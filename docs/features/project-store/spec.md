@@ -1,6 +1,6 @@
 # Project store
 
-**Status:** In review
+**Status:** Shipped 2026-11-23
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-23, by inheritance from [the v1 product design](../../product/README.md) (Order of delivery, item 2; Isolation), approved by the owner on 2026-11-23; the calls below that the product design does not make are ADRs marked as the loop's calls and listed in the loop's questions for the owner
 **ADRs:** [0010](../../adr/0010-the-task-rules-run-behind-synchronous-ports.md), [0012](../../adr/0012-worker-tests-run-inside-workerd.md), [0013](../../adr/0013-a-project-is-reached-only-through-the-directory.md), [0014](../../adr/0014-credentials-are-stored-as-sha-256-digests.md), [0015](../../adr/0015-the-project-store-answers-with-results-not-thrown-errors.md)
