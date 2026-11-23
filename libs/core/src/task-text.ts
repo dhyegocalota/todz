@@ -10,6 +10,7 @@ import { RuleViolation } from './errors';
 
 const WHITESPACE_RUN_PATTERN = /\s+/g;
 const CARRIAGE_RETURN_LINE_BREAK_PATTERN = /\r\n/g;
+const INVISIBLE_CHARACTER_PATTERN = /[\s\p{Cf}]/gu;
 const COMBINING_MARK_PATTERN = /\p{M}/gu;
 const IDEMPOTENCY_KEY_PATTERN = new RegExp(`^[A-Za-z0-9._:-]{1,${IDEMPOTENCY_KEY_MAX_LENGTH}}$`);
 const SINGLE_SPACE = ' ';
@@ -24,7 +25,8 @@ function codePointLength(text: string): number {
 
 function normalizeSingleLine({ text, maxLength, issues }: { text: string; maxLength: number; issues: SingleLineIssues }): string {
   const collapsed = text.trim().replace(WHITESPACE_RUN_PATTERN, SINGLE_SPACE);
-  if (collapsed === '') throw new RuleViolation({ issue: issues.empty });
+  const visibleText = collapsed.replace(INVISIBLE_CHARACTER_PATTERN, '');
+  if (visibleText === '') throw new RuleViolation({ issue: issues.empty });
   if (codePointLength(collapsed) > maxLength) throw new RuleViolation({ issue: issues.tooLong });
   return collapsed;
 }

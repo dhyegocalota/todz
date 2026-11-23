@@ -2,7 +2,7 @@ import { ActorKind, CLIENT_NAME_MAX_LENGTH, RuleIssue } from '@todz/types';
 import { RuleViolation } from './errors';
 import type { Actor } from './task';
 
-const CONTROL_CHARACTER_PATTERN = /\p{Cc}/u;
+const CONTROL_CHARACTER_PATTERN = /[\p{Cc}\p{Zl}\p{Zp}]/u;
 
 export const OWNER_ACTOR: Actor = { kind: ActorKind.Owner };
 
