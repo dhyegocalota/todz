@@ -10,6 +10,12 @@ export function fixedClock(now: number): Clock {
   return { now: () => now };
 }
 
+export function itemAt<Item>({ items, index }: { items: Item[]; index: number }): Item {
+  const item = items[index];
+  if (item === undefined) throw new Error(`expected an item at ${index}`);
+  return item;
+}
+
 function captureError<ErrorInstance extends Error>({
   run,
   errorClass,

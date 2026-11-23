@@ -1,7 +1,8 @@
-import { DueWindow } from '@todz/types';
+import { DueWindow, RuleIssue } from '@todz/types';
 import { describe, expect, test } from 'vitest';
-import { dueWindowOf, parseCalendarDate } from './calendar-date';
+import { dueWindowOf, normalizeDueDate, parseCalendarDate } from './calendar-date';
 import type { CalendarDate } from './task';
+import { violationIssueOf } from './test-support';
 
 function calendarDate(text: string): CalendarDate {
   return text as CalendarDate;
@@ -25,6 +26,20 @@ describe('parseCalendarDate', () => {
     ' 2026-11-23',
   ])('rejects %j', (text) => {
     expect(parseCalendarDate(text)).toBeNull();
+  });
+});
+
+describe('normalizeDueDate', () => {
+  test('null stays null', () => {
+    expect(normalizeDueDate(null)).toBeNull();
+  });
+
+  test('a real day is kept', () => {
+    expect(normalizeDueDate('2026-11-23')).toBe('2026-11-23');
+  });
+
+  test.each(['2026-02-30', '', 'tomorrow'])('rejects %j as DueDateInvalid', (text) => {
+    expect(violationIssueOf(() => normalizeDueDate(text))).toBe(RuleIssue.DueDateInvalid);
   });
 });
 

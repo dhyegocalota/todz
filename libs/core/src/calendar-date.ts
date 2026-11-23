@@ -29,6 +29,10 @@ export function parseCalendarDate(text: string): CalendarDate | null {
   return text as CalendarDate;
 }
 
+export function normalizeDueDate(text: string | null): CalendarDate | null {
+  throw new Error('normalizeDueDate is not implemented');
+}
+
 export function dueWindowOf({ dueDate, today }: { dueDate: CalendarDate | null; today: CalendarDate }): DueWindow {
   if (dueDate === null) return DueWindow.Undated;
   if (dueDate < today) return DueWindow.Overdue;
