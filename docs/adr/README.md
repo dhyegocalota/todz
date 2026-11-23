@@ -32,3 +32,7 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0009](0009-manual-order-uses-fractional-keys.md) | Manual order uses fractional keys | Proposed | 2026-11-23 |
 | [0010](0010-the-task-rules-run-behind-synchronous-ports.md) | The task rules run behind synchronous ports | Proposed | 2026-11-23 |
 | [0011](0011-due-dates-are-calendar-dates-and-the-caller-names-today.md) | Due dates are calendar dates and the caller names today | Proposed | 2026-11-23 |
+| [0012](0012-worker-tests-run-inside-workerd.md) | Worker tests run inside workerd | Proposed | 2026-11-23 |
+| [0013](0013-a-project-is-reached-only-through-the-directory.md) | A project is reached only through the directory | Proposed | 2026-11-23 |
+| [0014](0014-credentials-are-stored-as-sha-256-digests.md) | Credentials are stored as SHA-256 digests | Proposed | 2026-11-23 |
+| [0015](0015-the-project-store-answers-with-results-not-thrown-errors.md) | The project store answers with results, not thrown errors | Proposed | 2026-11-23 |
