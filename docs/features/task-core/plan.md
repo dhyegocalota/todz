@@ -25,25 +25,25 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ### G1
 
-- [ ] **Step 1:** red: `libs/types/src/task.test.ts` pins every enum value and constant of the spec's tables; green: `libs/types/src/task.ts`, exported from `index.ts`; README names the task concepts.
+- [x] **Step 1:** red: `libs/types/src/task.test.ts` pins every enum value and constant of the spec's tables; green: `libs/types/src/task.ts`, exported from `index.ts`; README names the task concepts. (red c4cfb1d, green 1bf20ab)
 
 ### G2
 
-- [ ] **Step 2:** scaffold `@todz/core` (package, tsconfig, vitest config copied from `libs/types`, workspace dependency on `@todz/types`, `pnpm install --offline`), README, `libs/README.md` row, `AGENTS.md` layout line, `FEATURE_PACKAGES`; `task.ts`, `ports.ts`, `errors.ts`, `in-memory-task-store.ts`.
-- [ ] **Step 3:** red then green: `short-id` (`formatShortId`, `parseShortId`).
-- [ ] **Step 4:** red then green: `calendar-date` (`parseCalendarDate`, `dueWindowOf`).
-- [ ] **Step 5:** red then green: `order-key` (`orderKeyBetween`), including a seeded thousand-move property test.
-- [ ] **Step 6:** red then green: `task-text` (`normalizeTitle`, `normalizeNotes`, `normalizeCompletionNote`, `normalizeName`, the accent- and case-insensitive text match used by `listTasks`).
-- [ ] **Step 7:** red then green: `actor` (`agentActor`, `OWNER_ACTOR`).
+- [x] **Step 2:** scaffold `@todz/core` (package, tsconfig, vitest config copied from `libs/types`, workspace dependency on `@todz/types`, `pnpm install --offline`), README, `libs/README.md` row, `AGENTS.md` layout line, `FEATURE_PACKAGES`; `task.ts`, `ports.ts`, `errors.ts`, `in-memory-task-store.ts`. (c68026b)
+- [x] **Step 3:** red then green: `short-id` (`formatShortId`, `parseShortId`). (red 8aa2f21, green 2165104)
+- [x] **Step 4:** red then green: `calendar-date` (`parseCalendarDate`, `dueWindowOf`). (red f09c92b, green e9b5a3f)
+- [x] **Step 5:** red then green: `order-key` (`orderKeyBetween`), including a seeded thousand-move property test. (red 052afad, green 105cf51)
+- [x] **Step 6:** red then green: `task-text` (`normalizeTitle`, `normalizeNotes`, `normalizeCompletionNote`, `normalizeName`, the accent- and case-insensitive text match used by `listTasks`). (red 1c52dd2, green b986e07)
+- [x] **Step 7:** red then green: `actor` (`agentActor`, `OWNER_ACTOR`). (red ef80c47, green 7b349c1)
 
 ### G3
 
-- [ ] **Step 8:** red then green: `addTasks`.
-- [ ] **Step 9:** red then green: `updateTask`.
-- [ ] **Step 10:** red then green: `completeTasks` and `reopenTasks`.
-- [ ] **Step 11:** red then green: `listTasks`.
-- [ ] **Step 12:** red then green: `nextTask`.
-- [ ] **Step 13:** `index.ts` exports every public function, type and error; `tester-briefing.md` written.
+- [x] **Step 8:** red then green: `addTasks`. (red c9313b0, green e898149)
+- [x] **Step 9:** red then green: `updateTask`. (red 52f97c6, green 250ae6a)
+- [x] **Step 10:** red then green: `completeTasks` and `reopenTasks`. (red c2f0481, green b331cde)
+- [x] **Step 11:** red then green: `listTasks`. (red 219c477, green 0ba8df6)
+- [x] **Step 12:** red then green: `nextTask`. (red 439fc95, green 4890929)
+- [x] **Step 13:** `index.ts` exports every public function, type and error; `tester-briefing.md` written. (a853a18; briefing in the docs commit that follows)
 
 ## Failure modes
 
@@ -60,7 +60,7 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
 - [ ] **/check-ui:** not applicable: no UI.
