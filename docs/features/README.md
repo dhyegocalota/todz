@@ -24,3 +24,4 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 
 | Feature | Delivers | Status |
 |---------|----------|--------|
+| [`task-core`](task-core/) | The task and project rules in `libs/core` behind ports, with their enums in `libs/types` | Shipped 2026-11-23 ([PR #3](https://github.com/dhyegocalota/todz/pull/3)) |
