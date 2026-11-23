@@ -29,3 +29,6 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0006](0006-pull-request-media-is-attached-with-the-github-cli.md) | Pull request media is attached with the GitHub CLI | Accepted | 2026-11-23 |
 | [0007](0007-contributions-come-under-a-contributor-license-agreement.md) | Contributions come under a contributor license agreement | Accepted | 2026-11-23 |
 | [0008](0008-runbooks-live-in-the-repository.md) | Runbooks live in the repository | Accepted | 2026-11-23 |
+| [0009](0009-manual-order-uses-fractional-keys.md) | Manual order uses fractional keys | Proposed | 2026-11-23 |
+| [0010](0010-the-task-rules-run-behind-synchronous-ports.md) | The task rules run behind synchronous ports | Proposed | 2026-11-23 |
+| [0011](0011-due-dates-are-calendar-dates-and-the-caller-names-today.md) | Due dates are calendar dates and the caller names today | Proposed | 2026-11-23 |
