@@ -1,4 +1,4 @@
-import { HistoryAction, TaskState } from '@todz/types';
+import { HistoryAction, LAST_INDEX, TaskState } from '@todz/types';
 import { assertBatchSize } from './batch-size';
 import { normalizeDueDate } from './calendar-date';
 import { atBatchIndex } from './errors';
@@ -93,7 +93,7 @@ export function addTasks({
   const validatedDrafts = drafts.map((draft, index) => validateDraft({ draft, index }));
   const now = clock.now();
   const lastIssuedNumber = store.lastIssuedTaskNumber();
-  const lastTask = listAllTasks(store).at(-1);
+  const lastTask = listAllTasks(store).at(LAST_INDEX);
   const initialState: BatchState = {
     results: [],
     createdTasks: [],

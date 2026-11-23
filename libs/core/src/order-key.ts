@@ -1,3 +1,5 @@
+import { ABSENT_INDEX, LAST_INDEX } from '@todz/types';
+
 const DIGITS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const BASE = DIGITS.length;
 const ZERO_DIGIT = DIGITS.charAt(0);
@@ -15,6 +17,9 @@ const HEAD_STEP_UP = 1;
 const HEAD_STEP_DOWN = -1;
 const HALF = 2;
 const ORDER_ERROR_BEFORE_NOT_BELOW_AFTER = 'before must sort strictly below after';
+const NO_SHARED_PREFIX = 0;
+const FIRST_DIGIT_INDEX = 0;
+const ORDER_ERROR_CORRUPT_KEY = 'order key is corrupt';
 const ORDER_ERROR_NO_ROOM = 'no key fits in that range';
 
 type DigitShift = { digits: string[]; overflow: boolean };
@@ -25,7 +30,7 @@ function integerLengthOf(head: string): number {
   const isNegativeHead = head >= NEGATIVE_HEAD_START && head <= NEGATIVE_HEAD_END;
   if (isPositiveHead) return code - POSITIVE_HEAD_START.charCodeAt(0) + HEAD_LENGTH_OFFSET;
   if (isNegativeHead) return NEGATIVE_HEAD_END.charCodeAt(0) - code + HEAD_LENGTH_OFFSET;
-  throw new RangeError(ORDER_ERROR_NO_ROOM);
+  throw new RangeError(ORDER_ERROR_CORRUPT_KEY);
 }
 
 function integerPartOf(key: string): string {
@@ -56,7 +61,7 @@ function incrementInteger(integer: string): string | null {
   if (head === NEGATIVE_HEAD_END) return INTEGER_ZERO;
   if (head === POSITIVE_HEAD_END) return null;
   const nextHead = shiftHead({ head, step: HEAD_STEP_UP });
-  const resizedDigits = nextHead > POSITIVE_HEAD_START ? [...digits, ZERO_DIGIT] : digits.slice(0, -1);
+  const resizedDigits = nextHead > POSITIVE_HEAD_START ? [...digits, ZERO_DIGIT] : digits.slice(0, LAST_INDEX);
   return `${nextHead}${resizedDigits.join('')}`;
 }
 
@@ -67,7 +72,7 @@ function decrementInteger(integer: string): string | null {
   if (head === POSITIVE_HEAD_START) return `${NEGATIVE_HEAD_END}${LAST_DIGIT}`;
   if (head === NEGATIVE_HEAD_START) return null;
   const previousHead = shiftHead({ head, step: HEAD_STEP_DOWN });
-  const resizedDigits = previousHead < NEGATIVE_HEAD_END ? [...digits, LAST_DIGIT] : digits.slice(0, -1);
+  const resizedDigits = previousHead < NEGATIVE_HEAD_END ? [...digits, LAST_DIGIT] : digits.slice(0, LAST_INDEX);
   return `${previousHead}${resizedDigits.join('')}`;
 }
 
@@ -78,16 +83,16 @@ function digitAt({ text, index }: { text: string; index: number }): string {
 
 function sharedPrefixLength({ lower, upper }: { lower: string; upper: string }): number {
   const firstDifference = [...upper].findIndex((digit, index) => digitAt({ text: lower, index }) !== digit);
-  return firstDifference === -1 ? upper.length : firstDifference;
+  return firstDifference === ABSENT_INDEX ? upper.length : firstDifference;
 }
 
 function midpoint({ lower, upper }: { lower: string; upper: string | null }): string {
-  const prefixLength = upper === null ? 0 : sharedPrefixLength({ lower, upper });
+  const prefixLength = upper === null ? NO_SHARED_PREFIX : sharedPrefixLength({ lower, upper });
   const hasSharedPrefix = upper !== null && prefixLength > 0;
   if (hasSharedPrefix) {
     return upper.slice(0, prefixLength) + midpoint({ lower: lower.slice(prefixLength), upper: upper.slice(prefixLength) });
   }
-  const lowerDigit = lower === '' ? 0 : DIGITS.indexOf(lower.charAt(0));
+  const lowerDigit = lower === '' ? FIRST_DIGIT_INDEX : DIGITS.indexOf(lower.charAt(0));
   const upperDigit = upper === null ? BASE : DIGITS.indexOf(upper.charAt(0));
   const hasRoomForDigit = upperDigit - lowerDigit > 1;
   if (hasRoomForDigit) return DIGITS.charAt(Math.round((lowerDigit + upperDigit) / HALF));

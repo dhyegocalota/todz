@@ -1,9 +1,24 @@
 import { describe, expect, test } from 'vitest';
-import { HOURS_PER_DAY, MILLISECONDS_PER_DAY, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_SECOND } from './index';
+import {
+  ABSENT_INDEX,
+  HOURS_PER_DAY,
+  LAST_INDEX,
+  MILLISECONDS_PER_DAY,
+  MILLISECONDS_PER_HOUR,
+  MILLISECONDS_PER_MINUTE,
+  MILLISECONDS_PER_SECOND,
+} from './index';
 
 const MILLISECONDS_IN_A_DAY = 86_400_000;
 const MILLISECONDS_IN_AN_HOUR = 3_600_000;
 const MILLISECONDS_IN_A_MINUTE = 60_000;
+
+describe('index constants', () => {
+  test('an absent index and the last index are both -1 (pin)', () => {
+    expect(ABSENT_INDEX).toBe(-1);
+    expect(LAST_INDEX).toBe(-1);
+  });
+});
 
 describe('time constants', () => {
   test('a minute is sixty seconds in milliseconds', () => {

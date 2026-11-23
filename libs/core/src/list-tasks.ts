@@ -4,7 +4,7 @@ import { RuleViolation } from './errors';
 import type { TaskStore } from './ports';
 import { compareOrderKeys } from './project-tasks';
 import type { CalendarDate, Task, TaskFilter } from './task';
-import { exceedsCodePointLimit, textMatches } from './task-text';
+import { exceedsCodePointLimit, exceedsUtf16Budget, textMatches } from './task-text';
 
 const MINIMUM_LIMIT = 1;
 
@@ -30,6 +30,8 @@ function validateFilter(filter: TaskFilter): string | null {
   const isValidLimit = Number.isInteger(filter.limit) && filter.limit >= MINIMUM_LIMIT && filter.limit <= LIST_LIMIT_MAX;
   if (!isValidLimit) throw new RuleViolation({ issue: RuleIssue.LimitInvalid });
   if (filter.text === null) return null;
+  if (exceedsUtf16Budget({ text: filter.text, maxLength: SEARCH_TEXT_MAX_LENGTH }))
+    throw new RuleViolation({ issue: RuleIssue.SearchTextTooLong });
   const searchText = filter.text.trim();
   if (exceedsCodePointLimit({ text: searchText, maxLength: SEARCH_TEXT_MAX_LENGTH }))
     throw new RuleViolation({ issue: RuleIssue.SearchTextTooLong });

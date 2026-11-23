@@ -27,7 +27,7 @@ function rankOf({ task, today }: { task: Task; today: CalendarDate }): number {
 }
 
 export function nextTask({ store, today }: { store: TaskStore; today: CalendarDate }): Task | null {
-  const [first] = store.listTasksInState(TaskState.Open).sort((left, right) => {
+  const [first] = [...store.listTasksInState(TaskState.Open)].sort((left, right) => {
     const rankDifference = rankOf({ task: left, today }) - rankOf({ task: right, today });
     if (rankDifference !== SORTS_EQUAL) return rankDifference;
     const dueDateOrder = compareDueDates(left, right);

@@ -23,7 +23,7 @@ const DECOMPOSED_FORM = 'NFD';
 type SingleLineIssues = { empty: RuleIssue; tooLong: RuleIssue; invalid: RuleIssue };
 type MultilineIssues = { tooLong: RuleIssue; invalid: RuleIssue };
 
-function exceedsUtf16Budget({ text, maxLength }: { text: string; maxLength: number }): boolean {
+export function exceedsUtf16Budget({ text, maxLength }: { text: string; maxLength: number }): boolean {
   return text.length > maxLength * MAX_UTF16_UNITS_PER_CODE_POINT;
 }
 

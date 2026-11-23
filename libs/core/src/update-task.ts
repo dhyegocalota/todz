@@ -1,4 +1,4 @@
-import { HistoryAction, ORDER_KEY_MAX_LENGTH, RuleIssue, TaskField, TaskPlacement } from '@todz/types';
+import { ABSENT_INDEX, HistoryAction, ORDER_KEY_MAX_LENGTH, RuleIssue, TaskField, TaskPlacement } from '@todz/types';
 import { normalizeDueDate } from './calendar-date';
 import { RuleViolation, TaskNotFoundError } from './errors';
 import { orderKeyBetween } from './order-key';
@@ -9,7 +9,6 @@ import { assertTaskNumber } from './task-number';
 import { normalizeNotes, normalizeTitle } from './task-text';
 
 const NO_ANCHOR_POSITION = 0;
-const ABSENT_INDEX = -1;
 
 type Neighbours = { before: string | null; after: string | null };
 type NeighbourContext = { others: Task[]; anchorPosition: number };
