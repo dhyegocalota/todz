@@ -1,4 +1,5 @@
-import { DueWindow } from '@todz/types';
+import { DueWindow, RuleIssue } from '@todz/types';
+import { RuleViolation } from './errors';
 import type { CalendarDate } from './task';
 
 const CALENDAR_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -30,7 +31,10 @@ export function parseCalendarDate(text: string): CalendarDate | null {
 }
 
 export function normalizeDueDate(text: string | null): CalendarDate | null {
-  throw new Error('normalizeDueDate is not implemented');
+  if (text === null) return null;
+  const dueDate = parseCalendarDate(text);
+  if (dueDate === null) throw new RuleViolation({ issue: RuleIssue.DueDateInvalid });
+  return dueDate;
 }
 
 export function dueWindowOf({ dueDate, today }: { dueDate: CalendarDate | null; today: CalendarDate }): DueWindow {
