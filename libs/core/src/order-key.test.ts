@@ -7,6 +7,10 @@ const APPEND_COUNT = 1_000;
 const SPLIT_COUNT = 1_000;
 const MAX_APPENDED_KEY_LENGTH = 6;
 const MAX_SPLIT_KEY_LENGTH = 200;
+const SMALLEST_INTEGER_DIGIT_COUNT = 26;
+const LARGEST_INTEGER_DIGIT_COUNT = 26;
+const LONG_RUN_COUNT = 5_000;
+const LONG_RUN_MAX_KEY_LENGTH = 4;
 const KEY_PATTERN = /^[a-zA-Z][0-9A-Za-z]*$/;
 const TRAILING_ZERO_PATTERN = /0$/;
 const POSITIVE_HEAD_START = 'a'.charCodeAt(0);
@@ -135,6 +139,32 @@ describe('orderKeyBetween', () => {
     expect(isStrictlyIncreasing(keys)).toBe(true);
     expect(keys.every((key) => KEY_PATTERN.test(key))).toBe(true);
     expect(keys.some((key) => TRAILING_ZERO_PATTERN.test(fractionOf(key)))).toBe(false);
+  });
+
+  test('nothing sorts below the smallest integer key', () => {
+    const smallestInteger = `A${'0'.repeat(SMALLEST_INTEGER_DIGIT_COUNT)}`;
+    expect(() => orderKeyBetween({ before: null, after: smallestInteger })).toThrow(RangeError);
+  });
+
+  test('a key above the largest integer key sorts above it', () => {
+    const largestInteger = `z${'z'.repeat(LARGEST_INTEGER_DIGIT_COUNT)}`;
+    const above = orderKeyBetween({ before: largestInteger, after: null });
+    expect(isStrictlyIncreasing([largestInteger, above])).toBe(true);
+  });
+
+  test.each([
+    { before: 'az', after: 'b00' },
+    { before: 'Zz', after: 'a0' },
+    { before: 'a0V', after: 'a1' },
+    { before: 'a0', after: 'a0V' },
+    { before: 'a0V', after: 'a0V1' },
+  ])('a key between $before and $after sorts strictly between them', ({ before, after }) => {
+    expect(isStrictlyIncreasing([before, orderKeyBetween({ before, after }), after])).toBe(true);
+  });
+
+  test('five thousand appends and prepends stay at most four characters', () => {
+    expect(longestKeyLength(appendKeys(LONG_RUN_COUNT))).toBeLessThanOrEqual(LONG_RUN_MAX_KEY_LENGTH);
+    expect(longestKeyLength(prependKeys(LONG_RUN_COUNT))).toBeLessThanOrEqual(LONG_RUN_MAX_KEY_LENGTH);
   });
 
   test('a thousand appends keep every key at most six characters and increasing', () => {
