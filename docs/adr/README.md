@@ -36,3 +36,7 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0013](0013-a-project-is-reached-only-through-the-directory.md) | A project is reached only through the directory | Proposed | 2026-11-23 |
 | [0014](0014-credentials-are-stored-as-sha-256-digests.md) | Credentials are stored as SHA-256 digests | Proposed | 2026-11-23 |
 | [0015](0015-the-project-store-answers-with-results-not-thrown-errors.md) | The project store answers with results, not thrown errors | Proposed | 2026-11-23 |
+| [0016](0016-the-mcp-server-runs-on-the-sdk-v2-and-serves-both-protocol-eras.md) | The MCP server runs on the TypeScript SDK v2 and serves both protocol eras | Proposed | 2026-11-23 |
+| [0017](0017-a-2025-era-client-is-named-by-a-session-in-the-directory.md) | A 2025-era client is named by a session in the directory | Proposed | 2026-11-23 |
+| [0018](0018-the-mcp-server-reads-today-in-the-owner-s-time-zone.md) | The MCP server reads today in the owner's time zone | Proposed | 2026-11-23 |
+| [0019](0019-mcp-keys-are-prefixed-and-shown-once.md) | MCP keys are prefixed and shown once | Proposed | 2026-11-23 |
