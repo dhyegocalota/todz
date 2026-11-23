@@ -66,6 +66,7 @@ describe('task enums', () => {
       BatchTooLarge: 'batch_too_large',
       IdempotencyKeyInvalid: 'idempotency_key_invalid',
       ClientNameInvalid: 'client_name_invalid',
+      TaskNumberInvalid: 'task_number_invalid',
       NothingToUpdate: 'nothing_to_update',
       PlacementAnchorInvalid: 'placement_anchor_invalid',
       SearchTextTooLong: 'search_text_too_long',

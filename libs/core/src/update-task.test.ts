@@ -1,10 +1,9 @@
 import { HistoryAction, RuleIssue, TASK_TITLE_MAX_LENGTH, TaskField, TaskPlacement, TaskState } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { OWNER_ACTOR, agentActor } from './actor';
-import { addTasks } from './add-tasks';
 import { InMemoryTaskStore } from './in-memory-task-store';
 import type { Task, TaskPatch } from './task';
-import { CLOCK_NOW, captureNotFound, captureViolation, fixedClock } from './test-support';
+import { CLOCK_NOW, captureNotFound, captureViolation, fixedClock, markTaskDone, seedTasks } from './test-support';
 import { updateTask } from './update-task';
 
 const SENTINEL = 'SENTINEL-CONTENT';
@@ -15,24 +14,12 @@ const CLAUDE_CODE = 'Claude Code';
 
 function setup(taskCount: number) {
   const store = new InMemoryTaskStore();
-  addTasks({
-    store,
-    clock: fixedClock(CLOCK_NOW),
-    actor: OWNER_ACTOR,
-    drafts: Array.from({ length: taskCount }, (_, index) => ({
-      title: `Task ${index + 1}`,
-      notes: null,
-      dueDate: null,
-      idempotencyKey: null,
-    })),
-  });
+  seedTasks({ store, count: taskCount });
   function update({ number, patch }: { number: number; patch: TaskPatch }) {
     return updateTask({ store, clock: fixedClock(LATER), actor: OWNER_ACTOR, number, patch });
   }
   function markDone(number: number) {
-    const task = store.findTask(number);
-    if (!task) throw new Error(`T-${number} should exist`);
-    store.replaceTask({ ...task, state: TaskState.Done, completedAt: CLOCK_NOW });
+    markTaskDone({ store, number });
   }
   function orderOf(state: TaskState) {
     return store
