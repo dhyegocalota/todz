@@ -1,39 +1,70 @@
-import type { AddedTask, CompletedTask, Task, TaskList } from '@todz/core';
+import { type AddedTask, type CompletedTask, type Task, type TaskList, formatShortId } from '@todz/core';
 import type { TaskState } from '@todz/types';
-import type { ProjectFailure } from './project-result';
+import { MCP_COPY } from './mcp-copy';
+import { type ProjectFailure, ProjectFailureKind } from './project-result';
+
+const LINE_BREAK = '\n';
+const PARAGRAPH_BREAK = '\n\n';
+
+function lines(texts: string[]): string {
+  return texts.join(LINE_BREAK);
+}
+
+function paragraphs(texts: string[]): string {
+  return texts.join(PARAGRAPH_BREAK);
+}
+
+function addedLine({ task, replayed }: AddedTask): string {
+  if (replayed) return `${MCP_COPY.alreadyAdded} ${taskLine(task)}`;
+  return `${MCP_COPY.added} ${taskLine(task)}`;
+}
+
+function completedLine({ task, alreadyDone }: CompletedTask): string {
+  if (alreadyDone) return `${MCP_COPY.alreadyDone} ${taskLine(task)}`;
+  return `${MCP_COPY.done} ${taskLine(task)}`;
+}
 
 export function taskLine(task: Task): string {
-  throw new Error('taskLine is not implemented');
+  const line = `${formatShortId(task.number)} ${task.title}`;
+  if (task.dueDate === null) return line;
+  return `${line}${MCP_COPY.dueOn(task.dueDate)}`;
 }
 
 export function taskBlock(task: Task): string {
-  throw new Error('taskBlock is not implemented');
+  if (task.notes === null) return taskLine(task);
+  return paragraphs([taskLine(task), task.notes]);
 }
 
 export function listAnswer({ state, list }: { state: TaskState; list: TaskList }): string {
-  throw new Error('listAnswer is not implemented');
+  const header = `${MCP_COPY.stateTasks[state]}: ${MCP_COPY.shownOfMatched({ shown: list.tasks.length, matched: list.totalMatched })}`;
+  return lines([header, ...list.tasks.map(taskLine)]);
 }
 
 export function addedAnswer(added: AddedTask[]): string {
-  throw new Error('addedAnswer is not implemented');
+  return lines(added.map(addedLine));
 }
 
 export function updatedAnswer(task: Task): string {
-  throw new Error('updatedAnswer is not implemented');
+  return `${MCP_COPY.updated} ${taskLine(task)}`;
 }
 
 export function completedAnswer(completed: CompletedTask[]): string {
-  throw new Error('completedAnswer is not implemented');
+  return lines(completed.map(completedLine));
 }
 
 export function nextAnswer(task: Task | null): string {
-  throw new Error('nextAnswer is not implemented');
+  if (task === null) return MCP_COPY.noOpenTasks;
+  return taskBlock(task);
 }
 
 export function nextPromptText(task: Task | null): string {
-  throw new Error('nextPromptText is not implemented');
+  if (task === null) return MCP_COPY.nothingToDo;
+  return paragraphs([MCP_COPY.workOnTask, taskBlock(task), MCP_COPY.finishWith(formatShortId(task.number))]);
 }
 
 export function failureText(failure: ProjectFailure): string {
-  throw new Error('failureText is not implemented');
+  if (failure.kind === ProjectFailureKind.TaskNotFound) return MCP_COPY.taskNotFound(formatShortId(failure.number));
+  const sentence = MCP_COPY.ruleIssue[failure.issue];
+  if (failure.index === null) return sentence;
+  return MCP_COPY.atTaskPosition({ position: failure.index + 1, sentence });
 }
