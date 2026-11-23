@@ -2,7 +2,7 @@
 
 Every checkbox states the input and the exact expected outcome. A ticked box carries evidence after ` — evidence: ` (commit hash, log path, counts, screenshot path).
 
-Fixtures: a fixed `Clock` at `1_764_000_000_000`, `today` = `2026-11-23`, an empty in-memory store unless stated.
+Fixtures: a fixed `Clock` at `1_795_446_000_000` (2026-11-23 15:00 UTC), `today` = `2026-11-23`, an empty in-memory store unless stated.
 
 ## The failing test first
 
@@ -32,8 +32,9 @@ Fixtures: a fixed `Clock` at `1_764_000_000_000`, `today` = `2026-11-23`, an emp
 
 - [ ] `orderKeyBetween({ before: null, after: null })` → a non-empty key
 - [ ] Keys before the first, after the last and between two neighbours sort strictly between their bounds as plain strings
-- [ ] Seeded property: a thousand random insertions (first, last, between two random neighbours) keep the list strictly increasing, every key matches `^[0-9a-z]*[1-9a-z]$`, no two keys equal
-- [ ] A thousand insertions always at the front keep every key under 40 characters
+- [ ] Seeded property: a thousand random insertions (first, last, between two random neighbours) keep the list strictly increasing as plain strings, every key matches the ADR 0009 alphabet and never ends its fraction in `0`, no two keys equal
+- [ ] A thousand appends and a thousand prepends each keep every key at most 6 characters
+- [ ] A thousand splits of the same gap keep every key under 200 characters
 - [ ] Edge: `before` equal to `after`, or `before` greater than `after` → throws
 
 ### Text
@@ -43,6 +44,8 @@ Fixtures: a fixed `Clock` at `1_764_000_000_000`, `today` = `2026-11-23`, an emp
 - [ ] `normalizeNotes(null)`, `normalizeNotes('  \n ')` → `null`; `'a\r\nb'` → `'a\nb'`; `'    code'` kept with its leading spaces; 20 001 code points → `NotesTooLong`
 - [ ] `normalizeCompletionNote` of 2 001 code points → `CompletionNoteTooLong`
 - [ ] `normalizeName('  Logic   Bit ')` → `'Logic Bit'`; `''` → `NameEmpty`; 81 code points → `NameTooLong`
+
+- [ ] `normalizeIdempotencyKey`: `null` → `null`; `'run-42:a.b_C'` → kept exactly; `' k1'`, `'k 1'`, `''`, `'é'`, 129 characters → `IdempotencyKeyInvalid`
 
 ### Actor
 
@@ -57,6 +60,8 @@ Fixtures: a fixed `Clock` at `1_764_000_000_000`, `today` = `2026-11-23`, an emp
 - [ ] Idempotency: the same draft with key `k1` added twice → the second call returns `T-1` with `replayed: true`, the store holds one task and one history line
 - [ ] Idempotency: a replay whose title differs → the stored task is returned unchanged
 - [ ] Idempotency: one batch with key `k1` twice → one task created, both results name it, the second `replayed: true`
+- [ ] Idempotency: `[k1, k1, no key]` → `T-1`, `T-1`, `T-2`
+- [ ] Idempotency: a replayed draft with an empty title → `TitleEmpty`; nothing written
 - [ ] Edge: `[]` → `BatchEmpty`; 51 drafts → `BatchTooLarge`
 - [ ] Edge: a batch of three whose third draft has an empty title → `RuleViolation` `TitleEmpty` with `index: 2`, and the store is empty afterwards
 - [ ] Edge: due date `'2026-02-30'` → `DueDateInvalid`; idempotency key with a space or 129 characters → `IdempotencyKeyInvalid`
@@ -70,13 +75,18 @@ Fixtures: a fixed `Clock` at `1_764_000_000_000`, `today` = `2026-11-23`, an emp
 - [ ] Placement `Before T-1` for `T-3` in `T-1, T-2, T-3` → open order `T-3, T-1, T-2`; `After`, `First`, `Last` likewise
 - [ ] Placement where the task already sits (`T-2 After T-1`) → no write, no history line
 - [ ] Placement with a done task between open neighbours → every key across both states stays unique
+- [ ] Placement `First` on an open task preceded only by done tasks → it moves before them; `First` on the task holding the lowest key → no write, no history line
+- [ ] Placement `After` a done anchor → the key sits right after the anchor's key
+- [ ] Edge: title `'  '` → `TitleEmpty`; due date `'2026-02-30'` → `DueDateInvalid`; notes of 20 001 code points → `NotesTooLong`; nothing written in each case
+- [ ] A title that normalizes to the current one (`'  Same  title '` for `'Same title'`) → no write, no history line
 - [ ] Edge: `{}` → `NothingToUpdate`; missing task `T-9` → `TaskNotFoundError` with number 9; missing anchor → `TaskNotFoundError` naming the anchor; the task as its own anchor → `PlacementAnchorInvalid`
 - [ ] Edge: updating a done task's title works and keeps it `Done`
 
 ### completeTasks and reopenTasks
 
 - [ ] `completeTasks` of `[1, 2]` with note `'shipped in #4'` → both `Done`, `completedAt` = the clock, one `Completed` line each carrying the note
-- [ ] Already done → returned with `alreadyDone: true`, no new history line, `completedAt` unchanged
+- [ ] Already done → returned with `alreadyDone: true`, no new history line, `completedAt` unchanged, even with a note
+- [ ] Edge: `RuleViolation.index` for an invalid number in `[2, 2, -1]` → `2`, the original position
 - [ ] Duplicates `[2, 1, 2]` → results for `T-2`, `T-1` in that order
 - [ ] Edge: `[1, 9]` where `T-9` is missing → `TaskNotFoundError` with number 9 and `T-1` still `Open`
 - [ ] Edge: `[]` → `BatchEmpty`; 51 numbers → `BatchTooLarge`; a 2 001 code-point note → `CompletionNoteTooLong`

@@ -22,6 +22,7 @@ The MCP server and the owner API must apply the same task rules: what a valid ti
 - Storage, the change feed, sync, keys, sessions: later features.
 - Deleting a task: the product design names no delete; it is a question for the owner.
 - Rendering history lines or tool output: the MCP server and the app own their words.
+- "Done today": the app works it out from `completedAt` in its own zone; the MCP `list` tool filters by state, due window and text only.
 
 ## Design
 
@@ -70,18 +71,18 @@ Lengths count Unicode code points, not UTF-16 units.
 Values in `libs/core`:
 
 ```ts
-type CalendarDate = string & { readonly calendarDate: unique symbol };   // YYYY-MM-DD
+type CalendarDate = string & { readonly calendarDate: unique symbol };
 type Actor = { kind: ActorKind.Owner } | { kind: ActorKind.Agent; clientName: string };
 type Task = {
-  number: number;                 // short id T-<number>, unique per project, never reused
+  number: number;
   title: string;
   notes: string | null;
   dueDate: CalendarDate | null;
   state: TaskState;
-  orderKey: string;               // ADR 0009
+  orderKey: string;
   idempotencyKey: string | null;
   createdBy: Actor;
-  createdAt: number;              // epoch milliseconds, server time
+  createdAt: number;
   updatedAt: number;
   completedAt: number | null;
 };
@@ -96,20 +97,24 @@ type TaskPatch = { title?: string; notes?: string | null; dueDate?: string | nul
 type TaskFilter = { state: TaskState; dueWindows: DueWindow[]; text: string | null; limit: number };
 ```
 
+A `CalendarDate` is `YYYY-MM-DD` (ADR 0011). A task's `number` is its short id `T-<number>`, unique per project and never reused. `orderKey` follows ADR 0009. Instants are epoch milliseconds in server time.
+
 Ports (ADR 0010):
 
 ```ts
 interface TaskStore {
   findTask(number: number): Task | null;
   findTaskByIdempotencyKey(idempotencyKey: string): Task | null;
-  listTasks(state: TaskState): Task[];
-  highestTaskNumber(): number;            // 0 for an empty project
+  listTasksInState(state: TaskState): Task[];
+  lastIssuedTaskNumber(): number | null;
   insertTask(task: Task): void;
   replaceTask(task: Task): void;
   appendHistory({ number, entry }: { number: number; entry: HistoryEntry }): void;
 }
 interface Clock { now(): number }
 ```
+
+`lastIssuedTaskNumber` is the highest number ever issued in the project, kept by the store even if a task stops existing, and `null` before the first task; the first number is 1.
 
 Functions:
 
@@ -119,10 +124,11 @@ Functions:
 | `parseShortId(text)` | trims; `T-<digits>` in either case, no leading zero, at least 1, at most 999 999 999 → the number; anything else → `null` |
 | `parseCalendarDate(text)` | `YYYY-MM-DD` that names a real day (leap years included) → `CalendarDate`; anything else → `null` |
 | `dueWindowOf({ dueDate, today })` | `null` → `Undated`; before → `Overdue`; equal → `Today`; after → `Upcoming` |
-| `orderKeyBetween({ before, after })` | a key strictly between the two (either may be `null` for an open end), base 36, never ending in `0`; throws when `before >= after` |
+| `orderKeyBetween({ before, after })` | a key strictly between the two (either may be `null` for an open end), in the scheme of ADR 0009; throws a `RangeError` when `before >= after`, a programmer error no user input can reach |
 | `normalizeTitle(text)` | trims, turns every whitespace run (newlines included) into one space; empty → `TitleEmpty`; over the limit → `TitleTooLong` |
 | `normalizeNotes(text)` | `null` or blank → `null`; CRLF → LF; otherwise kept as written; over the limit → `NotesTooLong` |
 | `normalizeCompletionNote(text)` | as notes, with its own limit → `CompletionNoteTooLong` |
+| `normalizeIdempotencyKey(text)` | `null` → `null`; otherwise it must match `^[A-Za-z0-9._:-]{1,128}$` exactly, with no trimming and case kept → the key; anything else → `IdempotencyKeyInvalid` |
 | `normalizeName(text)` | project and workspace names: as a title, with `NAME_MAX_LENGTH` → `NameEmpty`, `NameTooLong` |
 | `agentActor(clientName)` | trims; 1 to `CLIENT_NAME_MAX_LENGTH` code points, no control characters → `Actor`; otherwise `ClientNameInvalid` |
 | `OWNER_ACTOR` | `{ kind: ActorKind.Owner }` |
@@ -131,18 +137,18 @@ Use cases, each taking one named object:
 
 | Use case | Rule |
 |---|---|
-| `addTasks({ store, clock, actor, drafts })` → `{ task, replayed }[]` | 1 to `TASK_BATCH_MAX_SIZE` drafts, every draft validated first (the error names the draft's index). A draft whose idempotency key already names a task returns that task unchanged with `replayed: true`; the same key twice in one batch creates one task. New tasks get the next numbers in draft order, `Open`, an order key after the highest key of the project, and one `Created` history line with empty fields. |
-| `updateTask({ store, clock, actor, number, patch })` → `Task` | an empty patch → `NothingToUpdate`; a missing task or anchor → `TaskNotFoundError`; the task itself as anchor → `PlacementAnchorInvalid`. A placement computes neighbours among every task of the project (both states) in key order, excluding the moved task, so keys stay unique. Only fields whose value changes are written; one `Updated` history line lists them in `TaskField` order; nothing changed → no write and no history line. Done tasks can be updated. |
-| `completeTasks({ store, clock, actor, numbers, note })` → `{ task, alreadyDone }[]` | 1 to `TASK_BATCH_MAX_SIZE` numbers, duplicates collapsed in first-seen order; any missing number → `TaskNotFoundError` before anything is written. An open task becomes `Done` with `completedAt` and one `Completed` history line carrying the note; a done task is returned untouched with `alreadyDone: true`. |
+| `addTasks({ store, clock, actor, drafts })` → `{ task, replayed }[]` | 1 to `TASK_BATCH_MAX_SIZE` drafts, every draft validated first, replayed or not (the error's `index` is the draft's position). A draft whose idempotency key already names a task returns that task unchanged with `replayed: true`; the same key twice in one batch creates one task and the repeat takes no number (`[k1, k1, no key]` → `T-1`, `T-1`, `T-2`). New tasks get the next numbers in draft order, `Open`, an order key after the highest key of the project, and one `Created` history line with empty fields. |
+| `updateTask({ store, clock, actor, number, patch })` → `Task` | an empty patch → `NothingToUpdate`; a missing task or anchor → `TaskNotFoundError`; the task itself as anchor → `PlacementAnchorInvalid`. A placement computes neighbours among every task of the project (both states) in key order, excluding the moved task, so keys stay unique: `First` goes before the lowest key, `Last` after the highest, `Before`/`After` next to the anchor, and a done task may be an anchor. When the task's current key already lies between those neighbours, the key is kept and the order does not count as a change. Only fields whose value changes are written; one `Updated` history line lists them in `TaskField` order; nothing changed → no write and no history line. Done tasks can be updated. |
+| `completeTasks({ store, clock, actor, numbers, note })` → `{ task, alreadyDone }[]` | 1 to `TASK_BATCH_MAX_SIZE` numbers, duplicates collapsed in first-seen order; any missing number → `TaskNotFoundError` before anything is written. An open task becomes `Done` with `completedAt` and one `Completed` history line carrying the note; a done task is returned untouched with `alreadyDone: true` and the note is not recorded for it, so the caller can say so. |
 | `reopenTasks({ store, clock, actor, numbers })` → `{ task, alreadyOpen }[]` | the mirror of `completeTasks`, without a note: `completedAt` back to `null`, the order key kept, one `Reopened` line. |
-| `listTasks({ store, today, filter })` → `{ tasks, totalMatched }` | tasks of `filter.state` whose due window is in `filter.dueWindows` (empty means any) and whose title or notes contain `filter.text`, compared without case or accents (blank text means no text filter; over the limit → `SearchTextTooLong`); `limit` an integer from 1 to `LIST_LIMIT_MAX` (else `LimitInvalid`). Open tasks sort by order key, done tasks by `completedAt` newest first then number highest first. `totalMatched` counts before the limit. |
-| `nextTask({ store, today })` → `Task \| null` | the first open task in this ranking: due today or overdue (earliest due date, then order key); then undated (order key); then upcoming (earliest due date, then order key). |
+| `listTasks({ store, today, filter })` with `today: CalendarDate` → `{ tasks, totalMatched }` | tasks of `filter.state` whose due window is in `filter.dueWindows` (empty means any) and whose title or notes contain `filter.text`, compared without case or accents (blank text means no text filter; over the limit → `SearchTextTooLong`); `limit` an integer from 1 to `LIST_LIMIT_MAX` (else `LimitInvalid`). Open tasks sort by order key, done tasks by `completedAt` newest first then number highest first. `totalMatched` counts before the limit. |
+| `nextTask({ store, today })` with `today: CalendarDate` → `Task \| null` | the first open task in this ranking: due today or overdue (earliest due date, then order key); then undated (order key); then upcoming (earliest due date, then order key). |
 
 Every write sets `updatedAt` to `clock.now()`; `clock.now()` is read once per use case.
 
 ### Failure handling
 
-- `RuleViolation` (`issue: RuleIssue`, `index: number | null` for the draft or number position in a batch) and `TaskNotFoundError` (`number`). Their messages name the issue or the short id only.
+- `RuleViolation` (`issue: RuleIssue`, `index: number | null`: the position in the caller's original batch, before duplicates collapse) and `TaskNotFoundError` (`number`). Their messages name the issue or the short id only.
 - Validation happens before the first write; a use case that throws has written nothing.
 - A store that throws propagates unchanged; the caller's transaction rolls back.
 
