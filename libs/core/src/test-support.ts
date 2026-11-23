@@ -1,4 +1,4 @@
-import { type RuleIssue, TaskState } from '@todz/types';
+import { type RuleIssue, TASK_BATCH_MAX_SIZE, TaskState } from '@todz/types';
 import { OWNER_ACTOR } from './actor';
 import { addTasks } from './add-tasks';
 import { RuleViolation, TaskNotFoundError } from './errors';
@@ -13,17 +13,22 @@ export function fixedClock(now: number): Clock {
 }
 
 export function seedTasks({ store, count }: { store: TaskStore; count: number }): Task[] {
-  return addTasks({
-    store,
-    clock: fixedClock(CLOCK_NOW),
-    actor: OWNER_ACTOR,
-    drafts: Array.from({ length: count }, (_, index) => ({
-      title: `Task ${index + 1}`,
-      notes: null,
-      dueDate: null,
-      idempotencyKey: null,
-    })),
-  }).map((added) => added.task);
+  const batchCount = Math.ceil(count / TASK_BATCH_MAX_SIZE);
+  return Array.from({ length: batchCount }, (_, batchIndex) => batchIndex).flatMap((batchIndex) => {
+    const firstNumber = batchIndex * TASK_BATCH_MAX_SIZE + 1;
+    const batchSize = Math.min(TASK_BATCH_MAX_SIZE, count - batchIndex * TASK_BATCH_MAX_SIZE);
+    return addTasks({
+      store,
+      clock: fixedClock(CLOCK_NOW),
+      actor: OWNER_ACTOR,
+      drafts: Array.from({ length: batchSize }, (_, offset) => ({
+        title: `Task ${firstNumber + offset}`,
+        notes: null,
+        dueDate: null,
+        idempotencyKey: null,
+      })),
+    }).map((added) => added.task);
+  });
 }
 
 export function markTaskDone({ store, number }: { store: TaskStore; number: number }): void {

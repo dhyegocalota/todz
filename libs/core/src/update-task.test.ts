@@ -11,6 +11,8 @@ const LATER = CLOCK_NOW + 60_000;
 const MISSING_NUMBER = 9;
 const NOTES_LIMIT_OVERFLOW = 20_001;
 const CLAUDE_CODE = 'Claude Code';
+const LARGE_PROJECT_SIZE = 300;
+const MIDDLE_TASK = 150;
 
 function setup(taskCount: number) {
   const store = new InMemoryTaskStore();
@@ -212,6 +214,16 @@ describe('updateTask placement', () => {
     markDone(2);
     update({ number: 1, patch: { placement: { kind: TaskPlacement.After, anchor: 2 } } });
     expect(keyOf(2) < keyOf(1) && keyOf(1) < keyOf(3)).toBe(true);
+  });
+
+  test('After the middle one of 299 done tasks keeps the key strictly between its neighbours and every key unique', () => {
+    const { store, update, markDone, keyOf } = setup(LARGE_PROJECT_SIZE);
+    Array.from({ length: LARGE_PROJECT_SIZE - 1 }, (_, index) => index + 1).forEach(markDone);
+    update({ number: LARGE_PROJECT_SIZE, patch: { placement: { kind: TaskPlacement.First } } });
+    update({ number: LARGE_PROJECT_SIZE, patch: { placement: { kind: TaskPlacement.After, anchor: MIDDLE_TASK } } });
+    const keys = store.allTasks().map((task) => task.orderKey);
+    expect(keyOf(MIDDLE_TASK) < keyOf(LARGE_PROJECT_SIZE) && keyOf(LARGE_PROJECT_SIZE) < keyOf(MIDDLE_TASK + 1)).toBe(true);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 
   test('a placement and a title change in one patch list both fields', () => {

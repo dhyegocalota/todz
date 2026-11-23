@@ -125,6 +125,15 @@ describe('textMatches', () => {
     expect(textMatches({ text: 'Fix the login', search: 'the log' })).toBe(true);
   });
 
+  test('matches accents typed as combining marks against precomposed text and capitals', () => {
+    expect(textMatches({ text: 'Reunião', search: 'reunião' })).toBe(true);
+    expect(textMatches({ text: 'Reunião', search: 'REUNIAO' })).toBe(true);
+  });
+
+  test('folds case and accents only, so ß does not match ss', () => {
+    expect(textMatches({ text: 'Straße', search: 'strasse' })).toBe(false);
+  });
+
   test('is false when the text does not contain the search', () => {
     expect(textMatches({ text: 'Fix the login', search: 'logout' })).toBe(false);
   });

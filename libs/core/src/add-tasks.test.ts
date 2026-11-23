@@ -4,13 +4,14 @@ import { OWNER_ACTOR, agentActor } from './actor';
 import { addTasks } from './add-tasks';
 import { InMemoryTaskStore } from './in-memory-task-store';
 import type { TaskDraft } from './task';
-import { CLOCK_NOW, captureViolation, fixedClock, itemAt } from './test-support';
+import { CLOCK_NOW, captureViolation, fixedClock, itemAt, markTaskDone } from './test-support';
 
 const SENTINEL = 'SENTINEL-CONTENT';
 const CLAUDE_CODE = 'Claude Code';
 const TITLE_LIMIT_OVERFLOW = 201;
 const NOTES_LIMIT_OVERFLOW = 20_001;
 const KEY_LIMIT_OVERFLOW = 129;
+const SECOND_INSERT = 2;
 const FIRST_INDEX = 0;
 const SECOND_INDEX = 1;
 const THIRD_INDEX = 2;
@@ -172,6 +173,48 @@ describe('addTasks', () => {
     const notesViolation = captureViolation(() => add([draftOf({ notes: `${SENTINEL}${'a'.repeat(NOTES_LIMIT_OVERFLOW)}` })]));
     expect(titleViolation.message).not.toContain(SENTINEL);
     expect(notesViolation.message).not.toContain(SENTINEL);
+  });
+
+  test('a mixed batch replays stored keys, repeats and new drafts in draft order', () => {
+    const { add } = setup();
+    const stored = itemAt({ items: add([draftOf({ title: 'Stored', idempotencyKey: 'k1' })]), index: FIRST_INDEX });
+    const results = add([
+      draftOf({ title: 'b' }),
+      draftOf({ title: 'other', notes: 'other', dueDate: '2026-12-01', idempotencyKey: 'k1' }),
+      draftOf({ title: 'c', idempotencyKey: 'k2' }),
+      draftOf({ title: 'c again', idempotencyKey: 'k2' }),
+      draftOf({ title: 'd' }),
+    ]);
+    expect(results.map((result) => result.task.number)).toEqual([2, 1, 3, 3, 4]);
+    expect(results.map((result) => result.replayed)).toEqual([false, true, false, true, false]);
+    expect(itemAt({ items: results, index: SECOND_INDEX }).task).toEqual(stored.task);
+  });
+
+  test('a done task is replayed by its key and the store is untouched', () => {
+    const { store, add } = setup();
+    add([draftOf({ idempotencyKey: 'k1' })]);
+    markTaskDone({ store, number: 1 });
+    const writesBefore = store.writeCount;
+    const replay = itemAt({ items: add([draftOf({ idempotencyKey: 'k1' })]), index: FIRST_INDEX });
+    expect(replay).toEqual({ task: store.findTask(1), replayed: true });
+    expect(replay.task.state).toBe(TaskState.Done);
+    expect(store.writeCount).toBe(writesBefore);
+  });
+
+  test('a store that throws on the second insert propagates the error and keeps the first task, as atomicity is the transaction of the caller', () => {
+    const store = new InMemoryTaskStore();
+    const failure = new Error('boom');
+    const insertTask = store.insertTask.bind(store);
+    let insertCount = 0;
+    store.insertTask = (task) => {
+      insertCount += 1;
+      if (insertCount === SECOND_INSERT) throw failure;
+      insertTask(task);
+    };
+    expect(() => addTasks({ store, clock: fixedClock(CLOCK_NOW), actor: OWNER_ACTOR, drafts: [draftOf({}), draftOf({})] })).toThrow(
+      failure,
+    );
+    expect(store.allTasks()).toHaveLength(1);
   });
 
   test('reads the clock once for the whole batch', () => {
