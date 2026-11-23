@@ -12,6 +12,12 @@ export function compareOrderKeys(left: Task, right: Task): number {
   return SORTS_EQUAL;
 }
 
+export function orderKeyAt({ tasks, index }: { tasks: Task[]; index: number }): string | null {
+  const task = tasks[index];
+  if (task === undefined) return null;
+  return task.orderKey;
+}
+
 export function listAllTasks(store: TaskStore): Task[] {
   return [...store.listTasksInState(TaskState.Open), ...store.listTasksInState(TaskState.Done)].sort(compareOrderKeys);
 }
