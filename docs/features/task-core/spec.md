@@ -1,6 +1,6 @@
 # Task core
 
-**Status:** Approved
+**Status:** Building
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-23, by inheritance from [the v1 product design](../../product/README.md) (Order of delivery, item 1), approved by the owner on 2026-11-23; the calls below that the product design does not make are listed in the loop's questions for the owner
 **ADRs:** [0009](../../adr/0009-manual-order-uses-fractional-keys.md), [0010](../../adr/0010-the-task-rules-run-behind-synchronous-ports.md), [0011](../../adr/0011-due-dates-are-calendar-dates-and-the-caller-names-today.md)
@@ -133,6 +133,8 @@ Functions:
 | `normalizeName(text)` | project and workspace names: as a title, with `NAME_MAX_LENGTH` → `NameEmpty`, `NameInvalid`, `NameTooLong` |
 | `agentActor(clientName)` | trims; 1 to `CLIENT_NAME_MAX_LENGTH` code points, no control characters and no line or paragraph separators → `Actor`; otherwise `ClientNameInvalid` |
 | `OWNER_ACTOR` | `{ kind: ActorKind.Owner }` |
+| `normalizeDueDate(text)` | `null` → `null`; a text `parseCalendarDate` accepts → the `CalendarDate`; anything else → `DueDateInvalid` |
+| `textMatches({ text, search })` | whether the folded search (case and accents removed, as `listTasks` does) occurs in the folded text |
 
 Use cases, each taking one named object:
 

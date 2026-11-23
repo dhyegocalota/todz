@@ -153,9 +153,9 @@ Found by the tester at 73d5e75 with throwaway probes outside the repo. Each unti
 
 The reviewer picks the three claims most likely to be wrong and tries to refute each.
 
-- [ ] Claim 1: <claim> — attack: <how>; result: <refuted | held>
-- [ ] Claim 2: <claim> — attack: <how>; result: <refuted | held>
-- [ ] Claim 3: <claim> — attack: <how>; result: <refuted | held>
+- [x] Claim 1: placement where the task already sits writes nothing — attack: open T-1, done T-2, open T-3, move T-3 After T-1 (already after T-1 in the open list); result: held as specified (neighbours span both states, so T-3 moves between T-1 and T-2 and writes an Order line); raised to the owner as a product question
+- [x] Claim 2: text over the limit is SearchTextTooLong — attack: `' '.repeat(100_000) + 'Task 1'`, traced through the filter validation, which trims before the UTF-16 budget check; result: refuted (accepted, against the spec's raw-length rule; `agentActor` had the same gap); back to Build, regression tests in the fix commit
+- [x] Claim 3: order keys stay strictly increasing with no trailing zero in the fraction — attack: line-by-line comparison with the reference fractional-indexing algorithm, plus the Zz/a0, az/b00, smallest-integer and z-max boundaries; result: held
 
 ## Coverage honesty
 

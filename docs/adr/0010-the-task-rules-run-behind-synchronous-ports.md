@@ -14,7 +14,7 @@ The task rules (titles, short ids, order, history, the next task, filters) live 
 1. `libs/core` declares a `TaskStore` port and a `Clock` port. Their methods are synchronous.
 2. Each use case takes its ports and its input as one named object, validates the whole input before it writes anything, and throws a typed error on a rule violation or a missing task.
 3. The caller wraps a use case in its storage transaction. The core never opens one.
-4. The core filters and sorts in memory the tasks the store returns for one state of one project.
+4. The core filters and sorts in memory the tasks the store returns for a state of one project. A list and the next task read one state; an add and a move read both, because order keys are unique across states (ADR 0009).
 
 ## Alternatives considered
 
@@ -27,7 +27,7 @@ The task rules (titles, short ids, order, history, the next task, filters) live 
 ## Consequences
 
 - Tests use an in-memory store; the Durable Object adapter arrives with `project-store`.
-- In-memory filtering reads every task of one state on each list; that is fine for a project of a few thousand tasks.
+- In-memory filtering reads every task of one state on each list, and every task of the project on each add and move; with no delete, done tasks only accumulate. That is fine for a project of a few thousand tasks, and a store method for the neighbouring keys replaces the full read when it is not.
 
 ## Evidence
 
@@ -36,4 +36,4 @@ The `task-core` unit tests run every use case against the in-memory store, inclu
 ## Revisit when
 
 - A store that is not synchronous is added.
-- One project holds more than ten thousand tasks of one state and a list is measurably slow.
+- One project holds more than ten thousand tasks and a list, an add or a move is measurably slow.
