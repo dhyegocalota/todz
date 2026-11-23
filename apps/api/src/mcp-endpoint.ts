@@ -1,5 +1,150 @@
+import {
+  type CreateMcpHandlerOptions,
+  INVALID_PARAMS,
+  JSONRPC_VERSION,
+  createMcpHandler,
+  isLegacyRequest,
+} from '@modelcontextprotocol/server';
+import { agentActor } from '@todz/core';
+import { ActorKind, RuleIssue } from '@todz/types';
+import { z } from 'zod';
 import type { Env } from './env';
+import { MCP_COPY } from './mcp-copy';
+import { type McpServerScope, buildMcpServer, envelopeClientName } from './mcp-server';
+import { findSessionClientName, openMcpSession } from './mcp-sessions';
+import { calendarDateInTimeZone } from './owner-today';
+import { resultOf } from './project-result';
+import { type KeyProject, openKeyProject } from './project-routing';
+
+const BAD_REQUEST_STATUS = 400;
+const UNAUTHORIZED_STATUS = 401;
+const NOT_FOUND_STATUS = 404;
+const METHOD_NOT_ALLOWED_STATUS = 405;
+const SESSION_REQUIRED_CODE = -32000;
+const SESSION_NOT_FOUND_CODE = -32001;
+const BEARER_PATTERN = /^Bearer (.+)$/i;
+const BEARER_SECRET_GROUP = 1;
+const BEARER_CHALLENGE = 'Bearer';
+const SESSION_HEADER = 'Mcp-Session-Id';
+const MCP_METHOD = 'POST';
+const INITIALIZE_METHOD = 'initialize';
+
+enum ProtocolEra {
+  Legacy = 'legacy',
+  Modern = 'modern',
+}
+
+// NB ADR 0016: a 2025-era request is served statelessly, a modern one by a handler that rejects the 2025 era.
+const HANDLER_OPTIONS_OF_ERA: Record<ProtocolEra, CreateMcpHandlerOptions> = {
+  [ProtocolEra.Legacy]: {},
+  [ProtocolEra.Modern]: { legacy: 'reject' },
+};
+
+const InitializeMessageSchema = z.object({
+  id: z.union([z.string(), z.number()]),
+  method: z.literal(INITIALIZE_METHOD),
+  params: z.unknown().optional(),
+});
+const InitializeParamsSchema = z.object({ clientInfo: z.object({ name: z.string() }) });
+
+type RequestId = z.infer<typeof InitializeMessageSchema>['id'];
+
+type LegacyRequest = { request: Request; env: Env; keyProject: KeyProject; today: string; now: number };
+
+function bearerSecret(request: Request): string | null {
+  const authorization = request.headers.get('Authorization');
+  if (authorization === null) return null;
+  const secret = BEARER_PATTERN.exec(authorization)?.[BEARER_SECRET_GROUP];
+  if (secret === undefined) return null;
+  return secret;
+}
+
+function unauthorized(): Response {
+  return new Response(null, { status: UNAUTHORIZED_STATUS, headers: { 'WWW-Authenticate': BEARER_CHALLENGE } });
+}
+
+function methodNotAllowed(): Response {
+  return new Response(null, { status: METHOD_NOT_ALLOWED_STATUS, headers: { Allow: MCP_METHOD } });
+}
+
+function jsonRpcError({ status, id, code, message }: { status: number; id: RequestId | null; code: number; message: string }): Response {
+  return Response.json({ jsonrpc: JSONRPC_VERSION, id, error: { code, message } }, { status });
+}
+
+async function parsedBody(request: Request): Promise<unknown> {
+  try {
+    return await request.clone().json();
+  } catch {
+    return null;
+  }
+}
+
+function validClientName(params: unknown): string | null {
+  const parsedParams = InitializeParamsSchema.safeParse(params);
+  if (!parsedParams.success) return null;
+  const actorResult = resultOf(() => agentActor(parsedParams.data.clientInfo.name));
+  if (!actorResult.ok) return null;
+  const actor = actorResult.value;
+  if (actor.kind !== ActorKind.Agent) return null;
+  return actor.clientName;
+}
+
+function serveScope({ request, scope, era }: { request: Request; scope: McpServerScope; era: ProtocolEra }): Promise<Response> {
+  return createMcpHandler(() => buildMcpServer(scope), HANDLER_OPTIONS_OF_ERA[era]).fetch(request);
+}
+
+function legacyScope({ legacyRequest, clientName }: { legacyRequest: LegacyRequest; clientName: string }): McpServerScope {
+  return { project: legacyRequest.keyProject.project, today: legacyRequest.today, clientNameOf: () => clientName };
+}
+
+async function initializeSession({
+  legacyRequest,
+  id,
+  params,
+}: {
+  legacyRequest: LegacyRequest;
+  id: RequestId;
+  params: unknown;
+}): Promise<Response> {
+  const { request, env, keyProject, now } = legacyRequest;
+  const clientName = validClientName(params);
+  if (clientName === null) {
+    return jsonRpcError({ status: BAD_REQUEST_STATUS, id, code: INVALID_PARAMS, message: MCP_COPY.ruleIssue[RuleIssue.ClientNameInvalid] });
+  }
+  const sessionId = await openMcpSession({ directory: env.DIRECTORY, keyDigest: keyProject.keyDigest, clientName, now });
+  const response = await serveScope({ request, scope: legacyScope({ legacyRequest, clientName }), era: ProtocolEra.Legacy });
+  const sessionResponse = new Response(response.body, response);
+  sessionResponse.headers.set(SESSION_HEADER, sessionId);
+  return sessionResponse;
+}
+
+async function serveLegacy(legacyRequest: LegacyRequest): Promise<Response> {
+  const { request, env, keyProject, now } = legacyRequest;
+  const initializeMessage = InitializeMessageSchema.safeParse(await parsedBody(request));
+  if (initializeMessage.success) {
+    return initializeSession({ legacyRequest, id: initializeMessage.data.id, params: initializeMessage.data.params });
+  }
+  const sessionId = request.headers.get(SESSION_HEADER);
+  const isMissingSession = sessionId === null || sessionId.trim() === '';
+  if (isMissingSession) {
+    return jsonRpcError({ status: BAD_REQUEST_STATUS, id: null, code: SESSION_REQUIRED_CODE, message: MCP_COPY.sessionRequired });
+  }
+  const clientName = await findSessionClientName({ directory: env.DIRECTORY, sessionId, keyDigest: keyProject.keyDigest, now });
+  if (clientName === null) {
+    return jsonRpcError({ status: NOT_FOUND_STATUS, id: null, code: SESSION_NOT_FOUND_CODE, message: MCP_COPY.sessionNotFound });
+  }
+  return serveScope({ request, scope: legacyScope({ legacyRequest, clientName }), era: ProtocolEra.Legacy });
+}
 
 export async function serveMcp({ request, env, now }: { request: Request; env: Env; now: number }): Promise<Response> {
-  throw new Error('serveMcp is not implemented');
+  const secret = bearerSecret(request);
+  if (secret === null) return unauthorized();
+  const keyProject = await openKeyProject({ env, secret });
+  if (keyProject === null) return unauthorized();
+  if (request.method !== MCP_METHOD) return methodNotAllowed();
+  const today = calendarDateInTimeZone({ timeZone: keyProject.timeZone, now });
+  const isLegacy = await isLegacyRequest(request);
+  if (isLegacy) return serveLegacy({ request, env, keyProject, today, now });
+  const scope = { project: keyProject.project, today, clientNameOf: envelopeClientName };
+  return serveScope({ request, scope, era: ProtocolEra.Modern });
 }
