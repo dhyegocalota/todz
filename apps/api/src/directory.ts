@@ -11,6 +11,23 @@ export async function findKeyProject({ directory, digest }: { directory: D1Datab
   return row.project_id;
 }
 
+export async function insertProjectKey({
+  directory,
+  digest,
+  projectId,
+  now,
+}: {
+  directory: D1Database;
+  digest: string;
+  projectId: string;
+  now: number;
+}): Promise<void> {
+  await directory
+    .prepare('INSERT INTO project_keys (digest, project_id, created_at, revoked_at) VALUES (?, ?, ?, NULL)')
+    .bind(digest, projectId, now)
+    .run();
+}
+
 export async function findSessionOwner({
   directory,
   digest,
