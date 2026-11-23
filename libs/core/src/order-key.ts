@@ -107,7 +107,9 @@ function keyAbove(before: string): string {
 function keyBelow(after: string): string {
   const integer = integerPartOf(after);
   const fraction = after.slice(integer.length);
-  if (integer === SMALLEST_INTEGER) return integer + midpoint({ lower: '', upper: fraction });
+  const isSmallestInteger = integer === SMALLEST_INTEGER;
+  if (isSmallestInteger && fraction === '') throw new RangeError(ORDER_ERROR_NO_ROOM);
+  if (isSmallestInteger) return integer + midpoint({ lower: '', upper: fraction });
   if (integer < after) return integer;
   const decremented = decrementInteger(integer);
   if (decremented === null) throw new RangeError(ORDER_ERROR_NO_ROOM);
