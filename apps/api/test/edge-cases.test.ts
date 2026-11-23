@@ -207,3 +207,23 @@ describe('arguments that arrive through RPC', () => {
     expect(await countRows()).toEqual(before);
   });
 });
+
+describe('a resolved session owner', () => {
+  test('an owner resolved for one owner opens nothing of another owner project and addresses no Durable Object', async () => {
+    const { countedEnv, addressingCalls } = countingEnv();
+    const firstOwner = await seedLiveOwner({ ownerId: await seedOwner() });
+    const secondProjectId = await seedProject({ ownerId: await seedOwner() });
+    expect(await openOwnedProject({ env: countedEnv, owner: firstOwner, projectId: secondProjectId })).toBeNull();
+    expect(addressingCalls).toEqual([]);
+  });
+
+  test('the same resolved owner opens its project on every call', async () => {
+    const { countedEnv, addressingCalls } = countingEnv();
+    const ownerId = await seedOwner();
+    const projectId = await seedProject({ ownerId });
+    const owner = await seedLiveOwner({ ownerId });
+    expect(await openOwnedProject({ env: countedEnv, owner, projectId })).not.toBeNull();
+    expect(await openOwnedProject({ env: countedEnv, owner, projectId })).not.toBeNull();
+    expect(addressingCalls.filter((call) => call === 'get')).toHaveLength(2);
+  });
+});
