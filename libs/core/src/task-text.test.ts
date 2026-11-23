@@ -7,31 +7,11 @@ import {
   TASK_TITLE_MAX_LENGTH,
 } from '@todz/types';
 import { describe, expect, test } from 'vitest';
-import { RuleViolation } from './errors';
 import { normalizeCompletionNote, normalizeIdempotencyKey, normalizeName, normalizeNotes, normalizeTitle, textMatches } from './task-text';
+import { violationIssueOf, violationMessageOf } from './test-support';
 
 const SENTINEL = 'SENTINEL-CONTENT';
 const EMOJI = '😀';
-
-function violationIssueOf(run: () => unknown): RuleIssue {
-  try {
-    run();
-  } catch (error) {
-    if (error instanceof RuleViolation) return error.issue;
-    throw error;
-  }
-  throw new Error('expected a RuleViolation');
-}
-
-function violationMessageOf(run: () => unknown): string {
-  try {
-    run();
-  } catch (error) {
-    if (error instanceof RuleViolation) return error.message;
-    throw error;
-  }
-  throw new Error('expected a RuleViolation');
-}
 
 describe('normalizeTitle', () => {
   test('trims and collapses every whitespace run into one space', () => {

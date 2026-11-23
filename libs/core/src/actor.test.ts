@@ -1,17 +1,7 @@
 import { ActorKind, CLIENT_NAME_MAX_LENGTH, RuleIssue } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { OWNER_ACTOR, agentActor } from './actor';
-import { RuleViolation } from './errors';
-
-function violationIssueOf(run: () => unknown): RuleIssue {
-  try {
-    run();
-  } catch (error) {
-    if (error instanceof RuleViolation) return error.issue;
-    throw error;
-  }
-  throw new Error('expected a RuleViolation');
-}
+import { violationIssueOf } from './test-support';
 
 describe('OWNER_ACTOR', () => {
   test('is the owner kind', () => {
