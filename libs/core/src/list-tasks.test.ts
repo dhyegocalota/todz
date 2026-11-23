@@ -117,6 +117,11 @@ describe('listTasks', () => {
     expect(violation.message).not.toContain(SENTINEL);
   });
 
+  test('search text of limit * 2 + 1 ASCII characters is SearchTextTooLong (pin)', () => {
+    const { list } = setup([draftOf({})]);
+    expect(captureViolation(() => list({ text: 'a'.repeat(SEARCH_TEXT_MAX_LENGTH * 2 + 1) })).issue).toBe(RuleIssue.SearchTextTooLong);
+  });
+
   test('a state with no tasks lists nothing', () => {
     const { list } = setup([draftOf({})]);
     expect(list({ state: TaskState.Done })).toEqual({ tasks: [], totalMatched: 0 });

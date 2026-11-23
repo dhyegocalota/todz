@@ -22,6 +22,10 @@ describe('agentActor', () => {
     expect(agentActor(clientName)).toEqual({ kind: ActorKind.Agent, clientName });
   });
 
+  test('a client name of limit * 2 + 1 ASCII characters is rejected', () => {
+    expect(violationIssueOf(() => agentActor('a'.repeat(CLIENT_NAME_MAX_LENGTH * 2 + 1)))).toBe(RuleIssue.ClientNameInvalid);
+  });
+
   test.each([
     '',
     '   ',

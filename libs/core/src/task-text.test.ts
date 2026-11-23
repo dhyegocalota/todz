@@ -53,6 +53,56 @@ describe('normalizeTitle', () => {
   });
 });
 
+describe('control characters and oversized input', () => {
+  const terminalEscape = `Pay ${String.fromCharCode(0x1b)}]52;c;AAAA${String.fromCharCode(0x07)} rent`;
+  const nullCharacter = String.fromCharCode(0);
+  const deleteCharacter = String.fromCharCode(0x7f);
+  const nextLine = String.fromCharCode(0x85);
+  const carriageReturn = String.fromCharCode(0x0d);
+
+  test.each([terminalEscape, `a${nullCharacter}b`, `a${deleteCharacter}b`, `a${nextLine}b`])('a title with %j is TitleInvalid', (text) => {
+    expect(violationIssueOf(() => normalizeTitle(text))).toBe(RuleIssue.TitleInvalid);
+  });
+
+  test.each([terminalEscape, `a${nullCharacter}b`, `a${deleteCharacter}b`])('a name with %j is NameInvalid', (text) => {
+    expect(violationIssueOf(() => normalizeName(text))).toBe(RuleIssue.NameInvalid);
+  });
+
+  test.each([terminalEscape, `a${nullCharacter}b`, `a${deleteCharacter}b`, `a${carriageReturn}b`, `a${nextLine}b`])(
+    'notes with %j are NotesInvalid',
+    (text) => {
+      expect(violationIssueOf(() => normalizeNotes(text))).toBe(RuleIssue.NotesInvalid);
+    },
+  );
+
+  test.each([terminalEscape, `a${nullCharacter}b`, `a${carriageReturn}b`])('a completion note with %j is CompletionNoteInvalid', (text) => {
+    expect(violationIssueOf(() => normalizeCompletionNote(text))).toBe(RuleIssue.CompletionNoteInvalid);
+  });
+
+  test('notes keep line feeds and tabs and turn CRLF into LF', () => {
+    expect(normalizeNotes('a\n\tb\r\nc')).toBe('a\n\tb\nc');
+  });
+
+  test('an invalid-character message holds the issue only', () => {
+    expect(violationMessageOf(() => normalizeTitle(`${SENTINEL}${nullCharacter}`))).not.toContain(SENTINEL);
+    expect(violationMessageOf(() => normalizeNotes(`${SENTINEL}${nullCharacter}`))).not.toContain(SENTINEL);
+  });
+
+  test.each([
+    { name: 'title', run: (text: string) => normalizeTitle(text), limit: TASK_TITLE_MAX_LENGTH, issue: RuleIssue.TitleTooLong },
+    { name: 'notes', run: (text: string) => normalizeNotes(text), limit: TASK_NOTES_MAX_LENGTH, issue: RuleIssue.NotesTooLong },
+    {
+      name: 'completion note',
+      run: (text: string) => normalizeCompletionNote(text),
+      limit: COMPLETION_NOTE_MAX_LENGTH,
+      issue: RuleIssue.CompletionNoteTooLong,
+    },
+    { name: 'name', run: (text: string) => normalizeName(text), limit: NAME_MAX_LENGTH, issue: RuleIssue.NameTooLong },
+  ])('a $name of limit * 2 + 1 ASCII characters is rejected as too long', ({ run, limit, issue }) => {
+    expect(violationIssueOf(() => run('a'.repeat(limit * 2 + 1)))).toBe(issue);
+  });
+});
+
 describe('normalizeNotes', () => {
   test.each([null, '', '  \n '])('%j becomes null', (text) => {
     expect(normalizeNotes(text)).toBeNull();
