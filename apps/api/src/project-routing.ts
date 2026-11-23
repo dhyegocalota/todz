@@ -18,7 +18,11 @@ function openProject({ env, projectId }: { env: Env; projectId: string }): Durab
 }
 
 export async function openKeyProject({ env, secret }: { env: Env; secret: string }): Promise<KeyProject | null> {
-  throw new Error('openKeyProject is not implemented');
+  if (isBlankSecret(secret)) return null;
+  const keyDigest = await digestCredential(secret);
+  const keyProjectRecord = await findKeyProject({ directory: env.DIRECTORY, digest: keyDigest });
+  if (keyProjectRecord === null) return null;
+  return { project: openProject({ env, projectId: keyProjectRecord.projectId }), keyDigest, timeZone: keyProjectRecord.timeZone };
 }
 
 export async function resolveSessionOwner({ env, secret, now }: { env: Env; secret: string; now: number }): Promise<SessionOwner | null> {

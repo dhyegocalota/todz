@@ -1,10 +1,19 @@
+type KeyRow = { project_id: string; time_zone: string };
 type SessionRow = { owner_id: string };
 type ProjectRow = { id: string };
+type McpSessionRow = { client_name: string };
 
 export type KeyProjectRecord = { projectId: string; timeZone: string };
 
 export async function findKeyProject({ directory, digest }: { directory: D1Database; digest: string }): Promise<KeyProjectRecord | null> {
-  throw new Error('findKeyProject is not implemented');
+  const row = await directory
+    .prepare(
+      'SELECT project_keys.project_id, owners.time_zone FROM project_keys JOIN projects ON projects.id = project_keys.project_id JOIN workspaces ON workspaces.id = projects.workspace_id JOIN owners ON owners.id = workspaces.owner_id WHERE project_keys.digest = ? AND project_keys.revoked_at IS NULL',
+    )
+    .bind(digest)
+    .first<KeyRow>();
+  if (row === null) return null;
+  return { projectId: row.project_id, timeZone: row.time_zone };
 }
 
 export async function insertProjectKey({
@@ -39,7 +48,10 @@ export async function insertMcpSession({
   now: number;
   expiresAt: number;
 }): Promise<void> {
-  throw new Error('insertMcpSession is not implemented');
+  await directory
+    .prepare('INSERT INTO mcp_sessions (digest, key_digest, client_name, created_at, expires_at) VALUES (?, ?, ?, ?, ?)')
+    .bind(digest, keyDigest, clientName, now, expiresAt)
+    .run();
 }
 
 export async function findMcpSessionClient({
@@ -53,7 +65,12 @@ export async function findMcpSessionClient({
   keyDigest: string;
   now: number;
 }): Promise<string | null> {
-  throw new Error('findMcpSessionClient is not implemented');
+  const row = await directory
+    .prepare('SELECT client_name FROM mcp_sessions WHERE digest = ? AND key_digest = ? AND expires_at > ?')
+    .bind(digest, keyDigest, now)
+    .first<McpSessionRow>();
+  if (row === null) return null;
+  return row.client_name;
 }
 
 export async function findSessionOwner({
