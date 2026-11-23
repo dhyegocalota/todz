@@ -88,7 +88,7 @@ function sharedPrefixLength({ lower, upper }: { lower: string; upper: string }):
 
 function midpoint({ lower, upper }: { lower: string; upper: string | null }): string {
   const prefixLength = upper === null ? NO_SHARED_PREFIX : sharedPrefixLength({ lower, upper });
-  const hasSharedPrefix = upper !== null && prefixLength > 0;
+  const hasSharedPrefix = upper !== null && prefixLength > NO_SHARED_PREFIX;
   if (hasSharedPrefix) {
     return upper.slice(0, prefixLength) + midpoint({ lower: lower.slice(prefixLength), upper: upper.slice(prefixLength) });
   }
