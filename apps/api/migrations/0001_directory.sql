@@ -18,14 +18,14 @@ CREATE TABLE projects (
 ) STRICT;
 
 CREATE TABLE project_keys (
-  digest TEXT PRIMARY KEY,
+  digest TEXT PRIMARY KEY CHECK (length(digest) = 64),
   project_id TEXT NOT NULL REFERENCES projects (id),
   created_at INTEGER NOT NULL,
   revoked_at INTEGER
 ) STRICT;
 
 CREATE TABLE sessions (
-  digest TEXT PRIMARY KEY,
+  digest TEXT PRIMARY KEY CHECK (length(digest) = 64),
   owner_id TEXT NOT NULL REFERENCES owners (id),
   created_at INTEGER NOT NULL,
   expires_at INTEGER NOT NULL
