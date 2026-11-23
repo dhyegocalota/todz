@@ -124,8 +124,8 @@ Observed, not a defect (closed by the first box above): `SessionOwner` is a bran
 
 ### Review fixes
 
-- [ ] A history row whose `fields` is `'Row secret'` (not JSON) → `listHistory` throws a message naming `task_history.fields` and the task number, without "Row secret" (`sqlite-task-store.test.ts` "listHistory throws for fields that are not JSON and names only the column and the task number")
-- [ ] A `SessionOwner` from `resolveSessionOwner` for O1, with its `ownerId` rewritten through a cast to O2's id → the write throws or is ignored, and `openOwnedProject` for O2's project → `null` (`project-routing.test.ts` "a resolved session owner cannot be rewritten to open another owner project")
+- [x] A history row whose `fields` is `'Row secret'` (not JSON) → `listHistory` throws a message naming `task_history.fields` and the task number, without "Row secret" (`sqlite-task-store.test.ts` "listHistory throws for fields that are not JSON and names only the column and the task number") — evidence: red 3bf36a0 replayed in a throwaway worktree (removed), 2 failed 107 passed, `expected 'Unexpected token 'R', "Row secret" ...' to contain 'task_history.fields'`; green 8e74846, 109 passed; mutation: dropped the try/catch around `JSON.parse`, this test alone went red, restored with git checkout
+- [x] A `SessionOwner` from `resolveSessionOwner` for O1, with its `ownerId` rewritten through a cast to O2's id → the write throws or is ignored, and `openOwnedProject` for O2's project → `null` (`project-routing.test.ts` "a resolved session owner cannot be rewritten to open another owner project") — evidence: red 3bf36a0 `expected function to throw an error, but it didn't`; green 8e74846 (the write throws `TypeError`, `ownerId` unchanged, O2's project `null`); mutation: dropped `Object.freeze`, this test alone went red, restored; typecheck clean
 
 ## Adversarial review
 
