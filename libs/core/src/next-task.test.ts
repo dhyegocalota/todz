@@ -4,6 +4,7 @@ import { OWNER_ACTOR } from './actor';
 import { addTasks } from './add-tasks';
 import { InMemoryTaskStore } from './in-memory-task-store';
 import { nextTask } from './next-task';
+import type { TaskStore } from './ports';
 import type { TaskDraft } from './task';
 import { CLOCK_NOW, TODAY, fixedClock, markTaskDone } from './test-support';
 
@@ -56,6 +57,15 @@ describe('nextTask', () => {
   test('with only upcoming tasks, the earliest due date wins', () => {
     const store = setup(['2026-11-30', '2026-11-25']);
     expect(nextNumber(store)).toBe(2);
+  });
+
+  test('does not reorder the array the store returned (pin)', () => {
+    const store = setup(['2026-11-30', null, '2026-11-20']);
+    const openTasks = store.listTasksInState(TaskState.Open);
+    const numbersBefore = openTasks.map((task) => task.number);
+    const sharingStore: TaskStore = Object.assign(Object.create(store), { listTasksInState: () => openTasks });
+    nextTask({ store: sharingStore, today: TODAY });
+    expect(openTasks.map((task) => task.number)).toEqual(numbersBefore);
   });
 
   test('done tasks are never next', () => {

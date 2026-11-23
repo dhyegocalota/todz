@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { OWNER_ACTOR, agentActor } from './actor';
 import { violationIssueOf } from './test-support';
 
+const PADDING_LENGTH = 100_000;
 const LINE_SEPARATOR = String.fromCharCode(0x2028);
 const PARAGRAPH_SEPARATOR = String.fromCharCode(0x2029);
 
@@ -24,6 +25,10 @@ describe('agentActor', () => {
 
   test('a client name of limit * 2 + 1 ASCII characters is rejected', () => {
     expect(violationIssueOf(() => agentActor('a'.repeat(CLIENT_NAME_MAX_LENGTH * 2 + 1)))).toBe(RuleIssue.ClientNameInvalid);
+  });
+
+  test('a padded client name is checked against the budget before it is trimmed', () => {
+    expect(violationIssueOf(() => agentActor(`${' '.repeat(PADDING_LENGTH)}Claude`))).toBe(RuleIssue.ClientNameInvalid);
   });
 
   test.each([

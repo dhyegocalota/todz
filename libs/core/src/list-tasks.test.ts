@@ -9,6 +9,7 @@ import { CLOCK_NOW, TODAY, captureViolation, fixedClock } from './test-support';
 
 const SENTINEL = 'SENTINEL-CONTENT';
 const DEFAULT_LIMIT = 50;
+const PADDING_LENGTH = 100_000;
 
 function draftOf(overrides: Partial<TaskDraft>): TaskDraft {
   return { title: 'Task', notes: null, dueDate: null, idempotencyKey: null, ...overrides };
@@ -120,6 +121,12 @@ describe('listTasks', () => {
   test('search text of limit * 2 + 1 ASCII characters is SearchTextTooLong (pin)', () => {
     const { list } = setup([draftOf({})]);
     expect(captureViolation(() => list({ text: 'a'.repeat(SEARCH_TEXT_MAX_LENGTH * 2 + 1) })).issue).toBe(RuleIssue.SearchTextTooLong);
+  });
+
+  test('padded search text is checked against the budget before it is trimmed', () => {
+    const { list } = setup([draftOf({ title: 'Task 1' })]);
+    const paddedText = `${' '.repeat(PADDING_LENGTH)}Task 1`;
+    expect(captureViolation(() => list({ text: paddedText })).issue).toBe(RuleIssue.SearchTextTooLong);
   });
 
   test('a state with no tasks lists nothing', () => {

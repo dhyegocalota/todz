@@ -11,6 +11,7 @@ const SMALLEST_INTEGER_DIGIT_COUNT = 26;
 const LARGEST_INTEGER_DIGIT_COUNT = 26;
 const LONG_RUN_COUNT = 5_000;
 const LONG_RUN_MAX_KEY_LENGTH = 4;
+const CORRUPT_KEY_MESSAGE = 'order key is corrupt';
 const KEY_PATTERN = /^[a-zA-Z][0-9A-Za-z]*$/;
 const TRAILING_ZERO_PATTERN = /0$/;
 const POSITIVE_HEAD_START = 'a'.charCodeAt(0);
@@ -139,6 +140,14 @@ describe('orderKeyBetween', () => {
     expect(isStrictlyIncreasing(keys)).toBe(true);
     expect(keys.every((key) => KEY_PATTERN.test(key))).toBe(true);
     expect(keys.some((key) => TRAILING_ZERO_PATTERN.test(fractionOf(key)))).toBe(false);
+  });
+
+  test.each([
+    { before: '!0', after: null },
+    { before: null, after: '!0' },
+    { before: '!0', after: 'a0' },
+  ])('a key with an unknown head ($before, $after) is reported as corrupt', ({ before, after }) => {
+    expect(() => orderKeyBetween({ before, after })).toThrow(CORRUPT_KEY_MESSAGE);
   });
 
   test('nothing sorts below the smallest integer key', () => {
