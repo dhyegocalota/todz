@@ -82,9 +82,17 @@ function dueDateOf({ raw, taskNumber }: { raw: string | null; taskNumber: number
   return dueDate;
 }
 
+function parsedJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 function fieldsOf({ raw, taskNumber }: { raw: string; taskNumber: number }): TaskField[] {
   const column = 'task_history.fields';
-  const parsed: unknown = JSON.parse(raw);
+  const parsed = parsedJson(raw);
   if (!Array.isArray(parsed)) throw invalidColumn({ column, taskNumber });
   return parsed.map((field) => enumValue({ enumeration: TaskField, raw: String(field), column, taskNumber }));
 }

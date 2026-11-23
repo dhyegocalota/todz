@@ -3,7 +3,7 @@ import { findKeyProject, findOwnedProject, findSessionOwner } from './directory'
 import type { Env } from './env';
 import type { ProjectStore } from './project-store';
 
-export type SessionOwner = { ownerId: string } & { readonly sessionOwner: unique symbol };
+export type SessionOwner = { readonly ownerId: string } & { readonly sessionOwner: unique symbol };
 
 const resolvedOwners = new WeakSet<SessionOwner>();
 
@@ -26,7 +26,7 @@ export async function resolveSessionOwner({ env, secret, now }: { env: Env; secr
   if (isBlankSecret(secret)) return null;
   const ownerId = await findSessionOwner({ directory: env.DIRECTORY, digest: await digestCredential(secret), now });
   if (ownerId === null) return null;
-  const owner = { ownerId } as SessionOwner;
+  const owner = Object.freeze({ ownerId }) as SessionOwner;
   resolvedOwners.add(owner);
   return owner;
 }
