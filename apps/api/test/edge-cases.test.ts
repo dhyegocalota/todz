@@ -100,9 +100,11 @@ describe('a key of one project reaches nothing of another', () => {
     const secrets = { a: newSecret(), b: newSecret() };
     await seedKey({ projectId: await seedProject({ ownerId }), secret: secrets.a });
     await seedKey({ projectId: await seedProject({ ownerId }), secret: secrets.b });
-    const stubA = await openKeyProject({ env, secret: secrets.a });
-    const stubB = await openKeyProject({ env, secret: secrets.b });
-    if (stubA === null || stubB === null) throw new Error('both keys should open');
+    const keyProjectA = await openKeyProject({ env, secret: secrets.a });
+    const keyProjectB = await openKeyProject({ env, secret: secrets.b });
+    if (keyProjectA === null || keyProjectB === null) throw new Error('both keys should open');
+    const stubA = keyProjectA.project;
+    const stubB = keyProjectB.project;
     unwrap(await stubA.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('A one')] }));
     unwrap(await stubB.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('B secret alpha'), draftOf('B two')] }));
     return { stubA, stubB };

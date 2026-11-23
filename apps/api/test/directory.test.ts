@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
-import { findKeyProject, findOwnedProject, findSessionOwner } from '../src/directory';
+import { findKeyProject, findMcpSessionClient, findOwnedProject, findSessionOwner, insertMcpSession } from '../src/directory';
 import { seedKey, seedOwner, seedProject, seedSession } from './directory-seed';
 import { CLOCK_NOW } from './task-fixtures';
 
@@ -13,11 +13,14 @@ function newSecret(): string {
 }
 
 describe('findKeyProject', () => {
-  test('a seeded key resolves to its project', async () => {
-    const projectId = await seedProject({ ownerId: await seedOwner() });
+  test('a seeded key resolves to its project and its owner time zone', async () => {
+    const projectId = await seedProject({ ownerId: await seedOwner(SAO_PAULO_TIME_ZONE) });
     const secret = newSecret();
     await seedKey({ projectId, secret });
-    expect(await findKeyProject({ directory: env.DIRECTORY, digest: await digestCredential(secret) })).toBe(projectId);
+    expect(await findKeyProject({ directory: env.DIRECTORY, digest: await digestCredential(secret) })).toEqual({
+      projectId,
+      timeZone: SAO_PAULO_TIME_ZONE,
+    });
   });
 
   test('an unknown secret resolves to nothing', async () => {
@@ -48,6 +51,48 @@ describe('findSessionOwner', () => {
 
   test('an unknown digest resolves to nothing', async () => {
     expect(await findSessionOwner({ directory: env.DIRECTORY, digest: await digestCredential(newSecret()), now: CLOCK_NOW })).toBeNull();
+  });
+});
+
+describe('findMcpSessionClient', () => {
+  const SESSION_EXPIRES_AT = CLOCK_NOW + 1;
+
+  async function storedSession(): Promise<{ digest: string; keyDigest: string }> {
+    const keySecret = newSecret();
+    await seedKey({ projectId: await seedProject({ ownerId: await seedOwner() }), secret: keySecret });
+    const digest = await digestCredential(newSecret());
+    const keyDigest = await digestCredential(keySecret);
+    await insertMcpSession({
+      directory: env.DIRECTORY,
+      digest,
+      keyDigest,
+      clientName: CLIENT_NAME,
+      now: CLOCK_NOW,
+      expiresAt: SESSION_EXPIRES_AT,
+    });
+    return { digest, keyDigest };
+  }
+
+  test('a session one millisecond before it expires names its client', async () => {
+    const { digest, keyDigest } = await storedSession();
+    expect(await findMcpSessionClient({ directory: env.DIRECTORY, digest, keyDigest, now: SESSION_EXPIRES_AT - 1 })).toBe(CLIENT_NAME);
+  });
+
+  test('a session at its expiry names nothing', async () => {
+    const { digest, keyDigest } = await storedSession();
+    expect(await findMcpSessionClient({ directory: env.DIRECTORY, digest, keyDigest, now: SESSION_EXPIRES_AT })).toBeNull();
+  });
+
+  test('a session offered with another key names nothing', async () => {
+    const { digest } = await storedSession();
+    const { keyDigest: otherKeyDigest } = await storedSession();
+    expect(await findMcpSessionClient({ directory: env.DIRECTORY, digest, keyDigest: otherKeyDigest, now: CLOCK_NOW })).toBeNull();
+  });
+
+  test('an unknown digest names nothing', async () => {
+    const { keyDigest } = await storedSession();
+    const unknownDigest = await digestCredential(newSecret());
+    expect(await findMcpSessionClient({ directory: env.DIRECTORY, digest: unknownDigest, keyDigest, now: CLOCK_NOW })).toBeNull();
   });
 });
 

@@ -1,14 +1,10 @@
-type KeyRow = { project_id: string };
 type SessionRow = { owner_id: string };
 type ProjectRow = { id: string };
 
-export async function findKeyProject({ directory, digest }: { directory: D1Database; digest: string }): Promise<string | null> {
-  const row = await directory
-    .prepare('SELECT project_id FROM project_keys WHERE digest = ? AND revoked_at IS NULL')
-    .bind(digest)
-    .first<KeyRow>();
-  if (row === null) return null;
-  return row.project_id;
+export type KeyProjectRecord = { projectId: string; timeZone: string };
+
+export async function findKeyProject({ directory, digest }: { directory: D1Database; digest: string }): Promise<KeyProjectRecord | null> {
+  throw new Error('findKeyProject is not implemented');
 }
 
 export async function insertProjectKey({
@@ -26,6 +22,38 @@ export async function insertProjectKey({
     .prepare('INSERT INTO project_keys (digest, project_id, created_at, revoked_at) VALUES (?, ?, ?, NULL)')
     .bind(digest, projectId, now)
     .run();
+}
+
+export async function insertMcpSession({
+  directory,
+  digest,
+  keyDigest,
+  clientName,
+  now,
+  expiresAt,
+}: {
+  directory: D1Database;
+  digest: string;
+  keyDigest: string;
+  clientName: string;
+  now: number;
+  expiresAt: number;
+}): Promise<void> {
+  throw new Error('insertMcpSession is not implemented');
+}
+
+export async function findMcpSessionClient({
+  directory,
+  digest,
+  keyDigest,
+  now,
+}: {
+  directory: D1Database;
+  digest: string;
+  keyDigest: string;
+  now: number;
+}): Promise<string | null> {
+  throw new Error('findMcpSessionClient is not implemented');
 }
 
 export async function findSessionOwner({

@@ -50,11 +50,11 @@ describe('issueProjectKey', () => {
     const secondSecret = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
     expect(firstSecret).not.toBe(secondSecret);
     expect(await keyRowsOf(projectId)).toHaveLength(2);
-    const firstStub = await openKeyProject({ env, secret: firstSecret });
-    const secondStub = await openKeyProject({ env, secret: secondSecret });
-    if (firstStub === null || secondStub === null) throw new Error('both keys should open the project');
-    unwrap(await firstStub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Through the first key')] }));
-    const listed = unwrap(await secondStub.listTasks({ today: TODAY, filter: openTasksFilter() }));
+    const firstKeyProject = await openKeyProject({ env, secret: firstSecret });
+    const secondKeyProject = await openKeyProject({ env, secret: secondSecret });
+    if (firstKeyProject === null || secondKeyProject === null) throw new Error('both keys should open the project');
+    unwrap(await firstKeyProject.project.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Through the first key')] }));
+    const listed = unwrap(await secondKeyProject.project.listTasks({ today: TODAY, filter: openTasksFilter() }));
     expect(listed.tasks.map((task) => task.title)).toEqual(['Through the first key']);
   });
 
