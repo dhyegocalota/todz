@@ -64,19 +64,20 @@ Package `@todz/api` under `apps/api`, depending on `@todz/core` and `@todz/types
 
 No directory column holds a task's title, notes or any task field. Ids are UUIDs from `crypto.randomUUID()`; instants are epoch milliseconds.
 
-**Project database** (the Durable Object's SQLite, created by the constructor inside `blockConcurrencyWhile`, versioned by `PRAGMA user_version`, `STRICT` tables):
+**Project database** (the Durable Object's SQLite, created by the constructor inside `blockConcurrencyWhile`, versioned by a one-row `schema_version` table because Durable Object SQLite refuses `PRAGMA user_version` with `SQLITE_AUTH`, `STRICT` tables):
 
 | Table | Columns |
 |---|---|
 | `tasks` | `number INTEGER PRIMARY KEY`, `title TEXT NOT NULL`, `notes TEXT`, `due_date TEXT`, `state TEXT NOT NULL`, `order_key TEXT NOT NULL COLLATE BINARY`, `idempotency_key TEXT UNIQUE`, `created_by_kind TEXT NOT NULL`, `created_by_client TEXT`, `created_at INTEGER NOT NULL`, `updated_at INTEGER NOT NULL`, `completed_at INTEGER` |
 | `task_history` | `id INTEGER PRIMARY KEY AUTOINCREMENT`, `task_number INTEGER NOT NULL REFERENCES tasks`, `at INTEGER NOT NULL`, `actor_kind TEXT NOT NULL`, `actor_client TEXT`, `action TEXT NOT NULL`, `fields TEXT NOT NULL` (a JSON array of `TaskField`), `note TEXT` |
 | `task_counter` | one row: `last_issued_number INTEGER NOT NULL` |
+| `schema_version` | one row: `version INTEGER NOT NULL`, `1` for this schema |
 
 **`SqliteTaskStore`** implements `TaskStore` over `SqlStorage`:
 
-- `lastIssuedTaskNumber()` reads `task_counter`, `null` when it has no row; `insertTask` raises the counter to the task's number, so a number is never issued twice even if a task row stopped existing.
+- `lastIssuedTaskNumber()` reads `task_counter`, `null` when it has no row; `insertTask` sets the counter to the larger of the counter and the task's number (inserting `T-3` after `T-5` leaves 5), so a number is never issued twice even if a task row stopped existing.
 - `listTasksInState(state)` returns that state's tasks ordered by `order_key` (BINARY, the order JavaScript string comparison gives the ASCII keys of ADR 0009).
-- Rows map to `Task` and `HistoryEntry` exactly: an owner actor has no client name, an agent actor always has one; a row that breaks that (an unknown enum value, an agent without a client) throws, never defaults.
+- Rows map to `Task` and `HistoryEntry` exactly: an owner actor has no client name, an agent actor always has one; a row that breaks that (an unknown state, action or field, an agent without a client, an owner with one) throws, never defaults, with a message that names only the column and the task number, never a row value.
 - `listHistory(number)` (not on the port) returns a task's history in insertion order, for tests and the future inspector.
 
 **`ProjectStore`** Durable Object (`extends DurableObject`), RPC methods, each one named object, each one use case inside `ctx.storage.transactionSync` with a clock that reads `Date.now()`:
@@ -92,23 +93,27 @@ No directory column holds a task's title, notes or any task field. Ids are UUIDs
 
 Each returns `ProjectResult<Value> = { ok: true; value: Value } | { ok: false; failure: ProjectFailure }` where `ProjectFailure = { kind: ProjectFailureKind.TaskNotFound; number: number } | { kind: ProjectFailureKind.RuleViolated; issue: RuleIssue; index: number | null }`. `ProjectFailureKind` is an enum in `apps/api` (`TaskNotFound = 'task_not_found'`, `RuleViolated = 'rule_violated'`). Any other error is rethrown.
 
+Arguments arrive as structured clones, so the Durable Object does not trust their brands: it rebuilds an agent actor with `agentActor(clientName)` (an invalid name → `{ kind: RuleViolated, issue: ClientNameInvalid, index: null }`), and parses `today` with `parseCalendarDate`; an actor of an unknown kind or a `today` that does not parse is a caller's bug and is thrown.
+
 **Credentials** (`credential-digest.ts`): `digestCredential(secret)` → `Promise<string>`, the lowercase hex SHA-256 of the UTF-8 secret (ADR 0014).
 
 **Directory reads** (`directory.ts`), each one named object with `directory: D1Database`:
 
 | Function | Returns |
 |---|---|
-| `findKeyProject({ directory, digest })` | the `project_id` of an unrevoked key with that digest, else `null` |
+| `findKeyProject({ directory, digest })` | the `project_id` of the key with that digest whose `revoked_at IS NULL`, else `null` |
 | `findSessionOwner({ directory, digest, now })` | the `owner_id` of a session with that digest whose `expires_at` is after `now`, else `null` |
 | `findOwnedProject({ directory, ownerId, projectId })` | `projectId` when that project's workspace belongs to `ownerId`, else `null` |
 
-**Routing** (`project-routing.ts`), the only module that calls `PROJECT_STORE.get`:
+**Routing** (`project-routing.ts`), the only module under `apps/api/src` that reads a member of `PROJECT_STORE` (the text `PROJECT_STORE.`), which a repository-shape test enforces:
 
 | Function | Returns |
 |---|---|
-| `openKeyProject({ env, secret })` | the stub of the key's project, else `null` |
-| `resolveSessionOwner({ env, secret, now })` | the owner id of a live session, else `null` |
-| `openOwnedProject({ env, ownerId, projectId })` | the stub of that project when the owner owns it, else `null` |
+| `openKeyProject({ env, secret })` | the stub of the key's project, else `null`; an empty secret is refused before any lookup |
+| `resolveSessionOwner({ env, secret, now })` | a `SessionOwner` for a live session, else `null`; an empty secret is refused before any lookup |
+| `openOwnedProject({ env, owner, projectId })` | the stub of that project when `owner` owns it, else `null` |
+
+`SessionOwner` is a branded type (`{ ownerId: string } & { readonly sessionOwner: unique symbol }`) that only `resolveSessionOwner` builds, so `openOwnedProject` cannot be handed an owner id taken from a request.
 
 **Worker** (`src/index.ts`): exports `ProjectStore` and a default `fetch` that answers `404` with an empty body to every request; the HTTP surfaces arrive with `mcp-server` and `owner-api`.
 
@@ -135,4 +140,4 @@ Nothing is deployed and no production data exists: reverting the merge commit re
 
 ## Test strategy summary
 
-Vitest inside workerd (ADR 0012), in `apps/api`: the SQLite adapter against the core's expectations (round trips, counter, BINARY order, mapping failures, rollback), each RPC method's value and failure, the directory reads and the routing, and the isolation suite. A repository-shape test fails when a file under `apps/api/src` calls `console`. No browser surface, so no Playwright.
+Vitest inside workerd (ADR 0012), in `apps/api`: the SQLite adapter against the core's expectations (round trips, counter, BINARY order, mapping failures, rollback), each RPC method's value and failure, the directory reads and the routing, and the isolation suite. A repository-shape test fails when a file under `apps/api/src` calls `console`, or when a file other than `project-routing.ts` contains `PROJECT_STORE.`. No browser surface, so no Playwright.
