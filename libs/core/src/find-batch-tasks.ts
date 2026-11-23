@@ -1,14 +1,8 @@
-import { RuleIssue } from '@todz/types';
 import { assertBatchSize } from './batch-size';
-import { RuleViolation, TaskNotFoundError, atBatchIndex } from './errors';
+import { TaskNotFoundError, atBatchIndex } from './errors';
 import type { TaskStore } from './ports';
-import { FIRST_TASK_NUMBER } from './project-tasks';
 import type { Task } from './task';
-
-function assertTaskNumber(number: number): void {
-  const isTaskNumber = Number.isSafeInteger(number) && number >= FIRST_TASK_NUMBER;
-  if (!isTaskNumber) throw new RuleViolation({ issue: RuleIssue.TaskNumberInvalid });
-}
+import { assertTaskNumber } from './task-number';
 
 function requireTask({ store, number }: { store: TaskStore; number: number }): Task {
   const task = store.findTask(number);

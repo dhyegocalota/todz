@@ -1,10 +1,11 @@
-import { HistoryAction, RuleIssue, TaskField, TaskPlacement } from '@todz/types';
+import { HistoryAction, ORDER_KEY_MAX_LENGTH, RuleIssue, TaskField, TaskPlacement } from '@todz/types';
 import { normalizeDueDate } from './calendar-date';
 import { RuleViolation, TaskNotFoundError } from './errors';
 import { orderKeyBetween } from './order-key';
 import type { Clock, TaskStore } from './ports';
 import { listAllTasks, orderKeyAt } from './project-tasks';
 import type { Actor, Placement, Task, TaskPatch } from './task';
+import { assertTaskNumber } from './task-number';
 import { normalizeNotes, normalizeTitle } from './task-text';
 
 const NO_ANCHOR_POSITION = 0;
@@ -41,7 +42,15 @@ function orderKeyAfterPlacement({ placement, task, store }: { placement: Placeme
   const isAboveBefore = before === null || before < task.orderKey;
   const isBelowAfter = after === null || task.orderKey < after;
   if (isAboveBefore && isBelowAfter) return task.orderKey;
-  return orderKeyBetween({ before, after });
+  const newOrderKey = orderKeyBetween({ before, after });
+  if (newOrderKey.length > ORDER_KEY_MAX_LENGTH) throw new RuleViolation({ issue: RuleIssue.OrderKeyTooLong });
+  return newOrderKey;
+}
+
+function assertPlacementAnchor(placement: Placement | undefined): void {
+  if (placement === undefined) return;
+  if (placement.kind === TaskPlacement.First || placement.kind === TaskPlacement.Last) return;
+  assertTaskNumber(placement.anchor);
 }
 
 export function updateTask({
@@ -57,6 +66,8 @@ export function updateTask({
   number: number;
   patch: TaskPatch;
 }): Task {
+  assertTaskNumber(number);
+  assertPlacementAnchor(patch.placement);
   const isEmptyPatch = [patch.title, patch.notes, patch.dueDate, patch.placement].every((value) => value === undefined);
   if (isEmptyPatch) throw new RuleViolation({ issue: RuleIssue.NothingToUpdate });
   const task = store.findTask(number);
