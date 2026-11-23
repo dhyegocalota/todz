@@ -121,7 +121,7 @@ Not applicable: `libs/core` has no browser or HTTP surface.
 
 Not applicable: no UI. The tester instead runs `pnpm --filter @todz/core test:unit`, `pnpm --filter @todz/types test:unit`, `pnpm typecheck` and `pnpm verify all`.
 
-- [x] `pnpm verify all` green on the branch head — evidence: pnpm verify all: "verify: 6 gates green at e0cab70 (product)"; unit core 247/247, types 12/12
+- [x] `pnpm verify all` green on the branch head — evidence: pnpm verify all: "verify: 6 gates green at 20585b1 (product)"; unit core 253/253, types 12/12
 
 ## Edge cases found during execution
 
@@ -148,6 +148,10 @@ Found by the tester at 73d5e75 with throwaway probes outside the repo. Each unti
 - [x] Early length cap: a title, notes, completion note, name or search text of more than 2 × its limit in UTF-16 units → `*TooLong` before normalizing (a title of 401 `é`, notes of 40 001 `é` → `TitleTooLong`, `NotesTooLong`); 400 spaces plus `a` (401 units) → `TitleTooLong` although it would normalize to `a`; 399 spaces plus `a` → `'a'`; 200 emoji (400 units) accepted — evidence: libs/core/src/task-text.test.ts::control characters and oversized input > a title of limit * 2 + 1 ASCII characters is rejected as too long (and the notes, completion note, name variants); list-tasks.test.ts search text variant; probe: the non-ASCII, space-padded and 400-unit cases behave as stated; core 247/247 and types 12/12 green at e0cab70
 - [x] Order key cap: a placement whose new key is longer than `ORDER_KEY_MAX_LENGTH` (1024) → `RuleViolation` `OrderKeyTooLong`, nothing written; a key of exactly the limit is accepted — evidence: libs/core/src/update-task.test.ts::updateTask placement > a new key longer than the limit is OrderKeyTooLong and nothing is written; red 2ccc7d7 ("expected RuleViolation") then 8c7db25; core 247/247 and types 12/12 green at e0cab70
 - [x] `updateTask` with `number` or placement `anchor` of `-1`, `0`, `1.5`, `NaN` (and `Infinity` for `number`) → `RuleViolation` `TaskNumberInvalid`, nothing written; an integer anchor that does not exist (99) → `TaskNotFoundError` `T-99` — evidence: libs/core/src/update-task.test.ts::updateTask placement > a fractional number is TaskNumberInvalid ..., NaN ..., zero ..., a negative anchor ..., a fractional anchor ...; red 2ccc7d7 (5 tests, "TaskNotFoundError: T-1.5 / T-NaN / T-0 / T--1") then 8c7db25; probe: every listed value rejected, anchor 99 not found; core 247/247 and types 12/12 green at e0cab70
+- [x] `listTasks` with search text `' '.repeat(100_000) + 'Task 1'` → `RuleViolation` `SearchTextTooLong` (raw-length budget checked before trimming); `' '.repeat(100) + 'Task 1'` still matches — evidence: libs/core/src/list-tasks.test.ts::listTasks > padded search text is checked against the budget before it is trimmed; red d47fcaa precedes fix 20585b1 in git log; probe: 100 000 spaces rejected, 100 spaces matched 1 task; core 253/253 green at 20585b1
+- [x] `agentActor(' '.repeat(100_000) + 'Claude')` → `RuleViolation` `ClientNameInvalid`; `' '.repeat(10) + 'Claude'` → `clientName: 'Claude'` — evidence: libs/core/src/actor.test.ts::agentActor > a padded client name is checked against the budget before it is trimmed; red d47fcaa precedes fix 20585b1 in git log; probe: both outcomes confirmed; core 253/253 green at 20585b1
+- [x] `nextTask` leaves the array the store returned in its original order (it sorts a copy) — evidence: libs/core/src/next-task.test.ts::nextTask > does not reorder the array the store returned (pin); probe: array stayed [1, 2, 3]; core 253/253 green at 20585b1
+- [x] `orderKeyBetween` with a key whose head is unknown (`'!0'`) → a distinct corrupt-key error, not the 'no room' error — evidence: libs/core/src/order-key.test.ts::orderKeyBetween > a key with an unknown head (!0, null) / (null, !0) / (!0, a0) is reported as corrupt; red d47fcaa precedes fix 20585b1 in git log; core 253/253 green at 20585b1
 
 ## Adversarial review
 
