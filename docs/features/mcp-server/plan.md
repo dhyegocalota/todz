@@ -31,24 +31,24 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ### G1
 
-- [ ] **Step 1:** pin: add the three dependencies at exact versions; `owners.time_zone` in `0001_directory.sql`; `0002_mcp_sessions.sql`; `seedOwner` takes an optional `timeZone` (default `'UTC'` is a test fixture, not product code) and every seed caller keeps working; `worker.test.ts` lists the six tables; `PROJECT_KEY_PREFIX` and `LIST_LIMIT_DEFAULT` in `libs/types` with their pin tests; the schema pins of the test plan (time zone and session constraints) in `directory.test.ts`; `pnpm install`. All existing tests stay green. — evidence:
+- [x] **Step 1:** pin: add the three dependencies at exact versions; `owners.time_zone` in `0001_directory.sql`; `0002_mcp_sessions.sql`; `seedOwner` takes an optional `timeZone` (default `'UTC'` is a test fixture, not product code) and every seed caller keeps working; `worker.test.ts` lists the six tables; `PROJECT_KEY_PREFIX` and `LIST_LIMIT_DEFAULT` in `libs/types` with their pin tests; the schema pins of the test plan (time zone and session constraints) in `directory.test.ts`; `pnpm install`. All existing tests stay green. — evidence: pin `9038c84`; `@todz/api` 113 and `@todz/types` 15 tests green
 
 ### G2
 
-- [ ] **Step 2:** red then green: `generateCredentialSecret` and `issueProjectKey` (`credential-secret.test.ts`, `project-keys.test.ts`). — evidence:
-- [ ] **Step 3:** red then green: `findKeyProject` returns `{ projectId, timeZone }`, `insertProjectKey`, `insertMcpSession`, `findMcpSessionClient` (`directory.test.ts`); `openKeyProject` returns a `KeyProject` (`project-routing.test.ts`, and the callers in `isolation.test.ts` and `edge-cases.test.ts` follow). — evidence:
-- [ ] **Step 4:** red then green: `calendarDateInTimeZone` (`owner-today.test.ts`). — evidence:
+- [x] **Step 2:** red then green: `generateCredentialSecret` and `issueProjectKey` (`credential-secret.test.ts`, `project-keys.test.ts`). — evidence: red `503c626`, green `926591b`; `insertProjectKey` landed here because `issueProjectKey` calls it
+- [x] **Step 3:** red then green: `findKeyProject` returns `{ projectId, timeZone }`, ~~`insertProjectKey`,~~ `insertMcpSession`, `findMcpSessionClient` (`directory.test.ts`); `openKeyProject` returns a `KeyProject` (`project-routing.test.ts`, and the callers in `isolation.test.ts` and `edge-cases.test.ts` follow). — evidence: red `64b19c3`, green `239638a`; `insertProjectKey` moved to step 2 (`926591b`) and is tested through `project-keys.test.ts`
+- [x] **Step 4:** red then green: `calendarDateInTimeZone` (`owner-today.test.ts`). — evidence: red `3d58860`, green `ee6a81b`
 
 ### G3
 
-- [ ] **Step 5:** red then green: the task line, task block, list header, answer lines and error texts, and the copy record (`mcp-format.test.ts`). — evidence:
+- [x] **Step 5:** red then green: the task line, task block, list header, answer lines and error texts, and the copy record (`mcp-format.test.ts`). — evidence: red `9767e59` (the copy record landed whole with it, so its 22 tests are pins), green `b5bb8ce`
 
 ### G4
 
-- [ ] **Step 6:** red then green: the HTTP surface table, row by row (`mcp-endpoint.test.ts`), with `src/index.ts` dispatching from a record keyed by the path and `worker.test.ts`'s `POST /mcp` case moving to 401. — evidence:
-- [ ] **Step 7:** red then green: the five tools and the prompt through the real client in both eras, the actor in history, today in the owner's zone (`mcp-tools.test.ts`, helper `mcp-client.ts`). — evidence:
-- [ ] **Step 8:** the MCP isolation suite (`mcp-isolation.test.ts`); cases green on landing are marked `pin`. — evidence:
-- [ ] **Step 9:** `apps/api/README.md` states the MCP purpose; `tester-briefing.md` written with the red texts each red run printed. — evidence:
+- [x] **Step 6:** red then green: the HTTP surface table, row by row (`mcp-endpoint.test.ts`), with `src/index.ts` dispatching from a record keyed by the path and `worker.test.ts`'s `POST /mcp` case moving to 401. — evidence: red `4f9363c`, green `c9c7783` (also `mcp-sessions.ts` and a tool-less `mcp-server.ts`)
+- [x] **Step 7:** red then green: the five tools and the prompt through the real client in both eras, the actor in history, today in the owner's zone (`mcp-tools.test.ts`, helper `mcp-client.ts`). — evidence: red `2356366`, green `e68a57f`; `mcp-server.ts` split into `mcp-tool-arguments.ts` past 150 lines
+- [x] **Step 8:** the MCP isolation suite (`mcp-isolation.test.ts`); cases green on landing are marked `pin`. — evidence: pin `1a62a78`, 9 tests in both eras
+- [x] **Step 9:** `apps/api/README.md` states the MCP purpose; `tester-briefing.md` written with the red texts each red run printed. — evidence: `53eec27`
 
 ## Failure modes
 
