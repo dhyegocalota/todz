@@ -17,6 +17,13 @@ Every learning touched by a change gets a `Revisited` line appended.
 | Date | Title | File | Last revisited |
 |------|-------|------|----------------|
 | 2026-11-07 | A test that asserts no timing fails with a 5 s timeout and then later tests fail on leftover state | [2026-11-07-default-test-timeout-measures-the-machine-under-load.md](2026-11-07-default-test-timeout-measures-the-machine-under-load.md) | 2026-11-23 |
+| 2026-11-23 | A test that catches an error thrown across Durable Object RPC still fails the whole Vitest run | [2026-11-23-an-error-thrown-across-durable-object-rpc-fails-the-vitest-run.md](2026-11-23-an-error-thrown-across-durable-object-rpc-fails-the-vitest-run.md) | 2026-11-23 |
+
+### runtime
+
+| Date | Title | File | Last revisited |
+|------|-------|------|----------------|
+| 2026-11-23 | A Durable Object fails its first call with SQLITE_AUTH when its schema is versioned by a PRAGMA | [2026-11-23-durable-object-sqlite-refuses-pragma-user-version.md](2026-11-23-durable-object-sqlite-refuses-pragma-user-version.md) | 2026-11-23 |
 
 ### tooling
 
