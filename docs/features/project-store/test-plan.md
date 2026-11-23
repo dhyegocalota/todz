@@ -46,9 +46,10 @@ Fixtures: every test creates its own owner, workspace and project ids with `cryp
 - [ ] `nextTask` with `T-1` undated and `T-2` due `2026-11-23` → `T-2`; on an empty project → `ok: true`, `value: null`
 - [ ] `listTasks` with `limit: 0` → `{ kind: RuleViolated, issue: LimitInvalid, index: null }`
 - [ ] Edge: `addTasks` with drafts "B secret alpha" (notes "B notes") then a blank title → the failure's `JSON.stringify` contains neither "secret" nor "notes"
-- [ ] Edge: an agent actor whose client name is `''` → `{ kind: RuleViolated, issue: ClientNameInvalid, index: null }` and nothing written; an actor of kind `'robot'` → the promise rejects
-- [ ] Edge: `listTasks` and `nextTask` with `today` `'2026-13-01'` → the promise rejects
-- [ ] Edge: a store failure rolls back: `T-1` added, then its `state` corrupted to `'archived'` through `runInDurableObject`; `listTasks` (done state) → rejects; `addTasks` with one draft → rejects, and afterwards the `tasks` row count, the `task_counter` value and the `task_history` row count are what they were before the call
+- [ ] Edge: an agent actor whose client name is `''` → `{ kind: RuleViolated, issue: ClientNameInvalid, index: null }` and nothing written; an actor of kind `'robot'` → the method throws (asserted inside the Durable Object through `runInDurableObject`, because an error thrown across RPC surfaces in Vitest as an unhandled error that fails the run even when caught)
+- [ ] Edge: `listTasks` and `nextTask` with `today` `'2026-13-01'` → the method throws (asserted inside the Durable Object, as above)
+- [ ] Edge: a store failure rolls back: `T-1` added, then its `created_by_kind` and `created_by_client` corrupted through `runInDurableObject` (a corrupt `state` is never selected by a state query, so it cannot make a read throw); `listTasks` (open state) → throws; `addTasks` with one draft → throws, and afterwards the `tasks` row count, the `task_counter` value and the `task_history` row count are what they were before the call
+- [ ] Edge: a failure after the first write rolls back: a `BEFORE INSERT` trigger on `task_history` that raises an error; `addTasks` with one draft → throws, and the task row and the counter written before the history line are gone; removing `transactionSync` turns this test red
 
 ### Credentials, directory and routing
 
