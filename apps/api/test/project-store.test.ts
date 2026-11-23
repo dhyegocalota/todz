@@ -3,13 +3,15 @@ import { ActorKind, DueWindow, RuleIssue, TASK_BATCH_MAX_SIZE, TaskPlacement, Ta
 import { runInDurableObject } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
 import { ProjectFailureKind } from '../src/project-result';
-import { AGENT_ACTOR, TODAY, draftOf, newProjectStub, openTasksFilter, unwrap } from './task-fixtures';
+import type { ProjectStore } from '../src/project-store';
+import { AGENT_ACTOR, TODAY, draftOf, execInside, newProjectStub, openTasksFilter, rejectionMessageOf, unwrap } from './task-fixtures';
 
 const MISSING_NUMBER = 9;
 const INVALID_TASK_NUMBER = 0;
 const INVALID_LIMIT = 0;
 const INVALID_TODAY = '2026-13-01';
 const COMPLETION_NOTE = 'shipped';
+const UNMAPPED_ROW_MESSAGE = 'tasks.created_by_client of task 1 is not valid';
 
 function ruleViolated({ issue, index }: { issue: RuleIssue; index: number | null }) {
   return { ok: false, failure: { kind: ProjectFailureKind.RuleViolated, issue, index } };
@@ -152,13 +154,11 @@ describe('ProjectStore reads', () => {
     );
   });
 
-  test.each(['listTasks', 'nextTask'] as const)('%s rejects a today that is not a calendar date', async (method) => {
-    const stub = newProjectStub();
-    const call =
-      method === 'listTasks'
-        ? stub.listTasks({ today: INVALID_TODAY, filter: openTasksFilter() })
-        : stub.nextTask({ today: INVALID_TODAY });
-    await expect(call).rejects.toThrow();
+  test.each([
+    { name: 'listTasks', call: (instance: ProjectStore) => instance.listTasks({ today: INVALID_TODAY, filter: openTasksFilter() }) },
+    { name: 'nextTask', call: (instance: ProjectStore) => instance.nextTask({ today: INVALID_TODAY }) },
+  ])('$name throws for a today that is not a calendar date', async ({ call }) => {
+    expect(await rejectionMessageOf({ stub: newProjectStub(), call })).toBe('today is not a calendar date');
   });
 });
 
@@ -172,9 +172,13 @@ describe('ProjectStore actors', () => {
     expect(await openTaskCount(stub)).toBe(0);
   });
 
-  test('an actor of an unknown kind is rejected', async () => {
+  test('an actor of an unknown kind throws', async () => {
     const actor = { kind: 'robot' } as unknown as Actor;
-    await expect(newProjectStub().addTasks({ actor, drafts: [draftOf('One')] })).rejects.toThrow();
+    const message = await rejectionMessageOf({
+      stub: newProjectStub(),
+      call: (instance) => instance.addTasks({ actor, drafts: [draftOf('One')] }),
+    });
+    expect(message).toBe('the actor kind is not known');
   });
 });
 
@@ -187,22 +191,33 @@ describe('ProjectStore when the store fails', () => {
     }));
   }
 
-  test('a row that does not map rejects the reads and the write', async () => {
+  test('a row that does not map throws from the reads and the write', async () => {
     const stub = await seededStub('One');
-    await runInDurableObject(stub, (_instance, state) =>
-      state.storage.sql.exec("UPDATE tasks SET created_by_kind = 'agent', created_by_client = NULL"),
-    );
-    await expect(stub.listTasks({ today: TODAY, filter: openTasksFilter() })).rejects.toThrow();
-    await expect(stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Two')] })).rejects.toThrow();
+    await execInside({ stub, statement: "UPDATE tasks SET created_by_kind = 'agent', created_by_client = NULL" });
+    const readMessage = await rejectionMessageOf({
+      stub,
+      call: (instance) => instance.listTasks({ today: TODAY, filter: openTasksFilter() }),
+    });
+    const writeMessage = await rejectionMessageOf({
+      stub,
+      call: (instance) => instance.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Two')] }),
+    });
+    expect(readMessage).toBe(UNMAPPED_ROW_MESSAGE);
+    expect(writeMessage).toBe(UNMAPPED_ROW_MESSAGE);
   });
 
   test('a failure after the task row is written rolls the whole call back', async () => {
     const stub = await seededStub('One');
     const before = await counts(stub);
-    await runInDurableObject(stub, (_instance, state) =>
-      state.storage.sql.exec("CREATE TRIGGER refuse_history BEFORE INSERT ON task_history BEGIN SELECT RAISE(ABORT, 'refused'); END"),
-    );
-    await expect(stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Two')] })).rejects.toThrow();
+    await execInside({
+      stub,
+      statement: "CREATE TRIGGER refuse_history BEFORE INSERT ON task_history BEGIN SELECT RAISE(ABORT, 'refused'); END",
+    });
+    const message = await rejectionMessageOf({
+      stub,
+      call: (instance) => instance.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Two')] }),
+    });
+    expect(message).toContain('refused');
     expect(await counts(stub)).toEqual(before);
   });
 });

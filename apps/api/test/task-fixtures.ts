@@ -10,6 +10,7 @@ import {
   parseCalendarDate,
 } from '@todz/core';
 import { LIST_LIMIT_MAX, TaskState } from '@todz/types';
+import { runInDurableObject } from 'cloudflare:test';
 import type { ProjectResult } from '../src/project-result';
 import type { ProjectStore } from '../src/project-store';
 
@@ -28,6 +29,30 @@ export function draftOf(title: string): TaskDraft {
 
 export function openTasksFilter(): TaskFilter {
   return { state: TaskState.Open, dueWindows: [], text: null, limit: LIST_LIMIT_MAX };
+}
+
+export async function execInside({ stub, statement }: { stub: DurableObjectStub<ProjectStore>; statement: string }): Promise<void> {
+  await runInDurableObject(stub, (_instance, state) => {
+    state.storage.sql.exec(statement);
+  });
+}
+
+export function rejectionMessageOf({
+  stub,
+  call,
+}: {
+  stub: DurableObjectStub<ProjectStore>;
+  call: (instance: ProjectStore) => unknown;
+}): Promise<string> {
+  return runInDurableObject(stub, async (instance: ProjectStore) => {
+    try {
+      await call(instance);
+    } catch (error) {
+      if (error instanceof Error) return error.message;
+      throw error;
+    }
+    throw new Error('expected the call to throw');
+  });
 }
 
 export function calendarDate(text: string): CalendarDate {
