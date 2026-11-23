@@ -1,5 +1,5 @@
 import { type HistoryEntry, OWNER_ACTOR, agentActor } from '@todz/core';
-import { HistoryAction, TaskField, TaskState } from '@todz/types';
+import { ActorKind, HistoryAction, TaskField, TaskState } from '@todz/types';
 import { evictDurableObject, runInDurableObject } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
 import { SqliteTaskStore } from '../src/sqlite-task-store';
@@ -32,7 +32,7 @@ function insertRawTask({
   sql,
   number,
   state = TaskState.Open,
-  createdByKind = 'owner',
+  createdByKind = ActorKind.Owner,
   createdByClient = null,
 }: {
   sql: SqlStorage;
@@ -59,7 +59,7 @@ function insertRawHistory({ sql, action, fields }: { sql: SqlStorage; action: st
     'INSERT INTO task_history (task_number, at, actor_kind, actor_client, action, fields, note) VALUES (?, ?, ?, ?, ?, ?, ?)',
     1,
     CLOCK_NOW,
-    'owner',
+    ActorKind.Owner,
     null,
     action,
     fields,
@@ -188,10 +188,15 @@ describe('SqliteTaskStore', () => {
   describe('a row that does not map', () => {
     test.each([
       { name: 'an unknown state', row: { state: BAD_STATE }, column: 'tasks.state', badValue: BAD_STATE },
-      { name: 'an agent without a client', row: { createdByKind: 'agent' }, column: 'tasks.created_by_client', badValue: 'agent' },
+      {
+        name: 'an agent without a client',
+        row: { createdByKind: ActorKind.Agent },
+        column: 'tasks.created_by_client',
+        badValue: ActorKind.Agent,
+      },
       {
         name: 'an owner with a client',
-        row: { createdByKind: 'owner', createdByClient: 'Claude Code' },
+        row: { createdByKind: ActorKind.Owner, createdByClient: 'Claude Code' },
         column: 'tasks.created_by_client',
         badValue: 'Claude Code',
       },
@@ -210,7 +215,20 @@ describe('SqliteTaskStore', () => {
 
     test.each([
       { name: 'an unknown action', action: BAD_ACTION, fields: '[]', column: 'task_history.action', badValue: BAD_ACTION },
-      { name: 'an unknown field', action: 'created', fields: `["${BAD_FIELD}"]`, column: 'task_history.fields', badValue: BAD_FIELD },
+      {
+        name: 'an unknown field',
+        action: HistoryAction.Created,
+        fields: `["${BAD_FIELD}"]`,
+        column: 'task_history.fields',
+        badValue: BAD_FIELD,
+      },
+      {
+        name: 'fields that are not JSON',
+        action: HistoryAction.Created,
+        fields: SECRET_TITLE,
+        column: 'task_history.fields',
+        badValue: SECRET_TITLE,
+      },
     ])('listHistory throws for $name and names only the column and the task number', async ({ action, fields, column, badValue }) => {
       const message = await inStore({
         run: ({ store, sql }) => {

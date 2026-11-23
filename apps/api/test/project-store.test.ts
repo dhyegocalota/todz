@@ -2,7 +2,7 @@ import { type Actor, type TaskDraft } from '@todz/core';
 import { ActorKind, DueWindow, RuleIssue, TASK_BATCH_MAX_SIZE, TaskPlacement, TaskState } from '@todz/types';
 import { runInDurableObject } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
-import { ProjectFailureKind } from '../src/project-result';
+import { ProjectFailureKind, type ProjectResult } from '../src/project-result';
 import type { ProjectStore } from '../src/project-store';
 import { AGENT_ACTOR, TODAY, draftOf, execInside, newProjectStub, openTasksFilter, rejectionMessageOf, unwrap } from './task-fixtures';
 
@@ -11,13 +11,15 @@ const INVALID_TASK_NUMBER = 0;
 const INVALID_LIMIT = 0;
 const INVALID_TODAY = '2026-13-01';
 const COMPLETION_NOTE = 'shipped';
+type StoreCounts = { tasks: number; counter: Record<string, SqlStorageValue>[]; history: number };
+
 const UNMAPPED_ROW_MESSAGE = 'tasks.created_by_client of task 1 is not valid';
 
-function ruleViolated({ issue, index }: { issue: RuleIssue; index: number | null }) {
+function ruleViolated({ issue, index }: { issue: RuleIssue; index: number | null }): ProjectResult<never> {
   return { ok: false, failure: { kind: ProjectFailureKind.RuleViolated, issue, index } };
 }
 
-function taskNotFound(number: number) {
+function taskNotFound(number: number): ProjectResult<never> {
   return { ok: false, failure: { kind: ProjectFailureKind.TaskNotFound, number } };
 }
 
@@ -183,7 +185,7 @@ describe('ProjectStore actors', () => {
 });
 
 describe('ProjectStore when the store fails', () => {
-  async function counts(stub: ReturnType<typeof newProjectStub>) {
+  async function counts(stub: ReturnType<typeof newProjectStub>): Promise<StoreCounts> {
     return runInDurableObject(stub, (_instance, state) => ({
       tasks: state.storage.sql.exec('SELECT number FROM tasks').toArray().length,
       counter: state.storage.sql.exec('SELECT last_issued_number FROM task_counter').toArray(),

@@ -95,6 +95,20 @@ describe('openOwnedProject', () => {
     expect(stub).toBeNull();
   });
 
+  test('a resolved session owner cannot be rewritten to open another owner project', async () => {
+    const ownerId = await seedOwner();
+    const ownProjectId = await seedProject({ ownerId });
+    const otherProjectId = await seedProject({ ownerId: await seedOwner() });
+    const owner = await seedLiveOwner({ ownerId });
+    const rewrite = (): void => {
+      (owner as { ownerId: string }).ownerId = crypto.randomUUID();
+    };
+    expect(rewrite).toThrow(TypeError);
+    expect(owner.ownerId).toBe(ownerId);
+    expect(await openOwnedProject({ env, owner, projectId: ownProjectId })).not.toBeNull();
+    expect(await openOwnedProject({ env, owner, projectId: otherProjectId })).toBeNull();
+  });
+
   test('a forged session owner opens nothing and addresses no Durable Object', async () => {
     const { countedEnv, addressingCalls } = countingEnv();
     const ownerId = await seedOwner();
