@@ -1,6 +1,6 @@
 # Task core
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-23, by inheritance from [the v1 product design](../../product/README.md) (Order of delivery, item 1), approved by the owner on 2026-11-23; the calls below that the product design does not make are listed in the loop's questions for the owner
 **ADRs:** [0009](../../adr/0009-manual-order-uses-fractional-keys.md), [0010](../../adr/0010-the-task-rules-run-behind-synchronous-ports.md), [0011](../../adr/0011-due-dates-are-calendar-dates-and-the-caller-names-today.md)
