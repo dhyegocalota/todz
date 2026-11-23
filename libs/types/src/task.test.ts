@@ -7,6 +7,7 @@ import {
   HistoryAction,
   IDEMPOTENCY_KEY_MAX_LENGTH,
   INBOX_PROJECT_NAME,
+  ORDER_KEY_MAX_LENGTH,
   LIST_LIMIT_MAX,
   NAME_MAX_LENGTH,
   RuleIssue,
@@ -73,6 +74,11 @@ describe('task enums', () => {
       LimitInvalid: 'limit_invalid',
       NameEmpty: 'name_empty',
       NameTooLong: 'name_too_long',
+      TitleInvalid: 'title_invalid',
+      NotesInvalid: 'notes_invalid',
+      CompletionNoteInvalid: 'completion_note_invalid',
+      NameInvalid: 'name_invalid',
+      OrderKeyTooLong: 'order_key_too_long',
     });
   });
 });
@@ -91,6 +97,7 @@ describe('task constants', () => {
       SEARCH_TEXT_MAX_LENGTH,
       NAME_MAX_LENGTH,
       INBOX_PROJECT_NAME,
+      ORDER_KEY_MAX_LENGTH,
     }).toEqual({
       TASK_SHORT_ID_PREFIX: 'T-',
       TASK_TITLE_MAX_LENGTH: 200,
@@ -103,6 +110,7 @@ describe('task constants', () => {
       SEARCH_TEXT_MAX_LENGTH: 200,
       NAME_MAX_LENGTH: 80,
       INBOX_PROJECT_NAME: 'Inbox',
+      ORDER_KEY_MAX_LENGTH: 1_024,
     });
   });
 });

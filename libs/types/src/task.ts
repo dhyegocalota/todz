@@ -53,6 +53,11 @@ export enum RuleIssue {
   LimitInvalid = 'limit_invalid',
   NameEmpty = 'name_empty',
   NameTooLong = 'name_too_long',
+  TitleInvalid = 'title_invalid',
+  NotesInvalid = 'notes_invalid',
+  CompletionNoteInvalid = 'completion_note_invalid',
+  NameInvalid = 'name_invalid',
+  OrderKeyTooLong = 'order_key_too_long',
 }
 
 export const TASK_SHORT_ID_PREFIX = 'T-';
@@ -66,3 +71,4 @@ export const LIST_LIMIT_MAX = 100;
 export const SEARCH_TEXT_MAX_LENGTH = 200;
 export const NAME_MAX_LENGTH = 80;
 export const INBOX_PROJECT_NAME = 'Inbox';
+export const ORDER_KEY_MAX_LENGTH = 1_024;
