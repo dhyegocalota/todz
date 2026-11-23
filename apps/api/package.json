@@ -1,0 +1,20 @@
+{
+  "name": "@todz/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@todz/core": "workspace:*",
+    "@todz/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.9.0",
+    "@cloudflare/workers-types": "5.20261123.1",
+    "vitest": "5.0.5",
+    "wrangler": "4.167.0"
+  }
+}

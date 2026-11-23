@@ -14,3 +14,4 @@ playwright-report/
 .codex/config.local.toml
 .DS_Store
 build/
+.wrangler/
