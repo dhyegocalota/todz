@@ -48,6 +48,25 @@ describe('findSessionOwner', () => {
   });
 });
 
+describe('the directory digests', () => {
+  const RAW_SECRET = 'secret';
+
+  test('a raw secret is refused as a key digest', async () => {
+    const projectId = await seedProject({ ownerId: await seedOwner() });
+    const insertion = env.DIRECTORY.prepare('INSERT INTO project_keys (digest, project_id, created_at) VALUES (?, ?, ?)')
+      .bind(RAW_SECRET, projectId, CLOCK_NOW)
+      .run();
+    await expect(insertion).rejects.toThrow();
+  });
+
+  test('a raw secret is refused as a session digest', async () => {
+    const insertion = env.DIRECTORY.prepare('INSERT INTO sessions (digest, owner_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
+      .bind(RAW_SECRET, await seedOwner(), CLOCK_NOW, CLOCK_NOW + 1)
+      .run();
+    await expect(insertion).rejects.toThrow();
+  });
+});
+
 describe('findOwnedProject', () => {
   test('the owner of the project gets its id', async () => {
     const ownerId = await seedOwner();

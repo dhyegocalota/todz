@@ -1,11 +1,13 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
-import { openKeyProject, openOwnedProject, resolveSessionOwner } from '../src/project-routing';
+import { digestCredential } from '../src/credential-digest';
+import { type SessionOwner, openKeyProject, openOwnedProject, resolveSessionOwner } from '../src/project-routing';
 import { countingEnv } from './counting-namespace';
 import { seedKey, seedLiveOwner, seedOwner, seedProject, seedSession } from './directory-seed';
 import { AGENT_ACTOR, CLOCK_NOW, TODAY, draftOf, openTasksFilter, unwrap } from './task-fixtures';
 
 const EMPTY_SECRET = '';
+const BLANK_SECRET = '   ';
 
 function newSecret(): string {
   return crypto.randomUUID();
@@ -90,6 +92,41 @@ describe('openOwnedProject', () => {
     const projectId = await seedProject({ ownerId });
     // @ts-expect-error a session owner is built only by resolveSessionOwner
     const stub = await openOwnedProject({ env, owner: { ownerId }, projectId });
-    expect(stub).not.toBeNull();
+    expect(stub).toBeNull();
+  });
+
+  test('a forged session owner opens nothing and addresses no Durable Object', async () => {
+    const { countedEnv, addressingCalls } = countingEnv();
+    const ownerId = await seedOwner();
+    const projectId = await seedProject({ ownerId });
+    const forgedOwner = { ownerId } as SessionOwner;
+    expect(await openOwnedProject({ env: countedEnv, owner: forgedOwner, projectId })).toBeNull();
+    expect(addressingCalls).toEqual([]);
+  });
+});
+
+describe('a secret that is not a usable string', () => {
+  test('a whitespace-only secret opens nothing even when rows hold its digest', async () => {
+    const projectId = await seedProject({ ownerId: await seedOwner() });
+    await seedKey({ projectId, secret: BLANK_SECRET });
+    await seedSession({ ownerId: await seedOwner(), secret: BLANK_SECRET, expiresAt: CLOCK_NOW + 1 });
+    const { countedEnv, addressingCalls } = countingEnv();
+    expect(await openKeyProject({ env: countedEnv, secret: BLANK_SECRET })).toBeNull();
+    expect(await resolveSessionOwner({ env: countedEnv, secret: BLANK_SECRET, now: CLOCK_NOW })).toBeNull();
+    expect(addressingCalls).toEqual([]);
+  });
+
+  test('a secret that is not a string opens nothing even when rows hold the digest of nothing', async () => {
+    const projectId = await seedProject({ ownerId: await seedOwner() });
+    const emptyDigest = await digestCredential(EMPTY_SECRET);
+    await env.DIRECTORY.prepare('INSERT OR IGNORE INTO project_keys (digest, project_id, created_at) VALUES (?, ?, ?)')
+      .bind(emptyDigest, projectId, CLOCK_NOW)
+      .run();
+    await env.DIRECTORY.prepare('INSERT OR IGNORE INTO sessions (digest, owner_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
+      .bind(emptyDigest, await seedOwner(), CLOCK_NOW, CLOCK_NOW + 1)
+      .run();
+    const missingSecret = undefined as unknown as string;
+    expect(await openKeyProject({ env, secret: missingSecret })).toBeNull();
+    expect(await resolveSessionOwner({ env, secret: missingSecret, now: CLOCK_NOW })).toBeNull();
   });
 });
