@@ -3,6 +3,9 @@ import { describe, expect, test } from 'vitest';
 import { OWNER_ACTOR, agentActor } from './actor';
 import { violationIssueOf } from './test-support';
 
+const LINE_SEPARATOR = String.fromCharCode(0x2028);
+const PARAGRAPH_SEPARATOR = String.fromCharCode(0x2029);
+
 describe('OWNER_ACTOR', () => {
   test('is the owner kind', () => {
     expect(OWNER_ACTOR).toEqual({ kind: ActorKind.Owner });
@@ -19,7 +22,15 @@ describe('agentActor', () => {
     expect(agentActor(clientName)).toEqual({ kind: ActorKind.Agent, clientName });
   });
 
-  test.each(['', '   ', 'a'.repeat(CLIENT_NAME_MAX_LENGTH + 1), 'Claude\nCode', 'Claude\u0000Code'])('rejects %j', (clientName) => {
+  test.each([
+    '',
+    '   ',
+    'a'.repeat(CLIENT_NAME_MAX_LENGTH + 1),
+    'Claude\nCode',
+    'Claude\u0000Code',
+    `Claude${LINE_SEPARATOR}Code`,
+    `Claude${PARAGRAPH_SEPARATOR}Code`,
+  ])('rejects %j', (clientName) => {
     expect(violationIssueOf(() => agentActor(clientName))).toBe(RuleIssue.ClientNameInvalid);
   });
 });

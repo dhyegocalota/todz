@@ -12,6 +12,10 @@ import { violationIssueOf, violationMessageOf } from './test-support';
 
 const SENTINEL = 'SENTINEL-CONTENT';
 const EMOJI = '😀';
+const ZERO_WIDTH_SPACE = String.fromCharCode(0x200b);
+const BYTE_ORDER_MARK = String.fromCharCode(0xfeff);
+const ZERO_WIDTH_JOINER = String.fromCharCode(0x200d);
+const FAMILY_EMOJI = ['👨', '👩', '👧'].join(ZERO_WIDTH_JOINER);
 
 describe('normalizeTitle', () => {
   test('trims and collapses every whitespace run into one space', () => {
@@ -31,6 +35,17 @@ describe('normalizeTitle', () => {
   test('the limit counts code points, so 200 emoji are accepted and 201 are not', () => {
     expect(normalizeTitle(EMOJI.repeat(TASK_TITLE_MAX_LENGTH))).toHaveLength(TASK_TITLE_MAX_LENGTH * EMOJI.length);
     expect(violationIssueOf(() => normalizeTitle(EMOJI.repeat(TASK_TITLE_MAX_LENGTH + 1)))).toBe(RuleIssue.TitleTooLong);
+  });
+
+  test.each([ZERO_WIDTH_SPACE, ` ${ZERO_WIDTH_SPACE}${ZERO_WIDTH_JOINER} `, BYTE_ORDER_MARK])(
+    'a title of whitespace and format characters only (%j) is TitleEmpty',
+    (text) => {
+      expect(violationIssueOf(() => normalizeTitle(text))).toBe(RuleIssue.TitleEmpty);
+    },
+  );
+
+  test('a joined emoji title keeps its zero-width joiners', () => {
+    expect(normalizeTitle(FAMILY_EMOJI)).toBe(FAMILY_EMOJI);
   });
 
   test('the length is checked after the whitespace collapses', () => {
@@ -84,8 +99,8 @@ describe('normalizeName', () => {
     expect(normalizeName('  Logic   Bit ')).toBe('Logic Bit');
   });
 
-  test('a blank name is NameEmpty', () => {
-    expect(violationIssueOf(() => normalizeName(''))).toBe(RuleIssue.NameEmpty);
+  test.each(['', ZERO_WIDTH_SPACE, ` ${ZERO_WIDTH_SPACE} `])('a blank or invisible name (%j) is NameEmpty', (text) => {
+    expect(violationIssueOf(() => normalizeName(text))).toBe(RuleIssue.NameEmpty);
   });
 
   test('over the limit is NameTooLong', () => {

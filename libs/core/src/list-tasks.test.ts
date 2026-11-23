@@ -82,6 +82,17 @@ describe('listTasks', () => {
     expect(listNumbers({ text: '  ' })).toEqual([1, 2]);
   });
 
+  test('search text that folds to nothing, such as a lone combining mark, means no text filter (pin)', () => {
+    const { listNumbers } = setup([draftOf({ title: 'A' }), draftOf({ title: 'B' })]);
+    expect(listNumbers({ text: '̃' })).toEqual([1, 2]);
+  });
+
+  test('text typed with combining marks matches precomposed titles and capitals (pin)', () => {
+    const { listNumbers } = setup([draftOf({ title: 'Reunião' })]);
+    expect(listNumbers({ text: 'Reunião' })).toEqual([1]);
+    expect(listNumbers({ text: 'REUNIAO' })).toEqual([1]);
+  });
+
   test('the limit cuts the list and totalMatched counts before it', () => {
     const { list } = setup(Array.from({ length: 5 }, () => draftOf({})));
     const result = list({ limit: 2 });
