@@ -2,6 +2,8 @@ import { TaskState } from '@todz/types';
 import type { TaskStore } from './ports';
 import type { Task } from './task';
 
+export const FIRST_TASK_NUMBER = 1;
+
 const SORTS_BEFORE = -1;
 const SORTS_AFTER = 1;
 const SORTS_EQUAL = 0;

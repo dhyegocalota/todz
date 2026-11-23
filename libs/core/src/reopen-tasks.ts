@@ -1,3 +1,5 @@
+import { HistoryAction, TaskState } from '@todz/types';
+import { findBatchTasks } from './find-batch-tasks';
 import type { Clock, TaskStore } from './ports';
 import type { Actor, Task } from './task';
 
@@ -14,5 +16,16 @@ export function reopenTasks({
   actor: Actor;
   numbers: number[];
 }): ReopenedTask[] {
-  throw new Error('reopenTasks is not implemented');
+  const tasks = findBatchTasks({ store, numbers });
+  const now = clock.now();
+  return tasks.map((task) => {
+    if (task.state === TaskState.Open) return { task, alreadyOpen: true };
+    const reopenedTask: Task = { ...task, state: TaskState.Open, completedAt: null, updatedAt: now };
+    store.replaceTask(reopenedTask);
+    store.appendHistory({
+      number: task.number,
+      entry: { at: now, actor, action: HistoryAction.Reopened, fields: [], note: null },
+    });
+    return { task: reopenedTask, alreadyOpen: false };
+  });
 }

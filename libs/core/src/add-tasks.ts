@@ -4,11 +4,9 @@ import { normalizeDueDate } from './calendar-date';
 import { atBatchIndex } from './errors';
 import { orderKeyBetween } from './order-key';
 import type { Clock, TaskStore } from './ports';
-import { listAllTasks } from './project-tasks';
+import { FIRST_TASK_NUMBER, listAllTasks } from './project-tasks';
 import type { Actor, Task, TaskDraft } from './task';
 import { normalizeIdempotencyKey, normalizeNotes, normalizeTitle } from './task-text';
-
-const FIRST_TASK_NUMBER = 1;
 
 export type AddedTask = { task: Task; replayed: boolean };
 
