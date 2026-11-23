@@ -67,4 +67,16 @@ Pins (green on arrival): `in-memory-task-store.test.ts` (c68026b), `index.test.t
 
 Pins (green on arrival): largest integer key, boundary pairs, 5000 appends and prepends (6c1fc0e); mixed replay batch, done-task replay, failing `insertTask` keeping the first task, After T-150 among 299 done tasks, decomposed accents, sharp s (02986c5); search text of a lone combining mark means no filter, joined emoji title kept (cf4aa90).
 
-Hypotheses: `orderKeyBetween` throws a RangeError whenever no key can exist; a title or name of only whitespace and format characters is empty while a joined emoji survives; only case and accents fold in `textMatches`.
+### Third pass: security review
+
+| Test | Red before the change because | Green after because |
+|------|--------------------------------|---------------------|
+| `task-text.test.ts` control characters in titles, notes, completion notes, names (a77f259) | `Error: expected RuleViolation` (16 tests) | 61ff74d |
+| `update-task.test.ts` order key over `ORDER_KEY_MAX_LENGTH` (2ccc7d7) | `Error: expected RuleViolation` | 8c7db25 |
+| `update-task.test.ts` invalid `number` or `anchor` (2ccc7d7) | `TaskNotFoundError: T-1.5` / `T-NaN` / `T-0` / `T--1` (5 tests) | 8c7db25 |
+
+Pins: the `RuleIssue` additions and `ORDER_KEY_MAX_LENGTH` (ca4a665); `limit * 2 + 1` ASCII characters for every text and the search text (a77f259); a key of exactly the limit is accepted.
+
+Hypotheses: no title, name or note ever stores NUL, ESC, DEL or C1 characters (notes keep LF and TAB only); error messages stay free of the text; no placement can store a key longer than 1024 characters; `updateTask` rejects a non-positive-integer number or anchor before any store read.
+
+Hypotheses (earlier passes): `orderKeyBetween` throws a RangeError whenever no key can exist; a title or name of only whitespace and format characters is empty while a joined emoji survives; only case and accents fold in `textMatches`.
