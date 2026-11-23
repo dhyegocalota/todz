@@ -1,4 +1,4 @@
-import { HistoryAction, RuleIssue, TASK_TITLE_MAX_LENGTH, TaskField, TaskPlacement, TaskState } from '@todz/types';
+import { HistoryAction, ORDER_KEY_MAX_LENGTH, RuleIssue, TASK_TITLE_MAX_LENGTH, TaskField, TaskPlacement, TaskState } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { OWNER_ACTOR, agentActor } from './actor';
 import { InMemoryTaskStore } from './in-memory-task-store';
@@ -35,6 +35,12 @@ function setup(taskCount: number) {
     return task.orderKey;
   }
   return { store, update, markDone, orderOf, keyOf };
+}
+
+function setKey({ store, number, orderKey }: { store: InMemoryTaskStore; number: number; orderKey: string }) {
+  const task = store.findTask(number);
+  if (!task) throw new Error(`T-${number} should exist`);
+  store.replaceTask({ ...task, orderKey });
 }
 
 function expectNoWrite({ store, run }: { store: InMemoryTaskStore; run: () => unknown }) {
@@ -224,6 +230,40 @@ describe('updateTask placement', () => {
     const keys = store.allTasks().map((task) => task.orderKey);
     expect(keyOf(MIDDLE_TASK) < keyOf(LARGE_PROJECT_SIZE) && keyOf(LARGE_PROJECT_SIZE) < keyOf(MIDDLE_TASK + 1)).toBe(true);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  test('a new key longer than the limit is OrderKeyTooLong and nothing is written', () => {
+    const { store, update } = setup(3);
+    const lowerKey = `a0${'1'.repeat(ORDER_KEY_MAX_LENGTH - 2)}`;
+    const upperKey = `${lowerKey}2`;
+    setKey({ store, number: 1, orderKey: lowerKey });
+    setKey({ store, number: 2, orderKey: upperKey });
+    const writesBefore = store.writeCount;
+    const violation = captureViolation(() => update({ number: 3, patch: { placement: { kind: TaskPlacement.After, anchor: 1 } } }));
+    expect(violation.issue).toBe(RuleIssue.OrderKeyTooLong);
+    expect(store.writeCount).toBe(writesBefore);
+  });
+
+  test('a new key exactly at the limit is accepted (pin)', () => {
+    const { store, update, keyOf } = setup(3);
+    const lowerKey = `a0${'1'.repeat(ORDER_KEY_MAX_LENGTH - 3)}`;
+    setKey({ store, number: 1, orderKey: lowerKey });
+    setKey({ store, number: 2, orderKey: `${lowerKey}2` });
+    update({ number: 3, patch: { placement: { kind: TaskPlacement.After, anchor: 1 } } });
+    expect(keyOf(3)).toHaveLength(ORDER_KEY_MAX_LENGTH);
+  });
+
+  test.each([
+    { name: 'a fractional number', number: 1.5, patch: { title: 'x' } },
+    { name: 'NaN', number: Number.NaN, patch: { title: 'x' } },
+    { name: 'zero', number: 0, patch: { title: 'x' } },
+    { name: 'a negative anchor', number: 1, patch: { placement: { kind: TaskPlacement.After, anchor: -1 } } as const },
+    { name: 'a fractional anchor', number: 1, patch: { placement: { kind: TaskPlacement.Before, anchor: 1.5 } } as const },
+  ])('$name is TaskNumberInvalid and nothing is written', ({ number, patch }) => {
+    const { store, update } = setup(2);
+    const writesBefore = store.writeCount;
+    expect(captureViolation(() => update({ number, patch })).issue).toBe(RuleIssue.TaskNumberInvalid);
+    expect(store.writeCount).toBe(writesBefore);
   });
 
   test('a placement and a title change in one patch list both fields', () => {
