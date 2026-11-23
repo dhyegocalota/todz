@@ -80,6 +80,14 @@ describe('completeTasks', () => {
     expect(store.findTask(2)?.state).toBe(TaskState.Open);
   });
 
+  test.each([Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 2, -0])(
+    'the number %j is TaskNumberInvalid (pin)',
+    (number) => {
+      const { complete } = setup(1);
+      expect(captureViolation(() => complete({ numbers: [number] })).issue).toBe(RuleIssue.TaskNumberInvalid);
+    },
+  );
+
   test.each([0, 1.5, Number.NaN])('the number %j is TaskNumberInvalid', (number) => {
     const { complete } = setup(1);
     expect(captureViolation(() => complete({ numbers: [number] })).issue).toBe(RuleIssue.TaskNumberInvalid);

@@ -11,6 +11,8 @@ const LATER = CLOCK_NOW + 60_000;
 const MISSING_NUMBER = 9;
 const NOTES_LIMIT_OVERFLOW = 20_001;
 const CLAUDE_CODE = 'Claude Code';
+const ALTERNATING_MOVE_COUNT = 500;
+const ALTERNATING_MAX_KEY_LENGTH = 2;
 const LARGE_PROJECT_SIZE = 300;
 const MIDDLE_TASK = 150;
 
@@ -264,6 +266,19 @@ describe('updateTask placement', () => {
     const writesBefore = store.writeCount;
     expect(captureViolation(() => update({ number, patch })).issue).toBe(RuleIssue.TaskNumberInvalid);
     expect(store.writeCount).toBe(writesBefore);
+  });
+
+  test('500 alternating After T-2 and Before T-1 moves keep a short key and a consistent order (pin)', () => {
+    const { update, orderOf, keyOf } = setup(3);
+    Array.from({ length: ALTERNATING_MOVE_COUNT }, (_, index) => index).forEach((index) => {
+      const isAfterMove = index % 2 === 0;
+      const placement = isAfterMove
+        ? ({ kind: TaskPlacement.After, anchor: 2 } as const)
+        : ({ kind: TaskPlacement.Before, anchor: 1 } as const);
+      update({ number: 3, patch: { placement } });
+    });
+    expect(orderOf(TaskState.Open)).toEqual([3, 1, 2]);
+    expect(keyOf(3).length).toBeLessThanOrEqual(ALTERNATING_MAX_KEY_LENGTH);
   });
 
   test('a placement and a title change in one patch list both fields', () => {
