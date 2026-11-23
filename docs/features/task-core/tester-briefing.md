@@ -56,3 +56,15 @@ Pins (green on arrival): `in-memory-task-store.test.ts` (c68026b), `index.test.t
 - `libs/core/src/test-support.ts` and the helpers `batch-size.ts`, `find-batch-tasks.ts`, `project-tasks.ts` are files the plan's file map does not name.
 - `scripts/verify-gates.tsv` maps `libs/types/*` to the gates; `libs/core/*` falls under the generic `libs/*` row (`typecheck unit`), which I did not change.
 - A task that is `Done` with `completedAt` `null` makes `listTasks` throw a plain `Error`; no use case produces that state.
+
+## Second pass: edge cases from the tester run
+
+| Test | Red before the change because | Green after because |
+|------|--------------------------------|---------------------|
+| `order-key.test.ts` nothing sorts below the smallest integer key (6c1fc0e) | `AssertionError: expected function to throw an error, but it didn't` | 26106bf |
+| `task-text.test.ts` zero-width titles and names (cf4aa90) | `Error: expected RuleViolation` (4 tests) | 8f50de6 |
+| `actor.test.ts` U+2028 and U+2029 client names (cf4aa90) | `Error: expected RuleViolation` (2 tests) | 8f50de6 |
+
+Pins (green on arrival): largest integer key, boundary pairs, 5000 appends and prepends (6c1fc0e); mixed replay batch, done-task replay, failing `insertTask` keeping the first task, After T-150 among 299 done tasks, decomposed accents, sharp s (02986c5); search text of a lone combining mark means no filter, joined emoji title kept (cf4aa90).
+
+Hypotheses: `orderKeyBetween` throws a RangeError whenever no key can exist; a title or name of only whitespace and format characters is empty while a joined emoji survives; only case and accents fold in `textMatches`.
