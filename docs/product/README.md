@@ -128,13 +128,13 @@ The owner may overturn any of these; until then they stand.
 
 - Each workspace starts with an Inbox project, and that is what the Inbox view shows.
 - A bearer key per project instead of OAuth, so v1 works in Claude Code, Codex and Cursor but not as a claude.ai connector.
-- Sign in with Apple for the app, since v1 is macOS only.
+- Sign in with Apple for the app, since v1 is macOS only. Until the paid Apple Developer membership exists, it sits behind the sign-in port and development builds use the fake provider.
 - Last write wins per field for sync conflicts.
 - macOS 14 as the floor.
 
 ## Owner prerequisites
 
-- **Xcode** installed from the App Store, for the macOS features (5 onward).
-- **An Apple Developer team** (paid membership) for App Groups, the widget extension and Sign in with Apple on a signed build.
+- **Xcode** installed from the App Store, for the macOS features (5 onward), with the owner's Apple ID added in Xcode so builds sign with the free Personal Team. The App Group identifier carries the Team ID prefix, which a Personal Team can use on macOS.
 - **XcodeGen** installed with Homebrew.
+- **The paid Apple Developer membership waits until the owner decides to publish**, probably under Logic Bit. v1 is done without it: the real Sign in with Apple, a Developer ID signature and notarization belong to publishing, not to v1.
 - Cloudflare is needed only for a deploy, which v1 does not include.
