@@ -5,6 +5,9 @@ import { findKeyProject, findOwnedProject, findSessionOwner } from '../src/direc
 import { seedKey, seedOwner, seedProject, seedSession } from './directory-seed';
 import { CLOCK_NOW } from './task-fixtures';
 
+const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
+const CLIENT_NAME = 'Claude Code';
+
 function newSecret(): string {
   return crypto.randomUUID();
 }
@@ -62,6 +65,48 @@ describe('the directory digests', () => {
   test('a raw secret is refused as a session digest', async () => {
     const insertion = env.DIRECTORY.prepare('INSERT INTO sessions (digest, owner_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
       .bind(RAW_SECRET, await seedOwner(), CLOCK_NOW, CLOCK_NOW + 1)
+      .run();
+    await expect(insertion).rejects.toThrow();
+  });
+});
+
+describe('the owner time zone', () => {
+  test('an empty time zone and a missing time zone are refused', async () => {
+    const emptyZone = env.DIRECTORY.prepare('INSERT INTO owners (id, time_zone, created_at) VALUES (?, ?, ?)')
+      .bind(crypto.randomUUID(), '', CLOCK_NOW)
+      .run();
+    const missingZone = env.DIRECTORY.prepare('INSERT INTO owners (id, created_at) VALUES (?, ?)')
+      .bind(crypto.randomUUID(), CLOCK_NOW)
+      .run();
+    await expect(emptyZone).rejects.toThrow();
+    await expect(missingZone).rejects.toThrow();
+  });
+
+  test('a named time zone is stored', async () => {
+    const ownerId = await seedOwner(SAO_PAULO_TIME_ZONE);
+    const row = await env.DIRECTORY.prepare('SELECT time_zone FROM owners WHERE id = ?').bind(ownerId).first<{ time_zone: string }>();
+    expect(row).toEqual({ time_zone: SAO_PAULO_TIME_ZONE });
+  });
+});
+
+describe('the mcp sessions table', () => {
+  test('a key digest with no key row is refused', async () => {
+    const insertion = env.DIRECTORY.prepare(
+      'INSERT INTO mcp_sessions (digest, key_digest, client_name, created_at, expires_at) VALUES (?, ?, ?, ?, ?)',
+    )
+      .bind(await digestCredential(newSecret()), await digestCredential(newSecret()), CLIENT_NAME, CLOCK_NOW, CLOCK_NOW + 1)
+      .run();
+    await expect(insertion).rejects.toThrow();
+  });
+
+  test('a digest of 63 characters is refused', async () => {
+    const keySecret = newSecret();
+    await seedKey({ projectId: await seedProject({ ownerId: await seedOwner() }), secret: keySecret });
+    const shortDigest = (await digestCredential(newSecret())).slice(1);
+    const insertion = env.DIRECTORY.prepare(
+      'INSERT INTO mcp_sessions (digest, key_digest, client_name, created_at, expires_at) VALUES (?, ?, ?, ?, ?)',
+    )
+      .bind(shortDigest, await digestCredential(keySecret), CLIENT_NAME, CLOCK_NOW, CLOCK_NOW + 1)
       .run();
     await expect(insertion).rejects.toThrow();
   });

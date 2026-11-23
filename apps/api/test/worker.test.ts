@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 
 const WORKER_ORIGIN = 'https://api.todz.test';
 const NOT_FOUND_STATUS = 404;
-const DIRECTORY_TABLES = ['owners', 'project_keys', 'projects', 'sessions', 'workspaces'];
+const DIRECTORY_TABLES = ['mcp_sessions', 'owners', 'project_keys', 'projects', 'sessions', 'workspaces'];
 const TASK_COLUMNS = ['title', 'notes', 'note', 'due_date', 'order_key'];
 
 type TableRow = { name: string };
@@ -31,7 +31,7 @@ describe('the worker', () => {
 });
 
 describe('the directory', () => {
-  test('lists exactly the five directory tables', async () => {
+  test('lists exactly the six directory tables', async () => {
     expect(await directoryTables()).toEqual(DIRECTORY_TABLES);
   });
 

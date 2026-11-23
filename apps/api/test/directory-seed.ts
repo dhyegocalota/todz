@@ -4,9 +4,9 @@ import { digestCredential } from '../src/credential-digest';
 import { type SessionOwner, resolveSessionOwner } from '../src/project-routing';
 import { CLOCK_NOW } from './task-fixtures';
 
-export async function seedOwner(): Promise<string> {
+export async function seedOwner(timeZone = 'UTC'): Promise<string> {
   const ownerId = crypto.randomUUID();
-  await env.DIRECTORY.prepare('INSERT INTO owners (id, created_at) VALUES (?, ?)').bind(ownerId, CLOCK_NOW).run();
+  await env.DIRECTORY.prepare('INSERT INTO owners (id, time_zone, created_at) VALUES (?, ?, ?)').bind(ownerId, timeZone, CLOCK_NOW).run();
   return ownerId;
 }
 
