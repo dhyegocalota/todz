@@ -66,7 +66,7 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 ## Z. Prove and ship
 
 - [x] **Tester briefing:** a developer wrote `tester-briefing.md`. — evidence: docs/features/project-store/tester-briefing.md
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
-- [ ] **/check-ui:** not applicable: no UI.
+- [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence. — evidence: c389491, c92a6ff, 22ef48b, 063a4bb, 71d2e7d
+- [x] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`. — evidence: Ship-ready YES after 713d4b5; security verdict CLEAR; refutations in test-plan.md → Adversarial review
+- [x] **/check-ui:** not applicable: no UI.
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
