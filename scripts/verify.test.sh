@@ -155,6 +155,14 @@ classify libs/types/README.md
 expect_line "a library README" "$output" class docs
 expect_line "a library README" "$output" gates "$DOCS_GATES"
 
+classify apps/README.md
+expect_line "the applications index" "$output" class docs
+expect_line "the applications index" "$output" packages -
+
+classify libs/README.md
+expect_line "the libraries index" "$output" class docs
+expect_line "the libraries index" "$output" packages -
+
 classify .agents/hooks/doctor.sh
 expect_line "a hook script" "$output" gates "doctor format secrets audit hooks shape"
 

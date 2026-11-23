@@ -24,6 +24,7 @@ const ROOT_ENTRIES = [
   'GEMINI.md',
   'LICENSE',
   'README.md',
+  'apps',
   'docs',
   'libs',
   'package.json',
@@ -33,7 +34,7 @@ const ROOT_ENTRIES = [
   'tools',
   'tsconfig.base.json',
 ];
-const FEATURE_PACKAGES = ['libs/core', 'libs/types'];
+const FEATURE_PACKAGES = ['apps/api', 'libs/core', 'libs/types'];
 const NESTED_PATH_PATTERN = /\/.*$/;
 const TEMPORARY_SEGMENT_PATTERN =
   /(^|\/)(spikes?|poc|prototypes?|experiments?|scratch|scratchpad|playground|sandbox|tmp|temp|wip|backups?)(\/|$)/i;
@@ -54,7 +55,7 @@ const FOLDER_SUFFIX = '/';
 const ANCHOR_SEPARATOR = '#';
 const MAILBOX_MARKER = '@';
 const MARKDOWN_EXTENSION = '.md';
-const TOP_LEVEL_FOLDERS = ['libs', 'tools', 'docs', 'scripts'];
+const TOP_LEVEL_FOLDERS = ['apps', 'libs', 'tools', 'docs', 'scripts'];
 const DEPENDENCY_FOLDER = 'node_modules';
 const LANGUAGE_COUNT_PATTERN = /\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve) languages\b/gi;
 

@@ -11,6 +11,8 @@ apps/*/package.json	product	all
 libs/*/package.json	product	all
 tools/*/package.json	product	all
 tools/repository-shape/*	product	typecheck
+apps/README.md	docs	-
+libs/README.md	docs	-
 apps/*/README.md	docs	-
 libs/*/README.md	docs	-
 .env.example	product	unit
