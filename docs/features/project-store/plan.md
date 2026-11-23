@@ -28,23 +28,23 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ### G1
 
-- [ ] **Step 1:** scaffold `@todz/api`: package with `typecheck`, `test:unit` and `dev` (`wrangler dev`) scripts and no deploy script, tsconfig, `wrangler.jsonc` as the spec states, `vitest.config.mts` on `@cloudflare/vitest-plugin` with the repository's loaded-machine timeouts and the D1 migrations passed as a binding, `migrations/0001_directory.sql`, `src/env.ts` (the `Env` type), `src/index.ts` (default `fetch` answering 404, `ProjectStore` export placeholder), `apps/README.md`, package README, `AGENTS.md` layout line, `delivery-docs.test.ts` entries, `.wrangler` ignored; `pnpm install`. Pin test `test/worker.test.ts`: `GET /` and `POST /mcp` answer 404 with an empty body; the directory migration applies and lists the five tables.
+- [x] **Step 1:** scaffold `@todz/api`: package with `typecheck`, `test:unit` and `dev` (`wrangler dev`) scripts and no deploy script, tsconfig, `wrangler.jsonc` as the spec states, `vitest.config.mts` on `@cloudflare/vitest-plugin` with the repository's loaded-machine timeouts and the D1 migrations passed as a binding, `migrations/0001_directory.sql`, `src/env.ts` (the `Env` type), `src/index.ts` (default `fetch` answering 404, `ProjectStore` export placeholder), `apps/README.md`, package README, `AGENTS.md` layout line, `delivery-docs.test.ts` entries, `.wrangler` ignored; `pnpm install`. Pin test `test/worker.test.ts`: `GET /` and `POST /mcp` answer 404 with an empty body; the directory migration applies and lists the five tables. — evidence: 5e87da0 (pin)
 
 ### G2
 
-- [ ] **Step 2:** red then green: `SqliteTaskStore` and the project schema (`sqlite-task-store.test.ts` inside the Durable Object through `runInDurableObject`).
-- [ ] **Step 3:** red then green: `ProjectStore` RPC methods and `ProjectResult` (`project-store.test.ts` through the stub).
+- [x] **Step 2:** red then green: `SqliteTaskStore` and the project schema (`sqlite-task-store.test.ts` inside the Durable Object through `runInDurableObject`). — evidence: red ab86c32, green f3b8316
+- [x] **Step 3:** red then green: `ProjectStore` RPC methods and `ProjectResult` (`project-store.test.ts` through the stub). — evidence: red 1e2b585, green ff3004a
 
 ### G3
 
-- [ ] **Step 4:** red then green: `digestCredential`.
-- [ ] **Step 5:** red then green: the directory reads.
-- [ ] **Step 6:** red then green: the routing functions.
-- [ ] **Step 7:** the isolation suite (`isolation.test.ts`); every case that is green when it lands is marked `pin` in its commit and the briefing.
+- [x] **Step 4:** red then green: `digestCredential`. — evidence: red e89818d, green 47ece3a
+- [x] **Step 5:** red then green: the directory reads. — evidence: red da09333, green f30293b
+- [x] **Step 6:** red then green: the routing functions. — evidence: red 56a3bf4, green dda28fd
+- [x] **Step 7:** the isolation suite (`isolation.test.ts`); every case that is green when it lands is marked `pin` in its commit and the briefing. — evidence: f48e3ab (pin)
 
 ### G4
 
-- [ ] **Step 8:** pin: `api-source.test.ts` fails when a file under `apps/api/src` calls `console`, and when a file other than `src/project-routing.ts` contains `PROJECT_STORE.`; it lands green, so two mutation checks prove it (a `console.log` added to `src/index.ts`; `PROJECT_STORE.idFromName` added to `src/project-store.ts`; each red with the file named, each restored), recorded in the briefing; `tester-briefing.md` written.
+- [x] **Step 8:** pin: `api-source.test.ts` fails when a file under `apps/api/src` calls `console`, and when a file other than `src/project-routing.ts` contains `PROJECT_STORE.`; it lands green, so two mutation checks prove it (a `console.log` added to `src/index.ts`; `PROJECT_STORE.idFromName` added to `src/project-store.ts`; each red with the file named, each restored), recorded in the briefing; `tester-briefing.md` written. — evidence: 8c8fcde (pin), mutations recorded in tester-briefing.md
 
 ## Failure modes
 
@@ -65,7 +65,7 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`. — evidence: docs/features/project-store/tester-briefing.md
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
 - [ ] **/check-ui:** not applicable: no UI.
