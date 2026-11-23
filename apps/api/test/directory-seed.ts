@@ -1,5 +1,7 @@
+import { MILLISECONDS_PER_HOUR } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { digestCredential } from '../src/credential-digest';
+import { type SessionOwner, resolveSessionOwner } from '../src/project-routing';
 import { CLOCK_NOW } from './task-fixtures';
 
 export async function seedOwner(): Promise<string> {
@@ -41,6 +43,14 @@ export async function seedKey({
   await env.DIRECTORY.prepare('INSERT INTO project_keys (digest, project_id, created_at, revoked_at) VALUES (?, ?, ?, ?)')
     .bind(digest, projectId, CLOCK_NOW, revokedAt)
     .run();
+}
+
+export async function seedLiveOwner({ ownerId }: { ownerId: string }): Promise<SessionOwner> {
+  const secret = crypto.randomUUID();
+  await seedSession({ ownerId, secret, expiresAt: CLOCK_NOW + MILLISECONDS_PER_HOUR });
+  const owner = await resolveSessionOwner({ env, secret, now: CLOCK_NOW });
+  if (owner === null) throw new Error('the seeded session should resolve');
+  return owner;
 }
 
 export async function seedSession({ ownerId, secret, expiresAt }: { ownerId: string; secret: string; expiresAt: number }): Promise<void> {
