@@ -84,8 +84,8 @@ Seed: owner O1 with workspace W1 holding projects A and B; owner O2 with project
 
 ## Repository shape
 
-- [x] `tools/repository-shape/src/api-source.test.ts` — input: the files under `apps/api/src`; expected: none contains `console.`; mutation: a `console.log` added to `src/index.ts` turns it red with the file named — evidence: tools/repository-shape/src/api-source.test.ts "no file calls console"; mutation run by the tester, red with received [apps/api/src/index.ts], restored
-- [x] `tools/repository-shape/src/api-source.test.ts` — input: the same files; expected: only `src/project-routing.ts` contains `PROJECT_STORE.`; mutation: `PROJECT_STORE.idFromName` added to `src/project-store.ts` turns it red with the file named — evidence: tools/repository-shape/src/api-source.test.ts "only the routing module reads a member of the project store namespace"; mutation run by the tester, red with received [apps/api/src/project-store.ts], restored
+- [x] `tools/repository-shape/src/api-source.test.ts` — input: the files under `apps/api/src`; expected: none contains `console.`; mutation: a `console.log` added to `src/index.ts` turns it red with the file named — evidence: tools/repository-shape/src/api-source.test.ts "no file calls console" at 8c8fcde; mutation run by the tester, red with received [apps/api/src/index.ts], restored; since 7ac7b89 the test is "no file names console, so no log carries a task, a secret or a digest" and matches the bare identifier (hardening box below)
+- [x] `tools/repository-shape/src/api-source.test.ts` — input: the same files; expected: only `src/project-routing.ts` contains `PROJECT_STORE.`; mutation: `PROJECT_STORE.idFromName` added to `src/project-store.ts` turns it red with the file named — evidence: tools/repository-shape/src/api-source.test.ts "only the routing module reads a member of the project store namespace" at 8c8fcde; mutation run by the tester, red with received [apps/api/src/project-store.ts], restored; since 7ac7b89 the test is "only the routing module and the env type name the project store namespace" and matches the bare identifier (hardening box below)
 
 ## Edge cases found during execution
 
@@ -122,13 +122,18 @@ Hardening run: `pnpm install --frozen-lockfile --offline` succeeds with `onlyBui
 
 Observed, not a defect (closed by the first box above): `SessionOwner` is a brand known to the compiler only; at runtime `openOwnedProject` accepts any object with an `ownerId`, so isolation from a forged owner rests on the type check and on the rule that only `resolveSessionOwner` builds the value. A `null` actor throws a `TypeError` ("Cannot read properties of null") rather than the "the actor kind is not known" message; both are thrown.
 
+### Review fixes
+
+- [ ] A history row whose `fields` is `'Row secret'` (not JSON) → `listHistory` throws a message naming `task_history.fields` and the task number, without "Row secret" (`sqlite-task-store.test.ts` "listHistory throws for fields that are not JSON and names only the column and the task number")
+- [ ] A `SessionOwner` from `resolveSessionOwner` for O1, with its `ownerId` rewritten through a cast to O2's id → the write throws or is ignored, and `openOwnedProject` for O2's project → `null` (`project-routing.test.ts` "a resolved session owner cannot be rewritten to open another owner project")
+
 ## Adversarial review
 
 The reviewer picks the three claims most likely to be wrong and tries to refute each.
 
-- [ ] Claim 1: <claim> — attack: <how>; result: <refuted | held>
-- [ ] Claim 2: <claim> — attack: <how>; result: <refuted | held>
-- [ ] Claim 3: <claim> — attack: <how>; result: <refuted | held>
+- [x] Claim 1: an agent actor whose client name is `''` fails with `ClientNameInvalid` because the Durable Object rebuilds every actor — attack: `trustedActor` made to return the agent actor unchanged, in a throwaway worktree at b5e660e; result: held, exactly "an agent whose client name is empty fails and nothing is written" went red (1 of 107) — evidence: reviewer run, worktree removed
+- [x] Claim 2: no refusal addresses a Durable Object — attack: `env.PROJECT_STORE.idFromName(projectId)` added before the run-time owner check in `openOwnedProject`; result: held, 8 tests went red across edge cases, isolation ("every refusal addresses no Durable Object") and routing — evidence: reviewer run, worktree removed
+- [x] Claim 3: a task number is never reissued and the counter never goes down — attacks: the early return of `isAlreadyIssued` disabled; the counter read from `MAX(number) FROM tasks` instead of `task_counter`; result: held, "the counter never goes down…", "the counter survives a task row that stopped existing" and "a number is never reissued after the last task row is deleted by hand" went red — evidence: reviewer run, worktree removed
 
 ## Coverage honesty
 

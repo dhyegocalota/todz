@@ -59,8 +59,8 @@ Package `@todz/api` under `apps/api`, depending on `@todz/core` and `@todz/types
 | `owners` | `id TEXT PRIMARY KEY`, `created_at INTEGER NOT NULL` |
 | `workspaces` | `id TEXT PRIMARY KEY`, `owner_id TEXT NOT NULL REFERENCES owners`, `name TEXT NOT NULL`, `created_at INTEGER NOT NULL` |
 | `projects` | `id TEXT PRIMARY KEY`, `workspace_id TEXT NOT NULL REFERENCES workspaces`, `name TEXT NOT NULL`, `created_at INTEGER NOT NULL` |
-| `project_keys` | `digest TEXT PRIMARY KEY`, `project_id TEXT NOT NULL REFERENCES projects`, `created_at INTEGER NOT NULL`, `revoked_at INTEGER` |
-| `sessions` | `digest TEXT PRIMARY KEY`, `owner_id TEXT NOT NULL REFERENCES owners`, `created_at INTEGER NOT NULL`, `expires_at INTEGER NOT NULL` |
+| `project_keys` | `digest TEXT PRIMARY KEY CHECK (length(digest) = 64)`, `project_id TEXT NOT NULL REFERENCES projects`, `created_at INTEGER NOT NULL`, `revoked_at INTEGER` |
+| `sessions` | `digest TEXT PRIMARY KEY CHECK (length(digest) = 64)`, `owner_id TEXT NOT NULL REFERENCES owners`, `created_at INTEGER NOT NULL`, `expires_at INTEGER NOT NULL` |
 
 No directory column holds a task's title, notes or any task field. Ids are UUIDs from `crypto.randomUUID()`; instants are epoch milliseconds.
 
@@ -105,15 +105,15 @@ Arguments arrive as structured clones, so the Durable Object does not trust thei
 | `findSessionOwner({ directory, digest, now })` | the `owner_id` of a session with that digest whose `expires_at` is after `now`, else `null` |
 | `findOwnedProject({ directory, ownerId, projectId })` | `projectId` when that project's workspace belongs to `ownerId`, else `null` |
 
-**Routing** (`project-routing.ts`), the only module under `apps/api/src` that reads a member of `PROJECT_STORE` (the text `PROJECT_STORE.`), which a repository-shape test enforces:
+**Routing** (`project-routing.ts`), the only module under `apps/api/src` that names `PROJECT_STORE` apart from the `Env` type in `env.ts`, which a repository-shape test enforces on the bare identifier:
 
 | Function | Returns |
 |---|---|
-| `openKeyProject({ env, secret })` | the stub of the key's project, else `null`; an empty secret is refused before any lookup |
-| `resolveSessionOwner({ env, secret, now })` | a `SessionOwner` for a live session, else `null`; an empty secret is refused before any lookup |
-| `openOwnedProject({ env, owner, projectId })` | the stub of that project when `owner` owns it, else `null` |
+| `openKeyProject({ env, secret })` | the stub of the key's project, else `null`; a secret that is not a string or is blank once trimmed is refused before any lookup |
+| `resolveSessionOwner({ env, secret, now })` | a `SessionOwner` for a live session, else `null`; a secret refused as above before any lookup |
+| `openOwnedProject({ env, owner, projectId })` | the stub of that project when `owner` owns it, else `null`; an `owner` that `resolveSessionOwner` did not build is refused before any lookup |
 
-`SessionOwner` is a branded type (`{ ownerId: string } & { readonly sessionOwner: unique symbol }`) that only `resolveSessionOwner` builds, so `openOwnedProject` cannot be handed an owner id taken from a request.
+`SessionOwner` is a branded type (`{ readonly ownerId: string } & { readonly sessionOwner: unique symbol }`) that only `resolveSessionOwner` builds, frozen, and recorded in a module-level `WeakSet` that `openOwnedProject` checks at run time, so it cannot be handed an owner id taken from a request, at compile time or at run time.
 
 **Worker** (`src/index.ts`): exports `ProjectStore` and a default `fetch` that answers `404` with an empty body to every request; the HTTP surfaces arrive with `mcp-server` and `owner-api`.
 
@@ -140,4 +140,4 @@ Nothing is deployed and no production data exists: reverting the merge commit re
 
 ## Test strategy summary
 
-Vitest inside workerd (ADR 0012), in `apps/api`: the SQLite adapter against the core's expectations (round trips, counter, BINARY order, mapping failures, rollback), each RPC method's value and failure, the directory reads and the routing, and the isolation suite. A repository-shape test fails when a file under `apps/api/src` calls `console`, or when a file other than `project-routing.ts` contains `PROJECT_STORE.`. No browser surface, so no Playwright.
+Vitest inside workerd (ADR 0012), in `apps/api`: the SQLite adapter against the core's expectations (round trips, counter, BINARY order, mapping failures, rollback), each RPC method's value and failure, the directory reads and the routing, and the isolation suite. A repository-shape test fails when a file under `apps/api/src` names `console`, or when a file other than `project-routing.ts` and `env.ts` names `PROJECT_STORE`. No browser surface, so no Playwright.
