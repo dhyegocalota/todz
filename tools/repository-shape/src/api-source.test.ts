@@ -3,13 +3,14 @@ import { readRepositoryFile, repositoryFiles } from './repository-files';
 
 const API_SOURCE_FOLDER = 'apps/api/src';
 const ROUTING_MODULE = 'apps/api/src/project-routing.ts';
-const CONSOLE_CALL = 'console.';
-const PROJECT_STORE_MEMBER = 'PROJECT_STORE.';
+const ENV_MODULE = 'apps/api/src/env.ts';
+const CONSOLE_IDENTIFIER = /\bconsole\b/;
+const PROJECT_STORE_IDENTIFIER = /\bPROJECT_STORE\b/;
 
 const sourceFiles = repositoryFiles(API_SOURCE_FOLDER);
 
-function filesContaining(text: string): string[] {
-  return sourceFiles.filter((path) => readRepositoryFile(path).includes(text));
+function filesMatching(pattern: RegExp): string[] {
+  return sourceFiles.filter((path) => pattern.test(readRepositoryFile(path)));
 }
 
 describe('the api source', () => {
@@ -17,11 +18,11 @@ describe('the api source', () => {
     expect(sourceFiles.length).toBeGreaterThan(0);
   });
 
-  test('no file calls console, so no log carries a task, a secret or a digest', () => {
-    expect(filesContaining(CONSOLE_CALL)).toEqual([]);
+  test('no file names console, so no log carries a task, a secret or a digest', () => {
+    expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([]);
   });
 
-  test('only the routing module reads a member of the project store namespace', () => {
-    expect(filesContaining(PROJECT_STORE_MEMBER).filter((path) => path !== ROUTING_MODULE)).toEqual([]);
+  test('only the routing module and the env type name the project store namespace', () => {
+    expect(filesMatching(PROJECT_STORE_IDENTIFIER).filter((path) => ![ROUTING_MODULE, ENV_MODULE].includes(path))).toEqual([]);
   });
 });
