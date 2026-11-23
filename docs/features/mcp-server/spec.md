@@ -57,19 +57,22 @@ MCP client ── POST /mcp, Authorization: Bearer todz_… ──▶ Worker fet
 
 ### HTTP surface
 
-`src/index.ts` dispatches on the pathname from a record keyed by the path: `/mcp` → the MCP endpoint, anything else → 404 with an empty body, as today.
+The Worker's default export is `fetch(request, env)`. It dispatches on the pathname from a record keyed by the path: `/mcp` → `serveMcp({ request, env, now: Date.now() })` in `mcp-endpoint.ts`, anything else → 404 with an empty body, as today. `serveMcp` takes `env` as an argument so a test can hand it the counting namespace.
+
+**Bearer parsing.** The header must match `^Bearer (.+)$` with the scheme compared case-insensitively (RFC 7235), one space, and the rest passed to `openKeyProject` exactly as sent (no trim): `bearer <key>` works, `Bearer  <key>` (two spaces) is an unknown key. A key without the `todz_` prefix is simply unknown.
 
 | Request to `/mcp` | Answer |
 |---|---|
-| no `Authorization` header, a scheme other than `Bearer`, a blank secret, an unknown or revoked key | 401, `WWW-Authenticate: Bearer`, empty body; no Durable Object addressed |
-| a modern request (the SDK's `isLegacyRequest` is false) | the SDK's modern handler (`createMcpHandler` with `legacy: 'reject'`) |
-| a 2025-era `POST` whose JSON body is one `initialize` request with a valid client name | the SDK's stateless legacy answer, plus an `Mcp-Session-Id` header with a new session id |
-| the same with a client name that `agentActor` refuses | 400, a JSON-RPC error `-32602` whose message is the `client_name_invalid` copy, `id` echoed; no session stored |
-| any other 2025-era request without `Mcp-Session-Id` | 400, a JSON-RPC error `-32000`, `Bad Request: Mcp-Session-Id header is required`, `id: null` |
-| any other 2025-era request whose session is unknown, expired or belongs to another key | 404, a JSON-RPC error `-32001`, `Session not found`, `id: null` |
-| any other 2025-era request with a live session of this key | the SDK's stateless legacy answer (`GET` and `DELETE` get its 405) |
+| no `Authorization` header, a scheme other than `Bearer`, a blank secret, an unknown or revoked key | 401, `WWW-Authenticate: Bearer`, empty body; no Durable Object addressed, no session read |
+| `GET` or `DELETE` with a valid key | 405, `Allow: POST`, empty body, answered before era routing; a `DELETE` leaves the session row to expire, on purpose (no session termination in v1) |
+| a modern `POST` (the SDK's `isLegacyRequest`, given a clone, is false) | the SDK's modern handler (`createMcpHandler` with `legacy: 'reject'`) |
+| a 2025-era `POST` whose JSON body is one `initialize` request whose `params.clientInfo.name` is a string `agentActor` accepts | the SDK's stateless legacy answer, plus an `Mcp-Session-Id` header with a new session id; the row stores `agentActor(name).clientName` (trimmed) |
+| the same with `params`, `clientInfo` or `name` missing, a `name` that is not a string, or one that `agentActor` refuses | 400, a JSON-RPC error `INVALID_PARAMS` (`-32602`) whose message is the `client_name_invalid` sentence, `id` echoed; no session stored |
+| any other 2025-era `POST` whose `Mcp-Session-Id` is absent or blank | 400, a JSON-RPC error `-32000`, the `session_required` copy `Bad Request: Mcp-Session-Id header is required`, `id: null` |
+| any other 2025-era `POST` whose session is unknown, expired or belongs to another key | 404, a JSON-RPC error `-32001`, the `session_not_found` copy `Session not found`, `id: null` |
+| any other 2025-era `POST` with a live session of this key | the SDK's stateless legacy answer |
 
-The body is parsed with `request.clone()` so the SDK still reads the original. A body that is not JSON or is a batch array is not an `initialize`.
+The body is parsed from `request.clone()` so the SDK still reads the original. A body that is not JSON or is a batch array is not an `initialize`. The two JSON-RPC codes are named constants at the top of `mcp-endpoint.ts`; the SDK exports `INVALID_PARAMS`. Every `initialize` from a valid key adds one row; a key holder can grow the table without bound (Coverage honesty).
 
 ### Directory
 
@@ -100,11 +103,11 @@ The body is parsed with `request.clone()` so the SDK still reads the original. A
 - `project-keys.ts`: `issueProjectKey({ directory, projectId, now })` → `Promise<string>`, the secret `todz_` + `generateCredentialSecret()`, after inserting its digest. A project id that does not exist fails the foreign key and rejects.
 - A session id is `generateCredentialSecret()`, stored as its digest, with `expiresAt = now + MCP_SESSION_LIFETIME_MS` (30 days).
 
-`PROJECT_KEY_PREFIX` (`'todz_'`) lives in `libs/types`, because the app shows and recognises keys; `MCP_SESSION_LIFETIME_MS` sits at the top of the module that issues sessions.
+`PROJECT_KEY_PREFIX` (`'todz_'`) and `LIST_LIMIT_DEFAULT` (20) live in `libs/types`, because the app shows and recognises keys; `MCP_SESSION_LIFETIME_MS` sits at the top of the module that issues sessions.
 
 ### Today
 
-`owner-today.ts`: `calendarDateInTimeZone({ timeZone, now })` → the `YYYY-MM-DD` of `now` in `timeZone` through `Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })`. An invalid zone throws the runtime's `RangeError`: the directory only ever holds zones `owner-api` validated, so it is a bug, not an input.
+`owner-today.ts`: `calendarDateInTimeZone({ timeZone, now })` → the `YYYY-MM-DD` of `now` in `timeZone`, assembled from the `year`, `month` and `day` parts of `Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now)`, never from a locale's formatted string. An invalid zone throws the runtime's `RangeError`: the directory only ever holds zones `owner-api` validated, so it is a bug, not an input.
 
 ### The server
 
@@ -113,15 +116,32 @@ A fresh `McpServer` per request, named `todz`, with `instructions` from the copy
 | Tool | Input (zod) | Calls | Answer |
 |---|---|---|---|
 | `next` | none | `nextTask({ today })` | the task block, or `No open tasks.` |
-| `add` | `tasks`: array of `{ title: string, notes?: string, due_date?: string, idempotency_key?: string }` | `addTasks` | one line per task: `Added <line>` or, for a replay, `Already added <line>` |
-| `list` | `state?: 'open' \| 'done'` (default `open`), `due?: ('overdue' \| 'today' \| 'upcoming' \| 'undated')[]` (default all), `text?: string`, `limit?: integer` (default 20) | `listTasks({ today, filter })` | `<State> tasks: <shown> of <matched>` then one line per task |
-| `update` | `id: string`, `title?: string`, `notes?: string \| null`, `due_date?: string \| null`, `placement?: { kind: 'first' } \| { kind: 'last' } \| { kind: 'before' \| 'after', anchor: string }` | `updateTask` | `Updated <line>` |
-| `done` | `ids: string[]`, `note?: string` | `completeTasks` | one line per task: `Done <line>` or `Already done <line>` |
+| `add` | `tasks`: array of `{ title: string, notes: string \| null, due_date: string \| null, idempotency_key: string \| null }`, each nullable field `.nullable().default(null)` | `addTasks` | one line per task: `Added <line>` or, for a replay, `Already added <line>` |
+| `list` | `state: z.enum(TaskState).default(TaskState.Open)`, `due: z.array(z.enum(DueWindow)).default([])` (empty means every window), `text: z.string().nullable().default(null)`, `limit: z.number().int().default(LIST_LIMIT_DEFAULT)` | `listTasks({ today, filter })` | `<State> tasks: <shown> of <matched>` then one line per task |
+| `update` | `id: string`, `title?: string`, `notes?: string \| null`, `due_date?: string \| null`, `placement?`: a discriminated union on `kind: z.enum(TaskPlacement)`, with `anchor: string` for `Before` and `After` | `updateTask` | `Updated <line>` |
+| `done` | `ids: string[]`, `note: z.string().nullable().default(null)` | `completeTasks` | one line per task: `Done <line>` or `Already done <line>` |
 
-- The defaults are declared in the zod schema, so the agent sees them in the tool's JSON Schema. A field left out of `update` is left out of the patch; `null` clears notes or the due date.
-- Ids are short ids (`T-12`, any case) parsed with `parseShortId`; the first one that does not parse is a tool error, `"<input>" is not a task id like T-12.`, and nothing is called.
+- Enum values come from `libs/types` (`TaskState`, `DueWindow`, `TaskPlacement`), never string literals. `LIST_LIMIT_DEFAULT` (20) joins `libs/types`.
+- Absence becomes the core's `null` through the schema's `.nullable().default(null)`, which the agent sees as `"default": null` in the JSON Schema; the handlers never write `?? null`. `update` is the exception on purpose: a field left out is left out of the `TaskPatch` (a key copied only when `field in args`), and `null` clears notes or the due date.
+- The schemas carry no `min`, `max` or length bounds: the core validates batch sizes, lengths, limits and dates, so its rule issues are the only limits and the messages agree with the app's.
+- Arguments that break a schema (a wrong type, an unknown enum value, a missing `tasks`, `id` or `ids`) are answered by the SDK in both eras as a tool result with `isError: true` whose text starts `Input validation error:` (spike, 2026-11-23); nothing is called.
+- Ids and anchors are short ids (`T-12`, any case) parsed with `parseShortId`; the first one that does not parse is a tool error with the `task_id_invalid` copy, `Not a task id: use one like T-12.` (built from `TASK_SHORT_ID_PREFIX`, never echoing the input), and nothing is called.
 - `next` and `list` carry `readOnlyHint: true`; `add`, `update` and `done` carry `destructiveHint: false`.
-- The array sizes, text lengths and dates are validated by the core, so its rule issues are the only limits and the messages agree with the app's.
+
+**Agent-facing copy** (`mcp-copy.ts`; a test asserts each registered description equals its entry):
+
+| Entry | Text |
+|---|---|
+| server `instructions` | `todz holds the to-do list of one project. Call next to get the task to work on, add to record new tasks, list to see tasks, update to change one, and done to complete tasks with a note of what was done. Ids look like T-12.` |
+| server version | `MCP_SERVER_VERSION = '0.1.0'`, a constant at the top of `mcp-server.ts` |
+| `next` | `The one open task to work on now in this project, with its notes.` |
+| `add` | `Add one or more tasks. Give each an idempotency_key to make a retry safe.` |
+| `list` | `List tasks by state, due window and text, in manual order (done: newest first).` |
+| `update` | `Change a task's title, notes, due date or place in the order. null clears notes or the due date.` |
+| `done` | `Complete one or more tasks, with an optional note of what was done.` |
+| prompt `next` | `Start working on the next task of this project.` |
+
+Field descriptions (`describe()`) are entries of the same file: `title` `Short title, up to 200 characters.`, `notes` `Markdown notes.`, `due_date` `Calendar date, YYYY-MM-DD.`, `idempotency_key` `Any string unique to this task; repeating it returns the task already added.`, `state` `open or done.`, `due` `Due windows to include; empty means all.`, `text` `Text to find in titles and notes.`, `limit` `How many tasks to show, 1 to 100.`, `id` `Task id, like T-12.`, `ids` `Task ids, like T-12.`, `placement` `Where to move the task: first, last, or before or after anchor.`, `note` `What was done.` The numbers come from `TASK_TITLE_MAX_LENGTH` and `LIST_LIMIT_MAX`.
 
 **Prompt `next`**, no arguments: one user message. With a task: `Work on this task from todz.`, a blank line, the task block, a blank line, `When it is finished, call the todz done tool with id <T-n> and a note of what was done.` With none: `There is nothing to do in todz right now: no open tasks.`
 
@@ -143,9 +163,9 @@ Every expected failure is a tool result with `isError: true` and one text line f
 | `TaskNotFound` | `<T-n> not found.`, the same for another project's task as for a number never issued |
 | `RuleViolated`, `index` null | the issue's sentence, e.g. `The title is empty.` |
 | `RuleViolated`, `index` set | `Task <index + 1>: <the issue's sentence>` |
-| an id that does not parse | `"<input>" is not a task id like T-12.` |
+| an id or anchor that does not parse | `Not a task id: use one like T-12.` |
 
-`mcp-copy.ts` holds a `Record<RuleIssue, string>`, so a new issue fails the typecheck until it has a sentence. Arguments that break the zod schema get the SDK's own invalid-params answer. Anything else (a thrown RPC, a bad zone) is not caught: the SDK turns it into an internal error, and nothing is logged.
+`mcp-copy.ts` holds a `Record<RuleIssue, string>`, so a new issue fails the typecheck until it has a sentence. Arguments that break the zod schema get the SDK's `Input validation error:` result. Anything else (a thrown RPC, a bad zone) is not caught: the SDK turns it into an internal error, and nothing is logged.
 
 ### Failure handling
 

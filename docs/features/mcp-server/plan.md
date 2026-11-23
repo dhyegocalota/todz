@@ -4,7 +4,7 @@
 **Tier:** 🔴
 **Seam:** `apps/api` only, plus one constant in `libs/types`; the Worker's `fetch` gains the `/mcp` route
 **Assumptions (decided, owner can override):**
-- ADRs 0016 to 0019 are the loop's calls, listed in the loop's questions.
+- ADRs 0016 to 0019 are the loop's calls, listed in the loop's questions. The loop's brief authorizes reversible internal calls recorded this way, and the dependencies the product's stack implies (an MCP server on the Worker), named in the PR body; the plan review's finding 1 is answered by that brief.
 - Dependencies, exact versions, named in the PR: `@modelcontextprotocol/server` 2.4.0 and `zod` 4.6.7 (runtime), `@modelcontextprotocol/client` 2.4.0 (dev).
 - Tests drive the Worker through `exports.default.fetch` from `cloudflare:workers`; the client gets that function as its `fetch`.
 - Secrets in tests are generated at run time (`issueProjectKey` or `crypto.randomUUID()`), never written as literals, so gitleaks has nothing to match.
@@ -14,10 +14,10 @@
 
 | Group | Paths owned | Developer sub-agent |
 |-------|-------------|---------------------|
-| G1 | `apps/api/package.json`, `pnpm-lock.yaml`, `apps/api/migrations/{0001_directory,0002_mcp_sessions}.sql`, `apps/api/test/{directory-seed.ts,worker.test.ts}`, `libs/types/src/{constants,constants.test}.ts` | `developer-1` |
+| G1 | `apps/api/package.json`, `pnpm-lock.yaml`, `apps/api/migrations/{0001_directory,0002_mcp_sessions}.sql`, `apps/api/test/{directory-seed.ts,worker.test.ts,directory.test.ts}` (step 1 adds the schema pins; step 3 extends the same file), `libs/types/src/{constants,constants.test}.ts` | `developer-1` |
 | G2 | `apps/api/src/{credential-secret,project-keys,directory,project-routing,owner-today}.ts`, `apps/api/test/{credential-secret,project-keys,directory,project-routing,isolation,edge-cases,owner-today}.test.ts` | `developer-1` |
 | G3 | `apps/api/src/{mcp-format,mcp-copy}.ts`, `apps/api/test/mcp-format.test.ts` | `developer-1` |
-| G4 | `apps/api/src/{index,mcp-endpoint,mcp-sessions,mcp-server}.ts`, `apps/api/test/{mcp-client.ts,mcp-endpoint.test.ts,mcp-tools.test.ts,mcp-isolation.test.ts}`, `apps/api/README.md`, `docs/features/mcp-server/tester-briefing.md` | `developer-1` |
+| G4 | `apps/api/src/{index,mcp-endpoint,mcp-sessions,mcp-server}.ts`, `apps/api/test/{mcp-client.ts,mcp-endpoint.test.ts,mcp-tools.test.ts,mcp-isolation.test.ts,worker.test.ts}`, `apps/api/README.md`, `docs/features/mcp-server/tester-briefing.md` | `developer-1` |
 
 The developer may split a G4 source file when it passes about 150 lines (one tool per file under `src/mcp-tools/` is fine); the split is named in the briefing.
 
@@ -31,7 +31,7 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ### G1
 
-- [ ] **Step 1:** pin: add the three dependencies at exact versions; `owners.time_zone` in `0001_directory.sql`; `0002_mcp_sessions.sql`; `seedOwner` takes an optional `timeZone` (default `'UTC'` is a test fixture, not product code) and every seed caller keeps working; `worker.test.ts` lists the six tables; `PROJECT_KEY_PREFIX` in `libs/types` with its pin test; `pnpm install`. All existing tests stay green. — evidence:
+- [ ] **Step 1:** pin: add the three dependencies at exact versions; `owners.time_zone` in `0001_directory.sql`; `0002_mcp_sessions.sql`; `seedOwner` takes an optional `timeZone` (default `'UTC'` is a test fixture, not product code) and every seed caller keeps working; `worker.test.ts` lists the six tables; `PROJECT_KEY_PREFIX` and `LIST_LIMIT_DEFAULT` in `libs/types` with their pin tests; the schema pins of the test plan (time zone and session constraints) in `directory.test.ts`; `pnpm install`. All existing tests stay green. — evidence:
 
 ### G2
 
