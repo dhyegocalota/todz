@@ -1,4 +1,14 @@
-export * from './errors';
-export * from './ports';
-export * from './short-id';
-export * from './task';
+export { OWNER_ACTOR, agentActor } from './actor';
+export { addTasks, type AddedTask } from './add-tasks';
+export { dueWindowOf, normalizeDueDate, parseCalendarDate } from './calendar-date';
+export { completeTasks, type CompletedTask } from './complete-tasks';
+export { RuleViolation, TaskNotFoundError } from './errors';
+export { listTasks, type TaskList } from './list-tasks';
+export { nextTask } from './next-task';
+export { orderKeyBetween } from './order-key';
+export type { Clock, TaskStore } from './ports';
+export { reopenTasks, type ReopenedTask } from './reopen-tasks';
+export { formatShortId, parseShortId } from './short-id';
+export type { Actor, CalendarDate, HistoryEntry, Placement, Task, TaskDraft, TaskFilter, TaskPatch } from './task';
+export { normalizeCompletionNote, normalizeIdempotencyKey, normalizeName, normalizeNotes, normalizeTitle, textMatches } from './task-text';
+export { updateTask } from './update-task';
