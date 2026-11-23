@@ -82,6 +82,17 @@ Root `package.json` gains `pnpm.onlyBuiltDependencies` with `esbuild` and `worke
 
 Last runs: `@todz/api` 105 tests green (includes the tester's edge cases), `repository-shape` 144 green, both typechecks green.
 
+## Review fixes
+
+Red `3bf36a0`, green `8e74846`.
+
+| Test | Red text printed | Green because |
+|------|------------------|---------------|
+| `sqlite-task-store.test.ts` "listHistory throws for fields that are not JSON and names only the column and the task number" | `AssertionError: expected 'Unexpected token 'R', "Row secret" ...' to contain 'task_history.fields'` | a parse failure becomes the same invalid-column error |
+| `project-routing.test.ts` "a resolved session owner cannot be rewritten to open another owner project" | `AssertionError: expected function to throw an error, but it didn't` | the owner is `Object.freeze`d and typed `readonly` |
+
+The store test and the project store test helpers use `ActorKind` and `HistoryAction` values and typed returns; those edits were green when they landed.
+
 ## Known gaps
 
 - `test-plan.md` says the corrupted-state rollback test corrupts `state` to `'archived'` and calls `listTasks` (done state). That cannot throw: the done list selects `WHERE state = 'done'` and never reads the archived row. I corrupted `created_by_kind`/`created_by_client` instead (the open list and `addTasks` then throw) and added a second test that proves rollback with a `BEFORE INSERT` trigger on `task_history`, which fails after the task row and the counter were written.
