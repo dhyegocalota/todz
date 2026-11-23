@@ -50,7 +50,7 @@ Enums and constants in `libs/types` (`src/task.ts`):
 | `HistoryAction` | `Created = 'created'`, `Updated = 'updated'`, `Completed = 'completed'`, `Reopened = 'reopened'` |
 | `DueWindow` | `Overdue = 'overdue'`, `Today = 'today'`, `Upcoming = 'upcoming'`, `Undated = 'undated'` |
 | `TaskPlacement` | `First = 'first'`, `Last = 'last'`, `Before = 'before'`, `After = 'after'` |
-| `RuleIssue` | `TitleEmpty`, `TitleTooLong`, `NotesTooLong`, `CompletionNoteTooLong`, `DueDateInvalid`, `BatchEmpty`, `BatchTooLarge`, `IdempotencyKeyInvalid`, `ClientNameInvalid`, `NothingToUpdate`, `PlacementAnchorInvalid`, `SearchTextTooLong`, `LimitInvalid`, `NameEmpty`, `NameTooLong`, `TaskNumberInvalid` (string values in snake case) |
+| `RuleIssue` | `TitleEmpty`, `TitleTooLong`, `NotesTooLong`, `CompletionNoteTooLong`, `DueDateInvalid`, `BatchEmpty`, `BatchTooLarge`, `IdempotencyKeyInvalid`, `ClientNameInvalid`, `NothingToUpdate`, `PlacementAnchorInvalid`, `SearchTextTooLong`, `LimitInvalid`, `NameEmpty`, `NameTooLong`, `TaskNumberInvalid`, `TitleInvalid`, `NotesInvalid`, `CompletionNoteInvalid`, `NameInvalid`, `OrderKeyTooLong` (string values in snake case) |
 
 | Constant | Value |
 |---|---|
@@ -65,8 +65,9 @@ Enums and constants in `libs/types` (`src/task.ts`):
 | `SEARCH_TEXT_MAX_LENGTH` | `200` |
 | `NAME_MAX_LENGTH` | `80` |
 | `INBOX_PROJECT_NAME` | `'Inbox'` |
+| `ORDER_KEY_MAX_LENGTH` | `1_024` |
 
-Lengths count Unicode code points, not UTF-16 units.
+Lengths count Unicode code points, not UTF-16 units. A text whose UTF-16 length is more than twice its limit is rejected as too long before it is read further, so an oversized input costs no more than its length check.
 
 Values in `libs/core`:
 
@@ -125,11 +126,11 @@ Functions:
 | `parseCalendarDate(text)` | `YYYY-MM-DD` that names a real day (leap years included) → `CalendarDate`; anything else → `null` |
 | `dueWindowOf({ dueDate, today })` | `null` → `Undated`; before → `Overdue`; equal → `Today`; after → `Upcoming` |
 | `orderKeyBetween({ before, after })` | a key strictly between the two (either may be `null` for an open end), in the scheme of ADR 0009; throws a `RangeError` when `before >= after`, a programmer error no user input can reach |
-| `normalizeTitle(text)` | trims, turns every whitespace run (newlines included) into one space; empty, or only whitespace and format characters such as a zero-width space → `TitleEmpty`; over the limit → `TitleTooLong` |
-| `normalizeNotes(text)` | `null` or blank → `null`; CRLF → LF; otherwise kept as written; over the limit → `NotesTooLong` |
-| `normalizeCompletionNote(text)` | as notes, with its own limit → `CompletionNoteTooLong` |
+| `normalizeTitle(text)` | trims, turns every whitespace run (newlines included) into one space; empty, or only whitespace and format characters such as a zero-width space → `TitleEmpty`; a control character left after that (NUL, ESC, DEL, C1) → `TitleInvalid`; over the limit → `TitleTooLong` |
+| `normalizeNotes(text)` | `null` or blank → `null`; CRLF → LF; otherwise kept as written; a control character other than LF and tab → `NotesInvalid`; over the limit → `NotesTooLong` |
+| `normalizeCompletionNote(text)` | as notes, with its own limit → `CompletionNoteInvalid`, `CompletionNoteTooLong` |
 | `normalizeIdempotencyKey(text)` | `null` → `null`; otherwise it must match `^[A-Za-z0-9._:-]{1,128}$` exactly, with no trimming and case kept → the key; anything else → `IdempotencyKeyInvalid` |
-| `normalizeName(text)` | project and workspace names: as a title, with `NAME_MAX_LENGTH` → `NameEmpty`, `NameTooLong` |
+| `normalizeName(text)` | project and workspace names: as a title, with `NAME_MAX_LENGTH` → `NameEmpty`, `NameInvalid`, `NameTooLong` |
 | `agentActor(clientName)` | trims; 1 to `CLIENT_NAME_MAX_LENGTH` code points, no control characters and no line or paragraph separators → `Actor`; otherwise `ClientNameInvalid` |
 | `OWNER_ACTOR` | `{ kind: ActorKind.Owner }` |
 
@@ -138,7 +139,7 @@ Use cases, each taking one named object:
 | Use case | Rule |
 |---|---|
 | `addTasks({ store, clock, actor, drafts })` → `{ task, replayed }[]` | 1 to `TASK_BATCH_MAX_SIZE` drafts, every draft validated first, replayed or not (the error's `index` is the draft's position). A draft whose idempotency key already names a task returns that task unchanged with `replayed: true`; the same key twice in one batch creates one task and the repeat takes no number (`[k1, k1, no key]` → `T-1`, `T-1`, `T-2`). New tasks get the next numbers in draft order, `Open`, an order key after the highest key of the project, and one `Created` history line with empty fields. |
-| `updateTask({ store, clock, actor, number, patch })` → `Task` | an empty patch → `NothingToUpdate`; a missing task or anchor → `TaskNotFoundError`; the task itself as anchor → `PlacementAnchorInvalid`. A placement computes neighbours among every task of the project (both states) in key order, excluding the moved task, so keys stay unique: `First` goes before the lowest key, `Last` after the highest, `Before`/`After` next to the anchor, and a done task may be an anchor. When the task's current key already lies between those neighbours, the key is kept and the order does not count as a change. Only fields whose value changes are written; one `Updated` history line lists them in `TaskField` order; nothing changed → no write and no history line. Done tasks can be updated. |
+| `updateTask({ store, clock, actor, number, patch })` → `Task` | `number` and an anchor not a positive integer → `TaskNumberInvalid`; an empty patch → `NothingToUpdate`; a new order key longer than `ORDER_KEY_MAX_LENGTH` → `OrderKeyTooLong`; a missing task or anchor → `TaskNotFoundError`; the task itself as anchor → `PlacementAnchorInvalid`. A placement computes neighbours among every task of the project (both states) in key order, excluding the moved task, so keys stay unique: `First` goes before the lowest key, `Last` after the highest, `Before`/`After` next to the anchor, and a done task may be an anchor. When the task's current key already lies between those neighbours, the key is kept and the order does not count as a change. Only fields whose value changes are written; one `Updated` history line lists them in `TaskField` order; nothing changed → no write and no history line. Done tasks can be updated. |
 | `completeTasks({ store, clock, actor, numbers, note })` → `{ task, alreadyDone }[]` | 1 to `TASK_BATCH_MAX_SIZE` numbers, each a positive integer (else `TaskNumberInvalid`), duplicates collapsed in first-seen order; any missing number → `TaskNotFoundError` before anything is written. An open task becomes `Done` with `completedAt` and one `Completed` history line carrying the note; a done task is returned untouched with `alreadyDone: true` and the note is not recorded for it, so the caller can say so. |
 | `reopenTasks({ store, clock, actor, numbers })` → `{ task, alreadyOpen }[]` | the mirror of `completeTasks`, without a note: `completedAt` back to `null`, the order key kept, one `Reopened` line. |
 | `listTasks({ store, today, filter })` with `today: CalendarDate` → `{ tasks, totalMatched }` | tasks of `filter.state` whose due window is in `filter.dueWindows` (empty means any) and whose title or notes contain `filter.text`, compared without case or accents and nothing else folded (`ß` stays `ß`); a text that is blank, or blank once accents are removed, means no text filter; text over the limit → `SearchTextTooLong`; `limit` an integer from 1 to `LIST_LIMIT_MAX` (else `LimitInvalid`). Open tasks sort by order key, done tasks by `completedAt` newest first then number highest first. `totalMatched` counts before the limit. |
@@ -151,6 +152,8 @@ Every write sets `updatedAt` to `clock.now()`; `clock.now()` is read once per us
 - `RuleViolation` (`issue: RuleIssue`, `index: number | null`: the position in the caller's original batch, before duplicates collapse) and `TaskNotFoundError` (`number`). Their messages name the issue or the short id only.
 - Validation happens before the first write; a use case that throws has written nothing.
 - A store that throws propagates unchanged; the caller's transaction rolls back.
+- Enum values (`TaskPlacement`, `TaskState`, `DueWindow`) arrive typed: the caller validates untrusted input against its schema before calling, and the core does not re-check them.
+- Titles, notes and names reject control characters, so text an agent stores cannot carry terminal escape sequences to the owner's terminal, logs, widgets or another agent's context.
 
 ## Open questions → answers
 
