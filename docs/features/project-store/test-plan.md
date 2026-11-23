@@ -108,7 +108,15 @@ All in `apps/api/test/edge-cases.test.ts`, commit c389491 (a pin: green when it 
 - [x] An owner actor carrying an extra `ownerId` field at runtime → the stored creator equals `{ kind: Owner }` and nothing of the extra field persists — evidence: c389491, "extra fields on an owner actor are dropped from the stored creator"
 - [x] A row corrupted so it does not map, then `addTasks` → throws `tasks.created_by_client of task 1 is not valid` and the `tasks` rows, `task_counter` and `task_history` rows equal what they were before (the original test did not assert the counts) — evidence: c389491, "a row that does not map leaves the tasks, the counter and the history as they were after a failed add"
 
-Observed, not a defect: `SessionOwner` is a brand known to the compiler only; at runtime `openOwnedProject` accepts any object with an `ownerId`, so isolation from a forged owner rests on the type check and on the rule that only `resolveSessionOwner` builds the value. A `null` actor throws a `TypeError` ("Cannot read properties of null") rather than the "the actor kind is not known" message; both are thrown.
+Security hardening (red 5602987, green 5dab82c, pin 7ac7b89):
+
+- [ ] `openOwnedProject` with a forged `{ ownerId } as SessionOwner` for the owner's own project → `null`, and the counting namespace records 0 calls; a plain object under `@ts-expect-error` → `null`
+- [ ] `openKeyProject` and `resolveSessionOwner` with `'   '` while a key row and a live session row hold its digest → `null` for both, 0 calls
+- [ ] `openKeyProject` and `resolveSessionOwner` with `undefined` as the secret while rows hold the digest of `''` → `null` for both
+- [ ] Inserting the raw digest `'secret'` into `project_keys` and into `sessions` → each insert rejects (`CHECK (length(digest) = 64)`)
+- [ ] `api-source.test.ts` matches bare identifiers: `console['log']('x')` in `src/index.ts` turns it red naming the file, and a destructured `PROJECT_STORE` in `src/project-store.ts` turns it red naming the file
+
+Observed, not a defect (closed by the first box above): `SessionOwner` is a brand known to the compiler only; at runtime `openOwnedProject` accepts any object with an `ownerId`, so isolation from a forged owner rests on the type check and on the rule that only `resolveSessionOwner` builds the value. A `null` actor throws a `TypeError` ("Cannot read properties of null") rather than the "the actor kind is not known" message; both are thrown.
 
 ## Adversarial review
 

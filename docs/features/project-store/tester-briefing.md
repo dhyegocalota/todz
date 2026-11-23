@@ -59,6 +59,29 @@ Other mutation checks by the developer, restored: replacing `transactionSync(use
 6. Hypothesis: the revoked key, expired session and `''` secret resolve to nothing. Break it by: a session expiring at `now`, `now - 1` and `now + 1`; a revoked key whose `revoked_at` is `0`.
 7. Hypothesis: the schema applies once and survives eviction. Break it by: evicting repeatedly between writes, then reading `schema_version` and `task_counter`.
 
+## Security hardening
+
+From the security reviewer's MINOR findings. Red `5602987`, green `5dab82c`; the source-rule change is a pin, `7ac7b89`; install scripts `d5fc111`.
+
+| Change | Red text printed by `5602987` | Green because |
+|--------|-------------------------------|---------------|
+| `SessionOwner` checked at runtime (a module-level `WeakSet` filled by `resolveSessionOwner`) | `AssertionError: expected [JsRpcPromise [object JsRpcProperty]] to be null` (4 tests: forged owner, plain object, whitespace secret, non-string secret) | `openOwnedProject` returns null before any query when the owner is not in the set |
+| `isBlankSecret` replaces the empty-string equality in both secret entry points | same four tests as above | blank, whitespace-only and non-string secrets return null before any lookup |
+| `CHECK (length(digest) = 64)` on `project_keys.digest` and `sessions.digest` in `0001_directory.sql` | `AssertionError: promise resolved "{ success: true, meta: ... }" instead of rejecting` (2 tests) | the insert of a raw `'secret'` digest is refused |
+
+Two other effects: the red run of an unconverted JsRpcPromise printed noise (`The RPC receiver does not implement "inspect"`) and was slow, so read the first assertion line only. The tester's `edge-cases.test.ts` whitespace case still passes unchanged.
+
+Mutation checks of `api-source.test.ts` on bare identifiers, restored and never committed:
+
+| Mutation | Red output |
+|----------|-----------|
+| `console['log']('x');` added to `apps/api/src/index.ts` | `no file names console...` fails, received `["apps/api/src/index.ts"]` |
+| a destructured `PROJECT_STORE` (`const { PROJECT_STORE } = { PROJECT_STORE: 1 };`, since a shell hook blocks the text of a real destructuring of the environment) added to `apps/api/src/project-store.ts` | `only the routing module and the env type name the project store namespace` fails, received `["apps/api/src/project-store.ts"]` |
+
+Root `package.json` gains `pnpm.onlyBuiltDependencies` with `esbuild` and `workerd`, the only two packages in the lock with an install script of their own (the others marked `requiresBuild` are platform binaries); `sharp` has none, so it is left out. `pnpm install` on pnpm 8.15.9 accepted it, the lock only dropped 117 `requiresBuild` lines and recorded the list, and the `@todz/api` suite stays green.
+
+Last runs: `@todz/api` 105 tests green (includes the tester's edge cases), `repository-shape` 144 green, both typechecks green.
+
 ## Known gaps
 
 - `test-plan.md` says the corrupted-state rollback test corrupts `state` to `'archived'` and calls `listTasks` (done state). That cannot throw: the done list selects `WHERE state = 'done'` and never reads the archived row. I corrupted `created_by_kind`/`created_by_client` instead (the open list and `addTasks` then throw) and added a second test that proves rollback with a `BEFORE INSERT` trigger on `task_history`, which fails after the task row and the counter were written.
