@@ -1,0 +1,226 @@
+import { execFileSync } from 'node:child_process';
+import { existsSync, readdirSync } from 'node:fs';
+import { posix } from 'node:path';
+import { describe, expect, test } from 'vitest';
+import { capturedNames, readmes, readRepositoryFile, repositoryPath, workspacePackages } from './repository-files';
+
+const README_FILE = 'README.md';
+const HARNESS_FILE = '.claude/HARNESS.md';
+const ROOT_ENTRIES = [
+  '.agents',
+  '.claude',
+  '.codex',
+  '.env.example',
+  '.github',
+  '.gitignore',
+  '.gitleaks.toml',
+  '.mcp.json',
+  '.npmrc',
+  '.nvmrc',
+  '.prettierignore',
+  '.prettierrc',
+  'AGENTS.md',
+  'CLAUDE.md',
+  'GEMINI.md',
+  'LICENSE',
+  'README.md',
+  'docs',
+  'libs',
+  'package.json',
+  'pnpm-lock.yaml',
+  'pnpm-workspace.yaml',
+  'scripts',
+  'tools',
+  'tsconfig.base.json',
+];
+const FEATURE_PACKAGES = ['libs/types'];
+const NESTED_PATH_PATTERN = /\/.*$/;
+const TEMPORARY_SEGMENT_PATTERN =
+  /(^|\/)(spikes?|poc|prototypes?|experiments?|scratch|scratchpad|playground|sandbox|tmp|temp|wip|backups?)(\/|$)/i;
+const LINK_PATTERN = /\]\(\s*([^)\s]+)(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*\)/g;
+const REFERENCE_LINK_PATTERN = /^\s{0,3}\[(?!\^)[^\]]+\]:\s*(\S+)/gm;
+const ANCHOR_HREF_PATTERN = /<a\s[^>]*href\s*=\s*["']?([^"'\s>]+)/gi;
+const AUTOLINK_PATTERN = /<([^<>\s]+)>/g;
+const HTML_PRE_PATTERN = /<pre[\s>]/gi;
+const HTML_CODE_PATTERN = /<code[\s>]/gi;
+const INDENTED_BLOCK_PATTERN = /^(?: {4}| {0,3}\t)[^\S\n]*\S.*$/gm;
+const HEADING_PATTERN = /^#{1,6} (.+)$/gm;
+const FENCED_BLOCK_PATTERN = /(```|~~~)[\s\S]*?(?:\1|$)/g;
+const INLINE_CODE_PATTERN = /`(?:[^`\n]|\n(?!\s*\n))*`/g;
+const SLUG_DISALLOWED_PATTERN = /[^a-z0-9 -]/g;
+const SPACE_PATTERN = / /g;
+const EXTERNAL_LINK_PATTERN = /^(https?:|mailto:|\/\/|#)/;
+const FOLDER_SUFFIX = '/';
+const ANCHOR_SEPARATOR = '#';
+const MAILBOX_MARKER = '@';
+const MARKDOWN_EXTENSION = '.md';
+const TOP_LEVEL_FOLDERS = ['libs', 'tools', 'docs', 'scripts'];
+const DEPENDENCY_FOLDER = 'node_modules';
+const LANGUAGE_COUNT_PATTERN = /\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve) languages\b/gi;
+
+enum PurposeViolation {
+  CodeSpan = 'code span',
+  FencedBlock = 'fenced block',
+  IndentedBlock = 'indented block',
+  PreformattedBlock = 'preformatted block',
+}
+
+function pathOf(target: string): string {
+  return target.split(ANCHOR_SEPARATOR, 1).join('');
+}
+
+function proseOf(text: string): string {
+  return text.replace(FENCED_BLOCK_PATTERN, '').replace(INLINE_CODE_PATTERN, '');
+}
+
+function slugOf(heading: string): string {
+  return heading.toLowerCase().replace(SLUG_DISALLOWED_PATTERN, '').replace(SPACE_PATTERN, '-');
+}
+
+function headingSlugs(path: string): string[] {
+  return capturedNames({ text: readRepositoryFile(path).replace(FENCED_BLOCK_PATTERN, ''), pattern: HEADING_PATTERN }).map(slugOf);
+}
+
+function isBroken({ document, target }: { document: string; target: string }): boolean {
+  const path = pathOf(target);
+  const anchor = target.slice(path.length + ANCHOR_SEPARATOR.length);
+  const targetPath = posix.join(posix.dirname(document), path);
+  if (!existsSync(repositoryPath(targetPath))) return true;
+  if (!anchor) return false;
+  if (!targetPath.endsWith(MARKDOWN_EXTENSION)) return false;
+  return !headingSlugs(targetPath).includes(anchor);
+}
+
+function brokenTargets({ document, text }: { document: string; text: string }): string[] {
+  return capturedNames({ text: proseOf(text), pattern: LINK_PATTERN })
+    .filter((target) => !EXTERNAL_LINK_PATTERN.test(target))
+    .filter((target) => isBroken({ document, target }));
+}
+
+function isFileLink(target: string): boolean {
+  const path = pathOf(target);
+  if (path.endsWith(FOLDER_SUFFIX)) return false;
+  if (path.includes(MAILBOX_MARKER)) return false;
+  return posix.extname(path) !== '';
+}
+
+function purposeViolations(text: string): string[] {
+  const withoutFences = text.replace(FENCED_BLOCK_PATTERN, '');
+  const prose = proseOf(text);
+  const fencedBlocks = [...text.matchAll(FENCED_BLOCK_PATTERN)].map(() => PurposeViolation.FencedBlock);
+  const codeSpans = [...withoutFences.matchAll(INLINE_CODE_PATTERN)].map(() => PurposeViolation.CodeSpan);
+  const codeElements = [...withoutFences.matchAll(HTML_CODE_PATTERN)].map(() => PurposeViolation.CodeSpan);
+  const preformattedElements = [...withoutFences.matchAll(HTML_PRE_PATTERN)].map(() => PurposeViolation.PreformattedBlock);
+  const indentedBlocks = [...withoutFences.matchAll(INDENTED_BLOCK_PATTERN)].map(() => PurposeViolation.IndentedBlock);
+  const fileLinks = [LINK_PATTERN, REFERENCE_LINK_PATTERN, ANCHOR_HREF_PATTERN, AUTOLINK_PATTERN]
+    .flatMap((pattern) => capturedNames({ text: prose, pattern }))
+    .filter((target) => !EXTERNAL_LINK_PATTERN.test(target))
+    .filter(isFileLink);
+  return [...fencedBlocks, ...preformattedElements, ...codeSpans, ...codeElements, ...indentedBlocks, ...fileLinks];
+}
+
+const LINKED_DOCUMENTS = readmes();
+
+function repositoryFiles(): string[] {
+  return execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], {
+    cwd: repositoryPath('.'),
+    encoding: 'utf8',
+  })
+    .split('\n')
+    .filter((path) => path.length > 0)
+    .filter((path) => existsSync(repositoryPath(path)));
+}
+
+describe('delivery documents', () => {
+  test.each(LINKED_DOCUMENTS)('every relative link in %s points at a file and a heading in the repository', (document) => {
+    expect(brokenTargets({ document, text: readRepositoryFile(document) })).toEqual([]);
+  });
+
+  test('a link to a heading its target does not have is reported', () => {
+    const text = `[missing](${HARNESS_FILE}#no-such-heading) [present](${HARNESS_FILE}#4-build)`;
+    expect(brokenTargets({ document: README_FILE, text })).toEqual([`${HARNESS_FILE}#no-such-heading`]);
+  });
+
+  test('a link written as inline code or inside a fenced block is not checked', () => {
+    const text = '`[NNNN](NNNN-slug.md)`\n```\n[missing](no-such-file.md)\n```\n[broken](no-such-file.md)';
+    expect(brokenTargets({ document: README_FILE, text })).toEqual(['no-such-file.md']);
+  });
+
+  test('a code span, a fenced block and a link to a file are reported; a link to a folder and plain prose are not', () => {
+    const text = 'Run `pnpm test`.\n```\ncode\n```\n[page](../docs/guides/setup.mdx#install) [the core](../core) plain prose';
+    expect(purposeViolations(text)).toEqual([PurposeViolation.FencedBlock, PurposeViolation.CodeSpan, '../docs/guides/setup.mdx#install']);
+    expect(purposeViolations('[the core](../core) [site](https://example.com/a.html) plain prose')).toEqual([]);
+  });
+
+  test.each([
+    ['a reference-style link to a file', '[page]: ../docs/guides/setup.mdx', ['../docs/guides/setup.mdx']],
+    ['a link to a file with a title', '[page](../docs/guides/setup.mdx "Setup")', ['../docs/guides/setup.mdx']],
+    ['an inline code element', 'Run <code>pnpm test</code>.', [PurposeViolation.CodeSpan]],
+    ['an anchor to a file', '<a href="../docs/guides/setup.mdx">page</a>', ['../docs/guides/setup.mdx']],
+    ['an inline code element with an attribute', 'Run <code class="x">pnpm test</code>.', [PurposeViolation.CodeSpan]],
+    ['a preformatted element', '<pre>pnpm test</pre>', [PurposeViolation.PreformattedBlock]],
+    ['an anchor to a file with single quotes', "<a href='../docs/guides/setup.mdx'>page</a>", ['../docs/guides/setup.mdx']],
+    ['a bracketed path', '<../docs/guides/setup.mdx>', ['../docs/guides/setup.mdx']],
+    ['an anchor with spaces around the equals sign', '<a href = "../docs/guides/setup.mdx">page</a>', ['../docs/guides/setup.mdx']],
+    ['an anchor with an unquoted target', '<a href=../docs/guides/setup.mdx>page</a>', ['../docs/guides/setup.mdx']],
+    ['a link with a single-quoted title', "[page](../docs/guides/setup.mdx 'Setup')", ['../docs/guides/setup.mdx']],
+    ['a link with a parenthesised title', '[page](../docs/guides/setup.mdx (Setup))', ['../docs/guides/setup.mdx']],
+    ['a link with spaces inside the parentheses', '[page]( ../docs/guides/setup.mdx )', ['../docs/guides/setup.mdx']],
+    ['a tilde fence', '~~~\ncode\n~~~', [PurposeViolation.FencedBlock]],
+    ['an unclosed tilde fence', '~~~\ncode', [PurposeViolation.FencedBlock]],
+    ['an indented code block', 'Prose.\n\n    pnpm test\n', [PurposeViolation.IndentedBlock]],
+    ['an indented code block of five spaces', 'Prose.\n\n     pnpm test\n', [PurposeViolation.IndentedBlock]],
+    ['a code span across a line break', 'Run `pnpm\ntest` now.', [PurposeViolation.CodeSpan]],
+  ])('%s is reported', (_name, text, expected) => {
+    expect(purposeViolations(text)).toEqual(expected);
+  });
+
+  test.each([
+    ['a folder whose name contains a dot', '[the core](../core.v2/)'],
+    ['a protocol-relative URL', '[site](//example.com/page.html)'],
+    ['a mailbox in angle brackets', '<owner@example.com>'],
+    ['a footnote definition', '[^1]: See.'],
+  ])('%s is not reported', (_name, text) => {
+    expect(purposeViolations(text)).toEqual([]);
+  });
+
+  test('a link with a single-quoted title is checked like any other link', () => {
+    expect(brokenTargets({ document: README_FILE, text: "[missing](no-such-file.md 'Title')" })).toEqual(['no-such-file.md']);
+  });
+
+  test.each(workspacePackages())('the README of %s states purpose only', (path) => {
+    expect(purposeViolations(readRepositoryFile(posix.join(path, README_FILE)))).toEqual([]);
+  });
+
+  test.each([README_FILE, ...workspacePackages().map((path) => posix.join(path, README_FILE))])(
+    '%s names no count of languages, which drifts when a language joins',
+    (path) => {
+      expect(readRepositoryFile(path).match(LANGUAGE_COUNT_PATTERN)).toBeNull();
+    },
+  );
+
+  test.each(TOP_LEVEL_FOLDERS)('%s has its own README that links every folder inside it', (folder) => {
+    const readme = readRepositoryFile(posix.join(folder, README_FILE));
+    const subfolders = readdirSync(repositoryPath(folder), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && entry.name !== DEPENDENCY_FOLDER)
+      .map((entry) => entry.name);
+    expect(subfolders.filter((name) => !readme.includes(`](${name}${FOLDER_SUFFIX})`))).toEqual([]);
+  });
+
+  test('every workspace package has a README', () => {
+    expect(workspacePackages().filter((path) => !existsSync(repositoryPath(posix.join(path, README_FILE))))).toEqual([]);
+  });
+
+  test.each(FEATURE_PACKAGES)('the %s package has a README', (path) => {
+    expect(existsSync(repositoryPath(posix.join(path, README_FILE)))).toBe(true);
+  });
+
+  test('the root holds only the entries the layout names', () => {
+    const rootEntries = new Set(repositoryFiles().map((path) => path.replace(NESTED_PATH_PATTERN, '')));
+    expect([...rootEntries].filter((entry) => !ROOT_ENTRIES.includes(entry))).toEqual([]);
+  });
+
+  test('no path carries a folder an agent leaves behind for temporary work', () => {
+    expect(repositoryFiles().filter((path) => TEMPORARY_SEGMENT_PATTERN.test(path))).toEqual([]);
+  });
+});

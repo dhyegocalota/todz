@@ -1,0 +1,317 @@
+#!/usr/bin/env bash
+set -u
+here="$(cd "$(dirname "$0")" && pwd)"
+failures=0
+export HOME=$(mktemp -d)
+
+expect_exit() {
+  local name=$1 expected=$2 script=$3 input=$4
+  printf '%s' "$input" | "$here/$script" >/dev/null 2>&1
+  local actual=$?
+  [[ "$actual" == "$expected" ]] && return
+  echo "FAIL $name: expected exit $expected, got $actual"
+  failures=$((failures + 1))
+}
+
+expect_stderr() {
+  local name=$1 pattern=$2 script=$3 input=$4
+  local output
+  output=$(printf '%s' "$input" | "$here/$script" 2>&1 >/dev/null)
+  [[ "$output" =~ $pattern ]] && return
+  echo "FAIL $name: stderr did not match /$pattern/: $output"
+  failures=$((failures + 1))
+}
+
+claude_edit() { printf '{"tool_name":"Edit","tool_input":{"file_path":"%s"}}' "$1"; }
+codex_patch() { printf '{"tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\\n*** %s File: %s\\n@@\\n+x\\n*** End Patch"}}' "$1" "$2"; }
+codex_bash_call() { printf '{"tool_name":"Bash","tool_input":{"command":"%s"},"hook_event_name":"PreToolUse"}' "$1"; }
+bash_call() { printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$1"; }
+
+expect_exit "claude: .env edit is blocked" 2 guard-secrets.sh "$(claude_edit /repo/.env)"
+expect_exit "claude: .env.local edit is blocked" 2 guard-secrets.sh "$(claude_edit /repo/apps/server/.env.local)"
+expect_exit "claude: .env.example edit is allowed" 0 guard-secrets.sh "$(claude_edit /repo/.env.example)"
+expect_exit "claude: uppercase environment file edit is blocked" 2 guard-secrets.sh "$(claude_edit /repo/.ENV)"
+expect_exit "claude: mixed case environment file edit is blocked" 2 guard-secrets.sh "$(claude_edit /repo/.Env.local)"
+expect_exit "claude: uppercase api environment file write is blocked" 2 guard-secrets.sh "$(claude_edit /repo/apps/api/.ENV.local)"
+expect_exit "claude: uppercase example edit is allowed" 0 guard-secrets.sh "$(claude_edit /repo/.ENV.EXAMPLE)"
+expect_exit "claude: mixed case example edit is allowed" 0 guard-secrets.sh "$(claude_edit /repo/.Env.Example)"
+expect_exit "claude: ordinary file is allowed" 0 guard-secrets.sh "$(claude_edit /repo/apps/web/src/main.tsx)"
+expect_exit "codex: .env update is blocked" 2 guard-secrets.sh "$(codex_patch Update .env)"
+expect_exit "codex: .env add is blocked" 2 guard-secrets.sh "$(codex_patch Add apps/server/.env.production)"
+expect_exit "codex: .env.example update is allowed" 0 guard-secrets.sh "$(codex_patch Update .env.example)"
+expect_exit "codex: ordinary patch is allowed" 0 guard-secrets.sh "$(codex_patch Update apps/web/src/main.tsx)"
+notebook_edit() { printf '{"tool_name":"NotebookEdit","tool_input":{"notebook_path":"%s"}}' "$1"; }
+expect_exit "claude: a notebook edit of .env is blocked" 2 guard-secrets.sh "$(notebook_edit /repo/.env)"
+expect_exit "claude: an ordinary notebook edit is allowed" 0 guard-secrets.sh "$(notebook_edit /repo/analysis.ipynb)"
+blocked_env_commands=('echo X=1 > .env' 'echo X=1 >> apps/server/.env.local' 'echo X=1 >.env.production' 'printf x | tee .env' 'tee -a apps/web/.env.staging < input' 'cp .env.example .env' 'mv draft .env.test' 'sed -i s/a/b/ .env' 'sed -i.bak s/a/b/ apps/server/.env.local' 'echo X=1 > \".env\"' 'printf x > \"$(true ).env\"' 'tee \"apps/api/$(: ).env.local\"' 'cp draft .e*v' 'cp draft apps/api/.e?v' 'echo X=1 > ${HOME}.env' 'echo X=1 > `pwd`/.env' 'install -m 600 draft .env' 'dd if=draft of=.env' 'ln -sf draft .env' 'rsync draft .env' 'perl -pi -e s/a/b/ .env' 'python3 -c \"open('.env', 'w').write('x')\"' 'bash -c \"cp draft .env\"' 'echo X=1 > .*' 'git log --output=.env' 'git diff --output=apps/api/.env.local' 'git show --output .env HEAD' 'git log --out=.env' 'tar xf archive.tar .env' 'tar -xzf archive.tgz -C apps/api .env.local' 'unzip archive.zip .env' 'unzip -o archive.zip -d apps/api .env' 'cat > .env <<EOF\nX=1\nEOF' 'echo X=1 &> .env' 'echo X=1 >| .env' 'touch .env' 'touch apps/api/.env.local' 'truncate -s 0 .env' 'curl -o .env https://example.com/x' 'wget -O .env https://example.com/x' 'patch .env change.patch' 'git checkout .env' 'git checkout HEAD -- apps/api/.env.production' 'git restore .env' 'node -e \"require(1)\" .env' 'ruby -e \"x\" .env' 'python3 -c \"x\" .env' 'sed -n \"w .env\" input' 'sed s/a/b/w .env input' 'cp draft \".e\"nv' 'cp draft .e\"n\"v' 'cp draft ${HOME}.env' 'cp draft .e[n]v' 'cp draft .env*' 'mv draft .env.production' 'tee .env' 'tee -a .env.local < x' 'pax -rw draft .env' 'ditto draft .env' 'gtar -xf a.tar -C . .env' 'bsdtar -xf a.tar .env' 'cpio -pdm .env < list' 'sort -o .env draft' 'sort draft -o .env' 'sort --output=.env draft' 'uniq draft .env' 'xxd -r hexdump .env' 'base64 -o .env draft' 'base64 -D -i draft -o .env' 'script -q .env' 'zip .env draft' 'iconv -f utf-8 -t utf-8 -o .env draft' 'openssl enc -base64 -d -in draft -out .env' 'sponge .env' 'ex -es .env' 'vim -es .env' 'vi -es apps/api/.env.local' 'split -l 1 draft .env' 'plutil -convert xml1 draft -o .env' 'git commit -m \"the .env file holds secrets\"' 'echo \"see .env\" > notes.md; touch x' 'echo see .env > notes.md && rm x' 'echo see .env | tee notes.md' 'echo see .env > notes.md > other.md' 'echo see .env >> notes.md >> other.md' 'echo \"see .env $HOME\" > notes.md' 'echo \"see .env `id`\" > notes.md' 'echo \"$(cat .env)\" > notes.md' 'echo see .env > $HOME/notes.md' 'echo see .env 2>&1' 'echo see .env > notes.md &' 'echo see .env >> .env.local' 'printf see .env > .envrc' 'echo see .env > \".env\"' 'echo see .env > .e*' 'echo see .env > apps/api/.env.production' 'echo \"a > b .env\" > notes.md' 'cat .env > notes.md' 'cat .env | sh' 'cat .env; touch x' 'cat .env && touch x' 'cat .env || touch x' 'cat $(echo .env)' 'cat `echo .env`' 'cat <.env' 'cat < .env' 'cat .env &' 'cat (.env)' 'cat {.env,x}' 'cat .env\ntouch x' 'env cat .env' 'xargs cat < .env' 'sh -c \"cat .env\"' 'FOO=bar cat .env' 'rg --pre sh x .env' 'rg --pre=sh x .env' 'rg -O sh x .env' 'git log --output=notes .env' 'git diff --ext-diff --output=notes -- .env' 'git grep -O sh x .env' 'sed -n 1p -i .env' 'sed -n \"w notes\" .env' 'sed -n \"e id\" .env' 'sed -n 1p .env > x' 'sed -i s/a/b/ notes .env' 'tail -f .env | sh' 'head -c 5 .env > notes' 'wc -l .env > notes' 'grep x .env >> notes' 'ls .env > notes' 'test -f .env && touch x' 'git status .env; touch x' 'git status .env | sh' 'cp .env notes' 'mv .env notes' 'rm .env' 'rm -f apps/api/.env.local' 'chmod 600 .env' 'ln -s .env link' 'cat .env.local; x' 'less .env' 'open .env' 'source .env' '. .env' 'export $(cat .env)' 'awk 1 .env' 'jq . .env' 'node --env-file=.env x.js' 'bash .env' 'python3 .env' 'echo X=1 > .ENV' 'echo X=1 > .Env.local' 'cp draft apps/api/.ENV.local' 'cp draft .{e,}nv' 'cp draft .e{n,n}v' 'cp draft `printf \\56env`' 'cp draft $(printf \\56env)' 'cp draft \"$(printf \\56env)\"' 'cp draft apps/api/.e?v.l*' 'cp draft .e[a-z]v.*' 'echo \"$(date)\" >> PROGRESS.md' 'echo X=1 > \"$(printf \\56env)\"' 'printf \"$(date)\" | sh' 'tee $(printf \\56env)' 'touch .{e,}nv' 'sed -i s/a/b/ .{e,}nv' 'git checkout $(printf \\56env)')
+blocked_env_commands+=("cp draft \$'\\\\x2eenv'")
+for form in "${blocked_env_commands[@]}"; do
+  expect_exit "claude: $form is blocked" 2 guard-secrets.sh "$(bash_call "$form")"
+  expect_exit "codex: $form is blocked" 2 guard-secrets.sh "$(codex_bash_call "$form")"
+done
+allowed_env_commands=('echo X=1 > .env.example' 'cp .env.example /tmp/copy' 'cat .env.example' 'sed -i s/a/b/ .env.example' 'echo x > notes.txt' 'git commit -m \"document the variable\"' 'touch notes.md' 'cp a b' 'git checkout -b feat/x' 'install -m 600 draft .env.example' 'dd if=draft of=notes.txt' 'ln -sf draft link' 'rsync draft backup' 'perl -pi -e s/a/b/ notes.md' 'sort -o notes draft' 'echo see .env and .env.local' 'echo \"the .env file\"' 'printf \"see .env\\n\"' 'echo \"the .env file holds secrets\" >> PROGRESS.md' "echo 'see .env and .env.local' > notes.md" 'printf \"see .env\" > notes.txt' 'echo see .env>notes.md' 'cat .env' 'cat apps/api/.env.local' 'cat -n .envrc' 'head -n 5 .env' 'tail -n 2 apps/api/.env.production' 'wc -l .env' 'grep -n API .env' 'grep -rn .env docs' 'rg X .env' 'rg -n X apps/api/.env.local' 'sed -n 1,5p .env' 'sed -n \"2p\" .env' 'git log --grep .env' 'git log -- .env' 'git diff -- .env' 'git show HEAD:apps/api/.env.local' 'git status .env' 'ls -la .env' 'test -f .env' '[ -f .env ]' 'cat .ENV' 'cat .{e,}nv' 'cat $(printf \\56env)' 'cd \"$(git rev-parse --show-toplevel)\"' 'git log -1 --format=%H $(git rev-parse HEAD)' 'git commit -F msg.txt' 'echo X=1 > .ENV.example' 'cp .Env.Example copy')
+for form in "${allowed_env_commands[@]}"; do
+  expect_exit "claude: $form is allowed" 0 guard-secrets.sh "$(bash_call "$form")"
+  expect_exit "codex: $form is allowed" 0 guard-secrets.sh "$(codex_bash_call "$form")"
+done
+expansion_text() { local text=${1//@HEX@/'$@Q@\\x2eenv@Q@'}; text=${text//@Q@/\'}; printf '%s' "$text"; }
+expansion_blocked_forms=('cp draft .e${X}nv' 'cp draft .${X:-e}nv' 'cp draft ${X:-.}env' 'a=.en; cp draft ${a}v' 'n=ENVF; cp x $n' 'printf -v n @Q@\\56env@Q@; cp draft \"$n\"' 'tee {,.e}nv' 'tee {.e,}nv' '/bin/cp draft @HEX@' 'c@Q@@Q@p draft @HEX@' 'c\\p draft \"$(printf @Q@\\56env@Q@)\"' 't\"\"ee @HEX@' 'echo X=1 </dev/null>@HEX@' 'echo X=1 <README.md>@HEX@' 'echo x <a@b> .env' 'printf X=1 <x>\"$(printf @Q@\\56env@Q@)\"' 'scp draft @HEX@' 'git archive -o @HEX@ HEAD' 'git bundle create @HEX@ HEAD' 'mkfifo @HEX@' 'ed -s @HEX@ <<< x' 'python3 -c \"open(@Q@$(printf \\56env)@Q@,@Q@w@Q@)\"' 'node -e \"require(@Q@fs@Q@).writeFileSync(@Q@$(printf \\56env)@Q@,@Q@X=1@Q@)\"' 'perl -e \"open F,@Q@>@Q@,q{$(printf \\56env)}\"' 'ruby -e \"File.write(@Q@$(printf \\56env)@Q@,@Q@X=1@Q@)\"' 'find . -name draft -exec cp {} @HEX@ \\;' 'gzip -c x > @HEX@' 'printf @Q@\\56env@Q@ | xargs touch' 'printf @Q@\\56env@Q@ | xargs -I@ cp draft @' 'cat x; cp draft @HEX@' 'cat x && cp draft @HEX@' 'cat x\ncp draft @HEX@' 'cat x | tee @HEX@' 'cat $(printf \\56env) > out' 'cat $(printf \\56env) | sh' 'cat \"$(c@Q@@Q@p draft @HEX@)\"' 'cat \"$(/bin/cp draft @HEX@)\"' 'cat \"$(git archive -o @HEX@ HEAD)\"' 'cat \"$(printf x > @HEX@)\"' 'cat \"$(cat $(cp draft @HEX@))\"' 'cat -O sh @HEX@' 'git log --output=@HEX@' 'cd @HEX@; cp draft @HEX@' 'cd \"$(cp draft @HEX@)\"' 'cd a b$X' 'git commit -m \"x $(date)\"' 'git commit -F $(cp draft @HEX@)' 'git commit -F @HEX@' 'git commit -m \"$(cat <<@Q@EOF@Q@\nmsg\nEOF\n)\" && cp draft @HEX@' 'git commit -m \"$(cat <<@Q@EOF@Q@\nmsg\nEOF\ncp draft @HEX@\nEOF\n)\"' 'git commit -m \"$(cat <<EOF\nmsg $(cp draft @HEX@)\nEOF\n)\"' 'git commit -F - <<@Q@EOF@Q@\nmsg\nEOF\ncp draft @HEX@' 'git commit -m \"$(cat <<@Q@EOF@Q@\nmsg\nEOF\n)\"; cp draft @HEX@')
+for form in "${expansion_blocked_forms[@]}"; do
+  expect_exit "claude: $form is blocked" 2 guard-secrets.sh "$(bash_call "$(expansion_text "$form")")"
+  expect_exit "codex: $form is blocked" 2 guard-secrets.sh "$(codex_bash_call "$(expansion_text "$form")")"
+done
+expansion_allowed_forms=('cd \"$(git rev-parse --show-toplevel)\"' 'cd $HOME' 'git log -1 --format=%H \"$(git rev-parse HEAD)\"' 'git rev-parse --show-toplevel $X' 'cat .{e,}nv' 'cat \"$file\"' 'grep -n x \"${file}\"' 'sed -n 1,5p \"$file\"' 'ls $HOME' 'git status --short \"$PWD\"' 'test -f \"$(pwd)/x\"' 'git commit -F \"$message_file\"' 'git commit -a -F ${message_file}' 'git commit -m \"$(cat <<@Q@EOF@Q@\nfeat: x\n\nCo-Authored-By: A <noreply@example.com>\nEOF\n)\"' 'git commit -a -m \"$(cat <<@Q@EOF@Q@\nfeat: $(cp draft @HEX@) `touch x`\nCo-Authored-By: A <noreply@example.com>\nEOF\n)\"' 'git commit -F - <<@Q@EOF@Q@\nfeat: x\n\nCo-Authored-By: A <noreply@example.com>\nEOF' 'python3 -c \"open(chr(46)+@Q@env@Q@,@Q@w@Q@)\"')
+for form in "${expansion_allowed_forms[@]}"; do
+  expect_exit "claude: $form is allowed" 0 guard-secrets.sh "$(bash_call "$(expansion_text "$form")")"
+  expect_exit "codex: $form is allowed" 0 guard-secrets.sh "$(codex_bash_call "$(expansion_text "$form")")"
+done
+settings_file="$here/../../.claude/settings.json"
+codex_hooks_file="$here/../../.codex/hooks.json"
+expect_jq() {
+  local name=$1 file=$2 filter=$3
+  [[ "$(jq -r "$filter" "$file")" == true ]] && return
+  echo "FAIL $name"
+  failures=$((failures + 1))
+}
+expect_jq "settings: guard-secrets watches MultiEdit and NotebookEdit" "$settings_file" '[.hooks.PreToolUse[] | select(any(.hooks[]; .command | contains("guard-secrets.sh"))) | .matcher] | any(test("MultiEdit") and test("NotebookEdit"))'
+expect_jq "settings: guard-secrets watches Bash" "$settings_file" '[.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[].command] | any(contains("guard-secrets.sh"))'
+expect_jq "codex: guard-secrets watches Bash" "$codex_hooks_file" '[.hooks.PreToolUse[] | select(.matcher == "^Bash$") | .hooks[].command] | any(contains("guard-secrets.sh"))'
+for rule in 'Edit(./**/.env)' 'Edit(./**/.env.local)' 'Write(./**/.env)' 'Write(./**/.env.production)' 'Read(./**/.env.*.local)' 'Read(~/.ssh/**)'; do
+  expect_jq "settings: deny lists $rule" "$settings_file" ".permissions.deny | index(\"$rule\") != null"
+done
+expect_exit "empty input is allowed" 0 guard-secrets.sh '{}'
+
+expect_exit "git add -A is blocked" 2 guard-git-add-all.sh "$(bash_call 'git add -A')"
+expect_exit "git add . is blocked" 2 guard-git-add-all.sh "$(bash_call 'git add .')"
+expect_exit "git add --all is blocked" 2 guard-git-add-all.sh "$(bash_call 'git add --all && git commit')"
+expect_exit "the no-verify flag is blocked" 2 guard-git-add-all.sh "$(bash_call 'git commit --no-verify -m x')"
+blocked_add_forms=('git add :/' 'git add -- :/' 'git add :(top)' 'git add :(top).' 'git add ./' 'git add -- .' 'git add -f .' 'git add src .' 'git add *' 'git add \".\"' 'git add .;' 'git add . && git status' 'git -C . add .' 'git add -u' 'git add --update' 'git add -Av' 'git add ..')
+for form in "${blocked_add_forms[@]}"; do
+  expect_exit "claude: $form is blocked" 2 guard-git-add-all.sh "$(bash_call "$form")"
+  expect_exit "codex: $form is blocked" 2 guard-git-add-all.sh "$(codex_bash_call "$form")"
+done
+blocked_commit_forms=('git commit -n -m x' 'git commit -nm x' 'git commit -an -m x' 'git -C . commit -n')
+for form in "${blocked_commit_forms[@]}"; do
+  expect_exit "claude: $form is blocked" 2 guard-git-add-all.sh "$(bash_call "$form")"
+  expect_exit "codex: $form is blocked" 2 guard-git-add-all.sh "$(codex_bash_call "$form")"
+done
+allowed_forms=('git commit -a -m x' 'git add :/src' 'git add src/a.ts docs/x.md' 'git add .gitignore' 'git add -p src/a.ts' 'git commit -m \"fix: handle . and * and -n in names\"' 'git commit -am x' 'git commit -mn x')
+for form in "${allowed_forms[@]}"; do
+  expect_exit "claude: $form is allowed" 0 guard-git-add-all.sh "$(bash_call "$form")"
+  expect_exit "codex: $form is allowed" 0 guard-git-add-all.sh "$(codex_bash_call "$form")"
+done
+expect_exit "known limit: a shell expansion that prints a dot is not resolved" 0 guard-git-add-all.sh "$(bash_call 'git add $(echo .)')"
+expect_exit "git add by name is allowed" 0 guard-git-add-all.sh "$(bash_call 'git add README.md .agents/hooks')"
+expect_exit "git add of a dotfile is allowed" 0 guard-git-add-all.sh "$(bash_call 'git add .gitignore')"
+
+expect_exit "verify records: a command naming .git/verify is blocked" 2 guard-verify-records.sh "$(bash_call 'echo x > .git/verify/abc')"
+expect_exit "verify records: rm of .git/verify is blocked" 2 guard-verify-records.sh "$(bash_call 'rm -rf .git/verify')"
+expect_exit "verify records: cp into .git/verify is blocked" 2 guard-verify-records.sh "$(bash_call 'cp a .git/verify/b')"
+expect_exit "verify records: ls of .git/verify is allowed" 0 guard-verify-records.sh "$(bash_call 'ls .git/verify')"
+expect_exit "verify records: cat of a record is allowed" 0 guard-verify-records.sh "$(bash_call 'cat .git/verify/x')"
+expect_exit "verify records: a search for git-common-dir is allowed" 0 guard-verify-records.sh "$(bash_call 'rg -n git-common-dir scripts/verify.sh')"
+expect_exit "verify records: git-common-dir beside pnpm verify is allowed" 0 guard-verify-records.sh "$(bash_call 'git rev-parse --git-common-dir && pnpm verify --plan')"
+expect_exit "verify records: a commit message naming .git/verify is allowed" 0 guard-verify-records.sh "$(bash_call 'git commit -m \"mentions .git/verify\"')"
+expect_exit "verify records: a relative Codex patch under .git/verify is blocked" 2 guard-verify-records.sh "$(codex_patch Add .git/verify/abc)"
+expect_exit "verify records: an edit through dot-dot segments is blocked" 2 guard-verify-records.sh "$(claude_edit /repo/.git/worktrees/x/../../verify/abc)"
+expect_exit "verify records: a Claude edit under .git/verify is blocked" 2 guard-verify-records.sh "$(claude_edit /repo/.git/verify/abc)"
+expect_exit "verify records: a Codex patch under .git/verify is blocked" 2 guard-verify-records.sh "$(codex_patch Add /repo/.git/verify/abc)"
+expect_exit "verify records: pnpm verify --plan is allowed" 0 guard-verify-records.sh "$(bash_call 'pnpm verify --plan')"
+expect_exit "verify records: an ordinary edit is allowed" 0 guard-verify-records.sh "$(claude_edit /repo/scripts/verify.sh)"
+expect_stderr "verify records: the block names the script" "records of green commits are written only by scripts/verify.sh" guard-verify-records.sh "$(bash_call 'rm -rf .git/verify')"
+
+scratch=$(mktemp -d)
+printf 'const value = input ?? "fallback";\nif (a) {\n  b();\n} else {\n  c();\n}\n' > "$scratch/else.ts"
+printf 'export function clean(): number {\n  return 1;\n}\n' > "$scratch/clean.ts"
+printf 'const value = input ?? "fallback";\n' > "$scratch/notes.md"
+printf '// NB ADR 0015: the rule in one sentence.\nexport const LIMIT = 5;\n' > "$scratch/pointer.ts"
+printf '// NB ADR 0015: the rule in one sentence.\n// plain comment\nexport const LIMIT = 5;\n' > "$scratch/comment.ts"
+expect_stderr "claude: else and ?? default are warned" "else.*return early|masks a missing value" warn-conventions.sh "$(claude_edit "$scratch/else.ts")"
+expect_stderr "codex: patch headers reach the same warnings" "masks a missing value" warn-conventions.sh "$(codex_patch Update "$scratch/else.ts")"
+expect_exit "clean file passes silently" 0 warn-conventions.sh "$(claude_edit "$scratch/clean.ts")"
+[[ -z "$(printf '%s' "$(claude_edit "$scratch/clean.ts")" | "$here/warn-conventions.sh" 2>&1)" ]] || { echo "FAIL clean file produced a warning"; failures=$((failures + 1)); }
+[[ -z "$(printf '%s' "$(claude_edit "$scratch/notes.md")" | "$here/warn-conventions.sh" 2>&1)" ]] || { echo "FAIL markdown file produced a warning"; failures=$((failures + 1)); }
+expect_stderr "a plain comment next to an NB pointer is warned" "only '// NB ADR NNNN:' pointers are allowed" warn-conventions.sh "$(claude_edit "$scratch/comment.ts")"
+[[ -z "$(printf '%s' "$(claude_edit "$scratch/pointer.ts")" | "$here/warn-conventions.sh" 2>&1)" ]] || { echo "FAIL an NB ADR pointer produced a warning"; failures=$((failures + 1)); }
+rm -rf "$scratch"
+
+repository=$(mktemp -d)
+codex_stop() { printf '{"session_id":"s","turn_id":"t","transcript_path":null,"cwd":"%s","hook_event_name":"Stop","model":"m","permission_mode":"default","stop_hook_active":%s,"last_assistant_message":null}' "$repository" "$1"; }
+remind() { (cd "$repository" && printf '%s' "$(codex_stop "$1")" | "$here/remind-docs.sh" 2>&1); }
+in_repository() { git -C "$repository" -c user.name=hooks -c user.email=hooks@example.com "$@"; }
+expect_match() {
+  local name=$1 output=$2 pattern=$3
+  [[ "$output" =~ $pattern ]] && return
+  echo "FAIL $name: output did not match /$pattern/: $output"
+  failures=$((failures + 1))
+}
+expect_no_match() {
+  local name=$1 output=$2 pattern=$3
+  [[ "$output" =~ $pattern ]] || return
+  echo "FAIL $name: output matched /$pattern/: $output"
+  failures=$((failures + 1))
+}
+expect_silence() {
+  local name=$1 output=$2
+  [[ -z "$output" ]] && return
+  echo "FAIL $name: expected no output, got: $output"
+  failures=$((failures + 1))
+}
+expect_silence "outside a git repository the docs reminder stays silent" "$(remind false)"
+in_repository init -q
+mkdir -p "$repository/apps/web/src" "$repository/libs/plain" "$repository/.claude/rules"
+printf '# Root\n' > "$repository/README.md"
+printf '# Web\n' > "$repository/apps/web/README.md"
+printf -- '---\npaths:\n  - "apps/web/**"\n---\n\n# Web facts\n' > "$repository/.claude/rules/web.md"
+printf 'one\n' > "$repository/apps/web/src/main.tsx"
+in_repository add README.md apps .claude
+in_repository commit -q -m initial
+expect_silence "a clean tree raises no docs reminder" "$(remind false)"
+printf 'two\n' > "$repository/apps/web/src/main.tsx"
+expect_match "a code change names the nearest README and the rule whose globs match it" "$(remind false)" '"decision": "block".*`\.claude/rules/web\.md` `apps/web/README\.md`'
+expect_silence "the same documents are reminded once" "$(remind false)"
+printf '{}\n' > "$repository/package.json"
+expect_silence "a stop that is already continuing is never blocked" "$(remind true)"
+printf '# Web, updated\n' > "$repository/apps/web/README.md"
+reminder=$(remind false)
+expect_match "a file outside every documented folder names the root README" "$reminder" '`README\.md`'
+expect_no_match "a document already reminded since the last commit is not reminded again" "$reminder" 'rules/web'
+in_repository add package.json
+in_repository commit -qam second
+printf 'three\n' > "$repository/apps/web/src/main.tsx"
+expect_match "a commit starts the reminders over" "$(remind false)" 'apps/web/README\.md'
+in_repository commit -qam third
+mkdir -p "$repository/apps/web/src/my dir"
+printf 'x\n' > "$repository/apps/web/src/my dir/b c.ts"
+expect_match "a path with spaces names its folder's README" "$(remind false)" 'apps/web/README\.md'
+in_repository add apps
+in_repository commit -qm fourth
+in_repository mv apps/web/src/main.tsx libs/plain/main.tsx
+expect_match "a rename names the README of the folder the file left" "$(remind false)" 'apps/web/README\.md'
+rm -rf "$repository"
+
+doctor_bin=$(mktemp -d)
+doctor_home=$(mktemp -d)
+stub() { printf '#!/bin/bash\n%s\n' "$2" > "$doctor_bin/$1"; chmod +x "$doctor_bin/$1"; }
+stub_gh() { stub gh "[[ \"\$1\" == --version ]] && { echo 'gh version ${2:-2.104.0} (2026-11-12)'; exit 0; }; $1"; }
+stub_all() {
+  rm -f "$doctor_bin"/*
+  stub node 'echo v24.7.0'
+  stub pnpm 'echo 8.15.9'
+  stub jq 'exit 0'
+  stub_gh 'exit 0'
+  stub gitleaks 'exit 0'
+  stub ffmpeg 'exit 0'
+  stub brew 'exit 0'
+  stub git 'exit 0'
+  stub xcodebuild 'exit 0'
+  stub swift 'exit 0'
+  rm -rf "$doctor_home/Library" "$doctor_home/.cache"
+  mkdir -p "$doctor_home/Library/Caches/ms-playwright/chromium-1247" "$doctor_home/.cache/ms-playwright/chromium-1247"
+}
+doctor() { PLAYWRIGHT_BROWSERS_PATH= DOCTOR_UNAME="$1" DOCTOR_PATH="$doctor_bin" DOCTOR_HOME="$doctor_home" DOCTOR_SKIP="${2:-}" "$here/doctor.sh" 2>&1; }
+doctor_line() { doctor "$1" "${3:-}" | grep "^$2 "; }
+doctor_exit() { local name=$1 expected=$2 platform=$3; doctor "$platform" >/dev/null; local actual=$?; [[ "$actual" == "$expected" ]] && return; echo "FAIL $name: expected exit $expected, got $actual"; failures=$((failures + 1)); }
+
+stub_all
+report=$(doctor Darwin)
+expect_match "doctor: every tool present reports ok" "$report" 'doctor: 0 missing required, 0 missing optional'
+expect_no_match "doctor: every tool present has no missing line" "$report" '\| missing \|'
+expect_match "doctor: a line carries the full shape" "$(doctor_line Darwin jq)" '^jq \| ok \| required \| lost: [^|]+ \| fix: brew install jq$'
+doctor_exit "doctor: every tool present exits 0" 0 Darwin
+
+rm "$doctor_bin/jq"
+report=$(doctor Darwin)
+expect_match "doctor: missing jq on macOS names brew" "$(doctor_line Darwin jq)" '^jq \| missing \| required \| lost: the four hooks; the two guards block \| fix: brew install jq$'
+expect_match "doctor: one missing required is counted" "$report" 'doctor: 1 missing required, 0 missing optional'
+doctor_exit "doctor: a missing required tool exits 1" 1 Darwin
+
+stub_all; rm "$doctor_bin/jq" "$doctor_bin/brew"; stub apt-get 'exit 0'
+report=$(doctor Linux)
+expect_match "doctor: missing jq on Linux names apt-get" "$report" 'fix: sudo apt-get install -y jq'
+expect_match "doctor: chromium on Linux installs with deps" "$(doctor_line Linux chromium)" '^chromium \| ok \| required \| lost: [^|]+ \| fix: npx -y playwright install --with-deps chromium$'
+
+stub_all; rm "$doctor_bin/jq" "$doctor_bin/brew"
+report=$(doctor Linux)
+expect_match "doctor: no package manager falls back to the URL" "$report" 'fix: https://jqlang.github.io/jq/download/'
+doctor_exit "doctor: the fallback keeps the exit code" 1 Linux
+
+stub_all; rm "$doctor_bin/gh" "$doctor_bin/brew"; stub apk 'exit 0'
+expect_match "doctor: gh on Alpine is github-cli" "$(doctor_line Linux gh)" 'fix: sudo apk add github-cli$'
+
+stub_all; rm "$doctor_bin/ffmpeg" "$doctor_bin/gitleaks"
+report=$(doctor Darwin)
+expect_match "doctor: optional tools are counted apart" "$report" 'doctor: 0 missing required, 2 missing optional'
+expect_match "doctor: ffmpeg says what is lost" "$(doctor_line Darwin ffmpeg)" '^ffmpeg \| missing \| optional \| lost: the recorder.s mp4 and gif; a PR that touches UI cannot ship \| fix: brew install ffmpeg$'
+doctor_exit "doctor: missing optional tools exit 0" 0 Darwin
+
+stub_all; stub_gh 'exit 1'
+report=$(doctor Darwin)
+expect_match "doctor: gh without auth is missing with the human step" "$(doctor_line Darwin gh)" '^gh \| missing \| required \| lost: [^|]+ \| fix: gh auth login \(run it yourself; the agent cannot\)$'
+
+stub_all; stub_gh 'exit 0' 2.71.0
+expect_match "doctor: gh older than the attach flag is missing with the upgrade" "$(doctor_line Darwin gh)" '^gh \| missing \| required \| lost: [^|]+ \| fix: brew upgrade gh$'
+
+stub_all; stub_gh 'exit 0' 2.99.0
+expect_match "doctor: gh at the minimum version is ok" "$(doctor_line Darwin gh)" '^gh \| ok \| required '
+
+stub_all; stub_gh 'exit 0' 2.100.0
+expect_match "doctor: gh compares versions by number, not by text" "$(doctor_line Darwin gh)" '^gh \| ok \| required '
+
+stub_all; stub node 'echo v22.11.0'
+expect_match "doctor: node below .nvmrc is missing" "$(doctor_line Darwin node)" '^node \| missing \| required \| lost: everything \| fix: nvm install \(reads \.nvmrc\), or https://nodejs\.org/en/download$'
+
+stub_all; stub pnpm 'echo 9.0.0'
+expect_match "doctor: pnpm at another version is missing" "$(doctor_line Darwin pnpm)" '^pnpm \| missing \| required \| lost: everything \| fix: corepack enable && corepack prepare pnpm@8\.15\.9 --activate$'
+
+stub_all; rm -rf "$doctor_home/Library/Caches/ms-playwright"
+expect_match "doctor: no chromium in the cache is missing" "$(doctor_line Darwin chromium)" '^chromium \| missing \| required \| lost: every Playwright MCP server, /check-ui, /scenario, the tester \| fix: npx -y playwright install chromium$'
+
+stub_all; rm -rf "$doctor_home/Library/Caches/ms-playwright"
+report=$(doctor Darwin chromium)
+expect_match "doctor: a skipped tool is printed as skipped" "$(doctor_line Darwin chromium chromium)" '^chromium \| skipped \| required \|'
+expect_match "doctor: a skipped tool is not counted" "$report" 'doctor: 0 missing required, 0 missing optional'
+
+stub_all; rm "$doctor_bin/jq"
+fix_line=$(DOCTOR_PATH="$doctor_bin" "$here/doctor.sh" --fix jq)
+[[ "$fix_line" == "brew install jq" ]] || { echo "FAIL doctor --fix prints the fix alone: $fix_line"; failures=$((failures + 1)); }
+
+stub_all; rm "$doctor_bin/git"
+expect_match "doctor: missing git on macOS names brew" "$(doctor_line Darwin git)" '^git \| missing \| required \| lost: [^|]+ \| fix: brew install git$'
+doctor_exit "doctor: a missing git exits 1" 1 Darwin
+
+stub_all; rm "$doctor_bin/xcodebuild" "$doctor_bin/swift"
+report=$(doctor Darwin)
+expect_match "doctor: xcodebuild and swift are optional and counted apart" "$report" 'doctor: 0 missing required, 2 missing optional'
+expect_match "doctor: xcodebuild says what is lost" "$(doctor_line Darwin xcodebuild)" '^xcodebuild \| missing \| optional \| lost: building and testing the native macOS app \| fix: xcode-select --install'
+expect_match "doctor: swift on Linux points at the Swift site" "$(doctor_line Linux swift)" '^swift \| missing \| optional \| lost: [^|]+ \| fix: https://www\.swift\.org/install/'
+doctor_exit "doctor: missing Apple tools exit 0" 0 Darwin
+
+nvmrc_file=$(mktemp)
+doctor_nvmrc() { DOCTOR_NVMRC="$nvmrc_file" DOCTOR_PATH="$doctor_bin" DOCTOR_HOME="$doctor_home" "$here/doctor.sh" 2>&1; }
+stub_all
+printf '24.7.0\n' > "$nvmrc_file"
+expect_match "doctor: a full version in .nvmrc is read as its major" "$(doctor_nvmrc | grep '^node ')" '^node \| ok \|'
+pwned_dir=$(mktemp -d)
+printf 'root[$(touch${IFS}'"$pwned_dir"'/marker)]\n' > "$nvmrc_file"
+output=$(doctor_nvmrc); status=$?
+[[ "$status" == 1 ]] || { echo "FAIL doctor with a hostile .nvmrc: expected exit 1, got $status"; failures=$((failures + 1)); }
+expect_match "doctor: a hostile .nvmrc is refused" "$output" '^doctor: \.nvmrc is not a version$'
+[[ ! -e "$pwned_dir/marker" ]] || { echo "FAIL doctor evaluated the .nvmrc"; failures=$((failures + 1)); }
+rm -rf "$pwned_dir"
+rm -f "$nvmrc_file"
+
+guard_path=$(mktemp -d)
+for tool in bash env cat dirname sed tr uname ls grep; do ln -s "$(command -v $tool)" "$guard_path/$tool"; done
+guard_without_jq() { PATH="$guard_path" "$here/$1" 2>&1 >/dev/null; }
+output=$(printf '%s' "$(claude_edit /repo/apps/web/src/main.tsx)" | guard_without_jq guard-secrets.sh); status=$?
+[[ "$status" == 2 ]] || { echo "FAIL guard-secrets without jq: expected exit 2, got $status"; failures=$((failures + 1)); }
+expect_match "guard-secrets without jq names the fix" "$output" '^Blocked: the hooks need jq\. fix: https://jqlang\.github\.io/jq/download/$'
+output=$(printf '%s' "$(bash_call 'git add README.md')" | guard_without_jq guard-git-add-all.sh); status=$?
+[[ "$status" == 2 ]] || { echo "FAIL guard-git-add-all without jq: expected exit 2, got $status"; failures=$((failures + 1)); }
+expect_match "guard-git-add-all without jq names the fix" "$output" '^Blocked: the hooks need jq\. fix: '
+rm -rf "$doctor_bin" "$doctor_home" "$guard_path"
+
+[[ "$failures" == 0 ]] && echo "hooks: all checks passed" && exit 0
+echo "hooks: $failures check(s) failed"
+exit 1
