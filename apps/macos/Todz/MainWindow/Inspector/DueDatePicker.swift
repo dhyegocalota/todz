@@ -7,23 +7,17 @@ struct DueDatePicker: View {
     @State private var pickedDate: Date?
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Button(action: open) {
-                if let dueDate = task.task.dueDate {
-                    DueLabel(dueDate: dueDate)
-                }
-                if task.task.dueDate == nil {
-                    Text(InspectorCopy.noDueDate)
-                }
+        Button(action: open) {
+            if let dueDate = task.task.dueDate {
+                DueLabel(dueDate: dueDate)
             }
-            .buttonStyle(.link)
-            .popover(isPresented: isPresented) {
-                DueDatePopover(pickedDate: pickedDate, hasDueDate: task.task.dueDate != nil, pick: pick, clear: clear)
+            if task.task.dueDate == nil {
+                Text(InspectorCopy.noDueDate)
             }
-            if let issue = model.ruleIssue(task: task.key, field: .dueDate) {
-                Text(issue.copy)
-                    .foregroundStyle(.red)
-            }
+        }
+        .buttonStyle(.link)
+        .popover(isPresented: isPresented) {
+            DueDatePopover(pickedDate: pickedDate, hasDueDate: task.task.dueDate != nil, pick: pick, clear: clear)
         }
     }
 

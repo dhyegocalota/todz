@@ -109,7 +109,6 @@ extension AppModel {
         board = TaskBoard()
         projectLoads = [:]
         histories = [:]
-        unconfirmedDrafts = [:]
         unsavedNotes = [:]
         selectedTask = nil
         dismissBanner()

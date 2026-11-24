@@ -49,17 +49,6 @@ extension AppModel {
         return candidates.first { $0.key == key }
     }
 
-    func isWriting(task key: TaskKey) -> Bool {
-        writesInFlight.contains { target in
-            guard case let .taskField(writtenKey, _) = target else { return false }
-            return writtenKey == key
-        }
-    }
-
-    func isSaving(task key: TaskKey, field: TaskWriteField) -> Bool {
-        writesInFlight.contains(.taskField(key, field))
-    }
-
     func ruleIssue(task key: TaskKey, field: TaskWriteField) -> RuleIssue? {
         ruleIssues[.taskField(key, field)]
     }
