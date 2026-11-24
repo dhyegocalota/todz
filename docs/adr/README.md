@@ -50,3 +50,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0027](0027-the-app-caches-each-owner-s-data-as-json-files-in-its-own-container-until-it-has-a-team.md) | The app caches each owner's data as JSON files in its own container until it has a team | Proposed | 2026-11-24 |
 | [0028](0028-the-app-s-task-writes-are-optimistic-and-go-through-a-persisted-outbox.md) | The app's task writes are optimistic and go through a persisted outbox | Proposed | 2026-11-24 |
 | [0029](0029-the-app-pulls-each-project-from-its-cursor-when-its-socket-says-changed.md) | The app pulls each project from its cursor when its socket says "changed" | Proposed | 2026-11-24 |
+| [0030](0030-product-screenshots-live-in-docs-screenshots-and-the-readme-walks-them.md) | Product screenshots live in docs/screenshots, and the README walks them | Proposed | 2026-11-24 |
