@@ -137,6 +137,10 @@ private let inboxName = "Inbox"
         suspendedRoutes.insert(route)
     }
 
+    func unsuspend(_ route: FakeRoute) {
+        suspendedRoutes.remove(route)
+    }
+
     func held(_ route: FakeRoute, count: Int = 1) async {
         guard heldCalls[route, default: []].count < count else { return }
         await withCheckedContinuation { waiters.append(HeldCallWaiter(route: route, count: count, continuation: $0)) }

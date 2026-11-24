@@ -79,6 +79,36 @@ extension AppModelTests {
         #expect(harness.model.canTryAgain == false)
     }
 
+    @Test func aSecondNewWorkspaceWhileTheFirstIsInFlightSendsNothing() async throws {
+        let harness = try AppModelHarness()
+        await harness.signedIn()
+        harness.service.suspend(.createWorkspace)
+        let firstCreate = Task { await harness.model.createWorkspace(name: "Acme") }
+        await harness.service.held(.createWorkspace)
+        harness.service.unsuspend(.createWorkspace)
+        let secondCreate = await harness.model.createWorkspace(name: "Acme")
+        harness.service.resume(.createWorkspace)
+        await firstCreate.value
+        #expect(secondCreate == nil)
+        #expect(harness.service.routes().filter { $0 == .createWorkspace } == [.createWorkspace])
+        #expect(harness.model.workspaces.count == 1)
+    }
+
+    @Test func aSecondTitleSaveWhileTheFirstIsInFlightSendsNothing() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 1)
+        await harness.signedIn()
+        harness.service.suspend(.updateTask)
+        let firstSave = Task { await harness.model.updateTitle(task: firstTask, title: "Renamed") }
+        await harness.service.held(.updateTask)
+        harness.service.unsuspend(.updateTask)
+        await harness.model.updateTitle(task: firstTask, title: "Renamed")
+        harness.service.resume(.updateTask)
+        await firstSave.value
+        #expect(harness.service.routes() == [.updateTask])
+    }
+
     @Test func anEarlierPullEndingLeavesALaterOneInFlight() async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
