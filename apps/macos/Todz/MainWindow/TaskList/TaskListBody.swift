@@ -11,8 +11,8 @@ struct TaskListBody: View {
         case .loading:
             ProgressView(MainWindowCopy.loading)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .failed:
-            FailureView(banner: .someProjectsFailed)
+        case let .failed(loadFailure):
+            FailureView(banner: loadFailure)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .empty:
             ContentUnavailableView(item.emptyTitle, systemImage: item.symbol, description: Text(item.emptyBody))

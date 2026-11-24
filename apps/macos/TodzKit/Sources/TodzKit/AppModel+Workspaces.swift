@@ -23,7 +23,11 @@ extension AppModel {
     }
 
     public func loadFailure(of workspace: Workspace) -> AppBanner? {
-        fatalError("AppModel.loadFailure is not implemented")
+        let loads = workspace.projects.map { projectLoads[$0.identifier] }
+        let isNothingLoaded = loads.allSatisfy { $0 == .unreachable || $0 == .failed }
+        guard isNothingLoaded else { return nil }
+        let isServerUnreachable = loads.allSatisfy { $0 == .unreachable }
+        return isServerUnreachable ? .network : .someProjectsFailed
     }
 
     @discardableResult
@@ -153,7 +157,7 @@ extension AppModel {
             projectLoads[projectIdentifier] = .loaded
         case let .unreachable(projectIdentifier), let .failed(projectIdentifier):
             guard projectLoads[projectIdentifier] != .loaded else { return }
-            projectLoads[projectIdentifier] = .failed
+            projectLoads[projectIdentifier] = pulled.isUnreachable ? .unreachable : .failed
         }
     }
 
