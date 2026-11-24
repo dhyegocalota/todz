@@ -287,7 +287,7 @@ Written by `developer-fix` after code review round 3 (all minor). Unit suite: 17
 |---|---|---|---|
 | Review 3 finding 1 | pin: a project create answered `notFound` whose workspace reload cannot reach the server keeps the network banner and its Try Again; one whose reload answers 401 signs out with no banner. Mutation check: with `reload` raising the gone banner unconditionally, both went red (`AppModelTests+Failures.swift:45:9: Expectation failed: harness.model.banner == .network`; `:46:9: … harness.model.canTryAgain`; `:58:9: … harness.model.banner == nil`), then the branch was restored | pin | `22fb8e4` |
 | Review 3 finding 2 | a create's answer leaves the workspace's projects unchanged when a reload that landed first already lists the project, and appends it otherwise; the fake names a created project `<workspace>-<name>`, as the harness seeds them, so a reload can list it before the answer | `95372fb` | `12f781c` |
-| Height floor (review 3 finding 3) | unchanged: the minimum height still subtracts the measured toolbar height. A clear floor with `minHeight: 480` and `ignoresSafeArea()` was tried and measured 848 × 532 (the safe area is added to the floor anyway), so it was reverted; a constant toolbar height would be a magic number of the system's. Full screen at the minimum size was not walked, because it takes over a Space on the owner's screen; it is a box of the PR's human checklist | — | — |
+| Height floor (review 3 finding 3, review 4) | the minimum height no longer reads geometry: the clear floor carries a content minimum of 480, so the window's floor is 480 plus the toolbar (532 on macOS 26), the loop's call in `design.md` § 7. A floor with `ignoresSafeArea()` was tried first and measured 532 as well. Walked by the lead: 848 × 532 every column, 528 × 532 sidebar only, 640 × 532 inspector only, 320 × 532 list alone, the app alive through three inspector toggles per sidebar state | view only, no unit test | `191ac05` |
 
 ### Red today, green after (fix round 3)
 
@@ -303,5 +303,5 @@ Written by `developer-fix` after code review round 3 (all minor). Unit suite: 17
 ### Gaps (fix round 3)
 
 - When the reload lists the project first, the sidebar keeps the reload's copy of it; the create's answer only selects it and marks it loaded.
-- The minimum height still reads the toolbar's measured height, the path the inspector crash went through; entering and leaving full screen at the minimum size with the inspector toggled is unproven.
+- Full screen was not walked: it takes over a Space on the owner's screen. No minimum reads geometry any more, so it no longer reaches the crash's path.
 - The list's 320 floor does not count the sidebar: with the sidebar shown the list measures about 304 at the window's minimum, and with the sidebar hidden an inspector dragged past 320 narrows the list below 320.
