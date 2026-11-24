@@ -40,12 +40,13 @@ extension AppModel {
             return
         }
         guard !stored.isEmpty else { return }
+        let removed: [String]
         do {
-            _ = try widgetStore.removeRequests(stored.map(\.name))
+            removed = try widgetStore.removeRequests(stored.map(\.name))
         } catch {
             return
         }
-        for request in stored.map(\.request) {
+        for request in stored.filter({ removed.contains($0.name) }).map(\.request) {
             await take(request)
         }
         guard case let .ready(snapshot) = widgetSnapshot else { return }
