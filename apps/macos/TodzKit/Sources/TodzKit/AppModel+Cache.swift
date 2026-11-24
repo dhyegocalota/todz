@@ -48,14 +48,15 @@ extension AppModel {
             .forEach { loadCachedProject(identifier: $0.identifier) }
     }
 
+    // NB ADR 0027: nothing listed or pulled is written to the cache before this session's owner is confirmed.
     func keepOwner() {
-        guard let ownerIdentifier else { return }
+        guard isOwnerConfirmed, let ownerIdentifier else { return }
         let cache = OwnerCache(ownerIdentifier: ownerIdentifier, workspaces: workspaces, activeWorkspaceIdentifier: activeWorkspaceIdentifier)
         keepInCache { try store.writeOwner(cache) }
     }
 
     func keepProject(identifier: String) {
-        guard let cursor = board.cursor(projectIdentifier: identifier) else { return }
+        guard isOwnerConfirmed, let cursor = board.cursor(projectIdentifier: identifier) else { return }
         let cache = ProjectCache(projectIdentifier: identifier, cursor: cursor, tasks: board.tasks(projectIdentifier: identifier))
         keepInCache { try store.writeProject(cache) }
     }
