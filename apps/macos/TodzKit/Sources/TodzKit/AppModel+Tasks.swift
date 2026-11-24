@@ -29,11 +29,23 @@ extension AppModel {
     }
 
     public func commitNotes(task key: TaskKey, draft: String) async {
-        fatalError("AppModel.commitNotes is not implemented")
+        let issue = TextCheck.issue(ofNotes: draft)
+        ruleIssues[.taskField(key, .notes)] = issue
+        guard issue == nil else {
+            unsavedNotes[key] = draft
+            return
+        }
+        unsavedNotes[key] = nil
+        let isBlank = draft.allSatisfy(\.isWhitespace)
+        let notes: String? = isBlank ? nil : draft
+        let savedNotes = board.task(projectIdentifier: key.projectIdentifier, number: key.number)?.notes
+        guard notes != savedNotes else { return }
+        await updateNotes(task: key, notes: notes)
     }
 
     public func discardUnsavedNotes(task key: TaskKey) {
-        fatalError("AppModel.discardUnsavedNotes is not implemented")
+        unsavedNotes[key] = nil
+        ruleIssues[.taskField(key, .notes)] = nil
     }
 
     public func updateDueDate(task key: TaskKey, dueDate: CalendarDate?) async {

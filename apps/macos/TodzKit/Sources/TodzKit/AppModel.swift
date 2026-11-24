@@ -152,6 +152,7 @@ import Observation
         projectLoads = [:]
         ruleIssues = [:]
         unconfirmedDrafts = [:]
+        unsavedNotes = [:]
         histories = [:]
         dismissBanner()
     }

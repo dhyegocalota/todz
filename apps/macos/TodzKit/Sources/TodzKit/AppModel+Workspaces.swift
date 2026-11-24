@@ -85,6 +85,7 @@ extension AppModel {
         projectLoads = [:]
         histories = [:]
         unconfirmedDrafts = [:]
+        unsavedNotes = [:]
         selectedTask = nil
         dismissBanner()
     }

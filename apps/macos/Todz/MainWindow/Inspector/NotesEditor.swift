@@ -9,13 +9,13 @@ struct NotesEditor: View {
     let task: BoardTask
     @Environment(AppModel.self) private var model
     @State private var draft: String
-    @State private var isEditing = false
-    @State private var localIssue: RuleIssue?
+    @State private var isEditing: Bool
     @FocusState private var isFocused: Bool
 
-    init(task: BoardTask) {
+    init(task: BoardTask, unsavedNotes: String?) {
         self.task = task
-        _draft = State(initialValue: Self.editableText(task.task.notes))
+        _draft = State(initialValue: Self.initialDraft(unsavedNotes: unsavedNotes, savedNotes: task.task.notes))
+        _isEditing = State(initialValue: unsavedNotes != nil)
     }
 
     var body: some View {
@@ -44,8 +44,8 @@ struct NotesEditor: View {
             }
             .padding()
             .background(.fill.quaternary)
-            if let shownIssue {
-                Text(shownIssue.copy)
+            if let issue = model.ruleIssue(task: task.key, field: .notes) {
+                Text(issue.copy)
                     .foregroundStyle(.red)
             }
         }
@@ -64,9 +64,9 @@ struct NotesEditor: View {
         model.isSaving(task: task.key, field: .notes)
     }
 
-    private var shownIssue: RuleIssue? {
-        guard let localIssue else { return model.ruleIssue(task: task.key, field: .notes) }
-        return localIssue
+    private static func initialDraft(unsavedNotes: String?, savedNotes: String?) -> String {
+        guard let unsavedNotes else { return editableText(savedNotes) }
+        return unsavedNotes
     }
 
     private static func editableText(_ notes: String?) -> String {
@@ -80,23 +80,15 @@ struct NotesEditor: View {
     }
 
     private func restore() {
+        model.discardUnsavedNotes(task: task.key)
         draft = Self.editableText(task.task.notes)
-        localIssue = nil
         isEditing = false
     }
 
     private func commit() {
         guard isEditing, !isSaving else { return }
-        localIssue = TextCheck.issue(ofNotes: draft)
-        guard localIssue == nil else { return }
-        guard draft != Self.editableText(task.task.notes) else {
-            isEditing = false
-            return
-        }
-        let isBlank = draft.allSatisfy(\.isWhitespace)
-        let notes: String? = isBlank ? nil : draft
         Task {
-            await model.updateNotes(task: task.key, notes: notes)
+            await model.commitNotes(task: task.key, draft: draft)
             guard model.ruleIssue(task: task.key, field: .notes) == nil else { return }
             isEditing = false
         }

@@ -19,7 +19,7 @@ struct TaskInspector: View {
                 TaskProperties(task: task)
                 Divider()
                 InspectorSectionTitle(title: InspectorCopy.notes)
-                NotesEditor(task: task)
+                NotesEditor(task: task, unsavedNotes: model.unsavedNotes[task.key])
                 Divider()
                 InspectorSectionTitle(title: InspectorCopy.history)
                 HistoryList(task: task)

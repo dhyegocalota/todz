@@ -50,8 +50,11 @@ extension AppModelTests {
     }
 
     @Test func switchingWorkspaceForgetsUnsavedNotes() async throws {
-        let harness = try await notesHarness()
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "side")
+        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 1)
+        await harness.signedIn()
         await harness.model.commitNotes(task: firstTask, draft: tooLongNotes)
         await harness.model.switchWorkspace(identifier: side.identifier)
         #expect(harness.model.unsavedNotes == [:])
