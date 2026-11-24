@@ -6,7 +6,6 @@ private let upcomingSymbol = "calendar"
 private let doneSymbol = "checkmark.circle"
 private let projectSymbol = "list.bullet"
 private let connectAgentSymbol = "powerplug"
-private let noTaskListFailure = "the key screen shows no task list"
 
 extension SidebarItem {
     static let views: [SidebarItem] = [.inbox, .today, .upcoming, .done]
@@ -29,7 +28,7 @@ extension SidebarItem {
         case .upcoming: MainWindowCopy.upcomingEmptyTitle
         case .done: MainWindowCopy.doneEmptyTitle
         case .project: MainWindowCopy.projectEmptyTitle
-        case .connectAgent: preconditionFailure(noTaskListFailure)
+        case .connectAgent: KeyScreenCopy.title
         }
     }
 
@@ -40,7 +39,7 @@ extension SidebarItem {
         case .upcoming: MainWindowCopy.upcomingEmptyBody
         case .done: MainWindowCopy.doneEmptyBody
         case .project: MainWindowCopy.projectEmptyBody
-        case .connectAgent: preconditionFailure(noTaskListFailure)
+        case .connectAgent: KeyScreenCopy.intro
         }
     }
 
