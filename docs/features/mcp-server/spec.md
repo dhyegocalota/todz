@@ -1,6 +1,6 @@
 # MCP server
 
-**Status:** In review
+**Status:** Shipped 2026-11-23
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-23, by inheritance from [the v1 product design](../../product/README.md) (Order of delivery, item 3; MCP server; Isolation), approved by the owner on 2026-11-23; the calls below that the product design does not make are ADRs marked as the loop's calls and listed in the loop's questions for the owner
 **ADRs:** [0011](../../adr/0011-due-dates-are-calendar-dates-and-the-caller-names-today.md), [0013](../../adr/0013-a-project-is-reached-only-through-the-directory.md), [0014](../../adr/0014-credentials-are-stored-as-sha-256-digests.md), [0015](../../adr/0015-the-project-store-answers-with-results-not-thrown-errors.md), [0016](../../adr/0016-the-mcp-server-runs-on-the-sdk-v2-and-serves-both-protocol-eras.md), [0017](../../adr/0017-a-2025-era-client-is-named-by-a-session-in-the-directory.md), [0018](../../adr/0018-the-mcp-server-reads-today-in-the-owner-s-time-zone.md), [0019](../../adr/0019-mcp-keys-are-prefixed-and-shown-once.md)

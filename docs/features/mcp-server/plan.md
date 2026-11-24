@@ -73,4 +73,4 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 - [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence. — evidence: three passes: 2695abb (one defect, d53ee22), 569cfe0 (one defect, a4e2286), 21950bb (no defect)
 - [x] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`. — evidence: WITH RESERVATIONS at 4ec37dc (2 IMPORTANT, 4 MINOR), then Ship-ready YES at 819f434; security FINDINGS (1 IMPORTANT, 2 MINOR), the IMPORTANT and the fence fixed, time-zone validation deferred to `owner-api`
 - [x] **/check-ui:** not applicable: no UI.
-- [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened. — evidence:
+- [x] **/open-pr:** gates passed, learnings sweep stated, PR opened. — evidence: verify 6 gates green at 5786b63; [PR #5](https://github.com/dhyegocalota/todz/pull/5)
