@@ -121,3 +121,35 @@ Pins: the ADR status lines, the README sentence, `SECONDS_PER_MINUTE` (the exist
 - `wrangler whoami`'s exact wording with an API token was not run.
 - Both apps still register the `todz` URL scheme, so with both installed a sign-in link opens whichever macOS picks.
 - The apex-SPF rule rests on the assumption that Cloudflare Email Sending's records sit on subdomains; step 10 stops if `dns get` says otherwise.
+
+## Fix round 2
+
+Red commit `ce84f57` (wrapper test), green commit `8da0274` (wrapper); the runbook commit follows.
+
+### What changed
+
+- `scripts/todz-cloudflare.sh api` refuses, before the Keychain is read and with no network, any path outside: `/user/tokens/verify`, `/accounts/<account>/tokens/verify`, everything under `/zones/<todz.app zone>/`, the one D1 database (with sub-paths or a query string), `/accounts/<account>/workers/domains` (sub-paths and query string) and `/accounts/<account>/workers/subdomain`; any path containing `..` or `%2e` is refused. The message is `refused <path>: not on the allowlist`.
+- The script calls `/usr/bin/security` and `/usr/bin/curl -q` by absolute path; `TODZ_CLOUDFLARE_SECURITY_BINARY` and `TODZ_CLOUDFLARE_CURL_BINARY` override them for the test only, and the test no longer puts its fakes on `PATH`.
+- The shell test also reads every `api` path in the runbook and requires the allowlist to accept it.
+- Runbook: step 7 restores the bookmark only on the owner's word; the rollback requires the domain entry's `hostname` `api.todz.app` and `service` `todz-api` before the DELETE; step 11 reads `settings/pseudo_ipv4` first and stops unless `off` or `add_header`; the prerequisites say Zone Read is scoped to the `todz.app` zone.
+
+### Red today, green after
+
+| Test | Red text | Green |
+|------|----------|-------|
+| `todz-cloudflare.test.sh` absolute binaries | `FAIL the production Keychain reader is absolute: expected '1', got '0'`, same for curl | `8da0274` |
+| same, curl ignores curlrc | `FAIL curl ignores any curlrc: expected 'curl -q ' in 'security find-generic-password ...'` | `8da0274` |
+| same, fourteen refused paths | `FAIL api exits non-zero for '/user/tokens': expected '1', got '0'`, `never reaches curl ... expected '0', got '1'`, `says why ... expected 'not on the allowlist' in ''` | `8da0274` |
+| whole file | `todz-cloudflare: 59 check(s) failed` | `todz-cloudflare: all checks passed` |
+
+Pins: the nine allowed paths and the runbook's own paths passed when they landed. Old checks that used the made-up zone `zone` now use the real zone id. The runbook edits carry no test of their own beyond the allowlist walk and the existing shape tests.
+
+### Hypotheses for the tester
+
+- Every `api` call in the runbook passes the allowlist; a path with `..`, `%2e`, another zone, another database or another host is refused without a Keychain read.
+- The runbook's new text keeps every command line free of `$`, backticks, braces and heredocs.
+
+### Gaps
+
+- The prefix match on `/zones/<zone>/` allows any method and any sub-path of the zone, as asked; the allowlist does not limit methods.
+- Nothing ran against Cloudflare.
