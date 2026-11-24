@@ -59,7 +59,8 @@ struct LiveOwnerAPITests {
         #expect(reopened.first?.task.state == .open)
 
         let pulled = try await ProjectFeed(service: api).pull(session: session, projectIdentifier: inbox.identifier, cursor: 0)
-        #expect(pulled == reopened.map(\.task))
+        #expect(pulled.tasks == reopened.map(\.task))
+        #expect(!pulled.isFromStart)
         await #expect(throws: OwnerAPIError.cursorAhead) {
             try await api.readChanges(session: session, projectIdentifier: inbox.identifier, cursor: 1_000)
         }

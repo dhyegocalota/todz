@@ -7,12 +7,8 @@ public struct ProjectFeed: Sendable {
         self.service = service
     }
 
-    public func pull(session: String, projectIdentifier: String, cursor: Int) async throws -> [TaskRecord] {
-        do {
-            return try await tasks(session: session, projectIdentifier: projectIdentifier, cursor: cursor)
-        } catch OwnerAPIError.cursorAhead {
-            return try await tasks(session: session, projectIdentifier: projectIdentifier, cursor: Self.firstCursor)
-        }
+    public func pull(session: String, projectIdentifier: String, cursor: Int) async throws -> ProjectChanges {
+        fatalError("ProjectFeed.pull is not implemented")
     }
 
     private func tasks(session: String, projectIdentifier: String, cursor: Int) async throws -> [TaskRecord] {
