@@ -25,6 +25,9 @@ final class Captured<Value> {
 @MainActor struct AppModelHarness {
     let service = FakeOwnerService()
     let vault = InMemorySessionVault()
+    let store = InMemorySyncStore()
+    let signals = FakeChangeSignals()
+    let pause = HeldPause()
     let keys = KeySequence()
     let session = UUID().uuidString
     let model: AppModel
@@ -32,7 +35,45 @@ final class Captured<Value> {
     init() throws {
         let timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
         let keys = keys
-        model = AppModel(service: service, vault: vault, timeZone: timeZone, now: { fixedInstant }, makeIdempotencyKey: { keys.next() })
+        let pause = pause
+        model = AppModel(
+            service: service,
+            vault: vault,
+            store: store,
+            signals: signals,
+            timeZone: timeZone,
+            now: { fixedInstant },
+            pause: { try await pause.pause($0) },
+            makeIdempotencyKey: { keys.next() }
+        )
+    }
+
+    var ownerIdentifier: String {
+        service.issuedSession.owner.identifier
+    }
+
+    func watchKey(_ projectIdentifier: String) -> WatchKey {
+        WatchKey(session: session, projectIdentifier: projectIdentifier)
+    }
+
+    func cache(_ workspaces: [Workspace], active: Workspace) {
+        cache(workspaces, active: active, ownerIdentifier: ownerIdentifier)
+    }
+
+    func cache(_ workspaces: [Workspace], active: Workspace, ownerIdentifier: String) {
+        store.owner = OwnerCache(ownerIdentifier: ownerIdentifier, workspaces: workspaces, activeWorkspaceIdentifier: active.identifier)
+    }
+
+    func cacheTasks(projectIdentifier: String, count: Int, cursor: Int) {
+        let tasks = (1...count).map { MutableTask(number: $0, title: "Cached \($0)").record }
+        store.projects[projectIdentifier] = ProjectCache(projectIdentifier: projectIdentifier, cursor: cursor, tasks: tasks)
+    }
+
+    func launchedFromCache() async {
+        vault.secret = session
+        await model.launch()
+        service.calls = []
+        store.calls = []
     }
 
     @discardableResult

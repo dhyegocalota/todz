@@ -22,25 +22,41 @@ import Observation
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
 
+    var outbox = Outbox()
+
     @ObservationIgnored var session: String?
+    @ObservationIgnored var watches: [String: Task<Void, Never>] = [:]
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
+    @ObservationIgnored let store: any SyncStore
+    @ObservationIgnored let signals: any ChangeSignals
     @ObservationIgnored public let timeZone: TimeZone
     @ObservationIgnored let now: () -> Date
+    @ObservationIgnored let pause: @Sendable (Duration) async throws -> Void
     @ObservationIgnored let makeIdempotencyKey: () -> String
 
     public init(
         service: any OwnerService,
         vault: any SessionVault,
+        store: any SyncStore,
+        signals: any ChangeSignals,
         timeZone: TimeZone,
         now: @escaping () -> Date = Date.init,
+        pause: @escaping @Sendable (Duration) async throws -> Void,
         makeIdempotencyKey: @escaping () -> String = TaskDraft.newIdempotencyKey
     ) {
         self.service = service
         self.vault = vault
+        self.store = store
+        self.signals = signals
         self.timeZone = timeZone
         self.now = now
+        self.pause = pause
         self.makeIdempotencyKey = makeIdempotencyKey
+    }
+
+    public var waitingChangeCount: Int {
+        fatalError("AppModel.waitingChangeCount is not implemented")
     }
 
     public var activeWorkspace: Workspace? {
