@@ -3,6 +3,7 @@ import Foundation
 
 private let tickSeconds: TimeInterval = 1
 private let inboxName = "Inbox"
+private let keyHintLength = 4
 
 struct UndecodableAnswer: Error {}
 
@@ -28,6 +29,8 @@ struct StatusFailure: Sendable {
     var workspaces: [Workspace] = []
     var tasksOfProject: [String: [TaskRecord]] = [:]
     var history: [HistoryEntry] = []
+    var keysOfProject: [String: [ProjectKey]] = [:]
+    private(set) var issuedKeyCount = 0
     var clock = fixedInstant
     private var suspendedRoutes: Set<FakeRoute> = []
     private var heldCalls: [FakeRoute: [CheckedContinuation<Void, Never>]] = [:]
@@ -139,6 +142,37 @@ struct StatusFailure: Sendable {
         guard let scripted = script.first else { return page(projectIdentifier: projectIdentifier, cursor: cursor) }
         changeScripts[projectIdentifier] = Array(script.dropFirst())
         return try scripted.get()
+    }
+
+    func listKeys(session: String, projectIdentifier: String) async throws -> [ProjectKey] {
+        try await record(.listKeys(session: session, projectIdentifier: projectIdentifier))
+        return keysOfProject[projectIdentifier, default: []]
+    }
+
+    func issueKey(session: String, projectIdentifier: String) async throws -> IssuedKey {
+        try await record(.issueKey(session: session, projectIdentifier: projectIdentifier))
+        let issued = nextIssuedKey()
+        keysOfProject[projectIdentifier, default: []].append(issued.key)
+        return issued
+    }
+
+    func revokeKey(session: String, projectIdentifier: String, keyIdentifier: String) async throws {
+        try await record(.revokeKey(session: session, projectIdentifier: projectIdentifier, keyIdentifier: keyIdentifier))
+        let isListed = keysOfProject[projectIdentifier, default: []].contains { $0.identifier == keyIdentifier }
+        guard isListed else { throw OwnerAPIError.notFound }
+        keysOfProject[projectIdentifier]?.removeAll { $0.identifier == keyIdentifier }
+    }
+
+    func nextIssuedKey() -> IssuedKey {
+        let identifier = nextKeyIdentifier()
+        issuedKeyCount += 1
+        let secret = "todz_fake-secret-\(issuedKeyCount)"
+        let key = ProjectKey(identifier: identifier, hint: String(secret.suffix(keyHintLength)), createdAt: tick())
+        return IssuedKey(key: key, secret: secret)
+    }
+
+    func nextKeyIdentifier() -> String {
+        "project-key-\(issuedKeyCount + 1)"
     }
 
     private func page(projectIdentifier: String, cursor: Int) -> ChangePage {

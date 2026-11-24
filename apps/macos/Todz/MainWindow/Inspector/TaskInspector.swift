@@ -3,6 +3,7 @@ import TodzKit
 
 struct TaskInspector: View {
     let task: BoardTask
+    let item: SidebarItem
     let focus: FocusState<MainWindowFocus?>.Binding
     @Environment(AppModel.self) private var model
 
@@ -10,7 +11,7 @@ struct TaskInspector: View {
         ScrollView {
             VStack(alignment: .leading) {
                 HStack(alignment: .firstTextBaseline) {
-                    TaskCheckbox(task: task, item: model.selectedItem)
+                    TaskCheckbox(task: task, item: item)
                     TitleField(task: task, focus: focus)
                     Text(TaskRowCopy.shortId(number: task.task.number))
                         .monospacedDigit()

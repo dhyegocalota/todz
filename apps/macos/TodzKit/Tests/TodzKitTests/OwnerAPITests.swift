@@ -14,12 +14,12 @@ struct ExpectedRequest {
     let body: [String: Any]?
 }
 
-private func api(answering answer: StubAnswer) throws -> OwnerAPI {
+func api(answering answer: StubAnswer) throws -> OwnerAPI {
     let baseURL = try #require(URL(string: baseText))
     return OwnerAPI(baseURL: baseURL, transport: StubURLProtocol.session(answering: answer))
 }
 
-private func expectOnlyRequest(_ expected: ExpectedRequest) throws {
+func expectOnlyRequest(_ expected: ExpectedRequest) throws {
     let requests = StubURLProtocol.recordedRequests()
     #expect(requests.count == 1)
     let request = try #require(requests.first)

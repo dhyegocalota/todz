@@ -5,12 +5,13 @@ private let noSelectionSymbol = "checklist"
 private let goneSymbol = "questionmark.square.dashed"
 
 struct InspectorView: View {
+    let item: SidebarItem
     let focus: FocusState<MainWindowFocus?>.Binding
     @Environment(AppModel.self) private var model
 
     var body: some View {
         if let selectedTask = model.selectedTask, let task = model.boardTask(selectedTask) {
-            TaskInspector(task: task, focus: focus)
+            TaskInspector(task: task, item: item, focus: focus)
                 .id(selectedTask)
         }
         if model.selectedTask == nil {

@@ -124,6 +124,7 @@ extension AppModel {
     private func forgetActiveWorkspace() {
         guard activeWorkspaceIdentifier != nil else { return }
         stopWatching()
+        forgetKeys()
         board = TaskBoard()
         projectLoads = [:]
         histories = [:]
@@ -133,6 +134,8 @@ extension AppModel {
     }
 
     private func keepSelection(in workspace: Workspace) {
+        let isKeyScreenForgotten = selectedItem == .connectAgent && keyProjectIdentifier == nil
+        if isKeyScreenForgotten { showInboxKeys() }
         guard case let .project(identifier) = selectedItem else { return }
         let isInWorkspace = workspace.projects.contains { $0.identifier == identifier }
         guard !isInWorkspace else { return }

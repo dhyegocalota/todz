@@ -9,7 +9,10 @@ import Observation
     public internal(set) var workspaces: [Workspace] = []
     public internal(set) var activeWorkspaceIdentifier: String?
     public var selectedItem: SidebarItem = .inbox {
-        didSet { waitingLink = nil }
+        didSet {
+            waitingLink = nil
+            followKeyScreen(from: oldValue)
+        }
     }
 
     public var selectedTask: TaskKey? {
@@ -24,6 +27,14 @@ import Observation
     public internal(set) var banner: AppBanner?
     public internal(set) var histories: [TaskKey: HistoryLoad] = [:]
     public internal(set) var linkRevealCount = 0
+    public internal(set) var keyProjectIdentifier: String?
+    public internal(set) var keys: KeyList?
+    public internal(set) var issuedKey: IssuedKey?
+    public internal(set) var isIssuing = false
+    public internal(set) var issueFailure: KeyFailure?
+    public internal(set) var keyReloadFailure: KeyFailure?
+    public internal(set) var revokingKeyIdentifiers: Set<String> = []
+    public internal(set) var failedRevokeIdentifiers: Set<String> = []
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
     var outbox = Outbox()
@@ -60,6 +71,10 @@ import Observation
     @ObservationIgnored var linkFollowing: Task<Void, Never>?
     @ObservationIgnored var waitingLink: WidgetLink?
     @ObservationIgnored var publishedWidgetSnapshot: WidgetSnapshotState?
+    @ObservationIgnored var keyScreenIdentifier: UUID?
+    @ObservationIgnored var keyIssueAnswerCount = 0
+    @ObservationIgnored var revokedKeyIdentifiers: Set<String> = []
+    @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let store: any SyncStore
@@ -256,6 +271,7 @@ import Observation
         isOffline = false
         workspaces = []
         activeWorkspaceIdentifier = nil
+        forgetKeys()
         selectedItem = .inbox
         selectedTask = nil
         board = TaskBoard()

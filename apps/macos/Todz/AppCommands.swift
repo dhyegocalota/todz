@@ -34,12 +34,16 @@ struct AppCommands: Commands {
             .disabled(!model.isReady || model.isRefreshing)
             Button(windowState.inspectorToggleTitle) { windowState.isInspectorPresented.toggle() }
                 .keyboardShortcut(inspectorKey, modifiers: [.command, .option])
-                .disabled(!model.isReady)
+                .disabled(!canToggleInspector)
             Divider()
             WorkspaceMenuItems(model: model)
         }
         CommandMenu(MainWindowCopy.taskMenu) {
             TaskMenuItems(model: model, windowState: windowState)
         }
+    }
+
+    private var canToggleInspector: Bool {
+        model.isReady && model.selectedItem != .connectAgent
     }
 }

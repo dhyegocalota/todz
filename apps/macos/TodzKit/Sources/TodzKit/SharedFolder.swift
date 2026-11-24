@@ -1,28 +1,18 @@
 import Foundation
 
-private let relativePathKey = "TodzSharedFolder"
-private let pathSeparator = "/"
-private let parentFolderComponent = ".."
+private let appGroupKey = "TodzAppGroup"
 private let privateFolderMode = 0o700
 
 public enum SharedFolder {
-    // NB ADR 0033: the shared folder is a path relative to the account's home, never to the sandbox's.
-    public static func of(info: [String: Any], home: URL) -> URL? {
-        guard let relativePath = info[relativePathKey] as? String else { return nil }
-        let components = relativePath.split(separator: pathSeparator)
-        let isUnderTheHome = !relativePath.hasPrefix(pathSeparator) && !components.isEmpty && !components.contains { $0 == parentFolderComponent }
-        guard isUnderTheHome else { return nil }
-        return home.appending(path: relativePath, directoryHint: .isDirectory)
+    // NB ADR 0035: the shared folder is the container of the App Group that the Info.plist names.
+    public static func of(info: [String: Any], container: (String) -> URL?) -> URL? {
+        guard let appGroup = info[appGroupKey] as? String, !appGroup.isEmpty else { return nil }
+        return container(appGroup)
     }
 
     public static func of(bundle: Bundle) -> URL? {
-        guard let info = bundle.infoDictionary, let home = accountHome else { return nil }
-        return of(info: info, home: home)
-    }
-
-    public static var accountHome: URL? {
-        guard let account = getpwuid(getuid()), let directory = account.pointee.pw_dir else { return nil }
-        return URL(filePath: String(cString: directory), directoryHint: .isDirectory)
+        guard let info = bundle.infoDictionary else { return nil }
+        return of(info: info) { FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: $0) }
     }
 
     public static func created(_ folder: URL) -> URL? {
