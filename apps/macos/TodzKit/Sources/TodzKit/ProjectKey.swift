@@ -5,17 +5,13 @@ public struct ProjectKey: Codable, Sendable, Equatable, Identifiable {
     public let hint: String
     public let createdAt: Date
 
+    enum CodingKeys: String, CodingKey {
+        case identifier = "id"
+        case hint
+        case createdAt
+    }
+
     public var id: String {
         identifier
-    }
-}
-
-extension ProjectKey {
-    public init(from decoder: any Decoder) throws {
-        fatalError("ProjectKey is not implemented")
-    }
-
-    public func encode(to encoder: any Encoder) throws {
-        fatalError("ProjectKey is not implemented")
     }
 }
