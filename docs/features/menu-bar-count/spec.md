@@ -1,6 +1,6 @@
 # The menu bar shows the pending count
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-24: the owner asked for it ("extremely important": the menu bar icon shows the number of pending tasks, behind a setting he can turn off, on by default), relayed by the session that ran his checklists. What counts, where the setting lives and the look at zero are [ADR 0036](../../adr/0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md), the loop's call, listed in the loop's questions for the owner
 **ADRs:** [0036](../../adr/0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md), [0031](../../adr/0031-the-menu-bar-extra-is-a-swiftui-window-over-the-app-s-one-model.md)
