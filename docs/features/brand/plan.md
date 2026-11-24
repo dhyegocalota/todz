@@ -20,10 +20,10 @@ One group, after `owner-check-notes` merges (it may touch the menu bar files).
 
 ### G1
 
-- [ ] **Step 1:** Red: `brand-assets.test.ts` reads `AppIcon.appiconset/Contents.json` and checks that every image it names exists with the pixel size its `size` × `scale` gives (from the PNG header), that the set covers 16, 32, 128, 256 and 512 at 1× and 2×, and that `MenuBarGlyph.imageset/Contents.json` names one PDF with `template-rendering-intent: template` and `preserves-vector-representation: true`. Commit it failing alone.
-- [ ] **Step 2:** Render with `rsvg-convert` from `docs/brand/`: the ten app icon PNGs and their `Contents.json`; `MenuBarGlyph.pdf` and its `Contents.json`. Set `ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon` in `project.yml`. Green.
-- [ ] **Step 3:** `MenuBarLabel` uses the glyph; build with no warning (no "unassigned child" or missing-size warning from `actool`).
-- [ ] **Step 4:** README: the lockup as the header (replacing the plain `<h1>`, with the alt text "todz"), the icon at 128 above the hero screenshot. The runbook `render-the-brand-assets.md` (each step with an expected result and an `If it fails` line) and its row in the runbooks index. The app's README names the icon and glyph (purpose only). Tester briefing.
+- [x] **Step 1:** Red: `brand-assets.test.ts` reads `AppIcon.appiconset/Contents.json` and checks that every image it names exists with the pixel size its `size` × `scale` gives (from the PNG header), that the set covers 16, 32, 128, 256 and 512 at 1× and 2×, and that `MenuBarGlyph.imageset/Contents.json` names one PDF with `template-rendering-intent: template` and `preserves-vector-representation: true`. Commit it failing alone. Evidence: 5b01022.
+- [x] **Step 2:** Render with `rsvg-convert` from `docs/brand/`: the ten app icon PNGs and their `Contents.json`; `MenuBarGlyph.pdf` and its `Contents.json`. Set `ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon` in `project.yml`. Green. Evidence: 3a5c6fc.
+- [x] **Step 3:** `MenuBarLabel` uses the glyph; build with no warning (no "unassigned child" or missing-size warning from `actool`). Evidence: 3a5c6fc, the build log holds no `warning:` line.
+- [x] **Step 4:** README: the lockup as the header (replacing the plain `<h1>`, with the alt text "todz"), the icon at 128 above the hero screenshot. The runbook `render-the-brand-assets.md` (each step with an expected result and an `If it fails` line) and its row in the runbooks index. The app's README names the icon and glyph (purpose only). Tester briefing.
 
 ## Failure modes
 
@@ -36,7 +36,7 @@ One group, after `owner-check-notes` merges (it may touch the menu bar files).
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict.
 - [ ] **/check-ui:** the Dock, the About panel and the status item, light and dark.

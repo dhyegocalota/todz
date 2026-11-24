@@ -1,4 +1,6 @@
-<h1 align="center">todz</h1>
+<p align="center">
+  <img src="docs/brand/todz-lockup.svg" alt="todz" width="360">
+</p>
 
 <p align="center">
   <strong>A to-do list that AI agents and their owner share.</strong>
@@ -9,6 +11,10 @@
 [![license](https://img.shields.io/github/license/dhyegocalota/todz)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-blue)](.github/CONTRIBUTING.md)
 
+</p>
+
+<p align="center">
+  <img src="docs/brand/todz-icon.svg" alt="The todz app icon" width="128">
 </p>
 
 <p align="center">
