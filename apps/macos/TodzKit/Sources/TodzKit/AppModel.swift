@@ -253,7 +253,14 @@ import Observation
     // NB ADR 0027: nothing is sent before this session's owner is confirmed, and another owner's cache is erased first.
     func confirmOwner() async throws {
         guard !isOwnerConfirmed else { return }
-        guard let owner = await confirmedOwner() else { return }
+        let owner: Owner
+        do {
+            owner = try await confirmedOwner()
+        } catch {
+            let isAnotherOwnerPossible = ownerIdentifier != nil
+            guard !isAnotherOwnerPossible else { throw error }
+            return
+        }
         let isAnotherOwnersCache = ownerIdentifier != nil && ownerIdentifier != owner.identifier
         if isAnotherOwnersCache { try forgetCache() }
         isOwnerConfirmed = true
@@ -261,13 +268,11 @@ import Observation
         ownerIdentifier = owner.identifier
     }
 
-    private func confirmedOwner() async -> Owner? {
+    private func confirmedOwner() async throws -> Owner {
         do {
             return try await request { try await service.updateOwner(session: $0, timeZone: timeZone.identifier) }
         } catch OwnerAPIError.timeZoneInvalid {
-            return try? await request { try await service.readOwner(session: $0) }
-        } catch {
-            return nil
+            return try await request { try await service.readOwner(session: $0) }
         }
     }
 
