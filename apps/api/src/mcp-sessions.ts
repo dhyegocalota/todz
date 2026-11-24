@@ -5,6 +5,7 @@ import { findMcpSessionClient, insertMcpSession } from './directory';
 
 const MCP_SESSION_LIFETIME_DAYS = 30;
 const MCP_SESSION_LIFETIME_MS = MCP_SESSION_LIFETIME_DAYS * MILLISECONDS_PER_DAY;
+export const MCP_SESSIONS_PER_KEY_MAX = 20;
 
 // NB ADR 0017: a 2025-era client is named by a session bound to the key it came with.
 export async function openMcpSession({

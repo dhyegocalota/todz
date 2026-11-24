@@ -79,6 +79,7 @@ export const MCP_COPY = {
   taskIdInvalid: `Not a task id: use one like ${EXAMPLE_TASK_ID}.`,
   sessionRequired: 'Bad Request: Mcp-Session-Id header is required',
   sessionNotFound: 'Session not found',
+  clientUnnamed: 'This client sent no name.',
   noOpenTasks: 'No open tasks.',
   nothingToDo: 'There is nothing to do in todz right now: no open tasks.',
   workOnTask: 'Work on this task from todz.',

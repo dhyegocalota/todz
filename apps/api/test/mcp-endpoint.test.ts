@@ -7,6 +7,7 @@ import { generateCredentialSecret } from '../src/credential-secret';
 import { insertMcpSession } from '../src/directory';
 import { MCP_COPY } from '../src/mcp-copy';
 import { serveMcp } from '../src/mcp-endpoint';
+import { MCP_SESSIONS_PER_KEY_MAX } from '../src/mcp-sessions';
 import { issueProjectKey } from '../src/project-keys';
 import { countingEnv } from './counting-namespace';
 import { revokeKey, seedIssuedKey } from './directory-seed';
@@ -444,5 +445,48 @@ describe('edge cases found during execution', () => {
     expect(await sessionRowsOf(key)).toHaveLength(1);
     const withoutKey = await exports.default.fetch(mcpRequest({ authorization: null, body: padding }));
     expect(withoutKey.status).toBe(UNAUTHORIZED_STATUS);
+  });
+});
+
+describe('the sessions of one key', () => {
+  async function seedExpiredSession(key: string): Promise<string> {
+    const sessionId = generateCredentialSecret();
+    const now = Date.now();
+    await insertMcpSession({
+      directory: env.DIRECTORY,
+      digest: await digestCredential(sessionId),
+      keyDigest: await digestCredential(key),
+      clientName: CLIENT_NAME,
+      now: now - MCP_SESSION_LIFETIME_MS,
+      expiresAt: now - 1,
+    });
+    return digestCredential(sessionId);
+  }
+
+  test('keep only the newest sessions up to the cap: the first of one more is not found and the last is served', async () => {
+    const { key } = await seedIssuedKey();
+    const sessionIds = await Array.from({ length: MCP_SESSIONS_PER_KEY_MAX + 1 }).reduce<Promise<string[]>>(
+      async (opened) => [...(await opened), await openSession(key)],
+      Promise.resolve([]),
+    );
+    expect(await sessionRowsOf(key)).toHaveLength(MCP_SESSIONS_PER_KEY_MAX);
+    const first = await toolsList({ key, sessionId: String(sessionIds.at(0)) });
+    expect(first.status).toBe(NOT_FOUND_STATUS);
+    expect(await first.json()).toEqual(SESSION_NOT_FOUND);
+    const last = await toolsList({ key, sessionId: String(sessionIds.at(-1)) });
+    await last.body?.cancel();
+    expect(last.status).toBe(OK_STATUS);
+  });
+
+  test('a new session deletes the expired rows of its key and leaves the expired rows of another key', async () => {
+    const { key } = await seedIssuedKey();
+    const other = await seedIssuedKey();
+    const expiredDigest = await seedExpiredSession(key);
+    const otherExpiredDigest = await seedExpiredSession(other.key);
+    await openSession(key);
+    const digests = (await sessionRowsOf(key)).map((row) => row.digest);
+    expect(digests).toHaveLength(1);
+    expect(digests).not.toContain(expiredDigest);
+    expect((await sessionRowsOf(other.key)).map((row) => row.digest)).toEqual([otherExpiredDigest]);
   });
 });
