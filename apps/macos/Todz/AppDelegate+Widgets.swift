@@ -9,7 +9,7 @@ extension AppDelegate {
         CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, { _, observer, _, _, _ in
             guard let observer else { return }
             let delegate = Unmanaged<AppDelegate>.fromOpaque(observer).takeUnretainedValue()
-            Task { @MainActor in await delegate.model.takeWidgetRequests() }
+            Task { @MainActor in delegate.model.widgetRequestsAdded() }
         }, name, nil, .deliverImmediately)
     }
 

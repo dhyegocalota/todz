@@ -24,7 +24,11 @@ extension AppModel {
     }
 
     public func widgetRequestsAdded() {
-        widgetIntake = Task { await takeWidgetRequests() }
+        guard widgetIntake == nil else { return }
+        widgetIntake = Task { [weak self] in
+            await self?.takeWidgetRequests()
+            self?.widgetIntake = nil
+        }
     }
 
     public func takeWidgetRequests() async {

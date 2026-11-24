@@ -4,6 +4,7 @@ private let snapshotFileName = "widget-snapshot.json"
 private let requestsFolderName = "requests"
 private let requestFileExtension = "json"
 private let requestsPerPass = 50
+private let entriesPerPass = 500
 private let snapshotMaxByteCount = 1_048_576
 private let requestMaxByteCount = 4_096
 private let readFlags = O_RDONLY | O_NOFOLLOW | O_NONBLOCK
@@ -76,19 +77,14 @@ public struct FileWidgetStore: WidgetStore {
 
     private func oldestRequestFiles() throws -> [URL] {
         guard try hasRequestsFolder() else { return [] }
-        let listed: [URL]
-        do {
-            listed = try FileManager.default.contentsOfDirectory(
-                at: requestsFolder,
-                includingPropertiesForKeys: [.contentModificationDateKey],
-                options: .skipsHiddenFiles
-            )
-        } catch CocoaError.fileReadNoSuchFile {
-            return []
-        } catch {
-            throw WidgetStoreError.unreadable
-        }
-        let dated = listed
+        let entries = FileManager.default.enumerator(
+            at: requestsFolder,
+            includingPropertiesForKeys: [.contentModificationDateKey],
+            options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+        )
+        guard let entries else { throw WidgetStoreError.unreadable }
+        let dated = entries.prefix(entriesPerPass)
+            .compactMap { $0 as? URL }
             .filter { requestFile(name: $0.lastPathComponent) != nil }
             .compactMap { file in modificationDate(of: file).map { (modifiedAt: $0, file: file) } }
         return dated.sorted(by: isOlder).prefix(requestsPerPass).map(\.file)
