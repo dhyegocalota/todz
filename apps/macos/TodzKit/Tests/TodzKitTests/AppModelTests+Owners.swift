@@ -215,17 +215,47 @@ extension AppModelTests {
         #expect(harness.model.syncStatus == .online)
     }
 
-    @Test func aLaunchWhoseOwnerUpdateFailsOnceConfirmsOnALaterPullAndSends() async throws {
+    @Test func aLaunchWhoseOwnerUpdateFailsOnceConfirmsAfterTheReconnectDelayAndSends() async throws {
         let harness = try harnessWithAWaitingChange()
         harness.service.failures[.updateOwner] = .unexpected(status: 503)
         await harness.launchedFromCache()
         #expect(harness.model.syncStatus == .offline(waiting: 1))
         harness.service.failures = [:]
-        await harness.model.pullProject(identifier: inboxIdentifier)
+        let retry = try #require(harness.model.ownerConfirmationRetry)
+        await harness.pause.started()
+        harness.pause.release()
+        await retry.value
         await harness.model.workspaceReload?.value
         await harness.flushed()
+        #expect(harness.pause.durations == [.seconds(1)])
         #expect(harness.service.calls.contains(.updateTask(session: harness.session, projectIdentifier: inboxIdentifier, number: 1, patch: .title("Waiting"))))
         #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.model.syncStatus == .online)
+    }
+
+    @Test func anOwnerUpdateThatKeepsFailingIsTriedAgainAfterGrowingDelays() async throws {
+        let harness = try harnessWithAWaitingChange()
+        harness.service.failures[.updateOwner] = .unexpected(status: 503)
+        await harness.launchedFromCache()
+        let firstRetry = try #require(harness.model.ownerConfirmationRetry)
+        await harness.pause.started()
+        harness.pause.release()
+        await firstRetry.value
+        await harness.model.workspaceReload?.value
+        await harness.pause.started(count: 2)
+        #expect(harness.pause.durations == [.seconds(1), .seconds(2)])
+        #expect(harness.service.routes().filter { $0 == .updateOwner }.count == 1)
+        #expect(harness.service.routes().contains(.updateTask) == false)
+    }
+
+    @Test func aSignOutCancelsTheOwnerUpdateWaitingToBeTriedAgain() async throws {
+        let harness = try harnessWithAWaitingChange()
+        harness.service.failures[.updateOwner] = .unexpected(status: 503)
+        await harness.launchedFromCache()
+        let retry = try #require(harness.model.ownerConfirmationRetry)
+        await harness.model.signOut()
+        await retry.value
+        #expect(harness.service.calls == [.signOut(session: harness.session)])
     }
 
     @Test func aLaunchWhoseZoneIsRefusedConfirmsTheOwnerByReadingItAndSends() async throws {
