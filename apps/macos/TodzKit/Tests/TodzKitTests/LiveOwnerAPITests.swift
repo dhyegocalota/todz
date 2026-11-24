@@ -66,7 +66,7 @@ struct LiveOwnerAPITests {
 
         let history = try await api.readHistory(session: session, projectIdentifier: inbox.identifier, number: task.number)
         #expect(history.map(\.action) == [.created, .updated, .updated, .updated, .completed, .reopened])
-        #expect(history.allSatisfy { $0.actor.kind == .owner })
+        #expect(history.allSatisfy { $0.actor == .owner })
         await #expect(throws: OwnerAPIError.taskNotFound(number: 99)) {
             try await api.readHistory(session: session, projectIdentifier: inbox.identifier, number: 99)
         }

@@ -72,10 +72,10 @@ private let agentActorsWithoutAClientName = [
     }
 
     @Test func decodesTheOwnerActorAndAnAgentActor() throws {
-        #expect(try OwnerFixtures.decoded(ChangeActor.self, from: OwnerFixtures.ownerActorJSON) == ChangeActor(kind: .owner, clientName: nil))
+        #expect(try OwnerFixtures.decoded(ChangeActor.self, from: OwnerFixtures.ownerActorJSON) == ChangeActor.owner)
         #expect(
             try OwnerFixtures.decoded(ChangeActor.self, from: OwnerFixtures.agentActorJSON)
-                == ChangeActor(kind: .agent, clientName: OwnerFixtures.agentClientName)
+                == ChangeActor.agent(clientName: OwnerFixtures.agentClientName)
         )
     }
 
@@ -91,7 +91,7 @@ private let agentActorsWithoutAClientName = [
             update
                 == HistoryEntry(
                     at: OwnerFixtures.date(milliseconds: OwnerFixtures.updatedAtMilliseconds),
-                    actor: ChangeActor(kind: .agent, clientName: OwnerFixtures.agentClientName),
+                    actor: .agent(clientName: OwnerFixtures.agentClientName),
                     action: .updated,
                     fields: [.title, .dueDate],
                     note: nil

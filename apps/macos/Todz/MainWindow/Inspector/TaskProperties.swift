@@ -15,11 +15,9 @@ struct TaskProperties: View {
                 label(InspectorCopy.due)
                 DueDatePicker(task: task)
             }
-            if let addedLine {
-                GridRow {
-                    label(InspectorCopy.added)
-                    Text(addedLine)
-                }
+            GridRow {
+                label(InspectorCopy.added)
+                Text(addedLine)
             }
             if let completedAt = task.task.completedAt {
                 GridRow {
@@ -31,10 +29,9 @@ struct TaskProperties: View {
         .font(.callout)
     }
 
-    private var addedLine: String? {
-        guard let source = ChangeSource(task.task.createdBy) else { return nil }
+    private var addedLine: String {
         let time = DayFormat.moment(instant: task.task.createdAt, timeZone: model.timeZone)
-        return source.line(owner: InspectorCopy.byYou(time: time)) { InspectorCopy.viaClient(time: time, client: $0) }
+        return task.task.createdBy.line(owner: InspectorCopy.byYou(time: time)) { InspectorCopy.viaClient(time: time, client: $0) }
     }
 
     private func label(_ text: String) -> some View {

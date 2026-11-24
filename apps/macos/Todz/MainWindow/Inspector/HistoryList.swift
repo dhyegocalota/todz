@@ -21,9 +21,7 @@ struct HistoryList: View {
         case let .loaded(entries):
             VStack(alignment: .leading) {
                 ForEach(Array(entries.reversed().enumerated()), id: \.offset) { _, entry in
-                    if let sentence = entry.sentence {
-                        HistoryLine(entry: entry, sentence: sentence)
-                    }
+                    HistoryLine(entry: entry)
                 }
             }
         }

@@ -1,5 +1,7 @@
 import Foundation
 
+private let emptyClientNameDescription = "An agent's client name is empty."
+
 public struct Owner: Decodable, Sendable, Equatable {
     public let identifier: String
     public let timeZone: String
@@ -38,9 +40,32 @@ public struct Workspace: Decodable, Sendable, Equatable {
     }
 }
 
-public struct ChangeActor: Decodable, Sendable, Equatable {
-    public let kind: ActorKind
-    public let clientName: String?
+public enum ChangeActor: Decodable, Sendable, Equatable {
+    case owner
+    case agent(clientName: String)
+
+    enum CodingKeys: String, CodingKey {
+        case kind
+        case clientName
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(ActorKind.self, forKey: .kind) {
+        case .owner:
+            self = .owner
+        case .agent:
+            self = .agent(clientName: try Self.clientName(in: container))
+        }
+    }
+
+    private static func clientName(in container: KeyedDecodingContainer<CodingKeys>) throws -> String {
+        let clientName = try container.decode(String.self, forKey: .clientName)
+        guard !clientName.isEmpty else {
+            throw DecodingError.dataCorruptedError(forKey: .clientName, in: container, debugDescription: emptyClientNameDescription)
+        }
+        return clientName
+    }
 }
 
 public struct TaskRecord: Decodable, Sendable, Equatable {

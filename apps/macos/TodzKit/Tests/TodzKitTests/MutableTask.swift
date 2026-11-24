@@ -32,7 +32,7 @@ struct MutableTask {
         self.state = state
         self.orderKey = orderKey
         self.idempotencyKey = nil
-        self.createdBy = ChangeActor(kind: .owner, clientName: nil)
+        self.createdBy = .owner
         self.createdAt = fixedInstant
         self.updatedAt = updatedAt
         self.completedAt = completedAt

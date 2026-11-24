@@ -62,7 +62,7 @@ enum OwnerFixtures {
             state: .open,
             orderKey: "a0",
             idempotencyKey: nil,
-            createdBy: ChangeActor(kind: .owner, clientName: nil),
+            createdBy: .owner,
             createdAt: date(milliseconds: createdAtMilliseconds),
             updatedAt: date(milliseconds: updatedAtMilliseconds),
             completedAt: nil
@@ -78,7 +78,7 @@ enum OwnerFixtures {
             state: .done,
             orderKey: "a1",
             idempotencyKey: idempotencyKey,
-            createdBy: ChangeActor(kind: .agent, clientName: agentClientName),
+            createdBy: .agent(clientName: agentClientName),
             createdAt: date(milliseconds: createdAtMilliseconds),
             updatedAt: date(milliseconds: updatedAtMilliseconds),
             completedAt: date(milliseconds: completedAtMilliseconds)

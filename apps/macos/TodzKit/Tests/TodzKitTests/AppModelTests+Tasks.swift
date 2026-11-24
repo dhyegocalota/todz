@@ -162,7 +162,7 @@ extension AppModelTests {
 
     @Test func loadHistoryHoldsTheEntriesOfTheTask() async throws {
         let harness = try await readyHarness()
-        let entry = HistoryEntry(at: fixedInstant, actor: ChangeActor(kind: .owner, clientName: nil), action: .created, fields: [], note: nil)
+        let entry = HistoryEntry(at: fixedInstant, actor: .owner, action: .created, fields: [], note: nil)
         harness.service.history = [entry]
         await harness.model.loadHistory(task: firstTask)
         #expect(harness.service.calls == [.readHistory(session: harness.session, projectIdentifier: inboxIdentifier, number: 1)])

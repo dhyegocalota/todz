@@ -28,7 +28,7 @@ struct TaskRowDetails {
     }
 
     private static func agentLine(task: BoardTask) -> String? {
-        guard case let .agent(client) = ChangeSource(task.task.createdBy) else { return nil }
-        return TaskRowCopy.via(client: client)
+        guard case let .agent(clientName) = task.task.createdBy else { return nil }
+        return TaskRowCopy.via(client: clientName)
     }
 }

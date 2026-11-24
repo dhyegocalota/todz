@@ -3,7 +3,6 @@ import TodzKit
 
 struct HistoryLine: View {
     let entry: HistoryEntry
-    let sentence: String
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -12,7 +11,7 @@ struct HistoryLine: View {
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading) {
-                Text(sentence)
+                Text(entry.sentence)
                 if let note = entry.note {
                     Text(note)
                         .foregroundStyle(.secondary)
