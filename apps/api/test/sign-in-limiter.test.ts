@@ -1,10 +1,10 @@
-import { SIGN_IN_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
+import { SIGN_IN_RATE_LIMIT_MAX, SIGN_IN_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import type { Env } from '../src/env';
 import { OwnerRoute } from '../src/owner-routes';
 import { signInLimitRefusal } from '../src/sign-in-limiter';
 import { LINK_CHALLENGE, PUBLIC_ORIGIN, emailEnv, freshAddress } from './email-sign-in-client';
-import { type OwnerCall, serveOwnerCall } from './owner-client';
+import { type OwnerCall, ownerCall, serveOwnerCall } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
 
 const CLIENT_ADDRESS_HEADER = 'CF-Connecting-IP';
@@ -12,6 +12,8 @@ const FIRST_CLIENT_ADDRESS = '203.0.113.7';
 const SECOND_CLIENT_ADDRESS = '203.0.113.8';
 const ACCEPTED_STATUS = 202;
 const OK_STATUS = 200;
+const SATURATED_CLIENT_ADDRESS = '198.51.100.1';
+const UNTOUCHED_CLIENT_ADDRESS = '192.0.2.1';
 const TOO_MANY_STATUS = 429;
 const TOO_MANY_REQUESTS = { error: 'too_many_requests' };
 const RETRY_AFTER_HEADER = 'Retry-After';
@@ -111,6 +113,16 @@ describe('the sign-in limiter', () => {
     const response = await serve({ call, workerEnv: limitedEnv(limiter) });
     expect(response.status).toBe(OK_STATUS);
     expect(keys).toEqual([]);
+  });
+
+  test('the configured binding refuses the call after the shared maximum, for that client address only', async () => {
+    const responses = await Promise.all(
+      Array.from({ length: SIGN_IN_RATE_LIMIT_MAX + 1 }, () => ownerCall(sessionCall(SATURATED_CLIENT_ADDRESS))),
+    );
+    const statuses = responses.map((response) => response.status);
+    const otherClient = await ownerCall(sessionCall(UNTOUCHED_CLIENT_ADDRESS));
+    expect(statuses.filter((status) => status === TOO_MANY_STATUS)).toHaveLength(1);
+    expect(otherClient.status).not.toBe(TOO_MANY_STATUS);
   });
 
   test('the helper refuses only when the limiter says so', async () => {

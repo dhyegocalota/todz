@@ -18,7 +18,7 @@ The whole of todz v1 in one run: the owner signs in to an empty Mac, names a wor
 - Surface: macOS app. A is driven with Orca computer use (ADR 0026); B is an MCP client from `@modelcontextprotocol/client`, written in the scratchpad, with `clientInfo.name` "Claude Code".
 - Save the owner's session file, `~/Library/Containers/dev.todz.Todz/Data/Library/Application Support/session` (its `shasum`), then remove it so the app starts signed out. Keep the copy at mode 600, restore it byte-identical at the end, and delete the copy once the check matches.
 - The key copied in T4 appears in reports, logs and the PR only as its last four characters; the frames that show the full key stay out of the PR.
-- Boot: from `apps/api`, `pnpm exec wrangler d1 migrations apply directory --local --persist-to <scratch>` then `pnpm exec wrangler dev --var SIGN_IN_PROVIDER:fake --port 8787 --persist-to <scratch>`. Port 8787 must be free.
+- Boot: from `apps/api`, `pnpm exec wrangler d1 migrations apply todz-directory --local --persist-to <scratch>` then `pnpm exec wrangler dev --local-upstream localhost:8787 --var SIGN_IN_PROVIDER:fake --var EMAIL_SENDER:console --var PUBLIC_ORIGIN:http://localhost:8787 --port 8787 --persist-to <scratch>`. Port 8787 must be free.
 - Build and launch the app (`pnpm verify all` builds it into `apps/macos/build`), hidden where a step allows.
 - Fictional data only: workspace "Acme", project "Launch", tasks named like "Draft the release notes".
 

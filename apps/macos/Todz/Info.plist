@@ -35,7 +35,7 @@
 		<true/>
 	</dict>
 	<key>TodzAPIBaseURL</key>
-	<string>http://localhost:8787</string>
+	<string>$(TODZ_API_BASE_URL)</string>
 	<key>TodzAppGroup</key>
 	<string>$(TeamIdentifierPrefix)dev.todz</string>
 </dict>
