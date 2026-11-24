@@ -1,3 +1,5 @@
+import Foundation
+
 typealias ChangeSignalStream = AsyncThrowingStream<ChangeSignalEvent, any Error>
 
 extension AppModel {
@@ -30,10 +32,12 @@ extension AppModel {
     }
 
     func requestWorkspaceReload() {
-        guard let session, workspaceReload == nil, workspaceListingsInFlight == 0 else { return }
+        guard session != nil, workspaceReload == nil, workspaceListingsInFlight == 0 else { return }
+        let reloadIdentifier = UUID()
+        workspaceReloadIdentifier = reloadIdentifier
         workspaceReload = Task {
             await reloadWorkspacesQuietly()
-            guard self.session == session else { return }
+            guard workspaceReloadIdentifier == reloadIdentifier else { return }
             workspaceReload = nil
         }
     }

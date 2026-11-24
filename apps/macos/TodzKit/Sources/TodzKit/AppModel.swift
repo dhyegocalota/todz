@@ -33,6 +33,7 @@ import Observation
     @ObservationIgnored var watchAttempts: [String: Int] = [:]
     @ObservationIgnored var isWatchAnswered: [String: Bool] = [:]
     @ObservationIgnored var workspaceReload: Task<Void, Never>?
+    @ObservationIgnored var workspaceReloadIdentifier: UUID?
     @ObservationIgnored var sendLoop: Task<Void, Never>?
     @ObservationIgnored var sendingSession: String?
     @ObservationIgnored var sendWait: Task<Void, any Error>?
