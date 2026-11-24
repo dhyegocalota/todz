@@ -8,6 +8,10 @@ enum FolderStatus: Equatable {
     case owned
     case refused
 
+    static func checked(_ folder: URL) -> FolderStatus {
+        fatalError("FolderStatus.checked is not implemented")
+    }
+
     static func madePrivate(_ folder: URL) -> FolderStatus {
         let descriptor = folder.withUnsafeFileSystemRepresentation { path in
             path.map { open($0, openFlags) }
