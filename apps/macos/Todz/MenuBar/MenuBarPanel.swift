@@ -12,7 +12,7 @@ import SwiftUI
 
     func openMainWindow(_ openWindow: OpenWindowAction) {
         close()
-        openWindow.mainWindow()
+        Task { openWindow.mainWindow() }
     }
 
     private var statusItemButton: NSStatusBarButton? {
