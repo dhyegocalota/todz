@@ -235,3 +235,39 @@ D1, R1, S1, S2 and R5 live in the app, which has no test target; their proof is 
 - R1 relies on SwiftUI tearing the `Window` scene's content down when it closes, so `.onDisappear` fires; if a close only hides the window, the secret would survive a reopen.
 - The R2 duplicate test gives the listed key the fake's next identifier, not the issued key itself (the fake stamps its creation time on issue); the model compares by identifier.
 - The secret-shape check repeats the base64url alphabet in `IssuedKey.swift`, beside the different unreserved set `AgentCommand.swift` percent-encodes with.
+
+## Fix round 2
+
+### What changed
+
+| Finding | Change | Commits |
+|---------|--------|---------|
+| Security: ⌘W during Create, late answer lands on reopen | `AppModel.leaveKeyScreen()` ends the visit (no visit identifier, so late list, issue and revoke answers are dropped), sets `isIssuing = false` and clears `issuedKey`; `reopenKeyScreen()` starts a new visit for `keyProjectIdentifier`, else the Inbox, and reloads, only when no visit is open. `KeyScreen` calls them from `.onDisappear` and `.onAppear`; `hideKey()` stays for the Hide button | 8ce67ce red, ec45285 |
+| Reviewer 1: `selectedItem` read in the task list subtree | `TaskListHeader`, `InspectorView` and `TaskInspector` take `item` from `MainWindow`, as `TaskListView` does | 4cbd412 |
+| Reviewer 2: handler looked up twice | Add to Cursor opens the link with `open([link], withApplicationAt:)` on the application it checked; a thrown error shows "Cursor didn't open" | 0e5d738 |
+| Reviewer 3: a key revoked elsewhere stays listed | `keyIssueAnswers` counts issue answers; a list answer re-adds `issuedKey` only when the count changed while its request ran | 0ddcc08 red, 22825fa |
+
+`swift test`: 534 before, 539 after, all green. The app builds with the gate's lines into a scratch derived data folder, with no warning.
+
+### Red today, green after
+
+| Test | Red commit and printed failure | Green commit |
+|------|--------------------------------|--------------|
+| `AppModelTests.aReloadStartedAfterTheIssueDropsAKeyRevokedElsewhere` | 0ddcc08: `Expectation failed: harness.model.keys == .loaded([launchKey])`, the list still held `project-key-1` beside `launch-key` | 22825fa |
+| `AppModelTests.anIssueAnswerAfterLeavingTheScreenInTheSameWindowShowsNoSecret` | 8ce67ce: `TodzKit/AppModel+Keys.swift:82: Fatal error: AppModel.leaveKeyScreen is not implemented` | ec45285 |
+| `AppModelTests.leavingTheScreenForgetsTheSecretAndKeepsTheList`, `reopeningTheScreenWithNoProjectShowsTheInboxKeys`, `reopeningTheScreenAlreadyLoadingStartsNoSecondLoad` | 8ce67ce: the same fatal error, from the stubs | ec45285 |
+| `AppModelTests.aReloadThatMissedTheIssuedKeyKeepsItListed` | pin for the other order, green on landing; it stays green with the counter | 63a9489 |
+
+The two views and the Cursor button live in the app, which has no test target; their proof is the build and the walk.
+
+### Hypotheses to attack
+
+1. Hypothesis: click Create, then ⌘W before the answer arrives, then reopen from the menu bar: no secret is shown, and the new key is listed by its hint. Break it by: a slow network, and ⌘W at once after the click.
+2. Hypothesis: opening the key screen from the sidebar loads the list once. Break it by: watching the server log for a doubled `GET` of the keys.
+3. Hypothesis: with a secret shown and the key revoked from another device, Refresh drops the row; the secret block stays until hidden. Break it by: revoking by hand with the other client, then Refresh.
+4. Hypothesis: Add to Cursor with Cursor installed opens Cursor's install dialog and shows no failure line.
+
+### Known gaps
+
+- Both ⌘W paths rely on SwiftUI tearing the `Window` content down; a close that only hides the window would skip `.onDisappear`.
+- `reopenKeyScreen()` is a no-op while a visit is open, so a disappear without a following appear leaves the visit closed until the next appear.
