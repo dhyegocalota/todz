@@ -29,10 +29,17 @@ struct AddToCursorButton: View {
         let link = AgentCommand.cursorLink(serverURL: serverURL, secret: secret)
         let handlerApplicationURL = NSWorkspace.shared.urlForApplication(toOpen: link)
         let handlerIdentifier = handlerApplicationURL.flatMap { Bundle(url: $0)?.bundleIdentifier }
-        guard AgentCommand.isCursor(bundleIdentifier: handlerIdentifier) else {
+        guard let handlerApplicationURL, AgentCommand.isCursor(bundleIdentifier: handlerIdentifier) else {
             didNotOpen = true
             return
         }
-        didNotOpen = !NSWorkspace.shared.open(link)
+        Task {
+            do {
+                _ = try await NSWorkspace.shared.open([link], withApplicationAt: handlerApplicationURL, configuration: NSWorkspace.OpenConfiguration())
+                didNotOpen = false
+            } catch {
+                didNotOpen = true
+            }
+        }
     }
 }
