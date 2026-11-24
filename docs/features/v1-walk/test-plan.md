@@ -30,7 +30,7 @@ One box per test of `docs/scenarios/v1-walk.md`; expected: its `Expect` line, as
 - [x] T13 Offline and back — evidence: .pr-media/scenario-v1-walk/13-t13-offline-a.png, 13-t13-back-online-a.png
 - [ ] T14 A widget tick (owner's desktop) — BLOCKED: no owner OK to place a widget on the desktop; stays on the Human checklist
 - [x] Edge cases hunted, each with input and observed outcome — evidence: .pr-media/scenario-v1-walk/report.md; six cases, see the section below
-- [x] The owner's session file restored byte-identical; port 8787 free; the app quit — evidence: shasum 6d7f01fe1587e5a5d549fb7c6b8bd0750de9115c before and after; app quit, wrangler stopped, 8787 and 9797 free
+- [x] The owner's session file restored byte-identical; port 8787 free; the app quit — evidence: the session file's shasum matched before and after; app quit, wrangler stopped, 8787 and 9797 free
 - [x] Report at `.pr-media/scenario-v1-walk/report.md`, frames and `walkthrough.mp4` — evidence: .pr-media/scenario-v1-walk/report.md, walkthrough.mp4 (12 frames of the window)
 
 ## Edge cases found during execution
