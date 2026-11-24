@@ -1,3 +1,5 @@
+import Foundation
+
 public enum MenuBarBadge {
     public static let storageKey = "showsMenuBarCount"
     public static let isEnabledByDefault = true
@@ -8,5 +10,9 @@ public enum MenuBarBadge {
         guard isEnabled, let openCount, openCount > 0 else { return nil }
         guard openCount <= cap else { return "\(cap)+" }
         return "\(openCount)"
+    }
+
+    public static func registerDefault(in defaults: UserDefaults) {
+        fatalError("MenuBarBadge.registerDefault is not implemented")
     }
 }
