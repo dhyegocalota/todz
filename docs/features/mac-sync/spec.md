@@ -95,8 +95,8 @@ Copy keys are those of [`design.md`](design.md).
 - **Unexpected** on a send → kept; the third failure of the same change drops it as refused.
 - **401** anywhere → the shell's sign-in screen with "session ended"; sockets close; the cache and outbox stay. The next sign-in as the same owner shows the cache and sends the outbox; as another owner, it erases them first.
 - **Sign-out** with changes waiting → the design's confirmation; confirmed, the cache and outbox are erased, then the session.
-- **Unreadable cache files** → ADR 0027 § 5: a project file is erased and pulled from 0; an owner file erases the cache; an outbox file is erased and the owner is told once.
-- **Unwritable cache** → the app goes on in memory and raises the design's "changes not saved on this Mac" notice once per launch.
+- **Unreadable cache files** → ADR 0027 § 5: a project file is erased and pulled from 0; an owner file erases the cache; an outbox file is erased and `ErrorCopy.waitingChangesLost` shows once.
+- **Unwritable cache** → the app goes on in memory and raises `ErrorCopy.cacheNotSaved` once per launch (`design.md` § 1.9).
 - **A pull's answer for a task with a waiting change** → the board takes the server's record; the screen keeps the waiting field on top until its answer arrives.
 - **A project that leaves the workspace** (404 on its socket or pull) → the workspaces reload; its waiting changes are dropped as refused.
 - **Two Macs** → each sends its own outbox; the server applies whichever arrives last per field.
