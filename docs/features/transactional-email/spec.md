@@ -54,6 +54,21 @@ GET /brand/todz-lockup.png ── Worker static assets (byte copy of docs/brand/
 | A slot value with `<` or `"` | escaped in HTML, literal in text |
 | The generated module is stale | `generated-emails.test.ts` fails in the gate |
 
+## Plan review answers (2026-11-24)
+
+These bind the build and win over any line above that disagrees.
+
+- **T1, two test projects.** `vitest.config.mts` gets `test.projects`: `workers` (the current pool, excluding `test/emails/**` and `test/brand-asset.test.ts`) and `node` (`environment: node`, those files). `test:unit` runs both. `scripts/` and the Node tests get their own `tsconfig` with Node types, so the Worker's typecheck keeps its Workers-only types.
+- **T2, assets.** `assets` gets `run_worker_first` for `/owner/*`, `/mcp` and `/sign-in`, so no file can shadow an API path; `worker.test.ts` covers the three. The PNG is proven by a Node byte check (`public/brand/todz-lockup.png` equals `docs/brand/todz-lockup.png`) and by a `wrangler dev` request in the walk, unless the pool serves assets.
+- **T3, the welcome's trigger.** `identityOwnerId` returns `{ ownerId, isNewOwner }`: true only after its own successful insert, false for a known owner and for the rival path of the insert race. The welcome goes only when `isNewOwner` and the provider kind is `email`; a fake subject is not an address.
+- **T4, the welcome never delays or fails a sign-in.** `OwnerContext` carries the Worker's `ExecutionContext`; the welcome is handed to `ctx.waitUntil`, its rejection caught there. With no sender or no `PUBLIC_ORIGIN` the welcome is skipped by an explicit branch. A throwing welcome is tested after the session opens.
+- **T5, slots.** `EmailSlot` is `Link`, `Email` and `Origin`; all slots are filled in one pass from a pattern built from the enum, so a value holding `{{link}}` is never expanded again; the link is escaped in `href` too. Tests: the address `{{link}}@x.io`, and the escaping case.
+- **T6, dark mode in mail clients.** The layout declares `<meta name="color-scheme" content="light dark">` and `supported-color-schemes`, a `prefers-color-scheme: dark` block for the card, the text and the button, inline colours and `bgcolor` on the containers, and the header `img` with `alt="todz"`, `width` and `height`. A test asserts the meta in the generated HTML.
+- **T7, the port.** `emailSenderOf({ configured, publicOrigin, binding })`; the senders become a record of factories; `EmailMessage.html` is required; the console origin rule stays console-only, so `cloudflare` sends from a public origin. The sender, reply-to and display name are constants at the top of the sender's file.
+- **T8, existing tests.** The console sender keeps logging `{to, text}`; the welcome's text never matches the token pattern; no generated file or new source names `console`.
+- **T9, scripts and guards.** A `dev:email:cloudflare` script runs `wrangler dev` with `EMAIL_SENDER=cloudflare` so the simulated binding writes the mail locally; `api-source.test.ts` also asserts `wrangler.jsonc` never names `EMAIL_SENDER`; the test environment gets an `EMAIL` stub binding instead of Miniflare's `send_email`.
+- **T10, proof.** Test lines for `cloudflare` on a public origin, the welcome never firing for `fake`, and the Worker bundle size with the generated module (`wrangler deploy --dry-run --outdir`); the lead adds the two mails' light screenshots to the root README.
+
 ## Open questions → answers
 
 | Question | Options | Owner's answer | Date |

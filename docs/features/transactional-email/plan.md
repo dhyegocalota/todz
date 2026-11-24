@@ -6,13 +6,14 @@
 **Assumptions (decided, owner can override):**
 - ADRs 0042 and 0043, built while `Proposed` (the owner asked the loop to decide every call and review later, PROMPT.md 2026-11-24).
 - The branch starts from `feat/magic-link-sign-in` and takes `main` by merge once that feature ships.
+- spec.md → Plan review answers T1–T10 bind every step.
 - Ported from the owner's zapbip (`/Users/dhyegocalota/Projects/zapbip/zapbip/apps/api/scripts/emails/`, read-only): copy and adapt, never edit it.
 
 ## File map
 
 | Group | Paths owned | Developer sub-agent |
 |-------|-------------|---------------------|
-| G1 | `apps/api/scripts/emails/**` (new), `apps/api/src/emails/**` (new), `apps/api/src/email-sender.ts`, `apps/api/src/sign-in-links.ts`, `apps/api/src/sign-in-mail-copy.ts` (removed), `apps/api/src/owner-sign-in.ts`, `apps/api/src/env.ts`, `apps/api/src/index.ts`, `apps/api/public/**` (new), `apps/api/wrangler.jsonc`, `apps/api/package.json`, `apps/api/tsconfig*.json`, `apps/api/vitest.config.mts`, `apps/api/test/**`, `apps/api/README.md`, `package.json` (root scripts), `pnpm-lock.yaml`, `tools/repository-shape/src/api-source.test.ts`, `docs/features/transactional-email/tester-briefing.md` | `developer` |
+| G1 | `apps/api/scripts/emails/**` (new), `apps/api/src/emails/**` (new), `apps/api/src/email-sender.ts`, `apps/api/src/sign-in-links.ts`, `apps/api/src/sign-in-mail-copy.ts` (removed), `apps/api/src/owner-sign-in.ts`, `apps/api/src/env.ts`, `apps/api/src/index.ts`, `apps/api/public/**` (new), `apps/api/wrangler.jsonc`, `apps/api/package.json`, `apps/api/tsconfig*.json`, `apps/api/vitest.config.mts`, `apps/api/tsconfig.scripts.json` (new), `apps/api/test/**`, `apps/api/src/owner-request.ts`, `apps/api/src/owner-endpoint.ts`, `apps/api/README.md`, `package.json` (root scripts), `pnpm-lock.yaml`, `tools/repository-shape/src/api-source.test.ts`, `docs/features/transactional-email/tester-briefing.md` | `developer` |
 
 ## Sequencing
 
