@@ -1,4 +1,6 @@
-<h1 align="center">todz</h1>
+<p align="center">
+  <img src="docs/brand/todz-lockup.png" alt="todz" width="360">
+</p>
 
 <p align="center">
   <strong>A to-do list that AI agents and their owner share.</strong>
@@ -9,6 +11,10 @@
 [![license](https://img.shields.io/github/license/dhyegocalota/todz)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-blue)](.github/CONTRIBUTING.md)
 
+</p>
+
+<p align="center">
+  <img src="docs/brand/todz-icon.svg" alt="The todz app icon" width="128">
 </p>
 
 <p align="center">
@@ -36,7 +42,7 @@ The approved design is in [docs/product](docs/product/); how each piece was buil
 | ![Today from the menu bar](docs/screenshots/menu-bar/01-today-popover.png)<br>Today from the menu bar             | ![Today ring](docs/screenshots/widgets/01-today-ring.png)<br>Today ring (rendered)                                    |
 | ![Next up](docs/screenshots/widgets/02-next-up.png)<br>Next up (rendered)                                         | ![Medium Today list](docs/screenshots/widgets/03-medium-today.png)<br>Medium Today list (rendered)                    |
 | ![Large Today list](docs/screenshots/widgets/04-large-today.png)<br>Large Today list (rendered)                   | ![Connect an agent](docs/screenshots/connect-an-agent/01-key-screen.png)<br>Connect an agent                          |
-| ![Today's open tasks on the menu bar icon](docs/screenshots/menu-bar-count/01-count.png)<br>Today's open tasks on the menu bar icon | |
+| ![Today's open tasks on the menu bar icon](docs/screenshots/menu-bar-count/01-count.png)<br>Today's open tasks on the menu bar icon | ![An agent's tasks in a project, via Claude Code](docs/screenshots/v1-walk/01-agent-tasks-in-a-project.png)<br>An agent's tasks in a project, via Claude Code |
 
 The widget shots are rendered from the widgets' own views until a desktop capture replaces them.
 

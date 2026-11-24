@@ -1,6 +1,6 @@
 # The v1 walk
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-24, by inheritance from [the v1 product design](../../product/README.md) (Order of delivery, item 10: "a scenario that walks the whole v1 from an empty workspace to tasks added by an agent and completed in a widget"), approved by the owner on 2026-11-23. How a native app's scenario runs is [ADR 0037](../../adr/0037-the-v1-scenario-walks-the-native-app-with-computer-use-and-the-agent-with-an-mcp-client.md), the loop's call, listed in the loop's questions for the owner
 **ADRs:** [0037](../../adr/0037-the-v1-scenario-walks-the-native-app-with-computer-use-and-the-agent-with-an-mcp-client.md), [0003](../../adr/0003-agentic-scenario-runs-with-one-browser-per-user.md), [0026](../../adr/0026-a-native-app-is-walked-with-computer-use-and-recorded-from-its-screenshots.md)

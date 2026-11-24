@@ -109,7 +109,7 @@ A places the medium todz widget on the desktop and ticks "Ship the changelog".
 
 ## Edge cases to hunt during the run
 
-- B adds a task with a title of 500 characters and Markdown notes; the app wraps it and the menu bar count stays right.
+- B adds a task with a title of 200 characters (the server refuses more) and Markdown notes; the app wraps it and the menu bar count stays right.
 - B calls `done` on an already done task; the answer says so and nothing changes twice.
 - A signs out mid-walk and signs in again; Acme, Launch and the tasks come back from the server.
 - A switches to a second workspace with ⌘2 from the popover; the count follows the active workspace.
