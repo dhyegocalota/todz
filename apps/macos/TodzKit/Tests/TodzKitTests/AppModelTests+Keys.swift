@@ -110,6 +110,14 @@ extension AppModelTests {
         #expect(harness.service.calls == [.issueKey(session: harness.session, projectIdentifier: launchIdentifier)])
     }
 
+    @Test func hidingTheKeyForgetsTheSecretAndKeepsTheList() async throws {
+        let harness = try await keyHarness()
+        let issued = try await issuedKeyOfLaunch(harness)
+        harness.model.hideKey()
+        #expect(harness.model.issuedKey == nil)
+        #expect(harness.model.keys == .loaded([launchKey, issued.key]))
+    }
+
     @Test func leavingTheScreenForgetsTheSecretAndKeepsTheList() async throws {
         let harness = try await keyHarness()
         let issued = try await issuedKeyOfLaunch(harness)

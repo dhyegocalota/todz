@@ -40,7 +40,8 @@ struct KeyScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color(nsColor: .windowBackgroundColor))
-        .onDisappear { model.hideKey() }
+        .onAppear { model.reopenKeyScreen() }
+        .onDisappear { model.leaveKeyScreen() }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SyncStatusItem(announcesChanges: true)

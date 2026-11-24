@@ -79,11 +79,18 @@ extension AppModel {
     }
 
     public func leaveKeyScreen() {
-        fatalError("AppModel.leaveKeyScreen is not implemented")
+        keyScreenIdentifier = nil
+        isIssuing = false
+        issuedKey = nil
     }
 
     public func reopenKeyScreen() {
-        fatalError("AppModel.reopenKeyScreen is not implemented")
+        guard keyScreenIdentifier == nil else { return }
+        guard let projectIdentifier = keyProjectIdentifier else {
+            showInboxKeys()
+            return
+        }
+        showKeys(projectIdentifier: projectIdentifier)
     }
 
     public func forgetKeys() {
