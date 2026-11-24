@@ -65,6 +65,20 @@ export const OWNER_ROUTES: Record<OwnerRoute, OwnerRouteDefinition> = {
   [OwnerRoute.RevokeKey]: definition({ method: HttpMethod.Delete, pathname: '/owner/projects/:projectId/keys/:keyId' }),
 };
 
-export function matchOwnerRoute(_request: Request): OwnerRouteMatch | null {
-  throw new Error('matchOwnerRoute is not implemented');
+function namedParams(groups: Record<string, string | undefined>): Record<string, string> {
+  return Object.fromEntries(Object.entries(groups).filter((entry): entry is [string, string] => entry[1] !== undefined));
+}
+
+function matchOf({ request, route }: { request: Request; route: OwnerRoute }): OwnerRouteMatch[] {
+  const { method, pattern } = OWNER_ROUTES[route];
+  if (method !== request.method) return [];
+  const result = pattern.exec(request.url);
+  if (result === null) return [];
+  return [{ route, params: namedParams(result.pathname.groups) }];
+}
+
+export function matchOwnerRoute(request: Request): OwnerRouteMatch | null {
+  const [firstMatch] = Object.values(OwnerRoute).flatMap((route) => matchOf({ request, route }));
+  if (firstMatch === undefined) return null;
+  return firstMatch;
 }
