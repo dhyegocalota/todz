@@ -16,7 +16,7 @@ The product design asks the key screen for "a ready command for Claude Code, Cod
 ## Decision
 
 1. "Create a key" issues a key and shows, once, three blocks built from the server URL and the new secret, each with Copy:
-   - **Claude Code:** `claude mcp add --transport http todz <url> --header "Authorization: Bearer <secret>"`.
+   - **Claude Code:** `claude mcp add --transport http todz '<url>' --header 'Authorization: Bearer <secret>'`, single-quoted because a secret is `todz_` plus base64url and never holds a quote.
    - **Codex:** the `config.toml` table `[mcp_servers.todz]` with `url` and `bearer_token_env_var = "TODZ_API_KEY"`, and the line `export TODZ_API_KEY=<secret>` for the owner's shell profile.
    - **Cursor:** an "Add to Cursor" button that opens the install link with `{"url": <url>, "headers": {"Authorization": "Bearer <secret>"}}`, and the same server as `mcp.json` JSON to copy.
 2. Without a secret on screen, the blocks show the same text with the secret replaced by a visible placeholder, and their Copy is disabled until a key is created.

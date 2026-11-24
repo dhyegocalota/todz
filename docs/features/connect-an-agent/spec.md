@@ -15,7 +15,7 @@ An agent works a project's tasks only with that project's MCP key, and the owner
 - "Connect an agent" at the bottom of the main window's sidebar opens the key screen for one project of the active workspace: the project the owner had selected, else the Inbox, with a picker to change it.
 - The screen shows the MCP server URL (the app's API base URL plus `/mcp`) with Copy, the five tools an agent gets (`next`, `add`, `list`, `update`, `done`) with one line each, and the project's unrevoked keys (the last four characters and the creation date), each with "Revoke" behind a confirmation.
 - "Create a key" issues a key for the project and shows its secret once, inside a ready command for Claude Code and for Codex, and an "Add to Cursor" link, each with Copy (ADR 0034). Leaving the project or the screen forgets the secret; the list then shows the key by its last four characters only.
-- Revoking a key removes it from the list; an agent using it gets "not found" from then on (the server already does this).
+- Revoking a key removes it from the list; an agent using it is refused from then on (`/mcp` answers 401 with `WWW-Authenticate: Bearer`, as the server already does).
 - Every failure is shown on the screen in the app's own words, and nothing is retried silently.
 
 ## Non-goals
@@ -38,7 +38,7 @@ sidebar "Connect an agent" ─▶ AppModel.selectedItem = .connectAgent
    ─▶ AppModel.loadKeys(project) ─▶ OwnerAPI.listKeys ─▶ [ProjectKey { identifier, hint, createdAt }]
 
 "Create a key" ─▶ OwnerAPI.issueKey(project) ─▶ { key, secret }
-   ─▶ list += key; IssuedKey(secret) held in memory by the screen only
+   ─▶ list += key; IssuedKey(secret) held in memory by AppModel while the screen shows that project, never persisted
    ─▶ AgentCommand.claudeCode / .codex / .cursorLink(url, secret) ─▶ Copy (NSPasteboard) or open the Cursor link
 
 "Revoke" ─▶ confirm ─▶ OwnerAPI.revokeKey(project, key) ─▶ 204 ─▶ list −= key (and the shown secret, if it was that key's)
@@ -51,11 +51,14 @@ sidebar "Connect an agent" ─▶ AppModel.selectedItem = .connectAgent
 ### Failure handling
 
 - **Listing fails** (offline, 5xx) → the screen shows the error with "Try again"; the URL, tools and commands stay usable.
-- **Issuing fails** → no secret is shown and the error says the key was not created; a retry creates a new key, never shows an old one.
+- **Issuing fails** → no secret is shown, the error says the key was not created, and the list reloads, so a key the server committed before the failure is listed (and can be revoked); a retry creates a new key, never shows an old one.
+- **An issue answer arrives after the project changed, the screen was left or the session ended** → no secret, no error.
+- **The shown project answers 404** → the screen falls back to the Inbox.
 - **Revoking answers 404** (already revoked, another device) → the key leaves the list without an error.
 - **The session ends (401)** → the app's existing sign-out path; the secret is gone with the screen.
 - **The project is removed or the workspace switched while the screen is open** → the screen follows the new active workspace's Inbox and forgets the secret.
 - **Logs:** nothing about keys.
+- **Pasteboard:** a copied text holding a secret carries the concealed and transient pasteboard markers, so clipboard managers skip it.
 
 ## Open questions → answers
 
