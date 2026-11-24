@@ -50,4 +50,16 @@ private func workspaces(count: Int) -> [Workspace] {
         #expect(WorkspaceShortcuts.lastNumber(of: workspaces(count: 3)) == 3)
         #expect(WorkspaceShortcuts.lastNumber(of: workspaces(count: 10)) == 9)
     }
+
+    @Test func aDigitKeyNamesItsNumber() {
+        #expect(WorkspaceShortcuts.number(forKey: "1") == 1)
+        #expect(WorkspaceShortcuts.number(forKey: "9") == 9)
+    }
+
+    @Test func aKeyOutsideTheNumbersNamesNone() {
+        #expect(WorkspaceShortcuts.number(forKey: "0") == nil)
+        #expect(WorkspaceShortcuts.number(forKey: "a") == nil)
+        #expect(WorkspaceShortcuts.number(forKey: "12") == nil)
+        #expect(WorkspaceShortcuts.number(forKey: "") == nil)
+    }
 }

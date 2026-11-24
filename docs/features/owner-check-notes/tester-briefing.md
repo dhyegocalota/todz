@@ -1,0 +1,62 @@
+# Tester briefing: The owner's checklist notes
+
+Written by the developer sub-agent. The developer did not run `test-plan.md`, did not launch the app and does not declare the feature works.
+
+## What changed
+
+- `apps/macos/TodzKit/Sources/TodzKit/HistoryFailure.swift`: `HistoryFailure.of(isOffline:)` picks `.offline` or `.failed`.
+- `apps/macos/TodzKit/Sources/TodzKit/AppModel.swift`: `isOffline` is readable from the app (`public internal(set)`).
+- `apps/macos/Todz/MainWindow/Inspector/HistoryList.swift`, `apps/macos/Copy/InspectorCopy.swift`: offline failed history shows `historyOffline` in secondary colour; online keeps the red line; Try Again under both.
+- `apps/macos/Todz/SignIn/CredentialSlot.swift`: asks for identity focus again when its own window becomes key (`controlActiveState`).
+- `docs/features/mac-app-shell/design.md`: § 1.1 and § 7 record the measured 976 × 532 next to the built 848 × 532.
+- Step 4 (⌘2 in the popover): no code was changed. The tester checks it with a real key event (`osascript` key code through System Events) with another app in front.
+
+## How to run
+
+```bash
+swift test --package-path apps/macos/TodzKit
+xcodegen -s apps/macos/project.yml -p apps/macos
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Debug
+```
+
+## Red today, green after
+
+| Test | Red before the change because | Green after because |
+|------|--------------------------------|---------------------|
+| `HistoryFailureTests::aFailureWhileOfflineIsOffline`, `aFailureWhileOnlineIsFailed` (commit 892249a) | `Fatal error: HistoryFailure is not implemented` | 967c600 returns `.offline` when offline, else `.failed` |
+
+Full suite after: 545 tests in 36 suites passed; Debug build succeeded.
+
+## Hypotheses to attack
+
+1. Hypothesis: offline, a task whose history is not cached shows the secondary "History shows when todz is back online." with Try Again; an online failure still shows the red "Couldn't load the history." Break it by: go offline, select an uncached task, come back online and press Try Again; also fail the history while online.
+2. Hypothesis: after Sign Out the identity field is focused with no click. Presumed cause (not reproduced): the sign-out confirmation dialog is still the key window when the `.task` of `CredentialSlot` runs, so the first focus request is lost; the new request when `controlActiveState` becomes `.key` lands once the main window is key. Break it by: sign out through the dialog and type at once; repeat through the menu command; also a fresh launch while signed out.
+3. Hypothesis: the focus observer does not steal focus elsewhere. Break it by: open the menu bar popover or another window while on the sign-in screen, then return.
+4. Hypothesis: the main window minimum on his Mac is 976 × 532 because the sidebar measured 308 wide with the Connect an Agent section. Break it by: resizing to the minimum and measuring the sidebar.
+5. Note 4 (⌘2 in the popover) may already work; verify with a real key event and record the evidence.
+6. Note 5: no change; the count follows the server's tasks.
+
+## Known gaps
+
+- The app was never launched by the developer; the focus fix is reasoned from the code only.
+- The focus request follows `controlActiveState` of the window that holds the sign-in screen, so no other window can trigger it; this is reasoned from the code only (see Fix round 1).
+
+## Fix round 1
+
+Commits: `e177ba8` (red test), `3b98192` (focus), `77e6e3f` (history failure chosen at failure time), `ed058a0` (online test uses a refused answer).
+
+- Red text of `e177ba8`: `Expectation failed: harness.model.histories[firstTask] == .failed(.offline)` in `aHistoryThatFailsToLoadWhileOfflineIsStoredAsOffline`.
+- Hypothesis: `CredentialSlot` asks for identity focus only when its own window's `controlActiveState` becomes `.key`; other windows becoming key, and the popover, do not move focus. Break it by: on the sign-in screen open the popover or another window and return; sign out through the dialog and type at once.
+- Hypothesis: a history that fails while offline keeps its offline line after todz comes back online until Try Again is pressed (the choice is stored when the failure happens). Break it by: fail a history offline, go online, look at the line without pressing Try Again.
+- Full suite after: 546 tests in 36 suites passed; Debug build succeeded.
+
+## Fix round 2
+
+Commits: `06bf48c` (red test), `e3c05ad` (D2), `0290c98` (D1), plus the docs commit for D3.
+
+- Red text of `06bf48c`: `Fatal error: number(forKey:) is not implemented` in `aDigitKeyNamesItsNumber` and `aKeyOutsideTheNumbersNamesNone` (`WorkspaceShortcutsTests`).
+- D2: `MenuBarPanelView.performKeyEquivalent` takes command plus a digit 1 to 9 (`WorkspaceShortcuts.number(forKey:)`) and calls `switchWorkspace(number:)`; the main menu items only fire for the active app. Verified in the Debug build against a local fake-sign-in API: Dia frontmost, popover opened from the status item, System Events command-1 then command-2 moved the switcher Side then Other; Dia stayed frontmost.
+- D1: the identity focus request in `CredentialSlot` now follows `await Task.yield()`. No TodzKit seam exists (it is view timing), so no unit test. Verified in the build: Sign Out from the app menu, then a real "ZZ" keystroke 1.5 s later landed in the identity field (value ZZ, focused element the field). Not re-run: the 401 path.
+- D3: docs only; `mac-app-shell/design.md` and the spec goal record 976 and 1000 and that the minimum follows the sidebar width.
+- Hypothesis: neither fix steals focus elsewhere; command-1 to 9 typed in the popover while todz is frontmost switches once, not twice. Break it by: the main window frontmost with the popover open; the 401 path; a cold launch.
+- Full suite after: 560 tests in 38 suites passed; Debug build succeeded. Session file restored (shasum ends 6d7f01fe); app and API quit.

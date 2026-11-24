@@ -102,8 +102,16 @@ extension AppModelTests {
 
     @Test func aHistoryThatFailsToLoadSaysSo() async throws {
         let harness = try await readyHarness()
+        harness.service.failures[.readHistory] = .taskNotFound(number: 1)
+        await harness.model.loadHistory(task: firstTask)
+        #expect(harness.model.histories[firstTask] == .failed(.failed))
+    }
+
+    @Test func aHistoryThatFailsToLoadWhileOfflineIsStoredAsOffline() async throws {
+        let harness = try await readyHarness()
+        harness.model.isOffline = true
         harness.service.failures[.readHistory] = .unreachable
         await harness.model.loadHistory(task: firstTask)
-        #expect(harness.model.histories[firstTask] == .failed)
+        #expect(harness.model.histories[firstTask] == .failed(.offline))
     }
 }

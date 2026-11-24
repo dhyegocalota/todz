@@ -11,6 +11,11 @@ public enum WorkspaceShortcuts {
         zip(numbers, workspaces).map { (number: $0, workspace: $1) }
     }
 
+    public static func number(forKey key: String) -> Int? {
+        guard let number = Int(key), numbers.contains(number) else { return nil }
+        return number
+    }
+
     public static func lastNumber(of workspaces: [Workspace]) -> Int {
         min(workspaces.count, numbers.upperBound)
     }
