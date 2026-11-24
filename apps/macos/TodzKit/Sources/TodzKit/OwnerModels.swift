@@ -2,7 +2,7 @@ import Foundation
 
 private let emptyClientNameDescription = "An agent's client name is empty."
 
-public struct Owner: Decodable, Sendable, Equatable {
+public struct Owner: Codable, Sendable, Equatable {
     public let identifier: String
     public let timeZone: String
 
@@ -10,9 +10,13 @@ public struct Owner: Decodable, Sendable, Equatable {
         case identifier = "id"
         case timeZone
     }
+
+    public func encode(to encoder: any Encoder) throws {
+        fatalError("Owner.encode is not implemented")
+    }
 }
 
-public struct Project: Decodable, Sendable, Equatable, Hashable {
+public struct Project: Codable, Sendable, Equatable, Hashable {
     public let identifier: String
     public let name: String
     public let isInbox: Bool
@@ -24,9 +28,13 @@ public struct Project: Decodable, Sendable, Equatable, Hashable {
         case isInbox
         case createdAt
     }
+
+    public func encode(to encoder: any Encoder) throws {
+        fatalError("Project.encode is not implemented")
+    }
 }
 
-public struct Workspace: Decodable, Sendable, Equatable {
+public struct Workspace: Codable, Sendable, Equatable {
     public let identifier: String
     public let name: String
     public let createdAt: Date
@@ -38,9 +46,13 @@ public struct Workspace: Decodable, Sendable, Equatable {
         case createdAt
         case projects
     }
+
+    public func encode(to encoder: any Encoder) throws {
+        fatalError("Workspace.encode is not implemented")
+    }
 }
 
-public enum ChangeActor: Decodable, Sendable, Equatable {
+public enum ChangeActor: Codable, Sendable, Equatable {
     case owner
     case agent(clientName: String)
 
@@ -59,6 +71,10 @@ public enum ChangeActor: Decodable, Sendable, Equatable {
         }
     }
 
+    public func encode(to encoder: any Encoder) throws {
+        fatalError("ChangeActor.encode is not implemented")
+    }
+
     private static func clientName(in container: KeyedDecodingContainer<CodingKeys>) throws -> String {
         let clientName = try container.decode(String.self, forKey: .clientName)
         guard !clientName.isEmpty else {
@@ -68,7 +84,7 @@ public enum ChangeActor: Decodable, Sendable, Equatable {
     }
 }
 
-public struct TaskRecord: Decodable, Sendable, Equatable {
+public struct TaskRecord: Codable, Sendable, Equatable {
     public let number: Int
     public let title: String
     public let notes: String?
@@ -80,6 +96,10 @@ public struct TaskRecord: Decodable, Sendable, Equatable {
     public let createdAt: Date
     public let updatedAt: Date
     public let completedAt: Date?
+
+    public func encode(to encoder: any Encoder) throws {
+        fatalError("TaskRecord.encode is not implemented")
+    }
 }
 
 public struct HistoryEntry: Decodable, Sendable, Equatable {
