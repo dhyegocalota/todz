@@ -17,12 +17,6 @@ extension AppModel {
         await activate(workspace)
     }
 
-    public func refresh() async {
-        guard let activeWorkspace else { return }
-        startSending()
-        await pull(projectIdentifiers: activeWorkspace.projects.map(\.identifier), workspaceIdentifier: activeWorkspace.identifier)
-    }
-
     public func loadFailure(of workspace: Workspace) -> AppBanner? {
         let loads = workspace.projects.map { projectLoads[$0.identifier] }
         let isNothingLoaded = loads.allSatisfy { $0 == .unreachable || $0 == .failed }
@@ -127,91 +121,9 @@ extension AppModel {
         selectedItem = .inbox
     }
 
-    private func pull(projectIdentifiers: [String], workspaceIdentifier: String) async {
-        guard let session, activeWorkspaceIdentifier == workspaceIdentifier else { return }
-        startPulls(projectIdentifiers: projectIdentifiers)
-        defer { endPulls(projectIdentifiers: projectIdentifiers) }
-        let feed = ProjectFeed(service: service)
-        let cursors = projectIdentifiers.map { (projectIdentifier: $0, cursor: storedCursor(projectIdentifier: $0)) }
-        let pulls: [ProjectPull]
-        do {
-            pulls = try await withThrowingTaskGroup(of: ProjectPull.self) { group in
-                cursors.forEach { projectIdentifier, cursor in
-                    group.addTask {
-                        try await ProjectPull.pulling(feed: feed, session: session, projectIdentifier: projectIdentifier, cursor: cursor)
-                    }
-                }
-                var pulls: [ProjectPull] = []
-                for try await pulled in group {
-                    record(pulled, session: session, workspaceIdentifier: workspaceIdentifier)
-                    pulls.append(pulled)
-                }
-                return pulls
-            }
-        } catch {
-            guard self.session == session else { return }
-            endSession()
-            return
-        }
-        guard isCurrent(session: session, workspaceIdentifier: workspaceIdentifier) else { return }
-        raiseFailures(of: pulls, workspaceIdentifier: workspaceIdentifier)
-    }
-
     func isShown(projectIdentifier: String) -> Bool {
         guard let activeWorkspace else { return false }
         return activeWorkspace.projects.contains { $0.identifier == projectIdentifier }
-    }
-
-    func pullFromStart(projectIdentifier: String) async {
-        guard let activeWorkspaceIdentifier else { return }
-        projectsToPullFromStart.insert(projectIdentifier)
-        await pull(projectIdentifiers: [projectIdentifier], workspaceIdentifier: activeWorkspaceIdentifier)
-    }
-
-    private func storedCursor(projectIdentifier: String) -> Int {
-        let isPulledFromStart = projectsToPullFromStart.remove(projectIdentifier) != nil
-        guard !isPulledFromStart, let cursor = board.cursor(projectIdentifier: projectIdentifier) else { return ProjectFeed.firstCursor }
-        return cursor
-    }
-
-    private func isCurrent(session: String, workspaceIdentifier: String) -> Bool {
-        self.session == session && activeWorkspaceIdentifier == workspaceIdentifier
-    }
-
-    private func startPulls(projectIdentifiers: [String]) {
-        projectIdentifiers.forEach { pullsInFlight[$0, default: 0] += 1 }
-    }
-
-    private func endPulls(projectIdentifiers: [String]) {
-        projectIdentifiers.forEach { projectIdentifier in
-            guard let count = pullsInFlight[projectIdentifier] else { return }
-            let isLastPull = count == 1
-            pullsInFlight[projectIdentifier] = isLastPull ? nil : count - 1
-        }
-    }
-
-    private func record(_ pulled: ProjectPull, session: String, workspaceIdentifier: String) {
-        guard isCurrent(session: session, workspaceIdentifier: workspaceIdentifier) else { return }
-        switch pulled {
-        case let .loaded(projectIdentifier, changes):
-            if changes.isFromStart { board.reset(projectIdentifier: projectIdentifier) }
-            board.merge(projectIdentifier: projectIdentifier, tasks: changes.tasks)
-            board = board.setting(cursor: changes.cursor, projectIdentifier: projectIdentifier)
-            projectLoads[projectIdentifier] = .loaded
-            keepProject(identifier: projectIdentifier)
-            startSending()
-        case let .unreachable(projectIdentifier), let .failed(projectIdentifier):
-            guard projectLoads[projectIdentifier] != .loaded else { return }
-            projectLoads[projectIdentifier] = pulled.isUnreachable ? .unreachable : .failed
-        }
-    }
-
-    private func raiseFailures(of pulls: [ProjectPull], workspaceIdentifier: String) {
-        let failedIdentifiers = pulls.compactMap(\.failedProjectIdentifier)
-        guard !failedIdentifiers.isEmpty else { return }
-        let isServerUnreachable = pulls.allSatisfy(\.isUnreachable)
-        let banner: AppBanner = isServerUnreachable ? .network : .someProjectsFailed
-        raise(banner, retry: { await self.pull(projectIdentifiers: failedIdentifiers, workspaceIdentifier: workspaceIdentifier) })
     }
 
     private func replaceProjects(workspaceIdentifier: String, change: ([Project]) -> [Project]) {

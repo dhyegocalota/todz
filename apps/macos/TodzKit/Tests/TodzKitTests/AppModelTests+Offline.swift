@@ -14,7 +14,7 @@ extension AppModelTests {
         return harness
     }
 
-    @Test func aRefreshWithTheServerUnreachableKeepsTheBoardAndRaisesTheNetworkBanner() async throws {
+    @Test func aRefreshWithTheServerUnreachableKeepsTheBoardWithNoBanner() async throws {
         let harness = try await orderHarness()
         let boardBefore = harness.model.board
         let loadsBefore = harness.model.projectLoads
@@ -22,16 +22,10 @@ extension AppModelTests {
         await harness.model.refresh()
         #expect(harness.model.board == boardBefore)
         #expect(harness.model.projectLoads == loadsBefore)
-        #expect(harness.model.banner == .network)
-        #expect(harness.model.canTryAgain)
-        harness.service.failures[.readChanges] = nil
-        harness.service.calls = []
-        await harness.model.tryAgain()
-        #expect(harness.service.routes() == [.readChanges, .readChanges])
         #expect(harness.model.banner == nil)
     }
 
-    @Test func aRefreshWhereOneProjectFailsKeepsEveryProjectLoaded() async throws {
+    @Test func aRefreshWhereOneProjectFailsKeepsEveryProjectLoadedWithNoBanner() async throws {
         let harness = try await orderHarness()
         let boardBefore = harness.model.board
         let loadsBefore = harness.model.projectLoads
@@ -39,7 +33,7 @@ extension AppModelTests {
         await harness.model.refresh()
         #expect(harness.model.board == boardBefore)
         #expect(harness.model.projectLoads == loadsBefore)
-        #expect(harness.model.banner == .someProjectsFailed)
+        #expect(harness.model.banner == nil)
     }
 
     @Test func aFirstPullWithTheServerUnreachableRaisesTheNetworkBanner() async throws {

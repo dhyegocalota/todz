@@ -22,6 +22,7 @@ import Observation
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
     var outbox = Outbox()
+    var refreshesInFlight = 0
 
     @ObservationIgnored var session: String?
     @ObservationIgnored var ownerIdentifier: String?
@@ -35,6 +36,8 @@ import Observation
     @ObservationIgnored var refusalsInFlush = 0
     @ObservationIgnored var selectionsAtAdd: [String: TaskKey?] = [:]
     @ObservationIgnored var projectsToPullFromStart: Set<String> = []
+    @ObservationIgnored var pullGates: [String: PullGate] = [:]
+    @ObservationIgnored var queuedPulls: Set<String> = []
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let store: any SyncStore
@@ -210,8 +213,8 @@ import Observation
     func forgetWindow() {
         stopWatching()
         stopSending()
+        stopPulling()
         selectionsAtAdd = [:]
-        projectsToPullFromStart = []
         isWorkspaceListOutdated = false
         workspaces = []
         activeWorkspaceIdentifier = nil

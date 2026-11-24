@@ -148,21 +148,4 @@ extension AppModelTests {
         await harness.model.switchWorkspace(identifier: acme.identifier)
         #expect(harness.model.activeWorkspace?.projects.map(\.name) == ["Inbox", "Ship"])
     }
-
-    @Test func anEarlierPullEndingLeavesALaterOneInFlight() async throws {
-        let harness = try AppModelHarness()
-        harness.seedWorkspace(name: "acme")
-        await harness.signedIn()
-        harness.service.suspend(.readChanges)
-        let firstRefresh = Task { await harness.model.refresh() }
-        await harness.service.held(.readChanges)
-        let secondRefresh = Task { await harness.model.refresh() }
-        await harness.service.held(.readChanges, count: 2)
-        harness.service.resume(.readChanges)
-        await firstRefresh.value
-        #expect(harness.model.pullsInFlight.isEmpty == false)
-        harness.service.resume(.readChanges)
-        await secondRefresh.value
-        #expect(harness.model.pullsInFlight.isEmpty)
-    }
 }
