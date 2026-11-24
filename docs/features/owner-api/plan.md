@@ -50,10 +50,10 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ### G3
 
-- [ ] **Step 12:** red then green: `AddTasks`, `UpdateTask`, `CompleteTasks`, `ReopenTasks`, `ReadHistory`, every row of the error table they reach; history names the owner (`owner-tasks.test.ts`).
-- [ ] **Step 13:** red then green: `ReadChanges` paging and cursor validation; `WatchChanges` 101 and 426; `changed` after an owner write and after an MCP `add` (`owner-changes.test.ts`).
-- [ ] **Step 14:** the owner isolation suite (`owner-isolation.test.ts`); cases green on landing are marked `pin`.
-- [ ] **Step 15:** `apps/api/README.md` states the owner API's purpose; `tester-briefing.md` written with the red texts each red run printed.
+- [x] **Step 12** (red `652e797`, green `3609137`): red then green: `AddTasks`, `UpdateTask`, `CompleteTasks`, `ReopenTasks`, `ReadHistory`, every row of the error table they reach; history names the owner (`owner-tasks.test.ts`).
+- [x] **Step 13** (red `1007833`, green `9f1117d`, paging pin `f95eb99`, typecheck fix `07b3deb`): red then green: `ReadChanges` paging and cursor validation; `WatchChanges` 101 and 426; `changed` after an owner write and after an MCP `add` (`owner-changes.test.ts`).
+- [x] **Step 14** (pin `95f373d`): the owner isolation suite (`owner-isolation.test.ts`); cases green on landing are marked `pin`.
+- [x] **Step 15:** `apps/api/README.md` states the owner API's purpose; `tester-briefing.md` written with the red texts each red run printed.
 
 ## Failure modes
 

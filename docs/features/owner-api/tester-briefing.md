@@ -1,29 +1,90 @@
-# Tester briefing: <Feature title>
+# Tester briefing: Owner API
 
 Written by the developer sub-agent when its steps are done. The developer does not run `test-plan.md` and does not declare the feature works.
 
 ## What changed
 
-- <file or module> — <one line>
+Lane G1, the project store (`apps/api/src`):
+
+- `project-schema.ts`, `sqlite-task-store.ts` — project schema version 2: a change number per task and a change counter; the upgrade runs in one transaction.
+- `project-store.ts` — `readChanges`, `readHistory`, `fetch` (socket upgrade, 426 otherwise) and the `changed` broadcast after a write that moved the counter.
+- `project-result.ts`, `mcp-format.ts` — `ProjectFailureKind.CursorAhead`; `mcp-format.ts` gained one line that throws for it.
+- `project-keys.ts`, `project-routing.ts` — keys carry an id and a hint; `findOwnedProjectId` and `findOwnedWorkspaceId` look up ownership without opening a Durable Object.
+- `time-zone.ts`, `sign-in-provider.ts`, `bearer-secret.ts`, migrations — the canonical time zone, the fake sign-in provider, the shared bearer parsing and the directory columns.
+- `owner-json.ts`, `owner-routes.ts` — the JSON shapes and the route table.
+
+Lane G2, sign-in, workspaces, projects and keys:
+
+- `owner-endpoint.ts`, `owner-request.ts`, `owner-errors.ts`, `owner-sign-in.ts`, `owner-account.ts`, `owner-sessions.ts` — routing, sessions, sign-in, read and update of the owner.
+- `owner-workspaces.ts`, `owner-keys.ts` — workspace, project and key routes.
+- Extra files: `http-status.ts`, `owner-records.ts`, `directory-owners.ts`, `directory-workspaces.ts`, `directory-keys.ts`, `owner-sign-in.ts`, `owner-account.ts`.
+- `signInKindOf` replaced `signInProviderOf`.
+
+Lane G3, tasks, feed and socket:
+
+- `owner-tasks.ts` — the record of task route handlers.
+- `owner-task-writes.ts` — add, update, complete, reopen and history.
+- `owner-changes.ts` — the change feed and the socket.
+- `owner-project.ts` — opens the project a session owns, or answers nothing.
+- `owner-errors.ts` — `cursor_ahead` answers 409.
+- `owner-request.ts` — the unbuilt handler is gone: every route has one.
+- Tests: `owner-tasks.test.ts`, `owner-changes.test.ts`, `owner-isolation.test.ts`; `owner-client.ts` gained `createOwnedProject`, `issueMcpKey` and `projectCall`.
+- `apps/api/README.md` states the owner API's purpose.
 
 ## How to run
 
 ```bash
-<commands to start the stack and open the feature>
+pnpm --filter @todz/api test:unit
+pnpm --filter @todz/api typecheck
+pnpm --filter @todz/api dev
 ```
+
+`dev` runs `wrangler dev --var SIGN_IN_PROVIDER:fake`. Delete a local `.wrangler` directory once first: `0001_directory.sql` changed and project stores may hold version 2.
 
 ## Red today, green after
 
+Each red run printed the text below against the unbuilt code; the green commit followed.
+
 | Test | Red before the change because | Green after because |
 |------|--------------------------------|---------------------|
-| `<path>::<name>` |  |  |
+| G1 `project-schema.test.ts` | `AssertionError: expected 1 to be 2`; `no such table: change_counter`; `no such column: change_number`; unique index missing; half-applied upgrade left a trace | the upgrade runs in one transaction |
+| G1 `sqlite-task-store.test.ts` | `Error: lastChangeNumber is not implemented`; `Error: listChangesSince is not implemented` (cursors 0 and 1 with limit 10) | the adapter stamps and reads change numbers |
+| G1 `project-keys.test.ts`, `project-routing.test.ts` | `AssertionError: expected '' to match /^[0-9a-f]{8}-...`; `expected '' not to be ''`; `Error: findOwnedProjectId is not implemented`; `Error: findOwnedWorkspaceId is not implemented` | keys get an id and hint; lookups answer an id or null |
+| G1 `project-changes.test.ts` (changes, history) | `Error: expected an ok result, got {"kind":"task_not_found","number":0}` (and 3, and 1); `AssertionError: expected { ok: false, ... } to deeply equal { ok: false, ... }`; the missing history number passes against the stub (pin) | `readChanges` and `readHistory` answer |
+| G1 `project-changes.test.ts` (socket) | `AssertionError: expected 501 to be 426`; `expected 501 to be 101`; `Error: the project did not accept the socket` (7 broadcast tests) | `fetch` accepts the upgrade and writes broadcast |
+| G1 `sign-in-provider.test.ts`, `time-zone.test.ts` | `Error: canonicalTimeZone is not implemented`; `Error: the fake sign-in provider is not implemented`; `Error: signInProviderOf is not implemented` (37 failures) | the canonicaliser and the fake exist |
+| G1 `owner-json.test.ts`, `owner-routes.test.ts` | `Error: ownerJson / projectJson / workspaceJson / keyJson / actorJson / taskJson / historyEntryJson is not implemented`; `Error: matchOwnerRoute is not implemented` (61 failures, 1 pass) | the shapes and the matcher exist |
+| G2 `owner-sign-in.test.ts` | `Error: serveOwner is not implemented` (49 of 51 failures); one `AssertionError: expected [Function] to throw error including 'the directory is unavailable' but got 'serveOwner is not implemented'` | `serveOwner` matches routes and runs sign-in |
+| G2 `owner-workspaces.test.ts` | 31 failures, 5 passes (the 401 cases): 16x `Error: create workspace answered 404`; 4x `expected 404 to be 400`; 2x `expected 404 to be 201`; 1x `expected 404 to be 200`; 1x `expected 404 to be 422`; 1x `SyntaxError: Unexpected end of JSON input` | the workspace routes answer |
+| G2 `owner-keys.test.ts` | 13 failures, 3 passes (the 401 cases): 8x `Error: issue key answered 404`; 3x `SyntaxError: Unexpected end of JSON input`; 1x `expected 404 to be 201`; 1x `expected 404 to be 200` | the key routes answer |
+| G3 `owner-tasks.test.ts` | 35 failures: `AssertionError: expected 404 to be 201 // Object.is equality`; `SyntaxError: Unexpected end of JSON input` (the unbuilt handler answers 404 with an empty body) | the five task handlers answer through the project store |
+| G3 `owner-changes.test.ts` | 19 failures, 2 passes (the 401 cases): `expected 404 to be 200`; `expected 404 to be 400`; `expected 404 to be 409`; `expected 404 to be 101`; `expected 404 to be 426`; `Error: the socket answered 404` | the feed and the socket handlers answer |
+| G3 `owner-isolation.test.ts` | pin: green on landing | — |
+| G3 `owner-changes.test.ts` paging | pin: green on landing | — |
+
+Also pins from G1: the directory schema and the sign-in provider guard (`2bab72f`), the change numbers stamped on tasks, the schema upgrade, the change feed and history of a project.
 
 ## Hypotheses to attack
 
 Every "it works" is a hypothesis the tester tries to break.
 
-1. Hypothesis: <claim>. Break it by: <suggested attack>.
+1. Hypothesis: another owner's session gets the same answer for every project, workspace and key route as for an id that never existed. Break it by: diffing status, body and headers, including the 426 route without the upgrade header, and by timing a foreign id against a never-issued one.
+2. Hypothesis: a refused credential never opens a Durable Object. Break it by: watching `wrangler dev` for a Durable Object start after a call with no, blank or expired session.
+3. Hypothesis: a patch copies a key into the task patch only when the body has it. Break it by: sending `{"title":"x","notes":null}`, `{"notes":null,"due_date":null}`, `{}` and keys with the value `undefined` spelled in strings.
+4. Hypothesis: `cursor` accepts `0` or digits with no leading zero up to a safe integer, nothing else. Break it by: `+1`, `1e3`, `0x10`, `1 `, `%31`, a repeated `cursor` parameter, a very long digit string.
+5. Hypothesis: an open socket receives `changed` once per write that moved the project's change counter, from an owner or an agent, and nothing for a refused or replayed write. Break it by: replaying an idempotency key, completing a done task, many sockets on one project, a socket closed mid-write.
+6. Hypothesis: `WatchChanges` without `Upgrade: websocket` answers 426 with an empty body and the header, after ownership. Break it by: `Upgrade: WebSocket`, `Upgrade: h2c`, a `Connection` header alone.
+7. Hypothesis: a task number outside `1` to `999999999` never reaches a handler. Break it by: `0`, `01`, `1000000000`, `1.5`, `-1` on the update and history routes.
+8. Hypothesis: history names the actor, and an agent's task shows the agent's client name through the owner route. Break it by: an agent that connects with an odd client name, then reading the history as the owner.
+9. Hypothesis: a session token is not an MCP key and an MCP key is not a session token. Break it by: each in the other's `Authorization` header, with and without the `todz_` prefix.
 
 ## Known gaps
 
-- <what the developer knows is missing or untested>
+- The "nothing sent" socket checks settle by message count plus one RPC; a stray late message could go unseen.
+- G1 added one line to `mcp-format.ts` that throws for `CursorAhead`; the MCP tools never read changes.
+- `Asia/Kolkata` canonicalises to `Asia/Calcutta` on this runtime; that name is stored.
+- Names collapse a line break to a space, so a name is never refused for one.
+- `HttpStatus` has no entry for 101; the socket tests use a local constant because `http-status.ts` belongs to G2.
+- `WatchChanges` forwards the request to the project and takes its 426 and 101 answers as they come; the Worker itself does not read the `Upgrade` header.
+- Task numbers in `complete` and `reopen` bodies are any JSON number; a fractional or non-positive number reaches the core, which answers 422 `task_number_invalid`, not 400. No test pins it.
+- No test sends an update with an explicit `placement` plus other fields in one body.
