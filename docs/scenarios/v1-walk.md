@@ -16,7 +16,7 @@ The whole of todz v1 in one run: the owner signs in to an empty Mac, names a wor
 ## Setup
 
 - Surface: macOS app. A is driven with Orca computer use (ADR 0026); B is an MCP client from `@modelcontextprotocol/client`, written in the scratchpad, with `clientInfo.name` "Claude Code".
-- Save the owner's session file from the app's container (its `shasum`), then remove it so the app starts signed out. Restore it byte-identical at the end.
+- Save the owner's session file, `~/Library/Containers/dev.todz.Todz/Data/Library/Application Support/session` (its `shasum`), then remove it so the app starts signed out. Restore it byte-identical at the end.
 - Boot: from `apps/api`, `pnpm exec wrangler d1 migrations apply directory --local --persist-to <scratch>` then `pnpm exec wrangler dev --var SIGN_IN_PROVIDER:fake --port 8787 --persist-to <scratch>`. Port 8787 must be free.
 - Build and launch the app (`pnpm verify all` builds it into `apps/macos/build`), hidden where a step allows.
 - Fictional data only: workspace "Acme", project "Launch", tasks named like "Draft the release notes".
@@ -25,7 +25,7 @@ The whole of todz v1 in one run: the owner signs in to an empty Mac, names a wor
 
 ### T1 Sign in to an empty Mac
 
-A types `maria@example.com` in the identity field and signs in with the fake provider.
+A types `maria.example` in the identity field and signs in with the fake provider.
 
 - Expect: the app asks for the first workspace's name.
 
@@ -67,7 +67,7 @@ A opens Today.
 
 ### T8 The widget snapshot
 
-A's app writes the widget snapshot.
+After T7, read the widget snapshot the app wrote, with `stat -f %Lp` for its mode.
 
 - Expect: `widget-snapshot.json` in the App Group container lists the two tasks due today for Acme, at mode 600.
 
@@ -79,27 +79,27 @@ A ticks "Review the onboarding copy" in Today.
 
 ### T10 The agent asks what is next and completes it
 
-B calls `next`, then `done` on that task with the note "Notes drafted in the release doc".
+B calls `next` (after T9 only "Draft the release notes" is open today), then `done` on that task with the note "Notes drafted in the release doc".
 
 - Expect: `next` answers "Draft the release notes", and the app shows it done with the note in its history, via Claude Code; the menu bar item shows the icon only.
 
 ### T11 The key reaches one project only
 
-A adds "Buy a domain" to the Inbox. B calls `list` with every state and a text search for "domain", and `update` on an id it guesses from the Inbox's short ids.
+A adds "Buy a domain" to the Inbox; it is the Inbox's `T-1`. B calls `list` once with `state` open and once with `state` done, each with `text` "domain", then `update` on `T-99`, a number above Launch's highest, then `update` on `T-1` with a new title.
 
-- Expect: B never sees the Inbox task; the guessed id answers "not found", the same as an id that never existed.
+- Expect: neither `list` shows the Inbox task; `T-99` answers "not found", the same as an id that never existed; and `T-1` changes Launch's own first task, never the Inbox's, because a short id only ever names a task of the key's project.
 
 ### T12 Revoke the key
 
 A revokes the key in Connect an Agent.
 
-- Expect: B's next call is refused with 401, and the app no longer lists the key.
+- Expect: B's next call on its existing MCP session is refused with 401, and the app no longer lists the key.
 
 ### T13 Offline and back
 
 Stop `wrangler dev`; A adds "Ship the changelog" to Launch in the app, then start the server again.
 
-- Expect: the app says it is offline with the add waiting, and once the server is back the task is sent and shown as a normal row.
+- Expect: the toolbar shows "Offline" with one change waiting and the add as a pending row, and once the server is back the task is sent and shown as a normal row.
 
 ### T14 A widget tick (owner's desktop)
 
