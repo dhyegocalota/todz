@@ -57,6 +57,7 @@ public struct FileWidgetStore: WidgetStore {
     }
 
     public func removeRequests(_ names: [String]) throws {
+        guard try hasRequestsFolder() else { return }
         try names.compactMap(requestFile).forEach(remove)
     }
 
@@ -65,7 +66,16 @@ public struct FileWidgetStore: WidgetStore {
         try remove(requestsFolder)
     }
 
+    private func hasRequestsFolder() throws -> Bool {
+        switch FolderStatus.madePrivate(requestsFolder) {
+        case .missing: false
+        case .owned: true
+        case .refused: throw WidgetStoreError.unreadable
+        }
+    }
+
     private func oldestRequestFiles() throws -> [URL] {
+        guard try hasRequestsFolder() else { return [] }
         let listed: [URL]
         do {
             listed = try FileManager.default.contentsOfDirectory(
