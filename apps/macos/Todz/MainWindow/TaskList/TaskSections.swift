@@ -59,14 +59,9 @@ enum TaskSections {
     }
 
     private static func upcomingSections(views: TaskViews, today: CalendarDate, timeZone: TimeZone) -> [TaskSection] {
-        let days = Set(views.upcomingDays.map(\.day) + views.upcomingPendingDays.map(\.day)).sorted()
-        return days.map { day in
-            daySection(
-                day: day,
-                tasks: views.upcomingDays.filter { $0.day == day }.flatMap(\.tasks),
-                pendingTasks: views.upcomingPendingDays.filter { $0.day == day }.flatMap(\.tasks),
-                title: upcomingTitle(day: day, today: today, timeZone: timeZone)
-            )
+        views.upcomingSchedule.map { upcomingDay in
+            let title = upcomingTitle(day: upcomingDay.day, today: today, timeZone: timeZone)
+            return daySection(day: upcomingDay.day, tasks: upcomingDay.tasks, pendingTasks: upcomingDay.pendingTasks, title: title)
         }
     }
 
