@@ -19,32 +19,35 @@ private let inboxName = "Inbox"
     var tasksOfProject: [String: [TaskRecord]] = [:]
     var history: [HistoryEntry] = []
     var clock = fixedInstant
+    private var suspendedRoutes: Set<FakeRoute> = []
+    private var heldCalls: [FakeRoute: [CheckedContinuation<Void, Never>]] = [:]
+    private var waiters: [HeldCallWaiter] = []
 
     func routes() -> [FakeRoute] {
         calls.map(\.route)
     }
 
     func signIn(identityToken: String, timeZone: String) async throws -> IssuedSession {
-        try record(.signIn(identityToken: identityToken, timeZone: timeZone))
+        try await record(.signIn(identityToken: identityToken, timeZone: timeZone))
         return issuedSession
     }
 
     func signOut(session: String) async throws {
-        try record(.signOut(session: session))
+        try await record(.signOut(session: session))
     }
 
     func updateOwner(session: String, timeZone: String) async throws -> Owner {
-        try record(.updateOwner(session: session, timeZone: timeZone))
+        try await record(.updateOwner(session: session, timeZone: timeZone))
         return Owner(identifier: issuedSession.owner.identifier, timeZone: timeZone)
     }
 
     func listWorkspaces(session: String) async throws -> [Workspace] {
-        try record(.listWorkspaces(session: session))
+        try await record(.listWorkspaces(session: session))
         return workspaces
     }
 
     func createWorkspace(session: String, name: String) async throws -> Workspace {
-        try record(.createWorkspace(session: session, name: name))
+        try await record(.createWorkspace(session: session, name: name))
         let inbox = Project(identifier: UUID().uuidString, name: inboxName, isInbox: true, createdAt: tick())
         let workspace = Workspace(identifier: UUID().uuidString, name: name, createdAt: clock, projects: [inbox])
         workspaces.append(workspace)
@@ -52,19 +55,19 @@ private let inboxName = "Inbox"
     }
 
     func createProject(session: String, workspaceIdentifier: String, name: String) async throws -> Project {
-        try record(.createProject(session: session, workspaceIdentifier: workspaceIdentifier, name: name))
+        try await record(.createProject(session: session, workspaceIdentifier: workspaceIdentifier, name: name))
         return Project(identifier: UUID().uuidString, name: name, isInbox: false, createdAt: tick())
     }
 
     func renameProject(session: String, projectIdentifier: String, name: String) async throws -> Project {
-        try record(.renameProject(session: session, projectIdentifier: projectIdentifier, name: name))
+        try await record(.renameProject(session: session, projectIdentifier: projectIdentifier, name: name))
         let project = workspaces.flatMap(\.projects).first { $0.identifier == projectIdentifier }
         guard let project else { throw OwnerAPIError.notFound }
         return Project(identifier: project.identifier, name: name, isInbox: project.isInbox, createdAt: project.createdAt)
     }
 
     func addTasks(session: String, projectIdentifier: String, drafts: [TaskDraft]) async throws -> [AddedTask] {
-        try record(.addTasks(session: session, projectIdentifier: projectIdentifier, drafts: drafts))
+        try await record(.addTasks(session: session, projectIdentifier: projectIdentifier, drafts: drafts))
         let held = tasksOfProject[projectIdentifier, default: []]
         let added = drafts.enumerated().map { offset, draft in
             var task = MutableTask(number: held.count + offset + 1, title: draft.title, dueDate: draft.dueDate, updatedAt: tick())
@@ -77,7 +80,7 @@ private let inboxName = "Inbox"
     }
 
     func updateTask(session: String, projectIdentifier: String, number: Int, patch: TaskPatch) async throws -> TaskRecord {
-        try record(.updateTask(session: session, projectIdentifier: projectIdentifier, number: number, patch: patch))
+        try await record(.updateTask(session: session, projectIdentifier: projectIdentifier, number: number, patch: patch))
         return try revise(projectIdentifier: projectIdentifier, number: number) { task in
             switch patch {
             case let .title(title): task.title = title
@@ -89,7 +92,7 @@ private let inboxName = "Inbox"
     }
 
     func completeTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [CompletedTask] {
-        try record(.completeTasks(session: session, projectIdentifier: projectIdentifier, numbers: numbers))
+        try await record(.completeTasks(session: session, projectIdentifier: projectIdentifier, numbers: numbers))
         return try numbers.map { number in
             let task = try revise(projectIdentifier: projectIdentifier, number: number) { task in
                 task.state = .done
@@ -100,7 +103,7 @@ private let inboxName = "Inbox"
     }
 
     func reopenTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [ReopenedTask] {
-        try record(.reopenTasks(session: session, projectIdentifier: projectIdentifier, numbers: numbers))
+        try await record(.reopenTasks(session: session, projectIdentifier: projectIdentifier, numbers: numbers))
         return try numbers.map { number in
             let task = try revise(projectIdentifier: projectIdentifier, number: number) { task in
                 task.state = .open
@@ -111,12 +114,12 @@ private let inboxName = "Inbox"
     }
 
     func readHistory(session: String, projectIdentifier: String, number: Int) async throws -> [HistoryEntry] {
-        try record(.readHistory(session: session, projectIdentifier: projectIdentifier, number: number))
+        try await record(.readHistory(session: session, projectIdentifier: projectIdentifier, number: number))
         return history
     }
 
     func readChanges(session: String, projectIdentifier: String, cursor: Int) async throws -> ChangePage {
-        try record(.readChanges(session: session, projectIdentifier: projectIdentifier, cursor: cursor))
+        try await record(.readChanges(session: session, projectIdentifier: projectIdentifier, cursor: cursor))
         let script = changeScripts[projectIdentifier, default: []]
         guard let scripted = script.first else { return page(projectIdentifier: projectIdentifier, cursor: cursor) }
         changeScripts[projectIdentifier] = Array(script.dropFirst())
@@ -130,9 +133,36 @@ private let inboxName = "Inbox"
         return ChangePage(tasks: pageTasks, cursor: nextCursor, hasMore: nextCursor < tasks.count)
     }
 
-    private func record(_ call: FakeCall) throws {
+    func suspend(_ route: FakeRoute) {
+        suspendedRoutes.insert(route)
+    }
+
+    func held(_ route: FakeRoute, count: Int = 1) async {
+        guard heldCalls[route, default: []].count < count else { return }
+        await withCheckedContinuation { waiters.append(HeldCallWaiter(route: route, count: count, continuation: $0)) }
+    }
+
+    func resume(_ route: FakeRoute) {
+        guard let oldest = heldCalls[route]?.first else { return }
+        heldCalls[route]?.removeFirst()
+        oldest.resume()
+    }
+
+    private func hold(_ route: FakeRoute) async {
+        await withCheckedContinuation { continuation in
+            heldCalls[route, default: []].append(continuation)
+            let heldCount = heldCalls[route, default: []].count
+            let isAnswered: (HeldCallWaiter) -> Bool = { $0.route == route && $0.count <= heldCount }
+            let answered = waiters.filter(isAnswered)
+            waiters.removeAll(where: isAnswered)
+            answered.forEach { $0.continuation.resume() }
+        }
+    }
+
+    private func record(_ call: FakeCall) async throws {
         calls.append(call)
         onCall?(call)
+        if suspendedRoutes.contains(call.route) { await hold(call.route) }
         if let failure = failures[call.route] { throw failure }
         guard let projectIdentifier = call.projectIdentifier else { return }
         if let failure = projectFailures[projectIdentifier] { throw failure }
