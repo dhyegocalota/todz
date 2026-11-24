@@ -75,6 +75,16 @@ Tester pass 1 (2026-11-24, `d02669c`): the Debug build was driven with `orca com
 - [x] Move Up on the only task of a project, offline — input: Move Up on `Agent task in api`; expected: nothing queued — evidence: the toolbar count stayed as it was (only the rename counted)
 - [x] A pending add and the sidebar badge — input: offline, add Gamma with every other Inbox task done; observed: the Inbox badge reads 0 while Gamma is listed as pending (`07-offline-gamma-pending.png`), it becomes 1 once Gamma is confirmed (`11-back-online-gamma-t3.png`); `design.md` does not say whether a pending add counts, so this is recorded for the lead, not failed
 
+## Security fixes and pass 1 fixes (re-check in pass 2)
+
+- [ ] D1 regression — input: as the D1 box above, after 1853971; expected: the toolbar shows "Offline" within the first socket failure (a few seconds) with no click; `AppModelTests+Watch` holds the regression test and it is green
+- [ ] A project removed on the server — input: online, the window on a project with tasks; delete the project's row in the local directory, then reload the workspaces (⌘R or a socket 404); expected: the project leaves the sidebar, its `Cache/projects/<id>.json` is gone from the container, other projects' files stay
+- [ ] An outage never drops a waiting change (security finding 1) — input: offline with two changes waiting, then a proxy that answers every request `503` with an HTML body for 60 s; expected: both changes stay waiting the whole time (toolbar count 2), and both are sent once the proxy forwards again; a coded `rule_violated` from the proxy still drops its change at once with the refused banner
+- [ ] A bare 404 keeps the change — input: the proxy answers one task edit `404` with an empty body; expected: the change stays waiting and is sent when the proxy forwards again
+- [ ] Nothing is sent before the owner is confirmed (security finding 2) — expected: `AppModelTests+Owners` holds a green test where an `opened` arrives before `updateOwner` answers as another owner and no send call is recorded; evidence names it
+- [ ] A sign-out whose erase fails stays signed in (security finding 3) — expected: `AppModelTests+Owners` holds a green test; the app shows `ErrorCopy.signOutFailed` and the session file stays; evidence names it
+- [ ] A sign-in whose erase fails signs the issued session out (security finding 5) — expected: a green test records `signOut` on the fake service; evidence names it
+
 ## Adversarial review
 
 - [x] Plan review (2026-11-24, before building): 24 findings (5 CRITICAL, 11 IMPORTANT, 8 MINOR), all answered in `plan.md`, `spec.md`, ADRs 0027 to 0029, `design.md` and this file before any code; its three refutations were the overlay order, resent patches (now stated in ADR 0028 § 5) and the cross-owner outbox — evidence: `5ad0326` (the answers), first code commit `e8cbbad` after it

@@ -102,6 +102,8 @@ Every rule below is a test in the named file. "The current session" is `AppModel
     | Transient, one attempt | `unexpected`, `signInUnavailable`, a failure that is not an `OwnerAPIError` (an answer that does not decode) | count an attempt; at the third, drop as refused; otherwise wait as above and send again |
     | Session gone | `unauthorized`, `CancellationError` | keep the head, count nothing, exit the loop (`unauthorized` ends the session only if the loop's session is current) |
 
+    ~~The Refused row's codes from a bare status and the "one attempt" row as written.~~ Amended after the security review (finding 1, 917bcd5, ADR 0028 point 4): a captive portal, a 5xx or a bare 400 or 404 emptied the outbox in seconds. A change is refused only when the answer carries a decoded todz error body; a bare 400 or 404 is `unexpected(status:)`; an `unexpected` failure counts an attempt only when the server answered with a decodable todz answer since that change's previous attempt, and otherwise waits as `unreachable` does.
+
     A wait is cut short by an `opened`, a successful pull, a new write or `refresh()`.
   - Refusals in one flush (from the first send until the outbox is empty or the loop stops) raise one banner `.changesRefused(count:)` with the total (two refusals → one banner with 2).
   - Tests: each row of the table; three `unexpected` with `HeldPause` released twice between them → dropped; `unreachable` then an `opened` → sent at once; a 401 mid-flush keeps the rest.
