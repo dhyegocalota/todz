@@ -9,9 +9,11 @@ import { ownedProjectOf } from './owner-project';
 import { type SessionContext, parsedBody, routeParam } from './owner-request';
 import { RouteParam } from './owner-routes';
 
+const TaskNumberSchema = z.number().int().positive();
+
 const PlacementSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.enum([TaskPlacement.First, TaskPlacement.Last]) }),
-  z.object({ kind: z.enum([TaskPlacement.Before, TaskPlacement.After]), anchor: z.number() }),
+  z.object({ kind: z.enum([TaskPlacement.Before, TaskPlacement.After]), anchor: TaskNumberSchema }),
 ]);
 
 const UpdateBodySchema = z.object({
@@ -21,9 +23,9 @@ const UpdateBodySchema = z.object({
   placement: PlacementSchema.optional(),
 });
 
-const CompleteBodySchema = z.object({ numbers: z.array(z.number()), note: z.string().nullable().default(null) });
+const CompleteBodySchema = z.object({ numbers: z.array(TaskNumberSchema), note: z.string().nullable().default(null) });
 
-const ReopenBodySchema = z.object({ numbers: z.array(z.number()) });
+const ReopenBodySchema = z.object({ numbers: z.array(TaskNumberSchema) });
 
 function patchOf(body: z.output<typeof UpdateBodySchema>): TaskPatch {
   return {

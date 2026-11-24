@@ -7,8 +7,9 @@ const CURSOR_PARAMETER = 'cursor';
 const CURSOR_PATTERN = /^(0|[1-9][0-9]*)$/;
 
 function cursorOf(request: Request): number | null {
-  const text = new URL(request.url).searchParams.get(CURSOR_PARAMETER);
-  if (text === null || !CURSOR_PATTERN.test(text)) return null;
+  const [text, ...rest] = new URL(request.url).searchParams.getAll(CURSOR_PARAMETER);
+  const isMalformedCursor = text === undefined || rest.length > 0 || !CURSOR_PATTERN.test(text);
+  if (isMalformedCursor) return null;
   const cursor = Number(text);
   if (!Number.isSafeInteger(cursor)) return null;
   return cursor;
