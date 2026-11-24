@@ -27,6 +27,27 @@ export async function insertSignInLinkWithinLimit({
   return insertion.meta.changes > 0;
 }
 
+export async function spendSignInLink({
+  directory,
+  digest,
+  challenge,
+  now,
+}: {
+  directory: D1Database;
+  digest: string;
+  challenge: string;
+  now: number;
+}): Promise<string | null> {
+  const row = await directory
+    .prepare(
+      'UPDATE sign_in_links SET consumed_at = ? WHERE digest = ? AND consumed_at IS NULL AND expires_at > ? AND challenge = ? RETURNING email',
+    )
+    .bind(now, digest, now, challenge)
+    .first<{ email: string }>();
+  if (row === null) return null;
+  return row.email;
+}
+
 export async function deleteSignInLink({ directory, digest }: { directory: D1Database; digest: string }): Promise<void> {
   await directory.prepare('DELETE FROM sign_in_links WHERE digest = ?').bind(digest).run();
 }

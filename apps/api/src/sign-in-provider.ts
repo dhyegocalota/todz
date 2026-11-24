@@ -1,3 +1,6 @@
+import { digestCredential } from './credential-digest';
+import { spendSignInLink } from './directory-sign-in-links';
+
 const FAKE_SUBJECT_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 
 export enum SignInProviderKind {
@@ -30,8 +33,14 @@ export const SIGN_IN_PROVIDER_OF_KIND: Record<SignInProviderKind, SignInProvider
   },
   [SignInProviderKind.Email]: {
     method: SignInMethod.Link,
-    async verify() {
-      throw new Error('the email provider verify is not implemented');
+    async verify({ identityToken, linkVerifier, directory, now }) {
+      if (linkVerifier === undefined) return null;
+      return spendSignInLink({
+        directory,
+        digest: await digestCredential(identityToken),
+        challenge: await digestCredential(linkVerifier),
+        now,
+      });
     },
   },
 };
