@@ -8,6 +8,7 @@ import Observation
     public internal(set) var isRequestingLink = false
     public internal(set) var lastIdentity: String?
     public internal(set) var signInMethod: SignInMethod?
+    public internal(set) var signInMethodError: SignInError?
     public internal(set) var pendingLink: PendingSignInLink?
     public internal(set) var workspaces: [Workspace] = []
     public internal(set) var activeWorkspaceIdentifier: String?

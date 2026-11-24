@@ -51,6 +51,12 @@ extension AppModel {
         if isExpired(pendingLink) { discardPendingLink() }
     }
 
+    public var canRedeemAgain: Bool {
+        false
+    }
+
+    public func useDifferentEmail() {}
+
     public func discardPendingLink() {
         pendingLink = nil
         try? pendingLinks.erase()
@@ -65,7 +71,7 @@ extension AppModel {
         pendingLink = stored
     }
 
-    func redeemHeldSignInLink() async {
+    public func redeemHeldSignInLink() async {
         guard let heldSignInLink else { return }
         self.heldSignInLink = nil
         await redeem(signInLink: heldSignInLink)

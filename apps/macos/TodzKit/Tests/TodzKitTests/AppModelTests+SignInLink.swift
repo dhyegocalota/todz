@@ -44,7 +44,7 @@ extension AppModelTests {
         harness.service.failures[.signInMethod] = failure
         await harness.model.loadSignInMethod()
         #expect(harness.model.signInMethod == nil)
-        #expect(harness.model.signInError == expected)
+        #expect(harness.model.signInMethodError == expected)
     }
 
     @Test func askingForALinkSendsTheChallengeOfAFreshVerifierAndKeepsThePendingLink() async throws {
@@ -62,7 +62,7 @@ extension AppModelTests {
         (OwnerAPIError.tooManyLinks, SignInError.tooManyLinks),
         (.signInUnavailable, .signInUnavailable),
         (.unreachable, .unreachable),
-        (.invalidRequest, .unexpected),
+        (.invalidRequest, .invalidAddress),
     ])
     func aRefusedAskKeepsNoPendingLinkAndShowsItsError(failure: OwnerAPIError, expected: SignInError) async throws {
         let harness = try AppModelHarness()
