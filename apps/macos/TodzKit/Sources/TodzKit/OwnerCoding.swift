@@ -14,4 +14,10 @@ enum OwnerCoding {
         decoder.dateDecodingStrategy = .custom(dateOfMilliseconds)
         return decoder
     }
+
+    static func encoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        return encoder
+    }
 }

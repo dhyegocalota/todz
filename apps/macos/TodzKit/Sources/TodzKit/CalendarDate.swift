@@ -8,7 +8,7 @@ private func gregorianCalendar(in timeZone: TimeZone) -> Calendar {
     return calendar
 }
 
-public struct CalendarDate: Decodable, Sendable, Hashable, Comparable {
+public struct CalendarDate: Codable, Sendable, Hashable, Comparable {
     public let year: Int
     public let month: Int
     public let day: Int
@@ -47,6 +47,11 @@ public struct CalendarDate: Decodable, Sendable, Hashable, Comparable {
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "a due date is not a calendar date")
         }
         self = date
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(text)
     }
 
     public var text: String {

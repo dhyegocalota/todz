@@ -1,4 +1,4 @@
-public struct TaskDraft: Sendable, Equatable {
+public struct TaskDraft: Encodable, Sendable, Equatable {
     public let title: String
     public let notes: String?
     public let dueDate: CalendarDate?

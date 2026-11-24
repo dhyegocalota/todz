@@ -1,5 +1,27 @@
 import Foundation
 
+private let ownerPath = "/owner"
+private let sessionsPath = "/owner/sessions"
+private let currentSessionPath = "/owner/sessions/current"
+private let workspacesPath = "/owner/workspaces"
+private let cursorParameter = "cursor"
+
+private func projectsPath(workspaceIdentifier: String) -> String {
+    "\(workspacesPath)/\(workspaceIdentifier)/projects"
+}
+
+private func projectPath(_ projectIdentifier: String) -> String {
+    "\(ownerPath)/projects/\(projectIdentifier)"
+}
+
+private func tasksPath(_ projectIdentifier: String) -> String {
+    "\(projectPath(projectIdentifier))/tasks"
+}
+
+private func taskPath(projectIdentifier: String, number: Int) -> String {
+    "\(tasksPath(projectIdentifier))/\(number)"
+}
+
 public protocol OwnerService: Sendable {
     func signIn(identityToken: String, timeZone: String) async throws -> IssuedSession
     func signOut(session: String) async throws
@@ -26,54 +48,90 @@ public struct OwnerAPI: OwnerService {
     }
 
     public func signIn(identityToken: String, timeZone: String) async throws -> IssuedSession {
-        fatalError("OwnerAPI is not implemented")
+        let body = SignInBody(identityToken: identityToken, timeZone: timeZone)
+        return try await answer(IssuedSession.self, to: OwnerRequest(method: .post, path: sessionsPath, session: nil, body: body))
     }
 
     public func signOut(session: String) async throws {
-        fatalError("OwnerAPI is not implemented")
+        _ = try await send(OwnerRequest(method: .delete, path: currentSessionPath, session: session))
     }
 
     public func updateOwner(session: String, timeZone: String) async throws -> Owner {
-        fatalError("OwnerAPI is not implemented")
+        let request = try OwnerRequest(method: .patch, path: ownerPath, session: session, body: TimeZoneBody(timeZone: timeZone))
+        return try await answer(OwnerAnswer.self, to: request).owner
     }
 
     public func listWorkspaces(session: String) async throws -> [Workspace] {
-        fatalError("OwnerAPI is not implemented")
+        try await answer(WorkspacesAnswer.self, to: OwnerRequest(method: .get, path: workspacesPath, session: session)).workspaces
     }
 
     public func createWorkspace(session: String, name: String) async throws -> Workspace {
-        fatalError("OwnerAPI is not implemented")
+        let request = try OwnerRequest(method: .post, path: workspacesPath, session: session, body: NameBody(name: name))
+        return try await answer(WorkspaceAnswer.self, to: request).workspace
     }
 
     public func createProject(session: String, workspaceIdentifier: String, name: String) async throws -> Project {
-        fatalError("OwnerAPI is not implemented")
+        let path = projectsPath(workspaceIdentifier: workspaceIdentifier)
+        let request = try OwnerRequest(method: .post, path: path, session: session, body: NameBody(name: name))
+        return try await answer(ProjectAnswer.self, to: request).project
     }
 
     public func renameProject(session: String, projectIdentifier: String, name: String) async throws -> Project {
-        fatalError("OwnerAPI is not implemented")
+        let request = try OwnerRequest(method: .patch, path: projectPath(projectIdentifier), session: session, body: NameBody(name: name))
+        return try await answer(ProjectAnswer.self, to: request).project
     }
 
     public func addTasks(session: String, projectIdentifier: String, drafts: [TaskDraft]) async throws -> [AddedTask] {
-        fatalError("OwnerAPI is not implemented")
+        let request = try OwnerRequest(method: .post, path: tasksPath(projectIdentifier), session: session, body: AddTasksBody(tasks: drafts))
+        return try await answer(AddedTasksAnswer.self, to: request).tasks
     }
 
     public func updateTask(session: String, projectIdentifier: String, number: Int, patch: TaskPatch) async throws -> TaskRecord {
-        fatalError("OwnerAPI is not implemented")
+        let path = taskPath(projectIdentifier: projectIdentifier, number: number)
+        return try await answer(TaskAnswer.self, to: OwnerRequest(method: .patch, path: path, session: session, body: patch)).task
     }
 
     public func completeTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [CompletedTask] {
-        fatalError("OwnerAPI is not implemented")
+        let path = "\(tasksPath(projectIdentifier))/complete"
+        let request = try OwnerRequest(method: .post, path: path, session: session, body: TaskNumbersBody(numbers: numbers))
+        return try await answer(CompletedTasksAnswer.self, to: request).tasks
     }
 
     public func reopenTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [ReopenedTask] {
-        fatalError("OwnerAPI is not implemented")
+        let path = "\(tasksPath(projectIdentifier))/reopen"
+        let request = try OwnerRequest(method: .post, path: path, session: session, body: TaskNumbersBody(numbers: numbers))
+        return try await answer(ReopenedTasksAnswer.self, to: request).tasks
     }
 
     public func readHistory(session: String, projectIdentifier: String, number: Int) async throws -> [HistoryEntry] {
-        fatalError("OwnerAPI is not implemented")
+        let path = "\(taskPath(projectIdentifier: projectIdentifier, number: number))/history"
+        return try await answer(HistoryAnswer.self, to: OwnerRequest(method: .get, path: path, session: session)).history
     }
 
     public func readChanges(session: String, projectIdentifier: String, cursor: Int) async throws -> ChangePage {
-        fatalError("OwnerAPI is not implemented")
+        let path = "\(projectPath(projectIdentifier))/changes"
+        let queryItems = [URLQueryItem(name: cursorParameter, value: String(cursor))]
+        return try await answer(ChangePage.self, to: OwnerRequest(method: .get, path: path, session: session, queryItems: queryItems))
+    }
+
+    private func answer<Answer: Decodable>(_ type: Answer.Type, to request: OwnerRequest) async throws -> Answer {
+        try OwnerCoding.decoder().decode(Answer.self, from: try await send(request))
+    }
+
+    private func send(_ request: OwnerRequest) async throws -> Data {
+        let (body, response) = try await exchange(request)
+        guard let response = response as? HTTPURLResponse else { throw OwnerAPIError.unreachable }
+        guard ResponseStatus.successes.contains(response.statusCode) else {
+            throw OwnerErrorBody.failure(status: response.statusCode, body: body)
+        }
+        return body
+    }
+
+    private func exchange(_ request: OwnerRequest) async throws -> (Data, URLResponse) {
+        do {
+            return try await transport.data(for: request.transportRequest(baseURL: baseURL))
+        } catch is URLError {
+            throw OwnerAPIError.unreachable
+        }
     }
 }
