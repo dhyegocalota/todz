@@ -4,6 +4,7 @@ import Testing
 
 private let inboxIdentifier = "acme-inbox"
 private let firstTask = TaskKey(projectIdentifier: inboxIdentifier, number: 1)
+private let cachedOwnerIdentifier = "cached-owner"
 
 enum CachedOwner: CaseIterable, Sendable {
     case another
@@ -139,6 +140,43 @@ extension AppModelTests {
         #expect(harness.store.calls == [])
         #expect(harness.store.owner == nil)
         #expect(harness.store.projects == [:])
+    }
+
+    @Test func aLaunchSendsNothingBeforeTheSessionsOwnerIsConfirmedThenErasesAnotherOwnersCache() async throws {
+        let harness = try harnessWithAWaitingChange()
+        let acme = try #require(harness.service.workspaces.first)
+        harness.cache([acme], active: acme, ownerIdentifier: cachedOwnerIdentifier)
+        harness.vault.secret = harness.session
+        harness.service.suspend(.updateOwner)
+        harness.service.suspend(.readChanges)
+        let launching = Task { await harness.model.launch() }
+        await harness.service.held(.updateOwner)
+        harness.signals.send(.opened, to: harness.watchKey(inboxIdentifier))
+        await harness.service.held(.readChanges)
+        await harness.flushed()
+        #expect(harness.service.routes().contains(.updateTask) == false)
+        harness.service.unsuspend(.readChanges)
+        harness.service.resume(.readChanges)
+        harness.service.resume(.updateOwner)
+        await launching.value
+        await harness.flushed()
+        #expect(harness.service.routes().contains(.updateTask) == false)
+        #expect(harness.store.routes().contains(.erase))
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.store.owner?.ownerIdentifier == harness.ownerIdentifier)
+    }
+
+    @Test func aLaunchAsAnotherOwnerWhoseListingFailsSaysSoWithTryAgain() async throws {
+        let harness = try harnessWithAWaitingChange()
+        let acme = try #require(harness.service.workspaces.first)
+        harness.cache([acme], active: acme, ownerIdentifier: cachedOwnerIdentifier)
+        harness.service.failures[.listWorkspaces] = .unreachable
+        harness.vault.secret = harness.session
+        await harness.model.launch()
+        #expect(harness.store.routes().contains(.erase))
+        #expect(harness.model.phase == .loading)
+        #expect(harness.model.banner == .network)
+        #expect(harness.model.canTryAgain)
     }
 
     @Test func aSessionEndedKeepsTheCacheAndTheWaitingChanges() async throws {
