@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { SIGN_IN_PROVIDER_OF_KIND, SignInProviderKind, signInProviderOf } from '../src/sign-in-provider';
+import { SIGN_IN_PROVIDER_OF_KIND, SignInProviderKind, signInKindOf } from '../src/sign-in-provider';
 
 const SUBJECT_MAX_LENGTH = 64;
 const fakeProvider = SIGN_IN_PROVIDER_OF_KIND[SignInProviderKind.Fake];
@@ -17,15 +17,15 @@ describe('the fake sign-in provider', () => {
   );
 });
 
-describe('signInProviderOf', () => {
-  test('fake names the fake provider', () => {
-    expect(signInProviderOf('fake')).toBe(fakeProvider);
+describe('signInKindOf', () => {
+  test('fake names the fake kind', () => {
+    expect(signInKindOf('fake')).toBe(SignInProviderKind.Fake);
   });
 
   test.each([[undefined], [''], ['apple'], ['Fake'], [' fake'], ['toString'], ['__proto__'], ['constructor']])(
-    '%j names no provider',
+    '%j names no kind',
     (configured) => {
-      expect(signInProviderOf(configured)).toBeNull();
+      expect(signInKindOf(configured)).toBeNull();
     },
   );
 });

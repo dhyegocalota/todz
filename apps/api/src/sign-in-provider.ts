@@ -16,8 +16,8 @@ export const SIGN_IN_PROVIDER_OF_KIND: Record<SignInProviderKind, SignInProvider
   },
 };
 
-export function signInProviderOf(configured: string | undefined): SignInProvider | null {
+export function signInKindOf(configured: string | undefined): SignInProviderKind | null {
   const kind = Object.values(SignInProviderKind).find((candidate) => candidate === configured);
   if (kind === undefined) return null;
-  return SIGN_IN_PROVIDER_OF_KIND[kind];
+  return kind;
 }
