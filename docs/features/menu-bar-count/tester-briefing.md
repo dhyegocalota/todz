@@ -28,7 +28,7 @@ Then launch the built Todz.app, signed in on a workspace with tasks due today.
 | `MenuBarBadgeTests` (6 tests), commit 756958f | `TodzKit/MenuBarBadge.swift:3: Fatal error: MenuBarBadge is not implemented` (the run aborts at the first test) | the text rule in 60de2c2 |
 | `AppModelTests+HeadingCount` (4 tests), commit cbc8ba7 | `TodzKit/AppModel+HeadingCount.swift:3: Fatal error: AppModel.todayHeadingCount is not implemented` | cc3e6f7 |
 | `MenuBarBadgeDefaultsTests.aRegisteredDefaultReadsOnForAFreshDefaultsStore`, cbc8ba7 | `TodzKit/MenuBarBadge.swift:16: Fatal error: MenuBarBadge.registerDefault is not implemented` | cc3e6f7 |
-| `MenuBarBadgeDefaultsTests.anUnregisteredKeyReadsOffWhichIsWhyTheDefaultIsRegistered` | pin: green when it landed (documents why the default is registered) | pin |
+| ~~`MenuBarBadgeDefaultsTests.anUnregisteredKeyReadsOffWhichIsWhyTheDefaultIsRegistered`~~ | removed by the lead: the registration domain is process-wide, so it raced the tests that register and failed 2 runs in 3 | — |
 | `MenuBarBadgeDefaultsTests.registeringNeverOverwritesTheOwnersChoice` | red with the stub, same text as above | cc3e6f7 |
 
 A stub aborts the whole test process, so run each red test alone with `--filter`. Full suite: 488 tests pass.

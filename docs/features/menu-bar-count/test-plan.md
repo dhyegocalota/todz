@@ -4,7 +4,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 
 ## The failing test first
 
-- [ ] `MenuBarBadgeTests` (`apps/macos/TodzKit/Tests/TodzKitTests/MenuBarBadgeTests.swift`) — input: the red commit; expected: every test fails on the stub `MenuBarBadge is not implemented`
+- [ ] `MenuBarBadgeTests` (`apps/macos/TodzKit/Tests/TodzKitTests/MenuBarBadgeTests.swift`) — input: the red commit; expected: each test, run alone with `--filter`, fails on the stub `MenuBarBadge is not implemented` (a `fatalError` stub stops a whole run at its first test)
 - [ ] Confirmed it fails for the right reason: the failure text recorded from the red run
 
 ## Unit
@@ -16,7 +16,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] Edge: the cap — input: 99, on; expected: "99"
 - [ ] Edge: above the cap — input: 100, on; expected: "99+"
 - [ ] Edge: a negative count — input: -1, on; expected: `nil`
-- [ ] The toggle's default is on: a fresh `UserDefaults` suite after the app's default registration reads `true` for the key; without it, `false`
+- [ ] The toggle's default is on: a fresh `UserDefaults` suite after the app's default registration reads `true` for the key, and registering never overwrites a stored `false`
 - [ ] The count the item and the popover heading share: every project loaded → the open count; one loaded and one failed → the same count the heading shows; nothing loaded yet → none
 - [ ] `swift test --package-path apps/macos/TodzKit`: every suite green, count recorded
 

@@ -25,7 +25,7 @@ Layout: the template symbol `checkmark.square`, then the count as text, in one `
 | `ready`, 100 or more | icon, `99+` | the real number: "todz, 134 left today" (option O6) |
 | Popover open | the same content on the menu bar's highlight; the template image and the text tint together | unchanged |
 
-The count is `model.todayHeadingCount`, the number the popover's heading reads, passed through `MenuBarBadge`: the same open set as the popover's "N left", overdue included, pending adds counted once confirmed (menu-bar § 1.3). It moves with every optimistic write, every pull and the day change, with the popover closed.
+The count is `model.todayHeadingCount`, the number the popover's heading reads, passed through `MenuBarBadge`: the same open set as the popover's "N left", overdue included, pending adds counted once confirmed (menu-bar § 1.3). It moves with every optimistic write and every pull, with the popover closed. At the day change it keeps the old split of today and overdue until the next write or pull, like the popover (a known gap).
 
 **Light and dark menu bars.** The menu bar picks a light or dark appearance from the wallpaper and the system appearance; a template image and an untinted `Text` both take the bar's label colour, so the item reads black on a light bar and white on a dark one, like the clock beside it. The accent never appears in the status item (option O2).
 

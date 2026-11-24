@@ -29,7 +29,7 @@ G1 then G2, one developer: G2 reads G1's type.
 
 - [x] **Step 3 (evidence: cc3e6f7; the count is `AppModel.todayHeadingCount`, the heading's own number, after O4 was overturned; the label limits of design.md § 2 need a running app and go to the tester as hypotheses, not ticks):** `MenuBarLabel` shows the template icon, then the badge text when there is one, from `openCount(of: .today)` (O4) and the toggle through `@AppStorage`; the accessibility label per `design.md` (O6). Verify in a build the label limits `design.md` § 2 lists; strike through any that do not hold, with what was done instead.
 - [x] **Step 4 (evidence: cc3e6f7, Debug build succeeds; ⌘, behaviour left to the tester):** A `Settings` scene with `SettingsView`: one switch in a grouped Form with its subtitle (O5, O7, O8); copy in the `*Copy.swift` file `design.md` names. ⌘, and the app menu's "Settings…" open it.
-- [x] **Step 5 (evidence: the docs commit; the gallery cell is left to the lead, who adds the README cells):** Docs: the app's README names the count and the Settings window (purpose only). The root README's gallery gains a menu bar cell with the count (`docs/screenshots/menu-bar-count/01-count.png`, a real build, light, a fictional workspace), following ADR 0030 and `product-screenshots.test.ts`. Tester briefing.
+- [x] **Step 5 (evidence: the docs commit):** Docs: the app's README names the count and the Settings window (purpose only). ~~The root README's gallery gains a menu bar cell with the count (`docs/screenshots/menu-bar-count/01-count.png`, a real build, light, a fictional workspace), following ADR 0030 and `product-screenshots.test.ts`.~~ Left to the lead after the tester's walk, which takes the screenshot. Tester briefing.
 
 ## Failure modes
 
