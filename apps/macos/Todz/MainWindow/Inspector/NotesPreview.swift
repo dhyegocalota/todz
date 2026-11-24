@@ -1,4 +1,5 @@
 import SwiftUI
+import TodzKit
 
 struct NotesPreview: View {
     let notes: String?
@@ -16,6 +17,7 @@ struct NotesPreview: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
+        .environment(\.openURL, OpenURLAction { NoteLink.isOpenable($0) ? .systemAction : .discarded })
     }
 
     private func rendered(_ notes: String) -> AttributedString {
