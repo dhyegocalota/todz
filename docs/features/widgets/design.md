@@ -26,7 +26,7 @@ The system's content margins and container background (§ 3); no custom padding.
 | Widget | Top to bottom |
 |---|---|
 | Today ring | label `MainWindowCopy.today` (option O13); the ring, centred, a named diameter and line width (the mockup's 54 points and its 4-in-36 stroke), the progress arc from twelve o'clock clockwise in the accent over a track in `.fill.tertiary`, round caps; caption `WidgetCopy.progress(done:total:)` (option O7) |
-| Next up | label `WidgetCopy.nextUp` (option O13); the checkbox leading the task title, up to three lines, tail truncation; caption line 1: the due label, `TaskRowCopy.overdue(date:)` in red or `WidgetCopy.dueToday` in `.secondary`; caption line 2: the project tag and, when an agent added it, `TaskRowCopy.via(client:)`, one line, tail truncation (option O6) |
+| Next up | label `WidgetCopy.nextUp` (option O13); the checkbox leading the task title, up to three lines, tail truncation; caption line 1: the due label, `TaskRowCopy.overdue(date:)` in red or `WidgetCopy.dueToday` in `.secondary`; then, each on its own line with tail truncation: the project tag only when no agent added the task, and `TaskRowCopy.via(client:)` when one did (option O6, amended by the loop in the widgets build: at 170 pt the tag and the label on one line both truncated past reading) |
 | Medium | header: leading `MainWindowCopy.today`, trailing `MenuBarCopy.left(count:)` in `.secondary` (option O1); up to three rows (option O4), separated by `Divider()` |
 | Large | header: leading the workspace name, tail truncation, trailing `MenuBarCopy.left(count:)` in `.secondary` (option O1); up to seven rows (option O4), separated by `Divider()` |
 
@@ -267,7 +267,7 @@ The owner asked the build loop to take every call (2026-11-24, "take every decis
 | O3 | A: done-today rows fill the slots left, newest first, reopenable | 2026-11-24 |
 | O4 | A: medium 3 rows, large 7, no overflow line | 2026-11-24 |
 | O5 | A: one line: checkbox, title, the overdue label or (large) the project tag | 2026-11-24 |
-| O6 | A: the first open task in Today's order, with checkbox, due caption, tag and "via" | 2026-11-24 |
+| O6 | A: the first open task in Today's order, with checkbox, due caption, tag and "via"; amended by the loop's call: the due caption, the tag and "via" each on their own line, and no tag when there is a "via" | 2026-11-24 |
 | O7 | A: done today of (done today + open); pending adds do not count | 2026-11-24 |
 | O8 | A: the row turns done in place, counts change at once; a second tap reopens | 2026-11-24 |
 | O9 | A: a snapshot of an earlier day shows the "Open todz" prompt | 2026-11-24 |
