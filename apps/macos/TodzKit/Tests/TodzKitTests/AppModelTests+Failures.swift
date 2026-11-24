@@ -85,19 +85,22 @@ extension AppModelTests {
         let workspace = harness.seedWorkspace(name: "acme", projectNames: fiveProjectNames)
         workspace.projects.forEach { harness.seedTasks(projectIdentifier: $0.identifier, count: 3) }
         harness.service.pageSize = 1
-        harness.service.projectFailures["acme-two"] = .unauthorized
-        harness.service.projectFailures["acme-four"] = .unauthorized
-        let callsAtErase = Captured<Int>()
-        harness.vault.onErase = { callsAtErase.value = harness.service.calls.count }
+        harness.service.suspend(.readChanges)
         harness.vault.secret = harness.session
-        await harness.model.launch()
+        let launching = Task { await harness.model.launch() }
+        await harness.service.held(.readChanges, count: workspace.projects.count)
+        let callsBeforeTheFirstUnauthorized = harness.service.calls
+        harness.service.failures[.readChanges] = .unauthorized
+        harness.service.unsuspend(.readChanges)
+        workspace.projects.forEach { _ in harness.service.resume(.readChanges) }
+        await launching.value
         #expect(harness.vault.eraseCount == 1)
-        #expect(harness.service.calls.count == callsAtErase.value)
+        #expect(harness.service.calls == callsBeforeTheFirstUnauthorized)
         #expect(harness.model.phase == .signedOut(notice: .sessionEnded))
         #expect(harness.model.board == TaskBoard())
         await harness.model.refresh()
         await harness.model.complete(task: firstTask)
-        #expect(harness.service.calls.count == callsAtErase.value)
+        #expect(harness.service.calls == callsBeforeTheFirstUnauthorized)
         #expect(harness.vault.eraseCount == 1)
     }
 
