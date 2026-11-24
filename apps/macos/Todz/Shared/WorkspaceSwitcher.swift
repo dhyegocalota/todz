@@ -28,9 +28,10 @@ struct WorkspaceSwitcher: View {
     private var menu: some View {
         Menu {
             Picker(selection: activeIdentifier) {
-                ForEach(model.workspaces, id: \.identifier) { candidate in
+                ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, candidate in
                     Text(candidate.name)
                         .tag(candidate.identifier)
+                        .keyboardShortcut(WorkspaceShortcuts.keyboardShortcut(number: number))
                 }
             } label: {
                 EmptyView()
