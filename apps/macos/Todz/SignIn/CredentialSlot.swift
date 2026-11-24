@@ -5,6 +5,7 @@ private let noIdentity = ""
 
 struct CredentialSlot: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.controlActiveState) private var controlActiveState
     @State private var identity = noIdentity
     @State private var isFormatRefused = false
     @FocusState private var isIdentityFocused: Bool
@@ -38,7 +39,8 @@ struct CredentialSlot: View {
             guard let lastIdentity = model.lastIdentity else { return }
             identity = lastIdentity
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+        .onChange(of: controlActiveState) {
+            guard controlActiveState == .key else { return }
             isIdentityFocused = true
         }
     }
