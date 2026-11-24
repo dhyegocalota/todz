@@ -86,7 +86,7 @@ extension AppModel {
 
     public func reopenKeyScreen() {
         guard keyScreenIdentifier == nil else { return }
-        guard let projectIdentifier = keyProjectIdentifier else {
+        guard let projectIdentifier = keyProjectIdentifier, isShown(projectIdentifier: projectIdentifier) else {
             showInboxKeys()
             return
         }
