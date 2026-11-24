@@ -17,6 +17,10 @@ extension AppModel {
         await activate(workspace)
     }
 
+    public func switchWorkspace(number: Int) async {
+        fatalError("switchWorkspace(number:) is not implemented")
+    }
+
     public func loadFailure(of workspace: Workspace) -> AppBanner? {
         let loads = workspace.projects.map { projectLoads[$0.identifier] }
         let isNothingLoaded = loads.allSatisfy { $0 == .unreachable || $0 == .failed }
