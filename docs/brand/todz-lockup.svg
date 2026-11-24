@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4C6BFF"/>
+      <stop offset="1" stop-color="#1B2A9E"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="#0E1020"/>
+  <g transform="translate(90 70) scale(0.254)">
+    <rect x="80" y="80" width="864" height="864" rx="196" fill="url(#background)"/>
+    <path d="M300 532 L448 680 L724 404" fill="none" stroke="#FFFFFF" stroke-width="96" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M790 214 C800 268 818 286 872 296 C818 306 800 324 790 378 C780 324 762 306 708 296 C762 286 780 268 790 214 Z" fill="#8CF7D0"/>
+  </g>
+  <text x="400" y="262" font-family="SF Pro Rounded, SF Pro Display, Helvetica Neue, Arial" font-weight="700" font-size="190" letter-spacing="-6" fill="#FFFFFF">todz</text>
+  <text x="408" y="320" font-family="SF Pro Text, Helvetica Neue, Arial" font-weight="500" font-size="34" fill="#9AA3C7">your tasks, shared with your agents</text>
+</svg>
