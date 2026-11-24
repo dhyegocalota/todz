@@ -19,7 +19,7 @@ ADR 0027 keeps the cache, with its session-bound data, in the app's own containe
 
 1. The app and the widget extension share one App Group whose identifier is `<prefix>.dev.todz`. `<prefix>` is one build setting in `project.yml`. Until the owner has a team it is the placeholder `TODZLOCAL0`; with a team it becomes the Team ID, and nothing else changes.
 2. The group holds no session secret and not the cache. The app writes `widget-snapshot.json` there: the active workspace's name, the day, and Today as the app shows it (open tasks with their number, project, title, due date and creator label, then those done today, then the pending adds), written whenever that view changes, and it reloads the widget timelines after every write. The widgets read only that file.
-3. A widget's checkbox runs an `AppIntent` in the extension. The intent appends `{ project, number, state, at }` to `widget-requests.json` in the group, marks the task in the snapshot so the widget redraws at once, and reloads the timelines. The app takes the requests when it launches, when it becomes active, and when a Darwin notification posted by the intent arrives while it runs. Each request goes into the outbox (ADR 0028) only if its task is in the snapshot the app last wrote, and only to complete or reopen. Then the app writes a fresh snapshot.
+3. A widget's checkbox runs an `AppIntent` in the extension with the task and its target state. The intent writes one file per request, `requests/<UUID>.json` in the group, so the extension and the app never rewrite the same file. It sets the task's state in the snapshot so the widget redraws at once. The app takes the requests once it is ready after launch, when it becomes active, and when a Darwin notification posted by the intent arrives while it runs. Each request goes into the outbox (ADR 0028) only if its task is in the app's current Today and not already in that state, and only to complete or reopen. The app removes the files it read and writes a fresh snapshot.
 4. Signed out, never launched, or the snapshot of another day: the widgets show their empty states from `design.md`, and the checkboxes do nothing.
 5. Sign-out and a sign-in as another owner erase both files with the cache (ADR 0027).
 
@@ -42,7 +42,7 @@ ADR 0027 keeps the cache, with its session-bound data, in the app's own containe
 
 ## Evidence
 
-The spike's ad-hoc build: `xcodebuild` refused `group.dev.todz.wspike` ("requires a provisioning profile"); it built `ABCDE12345.dev.todz.wspike`; the sandboxed app got `~/Library/Group Containers/ABCDE12345.dev.todz.wspike` and wrote `shared.txt` and `Library/Caches/shared.txt` there; `pluginkit -m -v -i dev.todz.wspike.widget` listed the extension. The extension reading the group was not observed: it needs the widget placed on the desktop.
+The spike's ad-hoc build: `xcodebuild` refused `group.dev.todz.wspike` ("requires a provisioning profile"); it built `ABCDE12345.dev.todz.wspike`; the sandboxed app got `~/Library/Group Containers/ABCDE12345.dev.todz.wspike` and wrote `shared.txt` and `Library/Caches/shared.txt` there; `pluginkit -m -v -i dev.todz.wspike.widget` listed the extension. The extension reading the group was not observed: it needs the widget placed on the desktop. Nor was it recorded whether macOS showed a consent prompt for the group container. Plan step 0 proves both before any code, with the owner's OK (plan review of 2026-11-24, finding 2).
 
 ## Revisit when
 

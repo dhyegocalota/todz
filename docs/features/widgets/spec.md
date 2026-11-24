@@ -15,7 +15,7 @@ The owner sees Today only by opening the app or its popover. The product design 
 - A WidgetKit extension in the XcodeGen project, ad-hoc signed like the app, sharing an App Group `<prefix>.dev.todz` with it; `<prefix>` is one build setting, `TODZLOCAL0` until the owner's team (ADR 0032).
 - The app writes `widget-snapshot.json` to the group whenever the active workspace's Today changes (tasks, outbox, workspace switch, day change, sign-in and sign-out), then reloads the widget timelines.
 - Four widgets read only the snapshot: small Today ring (done today of the day's total), small Next up (the first open task in Today's order), medium and large Today lists, per [`design.md`](design.md).
-- A widget checkbox runs an `AppIntent` that records a completion or reopening request in the group, redraws the widget at once, and posts a Darwin notification; the app takes the requests into the outbox (ADR 0028) when it runs, launches or becomes active, only for tasks of the snapshot it wrote.
+- A widget checkbox runs an `AppIntent` that records a completion or reopening request in the group, redraws the widget at once, and posts a Darwin notification; the app takes the requests into the outbox (ADR 0028) once ready after a launch, when it becomes active, and on the notification, only for tasks in its current Today that are not already in the target state; one file per request, so no tap is lost between the two processes.
 - Signed out, no snapshot, or a snapshot of another day: the widgets' empty states.
 - Sign-out and a sign-in as another owner erase the snapshot and the requests with the cache.
 - The root README gallery gains the widgets (ADR 0030).
@@ -40,13 +40,14 @@ AppModel change (board, outbox, active workspace, day, phase)
 
 widget timeline ─▶ WidgetStore.readSnapshot ─▶ entries (now, and the next midnight in the snapshot's time zone)
 
-checkbox ─▶ ToggleTaskIntent.perform
-   ─▶ WidgetStore.appendRequest({ project, number, state, at })
-   ─▶ snapshot with that task toggled ─▶ writeSnapshot ─▶ reloadAllTimelines
-   ─▶ post Darwin notification "dev.todz.widget-requests"
+checkbox ─▶ ToggleTaskIntent.perform(project, number, target state)
+   ─▶ WidgetStore.addRequest (one file: requests/<UUID>.json)
+   ─▶ snapshot with that task's state set in place ─▶ writeSnapshot (the system reloads after the intent)
+   ─▶ post Darwin notification "<group>.widget-requests"
 
 app (launch, became active, notification) ─▶ WidgetStore.takeRequests
-   ─▶ each: task in the last written snapshot? ─▶ complete / reopen through the outbox ─▶ new snapshot
+   ─▶ each: task in the current Today, not already in that state? ─▶ complete / reopen through the outbox
+   ─▶ remove the request files read ─▶ write the snapshot (always, after an intake)
 ```
 
 ### Interfaces
@@ -58,7 +59,7 @@ app (launch, became active, notification) ─▶ WidgetStore.takeRequests
 - **The group container is missing** (an entitlement the system refused) → the app goes on without widgets and logs nothing about tasks; the widgets show "Open todz".
 - **An unreadable snapshot** → the widgets show their empty state; the app's next write replaces it.
 - **An unreadable request file** → erased; the requests in it are lost, the widget redraws from the next snapshot.
-- **A request for a task not in the last written snapshot** (another workspace, a forged request) → dropped.
+- **A request for a task not in the current Today** (another workspace, a forged request) → dropped, and the snapshot is rewritten so the widget's optimistic row returns to the truth. A forged Darwin notification only triggers an intake. No `todz://` link ever writes.
 - **The app is quit** → requests wait in the group; the widget shows them done; the app sends them at its next launch.
 - **Another owner signs in** → the snapshot and the requests are erased before anything is written for the new owner.
 - **Logs:** nothing about tasks.
