@@ -1,0 +1,70 @@
+# Tester briefing: Sign in with an email link
+
+## Worker (G1, lane `feat/magic-link-sign-in`)
+
+### What changed and where
+
+All under `apps/api`.
+
+- Public routes dispatch from one record keyed by route (`PUBLIC_HANDLERS` in `src/owner-endpoint.ts`): `POST /owner/sessions` (existing), `GET /owner/sign-in-method` (`src/sign-in-method.ts`), `POST /owner/sign-in-links` (`src/sign-in-links.ts`).
+- `src/sign-in-provider.ts`: kind `email`, `SignInMethod` (`link` | `identity`), `verify({identityToken, linkVerifier, directory, now})`. The email kind spends a link with one `UPDATE … RETURNING email` (`src/directory-sign-in-links.ts`).
+- `src/owner-sign-in.ts`: the order is now provider, body, time zone, verifier shape, verify (R4). A `link_verifier` that is present and not 43 base64url characters answers 401 `identity_rejected`.
+- `src/owner-request.ts`: `parsedPublicBody` requires `Content-Type: application/json` (any parameters, any case) before parsing; used by `POST /owner/sessions` and `POST /owner/sign-in-links` (R3).
+- `src/sign-in-links.ts`: 202 `{}` for every well-formed address; the sweep of expired rows and the insert run as two statements, the insert being one `INSERT … SELECT … WHERE count < 5` whose `meta.changes` of 0 is 429 (R2); a rejecting sender deletes the row and answers 503. None of the statements touches `owners` or `owner_identities` (R12).
+- `src/email-sender.ts`: the `EmailSender` port and the `console` kind, which logs one JSON line `{"to","text"}` per message; honoured only when `PUBLIC_ORIGIN`'s hostname is `localhost` or `127.0.0.1` (R8). `PUBLIC_ORIGIN` must equal `new URL(PUBLIC_ORIGIN).origin` (R8).
+- `src/sign-in-page.ts`, `src/sign-in-page-copy.ts`: `GET /sign-in`, the static page of R9 (script and style pinned by hash, fragment read by the script, `history.replaceState` before the jump to `todz://sign-in?token=…`). Any other method on `/sign-in` is 404.
+- `src/sign-in-mail-copy.ts`: the mail's subject and plain text.
+- `migrations/0004_sign_in_links.sql`; `src/env.ts` gains `EMAIL_SENDER?` and `PUBLIC_ORIGIN?`; `src/http-status.ts` gains `Accepted` and `TooManyRequests`; `src/owner-errors.ts` gains `too_many_links`.
+- `package.json` gains `dev:email`; the test configuration binds `EMAIL_SENDER=console` and `PUBLIC_ORIGIN=http://localhost:8787`.
+
+### How to run
+
+```
+pnpm --filter @todz/api dev:email
+```
+
+It applies the migrations to the local D1 and starts `wrangler dev` on `http://localhost:8787` with `SIGN_IN_PROVIDER=email`, `EMAIL_SENDER=console` and `PUBLIC_ORIGIN=http://localhost:8787`. Ask for a link with a challenge (the vector below is the challenge of the verifier `AAAA…A`, 43 characters):
+
+```
+curl -i -X POST -H 'Content-Type: application/json' -d '{"email":"maria@example.com","link_challenge":"0f007385b6f9d4b7eeb2748605afe1a984a0a3bfa3f014d09e2a784ce9e5cd1a"}' http://localhost:8787/owner/sign-in-links
+```
+
+The Worker's console prints one line with the address and the text, link included. Redeem with `POST /owner/sessions` `{"identity_token":"<token from the link>","link_verifier":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","time_zone":"UTC"}`. `pnpm --filter @todz/api dev` is unchanged (`fake`).
+
+Unit loop: `cd apps/api && npx vitest run` and `pnpm typecheck`.
+
+### Red to green
+
+| Step | Red commit | Red text the run printed | Green commit |
+|------|-----------|--------------------------|--------------|
+| 1, 2 `test/sign-in-method.test.ts` | c08dde9 | `Error: readSignInMethod is not implemented` (5 failed) | 3780409 |
+| 3, 4 `test/sign-in-links.test.ts` | 91d157e | `Error: requestSignInLink is not implemented` (21 assertions) and `D1_ERROR: no such table: sign_in_links` (4); 54 failed | dbd0e02 |
+| 5, 6 `test/owner-sign-in.test.ts`, `test/sign-in-provider.test.ts` | 83a0c03 | `Error: the email provider verify is not implemented` (11), `expected 401 to be 422` (time zone before identity), `expected 201 to be 401` (verifier shape), `expected 201 to be 400` (content type); 20 failed in all | a755d2e |
+| 7 `test/sign-in-page.test.ts` | 3a0071a | `Error: serveSignInPage is not implemented`; 15 failed | 098c128 |
+| R5 vector, `test/credential-digest.test.ts` | 83a0c03 | pin: green when it landed (`0f007385…cd1a` is `digestCredential('A' x 43)`) | none |
+
+`test/worker.test.ts` now lists eight directory tables (it changed with migration 0004 in dbd0e02). The fake provider's tests changed only in the rows R4 moves (time zone is checked before the identity) and in `test/sign-in-provider.test.ts`, rewritten for the new `verify` input (R10).
+
+The tests of step 3 were corrected in the green commit dbd0e02: addresses made unique per test (the shared D1 persists across tests) and the `undefined` cases dropped (JSON drops them). The red failure texts above are from the red run as committed.
+
+### Hypotheses for the tester
+
+- H1: `GET /owner/sign-in-method` answers `{"method":"link"}` with `email`, `{"method":"identity"}` with `fake`, 503 `sign_in_unavailable` otherwise, with or without a bearer.
+- H2: `POST /owner/sign-in-links` answers 202 `{}` for a known and an unknown address with the same statements, none on `owners` or `owner_identities`; the row holds the digest of the token, never the token.
+- H3: the sixth link for one address in 15 minutes is 429 `too_many_links`, whatever the case or spaces of the address; four parallel requests with three already made give two 202 and two 429; at exactly 15 minutes after the first the limit lets one through again.
+- H4: with no `email` kind, no `PUBLIC_ORIGIN`, a non-canonical origin, no sender, or the console sender on a non-local host, the answer is 503 and nothing is stored or sent, before the body is read.
+- H5: a link redeems once, in the 15 minutes, with the verifier whose digest is the stored challenge; a second use, an expired link, an unknown token, a wrong, missing or malformed verifier all answer 401 `identity_rejected`; two concurrent redeems give one 201 and one 401.
+- H6: a bad `time_zone` answers 422 and does not spend the link; a wrong verifier does not spend it either.
+- H7: `POST` of a public route with a content type other than JSON is 400 `invalid_request`; a stray `Authorization` header never matters.
+- H8: `GET /sign-in` sends no-store, no-referrer, nosniff and the policy of R9 whose hashes match the inline script and style; the script reads only a `token` fragment of exactly 43 base64url characters and drops the fragment before it navigates; a query string is ignored and a token in it never appears in the body.
+- H9: a first mail's link carries the configured origin; the console line holds the address and text on one line.
+
+### Known gaps
+
+- `tools/repository-shape/src/api-source.test.ts` ("no file names console") is red on this lane because `src/email-sender.ts` names `console`, which ADR 0041 requires. That file is outside G1's paths: the lead lets that guard allow `apps/api/src/email-sender.ts`, or the guard names the exception.
+- The page's script was exercised in unit tests against a fake `location`, `history` and `document`, not in a browser; the walk in a real browser is the tester's.
+- Spent rows stay until they expire and an asking sweeps them (`expires_at <= now`); there is no scheduled sweep.
+- Two statements (sweep, then insert) make the request, not a batch; the limit is atomic, the sweep is idempotent.
+- A spent link is not restored if creating the owner fails after the spend (a thrown D1 error); the owner asks again.
+- The mail's text copy lives in `src/sign-in-mail-copy.ts`, a file the plan's file map did not list.
+- `SIGN_IN_PROVIDER=email` is not set in `wrangler.jsonc` (that is `deploy-ready`).
