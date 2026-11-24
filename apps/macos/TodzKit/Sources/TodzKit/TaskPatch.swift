@@ -1,4 +1,4 @@
-public enum TaskPatch: Encodable, Sendable, Equatable {
+public enum TaskPatch: Codable, Sendable, Equatable {
     case title(String)
     case notes(String?)
     case dueDate(CalendarDate?)
@@ -9,6 +9,10 @@ public enum TaskPatch: Encodable, Sendable, Equatable {
         case notes
         case dueDate
         case placement
+    }
+
+    public init(from decoder: any Decoder) throws {
+        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "TaskPatch is not implemented"))
     }
 
     public func encode(to encoder: any Encoder) throws {
