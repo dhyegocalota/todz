@@ -1,6 +1,9 @@
 public enum SignInError: Equatable, Sendable {
     case identityRejected
     case signInUnavailable
+    case tooManyLinks
+    case linkRejected
+    case linkNotRequested
     case timeZoneInvalid
     case unreachable
     case unexpected

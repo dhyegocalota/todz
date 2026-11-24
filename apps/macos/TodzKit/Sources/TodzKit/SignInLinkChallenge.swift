@@ -5,8 +5,8 @@ private let verifierByteCount = 32
 private let base64Replacements = [("+", "-"), ("/", "_"), ("=", "")]
 private let hexByteFormat = "%02x"
 
-enum SignInLinkChallenge {
-    static func newVerifier() -> String {
+public enum SignInLinkChallenge {
+    public static func newVerifier() -> String {
         let bytes = Data((0..<verifierByteCount).map { _ in UInt8.random(in: .min ... .max) })
         return base64Replacements.reduce(bytes.base64EncodedString()) { text, replacement in
             text.replacingOccurrences(of: replacement.0, with: replacement.1)

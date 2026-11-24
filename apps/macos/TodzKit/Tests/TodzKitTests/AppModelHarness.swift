@@ -14,6 +14,16 @@ final class KeySequence {
     }
 }
 
+final class VerifierSequence {
+    private(set) var issued: [String] = []
+
+    func next() -> String {
+        let verifier = "verifier-\(issued.count + 1)"
+        issued.append(verifier)
+        return verifier
+    }
+}
+
 func isSameCallSet(_ calls: [FakeCall], _ expected: [FakeCall]) -> Bool {
     calls.count == expected.count && expected.allSatisfy(calls.contains)
 }
@@ -29,11 +39,13 @@ final class HarnessClock {
 @MainActor struct AppModelHarness {
     let service = FakeOwnerService()
     let vault = InMemorySessionVault()
+    let pendingLinks = InMemoryPendingLinkVault()
     let store = InMemorySyncStore()
     let widgets = InMemoryWidgetStore()
     let signals = FakeChangeSignals()
     let pause = HeldPause()
     let keys = KeySequence()
+    let verifiers = VerifierSequence()
     let clock = HarnessClock()
     let session = UUID().uuidString
     let model: AppModel
@@ -41,12 +53,14 @@ final class HarnessClock {
     init() throws {
         let timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
         let keys = keys
+        let verifiers = verifiers
         let pause = pause
         let widgets = widgets
         let clock = clock
         model = AppModel(
             service: service,
             vault: vault,
+            pendingLinks: pendingLinks,
             store: store,
             widgetStore: widgets,
             reloadWidgets: { MainActor.assumeIsolated { widgets.recordReload() } },
@@ -54,7 +68,8 @@ final class HarnessClock {
             timeZone: timeZone,
             now: { clock.now },
             pause: { try await pause.pause($0) },
-            makeIdempotencyKey: { keys.next() }
+            makeIdempotencyKey: { keys.next() },
+            makeLinkVerifier: { verifiers.next() }
         )
     }
 

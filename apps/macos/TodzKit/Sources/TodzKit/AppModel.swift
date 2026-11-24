@@ -6,6 +6,8 @@ import Observation
     public internal(set) var signInError: SignInError?
     public internal(set) var isSigningIn = false
     public internal(set) var lastIdentity: String?
+    public internal(set) var signInMethod: SignInMethod?
+    public internal(set) var pendingLink: PendingSignInLink?
     public internal(set) var workspaces: [Workspace] = []
     public internal(set) var activeWorkspaceIdentifier: String?
     public var selectedItem: SidebarItem = .inbox {
@@ -43,6 +45,8 @@ import Observation
     var isOwnerConfirmed = false
 
     @ObservationIgnored var hasLaunched = false
+    @ObservationIgnored var isLaunchSettled = false
+    @ObservationIgnored var heldSignInLink: SignInLink?
     @ObservationIgnored var session: String?
     @ObservationIgnored var ownerIdentifier: String?
     @ObservationIgnored var isWorkspaceListOutdated = false
@@ -77,6 +81,7 @@ import Observation
     @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
+    @ObservationIgnored let pendingLinks: any PendingLinkVault
     @ObservationIgnored let store: any SyncStore
     @ObservationIgnored let widgetStore: any WidgetStore
     @ObservationIgnored let reloadWidgets: @Sendable () -> Void
@@ -85,10 +90,12 @@ import Observation
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored let pause: @Sendable (Duration) async throws -> Void
     @ObservationIgnored let makeIdempotencyKey: () -> String
+    @ObservationIgnored let makeLinkVerifier: () -> String
 
     public init(
         service: any OwnerService,
         vault: any SessionVault,
+        pendingLinks: any PendingLinkVault,
         store: any SyncStore,
         widgetStore: any WidgetStore,
         reloadWidgets: @escaping @Sendable () -> Void,
@@ -96,10 +103,12 @@ import Observation
         timeZone: TimeZone,
         now: @escaping () -> Date = Date.init,
         pause: @escaping @Sendable (Duration) async throws -> Void,
-        makeIdempotencyKey: @escaping () -> String = TaskDraft.newIdempotencyKey
+        makeIdempotencyKey: @escaping () -> String = TaskDraft.newIdempotencyKey,
+        makeLinkVerifier: @escaping () -> String = SignInLinkChallenge.newVerifier
     ) {
         self.service = service
         self.vault = vault
+        self.pendingLinks = pendingLinks
         self.store = store
         self.widgetStore = widgetStore
         self.reloadWidgets = reloadWidgets
@@ -108,6 +117,7 @@ import Observation
         self.now = now
         self.pause = pause
         self.makeIdempotencyKey = makeIdempotencyKey
+        self.makeLinkVerifier = makeLinkVerifier
     }
 
     public var waitingChangeCount: Int {
