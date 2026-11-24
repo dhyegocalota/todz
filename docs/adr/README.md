@@ -59,3 +59,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0036](0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md) | The menu bar icon counts Today's open tasks, behind a setting | Proposed | 2026-11-24 |
 | [0037](0037-the-v1-scenario-walks-the-native-app-with-computer-use-and-the-agent-with-an-mcp-client.md) | The v1 scenario walks the native app with computer use and the agent with an MCP client | Proposed | 2026-11-24 |
 | [0038](0038-the-brand-sources-are-svgs-in-docs-brand-and-the-app-s-assets-are-generated-from-them.md) | The brand sources are SVGs in docs/brand, and the app's assets are generated from them | Proposed | 2026-11-24 |
+| [0039](0039-the-app-icon-is-a-layered-icon-composer-document-with-the-flat-set-as-its-fallback.md) | The app icon is a layered Icon Composer document, with the flat set as its fallback | Proposed | 2026-11-24 |
