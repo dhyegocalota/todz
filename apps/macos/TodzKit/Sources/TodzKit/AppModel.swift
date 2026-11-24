@@ -99,7 +99,7 @@ import Observation
         }
         session = secret
         phase = .loading
-        showCache()
+        openCache(cachedOwner())
         await sendTimeZone()
         guard session == secret else { return }
         guard phase == .ready else {
@@ -124,17 +124,30 @@ import Observation
             signInError = .unexpected
             return
         }
+        let cached: OwnerCache?
+        do {
+            cached = try cacheToOpen(for: issued.owner)
+        } catch {
+            signInError = .unexpected
+            return
+        }
         session = issued.sessionToken
         ownerIdentifier = issued.owner.identifier
         phase = .loading
         keep(secret: issued.sessionToken)
-        await loadWorkspaces()
+        openCache(cached)
+        guard phase == .ready else {
+            await loadWorkspaces()
+            return
+        }
+        await reloadWorkspacesQuietly()
     }
 
     public func signOut() async {
         guard let session else { return }
         clearSession()
         phase = .signedOut(notice: nil)
+        forgetCache()
         try? vault.erase()
         try? await service.signOut(session: session)
     }

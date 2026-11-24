@@ -1,6 +1,20 @@
 extension AppModel {
-    func showCache() {
-        let cached = try? store.readOwner()
+    func cachedOwner() -> OwnerCache? {
+        try? store.readOwner()
+    }
+
+    func cacheToOpen(for owner: Owner) throws -> OwnerCache? {
+        let cached = cachedOwner()
+        guard let cached, cached.ownerIdentifier == owner.identifier else {
+            forgetWindow()
+            outbox = Outbox()
+            try store.erase()
+            return nil
+        }
+        return cached
+    }
+
+    func openCache(_ cached: OwnerCache?) {
         loadOutbox()
         guard let cached else { return }
         ownerIdentifier = cached.ownerIdentifier
