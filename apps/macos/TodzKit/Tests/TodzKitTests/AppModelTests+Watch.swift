@@ -147,11 +147,27 @@ extension AppModelTests {
     }
 
     @Test func anUnreachableWatchMarksTheModelOfflineBeforeItReconnects() async throws {
-        let harness = try await watchHarness()
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme")
+        harness.cache([acme], active: acme)
+        harness.vault.secret = harness.session
+        harness.service.suspend(.updateOwner)
+        let launching = Task { await harness.model.launch() }
+        await harness.service.held(.updateOwner)
         #expect(harness.model.syncStatus == .online)
         harness.signals.fail(harness.watchKey(inboxIdentifier), with: .unreachable)
         await harness.pause.started()
         #expect(harness.model.syncStatus == .offline(waiting: 0))
+        harness.service.resume(.updateOwner)
+        await launching.value
+        harness.pause.release()
+    }
+
+    @Test func aWatchsFirstFailureAfterAnsweredPullsKeepsTheModelOnline() async throws {
+        let harness = try await watchHarness()
+        harness.signals.fail(harness.watchKey(inboxIdentifier), with: .unreachable)
+        await harness.pause.started()
+        #expect(harness.model.syncStatus == .online)
         harness.pause.release()
     }
 
@@ -160,13 +176,17 @@ extension AppModelTests {
         let inbox = harness.watchKey(inboxIdentifier)
         harness.signals.fail(inbox, with: .unreachable)
         await harness.pause.started()
-        #expect(harness.model.syncStatus == .offline(waiting: 0))
-        await harness.model.refresh()
-        #expect(harness.model.syncStatus == .online)
         harness.pause.release()
         await harness.signals.opened(inbox, count: 2)
         harness.signals.fail(inbox, with: .unreachable)
         await harness.pause.started(count: 2)
+        #expect(harness.model.syncStatus == .offline(waiting: 0))
+        await harness.model.refresh()
+        #expect(harness.model.syncStatus == .online)
+        harness.pause.release()
+        await harness.signals.opened(inbox, count: 3)
+        harness.signals.fail(inbox, with: .unreachable)
+        await harness.pause.started(count: 3)
         #expect(harness.model.syncStatus == .online)
         harness.pause.release()
     }
