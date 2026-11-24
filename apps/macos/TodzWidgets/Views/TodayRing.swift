@@ -27,9 +27,12 @@ struct TodayRing: View {
 
     private func layout(progress: Double, caption: AttributedString) -> some View {
         VStack(alignment: .leading) {
-            Text(MainWindowCopy.today)
-                .font(.headline)
-                .unredacted()
+            HStack {
+                WidgetBrandGlyph()
+                Text(MainWindowCopy.today)
+                    .font(.headline)
+                    .unredacted()
+            }
             Spacer()
             ring(progress: progress)
                 .frame(maxWidth: .infinity)
