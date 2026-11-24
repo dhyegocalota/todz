@@ -10,10 +10,6 @@ public struct Owner: Codable, Sendable, Equatable {
         case identifier = "id"
         case timeZone
     }
-
-    public func encode(to encoder: any Encoder) throws {
-        fatalError("Owner.encode is not implemented")
-    }
 }
 
 public struct Project: Codable, Sendable, Equatable, Hashable {
@@ -28,10 +24,6 @@ public struct Project: Codable, Sendable, Equatable, Hashable {
         case isInbox
         case createdAt
     }
-
-    public func encode(to encoder: any Encoder) throws {
-        fatalError("Project.encode is not implemented")
-    }
 }
 
 public struct Workspace: Codable, Sendable, Equatable {
@@ -45,10 +37,6 @@ public struct Workspace: Codable, Sendable, Equatable {
         case name
         case createdAt
         case projects
-    }
-
-    public func encode(to encoder: any Encoder) throws {
-        fatalError("Workspace.encode is not implemented")
     }
 }
 
@@ -72,7 +60,14 @@ public enum ChangeActor: Codable, Sendable, Equatable {
     }
 
     public func encode(to encoder: any Encoder) throws {
-        fatalError("ChangeActor.encode is not implemented")
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .owner:
+            try container.encode(ActorKind.owner, forKey: .kind)
+        case .agent(let clientName):
+            try container.encode(ActorKind.agent, forKey: .kind)
+            try container.encode(clientName, forKey: .clientName)
+        }
     }
 
     private static func clientName(in container: KeyedDecodingContainer<CodingKeys>) throws -> String {
@@ -96,10 +91,6 @@ public struct TaskRecord: Codable, Sendable, Equatable {
     public let createdAt: Date
     public let updatedAt: Date
     public let completedAt: Date?
-
-    public func encode(to encoder: any Encoder) throws {
-        fatalError("TaskRecord.encode is not implemented")
-    }
 }
 
 public struct HistoryEntry: Decodable, Sendable, Equatable {
