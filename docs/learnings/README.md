@@ -26,6 +26,7 @@ Every learning touched by a change gets a `Revisited` line appended.
 | 2026-11-23 | A Durable Object fails its first call with SQLITE_AUTH when its schema is versioned by a PRAGMA | [2026-11-23-durable-object-sqlite-refuses-pragma-user-version.md](2026-11-23-durable-object-sqlite-refuses-pragma-user-version.md) | 2026-11-23 |
 | 2026-11-23 | A failed MCP initialize answers HTTP 200, so a status check does not prove the handshake succeeded | [2026-11-23-an-mcp-sdk-error-answers-http-200.md](2026-11-23-an-mcp-sdk-error-answers-http-200.md) | 2026-11-23 |
 | 2026-11-23 | The Worker answers 500 "no such table" under wrangler dev while every Vitest test passes | [2026-11-23-wrangler-dev-never-applies-d1-migrations.md](2026-11-23-wrangler-dev-never-applies-d1-migrations.md) | 2026-11-23 |
+| 2026-11-24 | An ad-hoc signed app hangs on a Keychain prompt after a rebuild, or cannot write at all | [2026-11-24-an-ad-hoc-signed-app-cannot-keep-a-keychain-item-across-builds.md](2026-11-24-an-ad-hoc-signed-app-cannot-keep-a-keychain-item-across-builds.md) | 2026-11-24 |
 
 ### tooling
 
