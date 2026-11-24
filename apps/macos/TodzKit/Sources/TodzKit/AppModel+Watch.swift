@@ -28,7 +28,7 @@ extension AppModel {
     }
 
     func requestWorkspaceReload() {
-        guard let session, workspaceReload == nil else { return }
+        guard let session, workspaceReload == nil, workspaceListingsInFlight == 0 else { return }
         workspaceReload = Task {
             await reloadWorkspacesQuietly()
             guard self.session == session else { return }

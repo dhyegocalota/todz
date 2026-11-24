@@ -22,11 +22,12 @@ import Observation
     var outbox = Outbox()
     var refreshesInFlight = 0
     var isOffline = false
+    var isOwnerConfirmed = false
 
     @ObservationIgnored var session: String?
     @ObservationIgnored var ownerIdentifier: String?
-    @ObservationIgnored var isOwnerConfirmed = false
     @ObservationIgnored var isWorkspaceListOutdated = false
+    @ObservationIgnored var workspaceListingsInFlight = 0
     @ObservationIgnored var isCacheNotSavedRaised = false
     @ObservationIgnored var watches: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var watchAttempts: [String: Int] = [:]
@@ -248,7 +249,7 @@ import Observation
     // NB ADR 0027: nothing is sent before this session's owner is confirmed, and another owner's cache is erased first.
     func confirmOwner() async {
         guard !isOwnerConfirmed else { return }
-        guard let owner = try? await request({ try await service.updateOwner(session: $0, timeZone: timeZone.identifier) }) else { return }
+        guard let owner = await confirmedOwner() else { return }
         isOwnerConfirmed = true
         let cachedOwnerIdentifier = ownerIdentifier
         ownerIdentifier = owner.identifier
@@ -256,6 +257,16 @@ import Observation
         forgetWindow()
         forgetCache()
         phase = .loading
+    }
+
+    private func confirmedOwner() async -> Owner? {
+        do {
+            return try await request { try await service.updateOwner(session: $0, timeZone: timeZone.identifier) }
+        } catch OwnerAPIError.timeZoneInvalid {
+            return try? await request { try await service.readOwner(session: $0) }
+        } catch {
+            return nil
+        }
     }
 
     private func keep(secret: String) {

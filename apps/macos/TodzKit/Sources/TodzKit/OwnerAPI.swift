@@ -69,7 +69,7 @@ public struct OwnerAPI: OwnerService {
     }
 
     public func readOwner(session: String) async throws -> Owner {
-        fatalError("OwnerAPI.readOwner is not implemented")
+        try await answer(OwnerAnswer.self, to: OwnerRequest(method: .get, path: ownerPath, session: session)).owner
     }
 
     public func updateOwner(session: String, timeZone: String) async throws -> Owner {

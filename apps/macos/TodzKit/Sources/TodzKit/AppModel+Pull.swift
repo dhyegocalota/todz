@@ -6,7 +6,8 @@ extension AppModel {
     }
 
     public var syncStatus: SyncStatus {
-        guard isOffline else { return .online }
+        let isWaitingForTheOwner = !isOwnerConfirmed && outbox.head != nil
+        guard isOffline || isWaitingForTheOwner else { return .online }
         return .offline(waiting: outbox.count)
     }
 
