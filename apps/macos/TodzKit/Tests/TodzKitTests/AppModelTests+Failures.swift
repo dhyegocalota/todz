@@ -22,6 +22,19 @@ extension AppModelTests {
         #expect(harness.model.selectedItem == .inbox)
     }
 
+    @Test func aWorkspaceGoneOnAWriteReloadsTheWorkspacesAndSaysSo() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        let side = harness.seedWorkspace(name: "side")
+        await harness.signedIn()
+        harness.service.failures[.createProject] = .notFound
+        harness.service.workspaces = [side]
+        await harness.model.createProject(name: "Launch")
+        #expect(harness.model.banner == .workspaceGone)
+        #expect(harness.service.routes() == [.createProject, .listWorkspaces, .readChanges])
+        #expect(harness.model.activeWorkspace == side)
+    }
+
     @Test func aTaskGoneOnAWriteReloadsTheWorkspaceAndSaysSo() async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")

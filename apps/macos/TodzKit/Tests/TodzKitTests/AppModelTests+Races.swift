@@ -4,6 +4,7 @@ import Testing
 
 private let inboxIdentifier = "acme-inbox"
 private let firstTask = TaskKey(projectIdentifier: inboxIdentifier, number: 1)
+private let addToInbox = WriteTarget.newTask(projectIdentifier: inboxIdentifier)
 
 extension AppModelTests {
     @Test func aSessionEndedAnswerToAnEarlierSessionLeavesTheCurrentOneSignedIn() async throws {
@@ -107,6 +108,85 @@ extension AppModelTests {
         harness.service.resume(.updateTask)
         await firstSave.value
         #expect(harness.service.routes() == [.updateTask])
+    }
+
+    @Test func anAddWhileAnotherIsInFlightKeepsTheFirstDraft() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        harness.service.suspend(.addTasks)
+        let firstAdd = Task { await harness.model.addTask(title: "First", projectIdentifier: inboxIdentifier, dueDate: nil) }
+        await harness.service.held(.addTasks)
+        harness.service.unsuspend(.addTasks)
+        await harness.model.addTask(title: "Second", projectIdentifier: inboxIdentifier, dueDate: nil)
+        let first = TaskDraft(title: "First", notes: nil, dueDate: nil, idempotencyKey: "key-1")
+        #expect(harness.model.unconfirmedDrafts == [addToInbox: first])
+        harness.service.resume(.addTasks)
+        await firstAdd.value
+        #expect(harness.service.calls == [.addTasks(session: harness.session, projectIdentifier: inboxIdentifier, drafts: [first])])
+        #expect(harness.model.unconfirmedDrafts == [:])
+    }
+
+    @Test func tryAgainWhileAnotherAddIsInFlightKeepsTheBannerUntilItsAddIsSent() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        harness.service.failures[.addTasks] = .unreachable
+        await harness.model.addTask(title: "First", projectIdentifier: inboxIdentifier, dueDate: nil)
+        harness.service.failures = [:]
+        harness.service.suspend(.addTasks)
+        let secondAdd = Task { await harness.model.addTask(title: "Second", projectIdentifier: inboxIdentifier, dueDate: nil) }
+        await harness.service.held(.addTasks)
+        harness.service.unsuspend(.addTasks)
+        await harness.model.tryAgain()
+        let first = TaskDraft(title: "First", notes: nil, dueDate: nil, idempotencyKey: "key-1")
+        let second = TaskDraft(title: "Second", notes: nil, dueDate: nil, idempotencyKey: "key-2")
+        #expect(harness.model.banner == .network)
+        #expect(harness.model.canTryAgain)
+        #expect(harness.model.unconfirmedDrafts == [addToInbox: second])
+        harness.service.resume(.addTasks)
+        await secondAdd.value
+        await harness.model.tryAgain()
+        let adds = [first, second, first].map { FakeCall.addTasks(session: harness.session, projectIdentifier: inboxIdentifier, drafts: [$0]) }
+        #expect(harness.service.calls == adds)
+        #expect(harness.model.taskViews?.inbox.map(\.task.title).sorted() == ["First", "Second"])
+        #expect(harness.model.banner == nil)
+        #expect(harness.model.unconfirmedDrafts == [:])
+    }
+
+    @Test func aProjectCreatedAfterASwitchIsThereOnTheWayBack() async throws {
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme")
+        let side = harness.seedWorkspace(name: "side")
+        await harness.signedIn()
+        harness.service.suspend(.createProject)
+        let creating = Task { await harness.model.createProject(name: "Garden") }
+        await harness.service.held(.createProject)
+        await harness.model.switchWorkspace(identifier: side.identifier)
+        let loadsOfSide = harness.model.projectLoads
+        harness.service.resume(.createProject)
+        let created = try #require(await creating.value)
+        #expect(harness.model.selectedItem == .inbox)
+        #expect(harness.model.projectLoads == loadsOfSide)
+        await harness.model.switchWorkspace(identifier: acme.identifier)
+        #expect(harness.model.activeWorkspace?.projects.map(\.name) == ["Inbox", "Garden"])
+        #expect(harness.model.projectLoads[created.identifier] == .loaded)
+    }
+
+    @Test func aProjectRenamedAfterASwitchIsRenamedOnTheWayBack() async throws {
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme", projectNames: ["launch"])
+        let side = harness.seedWorkspace(name: "side")
+        await harness.signedIn()
+        harness.service.suspend(.renameProject)
+        let renaming = Task { await harness.model.renameProject(projectIdentifier: "acme-launch", name: "Ship") }
+        await harness.service.held(.renameProject)
+        await harness.model.switchWorkspace(identifier: side.identifier)
+        harness.service.resume(.renameProject)
+        await renaming.value
+        #expect(harness.model.activeWorkspace == side)
+        await harness.model.switchWorkspace(identifier: acme.identifier)
+        #expect(harness.model.activeWorkspace?.projects.map(\.name) == ["Inbox", "Ship"])
     }
 
     @Test func anEarlierPullEndingLeavesALaterOneInFlight() async throws {
