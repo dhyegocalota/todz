@@ -1,5 +1,5 @@
 extension AppModel {
-    public func addTask(title: String, projectIdentifier: String, dueDate: CalendarDate?) async {
+    public func addTask(title: String, projectIdentifier: String, dueDate: CalendarDate?, selection: AddedTaskSelection = .selectWhenSaved) async {
         let issue = TextCheck.issue(ofTitle: title)
         ruleIssues[.newTask(projectIdentifier: projectIdentifier)] = issue
         guard issue == nil else { return }

@@ -112,6 +112,15 @@ extension AppModelTests {
         #expect(harness.model.selectedTask == added)
     }
 
+    @Test func anAddThatKeepsTheSelectionLeavesItWhenTheServerAnswers() async throws {
+        let harness = try await outboxHarness()
+        harness.model.selectedTask = firstTask
+        await harness.model.addTask(title: "Call the bank", projectIdentifier: inboxIdentifier, dueDate: nil, selection: .keepSelection)
+        await harness.flushed()
+        #expect(harness.model.taskViews?.inbox.map(\.task.number) == [1, 2, 3])
+        #expect(harness.model.selectedTask == firstTask)
+    }
+
     @Test func anAddAnsweredAfterTheSelectionMovedLeavesTheSelection() async throws {
         let harness = try await outboxHarness()
         harness.service.suspend(.addTasks)
