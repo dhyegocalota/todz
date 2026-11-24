@@ -118,7 +118,9 @@ extension AppModel {
         do {
             pulls = try await withThrowingTaskGroup(of: ProjectPull.self) { group in
                 projectIdentifiers.forEach { projectIdentifier in
-                    group.addTask { try await ProjectPull.pulling(feed: feed, session: session, projectIdentifier: projectIdentifier) }
+                    group.addTask {
+                        try await ProjectPull.pulling(feed: feed, session: session, projectIdentifier: projectIdentifier, cursor: ProjectFeed.firstCursor)
+                    }
                 }
                 var pulls: [ProjectPull] = []
                 for try await pulled in group {
@@ -155,8 +157,8 @@ extension AppModel {
     private func record(_ pulled: ProjectPull, session: String, workspaceIdentifier: String) {
         guard isCurrent(session: session, workspaceIdentifier: workspaceIdentifier) else { return }
         switch pulled {
-        case let .loaded(projectIdentifier, tasks):
-            board.merge(projectIdentifier: projectIdentifier, tasks: tasks)
+        case let .loaded(projectIdentifier, changes):
+            board.merge(projectIdentifier: projectIdentifier, tasks: changes.tasks)
             projectLoads[projectIdentifier] = .loaded
         case let .unreachable(projectIdentifier), let .failed(projectIdentifier):
             guard projectLoads[projectIdentifier] != .loaded else { return }

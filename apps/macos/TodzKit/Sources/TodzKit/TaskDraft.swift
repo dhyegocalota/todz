@@ -1,6 +1,6 @@
 import Foundation
 
-public struct TaskDraft: Encodable, Sendable, Equatable {
+public struct TaskDraft: Codable, Sendable, Equatable {
     public let title: String
     public let notes: String?
     public let dueDate: CalendarDate?

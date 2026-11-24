@@ -1,4 +1,4 @@
-public struct TaskKey: Hashable, Sendable {
+public struct TaskKey: Codable, Hashable, Sendable {
     public let projectIdentifier: String
     public let number: Int
 

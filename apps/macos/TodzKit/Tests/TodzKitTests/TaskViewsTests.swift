@@ -21,12 +21,16 @@ private func done(_ number: Int, completedAt: Date, dueDate: CalendarDate? = nil
     MutableTask(number: number, dueDate: dueDate, state: .done, completedAt: completedAt).record
 }
 
-private func views(_ tasksOfProject: [(Project, [TaskRecord])]) throws -> TaskViews {
+private func views(_ tasksOfProject: [(Project, [TaskRecord])], pendingTasks: [PendingTask] = []) throws -> TaskViews {
     let timeZone = try #require(TimeZone(identifier: "America/Sao_Paulo"))
     let board = tasksOfProject.reduce(into: TaskBoard()) { board, entry in
         board.merge(projectIdentifier: entry.0.identifier, tasks: entry.1)
     }
-    return TaskViews(projects: sidebar, board: board, day: today, timeZone: timeZone)
+    return TaskViews(projects: sidebar, board: board, pendingTasks: pendingTasks, day: today, timeZone: timeZone)
+}
+
+private func pending(_ title: String, project: Project = inbox, dueDate: CalendarDate? = nil) -> PendingTask {
+    PendingTask(projectIdentifier: project.identifier, idempotencyKey: "key-\(title)", title: title, dueDate: dueDate)
 }
 
 private func labels(_ tasks: [BoardTask]) -> [String] {
@@ -130,5 +134,68 @@ private func labels(_ tasks: [BoardTask]) -> [String] {
         ])
         #expect(views.doneDays.map(\.day) == [today, yesterday])
         #expect(views.doneDays.map { labels($0.tasks) } == [["alpha 1", "inbox 1"], ["inbox 2"]])
+    }
+
+    @Test func aPendingAddLeavesEveryTaskListAsItWas() throws {
+        let views = try views([(inbox, [open(1)])], pendingTasks: [pending("Read", dueDate: today)])
+        #expect(labels(views.inbox) == ["inbox 1"])
+        #expect(views.today == TodayTasks(open: [], doneToday: []))
+        #expect(views.upcomingDays == [])
+    }
+
+    @Test func anInboxPendingAddIsReturnedForTheInboxOnly() throws {
+        let read = pending("Read")
+        let views = try views([], pendingTasks: [read])
+        #expect(views.pendingTasks(for: .inbox) == [read])
+        #expect(views.pendingTasks(for: .project(identifier: inbox.identifier)) == [read])
+        #expect(views.pendingTasks(for: .project(identifier: alpha.identifier)) == [])
+        #expect(views.pendingTasks(for: .today) == [])
+        #expect(views.pendingTasks(for: .upcoming) == [])
+        #expect(views.pendingTasks(for: .done) == [])
+        #expect(views.upcomingPendingDays == [])
+    }
+
+    @Test func aProjectsPendingAddsComeInOutboxOrder() throws {
+        let first = pending("First", project: alpha)
+        let second = pending("Second", project: alpha)
+        let views = try views([], pendingTasks: [first, pending("Elsewhere", project: beta), second])
+        #expect(views.pendingTasks(for: .project(identifier: alpha.identifier)) == [first, second])
+    }
+
+    @Test func pendingAddsDueTodayOrEarlierAreForToday() throws {
+        let dueToday = pending("Today", project: alpha, dueDate: today)
+        let overdue = pending("Overdue", dueDate: yesterday)
+        let views = try views([], pendingTasks: [dueToday, pending("Undated"), overdue, pending("Later", dueDate: tomorrow)])
+        #expect(views.pendingTasks(for: .today) == [dueToday, overdue])
+    }
+
+    @Test func pendingAddsDueLaterAreGroupedByDueDateEarliestFirst() throws {
+        let nextWeekTask = pending("Next week", dueDate: nextWeek)
+        let tomorrowTask = pending("Tomorrow", project: beta, dueDate: tomorrow)
+        let secondTomorrowTask = pending("Also tomorrow", dueDate: tomorrow)
+        let views = try views([], pendingTasks: [nextWeekTask, tomorrowTask, pending("Today", dueDate: today), secondTomorrowTask])
+        #expect(views.upcomingPendingDays == [
+            PendingTaskDay(day: tomorrow, tasks: [tomorrowTask, secondTomorrowTask]),
+            PendingTaskDay(day: nextWeek, tasks: [nextWeekTask]),
+        ])
+    }
+
+    @Test func anUndatedPendingAddIsNotForToday() throws {
+        let views = try views([], pendingTasks: [pending("Undated", project: alpha)])
+        #expect(views.pendingTasks(for: .today) == [])
+        #expect(views.upcomingPendingDays == [])
+    }
+
+    @Test func noPendingAddIsForDone() throws {
+        let views = try views([], pendingTasks: [pending("Today", dueDate: today), pending("Undated")])
+        #expect(views.pendingTasks(for: .done) == [])
+    }
+
+    @Test func aPendingAddOfAnotherWorkspacesProjectIsIgnored() throws {
+        let elsewhere = Project(identifier: "elsewhere", name: "Elsewhere", isInbox: false, createdAt: fixedInstant)
+        let views = try views([], pendingTasks: [pending("Today", project: elsewhere, dueDate: today), pending("Later", project: elsewhere, dueDate: tomorrow)])
+        #expect(views.pendingTasks(for: .project(identifier: elsewhere.identifier)) == [])
+        #expect(views.pendingTasks(for: .today) == [])
+        #expect(views.upcomingPendingDays == [])
     }
 }

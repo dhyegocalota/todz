@@ -1,12 +1,12 @@
 enum ProjectPull: Sendable {
-    case loaded(projectIdentifier: String, tasks: [TaskRecord])
+    case loaded(projectIdentifier: String, changes: ProjectChanges)
     case unreachable(projectIdentifier: String)
     case failed(projectIdentifier: String)
 
-    static func pulling(feed: ProjectFeed, session: String, projectIdentifier: String) async throws -> ProjectPull {
+    static func pulling(feed: ProjectFeed, session: String, projectIdentifier: String, cursor: Int) async throws -> ProjectPull {
         do {
-            let tasks = try await feed.pull(session: session, projectIdentifier: projectIdentifier, cursor: ProjectFeed.firstCursor)
-            return .loaded(projectIdentifier: projectIdentifier, tasks: tasks)
+            let changes = try await feed.pull(session: session, projectIdentifier: projectIdentifier, cursor: cursor)
+            return .loaded(projectIdentifier: projectIdentifier, changes: changes)
         } catch OwnerAPIError.unauthorized {
             throw OwnerAPIError.unauthorized
         } catch OwnerAPIError.unreachable {
