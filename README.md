@@ -33,7 +33,9 @@ The approved design is in [docs/product](docs/product/); how each piece was buil
 | ![Sign in](docs/screenshots/mac-app-shell/01-sign-in.png)<br>Sign in                                               | ![Name your first workspace](docs/screenshots/mac-app-shell/02-first-workspace.png)<br>Name your first workspace       |
 | ![Today across projects](docs/screenshots/mac-app-shell/03-today-two-projects.png)<br>Today across projects       | ![An agent's task appears live](docs/screenshots/mac-sync/01-agent-add-live.png)<br>An agent's task appears live       |
 | ![Offline, changes waiting](docs/screenshots/mac-sync/02-offline-changes-waiting.png)<br>Offline, changes waiting | ![A refused change, explained](docs/screenshots/mac-sync/03-refused-change-banner.png)<br>A refused change, explained |
-| ![Today from the menu bar](docs/screenshots/menu-bar/01-today-popover.png)<br>Today from the menu bar                     |                                                                                                                       |
+| ![Today from the menu bar](docs/screenshots/menu-bar/01-today-popover.png)<br>Today from the menu bar             | ![Today ring](docs/screenshots/widgets/01-today-ring.png)<br>Today ring widget                                        |
+| ![Next up](docs/screenshots/widgets/02-next-up.png)<br>Next up widget                                             | ![Medium Today list](docs/screenshots/widgets/03-medium-today.png)<br>Medium Today list widget                        |
+| ![Large Today list](docs/screenshots/widgets/04-large-today.png)<br>Large Today list widget                       |                                                                                                                       |
 
 ## How the work happens
 
