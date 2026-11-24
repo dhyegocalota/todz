@@ -1,6 +1,6 @@
 # The todz brand
 
-**Status:** In review
+**Status:** Shipped 2026-11-24
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-24: the owner asked for his logo in the app icon, the menu bar glyph, the README header and hero, and the email header (relayed by the session that runs his checks). Where the sources live and how the assets are made is [ADR 0038](../../adr/0038-the-brand-sources-are-svgs-in-docs-brand-and-the-app-s-assets-are-generated-from-them.md), the loop's call, listed in the loop's questions for the owner
 **ADRs:** [0038](../../adr/0038-the-brand-sources-are-svgs-in-docs-brand-and-the-app-s-assets-are-generated-from-them.md), [0036](../../adr/0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md)
