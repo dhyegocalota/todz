@@ -2,11 +2,13 @@ import { MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
+import { publicOriginOf } from '../src/sign-in-links';
 import { seedEmailIdentity, seedOwner } from './directory-seed';
 import {
   LINK_CHALLENGE,
   freshAddress,
   EMAIL_SETTINGS,
+  PUBLIC_ORIGIN,
   consoleOutput,
   emailEnv,
   linkRows,
@@ -110,6 +112,16 @@ describe('POST /owner/sign-in-links', () => {
     ['ma ria@example.com'],
     ['maria@exa mple.com'],
     ['maria@example.com\nbcc@example.com'],
+    ['<maria@example.com'],
+    ['maria@example.com>'],
+    ['maria@example.com,bcc@example.com'],
+    ['"maria"@example.com'],
+    ['maria@exa"mple.com'],
+    ['ma\tria@example.com'],
+    ['mar\u0001ia@example.com'],
+    ['maria@exam\u007fple.com'],
+    ['mária@example.com'],
+    ['maria@exámple.com'],
     [`${'a'.repeat(ADDRESS_LENGTH_MAX - '@example.com'.length + 1)}@example.com`],
     [5],
     [null],
@@ -151,7 +163,7 @@ describe('POST /owner/sign-in-links', () => {
   ])('%s answers 400 invalid_request', async (_name, payload) => {
     const output = consoleOutput();
     const response = await serveOwnerCall({
-      call: { method: 'POST', path: '/owner/sign-in-links', ...payload },
+      call: { method: 'POST', path: '/owner/sign-in-links', origin: PUBLIC_ORIGIN, ...payload },
       now: CLOCK_NOW,
       workerEnv: emailEnv(),
     });
@@ -169,6 +181,7 @@ describe('POST /owner/sign-in-links', () => {
         call: {
           method: 'POST',
           path: '/owner/sign-in-links',
+          origin: PUBLIC_ORIGIN,
           rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE }),
           headers: { 'Content-Type': contentType },
         },
@@ -188,6 +201,7 @@ describe('POST /owner/sign-in-links', () => {
       call: {
         method: 'POST',
         path: '/owner/sign-in-links',
+        origin: PUBLIC_ORIGIN,
         rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE }),
         headers: { 'Content-Type': 'Application/JSON; charset=utf-8' },
       },
@@ -203,6 +217,7 @@ describe('POST /owner/sign-in-links', () => {
       call: {
         method: 'POST',
         path: '/owner/sign-in-links',
+        origin: PUBLIC_ORIGIN,
         body: { email: freshAddress(), link_challenge: LINK_CHALLENGE },
         token: 'unknown',
       },
@@ -281,6 +296,7 @@ describe('a link that cannot be asked for', () => {
     ['an origin with a path', { PUBLIC_ORIGIN: 'http://localhost:8787/app' }],
     ['an origin with a trailing slash', { PUBLIC_ORIGIN: 'http://localhost:8787/' }],
     ['an origin that is not a URL', { PUBLIC_ORIGIN: 'todz' }],
+    ['an http origin on a public host', { PUBLIC_ORIGIN: 'http://todz.app' }],
     ['the console sender on a public origin', { PUBLIC_ORIGIN: 'https://todz.app' }],
     ['the console sender on a look-alike host', { PUBLIC_ORIGIN: 'https://localhost.todz.app' }],
   ])('%s answers 503 sign_in_unavailable, stores nothing and sends nothing', async (_name, settings) => {
@@ -298,15 +314,26 @@ describe('a link that cannot be asked for', () => {
     const statuses = await Promise.all(
       ['http://localhost:8787', 'http://127.0.0.1:8787'].map(
         async (origin) =>
-          (await requestLink({ email: `origin-${origin.length}@example.com`, workerEnv: emailEnv({ PUBLIC_ORIGIN: origin }) })).status,
+          (await requestLink({ email: `origin-${origin.length}@example.com`, origin, workerEnv: emailEnv({ PUBLIC_ORIGIN: origin }) }))
+            .status,
       ),
     );
     expect(statuses).toEqual([ACCEPTED_STATUS, ACCEPTED_STATUS]);
   });
 
+  test('the console sender is refused when the request itself arrives on a public host', async () => {
+    const output = consoleOutput();
+    const before = await totalLinks();
+    const response = await requestLink({ origin: 'https://api.todz.test' });
+    expect(response.status).toBe(UNAVAILABLE_STATUS);
+    expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
+    expect(output).not.toHaveBeenCalled();
+    expect(await totalLinks()).toBe(before);
+  });
+
   test('is checked before the body', async () => {
     const response = await serveOwnerCall({
-      call: { method: 'POST', path: '/owner/sign-in-links', rawBody: 'not json' },
+      call: { method: 'POST', path: '/owner/sign-in-links', origin: PUBLIC_ORIGIN, rawBody: 'not json' },
       now: CLOCK_NOW,
       workerEnv: emailEnv({ PUBLIC_ORIGIN: undefined }),
     });
@@ -326,6 +353,22 @@ describe('a link that cannot be asked for', () => {
   });
 });
 
+describe('the public origin', () => {
+  test.each([
+    ['https://todz.app', 'https://todz.app'],
+    ['http://localhost:8787', 'http://localhost:8787'],
+    ['http://127.0.0.1:9000', 'http://127.0.0.1:9000'],
+    ['https://localhost:8787', 'https://localhost:8787'],
+    ['http://todz.app', null],
+    ['http://localhost.todz.app', null],
+    ['ftp://todz.app', null],
+    ['https://todz.app/', null],
+    [undefined, null],
+  ])('%j is kept as %j', (configured, expected) => {
+    expect(publicOriginOf(configured)).toBe(expected);
+  });
+});
+
 describe('what a request reveals', () => {
   test('a known and an unknown address run the same statements, none on owners or identities', async () => {
     consoleOutput();
@@ -338,6 +381,13 @@ describe('what a request reveals', () => {
     expect(known.statements.length).toBeGreaterThan(0);
     expect(known.statements).toEqual(unknown.statements);
     expect(known.statements.filter((statement) => OWNER_TABLES_PATTERN.test(statement))).toEqual([]);
+  });
+
+  test('the sweep by expiry reads the expiry index', async () => {
+    const { results } = await env.DIRECTORY.prepare('EXPLAIN QUERY PLAN DELETE FROM sign_in_links WHERE expires_at <= ?')
+      .bind(CLOCK_NOW)
+      .all<{ detail: string }>();
+    expect(results.map((step) => step.detail).join(' ')).toContain('sign_in_links_expiry');
   });
 
   test('expired links are swept whatever the address, and live ones stay', async () => {

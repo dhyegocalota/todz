@@ -8,3 +8,5 @@ CREATE TABLE sign_in_links (
 ) STRICT;
 
 CREATE INDEX sign_in_links_email ON sign_in_links (email, created_at);
+
+CREATE INDEX sign_in_links_expiry ON sign_in_links (expires_at);

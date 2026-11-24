@@ -60,14 +60,16 @@ export function requestLink({
   challenge = LINK_CHALLENGE,
   now = CLOCK_NOW,
   workerEnv = emailEnv(),
+  origin = PUBLIC_ORIGIN,
 }: {
   email?: unknown;
   challenge?: unknown;
   now?: number;
   workerEnv?: Env;
+  origin?: string;
 } = {}): Promise<Response> {
   return serveOwnerCall({
-    call: { method: 'POST', path: LINKS_PATH, body: { email, link_challenge: challenge } },
+    call: { method: 'POST', path: LINKS_PATH, body: { email, link_challenge: challenge }, origin },
     now,
     workerEnv,
   });

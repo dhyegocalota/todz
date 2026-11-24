@@ -11,6 +11,7 @@ const TOKEN_SHAPED_RUN_PATTERN = /[A-Za-z0-9_-]{43}/;
 const SCRIPT_PATTERN = /<script>([\s\S]*?)<\/script>/g;
 const STYLE_PATTERN = /<style>([\s\S]*?)<\/style>/g;
 const CONTENT_GROUP = 1;
+const READY_STATE = 'ready';
 const BASE64_ALGORITHM = 'SHA-256';
 
 async function sourceHash(source: string): Promise<string> {
@@ -37,9 +38,22 @@ async function pageSource(path = PAGE_PATH): Promise<{ response: Response; html:
   return { response, html: await response.text() };
 }
 
-function runPageScript({ script, hash }: { script: string; hash: string }): { steps: string[]; openedHref: string } {
+function runPageScript({ script, hash }: { script: string; hash: string }): {
+  steps: string[];
+  state: string | undefined;
+  pressButton: () => void;
+} {
   const steps: string[] = [];
-  const anchor = { href: '' };
+  const pressListeners: (() => void)[] = [];
+  const button = {
+    focus() {
+      steps.push('focus');
+    },
+    addEventListener(_type: string, listener: () => void) {
+      pressListeners.push(listener);
+    },
+  };
+  const body = { dataset: {} as Record<string, string> };
   const location = {
     hash,
     pathname: PAGE_PATH,
@@ -52,9 +66,9 @@ function runPageScript({ script, hash }: { script: string; hash: string }): { st
       steps.push(`replace ${address}`);
     },
   };
-  const document = { getElementById: () => anchor };
+  const document = { body, getElementById: () => button };
   new Function('location', 'history', 'document', script)(location, history, document);
-  return { steps, openedHref: anchor.href };
+  return { steps, state: body.dataset.state, pressButton: () => pressListeners.forEach((listener) => listener()) };
 }
 
 async function onlyScript(): Promise<string> {
@@ -92,9 +106,10 @@ describe('GET /sign-in', () => {
   test('says its words from the copy module and carries no token, link or handler of its own', async () => {
     const { html } = await pageSource();
     expect(html).toContain(SIGN_IN_PAGE_COPY.title);
-    expect(html).toContain(SIGN_IN_PAGE_COPY.heading);
-    expect(html).toContain(SIGN_IN_PAGE_COPY.hint);
-    expect(html).toContain(SIGN_IN_PAGE_COPY.button);
+    expect(html).toContain(SIGN_IN_PAGE_COPY.opening);
+    expect(html).toContain(SIGN_IN_PAGE_COPY.openButton);
+    expect(html).toContain(SIGN_IN_PAGE_COPY.notOpened);
+    expect(html).toContain(SIGN_IN_PAGE_COPY.missingToken);
     expect(html).not.toMatch(TOKEN_SHAPED_RUN_PATTERN);
     expect(html).not.toMatch(/\son[a-z]+=/);
     expect(html).not.toContain('style=');
@@ -115,10 +130,17 @@ describe('GET /sign-in', () => {
 });
 
 describe('the script of the page', () => {
-  test('drops the fragment before it opens the app with the token it read', async () => {
-    const { steps, openedHref } = runPageScript({ script: await onlyScript(), hash: `#token=${TOKEN}` });
-    expect(steps).toEqual([`replace ${PAGE_PATH}`, `navigate todz://sign-in?token=${TOKEN}`]);
-    expect(openedHref).toBe(`todz://sign-in?token=${TOKEN}`);
+  test('drops the fragment, shows the opening state, focuses the button and opens the app with the token it read', async () => {
+    const { steps, state } = runPageScript({ script: await onlyScript(), hash: `#token=${TOKEN}` });
+    expect(steps).toEqual([`replace ${PAGE_PATH}`, 'focus', `navigate todz://sign-in?token=${TOKEN}`]);
+    expect(state).toBe(READY_STATE);
+  });
+
+  test('the button opens the app again with the same token', async () => {
+    const { steps, pressButton } = runPageScript({ script: await onlyScript(), hash: `#token=${TOKEN}` });
+    pressButton();
+    expect(steps.slice(-1)).toEqual([`navigate todz://sign-in?token=${TOKEN}`]);
+    expect(steps).toHaveLength(4);
   });
 
   test.each([
@@ -131,9 +153,31 @@ describe('the script of the page', () => {
     [`#token=${TOKEN}%0A`],
     [`#other=${TOKEN}`],
     [`#token=${TOKEN}/../../x`],
-  ])('the fragment %j opens nothing', async (hash) => {
-    const { steps, openedHref } = runPageScript({ script: await onlyScript(), hash });
-    expect(steps).toEqual([]);
-    expect(openedHref).toBe('');
+  ])('the fragment %j opens nothing, is dropped and leaves the missing-token state', async (hash) => {
+    const { steps, state } = runPageScript({ script: await onlyScript(), hash });
+    expect(steps).toEqual([`replace ${PAGE_PATH}`]);
+    expect(state).toBeUndefined();
+  });
+});
+
+describe('the markup of the page', () => {
+  test('starts in the missing-token state: a real button, no app link outside the script, the missing-token words shown', async () => {
+    const { html } = await pageSource();
+    const markup = html.replace(SCRIPT_PATTERN, '');
+    expect(markup).not.toContain('todz://');
+    expect(markup).toMatch(/<button id="open"/);
+    expect(markup).not.toMatch(/<a\s/);
+    expect(markup).toContain(`<p class="missing">${SIGN_IN_PAGE_COPY.missingToken}</p>`);
+    expect(markup).toMatch(/\[data-state=ready\]/);
+  });
+
+  test('draws the app icon at 64 pixels and the system colours, with no hex value', async () => {
+    const { html } = await pageSource();
+    const style = onlyInlineSource({ html, pattern: STYLE_PATTERN });
+    expect(html).toMatch(/<svg[^>]* width="64" height="64"/);
+    expect(html).toContain('M300 532 L448 680 L724 404');
+    expect(style).toContain('color-scheme:light dark');
+    ['Canvas', 'CanvasText', 'GrayText', 'AccentColor', 'AccentColorText'].forEach((keyword) => expect(style).toContain(keyword));
+    expect(style).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 });

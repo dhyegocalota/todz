@@ -17,16 +17,17 @@ export type OwnerCall = {
   body?: unknown;
   rawBody?: string;
   headers?: Record<string, string>;
+  origin?: string;
 };
 
 export type SignedInOwner = { token: string; ownerId: string; identityToken: string };
 
 function requestOf(call: OwnerCall): Request {
-  const { method, path, token, body, rawBody, headers } = call;
+  const { method, path, token, body, rawBody, headers, origin = WORKER_ORIGIN } = call;
   const authorization: Record<string, string> = token === undefined ? {} : { Authorization: `Bearer ${token}` };
   const payload = body === undefined ? rawBody : JSON.stringify(body);
   const contentType: Record<string, string> = payload === undefined ? {} : { 'Content-Type': JSON_MEDIA_TYPE };
-  return new Request(`${WORKER_ORIGIN}${path}`, { method, headers: { ...authorization, ...contentType, ...headers }, body: payload });
+  return new Request(`${origin}${path}`, { method, headers: { ...authorization, ...contentType, ...headers }, body: payload });
 }
 
 export function ownerCall(call: OwnerCall): Promise<Response> {

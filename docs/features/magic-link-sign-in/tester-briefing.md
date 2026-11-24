@@ -79,7 +79,7 @@ The tests of step 3 were corrected in the green commit dbd0e02: addresses made u
   - `AppModel` gains `signInMethod`, `pendingLink`, `isRequestingLink`, `loadSignInMethod()`, `requestSignInLink(email:)`, `redeem(signInLink:)` and `discardPendingLink()`. `signIn(identity:)` and `redeem` share `openSession(issuing:)`.
   - New `SignInError` cases: `tooManyLinks`, `linkRejected`, `linkNotRequested`.
   - `SignInLinkTiming`: a lifetime of 15 minutes and a cooldown of 30 seconds. The pending link is kept until 20 minutes.
-  - Red/green: 75de111 → edd0faa (types, vault, API calls), 7fa8b38 → a284d99 (the model: 21 tests).
+  - Red/green: 75de111 → edd0faa (types, vault, API calls), 7fa8b38 → a284d99 (the model: 21 tests, of which 3 were green at red and are pins: `discardingThePendingLinkErasesItFromMemoryAndFromTheVault`, `aLinkWhileSignedInIsDroppedWithNothingSentOrShown`, `aLinkThatArrivesBeforeLaunchSettlesIsDroppedOnceSignedIn`).
 - Todz (G3, e15c0b0):
   - `SignInStage`, `AddressSlot`, `InboxSlot` and `EmailAddressFormat` are new.
   - `SignInScreen` switches on the stage.
@@ -121,3 +121,54 @@ The owner's session file lives in the same folder as `sign-in-link`. Back it up 
 3. An expired pending link at launch is cleared before the view appears, so the address field is not prefilled.
 4. The cooldown starts when the app sends and is not restored after a relaunch.
 5. `EmailAddressFormat` sits in the app target, untested.
+
+## Fix round 1 (Worker)
+
+Red-first pairs, in `git log` order. The red text is what the run printed.
+
+| Red | Green | Red text |
+|---|---|---|
+| a24091a | 07f51aa | `expected 'SCAN sign_in_links' to contain 'sign_in_links_expiry'` |
+| f64563c | 3fe3797 | 14 failures, among them `expected [ 'replace /sign-in', …(1) ] to deeply equal [ 'replace /sign-in', 'focus', …(1) ]`; `expected [] to deeply equal [ 'replace /sign-in' ]` (a malformed fragment dropped nothing); `expected '<!doctype html>…' not to contain 'todz://'`; `to match /<svg[^>]* width="64" height="64"/` |
+| e09d9c7 | 69118ba | `expected 202 to be 503` (the console sender on a request to `https://api.todz.test`); the wrangler-never-names-`EMAIL_SENDER` test in the same commit is a pin |
+| 14ff05f | 048dfea | 8 failures: an address with `<`, `>`, `"`, a control character, DEL or a non-ASCII letter answered 202 instead of 400 (the comma row was already refused by the single-`@` rule: a pin) |
+| 1695d29 | f969675 | `expected 'http://todz.app' to be null`, the same for `http://localhost.todz.app` and `ftp://todz.app`; the worker-level `http://todz.app` row is a pin, because the console sender already refused a public host |
+
+Refactor without behaviour change: b39081a (named conditions `isLinkUnsendable` and `isMalformedAsk`, one `SIGN_IN_PAGE_PATH`, `enumValueOf` shared by `signInKindOf` and the sender kind, added to the AGENTS.md helper line). The content security policy is a module-level constant, computed once.
+
+### Hypotheses
+
+- `GET /sign-in` without a well-formed `#token=` (none, empty, 42 or 44 characters, an illegal character, another key) shows the missing-token words, no button and no `todz://` link; the fragment is dropped from the address bar either way.
+- With a valid fragment the page shows the opening state, focuses the real `Open todz` button, navigates to `todz://sign-in?token=…`, and the button navigates again on click.
+- The page uses system colour keywords (`Canvas`, `CanvasText`, `GrayText`, `AccentColor`, `AccentColorText`), no hex, and the 64 px app icon inline.
+- The email request is refused with 503 unless the request URL host is `localhost` or `127.0.0.1` as well as the public origin; `PUBLIC_ORIGIN` over plain http is accepted only on those hosts.
+- Addresses are ASCII with no `<`, `>`, `,`, `"`, spaces or control characters.
+- Migration 0004 carries `sign_in_links_expiry`; the sweep plan reads it.
+
+### Gaps
+
+- The `test-plan.md` boxes at lines 38, 41, 43 and 61 already carried the lead's R6 wording when this round began, so no box text was changed.
+- The icon is a copy of `docs/brand/todz-icon.svg`, with no test tying the two together.
+- Nothing was walked in a browser; the page needs the tester's Playwright run at 375 and 1280, light and dark.
+
+## Fix round 1 (app, merged in 7acf551)
+
+- Red 849d8b9 (45 issues), green a173065. `swift test`: 629 passing. The app builds with no warnings.
+- Changes:
+  - An offline redeem keeps the link (`heldSignInLink`, `canRedeemAgain`), and the inbox's Try Again redeems it again.
+  - Verifier reuse folds case and spaces.
+  - A sign-in link opens the main window through `windowState.waitingSignInLink`.
+  - `SignInStage` and `EmailAddressFormat` moved into TodzKit, with tests.
+  - `signInMethodError` is apart from `signInError`, and a redeem in flight shows Redeeming first.
+  - A 400 on asking maps to `.invalidAddress`, which shows the address hint.
+  - Use a Different Email clears the error.
+  - Any successful sign-in erases the pending link.
+- Pins at 849d8b9: `beforeTheMethodIsKnownItIsLoading`, the failing-address cases of `anythingElseFails`, `aRedeemThatFailsForAnotherReasonKeepsNoLinkToRedeemAgain`, `sendingAnotherMailLetsGoOfTheHeldLink`, `aFailedSignInByIdentityKeepsThePendingLink`, `aMethodReadThatSucceedsAfterAFailureClearsTheMethodError`, `anInvalidRequestAnswerOnRedeemingStaysUnexpected`.
+- Hypotheses:
+  - Worker unreachable on redeem: the inbox shows the offline line, and Try Again redeems the same link with no new mail.
+  - The same address in other case or spacing reuses the verifier.
+  - With the main window closed, a sign-in link brings it forward and a refused link shows its line there.
+  - A 400 shows "Enter a valid email address." with no Try Again.
+  - The 429 line goes after Use a Different Email.
+  - After an identity sign-in, the pending file is gone.
+- Gaps: the window-opening path and the Try Again branch in `InboxSlot` are view code with no automated test.
