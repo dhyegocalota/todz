@@ -1,6 +1,4 @@
-import TodzKit
-
-@MainActor enum SignInStage: Equatable {
+public enum SignInStage: Equatable, Sendable {
     case methodLoading
     case methodUnavailable
     case identity
@@ -9,9 +7,14 @@ import TodzKit
     case awaitingLink
     case redeeming
 
-    init(model: AppModel) {
+    @MainActor public init(model: AppModel) {
+        let isRedeeming = model.isSigningIn && model.signInMethod != .identity
+        guard !isRedeeming else {
+            self = .redeeming
+            return
+        }
         guard let signInMethod = model.signInMethod else {
-            self = model.signInError == nil ? .methodLoading : .methodUnavailable
+            self = model.signInMethodError == nil ? .methodLoading : .methodUnavailable
             return
         }
         guard signInMethod == .link else {
@@ -21,11 +24,7 @@ import TodzKit
         let isLinkRefused = model.signInError == .linkRejected || model.signInError == .linkNotRequested || model.signInError == .timeZoneInvalid
         let isWaitingForLink = model.pendingLink != nil && !isLinkRefused
         let isFirstRequest = model.isRequestingLink && model.pendingLink == nil
-        if model.isSigningIn {
-            self = .redeeming
-            return
-        }
-        if isFirstRequest {
+        guard !isFirstRequest else {
             self = .sending
             return
         }

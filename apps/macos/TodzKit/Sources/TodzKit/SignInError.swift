@@ -2,11 +2,20 @@ public enum SignInError: Equatable, Sendable {
     case identityRejected
     case signInUnavailable
     case tooManyLinks
+    case invalidAddress
     case linkRejected
     case linkNotRequested
     case timeZoneInvalid
     case unreachable
     case unexpected
+
+    init(asking failure: OwnerAPIError) {
+        guard failure == .invalidRequest else {
+            self.init(failure)
+            return
+        }
+        self = .invalidAddress
+    }
 
     init(_ failure: OwnerAPIError) {
         switch failure {

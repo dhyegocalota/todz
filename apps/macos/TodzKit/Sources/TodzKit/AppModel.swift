@@ -8,6 +8,7 @@ import Observation
     public internal(set) var isRequestingLink = false
     public internal(set) var lastIdentity: String?
     public internal(set) var signInMethod: SignInMethod?
+    public internal(set) var signInMethodError: SignInError?
     public internal(set) var pendingLink: PendingSignInLink?
     public internal(set) var workspaces: [Workspace] = []
     public internal(set) var activeWorkspaceIdentifier: String?
@@ -47,7 +48,7 @@ import Observation
 
     @ObservationIgnored var hasLaunched = false
     @ObservationIgnored var isLaunchSettled = false
-    @ObservationIgnored var heldSignInLink: SignInLink?
+    var heldSignInLink: SignInLink?
     @ObservationIgnored var session: String?
     @ObservationIgnored var ownerIdentifier: String?
     @ObservationIgnored var isWorkspaceListOutdated = false
@@ -212,6 +213,7 @@ import Observation
         isOwnerConfirmed = true
         phase = .loading
         keep(secret: issued.sessionToken)
+        discardPendingLink()
         openCache(cached)
         startSending()
         await openWorkspaces()
