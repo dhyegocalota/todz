@@ -64,7 +64,18 @@ Red text is what the red run printed, never the text expected. Every red commit 
 - `issueProjectKey` needs `insertProjectKey`, so that directory function landed with step 2's green commit (`926591b`), not step 3; it is tested through `project-keys.test.ts`, not on its own in `directory.test.ts`.
 - `mcp-endpoint.ts` parses the body with a local `parsedBody` (try/catch around `request.clone().json()`); `sqlite-task-store.ts` has a private `parsedJson` for strings. They were not merged into one helper because `sqlite-task-store.ts` is outside this feature's paths.
 - An `initialize` is recognised by `method: 'initialize'` with a string or number `id`; one without an `id` is treated as any other 2025-era request (400 `session_required`). The spec does not name this case.
-- The session row is stored before the SDK answers `initialize`, so an `initialize` the SDK itself rejects (for example an unsupported protocol version) still adds a row and a header. Not tested.
+- ~~The session row is stored before the SDK answers `initialize`.~~ Fixed in `9a85ae4` (fix round).
 - The server `instructions` and the field descriptions are not asserted through the client; only the tool and prompt descriptions are.
 - The `wrangler dev` walk and the Node client walk are the tester's (Prove it for real); the developer did not run them.
-- Expired sessions are never deleted, and every valid `initialize` adds a row (Coverage honesty in the test plan).
+- ~~Expired sessions are never deleted.~~ Since `a6978b3` a new session deletes its key's expired rows and keeps the 20 newest; a key that opens no new session keeps up to 20 expired rows.
+
+## Fix round (after the security review, 2026-11-23)
+
+| Test | Red before the change because | Green after because |
+|------|--------------------------------|---------------------|
+| `mcp-endpoint.test.ts::an initialize with $name that the SDK answers with an error opens no session` (2), the tester's red `d53ee22` | `expected '<session id>' to be null` | green `9a85ae4`: served first; row and header only when `isInitializeRequest` passes and the answer is `ok` |
+| `mcp-endpoint.test.ts::the sessions of one key` (2), red `dd89154` | `expected [ … ] to have a length of 20 but got 21`; `expected [ …(2) ] to have a length of 1 but got 2` | green `a6978b3`: one D1 batch deletes the key's expired rows, inserts, and keeps the 20 newest (`created_at`, then `rowid`) |
+| `mcp-format.test.ts::the prompt fences the task…`, `mcp-tools.test.ts::the next prompt asks…` and `::the next prompt keeps notes that read as instructions inside the task tags` (both eras), red `dd89154` | `expected 'Work on this task from todz.\n\nT-3 S…' to be 'Work on this task from todz. The text…'`; `expected [ { role: 'user', … } ] to deeply equal [ … ]` | green `07fbeb1` |
+| `mcp-tools.test.ts::a request whose envelope names no client writes nothing`, red `dd89154` | `expected { content: [ { …(2) } ], …(3) } to match object { Object (content, isError) }` | green `7a21663`: `MCP_COPY.clientUnnamed` |
+
+Hypotheses: 9. A key never holds more than 20 rows, even under concurrent `initialize` calls. Break it by: 30 `initialize` calls with one key in `Promise.all`, then counting rows. 10. A task's notes cannot leave the `<task>` fence. Break it by: notes holding `</task>` followed by instructions (the fence is not escaped; the fixed sentence is the only guard).
