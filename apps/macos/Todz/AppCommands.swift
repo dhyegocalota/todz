@@ -35,6 +35,8 @@ struct AppCommands: Commands {
             Button(windowState.inspectorToggleTitle) { windowState.isInspectorPresented.toggle() }
                 .keyboardShortcut(inspectorKey, modifiers: [.command, .option])
                 .disabled(!model.isReady)
+            Divider()
+            WorkspaceMenuItems(model: model)
         }
         CommandMenu(MainWindowCopy.taskMenu) {
             TaskMenuItems(model: model, windowState: windowState)

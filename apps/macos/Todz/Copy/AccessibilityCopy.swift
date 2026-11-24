@@ -3,6 +3,7 @@ enum AccessibilityCopy {
     static let rowValueDone = "Done"
     static let refreshing = "Refreshing"
     static let addProject = "New Project"
+    static let rowOpensWindow = "Shows it in the todz window."
 
     static func checkboxOpen(title: String) -> String {
         "Mark \(title) as done"

@@ -8,7 +8,7 @@ struct TaskMenuItems: View {
     var body: some View {
         Button(markTitle) {
             guard let selectedTask = model.selectedTask else { return }
-            windowState.toggleDone(task: selectedTask, model: model)
+            windowState.toggleDone(task: selectedTask, item: model.selectedItem, model: model)
         }
         .keyboardShortcut(.return, modifiers: .command)
         .disabled(!canToggle)

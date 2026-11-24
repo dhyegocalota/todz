@@ -10,7 +10,7 @@ struct TaskInspector: View {
         ScrollView {
             VStack(alignment: .leading) {
                 HStack(alignment: .firstTextBaseline) {
-                    TaskCheckbox(task: task)
+                    TaskCheckbox(task: task, item: model.selectedItem)
                     TitleField(task: task, focus: focus)
                     Text(TaskRowCopy.shortId(number: task.task.number))
                         .monospacedDigit()

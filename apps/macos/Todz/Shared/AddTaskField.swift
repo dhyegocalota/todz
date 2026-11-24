@@ -3,9 +3,12 @@ import TodzKit
 
 private let clearedTitle = ""
 
-struct AddTaskField: View {
+struct AddTaskField<Focus: Hashable>: View {
     let destination: AddTaskDestination
-    let focus: FocusState<MainWindowFocus?>.Binding
+    let selection: AddedTaskSelection
+    let focus: FocusState<Focus?>.Binding
+    let focusedValue: Focus
+    let onEscape: (AddTaskFieldEscape) -> Void
     @Environment(AppModel.self) private var model
     @State private var title = clearedTitle
     @State private var localIssue: RuleIssue?
@@ -14,9 +17,13 @@ struct AddTaskField: View {
         VStack(alignment: .leading) {
             TextField(MainWindowCopy.addPlaceholder, text: $title)
                 .textFieldStyle(.plain)
-                .focused(focus, equals: .addField)
+                .focused(focus, equals: focusedValue)
                 .onSubmit(submit)
                 .onExitCommand(perform: clear)
+                .onChange(of: destination) {
+                    title = clearedTitle
+                    localIssue = nil
+                }
                 .padding()
                 .background(.fill.quaternary)
             if let shownIssue {
@@ -33,9 +40,10 @@ struct AddTaskField: View {
     }
 
     private func clear() {
+        let escape: AddTaskFieldEscape = title.isEmpty ? .wasEmpty : .clearedTitle
         title = clearedTitle
         localIssue = nil
-        focus.wrappedValue = .list
+        onEscape(escape)
     }
 
     private func submit() {
@@ -45,6 +53,6 @@ struct AddTaskField: View {
         guard localIssue == nil else { return }
         let submitted = title
         title = clearedTitle
-        Task { await model.addTask(title: submitted, projectIdentifier: destination.projectIdentifier, dueDate: destination.dueDate) }
+        Task { await model.addTask(title: submitted, projectIdentifier: destination.projectIdentifier, dueDate: destination.dueDate, selection: selection) }
     }
 }

@@ -220,6 +220,7 @@ extension AppModelTests {
     func aCacheThatCannotBeWrittenSaysSoOncePerLaunchAndGoesOn(route: StoreRoute) async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
+        harness.seedWorkspace(name: "side")
         harness.seedTasks(projectIdentifier: inboxIdentifier, count: 2)
         harness.store.failures[route] = .unwritable
         await harness.signedIn()
@@ -230,6 +231,7 @@ extension AppModelTests {
         harness.model.dismissBanner()
         await harness.model.updateTitle(task: firstTask, title: "Renamed")
         await harness.flushed()
+        await harness.model.switchWorkspace(identifier: "side")
         await harness.model.switchWorkspace(identifier: "acme")
         #expect(harness.model.banner == nil)
         #expect(harness.model.board.task(projectIdentifier: inboxIdentifier, number: 1)?.title == "Renamed")

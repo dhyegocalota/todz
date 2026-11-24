@@ -48,6 +48,48 @@ extension AppModelTests {
         #expect(harness.model.selectedItem == .today)
     }
 
+    @Test func switchingWorkspaceByNumberPullsItsProjectsFromZero() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        let side = harness.seedWorkspace(name: "side", projectNames: ["garden"])
+        harness.seedTasks(projectIdentifier: "side-garden", count: 1)
+        await harness.signedIn()
+        await harness.model.switchWorkspace(number: 2)
+        let pulls = side.projects.map { FakeCall.readChanges(session: harness.session, projectIdentifier: $0.identifier, cursor: 0) }
+        #expect(isSameCallSet(harness.service.calls, pulls))
+        #expect(harness.model.activeWorkspace == side)
+    }
+
+    @Test func switchingWorkspaceByAnUnlistedNumberChangesNothing() async throws {
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme")
+        harness.seedWorkspace(name: "side")
+        await harness.signedIn()
+        await harness.model.switchWorkspace(number: 3)
+        #expect(harness.model.activeWorkspace == acme)
+        #expect(harness.service.calls == [])
+    }
+
+    @Test func switchingToTheActiveWorkspaceMakesNoCall() async throws {
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme")
+        harness.seedWorkspace(name: "side")
+        await harness.signedIn()
+        await harness.model.switchWorkspace(identifier: acme.identifier)
+        #expect(harness.model.activeWorkspace == acme)
+        #expect(harness.service.calls == [])
+    }
+
+    @Test func switchingWorkspaceByTheActiveNumberMakesNoCall() async throws {
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme")
+        harness.seedWorkspace(name: "side")
+        await harness.signedIn()
+        await harness.model.switchWorkspace(number: 1)
+        #expect(harness.model.activeWorkspace == acme)
+        #expect(harness.service.calls == [])
+    }
+
     @Test func refreshPullsEveryProjectFromItsCursorAndKeepsTheRows() async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme", projectNames: ["launch"])

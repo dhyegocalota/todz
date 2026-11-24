@@ -26,7 +26,7 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .safeAreaInset(edge: .top) {
-            WorkspaceSwitcher(workspace: workspace)
+            WorkspaceSwitcher(workspace: workspace, isMainWindow: true)
         }
     }
 

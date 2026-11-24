@@ -24,16 +24,6 @@ extension AppModel {
         }
     }
 
-    var addTaskDestination: AddTaskDestination? {
-        guard let inbox = activeWorkspace?.projects.first(where: \.isInbox) else { return nil }
-        switch selectedItem {
-        case .inbox: return AddTaskDestination(projectIdentifier: inbox.identifier, dueDate: nil)
-        case .today: return AddTaskDestination(projectIdentifier: inbox.identifier, dueDate: today)
-        case let .project(identifier): return AddTaskDestination(projectIdentifier: identifier, dueDate: nil)
-        case .upcoming, .done: return nil
-        }
-    }
-
     func boardTask(_ key: TaskKey) -> BoardTask? {
         guard let taskViews else { return nil }
         let candidates = taskViews.project(identifier: key.projectIdentifier) + taskViews.done
