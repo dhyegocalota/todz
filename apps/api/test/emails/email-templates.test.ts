@@ -64,3 +64,12 @@ describe('the welcome email', () => {
     expect(WELCOME_EMAIL.html).toContain(COLOR_SCHEME_META);
   });
 });
+
+describe('the lockup', () => {
+  test.each([
+    ['sign-in', SIGN_IN_EMAIL],
+    ['welcome', WELCOME_EMAIL],
+  ])('is named only by the image of the %s email, never by a link or a preload', (_name, email) => {
+    expect(email.html.replace(imageTagOf(email.html), '')).not.toContain(LOCKUP_URL);
+  });
+});
