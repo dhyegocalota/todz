@@ -39,7 +39,7 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ### G0 coding
 
-- [ ] **Step 1:** red then green: `OwnerCoding.encoder()` writes dates as epoch milliseconds, `Int64((date.timeIntervalSince1970 * 1000).rounded())`, keys in snake_case, as today. `OwnerCodingTests`: a `Date` of 1764000000000 ms encodes as `1764000000000` and decodes back equal; a pin that the request bodies (`SignInBody`, `NameBody`, `TimeZoneBody`, `AddTasksBody`, `TaskNumbersBody`, every `TaskPatch` case) encode to the same bytes as before the change.
+- [x] **Step 1:** red then green: `OwnerCoding.encoder()` writes dates as epoch milliseconds, `Int64((date.timeIntervalSince1970 * 1000).rounded())`, keys in snake_case, as today. `OwnerCodingTests`: a `Date` of 1764000000000 ms encodes as `1764000000000` and decodes back equal; a pin that the request bodies (`SignInBody`, `NameBody`, `TimeZoneBody`, `AddTasksBody`, `TaskNumbersBody`, every `TaskPatch` case) encode to the same bytes as before the change. — evidence: red e8cbbad, green 5ce0518
 
 ### G1a cache
 
