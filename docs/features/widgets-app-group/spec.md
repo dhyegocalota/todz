@@ -8,7 +8,7 @@
 
 ## Problem
 
-The widgets and the app share a folder in `~/Library/Application Support/dev.todz.widgets/` through a sandbox temporary exception (ADR 0033), because there was no team to sign an App Group. The product design puts the shared data in the App Group container, and any process the owner runs outside the sandbox can read today's titles in that folder. The Mac now has the owner's Personal Team identity (Team ID `XFWR794VS8`), so the group ADR 0033 promised can replace the folder.
+The widgets and the app share a folder in `~/Library/Application Support/dev.todz.widgets/` through a sandbox temporary exception (ADR 0033), because there was no team to sign an App Group. The product design puts the shared data in the App Group container, and any process the owner runs outside the sandbox can read today's titles in that folder. The Mac now has the owner's Personal Team identity (Team ID `XFWR794VS8`), so the group ADR 0033 promised can replace the folder. macOS 15 and later guard a group container against other apps; on macOS 14 the files' mode 600 remains the only guard.
 
 ## Goals
 
@@ -21,6 +21,7 @@ The widgets and the app share a folder in `~/Library/Application Support/dev.tod
 - Moving the cache or the session into the group.
 - Removing the old folder in Application Support: the sandboxed app can no longer reach it. The app's README says where it was, so the owner can delete it.
 - A Developer ID signature, notarization or the real Sign in with Apple.
+- The README gallery's sample widget rows change one fictional title that named this move as pending; nothing else the widgets show changes.
 
 ## Design
 

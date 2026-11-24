@@ -9,7 +9,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 
 ## Unit
 
-- [ ] `theFolderIsTheGroupsContainer` — input: `["TodzAppGroup": "ABCDE12345.dev.todz"]`, a container answering `/tmp/group/` for that identifier; expected: `/tmp/group/`, and the container was asked for `ABCDE12345.dev.todz`
+- [ ] `theFolderIsTheContainerOfTheKeysGroup` — input: `["TodzAppGroup": "TEAM123456.dev.todz"]`, a container answering `/Users/maria/Library/Group Containers/TEAM123456.dev.todz/` for that identifier; expected: that URL, and the container was asked for `TEAM123456.dev.todz`
 - [ ] Edge: missing key — input: `[:]`; expected: `nil`, the container never asked
 - [ ] Edge: a key that is not text — input: `["TodzAppGroup": 1]`; expected: `nil`, the container never asked
 - [ ] Edge: an empty key — input: `["TodzAppGroup": ""]`; expected: `nil`, the container never asked

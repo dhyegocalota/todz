@@ -29,7 +29,7 @@ ADR 0033 shared the widget snapshot and requests through a folder in `~/Library/
 ## Consequences
 
 - The `macos` gate builds only on a Mac with the owner's Apple Development identity; the app's README says so.
-- The local risk of ADR 0033 (another app reading today's titles in the folder) is gone for new data; the old folder keeps the last snapshot until the owner deletes it.
+- On macOS 15 and later the system guards the group container against other apps, so the local risk of ADR 0033 (another app reading today's titles) is gone for new data. On macOS 14 an unsandboxed process of the owner can still read it, and the files' mode 600 is the only guard. The old folder keeps the last snapshot until the owner deletes it.
 - The cache and the session stay in the app's own container (ADRs 0025, 0027); moving them is not part of this decision.
 
 ## Evidence
