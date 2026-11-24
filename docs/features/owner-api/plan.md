@@ -33,10 +33,10 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ### G1
 
-- [ ] **Step 1:** red then green: project schema version 2 (`change_number` numbered by task number, its unique index, `change_counter` seeded with the highest number), applied inside `transactionSync` to a new store and to a version-1 store; `PROJECT_SCHEMA_VERSION` in `project-schema.ts` is 2 (`project-schema.test.ts`).
-- [ ] **Step 2:** red then green: `insertTask` and `replaceTask` stamp increasing change numbers; `lastChangeNumber()` (`null` before any write) and `listChangesSince({ cursor, limit })` (`sqlite-task-store.test.ts`).
-- [ ] **Step 3:** red then green: `ProjectStore.readChanges({ cursor })` with `CHANGE_PAGE_SIZE` 100 at the top of `project-store.ts`, answering `{ tasks, cursor, hasMore }`, and `ProjectFailureKind.CursorAhead` for a cursor above the last change number; `readHistory({ number })` with `TaskNotFound` for a missing number (`project-changes.test.ts`).
-- [ ] **Step 4:** red then green: `ProjectStore.fetch` accepts a socket upgrade and answers 426 without one; every write that moves the change counter sends `changed` to each socket, a write that fails or replays sends nothing (`project-changes.test.ts`).
+- [x] **Step 1:** red then green: project schema version 2 (`change_number` numbered by task number, its unique index, `change_counter` seeded with the highest number), applied inside `transactionSync` to a new store and to a version-1 store; `PROJECT_SCHEMA_VERSION` in `project-schema.ts` is 2 (`project-schema.test.ts`). — evidence: red `7f71f65` and `4905f91`, green `c45b658` (one green for steps 1 and 2: the unique index refuses every insert until the store stamps change numbers); `@todz/api` 332 tests green
+- [x] **Step 2:** red then green: `insertTask` and `replaceTask` stamp increasing change numbers; `lastChangeNumber()` (`null` before any write) and `listChangesSince({ cursor, limit })` (`sqlite-task-store.test.ts`). — evidence: red `4905f91`, green `c45b658`
+- [x] **Step 3:** red then green: `ProjectStore.readChanges({ cursor })` with `CHANGE_PAGE_SIZE` 100 at the top of `project-store.ts`, answering `{ tasks, cursor, hasMore }`, and `ProjectFailureKind.CursorAhead` for a cursor above the last change number; `readHistory({ number })` with `TaskNotFound` for a missing number (`project-changes.test.ts`). — evidence: red `b0c8e52`, green `4270159`; `mcp-format.ts` rejects `CursorAhead` because the typecheck forced it
+- [x] **Step 4:** red then green: `ProjectStore.fetch` accepts a socket upgrade and answers 426 without one; every write that moves the change counter sends `changed` to each socket, a write that fails or replays sends nothing (`project-changes.test.ts`). — evidence: red `05f6865`, green `cb8033b`; `@todz/api` 349 tests green
 
 ### G2
 
