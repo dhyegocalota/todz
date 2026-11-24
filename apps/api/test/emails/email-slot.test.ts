@@ -39,7 +39,15 @@ describe('the email slots', () => {
     );
   });
 
-  test('leave a slot it has no value for in place', () => {
-    expect(filledTextOf({ text: '{{link}} {{email}}', values: { [EmailSlot.Email]: 'x' } })).toBe('{{link}} x');
+  test('throw when the text holds a slot it has no value for', () => {
+    expect(() => filledTextOf({ text: '{{link}} {{email}}', values: { [EmailSlot.Email]: 'x' } })).toThrow('no value for {{link}}');
+  });
+
+  test('throw when the html holds a slot it has no value for', () => {
+    expect(() => filledHtmlOf({ html: '<p>{{origin}}</p>', values: {} })).toThrow('no value for {{origin}}');
+  });
+
+  test('ignore a value no slot of the template uses', () => {
+    expect(filledTextOf({ text: '{{email}}', values: { [EmailSlot.Email]: 'x', [EmailSlot.Link]: 'y' } })).toBe('x');
   });
 });
