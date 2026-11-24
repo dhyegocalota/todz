@@ -1,6 +1,6 @@
 # The owner's checklist notes
 
-**Status:** In review
+**Status:** Shipped 2026-11-24
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-24, by inheritance from [the v1 product design](../../product/README.md) ("simple, fast, polished"; "It must feel like Apple made it"). The notes come from the owner's Human checklists of PRs #5–#10, run at his request on 2026-11-24; how each is answered is the loop's call, listed in the loop's questions for the owner
 **ADRs:** none (no decision with alternatives beyond the ones recorded below)
