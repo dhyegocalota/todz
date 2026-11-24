@@ -6,6 +6,7 @@ import { serveOwner } from '../src/owner-endpoint';
 const WORKER_ORIGIN = 'https://api.todz.test';
 const DEFAULT_TIME_ZONE = 'UTC';
 const CREATED_STATUS = 201;
+const JSON_MEDIA_TYPE = 'application/json';
 
 const SignInAnswerSchema = z.object({ session_token: z.string(), owner: z.object({ id: z.string(), time_zone: z.string() }) });
 
@@ -24,7 +25,8 @@ function requestOf(call: OwnerCall): Request {
   const { method, path, token, body, rawBody, headers } = call;
   const authorization: Record<string, string> = token === undefined ? {} : { Authorization: `Bearer ${token}` };
   const payload = body === undefined ? rawBody : JSON.stringify(body);
-  return new Request(`${WORKER_ORIGIN}${path}`, { method, headers: { ...authorization, ...headers }, body: payload });
+  const contentType: Record<string, string> = payload === undefined ? {} : { 'Content-Type': JSON_MEDIA_TYPE };
+  return new Request(`${WORKER_ORIGIN}${path}`, { method, headers: { ...authorization, ...contentType, ...headers }, body: payload });
 }
 
 export function ownerCall(call: OwnerCall): Promise<Response> {
@@ -39,7 +41,7 @@ export function workerEnvWith(settings: Partial<Env>): Env {
   return { DIRECTORY: env.DIRECTORY, PROJECT_STORE: env.PROJECT_STORE, ...settings };
 }
 
-export function recordingEnv(): { workerEnv: Env; statements: string[] } {
+export function recordingEnv(settings: Partial<Env> = {}): { workerEnv: Env; statements: string[] } {
   const statements: string[] = [];
   const directory = new Proxy(env.DIRECTORY, {
     get(target, property) {
@@ -51,7 +53,7 @@ export function recordingEnv(): { workerEnv: Env; statements: string[] } {
       };
     },
   }) as D1Database;
-  return { workerEnv: { DIRECTORY: directory, PROJECT_STORE: env.PROJECT_STORE }, statements };
+  return { workerEnv: { DIRECTORY: directory, PROJECT_STORE: env.PROJECT_STORE, ...settings }, statements };
 }
 
 export function signInCall({ identityToken, timeZone }: { identityToken: string; timeZone: string }): OwnerCall {

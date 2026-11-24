@@ -4,7 +4,7 @@ import type { OwnerRoute, RouteParam } from './owner-routes';
 import { parsedJson } from './parsed-json';
 import type { SessionOwner } from './project-routing';
 
-export type PublicRoute = OwnerRoute.SignIn | OwnerRoute.ReadSignInMethod;
+export type PublicRoute = OwnerRoute.SignIn | OwnerRoute.ReadSignInMethod | OwnerRoute.RequestSignInLink;
 
 export type SessionRoute = Exclude<OwnerRoute, PublicRoute>;
 

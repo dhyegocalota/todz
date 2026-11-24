@@ -6,6 +6,7 @@ import { KEY_HANDLERS } from './owner-keys';
 import type { PublicHandler, PublicRoute, SessionHandler, SessionRoute } from './owner-request';
 import { OwnerRoute, matchOwnerRoute } from './owner-routes';
 import { signIn } from './owner-sign-in';
+import { requestSignInLink } from './sign-in-links';
 import { readSignInMethod } from './sign-in-method';
 import { TASK_HANDLERS } from './owner-tasks';
 import { WORKSPACE_HANDLERS } from './owner-workspaces';
@@ -21,6 +22,7 @@ const SESSION_HANDLERS: Record<SessionRoute, SessionHandler> = {
 const PUBLIC_HANDLERS: Record<PublicRoute, PublicHandler> = {
   [OwnerRoute.SignIn]: signIn,
   [OwnerRoute.ReadSignInMethod]: readSignInMethod,
+  [OwnerRoute.RequestSignInLink]: requestSignInLink,
 };
 
 function isPublicRoute(route: OwnerRoute): route is PublicRoute {
