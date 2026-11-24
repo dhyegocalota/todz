@@ -35,7 +35,7 @@ describe('the api source', () => {
   test('the dev script applies the directory migrations locally before it starts wrangler dev', () => {
     const { scripts } = JSON.parse(readRepositoryFile(PACKAGE_MANIFEST)) as { scripts: Record<string, string> };
     const devScript = scripts[DEV_SCRIPT];
-    expect(devScript).toBeDefined();
+    if (devScript === undefined) throw new Error('the api has no dev script');
     expect(devScript.indexOf(MIGRATIONS_COMMAND)).toBeGreaterThanOrEqual(0);
     expect(devScript.indexOf(MIGRATIONS_COMMAND)).toBeLessThan(devScript.indexOf(DEV_COMMAND));
   });
