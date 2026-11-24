@@ -32,10 +32,14 @@ extension AppModel {
             return
         }
         guard !stored.isEmpty else { return }
+        do {
+            try widgetStore.removeRequests(stored.map(\.name))
+        } catch {
+            return
+        }
         for request in stored.map(\.request) {
             await take(request)
         }
-        try? widgetStore.removeRequests(stored.map(\.name))
         guard case let .ready(snapshot) = widgetSnapshot else { return }
         writeWidgetSnapshot(snapshot)
     }
