@@ -18,7 +18,7 @@ extension AppModelTests {
         return harness
     }
 
-    @MainActor private func withoutLaunch(_ harness: AppModelHarness) {
+    @MainActor func withoutLaunch(_ harness: AppModelHarness) {
         harness.service.workspaces = harness.service.workspaces.map { workspace in
             let kept = workspace.projects.filter { $0.identifier != launchIdentifier }
             return Workspace(identifier: workspace.identifier, name: workspace.name, createdAt: workspace.createdAt, projects: kept)

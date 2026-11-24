@@ -140,6 +140,30 @@ extension AppModelTests {
         #expect(harness.model.syncStatus == .online)
     }
 
+    @Test func aPullOfAProjectGoneReloadsTheWorkspacesAndStaysOnline() async throws {
+        let harness = try await pullHarness()
+        withoutLaunch(harness)
+        harness.service.projectFailures[launchIdentifier] = .notFound
+        await harness.model.pullProject(identifier: launchIdentifier)
+        await harness.model.workspaceReload?.value
+        #expect(harness.model.activeWorkspace?.projects.map(\.identifier) == [inboxIdentifier])
+        #expect(harness.model.syncStatus == .online)
+        #expect(harness.model.banner == nil)
+    }
+
+    @Test func aChangeRefusedInAProjectGoneReloadsTheWorkspacesAndSaysSo() async throws {
+        let harness = try await pullHarness()
+        withoutLaunch(harness)
+        harness.service.projectFailures[launchIdentifier] = .notFound
+        await harness.model.complete(task: TaskKey(projectIdentifier: launchIdentifier, number: 1))
+        await harness.flushed()
+        await harness.pulled(launchIdentifier)
+        await harness.model.workspaceReload?.value
+        #expect(harness.model.activeWorkspace?.projects.map(\.identifier) == [inboxIdentifier])
+        #expect(harness.model.banner == .changesRefused(count: 1))
+        #expect(harness.model.waitingChangeCount == 0)
+    }
+
     @Test func aCachedLaunchWithTheServerDownIsOffline() async throws {
         let harness = try AppModelHarness()
         let acme = harness.seedWorkspace(name: "acme")
