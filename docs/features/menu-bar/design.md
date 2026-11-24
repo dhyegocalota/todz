@@ -81,7 +81,7 @@ The popover shows `model.banner` through the shell's `ErrorBanner`, under the he
 | `MenuBarFoot` (new) | `MenuBar` | the done count or the offline item, and the switch hint |
 | `MenuBarCopy` (new) | `Copy` | section 8 |
 | `TodzApp` | app | adds the `MenuBarExtra` scene with `MainWindowCopy.windowTitle` as its title and the status symbol; injects the same `model` and `windowState` |
-| `WorkspaceSwitcher` | `MainWindow/Sidebar` → `Shared` | reused in the popover header; its items carry ⌘1 to ⌘9 for the first nine; the popover drops New Workspace and Sign Out (those stay in the main window) |
+| `WorkspaceSwitcher` | `MainWindow/Sidebar` → `Shared` | reused in the popover header; ⌘1 to ⌘9 live in the View menu only, so the switcher's items carry no key (the review found two registrations, ADR 0031); the popover drops New Workspace and Sign Out (those stay in the main window) |
 | `AddTaskField` | `MainWindow/TaskList` → `Shared` | reused with a Today destination that does not read `selectedItem`: the Inbox, due today; its focus binding generalises beyond `MainWindowFocus` |
 | `TaskRow`, `TaskRowSubline`, `TaskRowTitle`, `PendingTaskRow`, `DueLabel` | `MainWindow/TaskList` | reused unchanged with the item `.today` |
 | `TaskCheckbox` | `Shared` | reused; the linger it starts is computed for `.today`, not for the main window's `selectedItem`, so checking in the popover never depends on what the window shows |
