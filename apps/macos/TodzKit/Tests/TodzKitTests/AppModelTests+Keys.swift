@@ -110,12 +110,50 @@ extension AppModelTests {
         #expect(harness.service.calls == [.issueKey(session: harness.session, projectIdentifier: launchIdentifier)])
     }
 
-    @Test func hidingTheKeyForgetsTheSecretAndKeepsTheList() async throws {
+    @Test func leavingTheScreenForgetsTheSecretAndKeepsTheList() async throws {
         let harness = try await keyHarness()
         let issued = try await issuedKeyOfLaunch(harness)
-        harness.model.hideKey()
+        harness.model.leaveKeyScreen()
         #expect(harness.model.issuedKey == nil)
         #expect(harness.model.keys == .loaded([launchKey, issued.key]))
+    }
+
+    @Test func anIssueAnswerAfterLeavingTheScreenInTheSameWindowShowsNoSecret() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.service.suspend(.issueKey)
+        let issuing = Task { await harness.model.issueKey() }
+        await harness.service.held(.issueKey)
+        harness.model.leaveKeyScreen()
+        harness.service.resume(.issueKey)
+        await issuing.value
+        #expect(harness.model.issuedKey == nil)
+        #expect(harness.model.isIssuing == false)
+        harness.model.reopenKeyScreen()
+        await harness.model.keyLoading?.value
+        let committed = try #require(harness.service.keysOfProject[launchIdentifier]?.last)
+        #expect(harness.model.issuedKey == nil)
+        #expect(harness.model.keyProjectIdentifier == launchIdentifier)
+        #expect(harness.model.keys == .loaded([launchKey, committed]))
+    }
+
+    @Test func reopeningTheScreenWithNoProjectShowsTheInboxKeys() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.model.forgetKeys()
+        harness.model.reopenKeyScreen()
+        await harness.model.keyLoading?.value
+        #expect(harness.model.keyProjectIdentifier == inboxIdentifier)
+        #expect(harness.model.keys == .loaded([]))
+    }
+
+    @Test func reopeningTheScreenAlreadyLoadingStartsNoSecondLoad() async throws {
+        let harness = try await keyHarness()
+        harness.model.selectedItem = .project(identifier: launchIdentifier)
+        harness.model.selectedItem = .connectAgent
+        harness.model.reopenKeyScreen()
+        await harness.model.keyLoading?.value
+        #expect(harness.service.routes() == [.listKeys])
     }
 
     @Test func aReloadThatMissedTheIssuedKeyKeepsItListed() async throws {

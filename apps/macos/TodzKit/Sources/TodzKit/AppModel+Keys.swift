@@ -78,6 +78,14 @@ extension AppModel {
         issuedKey = nil
     }
 
+    public func leaveKeyScreen() {
+        fatalError("AppModel.leaveKeyScreen is not implemented")
+    }
+
+    public func reopenKeyScreen() {
+        fatalError("AppModel.reopenKeyScreen is not implemented")
+    }
+
     public func forgetKeys() {
         keyScreenIdentifier = nil
         keyLoading = nil
