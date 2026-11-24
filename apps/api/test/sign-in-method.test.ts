@@ -37,6 +37,20 @@ describe('GET /owner/sign-in-method', () => {
     expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
   });
 
+  test.each([
+    ['a public PUBLIC_ORIGIN', { SIGN_IN_PROVIDER: 'fake', PUBLIC_ORIGIN: 'https://api.todz.app' }, undefined],
+    ['no PUBLIC_ORIGIN', { SIGN_IN_PROVIDER: 'fake' }, undefined],
+    ['a public request host', { SIGN_IN_PROVIDER: 'fake', PUBLIC_ORIGIN: 'http://localhost:8787' }, 'https://api.todz.app'],
+  ])('the fake provider with %s answers 503 sign_in_unavailable', async (_name, settings, origin) => {
+    const response = await serveOwnerCall({
+      call: { method: 'GET', path: METHOD_PATH, origin },
+      now: CLOCK_NOW,
+      workerEnv: workerEnvWith(settings),
+    });
+    expect(response.status).toBe(UNAVAILABLE_STATUS);
+    expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
+  });
+
   test('a stray bearer does not matter', async () => {
     const response = await ownerCall({ method: 'GET', path: METHOD_PATH, token: 'unknown' });
     expect(response.status).toBe(OK_STATUS);

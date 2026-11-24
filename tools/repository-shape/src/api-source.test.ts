@@ -21,7 +21,9 @@ const PRODUCTION_DATABASE_NAME = 'todz-directory';
 const PRODUCTION_DATABASE_ID = 'dc22b1c3-1869-44a0-b805-91bf92017f19';
 const PRODUCTION_HOST = 'api.todz.app';
 const PRODUCTION_ORIGIN = `https://${PRODUCTION_HOST}`;
-const RATE_LIMIT_NAMESPACE_ID = '1001';
+const RATE_LIMIT_NAMESPACE_ID = '8601';
+const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
+const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_PERIOD_SECONDS = 60;
 const RESOURCE_NAME_PREFIX = 'todz';
@@ -43,7 +45,8 @@ const sourceFiles = repositoryFiles(API_SOURCE_FOLDER);
 
 type WranglerConfiguration = {
   name: string;
-  d1_databases: { binding: string; database_name: string; database_id: string }[];
+  account_id: string;
+  d1_databases: { binding: string; database_name: string; database_id: string; preview_database_id: string }[];
   routes: { pattern: string; custom_domain: boolean }[];
   vars: Record<string, string>;
   ratelimits: { name: string; namespace_id: string; simple: { limit: number; period: number } }[];
@@ -115,6 +118,16 @@ describe('the api source', () => {
       database_name: PRODUCTION_DATABASE_NAME,
       database_id: PRODUCTION_DATABASE_ID,
     });
+  });
+
+  test('the wrangler configuration names the todz account, so no other account can be deployed to by mistake', () => {
+    expect(wranglerConfiguration().account_id).toBe(ACCOUNT_ID);
+  });
+
+  test('the database has a preview id that is not the production one, so wrangler dev --remote fails closed', () => {
+    const [directory] = wranglerConfiguration().d1_databases;
+    expect(directory?.preview_database_id).toBe(PREVIEW_DATABASE_ID);
+    expect(directory?.preview_database_id).not.toBe(directory?.database_id);
   });
 
   test('the wrangler configuration serves api.todz.app as a custom domain and no other host', () => {

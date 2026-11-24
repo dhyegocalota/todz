@@ -3,13 +3,25 @@ import { describe, expect, test } from 'vitest';
 import type { Env } from '../src/env';
 import { OwnerRoute } from '../src/owner-routes';
 import { signInLimitRefusal } from '../src/sign-in-limiter';
-import { LINK_CHALLENGE, PUBLIC_ORIGIN, emailEnv, freshAddress } from './email-sign-in-client';
+import {
+  CLOUDFLARE_SETTINGS,
+  LINK_CHALLENGE,
+  PUBLIC_HTTPS_ORIGIN,
+  PUBLIC_ORIGIN,
+  emailEnv,
+  freshAddress,
+  recordingBinding,
+} from './email-sign-in-client';
 import { type OwnerCall, ownerCall, serveOwnerCall } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
 
 const CLIENT_ADDRESS_HEADER = 'CF-Connecting-IP';
 const FIRST_CLIENT_ADDRESS = '203.0.113.7';
 const SECOND_CLIENT_ADDRESS = '203.0.113.8';
+const FIRST_PREFIX_ADDRESS = '2001:db8:1:2:3:4:5:6';
+const SECOND_PREFIX_ADDRESS = '2001:db8:1:2:ffff:eeee:dddd:cccc';
+const OTHER_PREFIX_ADDRESS = '2001:db8:1:3:3:4:5:6';
+const MAPPED_ADDRESS = '::ffff:203.0.113.7';
 const ACCEPTED_STATUS = 202;
 const OK_STATUS = 200;
 const SATURATED_CLIENT_ADDRESS = '198.51.100.1';
@@ -35,23 +47,17 @@ function recordingLimiter({ isAllowed }: { isAllowed: boolean }): RecordingLimit
 }
 
 function limitedEnv(limiter: RateLimit | undefined): Env {
-  return emailEnv({ SIGN_IN_LIMITER: limiter });
+  return emailEnv({ ...CLOUDFLARE_SETTINGS, EMAIL: recordingBinding().binding, SIGN_IN_LIMITER: limiter });
 }
 
-function linkCall(address?: string): OwnerCall {
+function linkCall(address?: string, origin = PUBLIC_HTTPS_ORIGIN): OwnerCall {
   const headers = address === undefined ? undefined : { [CLIENT_ADDRESS_HEADER]: address };
-  return {
-    method: 'POST',
-    path: LINKS_PATH,
-    body: { email: freshAddress(), link_challenge: LINK_CHALLENGE },
-    headers,
-    origin: PUBLIC_ORIGIN,
-  };
+  return { method: 'POST', path: LINKS_PATH, body: { email: freshAddress(), link_challenge: LINK_CHALLENGE }, headers, origin };
 }
 
-function sessionCall(address: string): OwnerCall {
+function sessionCall(address: string, origin = PUBLIC_HTTPS_ORIGIN): OwnerCall {
   const body = { identity_token: 'not-a-link-token', time_zone: 'UTC' };
-  return { method: 'POST', path: SESSIONS_PATH, body, headers: { [CLIENT_ADDRESS_HEADER]: address } };
+  return { method: 'POST', path: SESSIONS_PATH, body, headers: { [CLIENT_ADDRESS_HEADER]: address }, origin };
 }
 
 function serve({ call, workerEnv }: { call: OwnerCall; workerEnv: Env }): Promise<Response> {
@@ -100,6 +106,33 @@ describe('the sign-in limiter', () => {
     const response = await serve({ call: linkCall(), workerEnv: limitedEnv(limiter) });
     expect(response.status).toBe(ACCEPTED_STATUS);
     expect(keys).toEqual([]);
+  });
+
+  test.each([
+    { name: 'the link request', call: linkCall(FIRST_CLIENT_ADDRESS, PUBLIC_ORIGIN) },
+    { name: 'the session post', call: sessionCall(FIRST_CLIENT_ADDRESS, PUBLIC_ORIGIN) },
+  ])('$name whose own host is local skips the check, whatever address the local runtime sets', async ({ call }) => {
+    const { limiter, keys } = recordingLimiter({ isAllowed: false });
+    const response = await serve({ call, workerEnv: limitedEnv(limiter) });
+    expect(response.status).not.toBe(TOO_MANY_STATUS);
+    expect(keys).toEqual([]);
+  });
+
+  test('two addresses in one IPv6 /64 share a bucket and another /64 has its own', async () => {
+    const { limiter, keys } = recordingLimiter({ isAllowed: true });
+    await serve({ call: sessionCall(FIRST_PREFIX_ADDRESS), workerEnv: limitedEnv(limiter) });
+    await serve({ call: sessionCall(SECOND_PREFIX_ADDRESS), workerEnv: limitedEnv(limiter) });
+    await serve({ call: sessionCall(OTHER_PREFIX_ADDRESS), workerEnv: limitedEnv(limiter) });
+    const [first, second, other] = keys;
+    expect(first).toBe(second);
+    expect(other).not.toBe(first);
+  });
+
+  test('an IPv4-mapped IPv6 address shares the bucket of its IPv4 address', async () => {
+    const { limiter, keys } = recordingLimiter({ isAllowed: true });
+    await serve({ call: sessionCall(FIRST_CLIENT_ADDRESS), workerEnv: limitedEnv(limiter) });
+    await serve({ call: sessionCall(MAPPED_ADDRESS), workerEnv: limitedEnv(limiter) });
+    expect(keys[0]).toBe(keys[1]);
   });
 
   test('a Worker without the binding skips the check', async () => {
