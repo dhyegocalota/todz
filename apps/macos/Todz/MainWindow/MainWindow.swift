@@ -31,7 +31,7 @@ struct MainWindow: View {
                 if !isOnKeyScreen {
                     TaskListView(workspace: workspace, item: model.selectedItem, focus: $focus)
                         .inspector(isPresented: $windowState.isInspectorPresented) {
-                            InspectorView(focus: $focus)
+                            InspectorView(item: model.selectedItem, focus: $focus)
                                 .inspectorColumnWidth(min: inspectorMinimumWidth, ideal: inspectorIdealWidth, max: inspectorMaximumWidth)
                         }
                 }

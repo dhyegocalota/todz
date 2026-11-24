@@ -11,7 +11,7 @@ struct TaskListView: View {
     var body: some View {
         let state = TaskListState.of(workspace: workspace, item: item, model: model, lingers: windowState.lingers)
         VStack(alignment: .leading, spacing: .zero) {
-            TaskListHeader(workspace: workspace)
+            TaskListHeader(workspace: workspace, item: item)
             if let banner = model.banner, !state.isFailed {
                 ErrorBanner(banner: banner)
             }
