@@ -1,6 +1,6 @@
 import { enumValueOf } from './enum-value';
+import { isLocalOrigin } from './local-origin';
 
-const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1'];
 const SENDER_ADDRESS: EmailAddress = { name: 'todz', email: 'noreply@todz.app' };
 const REPLY_TO_ADDRESS = 'hello@todz.app';
 
@@ -31,11 +31,6 @@ const EMAIL_SENDER_FACTORY_OF_KIND: Record<EmailSenderKind, EmailSenderFactory> 
     };
   },
 };
-
-export function isLocalOrigin(origin: string): boolean {
-  if (!URL.canParse(origin)) return false;
-  return LOCAL_HOSTNAMES.includes(new URL(origin).hostname);
-}
 
 export function emailSenderOf({
   configured,

@@ -1,6 +1,6 @@
 import { SIGN_IN_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
 import { clientRateKey } from './client-rate-key';
-import { isLocalOrigin } from './email-sender';
+import { isLocalOrigin } from './local-origin';
 import type { Env } from './env';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
 import { OwnerRoute } from './owner-routes';

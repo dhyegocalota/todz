@@ -1,6 +1,6 @@
 import { digestCredential } from './credential-digest';
 import { spendSignInLink } from './directory-sign-in-links';
-import { isLocalOrigin } from './email-sender';
+import { isLocalOrigin } from './local-origin';
 import { enumValueOf } from './enum-value';
 import type { Env } from './env';
 
