@@ -18,13 +18,18 @@ extension AppModel {
             let listed = try await request { try await service.listKeys(session: $0, projectIdentifier: projectIdentifier) }
             guard keyScreenIdentifier == visit else { return }
             keys = .loaded(listed)
+            keyReloadFailure = nil
         } catch {
             guard keyScreenIdentifier == visit else { return }
             guard !isGone(projectIdentifier: projectIdentifier, after: error) else {
                 showInboxKeys()
                 return
             }
-            keys = .failed(KeyFailure(error))
+            guard isListShown else {
+                keys = .failed(KeyFailure(error))
+                return
+            }
+            keyReloadFailure = KeyFailure(error)
         }
     }
 
@@ -78,6 +83,7 @@ extension AppModel {
         issuedKey = nil
         isIssuing = false
         issueFailure = nil
+        keyReloadFailure = nil
         revokingKeyIdentifiers = []
         failedRevokeIdentifiers = []
     }
