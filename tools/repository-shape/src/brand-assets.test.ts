@@ -15,6 +15,9 @@ const MACOS_IDIOM = 'mac';
 const TEMPLATE_INTENT = 'template';
 const REQUIRED_POINT_SIZES = [16, 32, 128, 256, 512];
 const REQUIRED_SCALES = [1, 2];
+const MENU_BAR_GLYPH_POINTS = 18;
+const NUMBER = String.raw`(\d+(?:\.\d+)?)`;
+const MEDIA_BOX_PATTERN = new RegExp(String.raw`/MediaBox\s*\[\s*${NUMBER}\s+${NUMBER}\s+${NUMBER}\s+${NUMBER}\s*\]`);
 
 type AppIconImage = { filename?: string; idiom: string; scale: string; size: string };
 type GlyphImage = { filename?: string; idiom: string };
@@ -96,5 +99,13 @@ describe('brand assets', () => {
     expect(contents.properties['preserves-vector-representation']).toBe(true);
     const header = readFile(posix.join(MENU_BAR_GLYPH_SET, image!.filename!)).toString('latin1', 0, PDF_SIGNATURE.length);
     expect(header).toBe(PDF_SIGNATURE);
+  });
+
+  test('the menu bar glyph page is 18 points square', () => {
+    const [image] = readContents<GlyphContents>(MENU_BAR_GLYPH_SET).images;
+    const pdf = readFile(posix.join(MENU_BAR_GLYPH_SET, image!.filename!)).toString('latin1');
+    const mediaBox = pdf.match(MEDIA_BOX_PATTERN);
+    expect(mediaBox).not.toBeNull();
+    expect(mediaBox!.slice(1).map(Number)).toEqual([0, 0, MENU_BAR_GLYPH_POINTS, MENU_BAR_GLYPH_POINTS]);
   });
 });
