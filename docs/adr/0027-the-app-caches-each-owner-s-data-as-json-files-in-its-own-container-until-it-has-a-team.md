@@ -38,6 +38,7 @@ The data is small: one owner, a few workspaces, a few projects, hundreds of task
 
 - Tasks are on disk as plaintext JSON in the sandbox container, as safe as the user's account, like the session (ADR 0025).
 - Sign-out loses changes that never reached the server; the window says so before it signs out (see `docs/features/mac-sync/design.md`).
+- A session revoked from elsewhere ends in a 401, which keeps the cache, and the sign-in screen cannot erase it, so a remote revocation never removes the tasks already on this Mac; only a sign-in as another owner, or a sign-out, does. Whether the sign-in screen should offer an erase is the owner's call.
 - Moving to the App Group is required before `widgets`; it is listed for the owner with the signing team.
 
 ## Evidence
