@@ -12,6 +12,7 @@ import {
   type TaskFilter,
   type TaskList,
   type TaskPatch,
+  TaskNotFoundError,
   addTasks,
   agentActor,
   completeTasks,
@@ -29,6 +30,7 @@ import { ProjectFailureKind, type ProjectResult, resultOf } from './project-resu
 import { SqliteTaskStore } from './sqlite-task-store';
 
 export const CHANGE_PAGE_SIZE = 100;
+const NO_CHANGE_NUMBER = 0;
 
 export type TaskChanges = { tasks: Task[]; cursor: number; hasMore: boolean };
 
@@ -80,11 +82,22 @@ export class ProjectStore extends DurableObject<Env> {
   }
 
   readChanges({ cursor }: { cursor: number }): ProjectResult<TaskChanges> {
-    return { ok: false, failure: { kind: ProjectFailureKind.TaskNotFound, number: cursor } };
+    const lastChangeNumber = this.store.lastChangeNumber();
+    const newestChangeNumber = lastChangeNumber === null ? NO_CHANGE_NUMBER : lastChangeNumber;
+    const isCursorAhead = cursor > newestChangeNumber;
+    if (isCursorAhead) return { ok: false, failure: { kind: ProjectFailureKind.CursorAhead } };
+    const changes = this.store.listChangesSince({ cursor, limit: CHANGE_PAGE_SIZE + 1 });
+    const page = changes.slice(0, CHANGE_PAGE_SIZE);
+    const lastOnPage = page.at(-1);
+    const nextCursor = lastOnPage === undefined ? cursor : lastOnPage.changeNumber;
+    return { ok: true, value: { tasks: page.map(({ task }) => task), cursor: nextCursor, hasMore: changes.length > CHANGE_PAGE_SIZE } };
   }
 
   readHistory({ number }: { number: number }): ProjectResult<HistoryEntry[]> {
-    return { ok: false, failure: { kind: ProjectFailureKind.TaskNotFound, number } };
+    return resultOf(() => {
+      if (this.store.findTask(number) === null) throw new TaskNotFoundError(number);
+      return this.store.listHistory(number);
+    });
   }
 
   private run<Value>(useCase: () => Value): ProjectResult<Value> {
