@@ -16,7 +16,7 @@ Nothing about todz runs anywhere but this Mac. The owner bought `todz.app` and a
 - Development and tests keep running exactly as today, overriding the production vars.
 - The app's Release build talks to `https://api.todz.app`; Debug keeps `localhost`.
 - A runbook, `docs/runbooks/deploy-the-api.md`, lists every remote step with its expected result: create the database, apply the migrations, deploy, attach the custom domain, onboard `todz.app` for Email Sending, and a smoke check of the live routes.
-- The loop runs that runbook from `main` once this feature and its predecessors have shipped, and records the outcome.
+- The loop runs that runbook from `main` once this feature and its predecessors have shipped, and records the outcome. The remote steps also wait for `sign-in-guard` to ship (the owner, 2026-11-24: sign-in never goes to production without it).
 
 ## Non-goals
 

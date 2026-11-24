@@ -2,7 +2,7 @@
 
 Deploy the todz Worker to `api.todz.app` from `main`: the database, its migrations, the Worker with its Durable Objects, the custom domain, mail sending for `todz.app`, HTTPS only and a smoke check of the live routes ([ADR 0044](../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md), [ADR 0043](../adr/0043-mail-leaves-through-cloudflare-email-service-from-noreply-at-todz-app.md)). The build loop runs it under the owner's authorization of 2026-11-24, and a person runs the same steps after that; each run adds rows to the run log at the end.
 
-Every command runs from the repository root, one command per call, and starts with `scripts/todz-cloudflare.sh`: it reads the token from the Keychain item `todz-cloudflare` and gives it only to that one command, so no step exports a variable, echoes the token or puts it on a command line. A Wrangler call is `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler ...`, a Cloudflare API call is `scripts/todz-cloudflare.sh api <METHOD> <path> [json-body-file]` and prints the JSON. No step passes `--var`, and every database command names `--remote`. The values: account `e2035d8e0b7173d520ccf643f6f4661c`, zone `todz.app` `06490974636c535e2cbfd7c5b09925a5`, database `todz-directory` `dc22b1c3-1869-44a0-b805-91bf92017f19`, Worker `todz-api`.
+Every command runs from the repository root, one command per call, and every command that needs the token starts with `scripts/todz-cloudflare.sh`: it reads the token from the Keychain item `todz-cloudflare` and gives it only to that one command, so no step exports a variable, echoes the token or puts it on a command line. A Wrangler call is `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler ...`, a Cloudflare API call is `scripts/todz-cloudflare.sh api <METHOD> <path> [json-body-file]` and prints the JSON. No step passes `--var`, and every database command names `--remote`. The values: account `e2035d8e0b7173d520ccf643f6f4661c`, zone `todz.app` `06490974636c535e2cbfd7c5b09925a5`, database `todz-directory` `dc22b1c3-1869-44a0-b805-91bf92017f19`, Worker `todz-api`.
 
 Prerequisites: the `sign-in-guard` feature has shipped. It adds Turnstile, failing closed, and the per-client, per-address and global limits on every public sign-in endpoint. The owner said on 2026-11-24 that sign-in never goes to production without it, so check `docs/features/README.md` for its `Shipped` row and stop if it is missing. The account is on Workers Paid (the owner confirmed it active on 2026-11-24), and the token has these permissions by the dashboard's names: Workers Scripts Edit, D1 Edit, Workers Routes Edit and DNS Edit and Zone Settings Edit on the zone, Zone Read scoped to the `todz.app` zone, and Email Sending Edit. The dashboard names are not checked against Cloudflare's documentation.
 
@@ -37,7 +37,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>
 
    ```bash
    scripts/todz-cloudflare.sh api GET "/zones/06490974636c535e2cbfd7c5b09925a5/dns_records?name=api.todz.app"
-   scripts/todz-cloudflare.sh api GET "/zones/06490974636c535e2cbfd7c5b09925a5/dns_records?per_page=100" | jq -r '.result[] | .type + " " + .name + " " + .content'
+   scripts/todz-cloudflare.sh api GET "/zones/06490974636c535e2cbfd7c5b09925a5/dns_records?per_page=100" | jq -r '.result | map(.type + " " + .name + " " + .content) | join("\n")'
    ```
 
    Expected: the first answers `"success":true` with `"result":[]`. The second prints one line per record; write the apex `MX` and `TXT` lines (name `todz.app`) in the run log, because step 10 compares them.
@@ -108,11 +108,11 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler email sending enable todz.app --zone-id 06490974636c535e2cbfd7c5b09925a5
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler email sending list todz.app --zone-id 06490974636c535e2cbfd7c5b09925a5
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler email sending dns get todz.app --zone-id 06490974636c535e2cbfd7c5b09925a5
-    scripts/todz-cloudflare.sh api GET "/zones/06490974636c535e2cbfd7c5b09925a5/dns_records?per_page=100" | jq -r '.result[] | .type + " " + .name + " " + .content'
+    scripts/todz-cloudflare.sh api GET "/zones/06490974636c535e2cbfd7c5b09925a5/dns_records?per_page=100" | jq -r '.result | map(.type + " " + .name + " " + .content) | join("\n")'
     ```
 
     Expected: the first prints `Email Sending enabled for todz.app (enabled: ...)`, and an already onboarded domain says so, which is fine. The list is a table with the columns `name`, `enabled` and `tag`, and `todz.app` shows `enabled` `yes`. `dns get` prints each record with its type, Name, Content, Priority and TTL, and the zone listing now holds them. The apex `MX` and `TXT` lines of step 3 are unchanged. Never add an apex SPF record by hand and never edit one: the sending records belong to the names `dns get` prints, and a merge of the apex SPF is the owner's call. The zone already publishes DMARC with `p=none`; leave it. Raising the policy is a later step, after the first deliveries are seen.
-    If it fails: an authentication error names Email Sending Edit and Zone Read. If `enabled` is `no` or the records are missing, run steps 11 and 12 and repeat this list for up to fifteen minutes, because the records verify in the background; link requests answer 503 until then, which is the safe state. If Cloudflare did not add the records to the zone, create each one that `dns get` prints at the name it prints, with DNS Edit, and nothing at the apex. A changed or missing apex record means stop and tell the owner. The Email Sending API is in open beta, and its documentation was not available to check this step beyond Wrangler 4.167.0's own commands.
+    If it fails: an authentication error names Email Sending Edit and Zone Read. If `enabled` is `no` or the records are missing, run steps 11 and 12 and repeat this list for up to fifteen minutes, because the records verify in the background; link requests answer 503 until then, which is the safe state. If Cloudflare did not add the records to the zone, stop and tell the owner; no record is written by hand. A changed or missing apex record means stop and tell the owner. The Email Sending API is in open beta, and its documentation was not available to check this step beyond Wrangler 4.167.0's own commands.
 
 11. **Turn on Always Use HTTPS for the zone.** Read the pseudo IPv4 setting, set the zone setting, then ask for the plain address:
 
@@ -148,9 +148,10 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>
     ```bash
     openssl rand -hex 32
     curl -sS -D - -X POST -H "Content-Type: application/json" --data-binary @<body-file> https://api.todz.app/owner/sign-in-links
+    rm <body-file>
     ```
 
-    Expected: `HTTP/2 202` and the body `{}`, and within a minute a mail from `todz <noreply@todz.app>` whose button opens `https://api.todz.app/sign-in#token=...`. Never open or paste that link into a log; the production smoke walk with the app does that. The owner confirms the mail arrived; delete `<body-file>` afterwards.
+    Expected: `HTTP/2 202` and the body `{}`, and within a minute a mail from `todz <noreply@todz.app>` whose button opens `https://api.todz.app/sign-in#token=...`. Never open or paste that link into a log; the production smoke walk with the app does that. The owner confirms the mail arrived.
     If it fails: a 503 with `{"error":"sign_in_unavailable"}` means the sender is not ready; go back to step 10. A 202 with no mail within fifteen minutes means the binding accepted it and the delivery failed; read the sending activity in the dashboard (Email Sending Read) and tell the owner. A 429 means this address used its quota; wait a minute and ask again.
 
 14. **Check the per-client limit.** Post wrong session tokens from this machine, fourteen in one command, and keep only the status and `retry-after` lines:
@@ -159,7 +160,11 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>
     curl -sS -D - -X POST -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/wrong-session.json https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions | grep -iE "^HTTP|^retry-after"
     ```
 
-    Expected: the first answers are `HTTP/2 401` (the wrong token) and at least one of the last four is `HTTP/2 429` followed by `retry-after: 60`, because the binding counts per Cloudflare location and may let a request or two more than ten through. After the next step, one more request to `https://api.todz.app/owner/sessions` with the same body answers `HTTP/2 401` again.
+    Expected: the first answers are `HTTP/2 401` (the wrong token) and at least one of the last four is `HTTP/2 429` followed by `retry-after: 60`, because the binding counts per Cloudflare location and may let a request or two more than ten through. A minute later, one single request answers `HTTP/2 401` again:
+
+    ```bash
+    curl -sS -D - -o /dev/null -X POST -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/wrong-session.json https://api.todz.app/owner/sessions
+    ```
     If it fails: no 429 means run the command once more; none in the second run either means the binding is not enforcing, or Cloudflare did not send `CF-Connecting-IP` or the request counted as local; tell the owner before the app ships. A 429 on the first request means another client on this address used the quota; wait a minute and run it again.
 
 15. **Record the run.** Add one row per step above to the run log, with the date, the commit, the step and the actual result, in a pull request on `docs/`.

@@ -33,7 +33,7 @@ if [[ "$1" == api ]]; then
   [[ $# -ge 3 ]] || fail "usage: todz-cloudflare.sh api <METHOD> <path> [json-body-file]"
   refuse_unlisted_path "$3"
 fi
-token=$("$security_binary" find-generic-password -s "$keychain_item" -w) || fail "no Keychain item named $keychain_item"
+token=$("$security_binary" find-generic-password -s "$keychain_item" -w) || fail "could not read the Keychain item $keychain_item"
 [[ -n "$token" ]] || fail "the Keychain item $keychain_item is empty"
 
 if [[ "$1" == api ]]; then

@@ -149,6 +149,15 @@ Pins: the nine allowed paths and the runbook's own paths passed when they landed
 - Every `api` call in the runbook passes the allowlist; a path with `..`, `%2e`, another zone, another database or another host is refused without a Keychain read.
 - The runbook's new text keeps every command line free of `$`, backticks, braces and heredocs.
 
+### Re-review additions
+
+Red commit `29d1847`; green commits follow (rate key and `isLocalOrigin` move; runbook, ADR 0044, spec and wrapper message).
+
+- `runbooks.test.ts` pipes every runbook command line through `.agents/hooks/guard-secrets.sh` instead of the old pattern. Red text: `expected [ …(2) ] to deeply equal []`, the two `jq -r '.result[] | ...'` lines. The runbook now uses `jq -r '.result | map(...) | join("\n")'`.
+- `clientRateKey` returns an address with more than eight groups unchanged. Red text: `RangeError: Invalid array length`.
+- `isLocalOrigin` lives in `apps/api/src/local-origin.ts` and joins the shared-helper line of `AGENTS.md`; a pure move, the existing tests pin it.
+- Runbook: only commands that need the token start with the wrapper; step 13 ends with `rm <body-file>`; step 14 has a single-request recheck; step 10 stops and tells the owner when the sending records are missing; the wrapper's Keychain failure reads `could not read the Keychain item todz-cloudflare`; ADR 0044 decision 6 and the spec wait for `sign-in-guard`.
+
 ### Gaps
 
 - The prefix match on `/zones/<zone>/` allows any method and any sub-path of the zone, as asked; the allowlist does not limit methods.
