@@ -122,7 +122,7 @@ From `apps/macos/TodzKit`: `swift test` (290 tests). App: `xcodegen generate --s
 
 ### Known gaps
 
-- The app build fails in `Todz/Copy/AppBanner+Copy.swift` (`switch must be exhaustive`) until the three new `AppBanner` cases get their copy; that file is G3's. TodzKit builds and its tests pass.
+- With the lead's approval, two app-target files of G3's were touched only to keep the app building: `Todz/Copy/AppBanner+Copy.swift` maps the three new banners, and `Todz/Copy/ErrorCopy.swift` gains the design § 8 strings `changesNotSaved(count:)`, `changeNotSavedBody`, `cacheNotSaved` and `waitingChangesLost`. The count is plain interpolation, not the system's inflection (design § 4); one refusal shows `changeNotSaved`. The app's `isRefreshing` in `AppModel+Window.swift` was left for G3.
 - `refresh()` kicks the send loop (cutting its wait short) and awaits the pulls; it does not wait for the flush, so `isRefreshing` covers the pulls only.
 - A 404 on a pull marks the project failed but does not ask for a workspace reload; only a socket's 404 does.
 - The refused-change count of a project dropped from the list while no flush runs carries into the next flush's banner.

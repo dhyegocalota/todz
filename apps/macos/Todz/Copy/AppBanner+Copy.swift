@@ -12,6 +12,9 @@ extension AppBanner {
         case .taskGone: ErrorCopy.taskGone
         case .projectGone: ErrorCopy.projectGone
         case .workspaceGone: ErrorCopy.workspaceGone
+        case let .changesRefused(count): Self.refusedTitle(count: count)
+        case .cacheNotSaved: ErrorCopy.cacheNotSaved
+        case .waitingChangesLost: ErrorCopy.waitingChangesLost
         }
     }
 
@@ -19,7 +22,15 @@ extension AppBanner {
         switch self {
         case .network: ErrorCopy.networkBody
         case .server: ErrorCopy.serverBody
-        case .someProjectsFailed, .changeNotSaved, .sessionNotSaved, .inboxIsFixed, .taskGone, .projectGone, .workspaceGone: nil
+        case .changesRefused: ErrorCopy.changeNotSavedBody
+        case .someProjectsFailed, .changeNotSaved, .sessionNotSaved, .inboxIsFixed, .taskGone, .projectGone, .workspaceGone, .cacheNotSaved,
+            .waitingChangesLost:
+            nil
         }
+    }
+
+    private static func refusedTitle(count: Int) -> String {
+        guard count > 1 else { return ErrorCopy.changeNotSaved }
+        return ErrorCopy.changesNotSaved(count: count)
     }
 }
