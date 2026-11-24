@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor @Observable final class MenuBarPanel {
     @ObservationIgnored weak var window: NSWindow?
 
+    // NB ADR 0031: a close from code clicks the status item's own button so the next click reopens.
     func close() {
         guard let window, window.isVisible else { return }
         statusItemButton?.performClick(nil)
