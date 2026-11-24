@@ -28,6 +28,7 @@ enum SignInCopy {
     static let sendAgain = "Send Again"
     static let useDifferentEmail = "Use a Different Email"
     static let tooManyLinks = "Too many links. Wait a few minutes and try again."
+    static let tooManyRequests = "Too many attempts. Wait a minute and try again."
     static let linkRejected = "That link has expired or was already used. Send a new one."
     static let linkNotRequested = "Open the link on the Mac that asked for it, or send a new one."
 

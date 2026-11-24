@@ -45,4 +45,18 @@ extension OwnerAPITests {
             try await api(answering: answer).requestSignInLink(email: "maria@example.com", challenge: challenge)
         }
     }
+
+    @Test func aRateLimitedLinkRequestIsRefusedAsTooManyRequests() async throws {
+        let answer = StubAnswer.response(status: 429, body: "{\"error\":\"too_many_requests\"}")
+        await #expect(throws: OwnerAPIError.tooManyRequests) {
+            try await api(answering: answer).requestSignInLink(email: "maria@example.com", challenge: challenge)
+        }
+    }
+
+    @Test func aRateLimitedSignInIsRefusedAsTooManyRequests() async throws {
+        let answer = StubAnswer.response(status: 429, body: "{\"error\":\"too_many_requests\"}")
+        await #expect(throws: OwnerAPIError.tooManyRequests) {
+            try await api(answering: answer).signIn(identityToken: "token", linkVerifier: verifier, timeZone: zone)
+        }
+    }
 }

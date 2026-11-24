@@ -45,6 +45,8 @@ The Worker has only ever run under `wrangler dev` and Miniflare. `wrangler.jsonc
 
 The token in the Keychain item `todz-cloudflare` verified as active on 2026-11-24 and sees the zone `todz.app` (id `06490974636c535e2cbfd7c5b09925a5`) in account `e2035d8e0b7173d520ccf643f6f4661c`.
 
+A local spike on 2026-11-24 ran Wrangler 4.167.0 `wrangler dev` with the production `routes` (`api.todz.app` as a custom domain) and a request to `localhost:8797`: the Worker saw `request.url` as `http://api.todz.app/probe`, so the console sender's local-host guard would have refused it. With `--host localhost` it saw `http://localhost/probe`, and with `--local-upstream localhost:<port>` it saw `http://localhost:<port>/probe`; the dev scripts pass `--local-upstream localhost:8787`.
+
 ## Revisit when
 
 A staging environment is needed, or a second person deploys.

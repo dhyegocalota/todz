@@ -60,6 +60,7 @@ extension AppModelTests {
 
     @Test(arguments: [
         (OwnerAPIError.tooManyLinks, SignInError.tooManyLinks),
+        (.tooManyRequests, .tooManyRequests),
         (.signInUnavailable, .signInUnavailable),
         (.unreachable, .unreachable),
         (.invalidRequest, .invalidAddress),
