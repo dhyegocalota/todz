@@ -29,4 +29,16 @@ public struct TaskBoard: Sendable, Equatable {
     public mutating func reset(projectIdentifier: String) {
         tasksOfProject[projectIdentifier] = nil
     }
+
+    public func cursor(projectIdentifier: String) -> Int? {
+        fatalError("TaskBoard.cursor is not implemented")
+    }
+
+    public func setting(cursor: Int, projectIdentifier: String) -> TaskBoard {
+        fatalError("TaskBoard.setting is not implemented")
+    }
+
+    public func applying(_ outbox: Outbox) -> TaskBoard {
+        fatalError("TaskBoard.applying is not implemented")
+    }
 }
