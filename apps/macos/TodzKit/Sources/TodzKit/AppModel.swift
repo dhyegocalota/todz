@@ -31,6 +31,7 @@ import Observation
     @ObservationIgnored var isCacheNotSavedRaised = false
     @ObservationIgnored var watches: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var watchAttempts: [String: Int] = [:]
+    @ObservationIgnored var isWatchAnswered: [String: Bool] = [:]
     @ObservationIgnored var workspaceReload: Task<Void, Never>?
     @ObservationIgnored var sendLoop: Task<Void, Never>?
     @ObservationIgnored var sendingSession: String?

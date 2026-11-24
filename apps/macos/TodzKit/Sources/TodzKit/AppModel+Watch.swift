@@ -8,6 +8,7 @@ extension AppModel {
         leftIdentifiers.forEach { projectIdentifier in
             watches.removeValue(forKey: projectIdentifier)?.cancel()
             watchAttempts[projectIdentifier] = nil
+            isWatchAnswered[projectIdentifier] = nil
         }
         dropChanges(projectIdentifiers: leftIdentifiers)
         leftIdentifiers.forEach { forgetProject(identifier: $0) }
@@ -23,6 +24,7 @@ extension AppModel {
         watches.values.forEach { $0.cancel() }
         watches = [:]
         watchAttempts = [:]
+        isWatchAnswered = [:]
         workspaceReload?.cancel()
         workspaceReload = nil
     }
@@ -75,7 +77,9 @@ extension AppModel {
             endSession()
             return false
         }
-        noteConnection(after: failure)
+        let isAnsweredSinceLastFailure = isWatchAnswered[projectIdentifier] == true
+        isWatchAnswered[projectIdentifier] = false
+        if !isAnsweredSinceLastFailure { noteConnection(after: failure) }
         if ownerFailure == .notFound { requestWorkspaceReload() }
         let attempt = watchAttempts[projectIdentifier, default: 0] + 1
         watchAttempts[projectIdentifier] = attempt
@@ -91,6 +95,7 @@ extension AppModel {
         switch event {
         case .opened:
             watchAttempts[projectIdentifier] = nil
+            isWatchAnswered[projectIdentifier] = false
             startSending()
             guard !isWorkspaceListOutdated else {
                 requestWorkspaceReload()

@@ -22,6 +22,7 @@ extension AppModel {
     func noteAnswer() {
         isOffline = false
         hasServerAnswered = true
+        isWatchAnswered = isWatchAnswered.mapValues { _ in true }
     }
 
     public func refresh() async {
