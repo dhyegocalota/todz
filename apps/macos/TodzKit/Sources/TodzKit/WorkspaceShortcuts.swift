@@ -11,6 +11,10 @@ public enum WorkspaceShortcuts {
         zip(numbers, workspaces).map { (number: $0, workspace: $1) }
     }
 
+    public static func number(forKey key: String) -> Int? {
+        fatalError("number(forKey:) is not implemented")
+    }
+
     public static func lastNumber(of workspaces: [Workspace]) -> Int {
         min(workspaces.count, numbers.upperBound)
     }
