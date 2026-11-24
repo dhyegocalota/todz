@@ -3,7 +3,7 @@ public enum WidgetContent: Equatable, Sendable {
     case empty(workspaceName: String)
     case today(WidgetToday)
 
-    // NB ADR 0032: a snapshot of another day shows the prompt, so a widget never checks off yesterday's list.
+    // NB ADR 0033: a snapshot of another day shows the prompt, so a widget never checks off yesterday's list.
     public static func of(snapshot: WidgetSnapshot?, family: WidgetFamilyKind, on day: CalendarDate) -> WidgetContent {
         guard let snapshot, snapshot.isCurrent(on: day) else { return .prompt }
         let rows = snapshot.open + snapshot.pending + snapshot.doneToday

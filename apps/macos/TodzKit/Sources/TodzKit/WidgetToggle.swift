@@ -1,7 +1,7 @@
 import Foundation
 
 public enum WidgetToggle {
-    // NB ADR 0032: a checkbox carries its target state, so a tap on a row the app has since redrawn never inverts it.
+    // NB ADR 0033: a checkbox carries its target state, so a tap on a row the app has since redrawn never inverts it.
     public static func setting(
         _ snapshot: WidgetSnapshot,
         projectIdentifier: String,

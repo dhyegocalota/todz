@@ -15,7 +15,7 @@ private func isOlder(_ lhs: DatedFile, _ rhs: DatedFile) -> Bool {
     (lhs.modifiedAt, lhs.file.lastPathComponent) < (rhs.modifiedAt, rhs.file.lastPathComponent)
 }
 
-// NB ADR 0032: the widgets read one snapshot and add one file per request, and a read refuses anything but a regular file.
+// NB ADR 0033: the widgets read one snapshot and add one file per request, and a read refuses anything but a regular file within its size cap.
 public struct FileWidgetStore: WidgetStore {
     private let folder: URL
 

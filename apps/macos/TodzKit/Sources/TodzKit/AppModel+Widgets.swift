@@ -69,7 +69,7 @@ extension AppModel {
         return publishedWidgetSnapshot != .ready(stored)
     }
 
-    // NB ADR 0032: a widget's request reaches the outbox only for a task in the current Today that is not already in that state.
+    // NB ADR 0033: a widget's request reaches the outbox only for a task in the current Today that is not already in that state.
     private func take(_ request: WidgetRequest) async {
         guard let today = taskViews?.today else { return }
         let isRequested = { (boardTask: BoardTask) in
@@ -97,7 +97,7 @@ extension AppModel {
         }
     }
 
-    // NB ADR 0032: the app writes the snapshot whenever the active workspace's Today changes, then reloads the widgets.
+    // NB ADR 0033: the app writes the snapshot whenever the active workspace's Today changes, then reloads the widgets.
     func publishWidgets() {
         let state = widgetSnapshot
         let isUnchanged = state == .loading || state == publishedWidgetSnapshot
@@ -109,7 +109,7 @@ extension AppModel {
         }
     }
 
-    // NB ADR 0032: sign-out and another owner erase the snapshot and the requests with the cache, and a failed erase never keeps a session or a cache.
+    // NB ADR 0033: sign-out and another owner erase the snapshot and the requests with the cache, and a failed erase never keeps a session or a cache.
     func eraseWidgets() {
         try? widgetStore.erase()
         publishedWidgetSnapshot = nil

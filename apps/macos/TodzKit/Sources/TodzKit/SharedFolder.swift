@@ -35,7 +35,6 @@ public enum SharedFolder {
         return owned(folder)
     }
 
-    // NB ADR 0033: the shared folder is a real directory of this account, made private, never a link followed.
     public static func owned(_ folder: URL) -> URL? {
         guard FolderStatus.madePrivate(folder) == .owned else { return nil }
         return folder
