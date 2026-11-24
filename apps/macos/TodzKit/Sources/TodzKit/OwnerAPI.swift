@@ -22,6 +22,10 @@ private func taskPath(projectIdentifier: String, number: Int) -> String {
     "\(tasksPath(projectIdentifier))/\(number)"
 }
 
+private func keysPath(_ projectIdentifier: String) -> String {
+    "\(projectPath(projectIdentifier))/keys"
+}
+
 public protocol OwnerService: Sendable {
     func signIn(identityToken: String, timeZone: String) async throws -> IssuedSession
     func signOut(session: String) async throws
@@ -134,15 +138,16 @@ public struct OwnerAPI: OwnerService {
     }
 
     public func listKeys(session: String, projectIdentifier: String) async throws -> [ProjectKey] {
-        fatalError("listKeys is not implemented")
+        try await answer(KeysAnswer.self, to: OwnerRequest(method: .get, path: keysPath(projectIdentifier), session: session)).keys
     }
 
     public func issueKey(session: String, projectIdentifier: String) async throws -> IssuedKey {
-        fatalError("issueKey is not implemented")
+        try await answer(IssuedKey.self, to: OwnerRequest(method: .post, path: keysPath(projectIdentifier), session: session))
     }
 
     public func revokeKey(session: String, projectIdentifier: String, keyIdentifier: String) async throws {
-        fatalError("revokeKey is not implemented")
+        let path = "\(keysPath(projectIdentifier))/\(keyIdentifier)"
+        _ = try await send(OwnerRequest(method: .delete, path: path, session: session))
     }
 
     private func answer<Answer: Decodable>(_ type: Answer.Type, to request: OwnerRequest) async throws -> Answer {
