@@ -29,7 +29,7 @@ struct CommandBlock: View {
     }
 
     private var isSelectable: Bool {
-        disabledReason == nil
+        disabledReason == nil && !holdsSecret
     }
 
     private var commandText: some View {
