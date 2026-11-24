@@ -9,6 +9,9 @@ private let privateFolderMode = 0o700
 private let brokenJSON = "{"
 private let requestsPerPass = 50
 private let manyRequestCount = 60
+private let snapshotMaxByteCount = 1_048_576
+private let requestMaxByteCount = 4_096
+private let padding = UInt8(ascii: " ")
 private let today = CalendarDate(year: 2026, month: 11, day: 24)
 private let namesThatAreNotRequests = ["../\(snapshotFileName)", snapshotFileName, "", "a/b.json"]
 
@@ -23,6 +26,10 @@ private func modeOfFile(at url: URL) throws -> Int {
 
 private func exists(_ url: URL) -> Bool {
     FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
+}
+
+private func padded(_ data: Data, beyond maxByteCount: Int) -> Data {
+    data + Data(repeating: padding, count: maxByteCount + 1 - data.count)
 }
 
 private func request(_ number: Int, state: TaskState = .done) -> WidgetRequest {
@@ -114,6 +121,23 @@ private let snapshot = WidgetSnapshot(
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try Data(brokenJSON.utf8).write(to: folder.appending(path: snapshotFileName))
         #expect(throws: WidgetStoreError.unreadable) { try store.readSnapshot() }
+    }
+
+    @Test func refusesASnapshotLargerThanItsCap() throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let encoded = try OwnerCoding.encoder().encode(snapshot)
+        try padded(encoded, beyond: snapshotMaxByteCount).write(to: folder.appending(path: snapshotFileName))
+        #expect(throws: WidgetStoreError.unreadable) { try store.readSnapshot() }
+    }
+
+    @Test func removesARequestLargerThanItsCapAndReadsTheOthers() throws {
+        try store.addRequest(request(1))
+        try store.addRequest(request(2))
+        let oversized = try #require(try store.requests().first?.name)
+        let encoded = try OwnerCoding.encoder().encode(request(1))
+        try padded(encoded, beyond: requestMaxByteCount).write(to: requestsFolder.appending(path: oversized))
+        #expect(try store.requests().map(\.request) == [request(2)])
+        #expect(exists(requestsFolder.appending(path: oversized)) == false)
     }
 
     @Test func removesAnUnreadableRequestAloneAndReadsTheOthers() throws {
