@@ -3,6 +3,6 @@ public enum HistoryFailure: Equatable, Sendable {
     case failed
 
     public static func of(isOffline: Bool) -> HistoryFailure {
-        fatalError("HistoryFailure is not implemented")
+        isOffline ? .offline : .failed
     }
 }
