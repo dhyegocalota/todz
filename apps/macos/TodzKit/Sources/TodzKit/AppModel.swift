@@ -142,6 +142,7 @@ import Observation
             cached = try cacheToOpen(for: issued.owner)
         } catch {
             signInError = .unexpected
+            try? await service.signOut(session: issued.sessionToken)
             return
         }
         session = issued.sessionToken
