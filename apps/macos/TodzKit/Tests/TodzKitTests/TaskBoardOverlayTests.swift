@@ -108,6 +108,13 @@ private func lettered(_ number: Int, title: String) -> TaskRecord {
         #expect(try views(applied).done.map(\.task.title) == ["A"])
     }
 
+    @Test func aTaskReopenedAfterAMoveTakesItsPlaceByItsKeyAmongTheMovedTasks() throws {
+        let finished = MutableTask(number: 2, title: "Y", state: .done, orderKey: "a2", completedAt: earlierCompletion).record
+        let held = board([lettered(1, title: "X"), finished, lettered(3, title: "A"), lettered(4, title: "B")])
+        let applied = held.applying(outbox([.field(key(4), .placement(.first)), .state(key(2), .open, at: completedAt)]))
+        #expect(try openTitles(applied) == ["B", "X", "Y", "A"])
+    }
+
     @Test func aMoveAfterAMissingAnchorChangesNothing() {
         let held = board([lettered(1, title: "X"), lettered(2, title: "Y"), MutableTask(number: 3, state: .done, completedAt: earlierCompletion).record])
         let applied = held.applying(outbox([.field(key(1), .placement(.after(anchor: 9))), .field(key(1), .placement(.after(anchor: 3)))]))
