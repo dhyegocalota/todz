@@ -1,6 +1,6 @@
 # 0033. Without a team, the widgets share a folder in Application Support that an App Group replaces later
 
-- Status: Proposed
+- Status: Superseded by [0035](0035-with-the-personal-team-the-widgets-share-the-app-group.md)
 - Date: 2026-11-24
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) may overturn it
 - Inspired by: [ADR 0032](0032-widgets-read-a-snapshot-in-an-app-group-that-a-team-prefix-replaces-later.md), the `widgets` plan step 0 spike of 2026-11-24
