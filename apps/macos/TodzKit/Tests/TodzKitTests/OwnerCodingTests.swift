@@ -9,6 +9,18 @@ private let timeZone = "America/Sao_Paulo"
 private let name = "Inbox"
 private let draftKey = "key-1"
 private let dueDate = CalendarDate(year: 2025, month: 11, day: 24)
+private let encodedCreatedAt = #""created_at":1764000000000"#
+private let encodedDueDate = #""due_date":"2026-11-24""#
+private let idempotencyKey = "key-2"
+private let ownerIdentifier = "owner-1"
+private let projectIdentifier = "project-1"
+private let workspaceIdentifier = "workspace-1"
+
+private func expectRoundTrip<Value: Codable & Equatable>(_ json: String, as type: Value.Type) throws {
+    let first = try OwnerFixtures.decoded(type, from: json)
+    let second = try OwnerCoding.decoder().decode(type, from: OwnerCoding.encoder().encode(first))
+    #expect(second == first)
+}
 
 private func encodedText(_ value: some Encodable) throws -> String {
     let encoder = OwnerCoding.encoder()
@@ -66,5 +78,33 @@ private func encodedText(_ value: some Encodable) throws -> String {
         for expectation in expectations {
             #expect(try encodedText(expectation.patch) == expectation.json)
         }
+    }
+
+    @Test func everyFixtureDecodesEncodesAndDecodesEqual() throws {
+        let project = OwnerFixtures.projectJSON(identifier: projectIdentifier, name: name, isInbox: false)
+        try expectRoundTrip(OwnerFixtures.ownerJSON(identifier: ownerIdentifier, timeZone: timeZone), as: Owner.self)
+        try expectRoundTrip(project, as: Project.self)
+        try expectRoundTrip(
+            OwnerFixtures.workspaceJSON(identifier: workspaceIdentifier, name: name, projects: [project]), as: Workspace.self)
+        try expectRoundTrip(OwnerFixtures.ownerActorJSON, as: ChangeActor.self)
+        try expectRoundTrip(OwnerFixtures.agentActorJSON, as: ChangeActor.self)
+        try expectRoundTrip(OwnerFixtures.openTaskJSON(number: 1), as: TaskRecord.self)
+        try expectRoundTrip(OwnerFixtures.doneTaskJSON(number: 2, idempotencyKey: idempotencyKey), as: TaskRecord.self)
+    }
+
+    @Test func encodedTaskHoldsEpochMillisecondsAndCalendarDate() throws {
+        let task = TaskRecord(
+            number: 1, title: name, notes: nil, dueDate: CalendarDate(year: 2026, month: 11, day: 24), state: .open,
+            orderKey: "a0", idempotencyKey: nil, createdBy: .owner, createdAt: instant, updatedAt: instant, completedAt: nil
+        )
+        let text = try encodedText(task)
+        #expect(text.contains(encodedCreatedAt))
+        #expect(text.contains(encodedDueDate))
+    }
+
+    @Test func taskWithoutNotesDecodesBackWithoutNotes() throws {
+        let task = try OwnerFixtures.decoded(TaskRecord.self, from: OwnerFixtures.openTaskJSON(number: 1))
+        let decoded = try OwnerCoding.decoder().decode(TaskRecord.self, from: OwnerCoding.encoder().encode(task))
+        #expect(decoded.notes == nil)
     }
 }

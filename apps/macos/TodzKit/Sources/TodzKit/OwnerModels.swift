@@ -2,7 +2,7 @@ import Foundation
 
 private let emptyClientNameDescription = "An agent's client name is empty."
 
-public struct Owner: Decodable, Sendable, Equatable {
+public struct Owner: Codable, Sendable, Equatable {
     public let identifier: String
     public let timeZone: String
 
@@ -12,7 +12,7 @@ public struct Owner: Decodable, Sendable, Equatable {
     }
 }
 
-public struct Project: Decodable, Sendable, Equatable, Hashable {
+public struct Project: Codable, Sendable, Equatable, Hashable {
     public let identifier: String
     public let name: String
     public let isInbox: Bool
@@ -26,7 +26,7 @@ public struct Project: Decodable, Sendable, Equatable, Hashable {
     }
 }
 
-public struct Workspace: Decodable, Sendable, Equatable {
+public struct Workspace: Codable, Sendable, Equatable {
     public let identifier: String
     public let name: String
     public let createdAt: Date
@@ -40,7 +40,7 @@ public struct Workspace: Decodable, Sendable, Equatable {
     }
 }
 
-public enum ChangeActor: Decodable, Sendable, Equatable {
+public enum ChangeActor: Codable, Sendable, Equatable {
     case owner
     case agent(clientName: String)
 
@@ -59,6 +59,17 @@ public enum ChangeActor: Decodable, Sendable, Equatable {
         }
     }
 
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .owner:
+            try container.encode(ActorKind.owner, forKey: .kind)
+        case .agent(let clientName):
+            try container.encode(ActorKind.agent, forKey: .kind)
+            try container.encode(clientName, forKey: .clientName)
+        }
+    }
+
     private static func clientName(in container: KeyedDecodingContainer<CodingKeys>) throws -> String {
         let clientName = try container.decode(String.self, forKey: .clientName)
         guard !clientName.isEmpty else {
@@ -68,7 +79,7 @@ public enum ChangeActor: Decodable, Sendable, Equatable {
     }
 }
 
-public struct TaskRecord: Decodable, Sendable, Equatable {
+public struct TaskRecord: Codable, Sendable, Equatable {
     public let number: Int
     public let title: String
     public let notes: String?
