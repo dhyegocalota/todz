@@ -43,6 +43,8 @@ The approved design is in [docs/product](docs/product/); how each piece was buil
 | ![Next up](docs/screenshots/widgets/02-next-up.png)<br>Next up (rendered)                                         | ![Medium Today list](docs/screenshots/widgets/03-medium-today.png)<br>Medium Today list (rendered)                    |
 | ![Large Today list](docs/screenshots/widgets/04-large-today.png)<br>Large Today list (rendered)                   | ![Connect an agent](docs/screenshots/connect-an-agent/01-key-screen.png)<br>Connect an agent                          |
 | ![Today's open tasks on the menu bar icon](docs/screenshots/menu-bar-count/01-count.png)<br>Today's open tasks on the menu bar icon | ![An agent's tasks in a project, via Claude Code](docs/screenshots/v1-walk/01-agent-tasks-in-a-project.png)<br>An agent's tasks in a project, via Claude Code |
+| ![The app icon in macOS 26's six looks](docs/screenshots/brand-glass/01-app-icon-looks.png)<br>The Liquid Glass app icon: default, dark, clear and tinted (rendered by Icon Composer) | ![Sign in, dark](docs/screenshots/brand-glass/02-sign-in-dark.png)<br>Sign in, dark |
+| ![The widgets in dark](docs/screenshots/brand-glass/03-widgets-dark.png)<br>The widgets in dark (rendered) | |
 
 The widget shots are rendered from the widgets' own views until a desktop capture replaces them.
 
