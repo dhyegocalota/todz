@@ -4,7 +4,7 @@
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-24, by inheritance from [the v1 product design](../../product/README.md) (Order of delivery, item 7; macOS app → Menu bar extra; the approved mockup's popover in [`glass-screens.html`](../../product/mockups/glass-screens.html)), approved by the owner on 2026-11-23; the calls below that the product design does not make are an ADR or design decisions marked as the loop's calls and listed in the loop's questions for the owner
 **ADRs:** [0026](../../adr/0026-a-native-app-is-walked-with-computer-use-and-recorded-from-its-screenshots.md), [0027](../../adr/0027-the-app-caches-each-owner-s-data-as-json-files-in-its-own-container-until-it-has-a-team.md), [0028](../../adr/0028-the-app-s-task-writes-are-optimistic-and-go-through-a-persisted-outbox.md), [0030](../../adr/0030-product-screenshots-live-in-docs-screenshots-and-the-readme-walks-them.md), [0031](../../adr/0031-the-menu-bar-extra-is-a-swiftui-window-over-the-app-s-one-model.md)
-**Not changing:** `apps/api`, `libs/core`, `libs/types`, the owner API contract, the cache, the outbox and the sockets. No widgets, no App Group, no login item, no "Connect an agent". The main window's screens are unchanged except that closing it no longer quits the app.
+**Not changing:** `apps/api`, `libs/core`, `libs/types`, the owner API contract, the cache, the outbox and the sockets. No widgets, no App Group, no login item, no "Connect an agent". The main window's screens are unchanged except that closing it no longer quits the app, its View menu gains ⌘1 to ⌘9 for the first nine workspaces, and its switcher shows those keys.
 
 ## Problem
 
@@ -68,7 +68,7 @@ status item click ─▶ MenuBarExtra(.window) ─▶ MenuBarPopover reads the o
 
 - **Signed out, loading, naming** → the popover says so and offers "Open todz"; nothing else is clickable.
 - **Offline** → the cached Today shows, writes queue in the outbox, and the popover shows the main window's offline line with the count waiting.
-- **Every project of the workspace failed to load** → the popover shows the load failure line and "Open todz"; the main window carries the Try Again.
+- **Every project of the workspace failed to load, or the launch failed** → the popover shows the main window's `FailureView` with Try Again (`design.md` § 1.3).
 - **A rule refusal on "Add a task"** (an empty or too long title) → the field shows the same inline issue as the main window's add field and keeps the text.
 - **⌘ with a number that has no workspace** → nothing happens.
 - **A workspace switch while the popover is open** → the popover shows the new workspace's Today, or its first-load state until its projects load.

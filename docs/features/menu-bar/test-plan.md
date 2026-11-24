@@ -42,9 +42,20 @@ The Debug build of `Todz` against `wrangler dev`; background input only, never `
 - [ ] One workspace: with only `Logic Bit` — expected: the header shows the name as plain text, no switch hint in the foot (O6)
 - [ ] Launch with the main window closed: close the main window, quit (pkill), relaunch with `open -g` — expected: whether the main window reopens or not, the popover shows the ready Today (the model launched once; one `PATCH /owner` in the server log)
 - [ ] Escape: type text in the add field, Escape — expected: the text clears and the popover stays; a second Escape closes it (or, if the close mechanism of plan step 6 was not proven, as the briefing states)
-- [ ] Row click: click a task row's title in the popover — expected: the main window comes forward on Today with that task selected in the list and the inspector
+- [ ] Row click: click a task row's title in the popover — expected: the main window is in the CoreGraphics window list on screen, on Today, with that task selected in the list and the inspector shown, and the popover closed; whether the app became frontmost is recorded separately (background input may not activate it)
 - [ ] Open todz with the main window closed: close the main window (⌘W through Orca hotkey), confirm the process still runs and the status item is still there; "Open todz" — expected: the main window opens on the active workspace, no second launch (one `PATCH /owner` in the server log since the app started)
 - [ ] Session ends while the popover is open: delete the session rows on the server, trigger a request — expected: the popover shows the signed-out state
+- [ ] Keys stay in the popover: with the main window on project `api`, press ⌘N, ⌘0, ⌘R and ⌘2 into the popover — expected: ⌘N focuses the popover's field and the main window's selected item stays `api`; ⌘0 opens the main window; ⌘R refreshes once; ⌘2 makes exactly one round of pulls of the second workspace's projects in the server log. If Orca's hotkey cannot reach the panel, BLOCKED with the reason
+- [ ] Linger by surface: with the main window on project `api`, check a Today task in the popover — expected: it lingers in the popover about a second; a second click within it reopens it; it never shows twice in the popover
+- [ ] Reopen after a close from code: click a row (the popover closes), then click the status item once — expected: the popover opens with the field focused; open → close (Escape on an empty field) → open focuses it each time; text typed before a close is still there after a reopen
+- [ ] Growth: the popover open with two rows, an MCP add of ten tasks due today — expected: the popover grows, never past 520 points high, still under the status item
+- [ ] Ten workspaces (owner API) — expected: the foot hint reads `Switch workspace ⌘1–9`; ⌘ digits reach the first nine; the tenth only through the switcher menu (the menu is an `NSMenu` pop-up: open it with System Events AXPress, else BLOCKED with the reason)
+- [ ] Field after a ⌘ digit: type `draft`, press ⌘2 — expected: the field is empty
+- [ ] Refused add with the main window closed: a refused add (the forwarding proxy of the sync walk answering `422 rule_violated`) — expected: the popover's banner; its Dismiss clears it, and the main window opened afterwards shows no banner
+- [ ] Launch failed: no cache, the server stopped, launch — expected: the popover shows `FailureView` with Try Again; starting the server and Try Again loads Today
+- [ ] Sign Out from the main window while the popover is open (the first-workspace screen's link, or BLOCKED as the sync walk's menu-only Sign Out) — expected: the popover shows the signed-out state
+- [ ] Dock click with no window: close the main window, click the Dock icon (System Events `click UI element "Todz" of list 1 of application process "Dock"`) — expected: the main window opens
+- [ ] Open todz with the main window minimised — expected: the main window is on screen (CoreGraphics list) and not minimised
 - [ ] Light and dark: the popover in the system appearance the README uses (ADR 0030 says light) — expected: readable text and the accent on the checkboxes, as `design.md` § 3
 - [ ] README shot: `docs/screenshots/menu-bar/01-today-popover.png` of the popover with a realistic Today (open, via Claude Code, overdue, done today), within ADR 0030's limits
 
@@ -56,3 +67,5 @@ The Debug build of `Todz` against `wrangler dev`; background input only, never `
 
 - The app target has no test target: the popover's views are proven only by the walk.
 - Key equivalents are pressed through Orca's background hotkey into the popover window; whether they reach a `MenuBarExtra` panel that is not key is a hypothesis the walk checks.
+- Background input cannot make a window key or frontmost, and cannot click outside the popover to close it: "click elsewhere closes", "the main window is frontmost" and anything that needs the main window key are recorded as what the CoreGraphics window list shows, or BLOCKED with the reason.
+- The switcher's menu is an `NSMenu` pop-up; opening it in the background is tried with System Events AXPress, else BLOCKED.
