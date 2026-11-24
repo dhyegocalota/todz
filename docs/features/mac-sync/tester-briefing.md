@@ -1,32 +1,169 @@
-# Tester briefing: <Feature title>
+# Tester briefing: Mac sync
 
-Written by the developer sub-agent when its steps are done. The developer does not run `test-plan.md` and does not declare the feature works.
+Written by the developer sub-agents when their steps were done. The developers did not run `test-plan.md` and do not declare the feature works. The lane sections below (G1b, G2) keep their own detail; this part covers the whole feature.
 
 ## What changed
 
-- <file or module> — <one line>
+- `TodzKit` coding and cache (G0, G1a): `OwnerCoding.encoder()` writes dates as epoch milliseconds; the owner models encode back to the owner API's shapes; `SyncStore` and `FileSyncStore` keep `owner.json`, `projects/<id>.json` and `outbox.json` in a private `Cache` folder through `PrivateFile`.
+- `TodzKit` outbox and pulls (G1b): `PendingChange`, `Outbox`, `TaskBoard.applying`, pending adds in `TaskViews`, `ProjectFeed.pull` from a cursor, `ReconnectDelay`, `ChangeSignals` and `SocketChangeSignals`.
+- `TodzKit` model (G2): the cached launch, one owner per cache, task writes through the outbox and one send loop, one pull gate per project, a socket per shown project, `syncStatus`, `isRefreshing`, `waitingChangeCount`, the three new banners.
+- App (G3, steps 19 to 22):
+  - `Copy/SyncCopy.swift` (new) and `Copy/InflectedCopy.swift` (new: every count goes through the system's inflection, so one reads "1 change"); `TaskRowCopy.pending`, `pendingHelp`; `SignInCopy.sessionEndedWaiting(count:)`; `ErrorCopy.changesNotSaved(count:)` now inflects too.
+  - `MainWindow/TaskList/SyncStatusItem.swift` (new): `wifi.slash` and `Offline` or `Offline · N changes waiting` before Refresh while offline; a click refreshes; one VoiceOver announcement when it appears.
+  - `RefreshButton` and the Refresh command read TodzKit's `isRefreshing` (the app's shadow over `pullsInFlight` is gone); `TaskListState` reads `model.taskViews`, the board with the outbox applied.
+  - The shell's in-flight `ProgressView`s, read-only fields and disabled rows are gone from `TaskRow`, `TaskCheckbox`, the Task menu, `TitleField`, `NotesEditor`, `DueDatePicker` and `AddTaskField`.
+  - `PendingTaskRow` (new), `TaskRowTitle` (new, shared by both rows), `TaskSection.pendingTasks`, `TaskSections` (pending adds in Inbox, a project, Today and the Upcoming day groups), `TaskRows` (pending rows after the confirmed ones, selection disabled, no move; a double-click on no selection opens nothing).
+  - `MainWindowState`: the checked row's linger (`completionLinger`, one second, per task, its own timer; animated unless Reduce Motion), `TaskLinger` and `LingeringTasks` (new); every toggle goes through `MainWindowState.toggleDone(task:model:)`; `AppModel+Window.openListTasks`.
+  - `TitleField`, `NotesEditor`: a focused field the owner has typed in keeps its text on a live update; one the owner has not typed in follows it.
+  - `RootView`: the sign-out `.confirmationDialog`; `MainWindowState.requestSignOut(model:)` from the app menu, `WorkspaceSwitcher` and `FirstWorkspaceScreen`. `SignInScreen`: the waiting line.
+  - Step 21: `AppModel.pullsInFlight`, `AppModel.unconfirmedDrafts`, the app's `isWriting(task:)`, `isSaving(task:field:)` and `DueDatePicker`'s issue line are deleted.
+- `apps/macos/README.md`: the cache and the live sync in its purpose.
 
 ## How to run
 
-```bash
-<commands to start the stack and open the feature>
+The server, in `apps/api`, with a new scratch folder `<state>` and port 8787 free:
+
 ```
+pnpm exec wrangler d1 migrations apply directory --local --persist-to <state>
+pnpm exec wrangler dev --var SIGN_IN_PROVIDER:fake --persist-to <state> --port 8787
+```
+
+**Offline and back.** Stop the server with Ctrl-C; start it again with the same command, same `<state>` and port. The app notices a stop at its next request or when a socket drops; it notices the restart when a socket reopens (1, 2, 4, 8, 16, then every 30 seconds) or on ⌘R.
+
+The app, from the repository root:
+
+```
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Debug -derivedDataPath apps/macos/build
+open apps/macos/build/Build/Products/Debug/Todz.app
+```
+
+Quit it with ⌘Q or `pkill -f Todz.app/Contents/MacOS/Todz`. The session file is `~/Library/Containers/dev.todz.Todz/Data/Library/Application Support/session`; the cache is the `Cache` folder beside it (`owner.json`, `projects/<id>.json`, `outbox.json`).
+
+The unit suite: `swift test --package-path apps/macos/TodzKit` (290 tests in 20 suites at `2d11f33`). The live suite: `TODZ_LIVE_API_URL=http://localhost:8787 swift test --package-path apps/macos/TodzKit --filter LiveOwnerAPITests`.
+
+### A refused change: the forwarding proxy
+
+The app talks to `http://localhost:8787` (`TodzAPIBaseURL`). Start the server on 8788 instead (`--port 8788`), then this proxy on 8787 from any folder. It forwards every request and every WebSocket upgrade to 8788, and answers the first `REFUSALS` task `PATCH`es (title, notes, due date, order) with `404 {"error":"task_not_found"}`, which the app treats as a refusal:
+
+```
+UPSTREAM_PORT=8788 PROXY_PORT=8787 REFUSALS=2 node --input-type=module -e "
+import http from 'node:http';
+import net from 'node:net';
+const upstream = { host: '127.0.0.1', port: Number(process.env.UPSTREAM_PORT) };
+let refusals = Number(process.env.REFUSALS);
+const server = http.createServer((request, response) => {
+  const isTaskPatch = request.method === 'PATCH' && /^\/owner\/projects\/[^/]+\/tasks\/\d+$/.test(request.url);
+  if (isTaskPatch && refusals > 0) {
+    refusals -= 1;
+    request.resume();
+    response.writeHead(404, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ error: 'task_not_found', number: Number(request.url.split('/').pop()) }));
+    console.log('refused ' + request.method + ' ' + request.url);
+    return;
+  }
+  const forwarded = http.request({ ...upstream, method: request.method, path: request.url, headers: request.headers }, (answer) => {
+    response.writeHead(answer.statusCode, answer.headers);
+    answer.pipe(response);
+  });
+  forwarded.on('error', () => { response.writeHead(502); response.end(); });
+  request.pipe(forwarded);
+});
+server.on('upgrade', (request, socket, head) => {
+  const upstreamSocket = net.connect(upstream.port, upstream.host, () => {
+    const headerLines = Object.entries(request.headers).map(([name, value]) => name + ': ' + value).join('\r\n');
+    upstreamSocket.write(request.method + ' ' + request.url + ' HTTP/1.1\r\n' + headerLines + '\r\n\r\n');
+    upstreamSocket.write(head);
+    socket.pipe(upstreamSocket).pipe(socket);
+  });
+  upstreamSocket.on('error', () => socket.destroy());
+  socket.on('error', () => upstreamSocket.destroy());
+});
+server.listen(Number(process.env.PROXY_PORT));
+"
+```
+
+To refuse several changes in one flush: stop the proxy (the app goes offline), rename two tasks, then start the proxy with `REFUSALS=2`. Checked with a stub upstream on 2026-11-24: the first `PATCH` answered 404 with the body above, the second was forwarded, a `GET` was forwarded, and an upgrade got `101` and echoed through.
+
+### An agent's write while the window is open
+
+With the app signed in as `walker-1` and the server above, take a second session, the Inbox's id and a project key:
+
+```
+curl -s -X POST http://localhost:8787/owner/sessions -H 'Content-Type: application/json' -d '{"identity_token":"walker-1","time_zone":"America/Sao_Paulo"}'
+curl -s http://localhost:8787/owner/workspaces -H 'Authorization: Bearer <session>'
+curl -s -X POST http://localhost:8787/owner/projects/<inbox id>/keys -H 'Authorization: Bearer <session>'
+```
+
+Then, from `apps/api` so Node resolves `@modelcontextprotocol/client`, without writing a file:
+
+```
+KEY=<key> node --input-type=module -e "
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
+const client = new Client({ name: 'Claude Code', version: '1.0.0' });
+const transport = new StreamableHTTPClientTransport(new URL('http://localhost:8787/mcp'), { requestInit: { headers: { Authorization: 'Bearer ' + process.env.KEY } } });
+await client.connect(transport);
+console.log(JSON.stringify(await client.callTool({ name: 'add', arguments: { tasks: [{ title: 'From the agent' }] } })));
+await client.close();
+"
+```
+
+No ⌘R: the project's socket says `changed` and the window pulls. Other tools of the same client (`list`, `done`, `update`) change titles, due dates and states the same way.
+
+**Session ended.** Read `<secret>` from the session file and send `curl -X DELETE http://localhost:8787/owner/sessions/current -H 'Authorization: Bearer <secret>'`, or delete every session with `pnpm exec wrangler d1 execute directory --local --persist-to <state> --command "DELETE FROM sessions"` while the server is stopped.
 
 ## Red today, green after
 
+Each red row was committed alone; the text is what the red run printed, copied from the commit bodies. The lane sections below map each to its green commit.
+
 | Test | Red before the change because | Green after because |
 |------|--------------------------------|---------------------|
-| `<path>::<name>` |  |  |
+| `OwnerCodingTests` dates (`e8cbbad`) | `Expectation failed: try encodedText(instant) == "\(millisecondsOfInstant)"`; `Expectation failed: try OwnerCoding.decoder().decode(Date.self, from: data) == instant`; the request body tests were pins | `5ce0518` |
+| `OwnerModelsTests` round trip (`f031064`) | `TodzKit/OwnerModels.swift:101: Fatal error: TaskRecord.encode is not implemented; Owner.encode is not implemented` | `7c81049` |
+| `FileSyncStoreTests` (`d39f8c2`) | `TodzKit/FileSyncStore.swift:12: Fatal error: FileSyncStore.readOwner is not implemented; FileSyncStore.writeProject is not implemented; FileSyncStore.writeOwner is not implemented (process exited with unexpected signal code 5)` | `31994c5` |
+| `PendingChangeTests` (`0317081`) | `Fatal error: PendingChange.projectIdentifier is not implemented`; `DecodingError.dataCorrupted … TaskPatch is not implemented`; `EncodingError.invalidValue … PendingChange is not implemented`; two decoding failures were pins | `3dc434f` |
+| `OutboxTests` (`0c9459b`) | `Fatal error: Outbox.appending is not implemented`; `Fatal error: Outbox.head is not implemented` | `52ca7fe` |
+| `TaskBoardOverlayTests` (`c9fb1dc`) | `Fatal error: TaskBoard.applying is not implemented`; `Fatal error: TaskBoard.setting is not implemented` | `e49e616` |
+| `TaskViewsTests` pending (`33f4f05`) | `Fatal error: TaskViews.pendingTasks is not implemented`; `aPendingAddLeavesEveryTaskListAsItWas` was a pin | `8015afa` |
+| `ProjectFeedTests` (`f6e159e`) | `Fatal error: ProjectFeed.pull is not implemented` | `7f9e4a0` |
+| `ReconnectDelayTests` (`433119d`) | `Fatal error: ReconnectDelay.after is not implemented` | `f2cde9f` |
+| `SocketChangeSignalsTests` (`b481d46`) | `Fatal error: SocketChangeSignals.socketRequest is not implemented`; `Fatal error: SocketChangeSignals.watch is not implemented` | `1af2ed6` |
+| `AppModelTests+Cache` launch (`269e7e8`) | `Expectation failed: harness.model.phase == .ready`; `Expectation failed: harness.model.banner == nil`; `Expectation failed: harness.store.calls == [.readOutbox]`; `Fatal error: AppModel.waitingChangeCount is not implemented` | `5a495cb` |
+| `AppModelTests+Owners` (`ce28d60`) | `Expectation failed: harness.model.phase == .ready`; `isWatchingAtErase.value == false`; `isStoreErasedAtVaultErase.value == true`; `isUntouchedAtErase.value == true`; `harness.model.signInError == .unexpected`; `harness.store.routes().contains(.erase)`; `harness.store.owner == nil`; one pin | `93c6df1` |
+| `AppModelTests+Outbox` (`3859ae1`) | `Expectation failed: harness.service.calls.contains(.updateTask(… patch: .title("Waiting")))`; `harness.model.waitingChangeCount == 0`; `Fatal error: SendOutcome.of is not implemented` | `39f2c63` |
+| `AppModelTests+Pull` gates (`5423899`) | `Fatal error: AppModel.pullProject is not implemented` | `6146b42` |
+| `AppModelTests+Watch` (`fa5688f`) | `Expectation failed: harness.signals.opens.last == harness.watchKey(gardenIdentifier)`; six tests hung on a read, pause or cancel that never came (run stopped by hand) | `a1a3867` |
+| `AppModelTests+Cache` failures (`ea9768a`) | `Expectation failed: harness.store.calls.contains(.eraseProject(identifier: inboxIdentifier))`; `….contains(.writeOutbox(emptyOutbox))`; `harness.model.banner == .waitingChangesLost`; `Array(harness.store.routes().prefix(3)) == [.readOwner, .erase, .readOutbox]`; `harness.model.banner == .cacheNotSaved` | `658762c` |
+| `AppModelTests+Pull` status (`f39d02a`) | `Fatal error: AppModel.syncStatus is not implemented` | `965585f` |
+| `TaskBoardOverlayTests::aTaskReopenedAfterAMoveTakesItsPlaceByItsKeyAmongTheMovedTasks` (`8207230`) | `Expectation failed: try openTitles(applied) == ["B", "X", "Y", "A"]` | `61348c7` |
+| App views, G3 (`ad0a52f`, `c8848e4`, `2d11f33`) | no unit test: the app target has no test target and the `macos` gate runs `swift test` and `xcodebuild build` only, so the view logic of steps 19 and 20 (the Upcoming merge, the linger, the waiting line) is proven by the walk | — |
 
 ## Hypotheses to attack
 
-Every "it works" is a hypothesis the tester tries to break.
+Every "it works" is a hypothesis. The lane sections hold the model's; these are the window's.
 
-1. Hypothesis: <claim>. Break it by: <suggested attack>.
+1. Hypothesis: online and idle the toolbar shows only Refresh and the inspector toggle; offline it shows `Offline`, and `Offline · 1 change waiting` / `Offline · 3 changes waiting` as changes join; clicking it refreshes; it disappears when a socket reopens. Break it by: stopping the server, checking, renaming and reordering offline, then restarting it; watch for "1 changes".
+2. Hypothesis: VoiceOver announces `Offline` once when the item appears and nothing when it goes. Break it by: narrowing the window until the item moves to the toolbar's overflow and back while offline (a re-created item may announce again).
+3. Hypothesis: a pending add sits last in Inbox, a project or Today with `circle.dashed` and no id; it cannot be selected, ↑ ↓ skip it, Return, Space, ⌘↩, a double-click, a right-click and a drag do nothing on it; VoiceOver reads its title, then `Not saved yet`. Break it by: adding three tasks offline, then arrowing through the list and dragging a confirmed row below them.
+4. Hypothesis: on confirmation the pending row becomes a normal row in place, selected only if the selection did not move. Break it by: adding offline, selecting another task, then going online.
+5. Hypothesis: a task checked in Inbox, a project or Today stays where it was, filled and struck through, for about a second, then leaves; a second click within the second reopens it in place; in Today it never shows in Done Today and the open list at once. Break it by: checking three rows quickly, by Space, ⌘↩, the inspector's checkbox and the VoiceOver action; with Reduce Motion on (the linger stays, the slide goes).
+6. Hypothesis: a focused title or notes field the owner has typed in keeps the typed text when an agent changes that field; on commit the owner's text wins; a focused field the owner has not typed in takes the agent's value. Break it by: focusing the title, letting the MCP script change it, then leaving the field without typing (the agent's title must survive).
+7. Hypothesis: Sign Out signs out at once with no change waiting, and asks `Sign out and lose N changes?` when changes wait, from the app menu, the workspace switcher and the first-workspace screen; Return and Escape cancel; confirming shows Sign in with an empty cache. Break it by: offline with changes, pressing Return in the dialog.
+8. Hypothesis: the sign-in screen says `Your session has ended. Sign in again to send N waiting changes.` whenever changes wait, after a 401 and after a relaunch; with none waiting it shows the shell's notice. Break it by: the session-ended walk with one and with two changes.
+9. Hypothesis: one refused change shows `Your change wasn't saved.` with `todz now shows what it has saved.` and Dismiss; two refused in one flush show `2 changes weren't saved.`; the rows show the server's values. Break it by: the proxy with `REFUSALS=1`, then `REFUSALS=2`.
+10. Hypothesis: no row, checkbox, field or add field shows a spinner or goes read-only during a write; the add field clears on Return and keeps focus. Break it by: adding and editing quickly online and offline.
 
 ## Known gaps
 
-- <what the developer knows is missing or untested>
+- No socket ping (ADR 0029): a socket the network drops silently is noticed only by the next failure (a write, ⌘R, a pull); changes made meanwhile show on the next pull.
+- The view logic of steps 19 and 20 has no unit test (no app test target); the lead was asked whether to move the Upcoming merge and the linger into TodzKit with tests.
+- An Upcoming pending row cannot be produced from the window: an add carries no due date, or today's in Today, so `upcomingPendingDays` is empty in practice; the merge is there for a pending add with a later due date.
+- Dragging a row while another row lingers counts the lingering (done) row in the offsets, so the move can be anchored on a done task and come back refused.
+- Live inserts, moves and removals are applied without an explicit animation; whether the system `List` animates them is for the walk to see.
+- The offline announcement is posted when the item appears, so a toolbar that re-creates it (overflow) may announce again.
+- Counts are formatted in the Mac's locale (`1.000 changes` in Portuguese settings).
+- The G2 note that `changesNotSaved(count:)` is plain interpolation is outdated: it inflects since `ad0a52f`.
+- `AppModelTests+Races.swift:95` warns `expression of type 'Workspace?' is unused` (test target, not from this lane).
 
 ## Lane G1b: outbox, overlay, pull from a cursor, sockets (steps 5 to 11)
 
