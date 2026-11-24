@@ -9,7 +9,6 @@ calls="$scratch/calls.log"
 standard_input="$scratch/stdin.log"
 marker="$scratch/ran"
 body="$scratch/body.json"
-export PATH="$fakes:$PATH"
 export TODZ_CLOUDFLARE_SECURITY_BINARY="$fakes/security"
 export TODZ_CLOUDFLARE_CURL_BINARY="$fakes/curl"
 unset CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
@@ -62,9 +61,9 @@ expect_equal "the child's exit status is the wrapper's" "$?" "7"
 expect_equal "the caller's shell never receives the token" "${CLOUDFLARE_API_TOKEN-unset}" "unset"
 
 : > "$calls"
-output=$("$here/todz-cloudflare.sh" api GET "/zones/zone/dns_records?name=api.todz.app")
+output=$("$here/todz-cloudflare.sh" api GET "/zones/06490974636c535e2cbfd7c5b09925a5/dns_records?name=api.todz.app")
 expect_equal "api prints the JSON curl returned" "$output" '{"success":true}'
-expect_contains "api calls the versioned endpoint" "$(cat "$calls")" "$base/zones/zone/dns_records?name=api.todz.app"
+expect_contains "api calls the versioned endpoint" "$(cat "$calls")" "$base/zones/06490974636c535e2cbfd7c5b09925a5/dns_records?name=api.todz.app"
 expect_contains "api uses the method" "$(cat "$calls")" "-X GET"
 expect_contains "api reads its headers from standard input" "$(cat "$calls")" "-H @-"
 expect_lacks "api never puts the token in the arguments" "$(cat "$calls")" "fake-token-value"
@@ -72,13 +71,13 @@ expect_equal "the Authorization header travels on standard input" "$(cat "$stand
 expect_lacks "api sends no body without a file" "$(cat "$calls")" "--data"
 
 : > "$calls"
-"$here/todz-cloudflare.sh" api PATCH "/zones/zone/settings/always_use_https" "$body" > /dev/null
+"$here/todz-cloudflare.sh" api PATCH "/zones/06490974636c535e2cbfd7c5b09925a5/settings/always_use_https" "$body" > /dev/null
 expect_contains "api sends the body file" "$(cat "$calls")" "--data-binary @$body"
 expect_contains "api uses the method with a body" "$(cat "$calls")" "-X PATCH"
 expect_contains "api says the body is JSON" "$(cat "$calls")" "Content-Type: application/json"
 
 : > "$calls"
-"$here/todz-cloudflare.sh" api POST /zones/zone/anything "$scratch/missing.json" > /dev/null 2>&1
+"$here/todz-cloudflare.sh" api POST /zones/06490974636c535e2cbfd7c5b09925a5/anything "$scratch/missing.json" > /dev/null 2>&1
 expect_equal "a missing body file exits non-zero" "$?" "1"
 expect_equal "a missing body file never reaches curl" "$(grep -c '^curl' "$calls")" "0"
 "$here/todz-cloudflare.sh" api GET > /dev/null 2>&1
@@ -91,7 +90,7 @@ FAKE_SECURITY_TOKEN="" "$here/todz-cloudflare.sh" touch "$marker" > /dev/null 2>
 expect_equal "an empty token exits non-zero" "$?" "1"
 FAKE_SECURITY_MISSING=yes "$here/todz-cloudflare.sh" touch "$marker" > /dev/null 2>&1
 expect_equal "a missing Keychain item exits non-zero" "$?" "1"
-FAKE_SECURITY_TOKEN="" "$here/todz-cloudflare.sh" api GET /zones > /dev/null 2>&1
+FAKE_SECURITY_TOKEN="" "$here/todz-cloudflare.sh" api GET /user/tokens/verify > /dev/null 2>&1
 expect_equal "api with an empty token exits non-zero" "$?" "1"
 expect_equal "no command runs without a token" "$(test -e "$marker" && echo ran || echo clean)" "clean"
 expect_equal "no request goes out without a token" "$(grep -c '^curl' "$calls")" "0"
