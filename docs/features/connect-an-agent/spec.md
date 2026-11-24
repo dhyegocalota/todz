@@ -1,6 +1,6 @@
 # Connect an agent
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-24, by inheritance from [the v1 product design](../../product/README.md) (Order of delivery, item 9; macOS app → "Connect an agent: copy a ready command for Claude Code, Codex or Cursor, the server URL, the tool list, and the keys of the selected project with Revoke"; MCP server → a bearer key per project, shown once, stored as a digest), approved by the owner on 2026-11-23. The calls below that the product design does not make are an ADR or design decisions marked as the loop's calls and listed in the loop's questions for the owner
 **ADRs:** [0019](../../adr/0019-mcp-keys-are-prefixed-and-shown-once.md), [0022](../../adr/0022-the-owner-api-is-json-routes-and-the-app-builds-the-cross-project-views.md), [0024](../../adr/0024-the-macos-app-is-an-xcodegen-project-over-a-local-swift-package.md), [0034](../../adr/0034-the-key-screen-shows-a-new-key-once-inside-each-client-s-command.md)
