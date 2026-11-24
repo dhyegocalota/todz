@@ -15,6 +15,7 @@ The product stack and every product decision have not been made yet: they arrive
 
 ```
 apps/api                the Worker: the directory, one project store per project, routing from a credential to a project
+apps/macos              the native macOS app: an XcodeGen project whose Todz target holds the views, over the TodzKit Swift package
 libs/core               the task and project rules behind ports, no I/O
 libs/types              shared enums and constants, no logic
 tools/repository-shape  tests about the repository itself: README links, root entries, workflows, feature statuses, indexes, runbooks, scenarios, agent surfaces
