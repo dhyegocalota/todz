@@ -33,6 +33,7 @@ const EMAIL_SENDER_FACTORY_OF_KIND: Record<EmailSenderKind, EmailSenderFactory> 
 };
 
 export function isLocalOrigin(origin: string): boolean {
+  if (!URL.canParse(origin)) return false;
   return LOCAL_HOSTNAMES.includes(new URL(origin).hostname);
 }
 

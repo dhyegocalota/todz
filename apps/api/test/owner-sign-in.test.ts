@@ -677,7 +677,7 @@ describe('the welcome mail', () => {
     const response = await serveOwnerCall({
       call: signInCall({ identityToken: crypto.randomUUID(), timeZone: 'UTC' }),
       now: CLOCK_NOW,
-      workerEnv: welcomeEnv({ binding, settings: { SIGN_IN_PROVIDER: FAKE_PROVIDER } }),
+      workerEnv: welcomeEnv({ binding, settings: { SIGN_IN_PROVIDER: FAKE_PROVIDER, PUBLIC_ORIGIN } }),
     });
     expect(response.status).toBe(CREATED_STATUS);
     expect(sent).toEqual([]);
