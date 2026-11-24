@@ -67,6 +67,22 @@ extension AppModelTests {
         #expect(harness.model.selectedTask == nil)
     }
 
+    @Test func aLinkFollowedBeforeTheLaunchFinishesRevealsTheTaskOnceTodayIsLoaded() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.service.tasksOfProject[inboxIdentifier] = [MutableTask(number: 1, title: "Due today", dueDate: today).record]
+        harness.service.suspend(.updateOwner)
+        harness.vault.secret = harness.session
+        let launching = Task { await harness.model.launch() }
+        await harness.service.held(.updateOwner)
+        harness.model.follow(.task(dueTodayTask))
+        harness.service.resume(.updateOwner)
+        await launching.value
+        await harness.model.linkFollowing?.value
+        #expect(harness.model.selectedItem == .today)
+        #expect(harness.model.selectedTask == dueTodayTask)
+    }
+
     @Test func aLinkNeverWrites() async throws {
         let harness = try await linkHarness()
         harness.model.follow(.task(dueTodayTask))

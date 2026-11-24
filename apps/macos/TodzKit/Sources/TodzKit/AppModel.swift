@@ -50,6 +50,7 @@ import Observation
     @ObservationIgnored var queuedPulls: Set<String> = []
     @ObservationIgnored var widgetPublication: Task<Void, Never>?
     @ObservationIgnored var widgetIntake: Task<Void, Never>?
+    @ObservationIgnored var linkFollowing: Task<Void, Never>?
     @ObservationIgnored var publishedWidgetSnapshot: WidgetSnapshotState?
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
