@@ -154,6 +154,14 @@ export class SqliteTaskStore implements TaskStore {
     return row.last_issued_number;
   }
 
+  lastChangeNumber(): number | null {
+    throw new Error('lastChangeNumber is not implemented');
+  }
+
+  listChangesSince({ cursor, limit }: { cursor: number; limit: number }): { task: Task; changeNumber: number }[] {
+    throw new Error(`listChangesSince is not implemented for ${cursor} and ${limit}`);
+  }
+
   insertTask(task: Task): void {
     this.sql.exec(
       `INSERT INTO tasks (${TASK_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

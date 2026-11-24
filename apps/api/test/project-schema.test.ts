@@ -1,8 +1,10 @@
 import { runInDurableObject } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
 import { PROJECT_SCHEMA_VERSION, VERSION_ONE_STATEMENTS, applyProjectSchema } from '../src/project-schema';
-import { newProjectStub } from './task-fixtures';
+import { SqliteTaskStore } from '../src/sqlite-task-store';
+import { buildTask, newProjectStub } from './task-fixtures';
 
+const LIST_LIMIT = 10;
 const UPGRADED_VERSION = 2;
 const VERSION_ONE = 1;
 const TABLES_TO_DROP = ['task_history', 'tasks', 'task_counter', 'change_counter', 'schema_version'];
@@ -77,6 +79,23 @@ describe('applyProjectSchema', () => {
       { number: 2, change_number: 2 },
     ]);
     expect(observed.counter).toEqual([2]);
+  });
+
+  test('an upgraded store returns both tasks at cursor 0, reports change 2 and stamps the next task 3', async () => {
+    const observed = await runInDurableObject(newProjectStub(), (_instance, state) => {
+      versionOneStore({ sql: state.storage.sql, taskCount: 2 });
+      applyProjectSchema(state.storage);
+      const store = new SqliteTaskStore(state.storage.sql);
+      const lastBefore = store.lastChangeNumber();
+      const atCursorZero = store.listChangesSince({ cursor: 0, limit: LIST_LIMIT }).map(({ task }) => task.number);
+      store.insertTask(buildTask({ number: 3, orderKey: 'a3' }));
+      return {
+        lastBefore,
+        atCursorZero,
+        afterTwo: store.listChangesSince({ cursor: 2, limit: LIST_LIMIT }).map(({ changeNumber }) => changeNumber),
+      };
+    });
+    expect(observed).toEqual({ lastBefore: 2, atCursorZero: [1, 2], afterTwo: [3] });
   });
 
   test('a version 1 store without tasks upgrades with an empty counter', async () => {
