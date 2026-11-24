@@ -31,6 +31,7 @@ struct OwnerErrorBody: Decodable {
         case .ruleViolated: issue.map { .ruleViolated(issue: $0, index: index) }
         case .timeZoneInvalid: .timeZoneInvalid
         case .signInUnavailable: .signInUnavailable
+        case .tooManyLinks: .tooManyLinks
         }
     }
 }

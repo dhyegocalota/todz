@@ -13,6 +13,12 @@ export async function seedOwner(timeZone = 'UTC'): Promise<string> {
   return ownerId;
 }
 
+export async function seedEmailIdentity({ ownerId, email }: { ownerId: string; email: string }): Promise<void> {
+  await env.DIRECTORY.prepare('INSERT INTO owner_identities (provider, subject, owner_id, created_at) VALUES (?, ?, ?, ?)')
+    .bind('email', email, ownerId, CLOCK_NOW)
+    .run();
+}
+
 export async function seedWorkspace({ ownerId }: { ownerId: string }): Promise<string> {
   const workspaceId = crypto.randomUUID();
   await env.DIRECTORY.prepare('INSERT INTO workspaces (id, owner_id, name, created_at) VALUES (?, ?, ?, ?)')

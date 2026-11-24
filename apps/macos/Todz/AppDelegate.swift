@@ -8,6 +8,7 @@ private let cacheFolderName = "Cache"
     let model = AppModel(
         service: OwnerAPI(baseURL: AppConfiguration.baseURL),
         vault: FileSessionVault(folder: AppConfiguration.sessionFolder),
+        pendingLinks: FilePendingLinkVault(folder: AppConfiguration.sessionFolder),
         store: FileSyncStore(folder: AppConfiguration.sessionFolder.appending(path: cacheFolderName)),
         widgetStore: AppConfiguration.widgetStore,
         reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
@@ -28,8 +29,11 @@ private let cacheFolderName = "Cache"
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        guard let link = urls.compactMap(WidgetLink.init(url:)).last else { return }
-        windowState.waitingLink = link
+        guard let link = urls.compactMap(IncomingLink.init(url:)).last else { return }
+        switch link {
+        case let .signIn(signInLink): windowState.waitingSignInLink = signInLink
+        case let .widget(widgetLink): windowState.waitingLink = widgetLink
+        }
     }
 
     // NB ADR 0031: the app keeps running in the menu bar when the main window closes; ⌘Q quits.

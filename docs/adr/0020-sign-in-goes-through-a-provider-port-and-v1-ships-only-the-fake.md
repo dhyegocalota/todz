@@ -1,6 +1,6 @@
 # 0020. Sign-in goes through a provider port, and v1 ships only the fake
 
-- Status: Proposed
+- Status: Proposed; amended by [0040](0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md) (§1 the port's input, §3 a deployed Worker may name `email`)
 - Date: 2026-11-23
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) may overturn it
 - Inspired by: [the v1 product design](../product/README.md) (Calls made without the owner: Sign in with Apple sits behind the sign-in port until the paid Apple Developer membership exists; Stack: a fake provider in development and tests)

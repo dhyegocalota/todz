@@ -1,12 +1,14 @@
-import { DueWindow, MILLISECONDS_PER_DAY } from '@todz/types';
+import { DueWindow, MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { env, exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
+import { generateCredentialSecret } from '../src/credential-secret';
 import type { Env } from '../src/env';
 import { McpToolName } from '../src/mcp-copy';
 import { calendarDateInTimeZone } from '../src/owner-today';
 import { issueProjectKey } from '../src/project-keys';
 import { seedIssuedKey, seedProject } from './directory-seed';
+import { askedLink, freshAddress, linkRows, redeemLink } from './email-sign-in-client';
 import { ClientEra, callTool, connectClient } from './mcp-client';
 import { ownerCall, serveOwnerCall, signInCall, signInOwner } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
@@ -17,6 +19,7 @@ const KIRITIMATI_TIME_ZONE = 'Pacific/Kiritimati';
 const PAGO_PAGO_TIME_ZONE = 'Pacific/Pago_Pago';
 const SESSION_LIFETIME_MS = 90 * MILLISECONDS_PER_DAY;
 const SESSIONS_PER_OWNER_MAX = 20;
+const LINK_LIFETIME_MS = 15 * MILLISECONDS_PER_MINUTE;
 const FAKE_PROVIDER = 'fake';
 const OK_STATUS = 200;
 const CREATED_STATUS = 201;
@@ -205,6 +208,22 @@ describe('POST /owner/sessions', () => {
     expect(await ownerCount()).toBe(owners);
   });
 
+  test.each([['text/plain'], ['application/x-www-form-urlencoded']])(
+    'a body of content type %j answers 400 invalid_request and creates no owner',
+    async (contentType) => {
+      const owners = await ownerCount();
+      const response = await ownerCall({
+        method: 'POST',
+        path: '/owner/sessions',
+        rawBody: JSON.stringify({ identity_token: 'maria', time_zone: 'UTC' }),
+        headers: { 'Content-Type': contentType },
+      });
+      expect(response.status).toBe(BAD_REQUEST_STATUS);
+      expect(await response.json()).toEqual(INVALID_REQUEST);
+      expect(await ownerCount()).toBe(owners);
+    },
+  );
+
   test('a stray or invalid Authorization header does not matter to sign-in', async () => {
     const response = await ownerCall({ ...signInCall({ identityToken: crypto.randomUUID(), timeZone: 'UTC' }), token: 'unknown' });
     expect(response.status).toBe(CREATED_STATUS);
@@ -240,9 +259,16 @@ describe('POST /owner/sessions', () => {
     ['body before identity', FAKE_PROVIDER, { body: { identity_token: 'a b' } }, BAD_REQUEST_STATUS, INVALID_REQUEST],
     ['body before time zone', FAKE_PROVIDER, { body: { identity_token: 'maria', time_zone: 5 } }, BAD_REQUEST_STATUS, INVALID_REQUEST],
     [
-      'identity before time zone',
+      'time zone before identity',
       FAKE_PROVIDER,
       { body: { identity_token: 'a b', time_zone: 'Nope/Zone' } },
+      UNPROCESSABLE_STATUS,
+      TIME_ZONE_INVALID,
+    ],
+    [
+      'link verifier shape before identity',
+      FAKE_PROVIDER,
+      { body: { identity_token: 'maria', link_verifier: 'a b', time_zone: 'UTC' } },
       UNAUTHORIZED_STATUS,
       IDENTITY_REJECTED,
     ],
@@ -313,6 +339,113 @@ describe('POST /owner/sessions', () => {
     await expect(answer).rejects.toThrow(failure.message);
     expect(await identityCount(identityToken)).toBe(0);
     expect(await ownerCount()).toBe(owners);
+  });
+});
+
+describe('POST /owner/sessions with a sign-in link', () => {
+  async function emailIdentityOwnerId(address: string): Promise<string> {
+    const row = await env.DIRECTORY.prepare('SELECT owner_id FROM owner_identities WHERE provider = ? AND subject = ?')
+      .bind('email', address)
+      .first<IdentityRow>();
+    if (row === null) throw new Error('the identity should exist');
+    return row.owner_id;
+  }
+
+  async function redeemedStatus(link: { token: string; verifier?: string; now?: number }): Promise<number> {
+    return (await redeemLink(link)).status;
+  }
+
+  test('a link answers 201 and an owner keyed by the address, with a session that reads the owner', async () => {
+    const { token, verifier, email } = await askedLink({ email: `Maria.${crypto.randomUUID()}@Example.com` });
+    const response = await redeemLink({ token, verifier, timeZone: SAO_PAULO_TIME_ZONE });
+    expect(response.status).toBe(CREATED_STATUS);
+    const body = await response.json<{ session_token: string; owner: { id: string; time_zone: string } }>();
+    expect(body.session_token).toMatch(SESSION_TOKEN_PATTERN);
+    expect(body.owner.time_zone).toBe(SAO_PAULO_TIME_ZONE);
+    expect(await emailIdentityOwnerId(email.toLowerCase())).toBe(body.owner.id);
+    expect((await readOwner(body.session_token)).status).toBe(OK_STATUS);
+  });
+
+  test('marks the link spent at the moment of redeeming', async () => {
+    const { token, verifier, email } = await askedLink();
+    await redeemLink({ token, verifier, now: CLOCK_NOW + 1 });
+    expect((await linkRows(email)).map((row) => row.consumed_at)).toEqual([CLOCK_NOW + 1]);
+  });
+
+  test('a second link for the same address finds the same owner', async () => {
+    const email = freshAddress();
+    const first = await askedLink({ email });
+    const second = await askedLink({ email });
+    const firstBody = await (await redeemLink(first)).json<{ owner: { id: string } }>();
+    const secondBody = await (await redeemLink(second)).json<{ owner: { id: string } }>();
+    expect(secondBody.owner.id).toBe(firstBody.owner.id);
+  });
+
+  test('a spent link answers 401 identity_rejected and opens no second session', async () => {
+    const link = await askedLink();
+    expect(await redeemedStatus(link)).toBe(CREATED_STATUS);
+    const response = await redeemLink(link);
+    expect(response.status).toBe(UNAUTHORIZED_STATUS);
+    expect(await response.json()).toEqual(IDENTITY_REJECTED);
+    expect(await sessionCount(await emailIdentityOwnerId(link.email))).toBe(1);
+  });
+
+  test('a link redeems one millisecond before it expires and answers 401 at the moment it expires', async () => {
+    const early = await askedLink();
+    const late = await askedLink();
+    expect(await redeemedStatus({ ...early, now: CLOCK_NOW + LINK_LIFETIME_MS - 1 })).toBe(CREATED_STATUS);
+    expect(await redeemedStatus({ ...late, now: CLOCK_NOW + LINK_LIFETIME_MS })).toBe(UNAUTHORIZED_STATUS);
+  });
+
+  test.each([
+    ['an unknown token', async () => ({ token: generateCredentialSecret(), verifier: generateCredentialSecret() })],
+    ['a wrong verifier', async () => ({ ...(await askedLink()), verifier: generateCredentialSecret() })],
+    ['no verifier', async () => ({ ...(await askedLink()), verifier: undefined })],
+    ['a token that is not 43 characters', async () => ({ ...(await askedLink()), token: 'short' })],
+    ['a malformed verifier', async () => ({ ...(await askedLink()), verifier: 'a b' })],
+    ['an empty verifier', async () => ({ ...(await askedLink()), verifier: '' })],
+  ])('%s answers 401 identity_rejected and creates no owner', async (_name, makeLink) => {
+    const link = await makeLink();
+    const owners = await ownerCount();
+    const response = await redeemLink(link);
+    expect(response.status).toBe(UNAUTHORIZED_STATUS);
+    expect(await response.json()).toEqual(IDENTITY_REJECTED);
+    expect(await ownerCount()).toBe(owners);
+  });
+
+  test('a wrong verifier does not spend the link', async () => {
+    const link = await askedLink();
+    expect(await redeemedStatus({ ...link, verifier: generateCredentialSecret() })).toBe(UNAUTHORIZED_STATUS);
+    expect(await redeemedStatus(link)).toBe(CREATED_STATUS);
+  });
+
+  test('two concurrent redeems of one link give one 201 and one 401', async () => {
+    const link = await askedLink();
+    const statuses = await Promise.all([redeemedStatus(link), redeemedStatus(link)]);
+    expect(statuses.sort()).toEqual([CREATED_STATUS, UNAUTHORIZED_STATUS]);
+  });
+
+  test('a bad time zone answers 422 and the same link then signs in', async () => {
+    const link = await askedLink();
+    const owners = await ownerCount();
+    const rejected = await redeemLink({ ...link, timeZone: 'Nope/Zone' });
+    expect(rejected.status).toBe(UNPROCESSABLE_STATUS);
+    expect(await rejected.json()).toEqual(TIME_ZONE_INVALID);
+    expect(await ownerCount()).toBe(owners);
+    expect(await redeemedStatus(link)).toBe(CREATED_STATUS);
+  });
+
+  test('the email provider refuses a fake identity token', async () => {
+    expect(await redeemedStatus({ token: crypto.randomUUID(), verifier: generateCredentialSecret() })).toBe(UNAUTHORIZED_STATUS);
+  });
+
+  test('the fake provider ignores a verifier', async () => {
+    const response = await ownerCall({
+      method: 'POST',
+      path: '/owner/sessions',
+      body: { identity_token: crypto.randomUUID(), link_verifier: generateCredentialSecret(), time_zone: 'UTC' },
+    });
+    expect(response.status).toBe(CREATED_STATUS);
   });
 });
 

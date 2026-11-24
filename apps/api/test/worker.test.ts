@@ -4,7 +4,16 @@ import { describe, expect, test } from 'vitest';
 const WORKER_ORIGIN = 'https://api.todz.test';
 const NOT_FOUND_STATUS = 404;
 const UNAUTHORIZED_STATUS = 401;
-const DIRECTORY_TABLES = ['mcp_sessions', 'owner_identities', 'owners', 'project_keys', 'projects', 'sessions', 'workspaces'];
+const DIRECTORY_TABLES = [
+  'mcp_sessions',
+  'owner_identities',
+  'owners',
+  'project_keys',
+  'projects',
+  'sessions',
+  'sign_in_links',
+  'workspaces',
+];
 const TASK_COLUMNS = ['title', 'notes', 'note', 'due_date', 'order_key'];
 
 type TableRow = { name: string };
@@ -32,7 +41,7 @@ describe('the worker', () => {
 });
 
 describe('the directory', () => {
-  test('lists exactly the seven directory tables', async () => {
+  test('lists exactly the eight directory tables', async () => {
     expect(await directoryTables()).toEqual(DIRECTORY_TABLES);
   });
 

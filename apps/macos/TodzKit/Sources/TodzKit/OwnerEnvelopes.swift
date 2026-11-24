@@ -52,3 +52,7 @@ struct HistoryAnswer: Decodable {
 struct KeysAnswer: Decodable {
     let keys: [ProjectKey]
 }
+
+struct SignInMethodAnswer: Decodable {
+    let method: SignInMethod
+}

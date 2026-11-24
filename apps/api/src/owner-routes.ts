@@ -14,6 +14,8 @@ export enum RouteParam {
 
 export enum OwnerRoute {
   SignIn = 'sign_in',
+  ReadSignInMethod = 'read_sign_in_method',
+  RequestSignInLink = 'request_sign_in_link',
   SignOut = 'sign_out',
   ReadOwner = 'read_owner',
   UpdateOwner = 'update_owner',
@@ -49,6 +51,8 @@ function definition({ method, pathname }: { method: HttpMethod; pathname: string
 
 export const OWNER_ROUTES: Record<OwnerRoute, OwnerRouteDefinition> = {
   [OwnerRoute.SignIn]: definition({ method: HttpMethod.Post, pathname: '/owner/sessions' }),
+  [OwnerRoute.ReadSignInMethod]: definition({ method: HttpMethod.Get, pathname: '/owner/sign-in-method' }),
+  [OwnerRoute.RequestSignInLink]: definition({ method: HttpMethod.Post, pathname: '/owner/sign-in-links' }),
   [OwnerRoute.SignOut]: definition({ method: HttpMethod.Delete, pathname: '/owner/sessions/current' }),
   [OwnerRoute.ReadOwner]: definition({ method: HttpMethod.Get, pathname: '/owner' }),
   [OwnerRoute.UpdateOwner]: definition({ method: HttpMethod.Patch, pathname: '/owner' }),

@@ -6,11 +6,13 @@ const ROUTING_MODULE = 'apps/api/src/project-routing.ts';
 const ENV_MODULE = 'apps/api/src/env.ts';
 const WRANGLER_CONFIGURATION = 'apps/api/wrangler.jsonc';
 const SIGN_IN_PROVIDER_VARIABLE = 'SIGN_IN_PROVIDER';
+const EMAIL_SENDER_VARIABLE = 'EMAIL_SENDER';
 const PACKAGE_MANIFEST = 'apps/api/package.json';
 const DEV_SCRIPT = 'dev';
 const MIGRATIONS_COMMAND = 'wrangler d1 migrations apply directory --local';
 const DEV_COMMAND = 'wrangler dev';
 const CONSOLE_IDENTIFIER = /\bconsole\b/;
+const CONSOLE_EMAIL_SENDER = 'apps/api/src/email-sender.ts';
 const PROJECT_STORE_IDENTIFIER = /\bPROJECT_STORE\b/;
 
 const sourceFiles = repositoryFiles(API_SOURCE_FOLDER);
@@ -24,12 +26,16 @@ describe('the api source', () => {
     expect(sourceFiles.length).toBeGreaterThan(0);
   });
 
-  test('no file names console, so no log carries a task, a secret or a digest', () => {
-    expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([]);
+  test('only the development email sender names console, so no other log carries a task, a secret or a digest', () => {
+    expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([CONSOLE_EMAIL_SENDER]);
   });
 
   test('the wrangler configuration never names the sign-in provider, so a deployed worker has none', () => {
     expect(readRepositoryFile(WRANGLER_CONFIGURATION)).not.toContain(SIGN_IN_PROVIDER_VARIABLE);
+  });
+
+  test('the wrangler configuration never names the email sender, so a deployed worker has none', () => {
+    expect(readRepositoryFile(WRANGLER_CONFIGURATION)).not.toContain(EMAIL_SENDER_VARIABLE);
   });
 
   test('the dev script applies the directory migrations locally before it starts wrangler dev', () => {
