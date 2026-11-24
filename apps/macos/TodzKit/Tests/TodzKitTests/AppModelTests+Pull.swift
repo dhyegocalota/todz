@@ -104,4 +104,51 @@ extension AppModelTests {
         #expect(harness.model.banner == .someProjectsFailed)
         #expect(harness.service.calls.filter { $0.projectIdentifier == launchIdentifier }.map(\.cursor) == [0])
     }
+
+    @Test func theStatusIsOfflineWithTheWaitingCountWhileSendsCannotReachTheServer() async throws {
+        let harness = try await pullHarness()
+        #expect(harness.model.syncStatus == .online)
+        harness.service.failures[.completeTasks] = .unreachable
+        await harness.model.complete(task: TaskKey(projectIdentifier: inboxIdentifier, number: 1))
+        await harness.pause.started()
+        #expect(harness.model.syncStatus == .offline(waiting: 1))
+        await harness.model.updateTitle(task: TaskKey(projectIdentifier: inboxIdentifier, number: 2), title: "B")
+        await harness.pause.started(count: 2)
+        #expect(harness.model.syncStatus == .offline(waiting: 2))
+        harness.service.failures = [:]
+        harness.pause.release()
+        await harness.flushed()
+        #expect(harness.model.syncStatus == .online)
+    }
+
+    @Test func aSendThatFailsTransientlyIsOffline() async throws {
+        let harness = try await pullHarness()
+        harness.service.failures[.completeTasks] = .unexpected(status: 503)
+        await harness.model.complete(task: TaskKey(projectIdentifier: inboxIdentifier, number: 1))
+        await harness.pause.started()
+        #expect(harness.model.syncStatus == .offline(waiting: 1))
+    }
+
+    @Test(arguments: [OwnerAPIError.unreachable, .unexpected(status: 500)])
+    func aPullThatFailsIsOfflineAndTheNextAnswerIsOnline(failure: OwnerAPIError) async throws {
+        let harness = try await pullHarness()
+        harness.service.failures[.readChanges] = failure
+        await harness.model.refresh()
+        #expect(harness.model.syncStatus == .offline(waiting: 0))
+        harness.service.failures = [:]
+        await harness.model.refresh()
+        #expect(harness.model.syncStatus == .online)
+    }
+
+    @Test func aCachedLaunchWithTheServerDownIsOffline() async throws {
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme")
+        harness.cache([acme], active: acme)
+        harness.cacheTasks(projectIdentifier: inboxIdentifier, count: 1, cursor: 1)
+        harness.service.failures[.updateOwner] = .unreachable
+        harness.service.failures[.listWorkspaces] = .unreachable
+        await harness.launchedFromCache()
+        #expect(harness.model.syncStatus == .offline(waiting: 0))
+        #expect(harness.model.banner == nil)
+    }
 }

@@ -5,6 +5,10 @@ extension AppModel {
         refreshesInFlight > 0
     }
 
+    public var syncStatus: SyncStatus {
+        fatalError("AppModel.syncStatus is not implemented")
+    }
+
     public func refresh() async {
         guard let activeWorkspace else { return }
         refreshesInFlight += 1
