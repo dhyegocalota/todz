@@ -9,7 +9,13 @@ struct MenuBarPopover: View {
     var body: some View {
         screen
             .environment(panel)
-            .background(MenuBarPanelReader(panel: panel) { Task { focus = .addField } })
+            .background(
+                MenuBarPanelReader(
+                    panel: panel,
+                    onBecomeKey: { Task { focus = .addField } },
+                    onWorkspaceNumber: { number in Task { await model.switchWorkspace(number: number) } }
+                )
+            )
             .task { await model.launch() }
     }
 

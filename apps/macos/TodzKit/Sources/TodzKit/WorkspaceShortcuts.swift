@@ -12,7 +12,8 @@ public enum WorkspaceShortcuts {
     }
 
     public static func number(forKey key: String) -> Int? {
-        fatalError("number(forKey:) is not implemented")
+        guard let number = Int(key), numbers.contains(number) else { return nil }
+        return number
     }
 
     public static func lastNumber(of workspaces: [Workspace]) -> Int {
