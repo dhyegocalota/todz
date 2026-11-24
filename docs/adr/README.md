@@ -64,3 +64,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0041](0041-outgoing-email-goes-through-a-port-with-a-console-sender-for-development.md) | Outgoing email goes through a port, with a console sender for development | Proposed | 2026-11-24 |
 | [0042](0042-emails-are-react-email-templates-rendered-at-build-time-into-a-generated-module.md) | Emails are React Email templates, rendered at build time into a generated module | Proposed | 2026-11-24 |
 | [0043](0043-mail-leaves-through-cloudflare-email-service-from-noreply-at-todz-app.md) | Mail leaves through Cloudflare Email Service, from noreply@todz.app | Proposed | 2026-11-24 |
+| [0044](0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md) | The Wrangler configuration is production on api.todz.app, and development overrides it | Proposed | 2026-11-24 |
