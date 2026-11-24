@@ -136,6 +136,8 @@ describe('GET /owner/projects/:projectId/changes', () => {
     ['a cursor that is not a number', '?cursor=abc'],
     ['a cursor with a leading zero', '?cursor=01'],
     ['an empty cursor', '?cursor='],
+    ['two valid cursors', '?cursor=1&cursor=2'],
+    ['a valid cursor then an invalid one', '?cursor=0&cursor=abc'],
     ['a cursor above the safe integers', `?cursor=${UNSAFE_CURSOR}`],
   ])('%s answers 400 invalid_request', async (_name, query) => {
     const project = await createOwnedProject();

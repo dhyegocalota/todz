@@ -225,6 +225,9 @@ describe('PATCH /owner/projects/:projectId/tasks/:number', () => {
     ['a placement kind that does not exist', { body: { placement: { kind: 'middle' } } }],
     ['a before placement without an anchor', { body: { placement: { kind: 'before' } } }],
     ['an anchor that is not a number', { body: { placement: { kind: 'before', anchor: 'T-1' } } }],
+    ['a fractional anchor', { body: { placement: { kind: 'before', anchor: 1.5 } } }],
+    ['a zero anchor', { body: { placement: { kind: 'after', anchor: 0 } } }],
+    ['a negative anchor', { body: { placement: { kind: 'after', anchor: -3 } } }],
   ])('%s answers 400 invalid_request', async (_name, payload) => {
     const project = await createOwnedProject();
     await addTitled({ project, titles: ['Task'] });
@@ -283,6 +286,12 @@ describe('POST /owner/projects/:projectId/tasks/complete and /reopen', () => {
     ['complete with a note that is not text', '/tasks/complete', { numbers: [1], note: 5 }],
     ['reopen without numbers', '/tasks/reopen', {}],
     ['reopen with numbers that are not numbers', '/tasks/reopen', { numbers: ['1'] }],
+    ['complete with a fractional number', '/tasks/complete', { numbers: [1.5] }],
+    ['complete with a negative number', '/tasks/complete', { numbers: [-3] }],
+    ['complete with zero', '/tasks/complete', { numbers: [0] }],
+    ['reopen with a fractional number', '/tasks/reopen', { numbers: [1.5] }],
+    ['reopen with a negative number', '/tasks/reopen', { numbers: [-3] }],
+    ['reopen with zero', '/tasks/reopen', { numbers: [0] }],
   ])('%s answers 400 invalid_request', async (_name, path, body) => {
     const project = await createOwnedProject();
     const response = await projectCall({ project, method: 'POST', path, body });
