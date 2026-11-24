@@ -67,7 +67,7 @@ extension AppModelTests {
         await harness.signals.cancelled(harness.watchKey(inboxIdentifier))
     }
 
-    @Test func aSignInWhoseEraseFailsFailsAndLeavesTheVaultUntouched() async throws {
+    @Test func aSignInWhoseEraseFailsFailsSignsTheIssuedSessionOutAndLeavesTheVaultUntouched() async throws {
         let harness = try harnessWithAWaitingChange()
         harness.store.owner = nil
         harness.store.failures[.erase] = .unwritable
@@ -78,7 +78,7 @@ extension AppModelTests {
         #expect(harness.model.phase == .signedOut(notice: nil))
         #expect(harness.vault.secret == nil)
         #expect(harness.vault.eraseCount == 0)
-        #expect(harness.service.routes() == [.signIn])
+        #expect(harness.service.calls.dropFirst() == [.signOut(session: harness.service.issuedSession.sessionToken)])
     }
 
     @Test func aSignInAsTheCachesOwnerReopensTheCachedWindowThenPulls() async throws {
