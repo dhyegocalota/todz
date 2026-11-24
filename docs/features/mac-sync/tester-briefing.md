@@ -349,3 +349,25 @@ The earlier known gaps "a 404 on a pull does not ask for a workspace reload" and
 - Fix 1: a trigger that arrives while a listing runs requests no reload; if that listing's confirmation failed, the next trigger after it retries.
 - Fix 3: with sockets blocked and no HTTP traffic, the second failure after an answer still marks Offline; the status stays Offline until the next answer.
 - Fix 6: after fix 1's guard, a newer reload can no longer start while another lists; the test reaches the race by cancelling through `stopWatching()` before the first reload runs.
+
+## Re-review fixes (lane `lane/mac-sync-rereview`)
+
+The unit suite: 333 tests in 22 suites, green three runs in a row; the app builds.
+
+| Fix | What changed | Red text | Commits |
+|---|---|---|---|
+| 1. One failed `PATCH /owner` stalls the outbox on a cached launch | A workspace listing that ends with the owner unconfirmed and a change waiting schedules one reload after `ReconnectDelay.after(attempt:)` (`retryOwnerConfirmation()` in `AppModel+Watch.swift`), the attempt growing per failed confirmation and reset on confirmation; `stopWatching()` cancels it. ADR 0027 point 4 says so. `aLaunchWhoseOwnerUpdateFailsOnceConfirmsOnALaterPullAndSends` became `aLaunchWhoseOwnerUpdateFailsOnceConfirmsAfterTheReconnectDelayAndSends` (no explicit pull); `anOwnerUpdateThatKeepsFailingIsTriedAgainAfterGrowingDelays`, `aSignOutCancelsTheOwnerUpdateWaitingToBeTriedAgain` are new | `Expectation failed: harness.model.ownerConfirmationRetry` (all three; the red commit adds the handle, unset) | 61ffaa6 → c51afab |
+| 2. Offline on the first socket failure after answered pulls | A watch starts with `isWatchAnswered` set to `hasServerAnswered`. `anUnreachableWatchMarksTheModelOfflineBeforeItReconnects` now fails its watch before any answer (a cached launch held at `PATCH /owner`); `anAnswerBetweenTwoWatchFailuresKeepsTheModelOnline` starts from the second failure. New `aWatchsFirstFailureAfterAnsweredPullsKeepsTheModelOnline` | `Expectation failed: harness.model.syncStatus == .online` | 3fa2bfe → 8fbea77 |
+| 3. The refused zone's owner read was tested only with the same owner | `aLaunchWhoseZoneIsRefusedAndWhoseOwnerReadNamesAnotherOwnerErasesTheCacheAndSendsNothing`; mutation: ignoring the read's answer turns it red at the erase, the count, the titles and the stored owner | pin | 48be545 |
+
+### Hypotheses to attack
+
+1. Hypothesis: a cached launch whose `PATCH /owner` fails once (a bare 503 at a proxy), with the sockets already open and changes waiting, sends them about one second later with nothing touched. Break it by: that proxy, then waiting; `PATCH /owner`, `GET /owner/workspaces`, then the changes, and the status turns online.
+2. Hypothesis: while `PATCH /owner` keeps failing, the asks space out 1, 2, 4 … 30 seconds and stop after a sign-out.
+3. Hypothesis: behind a proxy that blocks socket upgrades, the status stays online after the launch's pulls through the first reconnect, and turns Offline only after a failure with no HTTP answer since the one before.
+
+### Known gaps
+
+- D1 changes shape: with the server up and then stopped and nothing touched, Offline now shows at the second socket failure (after the first reconnect delay), not the first.
+- Fix 1: a workspace switch cancels the scheduled ask; the switch's own pulls ask again when they answer.
+- Fix 1: once a session's owner is confirmed it is never unconfirmed, so the reset on confirmation has no observable test.
