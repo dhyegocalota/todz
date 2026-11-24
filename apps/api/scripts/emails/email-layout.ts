@@ -1,4 +1,4 @@
-import { Body, Column, Container, Head, Hr, Html, Img, Preview, Row, Section, Text } from '@react-email/components';
+import { Body, Column, Container, Head, Hr, Html, Img, Preview, Row, Section, Text } from 'react-email';
 import { createElement, type PropsWithChildren, type ReactElement } from 'react';
 import { EMAIL_BRAND_NAME } from './email-layout-copy';
 import {

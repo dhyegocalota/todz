@@ -40,6 +40,13 @@ struct AddressSlot: View {
             await Task.yield()
             isEmailFocused = true
         }
+        .onChange(of: model.isRequestingLink) {
+            guard !model.isRequestingLink, model.signInError != nil else { return }
+            Task {
+                await Task.yield()
+                isEmailFocused = true
+            }
+        }
         .onChange(of: controlActiveState) {
             guard controlActiveState == .key else { return }
             isEmailFocused = true

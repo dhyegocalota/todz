@@ -24,6 +24,18 @@ describe('the cloudflare sender', () => {
     expect(sent).toEqual([{ ...MAIL, from: { name: 'todz', email: 'noreply@todz.app' }, replyTo: 'hello@todz.app' }]);
   });
 
+  test('passes an address with brackets only as the structured to field', async () => {
+    const { binding, sent } = recordingBinding();
+    const sender = emailSenderOf({
+      configured: 'cloudflare',
+      publicOrigin: PUBLIC_HTTPS_ORIGIN,
+      requestUrl: PUBLIC_REQUEST_URL,
+      binding,
+    });
+    await sender?.send({ ...MAIL, to: 'a(b)@x.co' });
+    expect(sent.map((message) => message.to)).toEqual(['a(b)@x.co']);
+  });
+
   test('rejects when the binding throws', async () => {
     const sender = emailSenderOf({
       configured: 'cloudflare',

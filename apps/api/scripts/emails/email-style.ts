@@ -30,6 +30,7 @@ export enum EmailClassName {
   Muted = 'email-muted',
   Rule = 'email-rule',
   Link = 'email-link',
+  Button = 'email-button',
 }
 
 export const DARK_MODE_CSS = [
@@ -41,6 +42,7 @@ export const DARK_MODE_CSS = [
   `  .${EmailClassName.Muted} { color: ${DARK_MUTED_TEXT_COLOR} !important; }`,
   `  .${EmailClassName.Rule} { border-color: ${DARK_RULE_COLOR} !important; }`,
   `  .${EmailClassName.Link} { color: ${ACCENT_COLOR} !important; }`,
+  `  .${EmailClassName.Button} { color: ${ON_BRAND_COLOR} !important; }`,
   '}',
 ].join('\n');
 

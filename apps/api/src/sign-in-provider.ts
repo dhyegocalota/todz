@@ -47,5 +47,5 @@ export const SIGN_IN_PROVIDER_OF_KIND: Record<SignInProviderKind, SignInProvider
 };
 
 export function signInKindOf(configured: string | undefined): SignInProviderKind | null {
-  return enumValueOf({ enumeration: SignInProviderKind, configured });
+  return enumValueOf({ enumeration: SignInProviderKind, candidate: configured });
 }

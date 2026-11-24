@@ -29,7 +29,7 @@ struct MenuBarLabel: View {
         .onChange(of: windowState.waitingSignInLink, initial: true) { _, link in
             guard let link else { return }
             windowState.waitingSignInLink = nil
-            openWindow.mainWindow()
+            if model.showsIncomingSignInLink { openWindow.mainWindow() }
             Task { await model.redeem(signInLink: link) }
         }
         .onChange(of: model.linkRevealCount) {

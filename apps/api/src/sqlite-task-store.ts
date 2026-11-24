@@ -1,5 +1,6 @@
 import { type Actor, type HistoryEntry, OWNER_ACTOR, type Task, type TaskStore, parseCalendarDate } from '@todz/core';
 import { ActorKind, HistoryAction, TaskField, TaskState } from '@todz/types';
+import { enumValueOf } from './enum-value';
 import { parsedJson } from './parsed-json';
 
 type TaskRow = {
@@ -50,8 +51,8 @@ function enumValue<Value extends string>({
   column: string;
   taskNumber: number;
 }): Value {
-  const value = Object.values(enumeration).find((candidate) => candidate === raw);
-  if (value === undefined) throw invalidColumn({ column, taskNumber });
+  const value = enumValueOf({ enumeration, candidate: raw });
+  if (value === null) throw invalidColumn({ column, taskNumber });
   return value;
 }
 

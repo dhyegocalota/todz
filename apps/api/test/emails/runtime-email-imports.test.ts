@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 const SOURCE_ROOT = join(import.meta.dirname, '..', '..', 'src');
-const RENDERING_IMPORT_PATTERN = /from ['"](react|react-dom|@react-email)(\/[^'"]*)?['"]/;
+const BUILD_TIME_IMPORT_PATTERN =
+  /(from |import |import\(|require\()\s*['"](react|react-dom|react-email|@react-email|(\.\.?\/)+scripts)(\/[^'"]*)?['"]/;
 const TYPESCRIPT_FILE_PATTERN = /\.tsx?$/;
 
 function sourceFilesOf(directory: string): string[] {
@@ -15,12 +16,24 @@ function sourceFilesOf(directory: string): string[] {
 }
 
 describe('the Worker source', () => {
-  test('imports no React or React Email package, which render only at build time', () => {
-    const renderingFiles = sourceFilesOf(SOURCE_ROOT).filter((path) => RENDERING_IMPORT_PATTERN.test(readFileSync(path, 'utf8')));
+  test('imports no React, React Email or build script, which run only at build time', () => {
+    const renderingFiles = sourceFilesOf(SOURCE_ROOT).filter((path) => BUILD_TIME_IMPORT_PATTERN.test(readFileSync(path, 'utf8')));
     expect(renderingFiles).toEqual([]);
   });
 
-  test('flags a rendering import', () => {
-    expect(RENDERING_IMPORT_PATTERN.test("import { render } from '@react-email/render';")).toBe(true);
+  test.each([
+    "import { render } from '@react-email/render';",
+    "import { Button } from 'react-email';",
+    "import { createElement } from 'react';",
+    "import 'react-dom';",
+    "const render = await import('@react-email/render');",
+    "const react = require('react');",
+    "import { filledHtmlOf } from '../../scripts/emails/render-email';",
+  ])('flags %s', (line) => {
+    expect(BUILD_TIME_IMPORT_PATTERN.test(line)).toBe(true);
+  });
+
+  test('lets a Worker import through', () => {
+    expect(BUILD_TIME_IMPORT_PATTERN.test("import { filledHtmlOf } from './email-slot';")).toBe(false);
   });
 });

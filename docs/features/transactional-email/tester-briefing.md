@@ -64,3 +64,25 @@ Pins (green when they landed): the four `worker.test.ts` cases that `/sign-in`, 
 - A real send through Cloudflare, SPF/DKIM and mail-client rendering are not exercised (`deploy-ready`).
 - `dev:email:cloudflare` was run once by the developer; the macOS app was not run.
 - An unrelated `wrangler dev` of the `feat/magic-link-sign-in` worktree (port 8787, not started by this lane) was still running at the end.
+
+## Fix round 1
+
+**Dependency.** `@react-email/components` 1.0.12 (2026-04-09) is deprecated on npm ("Package no longer supported"). `react-email` 6.11.16 (2026-11-17, `latest`, same maintainers, not deprecated) exports Body, Button, Column, Container, Head, Heading, Hr, Html, Img, Link, Preview, Row, Section and Text, re-exports `@react-email/render`, and has no install script. Switched in `edfc81b` (`react-email` 6.11.16, `@react-email/render` 2.3.1); the generated HTML lost only the lockup `<link rel="preload">`. `pnpm security:audit` and `pnpm audit --audit-level=high` (no `--prod`) both print `No known vulnerabilities found`. Evidence in ADR 0042. `@types/react-dom` dropped, `prettier` 3.9.10 declared in `@todz/api`.
+
+**Red then green.**
+
+| Test | Red text | Red | Green |
+|------|----------|-----|-------|
+| `email-slot.test.ts` throws for a slot with no value (text and html) | `expected [Function] to throw an error` | `46d5bb1` | `904eeff` |
+| `api-source.test.ts` run_worker_first names `/owner` | the `wrangler.jsonc` text did not match the pattern | `fa268b5` | `56efbbc` |
+| `email-templates.test.ts` the dark mode block styles `.email-button` | `expected '<!DOCTYPE html ...' to match /@media \(prefers-color-scheme: dark\)...` | `3d9952a` | `fd9c11e` |
+
+**Pins (green when they landed).** `a(b)@x.co` reaches the binding as the structured `to` (T7b, `0a40e02`); the worker routing tests are renamed to say they pin the handler; the import guard flags `react-email`, any `scripts/` import, bare `import 'x'`, `import('x')` and `require('x')` (`c4dfa57`, `f42f7bd`; a mutation file under `src` turned it red); the lockup URL appears only in the `img` tag (`f42f7bd`; the link to the PNG was the preload `<link>`, gone with the switch).
+
+**Not red-first.** The CLI changes (a missing generated module is stale, `fileURLToPath`) and the gitleaks allowlist of the committed preview token have no unit seam; `pnpm emails:check` exit 0 and `pnpm verify all` stand in. The preview placeholder is now `preview-only-not-a-token`, and `.gitleaks.toml` allowlists the old committed string, anchored.
+
+**T9 is met by** the `dev:email:cloudflare` script in `apps/api/package.json`, `api-source.test.ts` (the script exists, `wrangler.jsonc` never names `EMAIL_SENDER`, the `EMAIL` binding has the one sender) and the test environment's `EMAIL` stub in `email-sign-in-client.ts`.
+
+**T10 bundle.** `wrangler deploy --dry-run`: upload 1358.41 KiB, gzip 240.15 KiB, `index.js` 1,391,016 bytes; the only `react` strings in it are the `__react-email-column` data attributes of the rendered HTML.
+
+**Gaps.** `/owner` in `run_worker_first` is asserted by a text pattern only. No `wrangler dev` was run this round.

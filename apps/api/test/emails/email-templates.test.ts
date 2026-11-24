@@ -34,6 +34,11 @@ describe('the sign-in email', () => {
     expect(imageTag).toMatch(/height="\d+"/);
   });
 
+  test('gives its button the class that the dark mode block styles', () => {
+    expect(SIGN_IN_EMAIL.html).toMatch(/@media \(prefers-color-scheme: dark\)[\s\S]*\.email-button \{[^}]*color: #FFFFFF !important/);
+    expect(SIGN_IN_EMAIL.html).toMatch(/<a [^>]*class="email-button"/);
+  });
+
   test('holds the link and the ignore notice in its text', () => {
     expect(SIGN_IN_EMAIL.text).toContain(EmailSlot.Link);
     expect(SIGN_IN_EMAIL.text).toContain(IGNORE_NOTICE);
@@ -62,5 +67,14 @@ describe('the welcome email', () => {
 
   test('declares light and dark', () => {
     expect(WELCOME_EMAIL.html).toContain(COLOR_SCHEME_META);
+  });
+});
+
+describe('the lockup', () => {
+  test.each([
+    ['sign-in', SIGN_IN_EMAIL],
+    ['welcome', WELCOME_EMAIL],
+  ])('is named only by the image of the %s email, never by a link or a preload', (_name, email) => {
+    expect(email.html.replace(imageTagOf(email.html), '')).not.toContain(LOCKUP_URL);
   });
 });

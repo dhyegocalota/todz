@@ -42,7 +42,7 @@ describe('the worker', () => {
   });
 });
 
-describe('the paths the static assets never shadow', () => {
+describe('the handler routes the paths the static assets never answer (the asset side is pinned in the repository shape)', () => {
   test('GET /sign-in answers the sign-in page from the Worker', async () => {
     const response = await exports.default.fetch(`${WORKER_ORIGIN}/sign-in`);
     expect(response.status).toBe(OK_STATUS);

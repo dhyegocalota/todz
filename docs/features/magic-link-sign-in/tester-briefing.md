@@ -116,11 +116,11 @@ The owner's session file lives in the same folder as `sign-in-link`. Back it up 
 
 ### Known gaps (G3)
 
-1. Offline redeem falls back to the inbox with the error line. Its Try Again sends a new link with the same verifier, rather than retrying the held link.
-2. A Worker 400 maps to `.unexpected`. The local address check normally catches it first.
+1. ~~Offline redeem falls back to the inbox with the error line. Its Try Again sends a new link with the same verifier, rather than retrying the held link.~~ Fixed in a173065.
+2. ~~A Worker 400 maps to `.unexpected`. The local address check normally catches it first.~~ Fixed in a173065.
 3. An expired pending link at launch is cleared before the view appears, so the address field is not prefilled.
 4. The cooldown starts when the app sends and is not restored after a relaunch.
-5. `EmailAddressFormat` sits in the app target, untested.
+5. ~~`EmailAddressFormat` sits in the app target, untested.~~ Fixed in a173065: in TodzKit, with tests.
 
 ## Fix round 1 (Worker)
 
@@ -172,3 +172,15 @@ Refactor without behaviour change: b39081a (named conditions `isLinkUnsendable` 
   - The 429 line goes after Use a Different Email.
   - After an identity sign-in, the pending file is gone.
 - Gaps: the window-opening path and the Try Again branch in `InboxSlot` are view code with no automated test.
+
+## Fix round 2 (app and api, minor)
+
+- Red 0a2ec9f, green 35c2398: `showsIncomingSignInLink` (false once naming or ready) gates `openWindow.mainWindow()` in `MenuBarLabel`. Red text: `Expectation failed: harness.model.showsIncomingSignInLink == false` in `anIncomingLinkIsNotShownOnceTheOwnerIsSignedIn`. Its sibling `anIncomingLinkIsShownOnlyWhileTheOwnerIsNotSignedIn` is a pin.
+- Red 23fdfec, green 87cbe25: `restorePendingLink` erases the expired file but keeps a link held before launch. Red text: `Expectation failed: harness.model.signInError == .linkNotRequested` in `aLinkHeldBeforeLaunchSurvivesAnExpiredStoredPendingLinkAndSaysSo`.
+- Red 021bbec, green e594168: `enumValueOf` takes `candidate` and the task store reads enums through it. Red text: `AssertionError: expected null to be 'sour'` in `enumValueOf > returns the member whose value matches the candidate`. The red commit does not typecheck until the green one renames the parameter; the not-found case is a pin.
+- 2f37ce1, view only, no automated test: `AddressSlot` refocuses the field when a send ends with an error (a 400 or a 429).
+- Hypotheses:
+  - Signed in with the main window closed, opening a sign-in link opens no window and shows nothing.
+  - Signed out, the same link brings the window forward.
+  - After a Send Link refused with 400 or 429, the caret is back in the address field.
+- Gaps: the window-opening condition and the refocus are view code; only the model property is tested. `swift test` rewrites two screenshots under `docs/screenshots` on every run; they were restored with `git checkout` and never committed.
