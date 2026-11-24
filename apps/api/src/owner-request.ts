@@ -4,11 +4,13 @@ import type { OwnerRoute, RouteParam } from './owner-routes';
 import { parsedJson } from './parsed-json';
 import type { SessionOwner } from './project-routing';
 
-export type PublicRoute = OwnerRoute.SignIn;
+export type PublicRoute = OwnerRoute.SignIn | OwnerRoute.ReadSignInMethod;
 
 export type SessionRoute = Exclude<OwnerRoute, PublicRoute>;
 
 export type OwnerContext = { request: Request; env: Env; now: number; params: Record<string, string> };
+
+export type PublicHandler = (context: OwnerContext) => Promise<Response>;
 
 export type SessionContext = OwnerContext & { owner: SessionOwner; secret: string };
 

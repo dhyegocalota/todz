@@ -35,6 +35,10 @@ export function serveOwnerCall({ call, now, workerEnv = env }: { call: OwnerCall
   return serveOwner({ request: requestOf(call), env: workerEnv, now });
 }
 
+export function workerEnvWith(settings: Partial<Env>): Env {
+  return { DIRECTORY: env.DIRECTORY, PROJECT_STORE: env.PROJECT_STORE, ...settings };
+}
+
 export function recordingEnv(): { workerEnv: Env; statements: string[] } {
   const statements: string[] = [];
   const directory = new Proxy(env.DIRECTORY, {
