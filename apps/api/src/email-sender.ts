@@ -32,7 +32,7 @@ export function emailSenderOf({
   publicOrigin: string;
   requestUrl: string;
 }): EmailSender | null {
-  const kind = enumValueOf({ enumeration: EmailSenderKind, configured });
+  const kind = enumValueOf({ enumeration: EmailSenderKind, candidate: configured });
   if (kind === null) return null;
   const isConsoleOnPublicHost = kind === EmailSenderKind.Console && !(isLocalOrigin(publicOrigin) && isLocalOrigin(requestUrl));
   if (isConsoleOnPublicHost) return null;

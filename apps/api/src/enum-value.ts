@@ -1,11 +1,11 @@
 export function enumValueOf<Value extends string>({
   enumeration,
-  configured,
+  candidate,
 }: {
   enumeration: Record<string, Value>;
-  configured: string | undefined;
+  candidate: string | undefined;
 }): Value | null {
-  const value = Object.values(enumeration).find((candidate) => candidate === configured);
+  const value = Object.values(enumeration).find((member) => member === candidate);
   if (value === undefined) return null;
   return value;
 }
