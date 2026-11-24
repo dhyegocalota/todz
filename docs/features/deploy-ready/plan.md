@@ -42,8 +42,8 @@ The lead creates the database; G1 builds; tester and reviewers; merge; the lead 
 ## Z. Prove and ship
 
 - [x] **Tester briefing:** a developer wrote `tester-briefing.md`. — evidence: its steps 0 to 3 section.
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
-- [ ] **Reviewer:** verdict recorded; refutations in `test-plan.md`.
-- [ ] **Security reviewer:** verdict recorded.
+- [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
+- [x] **Reviewer:** verdict recorded; refutations in `test-plan.md`.
+- [x] **Security reviewer:** verdict recorded.
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
 - [ ] **Runbook run from `main`:** each step's actual result recorded in the runbook's run log.

@@ -1,6 +1,6 @@
 # Deploy ready
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-24 by the owner's authorization in PROMPT.md "Publishing on todz.app" ("já comprei todz.app no Cloudflare, configura tudo") and the queued `deploy-ready`; the configuration shape is [ADR 0044](../../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md), the loop's call
 **ADRs:** [0044](../../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md), [0040](../../adr/0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md), [0043](../../adr/0043-mail-leaves-through-cloudflare-email-service-from-noreply-at-todz-app.md), [0020](../../adr/0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md), [0041](../../adr/0041-outgoing-email-goes-through-a-port-with-a-console-sender-for-development.md), [0008](../../adr/0008-runbooks-live-in-the-repository.md)
