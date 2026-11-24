@@ -25,13 +25,13 @@ const WRITE_ANNOTATIONS = { destructiveHint: false };
 
 const EnvelopeClientSchema = z.object({ [CLIENT_INFO_META_KEY]: z.object({ name: z.string() }) });
 
-export type ClientNameOf = (ctx: ServerContext) => string;
+export type ClientNameOf = (ctx: ServerContext) => string | null;
 
 export type McpServerScope = { project: DurableObjectStub<ProjectStore>; today: string; clientNameOf: ClientNameOf };
 
-export function envelopeClientName(ctx: ServerContext): string {
+export function envelopeClientName(ctx: ServerContext): string | null {
   const envelope = EnvelopeClientSchema.safeParse(ctx.mcpReq.envelope);
-  if (!envelope.success) throw new Error('the modern request names no client');
+  if (!envelope.success) return null;
   return envelope.data[CLIENT_INFO_META_KEY].name;
 }
 
@@ -48,8 +48,18 @@ function resultAnswer<Value>({ result, answer }: { result: ProjectResult<Value>;
   return textAnswer(answer(result.value));
 }
 
-function agentOf({ clientNameOf, ctx }: { clientNameOf: ClientNameOf; ctx: ServerContext }): Actor {
-  return { kind: ActorKind.Agent, clientName: clientNameOf(ctx) };
+async function asAgent({
+  clientNameOf,
+  ctx,
+  write,
+}: {
+  clientNameOf: ClientNameOf;
+  ctx: ServerContext;
+  write: (actor: Actor) => Promise<CallToolResult>;
+}): Promise<CallToolResult> {
+  const clientName = clientNameOf(ctx);
+  if (clientName === null) return errorAnswer(MCP_COPY.clientUnnamed);
+  return write({ kind: ActorKind.Agent, clientName });
 }
 
 function registerReadTools({ server, scope }: { server: McpServer; scope: McpServerScope }): void {
@@ -72,10 +82,12 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
   server.registerTool(
     McpToolName.Add,
     { description: MCP_COPY.tools[McpToolName.Add], inputSchema: AddArgumentsSchema, annotations: WRITE_ANNOTATIONS },
-    async (args, ctx) => {
-      const result = await project.addTasks({ actor: agentOf({ clientNameOf, ctx }), drafts: draftsOf(args) });
-      return resultAnswer({ result, answer: addedAnswer });
-    },
+    async (args, ctx) =>
+      asAgent({
+        clientNameOf,
+        ctx,
+        write: async (actor) => resultAnswer({ result: await project.addTasks({ actor, drafts: draftsOf(args) }), answer: addedAnswer }),
+      }),
   );
   server.registerTool(
     McpToolName.Update,
@@ -85,8 +97,11 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
       const patch = patchOf(args);
       const hasInvalidId = number === null || patch === null;
       if (hasInvalidId) return errorAnswer(MCP_COPY.taskIdInvalid);
-      const result = await project.updateTask({ actor: agentOf({ clientNameOf, ctx }), number, patch });
-      return resultAnswer({ result, answer: updatedAnswer });
+      return asAgent({
+        clientNameOf,
+        ctx,
+        write: async (actor) => resultAnswer({ result: await project.updateTask({ actor, number, patch }), answer: updatedAnswer }),
+      });
     },
   );
   server.registerTool(
@@ -95,8 +110,11 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
     async ({ ids, note }, ctx) => {
       const numbers = taskNumbers(ids);
       if (numbers === null) return errorAnswer(MCP_COPY.taskIdInvalid);
-      const result = await project.completeTasks({ actor: agentOf({ clientNameOf, ctx }), numbers, note });
-      return resultAnswer({ result, answer: completedAnswer });
+      return asAgent({
+        clientNameOf,
+        ctx,
+        write: async (actor) => resultAnswer({ result: await project.completeTasks({ actor, numbers, note }), answer: completedAnswer }),
+      });
     },
   );
 }
