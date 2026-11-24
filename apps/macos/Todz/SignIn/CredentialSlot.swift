@@ -1,9 +1,11 @@
 import SwiftUI
 import TodzKit
 
+private let noIdentity = ""
+
 struct CredentialSlot: View {
     @Environment(AppModel.self) private var model
-    @State private var identity = ""
+    @State private var identity = noIdentity
     @State private var isFormatRefused = false
     @FocusState private var isIdentityFocused: Bool
 

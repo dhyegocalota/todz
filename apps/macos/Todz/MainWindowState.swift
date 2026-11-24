@@ -6,6 +6,10 @@ import TodzKit
     var sheet: NameSheetKind?
     var focusRequest: MainWindowFocus?
 
+    var inspectorToggleTitle: String {
+        isInspectorPresented ? MainWindowCopy.hideInspector : MainWindowCopy.showInspector
+    }
+
     func requestNewTask(model: AppModel) {
         let hasNoAddField = model.selectedItem == .upcoming || model.selectedItem == .done
         if hasNoAddField { model.selectedItem = .inbox }

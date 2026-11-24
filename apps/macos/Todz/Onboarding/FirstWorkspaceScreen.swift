@@ -2,10 +2,11 @@ import SwiftUI
 import TodzKit
 
 private let columnWidth: CGFloat = 320
+private let noName = ""
 
 struct FirstWorkspaceScreen: View {
     @Environment(AppModel.self) private var model
-    @State private var name = ""
+    @State private var name = noName
     @FocusState private var isNameFocused: Bool
 
     var body: some View {

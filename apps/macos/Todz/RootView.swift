@@ -21,7 +21,9 @@ struct RootView: View {
         case .naming:
             FirstWorkspaceScreen()
         case .ready:
-            MainWindow()
+            if let workspace = model.activeWorkspace {
+                MainWindow(workspace: workspace)
+            }
         }
     }
 }
