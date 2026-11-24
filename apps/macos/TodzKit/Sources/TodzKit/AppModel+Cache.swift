@@ -79,9 +79,11 @@ extension AppModel {
         keepInCache { try store.writeOutbox(OwnerCoding.encoder().encode(outbox)) }
     }
 
-    func forgetCache() {
+    func forgetCache() throws {
+        forgetWindow()
         outbox = Outbox()
-        keepInCache { try store.erase() }
+        phase = .loading
+        try store.erase()
     }
 
     private func loadCachedProject(identifier: String) {

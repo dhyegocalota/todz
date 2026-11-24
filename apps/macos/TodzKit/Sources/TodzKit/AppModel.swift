@@ -251,17 +251,14 @@ import Observation
     }
 
     // NB ADR 0027: nothing is sent before this session's owner is confirmed, and another owner's cache is erased first.
-    func confirmOwner() async {
+    func confirmOwner() async throws {
         guard !isOwnerConfirmed else { return }
         guard let owner = await confirmedOwner() else { return }
+        let isAnotherOwnersCache = ownerIdentifier != nil && ownerIdentifier != owner.identifier
+        if isAnotherOwnersCache { try forgetCache() }
         isOwnerConfirmed = true
         ownerConfirmationFailures = 0
-        let cachedOwnerIdentifier = ownerIdentifier
         ownerIdentifier = owner.identifier
-        guard let cachedOwnerIdentifier, cachedOwnerIdentifier != owner.identifier else { return }
-        forgetWindow()
-        forgetCache()
-        phase = .loading
     }
 
     private func confirmedOwner() async -> Owner? {
