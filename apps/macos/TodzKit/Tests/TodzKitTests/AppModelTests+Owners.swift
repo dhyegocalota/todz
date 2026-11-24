@@ -274,6 +274,22 @@ extension AppModelTests {
         #expect(harness.model.waitingChangeCount == 0)
     }
 
+    @Test func aLaunchWhoseZoneIsRefusedAndWhoseOwnerReadNamesAnotherOwnerErasesTheCacheAndSendsNothing() async throws {
+        let harness = try harnessWithAWaitingChange()
+        let acme = try #require(harness.service.workspaces.first)
+        harness.cache([acme], active: acme, ownerIdentifier: cachedOwnerIdentifier)
+        harness.service.failures[.updateOwner] = .timeZoneInvalid
+        harness.vault.secret = harness.session
+        await harness.model.launch()
+        await harness.flushed()
+        #expect(Array(harness.service.routes().prefix(2)) == [.updateOwner, .readOwner])
+        #expect(harness.service.routes().contains(.updateTask) == false)
+        #expect(harness.store.routes().contains(.erase))
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.model.taskViews?.inbox.map(\.task.title) == ["Task 1", "Task 2"])
+        #expect(harness.store.owner?.ownerIdentifier == harness.ownerIdentifier)
+    }
+
     @Test func aLaunchAsAnotherOwnerWhoseListingFailsSaysSoWithTryAgain() async throws {
         let harness = try harnessWithAWaitingChange()
         let acme = try #require(harness.service.workspaces.first)
