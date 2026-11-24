@@ -340,6 +340,13 @@ describe('what a request reveals', () => {
     expect(known.statements.filter((statement) => OWNER_TABLES_PATTERN.test(statement))).toEqual([]);
   });
 
+  test('the sweep by expiry reads the expiry index', async () => {
+    const { results } = await env.DIRECTORY.prepare('EXPLAIN QUERY PLAN DELETE FROM sign_in_links WHERE expires_at <= ?')
+      .bind(CLOCK_NOW)
+      .all<{ detail: string }>();
+    expect(results.map((step) => step.detail).join(' ')).toContain('sign_in_links_expiry');
+  });
+
   test('expired links are swept whatever the address, and live ones stay', async () => {
     consoleOutput();
     const stale = 'sweep-stale@example.com';
