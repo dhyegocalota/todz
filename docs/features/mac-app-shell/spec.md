@@ -1,6 +1,6 @@
 # Mac app shell
 
-**Status:** In review
+**Status:** Shipped 2026-11-24
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-24, by inheritance from [the v1 product design](../../product/README.md) (Order of delivery, item 5; Views; macOS app; Stack; Calls made without the owner), approved by the owner on 2026-11-23; the calls below that the product design does not make are ADRs or design decisions marked as the loop's calls and listed in the loop's questions for the owner
 **ADRs:** [0020](../../adr/0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md), [0021](../../adr/0021-owner-sessions-are-bearer-secrets-that-last-90-days.md), [0022](../../adr/0022-the-owner-api-is-json-routes-and-the-app-builds-the-cross-project-views.md), [0023](../../adr/0023-each-project-numbers-its-changes-and-its-socket-only-says-changed.md), [0024](../../adr/0024-the-macos-app-is-an-xcodegen-project-over-a-local-swift-package.md), [0025](../../adr/0025-the-session-secret-lives-in-a-private-file-until-the-app-has-a-team.md), [0026](../../adr/0026-a-native-app-is-walked-with-computer-use-and-recorded-from-its-screenshots.md)
