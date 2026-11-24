@@ -116,7 +116,7 @@ Every rule below is a test in the named file. "The current session" is `AppModel
   - `changed` → pull that project; `opened` → reset its attempt, start the send loop, pull that project.
   - A watch that finishes `unreachable` or `notFound` reopens after `pause(ReconnectDelay.after(attempt:))`, the attempt growing per project (1, 2, 4 seconds on three failures; 1 again after an `opened`); `notFound` also asks for a workspace reload, coalesced to one in flight.
   - `unauthorized` ends the session only when the watch's session is current; a stale watch's 401 after a new sign-in does nothing.
-  - `CancellationError` ends the loop with no reopen.
+  - A watch stream that ends without an error was cancelled (G1b, step 11: a cancelled `AsyncThrowingStream` ends, it cannot throw): it ends the loop with no reopen.
 - [ ] **Step 17:** red then green, the cache failing (`AppModelTests+Cache`): a `writeProject`, `writeOwner` or `writeOutbox` that throws raises `.cacheNotSaved` once per launch and the model goes on; `readProject` throwing → `eraseProject` and a pull from 0; `readOwner` throwing at launch → `erase` and the shell's loading path; `readOutbox` throwing or not decoding → an empty outbox written and `.waitingChangesLost` raised once.
 - [ ] **Step 18:** red then green, the status (`AppModelTests+Pull`): `syncStatus` is `.online` after any answer from the server and `.offline(waiting: n)` after a send or pull that ended unreachable or transient; `n` follows the outbox's count.
 
