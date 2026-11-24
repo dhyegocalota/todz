@@ -362,6 +362,23 @@ extension AppModelTests {
         #expect(harness.model.waitingChangeCount == 0)
     }
 
+    @Test func aLaunchWithNoCachedWorkspaceWhoseOwnerUpdateFailsSaysSoWithTryAgainThenLists() async throws {
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme")
+        harness.store.owner = OwnerCache(ownerIdentifier: harness.ownerIdentifier, workspaces: [], activeWorkspaceIdentifier: nil)
+        harness.service.failures[.updateOwner] = .unreachable
+        harness.vault.secret = harness.session
+        await harness.model.launch()
+        #expect(harness.model.phase == .loading)
+        #expect(harness.model.banner == .network)
+        #expect(harness.model.canTryAgain)
+        #expect(harness.service.routes().contains(.listWorkspaces) == false)
+        harness.service.failures = [:]
+        await harness.model.tryAgain()
+        #expect(harness.model.phase == .ready)
+        #expect(harness.model.workspaces == [acme])
+    }
+
     @Test func aLaunchAsAnotherOwnerWhoseEraseFailsStaysUnconfirmedEmptiesTheWindowAndSaysSoWithTryAgain() async throws {
         let harness = try harnessWithAWaitingChange()
         let acme = try #require(harness.service.workspaces.first)
