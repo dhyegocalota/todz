@@ -15,8 +15,9 @@ The same spike gave the two sandboxed ad-hoc processes one folder outside every 
 
 1. Until the owner has a team, the app and the widget extension share the folder `~/Library/Application Support/dev.todz.widgets/`. Both are sandboxed and both carry `com.apple.security.temporary-exception.files.home-relative-path.read-write` for that one folder and nothing else. Its path relative to the home folder is one Info.plist key both targets read; each process builds the absolute path from the account's home directory, not from the sandbox's.
 2. Everything else in ADR 0032's decision holds unchanged, in this folder instead of the group: `widget-snapshot.json` written by the app and read by the widgets, no session and no cache, one file per request under `requests/`, the intake rules, the empty states, and the erase with the cache. Files are `0600` through `PrivateFile`.
-3. The Darwin notification that tells the running app a request is waiting is named `dev.todz.widgets.requests`.
-4. With a team, the folder becomes the App Group `<TeamID>.dev.todz`, the exception is removed, and the app writes a fresh snapshot on its next launch. Nothing else changes, because the store takes its folder from the app.
+3. Because any local process can write the folder, the app treats it as untrusted: it refuses a folder or `requests/` that is a symlink or not the account's own, reads each file only up to a fixed size, examines a bounded number of entries per intake, runs one intake at a time, and erases the folder on a best-effort basis that never stops a sign-out or a sign-in.
+4. The Darwin notification that tells the running app a request is waiting is named `dev.todz.widgets.requests`.
+5. With a team, the folder becomes the App Group `<TeamID>.dev.todz`, the exception is removed, and the app writes a fresh snapshot on its next launch. Nothing else changes, because the store takes its folder from the app.
 
 ## Alternatives considered
 
