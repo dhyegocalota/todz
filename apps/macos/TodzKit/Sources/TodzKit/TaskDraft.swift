@@ -1,3 +1,5 @@
+import Foundation
+
 public struct TaskDraft: Encodable, Sendable, Equatable {
     public let title: String
     public let notes: String?
@@ -9,5 +11,9 @@ public struct TaskDraft: Encodable, Sendable, Equatable {
         self.notes = notes
         self.dueDate = dueDate
         self.idempotencyKey = idempotencyKey
+    }
+
+    public static func newIdempotencyKey() -> String {
+        UUID().uuidString.lowercased()
     }
 }

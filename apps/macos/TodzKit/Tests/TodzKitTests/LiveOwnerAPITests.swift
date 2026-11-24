@@ -32,7 +32,7 @@ struct LiveOwnerAPITests {
             try await api.renameProject(session: session, projectIdentifier: inbox.identifier, name: "Mine")
         }
 
-        let idempotencyKey = newIdempotencyKey()
+        let idempotencyKey = TaskDraft.newIdempotencyKey()
         let draft = TaskDraft(title: "Call the bank", notes: nil, dueDate: CalendarDate(year: 2026, month: 11, day: 24), idempotencyKey: idempotencyKey)
         let added = try await api.addTasks(session: session, projectIdentifier: inbox.identifier, drafts: [draft])
         let task = try #require(added.first?.task)

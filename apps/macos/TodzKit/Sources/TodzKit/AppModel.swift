@@ -1,10 +1,6 @@
 import Foundation
 import Observation
 
-public func newIdempotencyKey() -> String {
-    UUID().uuidString.lowercased()
-}
-
 @MainActor @Observable public final class AppModel {
     public internal(set) var phase: AppPhase = .loading
     public internal(set) var signInError: SignInError?
@@ -35,7 +31,7 @@ public func newIdempotencyKey() -> String {
         vault: any SessionVault,
         timeZone: TimeZone,
         now: @escaping () -> Date = Date.init,
-        makeIdempotencyKey: @escaping () -> String = newIdempotencyKey
+        makeIdempotencyKey: @escaping () -> String = TaskDraft.newIdempotencyKey
     ) {
         self.service = service
         self.vault = vault
