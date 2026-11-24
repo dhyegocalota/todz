@@ -59,9 +59,9 @@ G1 and G2 run in parallel in their own worktrees; G2's lane merges into `feat/ma
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** developers wrote `tester-briefing.md`.
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
-- [ ] **Security reviewer:** verdict recorded.
-- [ ] **/check-ui:** screenshots recorded and uploaded.
+- [x] **Tester briefing:** developers wrote `tester-briefing.md`.
+- [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
+- [x] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
+- [x] **Security reviewer:** verdict recorded. Evidence: CLEAR at 601962d and 4107d83.
+- [x] **/check-ui:** screenshots recorded and uploaded. Evidence: the testers' shots under `docs/screenshots/` and attached to the PR; no video (Playwright MCP's browser is missing on this Mac).
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
