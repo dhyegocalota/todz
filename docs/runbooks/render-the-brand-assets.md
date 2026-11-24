@@ -23,11 +23,11 @@ Render the app icon and the menu bar glyph again from the SVGs in [docs/brand](.
 4. **Render the menu bar glyph.** Render `docs/brand/todz-menubar.svg` as an 18 by 18 point PDF, the height of the menu bar's image:
 
    ```bash
-   rsvg-convert -f pdf -w 18 -h 18 docs/brand/todz-menubar.svg -o apps/macos/Todz/Assets.xcassets/MenuBarGlyph.imageset/MenuBarGlyph.pdf
+   rsvg-convert -f pdf1.4 --dpi-x 72 --dpi-y 72 -w 18 -h 18 docs/brand/todz-menubar.svg -o apps/macos/Todz/Assets.xcassets/MenuBarGlyph.imageset/MenuBarGlyph.pdf
    ```
 
-   Expected: one PDF of about a kilobyte; the imageset's `Contents.json` keeps `template-rendering-intent` as `template` and `preserves-vector-representation` as `true`.
-   If it fails: a glyph that is black on a dark menu bar means the template intent is missing from `Contents.json`; restore it.
+   Expected: one PDF of about a kilobyte whose `pdfinfo` page size reads `18 x 18 pts`; the imageset's `Contents.json` keeps `template-rendering-intent` as `template` and `preserves-vector-representation` as `true`.
+   If it fails: a page of 13.5 points means the dpi flags are missing, because `rsvg-convert` reads pixels at 90 dpi; render it again with them. PDF 1.4 keeps the page box readable as plain text for `brand-assets.test.ts`. A glyph that is black on a dark menu bar means the template intent is missing from `Contents.json`; restore it.
 
 5. **Prove the catalog.** Run `pnpm verify`.
    Expected: the `shape` gate passes `brand-assets.test.ts` and the `macos` gate builds with no `actool` warning.
