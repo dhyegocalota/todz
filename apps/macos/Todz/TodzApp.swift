@@ -1,7 +1,9 @@
 import SwiftUI
 import TodzKit
+import WidgetKit
 
 private let cacheFolderName = "Cache"
+private let widgetsFolderName = "Widgets"
 private let defaultWidth: CGFloat = 1100
 private let defaultHeight: CGFloat = 700
 private let popoverWidth: CGFloat = 360
@@ -13,6 +15,8 @@ struct TodzApp: App {
         service: OwnerAPI(baseURL: AppConfiguration.baseURL),
         vault: FileSessionVault(folder: AppConfiguration.sessionFolder),
         store: FileSyncStore(folder: AppConfiguration.sessionFolder.appending(path: cacheFolderName)),
+        widgetStore: FileWidgetStore(folder: AppConfiguration.sessionFolder.appending(path: widgetsFolderName)),
+        reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
         signals: SocketChangeSignals(baseURL: AppConfiguration.baseURL),
         timeZone: .current,
         pause: { try await Task.sleep(for: $0) }

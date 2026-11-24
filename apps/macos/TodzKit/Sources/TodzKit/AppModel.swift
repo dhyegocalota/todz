@@ -116,6 +116,7 @@ import Observation
     public func launch() async {
         guard !hasLaunched else { return }
         hasLaunched = true
+        observeWidgets()
         let secret: String?
         do {
             secret = try vault.read()
