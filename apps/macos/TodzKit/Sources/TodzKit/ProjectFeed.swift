@@ -1,6 +1,6 @@
-private let firstCursor = 0
-
 public struct ProjectFeed: Sendable {
+    static let firstCursor = 0
+
     private let service: any OwnerService
 
     public init(service: any OwnerService) {
@@ -11,7 +11,7 @@ public struct ProjectFeed: Sendable {
         do {
             return try await tasks(session: session, projectIdentifier: projectIdentifier, cursor: cursor)
         } catch OwnerAPIError.cursorAhead {
-            return try await tasks(session: session, projectIdentifier: projectIdentifier, cursor: firstCursor)
+            return try await tasks(session: session, projectIdentifier: projectIdentifier, cursor: Self.firstCursor)
         }
     }
 

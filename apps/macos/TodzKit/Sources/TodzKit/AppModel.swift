@@ -21,7 +21,9 @@ public func newIdempotencyKey() -> String {
     public internal(set) var ruleIssues: [WriteTarget: RuleIssue] = [:]
     public internal(set) var banner: AppBanner?
     public internal(set) var histories: [TaskKey: HistoryLoad] = [:]
+    var retry: (@MainActor () async -> Void)?
 
+    @ObservationIgnored var session: String?
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored public let timeZone: TimeZone
@@ -43,90 +45,126 @@ public func newIdempotencyKey() -> String {
     }
 
     public var activeWorkspace: Workspace? {
-        fatalError("AppModel is not implemented")
+        workspaces.first { $0.identifier == activeWorkspaceIdentifier }
     }
 
     public var today: CalendarDate {
-        fatalError("AppModel is not implemented")
+        CalendarDate.today(in: timeZone, at: now())
     }
 
     public var taskViews: TaskViews? {
-        fatalError("AppModel is not implemented")
+        guard let activeWorkspace else { return nil }
+        return TaskViews(projects: activeWorkspace.projects, board: board, day: today, timeZone: timeZone)
     }
 
     public var canTryAgain: Bool {
-        fatalError("AppModel is not implemented")
+        retry != nil
     }
 
     public func launch() async {
-        fatalError("AppModel is not implemented")
+        let secret: String?
+        do {
+            secret = try vault.read()
+        } catch {
+            phase = .signedOut(notice: .sessionUnreadable)
+            return
+        }
+        guard let secret else {
+            phase = .signedOut(notice: nil)
+            return
+        }
+        session = secret
+        phase = .loading
+        await sendTimeZone()
+        await loadWorkspaces()
     }
 
     public func signIn(identity: String) async {
-        fatalError("AppModel is not implemented")
+        lastIdentity = identity
+        signInError = nil
+        isSigningIn = true
+        defer { isSigningIn = false }
+        let issued: IssuedSession
+        do {
+            issued = try await service.signIn(identityToken: identity, timeZone: timeZone.identifier)
+        } catch let failure as OwnerAPIError {
+            signInError = SignInError(failure)
+            return
+        } catch {
+            signInError = .unexpected
+            return
+        }
+        session = issued.sessionToken
+        phase = .loading
+        keep(secret: issued.sessionToken)
+        await loadWorkspaces()
     }
 
     public func signOut() async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func createWorkspace(name: String) async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func switchWorkspace(identifier: String) async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func refresh() async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func createProject(name: String) async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func renameProject(projectIdentifier: String, name: String) async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func addTask(title: String, projectIdentifier: String, dueDate: CalendarDate?) async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func complete(task: TaskKey) async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func reopen(task: TaskKey) async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func updateTitle(task: TaskKey, title: String) async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func updateNotes(task: TaskKey, notes: String?) async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func updateDueDate(task: TaskKey, dueDate: CalendarDate?) async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func move(task: TaskKey, placement: TaskPlacement) async {
-        fatalError("AppModel is not implemented")
-    }
-
-    public func loadHistory(task: TaskKey) async {
-        fatalError("AppModel is not implemented")
+        guard let session else { return }
+        clearSession()
+        phase = .signedOut(notice: nil)
+        try? vault.erase()
+        try? await service.signOut(session: session)
     }
 
     public func tryAgain() async {
-        fatalError("AppModel is not implemented")
+        guard let retry else { return }
+        dismissBanner()
+        await retry()
     }
 
     public func dismissBanner() {
-        fatalError("AppModel is not implemented")
+        banner = nil
+        retry = nil
+    }
+
+    func raise(_ banner: AppBanner, retry: (@MainActor () async -> Void)? = nil) {
+        self.banner = banner
+        self.retry = retry
+    }
+
+    func request<Value>(_ operation: (String) async throws -> Value) async throws -> Value {
+        guard let session else { throw OwnerAPIError.unauthorized }
+        do {
+            let value = try await operation(session)
+            guard self.session == session else { throw CancellationError() }
+            return value
+        } catch OwnerAPIError.unauthorized {
+            endSession()
+            throw OwnerAPIError.unauthorized
+        }
+    }
+
+    func endSession() {
+        guard session != nil else { return }
+        clearSession()
+        try? vault.erase()
+        phase = .signedOut(notice: .sessionEnded)
+    }
+
+    private func clearSession() {
+        session = nil
+        workspaces = []
+        activeWorkspaceIdentifier = nil
+        selectedItem = .inbox
+        selectedTask = nil
+        board = TaskBoard()
+        projectLoads = [:]
+        ruleIssues = [:]
+        histories = [:]
+        dismissBanner()
+    }
+
+    private func sendTimeZone() async {
+        _ = try? await request { try await service.updateOwner(session: $0, timeZone: timeZone.identifier) }
+    }
+
+    private func keep(secret: String) {
+        do {
+            try vault.write(secret)
+        } catch {
+            raise(.sessionNotSaved)
+        }
     }
 }

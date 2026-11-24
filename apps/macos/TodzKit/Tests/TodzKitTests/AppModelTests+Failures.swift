@@ -9,13 +9,17 @@ private let fiveProjectNames = ["one", "two", "three", "four"]
 extension AppModelTests {
     @Test func aProjectGoneOnAWriteReloadsTheWorkspaceAndSaysSo() async throws {
         let harness = try AppModelHarness()
-        harness.seedWorkspace(name: "acme", projectNames: ["launch"])
+        let workspace = harness.seedWorkspace(name: "acme", projectNames: ["launch"])
         await harness.signedIn()
-        harness.service.projectFailures["acme-launch"] = .notFound
+        harness.model.selectedItem = .project(identifier: "acme-launch")
+        harness.service.failures[.renameProject] = .notFound
+        let remaining = Workspace(identifier: workspace.identifier, name: workspace.name, createdAt: workspace.createdAt, projects: [workspace.projects[0]])
+        harness.service.workspaces = [remaining]
         await harness.model.renameProject(projectIdentifier: "acme-launch", name: "Ship")
         #expect(harness.model.banner == .projectGone)
-        #expect(Array(harness.service.routes().prefix(2)) == [.renameProject, .listWorkspaces])
-        #expect(harness.service.routes().dropFirst(2).allSatisfy { $0 == .readChanges })
+        #expect(harness.service.routes() == [.renameProject, .listWorkspaces, .readChanges])
+        #expect(harness.model.activeWorkspace == remaining)
+        #expect(harness.model.selectedItem == .inbox)
     }
 
     @Test func aTaskGoneOnAWriteReloadsTheWorkspaceAndSaysSo() async throws {
@@ -82,6 +86,7 @@ extension AppModelTests {
         workspace.projects.forEach { harness.seedTasks(projectIdentifier: $0.identifier, count: 3) }
         harness.service.pageSize = 1
         harness.service.projectFailures["acme-two"] = .unauthorized
+        harness.service.projectFailures["acme-four"] = .unauthorized
         let callsAtErase = Captured<Int>()
         harness.vault.onErase = { callsAtErase.value = harness.service.calls.count }
         harness.vault.secret = harness.session
