@@ -11,6 +11,7 @@ struct MenuBarHeader: View {
     var body: some View {
         HStack {
             WorkspaceSwitcher(workspace: workspace, isMainWindow: false)
+                .help(workspace.name)
             Button(MenuBarCopy.openWindow) {
                 panel.openMainWindow(openWindow)
             }

@@ -18,7 +18,6 @@ struct WorkspaceSwitcher: View {
         if isSoleWorkspaceInPopover {
             Text(workspace.name)
                 .lineLimit(1)
-                .help(workspace.name)
         }
         if !isSoleWorkspaceInPopover {
             menu
@@ -52,7 +51,7 @@ struct WorkspaceSwitcher: View {
                 .lineLimit(1)
         }
         .menuStyle(.borderlessButton)
-        .fixedSize()
+        .fixedSize(horizontal: isMainWindow, vertical: true)
         .accessibilityLabel(AccessibilityCopy.switcher(name: workspace.name))
     }
 
