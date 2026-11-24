@@ -38,6 +38,9 @@ struct CredentialSlot: View {
             guard let lastIdentity = model.lastIdentity else { return }
             identity = lastIdentity
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            isIdentityFocused = true
+        }
     }
 
     private var missingIdentityReason: String? {
