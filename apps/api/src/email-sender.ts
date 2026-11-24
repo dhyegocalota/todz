@@ -1,21 +1,34 @@
 import { enumValueOf } from './enum-value';
 
 const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1'];
+const SENDER_ADDRESS: EmailAddress = { name: 'todz', email: 'noreply@todz.app' };
+const REPLY_TO_ADDRESS = 'hello@todz.app';
 
 export enum EmailSenderKind {
   Console = 'console',
+  Cloudflare = 'cloudflare',
 }
 
-export type EmailMessage = { to: string; subject: string; text: string };
+export type EmailMessage = { to: string; subject: string; html: string; text: string };
 
 export type EmailSender = { send(message: EmailMessage): Promise<void> };
 
+type EmailSenderFactory = (binding: SendEmail | undefined) => EmailSender | null;
+
 // NB ADR 0041: the console sender only logs, so a deployed origin never selects it.
-const EMAIL_SENDER_OF_KIND: Record<EmailSenderKind, EmailSender> = {
-  [EmailSenderKind.Console]: {
+const EMAIL_SENDER_FACTORY_OF_KIND: Record<EmailSenderKind, EmailSenderFactory> = {
+  [EmailSenderKind.Console]: () => ({
     async send({ to, text }) {
       console.log(JSON.stringify({ to, text }));
     },
+  }),
+  [EmailSenderKind.Cloudflare]: (binding) => {
+    if (binding === undefined) return null;
+    return {
+      async send({ to, subject, html, text }) {
+        await binding.send({ from: SENDER_ADDRESS, replyTo: REPLY_TO_ADDRESS, to, subject, html, text });
+      },
+    };
   },
 };
 
@@ -27,14 +40,16 @@ export function emailSenderOf({
   configured,
   publicOrigin,
   requestUrl,
+  binding,
 }: {
   configured: string | undefined;
   publicOrigin: string;
   requestUrl: string;
+  binding?: SendEmail;
 }): EmailSender | null {
   const kind = enumValueOf({ enumeration: EmailSenderKind, candidate: configured });
   if (kind === null) return null;
   const isConsoleOnPublicHost = kind === EmailSenderKind.Console && !(isLocalOrigin(publicOrigin) && isLocalOrigin(requestUrl));
   if (isConsoleOnPublicHost) return null;
-  return EMAIL_SENDER_OF_KIND[kind];
+  return EMAIL_SENDER_FACTORY_OF_KIND[kind](binding);
 }

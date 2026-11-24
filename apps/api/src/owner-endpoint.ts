@@ -29,10 +29,20 @@ function isPublicRoute(route: OwnerRoute): route is PublicRoute {
   return route in PUBLIC_HANDLERS;
 }
 
-export async function serveOwner({ request, env, now }: { request: Request; env: Env; now: number }): Promise<Response> {
+export async function serveOwner({
+  request,
+  env,
+  now,
+  executionContext,
+}: {
+  request: Request;
+  env: Env;
+  now: number;
+  executionContext: ExecutionContext;
+}): Promise<Response> {
   const match = matchOwnerRoute(request);
   if (match === null) return noRouteResponse();
-  const context = { request, env, now, params: match.params };
+  const context = { request, env, now, executionContext, params: match.params };
   if (isPublicRoute(match.route)) return PUBLIC_HANDLERS[match.route](context);
   const secret = bearerSecret(request);
   if (secret === null) return unauthorized();

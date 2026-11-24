@@ -5,14 +5,19 @@ import { digestCredential } from '../src/credential-digest';
 import { publicOriginOf } from '../src/sign-in-links';
 import { seedEmailIdentity, seedOwner } from './directory-seed';
 import {
+  CLOUDFLARE_SETTINGS,
   LINK_CHALLENGE,
   freshAddress,
   EMAIL_SETTINGS,
+  PUBLIC_HTTPS_ORIGIN,
   PUBLIC_ORIGIN,
+  bindingFailingWith,
   consoleOutput,
   emailEnv,
   linkRows,
   mailSent,
+  messageSent,
+  recordingBinding,
   requestLink,
   sentMail,
   tokenOfMail,
@@ -225,6 +230,58 @@ describe('POST /owner/sign-in-links', () => {
       workerEnv: emailEnv(),
     });
     expect(response.status).toBe(ACCEPTED_STATUS);
+  });
+});
+
+describe('POST /owner/sign-in-links through the cloudflare sender', () => {
+  const PUBLIC_REQUEST_ORIGIN = 'https://api.todz.test';
+  const LINK_PATTERN = /https:\/\/todz\.app\/sign-in#token=[A-Za-z0-9_-]{43}/;
+
+  test('sends one mail from a public https origin whose html button and text both carry the link and whose header shows the lockup', async () => {
+    const { binding, sent } = recordingBinding();
+    const email = freshAddress();
+    const response = await requestLink({
+      email,
+      origin: PUBLIC_REQUEST_ORIGIN,
+      workerEnv: emailEnv({ ...CLOUDFLARE_SETTINGS, EMAIL: binding }),
+    });
+    expect(response.status).toBe(ACCEPTED_STATUS);
+    const mail = messageSent(sent);
+    expect(mail.to).toBe(email);
+    expect(mail.subject).toBe('Your todz sign-in link');
+    const link = LINK_PATTERN.exec(mail.text)?.[0];
+    expect(link).toBeDefined();
+    expect(mail.html).toContain(`href="${link}"`);
+    expect(mail.html).toContain(`src="${PUBLIC_HTTPS_ORIGIN}/brand/todz-lockup.png"`);
+    expect(mail.text).toContain("If you didn't ask for this, ignore this email.");
+  });
+
+  test('stores the digest of the token it mailed', async () => {
+    const { binding, sent } = recordingBinding();
+    const email = freshAddress();
+    await requestLink({ email, origin: PUBLIC_REQUEST_ORIGIN, workerEnv: emailEnv({ ...CLOUDFLARE_SETTINGS, EMAIL: binding }) });
+    const [row] = await linkRows(email);
+    expect(row?.digest).toBe(await digestCredential(tokenOfMail(messageSent(sent))));
+  });
+
+  test('a binding that throws leaves no row and answers 503 sign_in_unavailable', async () => {
+    const email = freshAddress();
+    const response = await requestLink({
+      email,
+      origin: PUBLIC_REQUEST_ORIGIN,
+      workerEnv: emailEnv({ ...CLOUDFLARE_SETTINGS, EMAIL: bindingFailingWith(new Error('the binding is down')) }),
+    });
+    expect(response.status).toBe(UNAVAILABLE_STATUS);
+    expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
+    expect(await linkRows(email)).toEqual([]);
+  });
+
+  test('no binding answers 503 sign_in_unavailable and stores nothing', async () => {
+    const before = await totalLinks();
+    const response = await requestLink({ origin: PUBLIC_REQUEST_ORIGIN, workerEnv: emailEnv(CLOUDFLARE_SETTINGS) });
+    expect(response.status).toBe(UNAVAILABLE_STATUS);
+    expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
+    expect(await totalLinks()).toBe(before);
   });
 });
 

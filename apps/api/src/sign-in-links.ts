@@ -3,11 +3,11 @@ import { z } from 'zod';
 import { digestCredential } from './credential-digest';
 import { generateCredentialSecret } from './credential-secret';
 import { deleteSignInLink, insertSignInLinkWithinLimit } from './directory-sign-in-links';
+import { signInMail } from './emails/sign-in-mail';
 import { emailSenderOf, isLocalOrigin } from './email-sender';
 import { HttpStatus } from './http-status';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
 import { type OwnerContext, parsedPublicBody } from './owner-request';
-import { SIGN_IN_MAIL_SUBJECT, signInMailText } from './sign-in-mail-copy';
 import { SIGN_IN_PAGE_PATH } from './sign-in-page';
 import { SignInProviderKind, signInKindOf } from './sign-in-provider';
 
@@ -47,7 +47,7 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   const isEmailProvider = signInKindOf(env.SIGN_IN_PROVIDER) === SignInProviderKind.Email;
   const isLinkUnsendable = !isEmailProvider || publicOrigin === null;
   if (isLinkUnsendable) return errorResponse(OwnerErrorCode.SignInUnavailable);
-  const sender = emailSenderOf({ configured: env.EMAIL_SENDER, publicOrigin, requestUrl: request.url });
+  const sender = emailSenderOf({ configured: env.EMAIL_SENDER, publicOrigin, requestUrl: request.url, binding: env.EMAIL });
   if (sender === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
   const body = await parsedPublicBody({ request, schema: RequestBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
@@ -68,11 +68,7 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   });
   if (!isWithinLimit) return errorResponse(OwnerErrorCode.TooManyLinks);
   try {
-    await sender.send({
-      to: address,
-      subject: SIGN_IN_MAIL_SUBJECT,
-      text: signInMailText(`${publicOrigin}${SIGN_IN_PAGE_PATH}#token=${token}`),
-    });
+    await sender.send(signInMail({ to: address, link: `${publicOrigin}${SIGN_IN_PAGE_PATH}#token=${token}`, origin: publicOrigin }));
   } catch {
     await deleteSignInLink({ directory: env.DIRECTORY, digest });
     return errorResponse(OwnerErrorCode.SignInUnavailable);

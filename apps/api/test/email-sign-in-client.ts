@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { type MockInstance, vi } from 'vitest';
+import { z } from 'zod';
 import { digestCredential } from '../src/credential-digest';
 import { generateCredentialSecret } from '../src/credential-secret';
 import type { Env } from '../src/env';
@@ -15,6 +16,51 @@ const SESSIONS_PATH = '/owner/sessions';
 export const EMAIL_SETTINGS: Partial<Env> = { SIGN_IN_PROVIDER: 'email', EMAIL_SENDER: 'console', PUBLIC_ORIGIN };
 const TOKEN_IN_MAIL_PATTERN = /sign-in#token=([A-Za-z0-9_-]{43})/;
 const TOKEN_GROUP = 1;
+
+export const PUBLIC_HTTPS_ORIGIN = 'https://todz.app';
+export const CLOUDFLARE_SETTINGS: Partial<Env> = {
+  SIGN_IN_PROVIDER: 'email',
+  EMAIL_SENDER: 'cloudflare',
+  PUBLIC_ORIGIN: PUBLIC_HTTPS_ORIGIN,
+};
+
+const SentMessageSchema = z.object({
+  from: z.object({ name: z.string(), email: z.string() }),
+  replyTo: z.string(),
+  to: z.string(),
+  subject: z.string(),
+  html: z.string(),
+  text: z.string(),
+});
+
+export type SentMessage = z.output<typeof SentMessageSchema>;
+
+export type RecordingBinding = { binding: SendEmail; sent: SentMessage[] };
+
+export function recordingBinding(): RecordingBinding {
+  const sent: SentMessage[] = [];
+  const binding: SendEmail = {
+    async send(message: EmailMessage | EmailMessageBuilder) {
+      sent.push(SentMessageSchema.parse(message));
+      return { messageId: crypto.randomUUID() };
+    },
+  };
+  return { binding, sent };
+}
+
+export function messageSent(sent: SentMessage[]): SentMessage {
+  const [message, ...others] = sent;
+  if (message === undefined || others.length > 0) throw new Error('exactly one message should have been sent');
+  return message;
+}
+
+export function bindingFailingWith(failure: Error): SendEmail {
+  return {
+    async send() {
+      throw failure;
+    },
+  };
+}
 
 export type SentMail = { to: string; text: string };
 
@@ -94,17 +140,20 @@ export function redeemLink({
   now = CLOCK_NOW,
   timeZone = 'UTC',
   workerEnv = emailEnv(),
+  executionContext,
 }: {
   token: string;
   verifier?: string;
   now?: number;
   timeZone?: string;
   workerEnv?: Env;
+  executionContext?: ExecutionContext;
 }): Promise<Response> {
   return serveOwnerCall({
     call: { method: 'POST', path: SESSIONS_PATH, body: { identity_token: token, link_verifier: verifier, time_zone: timeZone } },
     now,
     workerEnv,
+    executionContext,
   });
 }
 
