@@ -10,7 +10,8 @@ struct MenuBarLabel: View {
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
 
     var body: some View {
-        let badgeText = MenuBarBadge.text(openCount: model.todayHeadingCount, isEnabled: isCountEnabled)
+        let openCount = model.todayHeadingCount
+        let badgeText = MenuBarBadge.text(openCount: openCount, isEnabled: isCountEnabled)
         HStack {
             Image(systemName: statusSymbol)
             if let badgeText {
@@ -18,7 +19,7 @@ struct MenuBarLabel: View {
                     .monospacedDigit()
             }
         }
-        .accessibilityLabel(accessibilityLabel(badgeText: badgeText))
+        .accessibilityLabel(accessibilityLabel(badgeText: badgeText, openCount: openCount))
         .task { await model.launch() }
         .onChange(of: windowState.waitingLink, initial: true) { _, link in
             guard let link else { return }
@@ -30,8 +31,8 @@ struct MenuBarLabel: View {
         }
     }
 
-    private func accessibilityLabel(badgeText: String?) -> String {
-        guard badgeText != nil, let openCount = model.todayHeadingCount else { return MainWindowCopy.windowTitle }
+    private func accessibilityLabel(badgeText: String?, openCount: Int?) -> String {
+        guard badgeText != nil, let openCount else { return MainWindowCopy.windowTitle }
         return AccessibilityCopy.menuBarCount(count: openCount)
     }
 }
