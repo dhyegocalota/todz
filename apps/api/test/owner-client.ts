@@ -63,3 +63,37 @@ export async function signInOwner({
   const answer = SignInAnswerSchema.parse(await response.json());
   return { token: answer.session_token, ownerId: answer.owner.id, identityToken };
 }
+
+export type OwnedProject = SignedInOwner & { projectId: string };
+
+export async function createOwnedProject(): Promise<OwnedProject> {
+  const owner = await signInOwner();
+  const response = await ownerCall({ method: 'POST', path: '/owner/workspaces', token: owner.token, body: { name: 'Work' } });
+  const { workspace } = await response.json<{ workspace: { projects: { id: string }[] } }>();
+  const [inbox] = workspace.projects;
+  if (inbox === undefined) throw new Error('a workspace has an Inbox');
+  return { ...owner, projectId: inbox.id };
+}
+
+export async function issueMcpKey({ token, projectId }: { token: string; projectId: string }): Promise<string> {
+  const response = await ownerCall({ method: 'POST', path: `/owner/projects/${projectId}/keys`, token });
+  if (response.status !== CREATED_STATUS) throw new Error(`issue key answered ${response.status}`);
+  const { secret } = await response.json<{ secret: string }>();
+  return secret;
+}
+
+export function projectCall({
+  project,
+  method,
+  path,
+  body,
+  rawBody,
+}: {
+  project: OwnedProject;
+  method: string;
+  path: string;
+  body?: unknown;
+  rawBody?: string;
+}): Promise<Response> {
+  return ownerCall({ method, path: `/owner/projects/${project.projectId}${path}`, token: project.token, body, rawBody });
+}
