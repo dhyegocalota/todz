@@ -173,6 +173,7 @@ import Observation
         guard let session else { return }
         do {
             try store.erase()
+            try eraseWidgets()
         } catch {
             raise(.signOutFailed)
             return
