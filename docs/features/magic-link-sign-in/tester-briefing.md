@@ -116,11 +116,11 @@ The owner's session file lives in the same folder as `sign-in-link`. Back it up 
 
 ### Known gaps (G3)
 
-1. Offline redeem falls back to the inbox with the error line. Its Try Again sends a new link with the same verifier, rather than retrying the held link.
-2. A Worker 400 maps to `.unexpected`. The local address check normally catches it first.
+1. ~~Offline redeem falls back to the inbox with the error line. Its Try Again sends a new link with the same verifier, rather than retrying the held link.~~ Fixed in a173065.
+2. ~~A Worker 400 maps to `.unexpected`. The local address check normally catches it first.~~ Fixed in a173065.
 3. An expired pending link at launch is cleared before the view appears, so the address field is not prefilled.
 4. The cooldown starts when the app sends and is not restored after a relaunch.
-5. `EmailAddressFormat` sits in the app target, untested.
+5. ~~`EmailAddressFormat` sits in the app target, untested.~~ Fixed in a173065: in TodzKit, with tests.
 
 ## Fix round 1 (Worker)
 
