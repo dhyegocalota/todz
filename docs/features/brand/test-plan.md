@@ -4,7 +4,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 
 ## The failing test first
 
-- [ ] `tools/repository-shape/src/brand-assets.test.ts` — input: the red commit (no `AppIcon.appiconset`, no `MenuBarGlyph.imageset`); expected: fails naming the missing `Contents.json` — evidence: throwaway worktree at 5b01022: `Tests  4 failed (4)`, `Error: ENOENT: no such file or directory, open '.../apps/macos/Todz/Assets.xcassets/AppIcon.appiconset/Contents.json'` (glyph test: `.../MenuBarGlyph.imageset/Contents.json`); worktree removed
+- [x] `tools/repository-shape/src/brand-assets.test.ts` — input: the red commit (no `AppIcon.appiconset`, no `MenuBarGlyph.imageset`); expected: fails naming the missing `Contents.json` — evidence: throwaway worktree at 5b01022: `Tests  4 failed (4)`, `Error: ENOENT: no such file or directory, open '.../apps/macos/Todz/Assets.xcassets/AppIcon.appiconset/Contents.json'` (glyph test: `.../MenuBarGlyph.imageset/Contents.json`); worktree removed
 - [x] Confirmed it fails for the right reason: the failure text recorded — evidence: the ENOENT text above; also f459bff (the 18 pt test before its fix): `AssertionError: expected null not to be null`, `Tests  1 failed | 4 passed (5)`, matching the briefing; worktree removed
 
 ## Unit
@@ -12,7 +12,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [x] Every app icon image named in `Contents.json` exists at its pixel size; expected: green — evidence: `npx vitest run src/brand-assets.test.ts` at 2fafcef: `Tests  5 passed (5)`
 - [x] The sizes 16, 32, 128, 256, 512 at 1× and 2× are all present; expected: green — evidence: same run, 5 passed
 - [x] `MenuBarGlyph` is one PDF, template intent, vector preserved; expected: green — evidence: same run; `pdfinfo` reads `18 x 18 pts`
-- [ ] `pnpm verify all`: green, gates recorded — FAILED: stops at the `format` gate (`prettier --check .`) at 2fafcef: `[warn] apps/macos/Todz/Assets.xcassets/AppIcon.appiconset/Contents.json`, `[warn] apps/macos/Todz/Assets.xcassets/MenuBarGlyph.imageset/Contents.json`; later gates not reached (see D1)
+- [x] `pnpm verify all`: green, gates recorded — evidence (lead, after D1's formatting-only fix in its own `style` commit): `verify: 7 gates green at 0c12c18 (product)`. Earlier, FAILED: stopped at the `format` gate (`prettier --check .`) at 2fafcef: `[warn] apps/macos/Todz/Assets.xcassets/AppIcon.appiconset/Contents.json`, `[warn] apps/macos/Todz/Assets.xcassets/MenuBarGlyph.imageset/Contents.json`; later gates not reached (see D1)
 
 ## Prove it for real — the app (ADR 0026)
 
