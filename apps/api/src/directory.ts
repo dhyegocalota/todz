@@ -40,6 +40,7 @@ export async function insertMcpSession({
   clientName,
   now,
   expiresAt,
+  sessionsPerKeyMax,
 }: {
   directory: D1Database;
   digest: string;
@@ -47,11 +48,19 @@ export async function insertMcpSession({
   clientName: string;
   now: number;
   expiresAt: number;
+  sessionsPerKeyMax: number;
 }): Promise<void> {
-  await directory
-    .prepare('INSERT INTO mcp_sessions (digest, key_digest, client_name, created_at, expires_at) VALUES (?, ?, ?, ?, ?)')
-    .bind(digest, keyDigest, clientName, now, expiresAt)
-    .run();
+  await directory.batch([
+    directory.prepare('DELETE FROM mcp_sessions WHERE key_digest = ? AND expires_at <= ?').bind(keyDigest, now),
+    directory
+      .prepare('INSERT INTO mcp_sessions (digest, key_digest, client_name, created_at, expires_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(digest, keyDigest, clientName, now, expiresAt),
+    directory
+      .prepare(
+        'DELETE FROM mcp_sessions WHERE key_digest = ? AND digest NOT IN (SELECT digest FROM mcp_sessions WHERE key_digest = ? ORDER BY created_at DESC, rowid DESC LIMIT ?)',
+      )
+      .bind(keyDigest, keyDigest, sessionsPerKeyMax),
+  ]);
 }
 
 export async function findMcpSessionClient({

@@ -267,6 +267,7 @@ describe('a later legacy request', () => {
       clientName: CLIENT_NAME,
       now: now - MCP_SESSION_LIFETIME_MS,
       expiresAt: now - 1,
+      sessionsPerKeyMax: MCP_SESSIONS_PER_KEY_MAX,
     });
     const response = await toolsList({ key, sessionId });
     expect(response.status).toBe(NOT_FOUND_STATUS);
@@ -420,6 +421,7 @@ describe('edge cases found during execution', () => {
       clientName: CLIENT_NAME,
       now: CLOCK_NOW,
       expiresAt,
+      sessionsPerKeyMax: MCP_SESSIONS_PER_KEY_MAX,
     });
     const request = () => mcpRequest({ authorization: bearer(key), body: TOOLS_LIST_BODY, sessionId });
     const beforeExpiry = await serveMcp({ request: request(), env, now: expiresAt - 1 });
@@ -459,6 +461,7 @@ describe('the sessions of one key', () => {
       clientName: CLIENT_NAME,
       now: now - MCP_SESSION_LIFETIME_MS,
       expiresAt: now - 1,
+      sessionsPerKeyMax: MCP_SESSIONS_PER_KEY_MAX,
     });
     return digestCredential(sessionId);
   }

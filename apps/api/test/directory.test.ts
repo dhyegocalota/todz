@@ -2,6 +2,7 @@ import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import { findKeyProject, findMcpSessionClient, findOwnedProject, findSessionOwner, insertMcpSession } from '../src/directory';
+import { MCP_SESSIONS_PER_KEY_MAX } from '../src/mcp-sessions';
 import { seedKey, seedOwner, seedProject, seedSession } from './directory-seed';
 import { CLOCK_NOW } from './task-fixtures';
 
@@ -72,6 +73,7 @@ describe('findMcpSessionClient', () => {
       clientName: CLIENT_NAME,
       now: CLOCK_NOW,
       expiresAt: SESSION_EXPIRES_AT,
+      sessionsPerKeyMax: MCP_SESSIONS_PER_KEY_MAX,
     });
     return { digest, keyDigest };
   }

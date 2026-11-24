@@ -27,6 +27,7 @@ export async function openMcpSession({
     clientName,
     now,
     expiresAt: now + MCP_SESSION_LIFETIME_MS,
+    sessionsPerKeyMax: MCP_SESSIONS_PER_KEY_MAX,
   });
   return sessionId;
 }
