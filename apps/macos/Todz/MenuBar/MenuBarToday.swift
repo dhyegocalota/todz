@@ -24,7 +24,6 @@ struct MenuBarToday: View {
                 }
                 if let destination, !state.isFailed {
                     AddTaskField(destination: destination, focus: focus, focusedValue: .addField, onEscape: closeWhenEmpty)
-                        .id(destination)
                 }
                 if case .rows = state, let taskViews = model.taskViews {
                     MenuBarTodayHeading(openCount: taskViews.today.open.count)
@@ -39,9 +38,6 @@ struct MenuBarToday: View {
             Button(MainWindowCopy.newTask) { focus.wrappedValue = .addField }
                 .keyboardShortcut(newTaskKey)
                 .hidden()
-        }
-        .onChange(of: destination) {
-            Task { focus.wrappedValue = .addField }
         }
     }
 

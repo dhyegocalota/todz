@@ -19,6 +19,10 @@ struct AddTaskField<Focus: Hashable>: View {
                 .focused(focus, equals: focusedValue)
                 .onSubmit(submit)
                 .onExitCommand(perform: clear)
+                .onChange(of: destination) {
+                    title = clearedTitle
+                    localIssue = nil
+                }
                 .padding()
                 .background(.fill.quaternary)
             if let shownIssue {
