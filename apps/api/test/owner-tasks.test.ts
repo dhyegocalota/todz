@@ -125,8 +125,8 @@ describe('POST /owner/projects/:projectId/tasks', () => {
     const response = await addTasks({ project, tasks: [{ title: 'Fine' }, { title: '   ' }] });
     expect(response.status).toBe(HttpStatus.Unprocessable);
     expect(await response.json()).toEqual({ error: 'rule_violated', issue: RuleIssue.TitleEmpty, index: 1 });
-    const changes = await projectCall({ project, method: 'GET', path: '/changes?cursor=0' });
-    expect(await changes.json()).toEqual({ tasks: [], cursor: 0, has_more: false });
+    const history = await projectCall({ project, method: 'GET', path: '/tasks/1/history' });
+    expect(history.status).toBe(HttpStatus.NotFound);
   });
 
   test.each([
@@ -197,11 +197,11 @@ describe('PATCH /owner/projects/:projectId/tasks/:number', () => {
 
   test('placement first and last are accepted without an anchor', async () => {
     const project = await createOwnedProject();
-    const [first, , third] = await addTitled({ project, titles: ['One', 'Two', 'Three'] });
+    const [first, second] = await addTitled({ project, titles: ['One', 'Two', 'Three'] });
     const movedFirst = await updatedTask({ project, number: 3, body: { placement: { kind: 'first' } } });
     expect(movedFirst.order_key < present(first).order_key).toBe(true);
-    const movedLast = await updatedTask({ project, number: 3, body: { placement: { kind: 'last' } } });
-    expect(movedLast.order_key > present(third).order_key).toBe(true);
+    const movedLast = await updatedTask({ project, number: 1, body: { placement: { kind: 'last' } } });
+    expect(movedLast.order_key > present(second).order_key).toBe(true);
   });
 
   test('placing a task relative to itself is placement_anchor_invalid', async () => {
