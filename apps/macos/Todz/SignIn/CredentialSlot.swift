@@ -35,6 +35,7 @@ struct CredentialSlot: View {
             }
         }
         .task {
+            await Task.yield()
             isIdentityFocused = true
             guard let lastIdentity = model.lastIdentity else { return }
             identity = lastIdentity
