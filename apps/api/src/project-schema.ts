@@ -1,4 +1,4 @@
-export const PROJECT_SCHEMA_VERSION = 1;
+const EMPTY_STORE_VERSION = 0;
 
 const SCHEMA_VERSION_TABLE = 'CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL) STRICT';
 
@@ -30,11 +30,31 @@ export const VERSION_ONE_STATEMENTS = [
   'CREATE TABLE task_counter (last_issued_number INTEGER NOT NULL) STRICT',
 ];
 
+const VERSION_TWO_STATEMENTS = [
+  'ALTER TABLE tasks ADD COLUMN change_number INTEGER NOT NULL DEFAULT 0',
+  'UPDATE tasks SET change_number = number',
+  'CREATE TABLE change_counter (last_change_number INTEGER NOT NULL) STRICT',
+  'INSERT INTO change_counter (last_change_number) SELECT number FROM tasks ORDER BY number DESC LIMIT 1',
+  'CREATE UNIQUE INDEX tasks_change_number ON tasks (change_number)',
+];
+
+const MIGRATIONS = [
+  { version: 1, statements: VERSION_ONE_STATEMENTS },
+  { version: 2, statements: VERSION_TWO_STATEMENTS },
+];
+
+export const PROJECT_SCHEMA_VERSION = MIGRATIONS.length;
+
 export function applyProjectSchema(storage: DurableObjectStorage): void {
   const sql = storage.sql;
-  sql.exec(SCHEMA_VERSION_TABLE);
-  const isApplied = sql.exec('SELECT version FROM schema_version').toArray().length > 0;
-  if (isApplied) return;
-  VERSION_ONE_STATEMENTS.forEach((statement) => sql.exec(statement));
-  sql.exec('INSERT INTO schema_version (version) VALUES (?)', PROJECT_SCHEMA_VERSION);
+  storage.transactionSync(() => {
+    sql.exec(SCHEMA_VERSION_TABLE);
+    const [storedRow] = sql.exec<{ version: number }>('SELECT version FROM schema_version').toArray();
+    if (storedRow === undefined) sql.exec('INSERT INTO schema_version (version) VALUES (?)', EMPTY_STORE_VERSION);
+    const storedVersion = storedRow === undefined ? EMPTY_STORE_VERSION : storedRow.version;
+    MIGRATIONS.filter(({ version }) => version > storedVersion).forEach(({ version, statements }) => {
+      statements.forEach((statement) => sql.exec(statement));
+      sql.exec('UPDATE schema_version SET version = ?', version);
+    });
+  });
 }

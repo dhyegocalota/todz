@@ -17,6 +17,10 @@ type TaskRow = {
   completed_at: number | null;
 };
 
+type ChangedTaskRow = TaskRow & { change_number: number };
+
+export type TaskChange = { task: Task; changeNumber: number };
+
 type HistoryRow = {
   at: number;
   actor_kind: string;
@@ -28,6 +32,7 @@ type HistoryRow = {
 
 const TASK_COLUMNS =
   'number, title, notes, due_date, state, order_key, idempotency_key, created_by_kind, created_by_client, created_at, updated_at, completed_at';
+const FIRST_CHANGE_NUMBER = 1;
 const HISTORY_COLUMNS = 'at, actor_kind, actor_client, action, fields, note';
 
 function invalidColumn({ column, taskNumber }: { column: string; taskNumber: number }): Error {
@@ -155,16 +160,25 @@ export class SqliteTaskStore implements TaskStore {
   }
 
   lastChangeNumber(): number | null {
-    throw new Error('lastChangeNumber is not implemented');
+    const [row] = this.sql.exec<{ last_change_number: number }>('SELECT last_change_number FROM change_counter').toArray();
+    if (row === undefined) return null;
+    return row.last_change_number;
   }
 
-  listChangesSince({ cursor, limit }: { cursor: number; limit: number }): { task: Task; changeNumber: number }[] {
-    throw new Error(`listChangesSince is not implemented for ${cursor} and ${limit}`);
+  listChangesSince({ cursor, limit }: { cursor: number; limit: number }): TaskChange[] {
+    return this.sql
+      .exec<ChangedTaskRow>(
+        `SELECT ${TASK_COLUMNS}, change_number FROM tasks WHERE change_number > ? ORDER BY change_number LIMIT ?`,
+        cursor,
+        limit,
+      )
+      .toArray()
+      .map((row) => ({ task: taskOf(row), changeNumber: row.change_number }));
   }
 
   insertTask(task: Task): void {
     this.sql.exec(
-      `INSERT INTO tasks (${TASK_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO tasks (${TASK_COLUMNS}, change_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       task.number,
       task.title,
       task.notes,
@@ -177,13 +191,14 @@ export class SqliteTaskStore implements TaskStore {
       task.createdAt,
       task.updatedAt,
       task.completedAt,
+      this.takeChangeNumber(),
     );
     this.raiseCounterTo(task.number);
   }
 
   replaceTask(task: Task): void {
     this.sql.exec(
-      'UPDATE tasks SET title = ?, notes = ?, due_date = ?, state = ?, order_key = ?, updated_at = ?, completed_at = ? WHERE number = ?',
+      'UPDATE tasks SET title = ?, notes = ?, due_date = ?, state = ?, order_key = ?, updated_at = ?, completed_at = ?, change_number = ? WHERE number = ?',
       task.title,
       task.notes,
       task.dueDate,
@@ -191,6 +206,7 @@ export class SqliteTaskStore implements TaskStore {
       task.orderKey,
       task.updatedAt,
       task.completedAt,
+      this.takeChangeNumber(),
       task.number,
     );
   }
@@ -213,6 +229,14 @@ export class SqliteTaskStore implements TaskStore {
       .exec<HistoryRow>(`SELECT ${HISTORY_COLUMNS} FROM task_history WHERE task_number = ? ORDER BY id`, number)
       .toArray()
       .map((row) => historyEntryOf({ row, taskNumber: number }));
+  }
+
+  private takeChangeNumber(): number {
+    const lastChangeNumber = this.lastChangeNumber();
+    const changeNumber = lastChangeNumber === null ? FIRST_CHANGE_NUMBER : lastChangeNumber + 1;
+    this.sql.exec('DELETE FROM change_counter');
+    this.sql.exec('INSERT INTO change_counter (last_change_number) VALUES (?)', changeNumber);
+    return changeNumber;
   }
 
   private raiseCounterTo(number: number): void {
