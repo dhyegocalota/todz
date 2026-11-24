@@ -48,9 +48,13 @@ import Observation
     @ObservationIgnored var projectsToPullFromStart: Set<String> = []
     @ObservationIgnored var pullGates: [String: PullGate] = [:]
     @ObservationIgnored var queuedPulls: Set<String> = []
+    @ObservationIgnored var widgetPublication: Task<Void, Never>?
+    @ObservationIgnored var publishedWidgetSnapshot: WidgetSnapshotState?
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let store: any SyncStore
+    @ObservationIgnored let widgetStore: any WidgetStore
+    @ObservationIgnored let reloadWidgets: @Sendable () -> Void
     @ObservationIgnored let signals: any ChangeSignals
     @ObservationIgnored public let timeZone: TimeZone
     @ObservationIgnored let now: () -> Date
@@ -61,6 +65,8 @@ import Observation
         service: any OwnerService,
         vault: any SessionVault,
         store: any SyncStore,
+        widgetStore: any WidgetStore,
+        reloadWidgets: @escaping @Sendable () -> Void,
         signals: any ChangeSignals,
         timeZone: TimeZone,
         now: @escaping () -> Date = Date.init,
@@ -70,6 +76,8 @@ import Observation
         self.service = service
         self.vault = vault
         self.store = store
+        self.widgetStore = widgetStore
+        self.reloadWidgets = reloadWidgets
         self.signals = signals
         self.timeZone = timeZone
         self.now = now
