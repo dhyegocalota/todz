@@ -59,3 +59,5 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0036](0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md) | The menu bar icon counts Today's open tasks, behind a setting | Proposed | 2026-11-24 |
 | [0037](0037-the-v1-scenario-walks-the-native-app-with-computer-use-and-the-agent-with-an-mcp-client.md) | The v1 scenario walks the native app with computer use and the agent with an MCP client | Proposed | 2026-11-24 |
 | [0038](0038-the-brand-sources-are-svgs-in-docs-brand-and-the-app-s-assets-are-generated-from-them.md) | The brand sources are SVGs in docs/brand, and the app's assets are generated from them | Proposed | 2026-11-24 |
+| [0040](0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md) | The owner signs in with an email link, bound to the Mac that asked for it | Proposed | 2026-11-24 |
+| [0041](0041-outgoing-email-goes-through-a-port-with-a-console-sender-for-development.md) | Outgoing email goes through a port, with a console sender for development | Proposed | 2026-11-24 |
