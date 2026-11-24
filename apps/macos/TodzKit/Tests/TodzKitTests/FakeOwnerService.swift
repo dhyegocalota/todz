@@ -56,7 +56,7 @@ private let inboxName = "Inbox"
 
     func createProject(session: String, workspaceIdentifier: String, name: String) async throws -> Project {
         try await record(.createProject(session: session, workspaceIdentifier: workspaceIdentifier, name: name))
-        return Project(identifier: UUID().uuidString, name: name, isInbox: false, createdAt: tick())
+        return Project(identifier: "\(workspaceIdentifier)-\(name)", name: name, isInbox: false, createdAt: tick())
     }
 
     func renameProject(session: String, projectIdentifier: String, name: String) async throws -> Project {
