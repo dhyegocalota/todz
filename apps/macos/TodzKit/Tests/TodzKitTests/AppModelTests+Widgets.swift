@@ -197,6 +197,39 @@ extension AppModelTests {
         await harness.flushed()
     }
 
+    @Test func aSnapshotRedrawnByTheExtensionIsRewrittenAfterTheNotification() async throws {
+        let harness = try await launchedWidgetHarness()
+        let truth = try #require(harness.widgets.snapshot)
+        let toggled = WidgetToggle.setting(truth, projectIdentifier: inboxIdentifier, number: 1, to: .done, at: fixedInstant)
+        harness.widgets.snapshot = try #require(toggled).snapshot
+        harness.model.widgetRequestsAdded()
+        await harness.model.widgetIntake?.value
+        #expect(harness.widgets.snapshot == truth)
+        #expect(harness.widgets.routes() == [.requests, .readSnapshot, .writeSnapshot, .reload])
+    }
+
+    @Test func aNotificationWithNothingRedrawnWritesNothing() async throws {
+        let harness = try await launchedWidgetHarness()
+        harness.model.widgetRequestsAdded()
+        await harness.model.widgetIntake?.value
+        #expect(harness.widgets.routes() == [.requests, .readSnapshot])
+    }
+
+    @Test func aSnapshotLeftAfterASignOutIsErasedOnTheNextNotification() async throws {
+        let harness = try await launchedWidgetHarness()
+        let left = try #require(harness.widgets.snapshot)
+        harness.widgets.failures = [.erase: .unwritable, .eraseSnapshot: .unwritable]
+        await harness.model.signOut()
+        await harness.published()
+        #expect(harness.widgets.snapshot == left)
+        harness.widgets.failures = [:]
+        harness.widgets.calls = []
+        harness.model.widgetRequestsAdded()
+        await harness.model.widgetIntake?.value
+        #expect(harness.widgets.snapshot == nil)
+        #expect(harness.widgets.routes() == [.readSnapshot, .eraseSnapshot, .reload])
+    }
+
     @Test func aRequestWhoseRemovalFailsIsNotTaken() async throws {
         let harness = try await launchedWidgetHarness()
         let waiting = stored(number: 1, state: .done)
