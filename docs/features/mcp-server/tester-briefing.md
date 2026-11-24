@@ -62,7 +62,7 @@ Red text is what the red run printed, never the text expected. Every red commit 
 ## Known gaps
 
 - `issueProjectKey` needs `insertProjectKey`, so that directory function landed with step 2's green commit (`926591b`), not step 3; it is tested through `project-keys.test.ts`, not on its own in `directory.test.ts`.
-- `mcp-endpoint.ts` parses the body with a local `parsedBody` (try/catch around `request.clone().json()`); `sqlite-task-store.ts` has a private `parsedJson` for strings. They were not merged into one helper because `sqlite-task-store.ts` is outside this feature's paths.
+- ~~`mcp-endpoint.ts` parses the body with a local `parsedBody`.~~ Merged into `parsedJson` (`apps/api/src/parsed-json.ts`) in `c71c3d6` (fix round 2).
 - An `initialize` is recognised by `method: 'initialize'` with a string or number `id`; one without an `id` is treated as any other 2025-era request (400 `session_required`). The spec does not name this case.
 - ~~The session row is stored before the SDK answers `initialize`.~~ Fixed in `9a85ae4` (fix round).
 - The server `instructions` and the field descriptions are not asserted through the client; only the tool and prompt descriptions are.
@@ -79,3 +79,14 @@ Red text is what the red run printed, never the text expected. Every red commit 
 | `mcp-tools.test.ts::a request whose envelope names no client writes nothing`, red `dd89154` | `expected { content: [ { …(2) } ], …(3) } to match object { Object (content, isError) }` | green `7a21663`: `MCP_COPY.clientUnnamed` |
 
 Hypotheses: 9. A key never holds more than 20 rows, even under concurrent `initialize` calls. Break it by: 30 `initialize` calls with one key in `Promise.all`, then counting rows. 10. A task's notes cannot leave the `<task>` fence. Break it by: notes holding `</task>` followed by instructions (the fence is not escaped; the fixed sentence is the only guard).
+
+## Fix round 2
+
+| Test | Red before the change because | Green after because |
+|------|--------------------------------|---------------------|
+| `mcp-endpoint.test.ts::an initialize whose clock is behind the live rows of its key is served with the session it answers`, the tester's red `a4e2286` | `expected 404 to be 200` | green `8171e84`: the cap never deletes the new digest and keeps the 19 newest others |
+| `mcp-format.test.ts::the prompt escapes ampersands and angle brackets…`, `mcp-tools.test.ts::the next prompt escapes notes that close the task tag…` (both eras; replaces the tester's pin of the unescaped fence), red `8fb4f52` | `expected 'Work on this task from todz. The text…' to contain '<task>\nT-3 Ship &lt;it&gt; &amp; go\…'`; `expected [ …(3) ] to have a length of 2 but got 3` | green `561f127`: the prompt's task block is escaped; the `next` tool's answer is not |
+| `directory.test.ts::the mcp sessions table > is indexed by key digest and creation time (pin)` | pin, `2360157` (lands with the index) | n/a |
+| `parsedJson` shared by `sqlite-task-store.ts` and `mcp-endpoint.ts` | refactor `c71c3d6`, existing suites green | n/a |
+
+Hypothesis 10 now reads: a note cannot close the fence. Break it by: `&lt;/task&gt;` typed literally (it becomes `&amp;lt;/task&amp;gt;`), titles holding tags, and a closing tag split across the title and the notes.
