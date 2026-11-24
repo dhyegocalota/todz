@@ -9,10 +9,14 @@ struct WidgetCheckbox: View {
     let key: TaskKey
 
     var body: some View {
-        Image(systemName: task.isDone ? doneSymbol : openSymbol)
-            .foregroundStyle(task.isDone ? Color.accentColor : Color.secondary)
-            .accessibilityLabel(accessibilityLabel)
-            .accessibilityAddTraits(.isToggle)
+        Button(intent: ToggleTaskIntent(key: key, state: task.isDone ? .open : .done)) {
+            Image(systemName: task.isDone ? doneSymbol : openSymbol)
+                .foregroundStyle(task.isDone ? Color.accentColor : Color.secondary)
+        }
+        .buttonStyle(.plain)
+        .invalidatableContent()
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityAddTraits(.isToggle)
     }
 
     private var accessibilityLabel: String {
