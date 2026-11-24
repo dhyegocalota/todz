@@ -273,3 +273,4 @@ The owner was not available on 2026-11-24. Each answer below is the build loop's
 | O7 short id | A: trailing in every row and in the inspector | 2026-11-24 |
 | O8 open values | A, A, A: `Color.red` for overdue, one `#2F5BFF` in both appearances, system spacing and radius | 2026-11-24 |
 | Minor calls | as listed above, including no workspace rename in the shell | 2026-11-24 |
+| § 1.1 window minimum | **848 × 480 with every column shown, not 760**: on macOS 26 the split view keeps the sidebar (224) and the inspector (320) at their ideal widths while the window narrows and counts the floating sidebar twice. Measured floors: 320 with the list alone, 528 with the sidebar, 640 with the inspector. The owner can choose instead a sidebar ideal of 180 (about 760) or an inspector ideal of 260 (about 788) | 2026-11-24 |
