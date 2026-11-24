@@ -8,13 +8,18 @@ public struct ProjectFeed: Sendable {
     }
 
     public func pull(session: String, projectIdentifier: String, cursor: Int) async throws -> ProjectChanges {
-        fatalError("ProjectFeed.pull is not implemented")
+        do {
+            return try await changes(session: session, projectIdentifier: projectIdentifier, cursor: cursor, isFromStart: false)
+        } catch OwnerAPIError.cursorAhead {
+            return try await changes(session: session, projectIdentifier: projectIdentifier, cursor: Self.firstCursor, isFromStart: true)
+        }
     }
 
-    private func tasks(session: String, projectIdentifier: String, cursor: Int) async throws -> [TaskRecord] {
+    private func changes(session: String, projectIdentifier: String, cursor: Int, isFromStart: Bool) async throws -> ProjectChanges {
         try Task.checkCancellation()
         let page = try await service.readChanges(session: session, projectIdentifier: projectIdentifier, cursor: cursor)
-        guard page.hasMore else { return page.tasks }
-        return page.tasks + (try await tasks(session: session, projectIdentifier: projectIdentifier, cursor: page.cursor))
+        guard page.hasMore else { return ProjectChanges(tasks: page.tasks, cursor: page.cursor, isFromStart: isFromStart) }
+        let rest = try await changes(session: session, projectIdentifier: projectIdentifier, cursor: page.cursor, isFromStart: isFromStart)
+        return ProjectChanges(tasks: page.tasks + rest.tasks, cursor: rest.cursor, isFromStart: isFromStart)
     }
 }
