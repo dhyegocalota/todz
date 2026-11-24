@@ -5,3 +5,5 @@ CREATE TABLE mcp_sessions (
   created_at INTEGER NOT NULL,
   expires_at INTEGER NOT NULL
 ) STRICT;
+
+CREATE INDEX mcp_sessions_key_digest ON mcp_sessions (key_digest, created_at);

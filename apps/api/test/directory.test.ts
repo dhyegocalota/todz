@@ -140,6 +140,17 @@ describe('the owner time zone', () => {
 });
 
 describe('the mcp sessions table', () => {
+  test('is indexed by key digest and creation time (pin)', async () => {
+    const { results } = await env.DIRECTORY.prepare("SELECT name FROM pragma_index_list('mcp_sessions') WHERE origin = 'c'").all<{
+      name: string;
+    }>();
+    expect(results.map((row) => row.name)).toEqual(['mcp_sessions_key_digest']);
+    const columns = await env.DIRECTORY.prepare("SELECT name FROM pragma_index_info('mcp_sessions_key_digest') ORDER BY seqno").all<{
+      name: string;
+    }>();
+    expect(columns.results.map((row) => row.name)).toEqual(['key_digest', 'created_at']);
+  });
+
   test('a key digest with no key row is refused', async () => {
     const insertion = env.DIRECTORY.prepare(
       'INSERT INTO mcp_sessions (digest, key_digest, client_name, created_at, expires_at) VALUES (?, ?, ?, ?, ?)',
