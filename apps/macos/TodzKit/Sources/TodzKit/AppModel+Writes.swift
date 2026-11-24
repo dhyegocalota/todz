@@ -4,6 +4,7 @@ extension AppModel {
         retry: @escaping @MainActor () async -> Void,
         operation: (String) async throws -> Value
     ) async -> Value? {
+        guard !writesInFlight.contains(target) else { return nil }
         writesInFlight.insert(target)
         defer { writesInFlight.remove(target) }
         ruleIssues[target] = nil
