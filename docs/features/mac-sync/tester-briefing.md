@@ -13,7 +13,8 @@ Written by the developer sub-agents when their steps were done. The developers d
   - `RefreshButton` and the Refresh command read TodzKit's `isRefreshing` (the app's shadow over `pullsInFlight` is gone); `TaskListState` reads `model.taskViews`, the board with the outbox applied.
   - The shell's in-flight `ProgressView`s, read-only fields and disabled rows are gone from `TaskRow`, `TaskCheckbox`, the Task menu, `TitleField`, `NotesEditor`, `DueDatePicker` and `AddTaskField`.
   - `PendingTaskRow` (new), `TaskRowTitle` (new, shared by both rows), `TaskSection.pendingTasks`, `TaskSections` (pending adds in Inbox, a project, Today and the Upcoming day groups), `TaskRows` (pending rows after the confirmed ones, selection disabled, no move; a double-click on no selection opens nothing).
-  - `MainWindowState`: the checked row's linger (`completionLinger`, one second, per task, its own timer; animated unless Reduce Motion), `TaskLinger` and `LingeringTasks` (new); every toggle goes through `MainWindowState.toggleDone(task:model:)`; `AppModel+Window.openListTasks`.
+  - TodzKit, new files of G3: `UpcomingDay.swift` and `TaskViews+Upcoming.swift` (`upcomingSchedule`: `upcomingDays` and `upcomingPendingDays` merged by day, confirmed tasks first), `CompletionLingers.swift` (per task, the list and place where it was checked; puts the done task back there, last when the list got shorter, never twice); tests `TaskViewsTests+Upcoming.swift` and `CompletionLingersTests.swift`.
+  - `MainWindowState`: the checked row's linger (`completionLinger`, one second, per task, its own timer; animated unless Reduce Motion) over one `CompletionLingers`; every toggle goes through `MainWindowState.toggleDone(task:model:)`.
   - `TitleField`, `NotesEditor`: a focused field the owner has typed in keeps its text on a live update; one the owner has not typed in follows it.
   - `RootView`: the sign-out `.confirmationDialog`; `MainWindowState.requestSignOut(model:)` from the app menu, `WorkspaceSwitcher` and `FirstWorkspaceScreen`. `SignInScreen`: the waiting line.
   - Step 21: `AppModel.pullsInFlight`, `AppModel.unconfirmedDrafts`, the app's `isWriting(task:)`, `isSaving(task:field:)` and `DueDatePicker`'s issue line are deleted.
@@ -40,7 +41,7 @@ open apps/macos/build/Build/Products/Debug/Todz.app
 
 Quit it with ⌘Q or `pkill -f Todz.app/Contents/MacOS/Todz`. The session file is `~/Library/Containers/dev.todz.Todz/Data/Library/Application Support/session`; the cache is the `Cache` folder beside it (`owner.json`, `projects/<id>.json`, `outbox.json`).
 
-The unit suite: `swift test --package-path apps/macos/TodzKit` (290 tests in 20 suites at `2d11f33`). The live suite: `TODZ_LIVE_API_URL=http://localhost:8787 swift test --package-path apps/macos/TodzKit --filter LiveOwnerAPITests`.
+The unit suite: `swift test --package-path apps/macos/TodzKit` (304 tests in 22 suites at `53aab63`). The live suite: `TODZ_LIVE_API_URL=http://localhost:8787 swift test --package-path apps/macos/TodzKit --filter LiveOwnerAPITests`.
 
 ### A refused change: the forwarding proxy
 
@@ -136,7 +137,9 @@ Each red row was committed alone; the text is what the red run printed, copied f
 | `AppModelTests+Cache` failures (`ea9768a`) | `Expectation failed: harness.store.calls.contains(.eraseProject(identifier: inboxIdentifier))`; `….contains(.writeOutbox(emptyOutbox))`; `harness.model.banner == .waitingChangesLost`; `Array(harness.store.routes().prefix(3)) == [.readOwner, .erase, .readOutbox]`; `harness.model.banner == .cacheNotSaved` | `658762c` |
 | `AppModelTests+Pull` status (`f39d02a`) | `Fatal error: AppModel.syncStatus is not implemented` | `965585f` |
 | `TaskBoardOverlayTests::aTaskReopenedAfterAMoveTakesItsPlaceByItsKeyAmongTheMovedTasks` (`8207230`) | `Expectation failed: try openTitles(applied) == ["B", "X", "Y", "A"]` | `61348c7` |
-| App views, G3 (`ad0a52f`, `c8848e4`, `2d11f33`) | no unit test: the app target has no test target and the `macos` gate runs `swift test` and `xcodebuild build` only, so the view logic of steps 19 and 20 (the Upcoming merge, the linger, the waiting line) is proven by the walk | — |
+| `TaskViewsUpcomingTests` (`68b8173`) | `TodzKit/TaskViews+Upcoming.swift:3: Fatal error: TaskViews.upcomingSchedule is not implemented` | `8687e2a` |
+| `CompletionLingersTests` (`209c8b9`) | `TodzKit/CompletionLingers.swift:9: Fatal error: CompletionLingers.toggling is not implemented` | `53aab63` |
+| App views, G3 (`ad0a52f`, `c8848e4`, `2d11f33`) | no unit test: the app target has no test target and the `macos` gate runs `swift test` and `xcodebuild build` only, so the rest of steps 19 and 20 (the sign-in waiting line, the rows, the dialog, the status item) is proven by the walk | — |
 
 ## Hypotheses to attack
 
@@ -156,7 +159,7 @@ Every "it works" is a hypothesis. The lane sections hold the model's; these are 
 ## Known gaps
 
 - No socket ping (ADR 0029): a socket the network drops silently is noticed only by the next failure (a write, ⌘R, a pull); changes made meanwhile show on the next pull.
-- The view logic of steps 19 and 20 has no unit test (no app test target); the lead was asked whether to move the Upcoming merge and the linger into TodzKit with tests.
+- The views of steps 19 and 20 have no unit test (no app test target); only the Upcoming merge and the linger, moved into TodzKit, are unit-tested. The linger's one-second timer and its animation live in the app.
 - An Upcoming pending row cannot be produced from the window: an add carries no due date, or today's in Today, so `upcomingPendingDays` is empty in practice; the merge is there for a pending add with a later due date.
 - Dragging a row while another row lingers counts the lingering (done) row in the offsets, so the move can be anchored on a done task and come back refused.
 - Live inserts, moves and removals are applied without an explicit animation; whether the system `List` animates them is for the walk to see.
