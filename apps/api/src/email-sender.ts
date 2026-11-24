@@ -19,7 +19,7 @@ const EMAIL_SENDER_OF_KIND: Record<EmailSenderKind, EmailSender> = {
   },
 };
 
-function isLocalOrigin(origin: string): boolean {
+export function isLocalOrigin(origin: string): boolean {
   return LOCAL_HOSTNAMES.includes(new URL(origin).hostname);
 }
 

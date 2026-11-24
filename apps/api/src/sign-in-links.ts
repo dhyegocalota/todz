@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { digestCredential } from './credential-digest';
 import { generateCredentialSecret } from './credential-secret';
 import { deleteSignInLink, insertSignInLinkWithinLimit } from './directory-sign-in-links';
-import { emailSenderOf } from './email-sender';
+import { emailSenderOf, isLocalOrigin } from './email-sender';
 import { HttpStatus } from './http-status';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
 import { type OwnerContext, parsedPublicBody } from './owner-request';
@@ -17,6 +17,8 @@ const SIGN_IN_LINKS_PER_ADDRESS_MAX = 5;
 const ADDRESS_LENGTH_MAX = 254;
 const ADDRESS_CHARACTER = '[^@<>,"\\x00-\\x20\\x7f-\\uffff]';
 const ADDRESS_PATTERN = new RegExp(`^${ADDRESS_CHARACTER}+@${ADDRESS_CHARACTER}+\\.${ADDRESS_CHARACTER}+$`);
+const SECURE_PROTOCOL = 'https:';
+const PLAIN_PROTOCOL = 'http:';
 const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
 
 const RequestBodySchema = z.object({ email: z.string(), link_challenge: z.string() });
@@ -24,7 +26,11 @@ const RequestBodySchema = z.object({ email: z.string(), link_challenge: z.string
 export function publicOriginOf(configured: string | undefined): string | null {
   if (configured === undefined) return null;
   if (!URL.canParse(configured)) return null;
-  if (new URL(configured).origin !== configured) return null;
+  const { origin, protocol } = new URL(configured);
+  if (origin !== configured) return null;
+  const isSecure = protocol === SECURE_PROTOCOL;
+  const isPlainOnLocalHost = protocol === PLAIN_PROTOCOL && isLocalOrigin(configured);
+  if (!isSecure && !isPlainOnLocalHost) return null;
   return configured;
 }
 
