@@ -493,3 +493,82 @@ describe('the sessions of one key', () => {
     expect((await sessionRowsOf(other.key)).map((row) => row.digest)).toEqual([otherExpiredDigest]);
   });
 });
+
+describe('edge cases of the session cap found during execution', () => {
+  const CONCURRENT_INITIALIZE_COUNT = 25;
+
+  async function openSessionAt({ key, now }: { key: string; now: number }): Promise<string> {
+    const response = await serveMcp({ request: mcpRequest({ authorization: bearer(key), body: initializeOf(CLIENT_NAME) }), env, now });
+    const sessionId = response.headers.get(SESSION_HEADER);
+    await response.body?.cancel();
+    if (sessionId === null) throw new Error('initialize should answer a session id');
+    return sessionId;
+  }
+
+  async function statusAt({ key, sessionId, now }: { key: string; sessionId: string; now: number }): Promise<number> {
+    const response = await serveMcp({ request: mcpRequest({ authorization: bearer(key), body: TOOLS_LIST_BODY, sessionId }), env, now });
+    await response.body?.cancel();
+    return response.status;
+  }
+
+  async function seedLiveSessions({ key, createdAt }: { key: string; createdAt: number[] }): Promise<string[]> {
+    return createdAt.reduce<Promise<string[]>>(async (seeded, now) => {
+      const sessionId = generateCredentialSecret();
+      await insertMcpSession({
+        directory: env.DIRECTORY,
+        digest: await digestCredential(sessionId),
+        keyDigest: await digestCredential(key),
+        clientName: CLIENT_NAME,
+        now,
+        expiresAt: now + MCP_SESSION_LIFETIME_MS,
+        sessionsPerKeyMax: MCP_SESSIONS_PER_KEY_MAX,
+      });
+      return [...(await seeded), sessionId];
+    }, Promise.resolve([]));
+  }
+
+  test('initializes of one key at once keep the cap, and each answered session is served exactly when its row is stored', async () => {
+    const { key } = await seedIssuedKey();
+    const sessionIds = await Promise.all(Array.from({ length: CONCURRENT_INITIALIZE_COUNT }, () => openSession(key)));
+    expect(new Set(sessionIds).size).toBe(CONCURRENT_INITIALIZE_COUNT);
+    const storedDigests = new Set((await sessionRowsOf(key)).map((row) => row.digest));
+    expect(storedDigests.size).toBe(MCP_SESSIONS_PER_KEY_MAX);
+    const outcomes = await Promise.all(
+      sessionIds.map(async (sessionId) => {
+        const response = await toolsList({ key, sessionId });
+        await response.body?.cancel();
+        return { status: response.status, isStored: storedDigests.has(await digestCredential(sessionId)) };
+      }),
+    );
+    expect(outcomes.map(({ status }) => status)).toEqual(outcomes.map(({ isStored }) => (isStored ? OK_STATUS : NOT_FOUND_STATUS)));
+  });
+
+  test('one more initialize than the cap in the same millisecond drops the first by insertion order', async () => {
+    const { key } = await seedIssuedKey();
+    const sessionIds = await Array.from({ length: MCP_SESSIONS_PER_KEY_MAX + 1 }).reduce<Promise<string[]>>(
+      async (opened) => [...(await opened), await openSessionAt({ key, now: CLOCK_NOW })],
+      Promise.resolve([]),
+    );
+    expect(await sessionRowsOf(key)).toHaveLength(MCP_SESSIONS_PER_KEY_MAX);
+    const statuses = await Promise.all(sessionIds.map((sessionId) => statusAt({ key, sessionId, now: CLOCK_NOW })));
+    expect(statuses).toEqual([NOT_FOUND_STATUS, ...Array.from({ length: MCP_SESSIONS_PER_KEY_MAX }, () => OK_STATUS)]);
+  });
+
+  test('a key whose rows are all live drops its oldest for a new session and keeps the others', async () => {
+    const { key } = await seedIssuedKey();
+    const createdAt = Array.from({ length: MCP_SESSIONS_PER_KEY_MAX }, (_unused, index) => CLOCK_NOW - MCP_SESSIONS_PER_KEY_MAX + index);
+    const [oldest, ...others] = await seedLiveSessions({ key, createdAt });
+    const opened = await openSessionAt({ key, now: CLOCK_NOW });
+    expect(await sessionRowsOf(key)).toHaveLength(MCP_SESSIONS_PER_KEY_MAX);
+    expect(await statusAt({ key, sessionId: String(oldest), now: CLOCK_NOW })).toBe(NOT_FOUND_STATUS);
+    const statuses = await Promise.all([...others, opened].map((sessionId) => statusAt({ key, sessionId, now: CLOCK_NOW })));
+    expect(statuses).toEqual(Array.from({ length: MCP_SESSIONS_PER_KEY_MAX }, () => OK_STATUS));
+  });
+
+  test('an initialize whose clock is behind the live rows of its key is served with the session it answers', async () => {
+    const { key } = await seedIssuedKey();
+    await seedLiveSessions({ key, createdAt: Array.from({ length: MCP_SESSIONS_PER_KEY_MAX }, () => CLOCK_NOW + 1) });
+    const opened = await openSessionAt({ key, now: CLOCK_NOW });
+    expect(await statusAt({ key, sessionId: opened, now: CLOCK_NOW })).toBe(OK_STATUS);
+  });
+});
