@@ -23,7 +23,37 @@ extension AppModel {
         publishWidgets()
     }
 
-    public func takeWidgetRequests() async {}
+    public func takeWidgetRequests() async {
+        guard case .ready = widgetSnapshot else { return }
+        let stored: [StoredWidgetRequest]
+        do {
+            stored = try widgetStore.requests()
+        } catch {
+            return
+        }
+        guard !stored.isEmpty else { return }
+        for request in stored.map(\.request) {
+            await take(request)
+        }
+        try? widgetStore.removeRequests(stored.map(\.name))
+        guard case let .ready(snapshot) = widgetSnapshot else { return }
+        writeWidgetSnapshot(snapshot)
+    }
+
+    // NB ADR 0032: a widget's request reaches the outbox only for a task in the current Today that is not already in that state.
+    private func take(_ request: WidgetRequest) async {
+        guard let today = taskViews?.today else { return }
+        let isRequested = { (boardTask: BoardTask) in
+            boardTask.project.identifier == request.projectIdentifier && boardTask.task.number == request.number
+        }
+        let requested = (today.open + today.doneToday).first(where: isRequested)
+        guard let requested, requested.task.state != request.state else { return }
+        let key = TaskKey(projectIdentifier: request.projectIdentifier, number: request.number)
+        switch request.state {
+        case .done: await complete(task: key)
+        case .open: await reopen(task: key)
+        }
+    }
 
     func observeWidgets() {
         withObservationTracking {

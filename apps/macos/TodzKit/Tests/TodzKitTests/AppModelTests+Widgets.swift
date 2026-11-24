@@ -43,7 +43,7 @@ extension AppModelTests {
         harness.vault.secret = harness.session
         await harness.model.launch()
         await harness.published()
-        #expect(harness.widgets.routes() == [.writeSnapshot, .reload])
+        #expect(harness.widgets.routes().filter { $0 != .requests } == [.writeSnapshot, .reload])
         #expect(harness.widgets.snapshot?.workspaceName == "acme")
         #expect(harness.widgets.snapshot?.day == today)
         #expect(harness.widgets.snapshot?.open.map(\.title) == ["Task 1", "Task 2"])

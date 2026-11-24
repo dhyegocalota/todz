@@ -133,11 +133,7 @@ import Observation
         session = secret
         phase = .loading
         openCache(cachedOwner())
-        guard phase == .ready else {
-            await loadWorkspaces()
-            return
-        }
-        await reloadWorkspacesQuietly()
+        await openWorkspaces()
     }
 
     public func signIn(identity: String) async {
@@ -170,11 +166,7 @@ import Observation
         keep(secret: issued.sessionToken)
         openCache(cached)
         startSending()
-        guard phase == .ready else {
-            await loadWorkspaces()
-            return
-        }
-        await reloadWorkspacesQuietly()
+        await openWorkspaces()
     }
 
     public func signOut() async {
@@ -279,6 +271,20 @@ import Observation
         isOwnerConfirmed = true
         ownerConfirmationFailures = 0
         ownerIdentifier = owner.identifier
+    }
+
+    private func openWorkspaces() async {
+        await takeWidgetRequests()
+        await loadOrReloadWorkspaces()
+        await takeWidgetRequests()
+    }
+
+    private func loadOrReloadWorkspaces() async {
+        guard phase == .ready else {
+            await loadWorkspaces()
+            return
+        }
+        await reloadWorkspacesQuietly()
     }
 
     private func confirmedOwner() async throws -> Owner {
