@@ -258,6 +258,15 @@ extension AppModelTests {
         #expect(harness.pendingLinks.link == nil)
     }
 
+    @Test func aLinkHeldBeforeLaunchSurvivesAnExpiredStoredPendingLinkAndSaysSo() async throws {
+        let harness = try harnessWithAPendingLink(at: fixedInstant)
+        await harness.model.redeem(signInLink: try incomingLink())
+        await harness.model.launch()
+        #expect(harness.service.calls == [])
+        #expect(harness.model.signInError == .linkNotRequested)
+        #expect(harness.pendingLinks.link == nil)
+    }
+
     @Test func aLinkThatArrivesBeforeLaunchSettlesIsDroppedOnceSignedIn() async throws {
         let harness = try harnessWithAPendingLink()
         harness.seedWorkspace(name: "acme")
