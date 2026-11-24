@@ -16,13 +16,7 @@ export async function issueProjectKey({
   now: number;
 }): Promise<{ id: string; secret: string }> {
   const secret = `${PROJECT_KEY_PREFIX}${generateCredentialSecret()}`;
-  await insertProjectKey({
-    directory,
-    digest: await digestCredential(secret),
-    id: crypto.randomUUID(),
-    hint: secret.slice(-KEY_HINT_LENGTH),
-    projectId,
-    now,
-  });
-  return { id: '', secret };
+  const id = crypto.randomUUID();
+  await insertProjectKey({ directory, digest: await digestCredential(secret), id, hint: secret.slice(-KEY_HINT_LENGTH), projectId, now });
+  return { id, secret };
 }

@@ -121,3 +121,20 @@ export async function findOwnedProject({
   if (row === null) return null;
   return row.id;
 }
+
+export async function findOwnedWorkspace({
+  directory,
+  ownerId,
+  workspaceId,
+}: {
+  directory: D1Database;
+  ownerId: string;
+  workspaceId: string;
+}): Promise<string | null> {
+  const row = await directory
+    .prepare('SELECT id FROM workspaces WHERE id = ? AND owner_id = ?')
+    .bind(workspaceId, ownerId)
+    .first<ProjectRow>();
+  if (row === null) return null;
+  return row.id;
+}
