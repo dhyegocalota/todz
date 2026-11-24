@@ -37,6 +37,9 @@ public protocol OwnerService: Sendable {
     func reopenTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [ReopenedTask]
     func readHistory(session: String, projectIdentifier: String, number: Int) async throws -> [HistoryEntry]
     func readChanges(session: String, projectIdentifier: String, cursor: Int) async throws -> ChangePage
+    func listKeys(session: String, projectIdentifier: String) async throws -> [ProjectKey]
+    func issueKey(session: String, projectIdentifier: String) async throws -> IssuedKey
+    func revokeKey(session: String, projectIdentifier: String, keyIdentifier: String) async throws
 }
 
 public struct OwnerAPI: OwnerService {
@@ -128,6 +131,18 @@ public struct OwnerAPI: OwnerService {
         let path = "\(projectPath(projectIdentifier))/changes"
         let queryItems = [URLQueryItem(name: cursorParameter, value: String(cursor))]
         return try await answer(ChangePage.self, to: OwnerRequest(method: .get, path: path, session: session, queryItems: queryItems))
+    }
+
+    public func listKeys(session: String, projectIdentifier: String) async throws -> [ProjectKey] {
+        fatalError("listKeys is not implemented")
+    }
+
+    public func issueKey(session: String, projectIdentifier: String) async throws -> IssuedKey {
+        fatalError("issueKey is not implemented")
+    }
+
+    public func revokeKey(session: String, projectIdentifier: String, keyIdentifier: String) async throws {
+        fatalError("revokeKey is not implemented")
     }
 
     private func answer<Answer: Decodable>(_ type: Answer.Type, to request: OwnerRequest) async throws -> Answer {
