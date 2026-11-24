@@ -1,6 +1,5 @@
 import Foundation
 
-private let projectsPath = "/owner/projects"
 private let changedMessage = "changed"
 private let socketSchemeOfScheme = ["http": "ws", "https": "wss"]
 
@@ -10,7 +9,7 @@ private let failureOfStatus: [ResponseStatus: OwnerAPIError] = [
 ]
 
 private func socketPath(_ projectIdentifier: String) -> String {
-    "\(projectsPath)/\(projectIdentifier)/socket"
+    "\(projectPath(projectIdentifier))/socket"
 }
 
 private func isChanged(_ message: URLSessionWebSocketTask.Message) -> Bool {

@@ -10,7 +10,7 @@ private func projectsPath(workspaceIdentifier: String) -> String {
     "\(workspacesPath)/\(workspaceIdentifier)/projects"
 }
 
-private func projectPath(_ projectIdentifier: String) -> String {
+func projectPath(_ projectIdentifier: String) -> String {
     "\(ownerPath)/projects/\(projectIdentifier)"
 }
 
