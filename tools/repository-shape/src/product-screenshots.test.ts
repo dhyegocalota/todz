@@ -8,7 +8,7 @@ const SCREENSHOTS_FOLDER = 'docs/screenshots';
 const FEATURES_FOLDER = 'docs/features';
 const WALK_HEADING = '## A walk through todz';
 const PNG_EXTENSION = '.png';
-const SCREENSHOT_PATH_PATTERN = /^docs\/screenshots\/([^/]+)\/\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.png$/;
+const SCREENSHOT_PATH_PATTERN = /^docs\/screenshots\/(?<slug>[^/]+)\/\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.png$/;
 const WIDTH_OFFSET = 16;
 const MAX_WIDTH_PIXELS = 1600;
 const MAX_BYTES = 1024 * 1024;
@@ -26,9 +26,9 @@ function pngWidth(path: string): number {
 }
 
 function isNamedForAFeature(path: string): boolean {
-  const match = SCREENSHOT_PATH_PATTERN.exec(path);
-  if (!match) return false;
-  return featureSlugs().includes(match[1]);
+  const slug = SCREENSHOT_PATH_PATTERN.exec(path)?.groups?.slug;
+  if (!slug) return false;
+  return featureSlugs().includes(slug);
 }
 
 describe('product screenshots', () => {
