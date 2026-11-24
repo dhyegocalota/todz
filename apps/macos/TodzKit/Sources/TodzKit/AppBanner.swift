@@ -9,4 +9,6 @@ public enum AppBanner: Equatable, Sendable {
     case projectGone
     case workspaceGone
     case changesRefused(count: Int)
+    case cacheNotSaved
+    case waitingChangesLost
 }

@@ -5,6 +5,12 @@ import Testing
 private let inboxIdentifier = "acme-inbox"
 private let launchIdentifier = "acme-launch"
 private let firstTask = TaskKey(projectIdentifier: inboxIdentifier, number: 1)
+private let undecodableOutbox = Data("not an outbox".utf8)
+
+enum UnreadableOutbox: CaseIterable, Sendable {
+    case unreadable
+    case undecodable
+}
 
 extension AppModelTests {
     @MainActor private func cachedHarness() throws -> AppModelHarness {
@@ -207,5 +213,69 @@ extension AppModelTests {
         await harness.signedIn()
         #expect(harness.model.phase == .ready)
         #expect(harness.store.routes().contains(.writeOwner) == false)
+    }
+
+    @Test(arguments: [StoreRoute.writeProject, .writeOwner, .writeOutbox])
+    func aCacheThatCannotBeWrittenSaysSoOncePerLaunchAndGoesOn(route: StoreRoute) async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 2)
+        harness.store.failures[route] = .unwritable
+        await harness.signedIn()
+        await harness.model.complete(task: firstTask)
+        await harness.flushed()
+        #expect(harness.model.banner == .cacheNotSaved)
+        #expect(harness.model.board.task(projectIdentifier: inboxIdentifier, number: 1)?.state == .done)
+        harness.model.dismissBanner()
+        await harness.model.updateTitle(task: firstTask, title: "Renamed")
+        await harness.flushed()
+        await harness.model.switchWorkspace(identifier: "acme")
+        #expect(harness.model.banner == nil)
+        #expect(harness.model.board.task(projectIdentifier: inboxIdentifier, number: 1)?.title == "Renamed")
+    }
+
+    @Test func anUnreadableProjectFileIsErasedAndPulledFromZero() async throws {
+        let harness = try cachedHarness()
+        harness.store.failures[.readProject] = .unreadable
+        harness.service.suspend(.updateOwner)
+        harness.vault.secret = harness.session
+        let launching = Task { await harness.model.launch() }
+        await harness.service.held(.updateOwner)
+        #expect(harness.model.phase == .ready)
+        #expect(harness.model.projectLoads == [:])
+        #expect(harness.store.calls.contains(.eraseProject(identifier: inboxIdentifier)))
+        #expect(harness.store.calls.contains(.eraseProject(identifier: launchIdentifier)))
+        harness.service.resume(.updateOwner)
+        await launching.value
+        #expect(harness.service.calls.contains(.readChanges(session: harness.session, projectIdentifier: inboxIdentifier, cursor: 0)))
+        #expect(harness.model.taskViews?.inbox.map(\.task.title) == ["Task 1", "Task 2", "Task 3"])
+    }
+
+    @Test func anUnreadableOwnerFileAtLaunchErasesTheCacheAndLoadsAsTheShellDoes() async throws {
+        let harness = try cachedHarness()
+        harness.store.failures[.readOwner] = .unreadable
+        harness.vault.secret = harness.session
+        await harness.model.launch()
+        #expect(Array(harness.store.routes().prefix(3)) == [.readOwner, .erase, .readOutbox])
+        #expect(harness.service.calls.contains(.readChanges(session: harness.session, projectIdentifier: inboxIdentifier, cursor: 0)))
+        #expect(harness.model.phase == .ready)
+        #expect(harness.model.taskViews?.inbox.map(\.task.title) == ["Task 1", "Task 2", "Task 3"])
+    }
+
+    @Test(arguments: UnreadableOutbox.allCases)
+    func anUnreadableOutboxIsReplacedByAnEmptyOneAndToldOnce(unreadable: UnreadableOutbox) async throws {
+        let harness = try cachedHarness()
+        switch unreadable {
+        case .unreadable: harness.store.failures[.readOutbox] = .unreadable
+        case .undecodable: harness.store.outbox = undecodableOutbox
+        }
+        harness.vault.secret = harness.session
+        await harness.model.launch()
+        let emptyOutbox = try OwnerCoding.encoder().encode(Outbox())
+        #expect(harness.store.calls.contains(.writeOutbox(emptyOutbox)))
+        #expect(harness.model.banner == .waitingChangesLost)
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.model.phase == .ready)
+        #expect(harness.model.taskViews?.inbox.count == 3)
     }
 }
