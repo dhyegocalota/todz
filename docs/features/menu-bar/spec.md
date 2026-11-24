@@ -1,6 +1,6 @@
 # Menu bar
 
-**Status:** Approved
+**Status:** Building
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-24, by inheritance from [the v1 product design](../../product/README.md) (Order of delivery, item 7; macOS app → Menu bar extra; the approved mockup's popover in [`glass-screens.html`](../../product/mockups/glass-screens.html)), approved by the owner on 2026-11-23; the calls below that the product design does not make are an ADR or design decisions marked as the loop's calls and listed in the loop's questions for the owner
 **ADRs:** [0026](../../adr/0026-a-native-app-is-walked-with-computer-use-and-recorded-from-its-screenshots.md), [0027](../../adr/0027-the-app-caches-each-owner-s-data-as-json-files-in-its-own-container-until-it-has-a-team.md), [0028](../../adr/0028-the-app-s-task-writes-are-optimistic-and-go-through-a-persisted-outbox.md), [0030](../../adr/0030-product-screenshots-live-in-docs-screenshots-and-the-readme-walks-them.md), [0031](../../adr/0031-the-menu-bar-extra-is-a-swiftui-window-over-the-app-s-one-model.md)
@@ -16,7 +16,8 @@ The owner sees and adds today's tasks only through the main window. The product 
 - The popover shows the active workspace's Today as the main window computes it: open tasks due today or overdue across the workspace's projects, then "Done today", with the pending adds of the outbox.
 - A checkbox completes an open task and reopens a done-today task, through the outbox, exactly as the main window's checkbox does.
 - "Add a task" adds a task to the workspace's Inbox, due today, through the outbox, exactly as the main window's Today view does; the field keeps focus for the next one.
-- ⌘1 to ⌘9 switch to the first nine workspaces in the switcher's order; the popover and the main window follow the same active workspace.
+- ⌘1 to ⌘9 switch to the first nine workspaces in the switcher's order, in the popover and in the main window's View menu (`design.md` O7); the popover and the main window follow the same active workspace.
+- The model launches once, whichever surface appears first: the popover can be the only one open (`design.md` § 2).
 - "Open todz" opens or raises the main window and activates the app; a task row opens the main window on Today with that task selected.
 - Every phase of the model has a popover state: signed out, loading, naming the first workspace, ready, offline, and a workspace whose projects failed to load ([`design.md`](design.md)).
 - The app keeps running in the menu bar when the main window closes.
@@ -28,7 +29,7 @@ The owner sees and adds today's tasks only through the main window. The product 
 - Upcoming, Done, the Inbox or a project's list in the popover.
 - Launch at login, or the menu bar extra while the app is quit.
 - A count or a badge on the status item.
-- ⌘1 to ⌘9 in the main window.
+- A global shortcut that opens the popover.
 
 ## Design
 
@@ -56,7 +57,8 @@ status item click ─▶ MenuBarExtra(.window) ─▶ MenuBarPopover reads the o
 | `AddTaskDestination.swift` | moves from the app target unchanged: a project and an optional due date, and its `WriteTarget` |
 | `AppModel+Destinations.swift` | `addTaskDestination(for item: SidebarItem) -> AddTaskDestination?`, the rule the main window already uses: the Inbox for Inbox, the Inbox due today for Today, the project for a project, none for Upcoming and Done; `reveal(task:)` selects Today and the task |
 | `WorkspaceShortcuts.swift` | `count` (nine) and the workspace a number from 1 to 9 selects, in the switcher's order; any other number selects none |
-| `AppModel+Workspaces.swift` | `switchWorkspace(number:)` over `WorkspaceShortcuts`; a number without a workspace does nothing |
+| `AppModel+Workspaces.swift` | `switchWorkspace(number:)` over `WorkspaceShortcuts`; a number without a workspace, or the active one's, does nothing |
+| `AppModel.swift` | `launch()` runs once per process: a second call, while the first runs or after it, does nothing, so the main window and the status item can both start it |
 
 ### `Todz` (app target)
 

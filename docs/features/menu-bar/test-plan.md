@@ -14,6 +14,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] `AppModelTests+Destinations`: `reveal(task:)` from a project view → `.today` and the key; a second reveal → the second key
 - [ ] `WorkspaceShortcutsTests`: 1 → first; 9 of 10 → ninth; 10 of 10 → nil; 0, -1 → nil; 3 of 2 → nil; 1 of none → nil
 - [ ] `AppModelTests+Workspaces`: `switchWorkspace(number: 2)` → the second workspace active, its projects pulled from 0; `number: 3` of 2 → nothing called, active unchanged; the active workspace's own number → nothing called
+- [ ] `AppModelTests`: two concurrent `launch()` calls → one vault read and one `updateOwner`; `launch()` after a finished launch → no new call
 - [ ] The whole suite stays green — input: `swift test` from `apps/macos/TodzKit`; expected: every test passes, count recorded
 
 ## E2E
@@ -37,7 +38,10 @@ The Debug build of `Todz` against `wrangler dev`; background input only, never `
 - [ ] Pending add offline: stop `wrangler dev`, add `Offline add` from the popover — expected: a pending row (dashed ring, no id) and the offline line with "1 change waiting"; start the server — expected: within 30 seconds the row gets its number and the offline line goes
 - [ ] Load failure: stop the server, relaunch with no cache for a new workspace (or as the briefing arranges) — expected: the load-failure state of `design.md` with "Open todz"
 - [ ] Switching with ⌘1 to ⌘9: create `Pessoal` (owner API) and relaunch or reload the list; in the popover press ⌘2 — expected: the popover shows `Pessoal`'s Today and the main window's sidebar switches to `Pessoal`; ⌘1 back to `Logic Bit`; ⌘3 with two workspaces → nothing changes, no request
-- [ ] Switching from the main window: switch the workspace in the main window (⌘ digits from the popover are the background path; else record how) — expected: the popover follows on its next open
+- [ ] Switching from the main window: with the main window key, ⌘2 through Orca's hotkey — expected: the sidebar shows `Pessoal`, and the popover shows `Pessoal`'s Today on its next open; the View menu lists both workspaces with ⌘1 and ⌘2 (read from the menu bar's accessibility tree, or recorded BLOCKED if menus cannot be read)
+- [ ] One workspace: with only `Logic Bit` — expected: the header shows the name as plain text, no switch hint in the foot (O6)
+- [ ] Launch with the main window closed: close the main window, quit (pkill), relaunch with `open -g` — expected: whether the main window reopens or not, the popover shows the ready Today (the model launched once; one `PATCH /owner` in the server log)
+- [ ] Escape: type text in the add field, Escape — expected: the text clears and the popover stays; a second Escape closes it (or, if the close mechanism of plan step 6 was not proven, as the briefing states)
 - [ ] Row click: click a task row's title in the popover — expected: the main window comes forward on Today with that task selected in the list and the inspector
 - [ ] Open todz with the main window closed: close the main window (⌘W through Orca hotkey), confirm the process still runs and the status item is still there; "Open todz" — expected: the main window opens on the active workspace, no second launch (one `PATCH /owner` in the server log since the app started)
 - [ ] Session ends while the popover is open: delete the session rows on the server, trigger a request — expected: the popover shows the signed-out state
