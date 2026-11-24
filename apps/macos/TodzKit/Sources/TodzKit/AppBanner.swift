@@ -1,0 +1,11 @@
+public enum AppBanner: Equatable, Sendable {
+    case network
+    case server
+    case someProjectsFailed
+    case changeNotSaved
+    case sessionNotSaved
+    case inboxIsFixed
+    case taskGone
+    case projectGone
+    case workspaceGone
+}
