@@ -16,7 +16,7 @@ export function SignInTemplate(): ReactElement {
     createElement(
       Section,
       { style: ACTION_STYLE },
-      createElement(Button, { href: EmailSlot.Link, style: BUTTON_STYLE }, SIGN_IN_EMAIL_COPY.action),
+      createElement(Button, { href: EmailSlot.Link, className: EmailClassName.Button, style: BUTTON_STYLE }, SIGN_IN_EMAIL_COPY.action),
     ),
     createElement(Text, { className: EmailClassName.Muted, style: MUTED_STYLE }, SIGN_IN_EMAIL_COPY.fallback),
     createElement(
