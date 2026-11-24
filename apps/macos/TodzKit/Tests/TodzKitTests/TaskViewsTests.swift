@@ -107,4 +107,28 @@ private func labels(_ tasks: [BoardTask]) -> [String] {
         ])
         #expect(labels(views.done) == ["beta 1", "inbox 1", "alpha 1", "alpha 2", "inbox 2"])
     }
+
+    @Test func emptyViewsHaveNoDays() throws {
+        let views = try views([])
+        #expect(views.upcomingDays == [])
+        #expect(views.doneDays == [])
+    }
+
+    @Test func upcomingDaysGroupTheUpcomingOrderByDueDate() throws {
+        let views = try views([
+            (inbox, [open(1, dueDate: nextWeek), open(2, dueDate: tomorrow)]),
+            (alpha, [open(1, dueDate: tomorrow), open(2, dueDate: today)]),
+        ])
+        #expect(views.upcomingDays.map(\.day) == [tomorrow, nextWeek])
+        #expect(views.upcomingDays.map { labels($0.tasks) } == [["inbox 2", "alpha 1"], ["inbox 1"]])
+    }
+
+    @Test func doneDaysGroupTheDoneOrderByCompletionDayInTheZone() throws {
+        let views = try views([
+            (inbox, [done(1, completedAt: firstSecondOfToday), done(2, completedAt: lastSecondOfYesterday)]),
+            (alpha, [done(1, completedAt: firstSecondOfToday.addingTimeInterval(60))]),
+        ])
+        #expect(views.doneDays.map(\.day) == [today, yesterday])
+        #expect(views.doneDays.map { labels($0.tasks) } == [["alpha 1", "inbox 1"], ["inbox 2"]])
+    }
 }

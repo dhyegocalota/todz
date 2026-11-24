@@ -51,6 +51,14 @@ public struct TaskViews: Sendable {
         finishedTasks.map(\.positioned.boardTask)
     }
 
+    public var upcomingDays: [TaskDay] {
+        fatalError("TaskViews.upcomingDays is not implemented")
+    }
+
+    public var doneDays: [TaskDay] {
+        fatalError("TaskViews.doneDays is not implemented")
+    }
+
     private var positionedTasks: [PositionedTask] {
         projects.enumerated().flatMap { position, project in
             board.tasks(projectIdentifier: project.identifier).map { task in

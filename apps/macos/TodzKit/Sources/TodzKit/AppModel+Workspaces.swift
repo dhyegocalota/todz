@@ -1,13 +1,15 @@
 extension AppModel {
-    public func createWorkspace(name: String) async {
+    @discardableResult
+    public func createWorkspace(name: String) async -> Workspace? {
         let created = await write(target: .newWorkspace, retry: { await self.createWorkspace(name: name) }) {
             try await service.createWorkspace(session: $0, name: name)
         }
-        guard let created else { return }
+        guard let created else { return nil }
         workspaces.append(created)
         selectedItem = .inbox
         phase = .ready
         await activate(created)
+        return nil
     }
 
     public func switchWorkspace(identifier: String) async {
@@ -20,27 +22,31 @@ extension AppModel {
         await pull(projectIdentifiers: activeWorkspace.projects.map(\.identifier))
     }
 
-    public func createProject(name: String) async {
-        guard let workspace = activeWorkspace else { return }
+    @discardableResult
+    public func createProject(name: String) async -> Project? {
+        guard let workspace = activeWorkspace else { return nil }
         let created = await write(target: .newProject, retry: { await self.createProject(name: name) }) {
             try await service.createProject(session: $0, workspaceIdentifier: workspace.identifier, name: name)
         }
-        guard let created else { return }
+        guard let created else { return nil }
         replaceProjects(workspaceIdentifier: workspace.identifier) { $0 + [created] }
         projectLoads[created.identifier] = .loaded
         selectedItem = .project(identifier: created.identifier)
+        return nil
     }
 
-    public func renameProject(projectIdentifier: String, name: String) async {
-        guard let workspace = activeWorkspace else { return }
+    @discardableResult
+    public func renameProject(projectIdentifier: String, name: String) async -> Project? {
+        guard let workspace = activeWorkspace else { return nil }
         let target = WriteTarget.projectName(projectIdentifier: projectIdentifier)
         let renamed = await write(target: target, retry: { await self.renameProject(projectIdentifier: projectIdentifier, name: name) }) {
             try await service.renameProject(session: $0, projectIdentifier: projectIdentifier, name: name)
         }
-        guard let renamed else { return }
+        guard let renamed else { return nil }
         replaceProjects(workspaceIdentifier: workspace.identifier) { projects in
             projects.map { $0.identifier == renamed.identifier ? renamed : $0 }
         }
+        return nil
     }
 
     func loadWorkspaces() async {

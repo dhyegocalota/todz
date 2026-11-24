@@ -57,4 +57,12 @@ public struct CalendarDate: Codable, Sendable, Hashable, Comparable {
     public var text: String {
         String(format: textFormat, year, month, day)
     }
+
+    public func start(in timeZone: TimeZone) -> Date {
+        fatalError("CalendarDate.start(in:) is not implemented")
+    }
+
+    public func adding(days: Int) -> CalendarDate {
+        fatalError("CalendarDate.adding(days:) is not implemented")
+    }
 }
