@@ -8,7 +8,7 @@ import { openOwnerSession } from './owner-sessions';
 import { SIGN_IN_PROVIDER_OF_KIND, type SignInProviderKind, signInKindOf } from './sign-in-provider';
 import { canonicalTimeZone } from './time-zone';
 
-const SignInBodySchema = z.object({ identity_token: z.string(), time_zone: z.string() });
+const SignInBodySchema = z.object({ identity_token: z.string(), link_verifier: z.string().optional(), time_zone: z.string() });
 
 type OwnerIdentity = { directory: D1Database; kind: SignInProviderKind; subject: string };
 
@@ -50,7 +50,12 @@ export async function signIn({ request, env, now }: OwnerContext): Promise<Respo
   if (kind === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
   const body = await parsedBody({ request, schema: SignInBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
-  const subject = await SIGN_IN_PROVIDER_OF_KIND[kind].verify(body.identity_token);
+  const subject = await SIGN_IN_PROVIDER_OF_KIND[kind].verify({
+    identityToken: body.identity_token,
+    linkVerifier: body.link_verifier,
+    directory: env.DIRECTORY,
+    now,
+  });
   if (subject === null) return errorResponse(OwnerErrorCode.IdentityRejected);
   const timeZone = canonicalTimeZone(body.time_zone);
   if (timeZone === null) return errorResponse(OwnerErrorCode.TimeZoneInvalid);

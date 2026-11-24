@@ -1,5 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { type MockInstance, vi } from 'vitest';
+import { digestCredential } from '../src/credential-digest';
+import { generateCredentialSecret } from '../src/credential-secret';
 import type { Env } from '../src/env';
 import { serveOwnerCall, workerEnvWith } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
@@ -7,6 +9,7 @@ import { CLOCK_NOW } from './task-fixtures';
 export const PUBLIC_ORIGIN = 'http://localhost:8787';
 export const LINK_CHALLENGE = 'ab'.repeat(32);
 
+const ACCEPTED_STATUS = 202;
 const LINKS_PATH = '/owner/sign-in-links';
 const SESSIONS_PATH = '/owner/sessions';
 export const EMAIL_SETTINGS: Partial<Env> = { SIGN_IN_PROVIDER: 'email', EMAIL_SENDER: 'console', PUBLIC_ORIGIN };
@@ -68,6 +71,19 @@ export function requestLink({
     now,
     workerEnv,
   });
+}
+
+export async function askedLink({
+  email = freshAddress(),
+  verifier = generateCredentialSecret(),
+  now = CLOCK_NOW,
+}: { email?: string; verifier?: string; now?: number } = {}): Promise<{ email: string; verifier: string; token: string }> {
+  const output = consoleOutput();
+  const response = await requestLink({ email, challenge: await digestCredential(verifier), now });
+  if (response.status !== ACCEPTED_STATUS) throw new Error(`asking for a link answered ${response.status}`);
+  const token = tokenOfMail(mailSent(output));
+  output.mockRestore();
+  return { email, verifier, token };
 }
 
 export function redeemLink({
