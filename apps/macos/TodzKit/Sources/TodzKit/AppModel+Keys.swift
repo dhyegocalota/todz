@@ -19,7 +19,8 @@ extension AppModel {
             let listed = try await request { try await service.listKeys(session: $0, projectIdentifier: projectIdentifier) }
             guard keyScreenIdentifier == visit else { return }
             let isIssueNewerThanList = keyIssueAnswers != issueAnswersAtStart
-            keys = .loaded(including(key: isIssueNewerThanList ? issuedKey?.key : nil, in: listed))
+            let withIssuedKey = including(key: isIssueNewerThanList ? issuedKey?.key : nil, in: listed)
+            keys = .loaded(withIssuedKey.filter { !revokedKeyIdentifiers.contains($0.identifier) })
             keyReloadFailure = nil
         } catch {
             guard keyScreenIdentifier == visit else { return }
@@ -104,6 +105,7 @@ extension AppModel {
         keyReloadFailure = nil
         revokingKeyIdentifiers = []
         failedRevokeIdentifiers = []
+        revokedKeyIdentifiers = []
     }
 
     func followKeyScreen(from oldItem: SidebarItem) {
@@ -157,6 +159,7 @@ extension AppModel {
     }
 
     private func forget(_ key: ProjectKey) {
+        revokedKeyIdentifiers.insert(key.identifier)
         let isShownSecret = issuedKey?.key.identifier == key.identifier
         if isShownSecret { issuedKey = nil }
         guard case let .loaded(listed) = keys else { return }
