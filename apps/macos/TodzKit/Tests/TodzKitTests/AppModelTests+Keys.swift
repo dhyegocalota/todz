@@ -155,6 +155,24 @@ extension AppModelTests {
         #expect(harness.model.keys == .loaded([]))
     }
 
+    @Test func reopeningTheScreenOfAProjectGoneElsewhereShowsTheInboxKeys() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.model.leaveKeyScreen()
+        harness.model.workspaces = harness.model.workspaces.map { workspace in
+            Workspace(
+                identifier: workspace.identifier,
+                name: workspace.name,
+                createdAt: workspace.createdAt,
+                projects: workspace.projects.filter { $0.identifier != launchIdentifier }
+            )
+        }
+        harness.model.reopenKeyScreen()
+        await harness.model.keyLoading?.value
+        #expect(harness.model.keyScreenIdentifier != nil)
+        #expect(harness.model.keyProjectIdentifier == inboxIdentifier)
+    }
+
     @Test func reopeningTheScreenAlreadyLoadingStartsNoSecondLoad() async throws {
         let harness = try await keyHarness()
         harness.model.selectedItem = .project(identifier: launchIdentifier)
