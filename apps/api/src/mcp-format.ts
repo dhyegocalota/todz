@@ -59,7 +59,8 @@ export function nextAnswer(task: Task | null): string {
 
 export function nextPromptText(task: Task | null): string {
   if (task === null) return MCP_COPY.nothingToDo;
-  return paragraphs([MCP_COPY.workOnTask, taskBlock(task), MCP_COPY.finishWith(formatShortId(task.number))]);
+  const fencedTask = lines([MCP_COPY.taskOpeningTag, taskBlock(task), MCP_COPY.taskClosingTag]);
+  return paragraphs([MCP_COPY.workOnTask, fencedTask, MCP_COPY.finishWith(formatShortId(task.number))]);
 }
 
 export function failureText(failure: ProjectFailure): string {
