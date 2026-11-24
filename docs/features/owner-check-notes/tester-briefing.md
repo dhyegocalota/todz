@@ -49,3 +49,14 @@ Commits: `e177ba8` (red test), `3b98192` (focus), `77e6e3f` (history failure cho
 - Hypothesis: `CredentialSlot` asks for identity focus only when its own window's `controlActiveState` becomes `.key`; other windows becoming key, and the popover, do not move focus. Break it by: on the sign-in screen open the popover or another window and return; sign out through the dialog and type at once.
 - Hypothesis: a history that fails while offline keeps its offline line after todz comes back online until Try Again is pressed (the choice is stored when the failure happens). Break it by: fail a history offline, go online, look at the line without pressing Try Again.
 - Full suite after: 546 tests in 36 suites passed; Debug build succeeded.
+
+## Fix round 2
+
+Commits: `06bf48c` (red test), `e3c05ad` (D2), `0290c98` (D1), plus the docs commit for D3.
+
+- Red text of `06bf48c`: `Fatal error: number(forKey:) is not implemented` in `aDigitKeyNamesItsNumber` and `aKeyOutsideTheNumbersNamesNone` (`WorkspaceShortcutsTests`).
+- D2: `MenuBarPanelView.performKeyEquivalent` takes command plus a digit 1 to 9 (`WorkspaceShortcuts.number(forKey:)`) and calls `switchWorkspace(number:)`; the main menu items only fire for the active app. Verified in the Debug build against a local fake-sign-in API: Dia frontmost, popover opened from the status item, System Events command-1 then command-2 moved the switcher Side then Other; Dia stayed frontmost.
+- D1: the identity focus request in `CredentialSlot` now follows `await Task.yield()`. No TodzKit seam exists (it is view timing), so no unit test. Verified in the build: Sign Out from the app menu, then a real "ZZ" keystroke 1.5 s later landed in the identity field (value ZZ, focused element the field). Not re-run: the 401 path.
+- D3: docs only; `mac-app-shell/design.md` and the spec goal record 976 and 1000 and that the minimum follows the sidebar width.
+- Hypothesis: neither fix steals focus elsewhere; command-1 to 9 typed in the popover while todz is frontmost switches once, not twice. Break it by: the main window frontmost with the popover open; the 401 path; a cold launch.
+- Full suite after: 560 tests in 38 suites passed; Debug build succeeded. Session file restored (shasum ends 6d7f01fe); app and API quit.

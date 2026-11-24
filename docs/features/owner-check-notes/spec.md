@@ -18,7 +18,7 @@ The owner's checklist run passed every box, with five notes:
 
 ## Goals
 
-- (1) The design records the measured minimum, 976 × 532, and why it grew.
+- (1) The design records the measured minimums, 976 × 532 (the owner's check) and 1000 × 532 (the tester's, System Events and Orca), and that the minimum follows the sidebar's measured width.
 - (2) While the app is offline, a history that could not load shows a secondary-colour line, "History shows when todz is back online.", and Try Again; online failures keep today's red line.
 - (3) The sign-in screen focuses the identity field whenever it appears, after a sign-out included.
 - (4) ⌘1–⌘9 in the popover switch workspaces when the popover was opened while another app was in front; if a real key press already works, the note is closed with the evidence and no code.
