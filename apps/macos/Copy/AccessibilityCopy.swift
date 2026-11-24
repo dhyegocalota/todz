@@ -21,6 +21,10 @@ enum AccessibilityCopy {
         "\(count) open"
     }
 
+    static func menuBarCount(count: Int) -> String {
+        InflectedCopy.text("todz, \(count) left today")
+    }
+
     static func todayIn(workspace: String) -> String {
         "Today in \(workspace)"
     }

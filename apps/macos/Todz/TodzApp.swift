@@ -4,10 +4,15 @@ import TodzKit
 private let defaultWidth: CGFloat = 1100
 private let defaultHeight: CGFloat = 700
 private let popoverWidth: CGFloat = 360
+private let settingsWidth: CGFloat = 420
 
 @main
 struct TodzApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    init() {
+        MenuBarBadge.registerDefault(in: .standard)
+    }
 
     var body: some Scene {
         let model = appDelegate.model
@@ -31,5 +36,10 @@ struct TodzApp: App {
                 .environment(windowState)
         }
         .menuBarExtraStyle(.window)
+        Settings {
+            SettingsView()
+                .frame(width: settingsWidth)
+        }
+        .windowResizability(.contentSize)
     }
 }

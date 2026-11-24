@@ -36,6 +36,7 @@ The approved design is in [docs/product](docs/product/); how each piece was buil
 | ![Today from the menu bar](docs/screenshots/menu-bar/01-today-popover.png)<br>Today from the menu bar             | ![Today ring](docs/screenshots/widgets/01-today-ring.png)<br>Today ring (rendered)                                    |
 | ![Next up](docs/screenshots/widgets/02-next-up.png)<br>Next up (rendered)                                         | ![Medium Today list](docs/screenshots/widgets/03-medium-today.png)<br>Medium Today list (rendered)                    |
 | ![Large Today list](docs/screenshots/widgets/04-large-today.png)<br>Large Today list (rendered)                   | ![Connect an agent](docs/screenshots/connect-an-agent/01-key-screen.png)<br>Connect an agent                          |
+| ![Today's open tasks on the menu bar icon](docs/screenshots/menu-bar-count/01-count.png)<br>Today's open tasks on the menu bar icon | |
 
 The widget shots are rendered from the widgets' own views until a desktop capture replaces them.
 

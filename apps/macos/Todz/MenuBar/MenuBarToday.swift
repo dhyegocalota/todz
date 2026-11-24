@@ -25,8 +25,8 @@ struct MenuBarToday: View {
                 if let destination, !state.isFailed {
                     AddTaskField(destination: destination, selection: .keepSelection, focus: focus, focusedValue: .addField, onEscape: closeWhenEmpty)
                 }
-                if case .rows = state, let taskViews = model.taskViews {
-                    MenuBarTodayHeading(openCount: taskViews.today.open.count)
+                if case .rows = state, let openCount = model.todayHeadingCount {
+                    MenuBarTodayHeading(openCount: openCount)
                 }
             }
             .onGeometryChange(for: CGFloat.self, of: \.size.height) { pinnedTopHeight = $0 }

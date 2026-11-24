@@ -14,7 +14,7 @@ extension AppModel {
         return .ready(WidgetSnapshot.of(views: views, workspace: workspace, day: today, timeZone: timeZone))
     }
 
-    private func isTodayKnown(in workspace: Workspace) -> Bool {
+    func isTodayKnown(in workspace: Workspace) -> Bool {
         !isFirstLoad(of: workspace) && loadFailure(of: workspace) == nil
     }
 
