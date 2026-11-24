@@ -34,6 +34,11 @@ describe('the sign-in email', () => {
     expect(imageTag).toMatch(/height="\d+"/);
   });
 
+  test('gives its button the class that the dark mode block styles', () => {
+    expect(SIGN_IN_EMAIL.html).toMatch(/@media \(prefers-color-scheme: dark\)[\s\S]*\.email-button \{[^}]*color: #FFFFFF !important/);
+    expect(SIGN_IN_EMAIL.html).toMatch(/<a [^>]*class="email-button"/);
+  });
+
   test('holds the link and the ignore notice in its text', () => {
     expect(SIGN_IN_EMAIL.text).toContain(EmailSlot.Link);
     expect(SIGN_IN_EMAIL.text).toContain(IGNORE_NOTICE);
