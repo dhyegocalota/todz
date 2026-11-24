@@ -9,6 +9,11 @@ const MISSING_NUMBER = 9;
 const BEYOND_LAST_CHANGE = 4;
 const BEFORE_FIRST_CHANGE = 0;
 const NEW_STORE_CURSOR = 1;
+const SOCKET_URL = 'https://project.test/socket';
+const WEBSOCKET_UPGRADE = 'websocket';
+const UPGRADE_REQUIRED_STATUS = 426;
+const SWITCHING_PROTOCOLS_STATUS = 101;
+const CHANGED = 'changed';
 
 async function addTitled({ stub, count }: { stub: ReturnType<typeof newProjectStub>; count: number }): Promise<void> {
   const titles = Array.from({ length: count }, (_unused, index) => `Task ${index + 1}`);
@@ -75,6 +80,124 @@ describe('ProjectStore readChanges', () => {
     const stub = newProjectStub();
     expect(await stub.readChanges({ cursor: NEW_STORE_CURSOR })).toEqual({ ok: false, failure: { kind: ProjectFailureKind.CursorAhead } });
     expect(unwrap(await stub.readChanges({ cursor: BEFORE_FIRST_CHANGE }))).toEqual({ tasks: [], cursor: 0, hasMore: false });
+  });
+});
+
+type ProjectStub = ReturnType<typeof newProjectStub>;
+type SocketProbe = { socket: WebSocket; messages: string[]; waitForCount: (count: number) => Promise<void> };
+
+async function openSocket(stub: ProjectStub): Promise<SocketProbe> {
+  const response = await stub.fetch(SOCKET_URL, { headers: { Upgrade: WEBSOCKET_UPGRADE } });
+  const socket = response.webSocket;
+  if (socket === null) throw new Error('the project did not accept the socket');
+  socket.accept();
+  const messages: string[] = [];
+  const countListeners: (() => void)[] = [];
+  socket.addEventListener('message', (event) => {
+    messages.push(String(event.data));
+    countListeners.forEach((listener) => listener());
+  });
+  function waitForCount(count: number): Promise<void> {
+    return new Promise((resolve) => {
+      function resolveWhenReached(): void {
+        if (messages.length >= count) resolve();
+      }
+      countListeners.push(resolveWhenReached);
+      resolveWhenReached();
+    });
+  }
+  return { socket, messages, waitForCount };
+}
+
+async function settled({ stub, probe, count }: { stub: ProjectStub; probe: SocketProbe; count: number }): Promise<string[]> {
+  await probe.waitForCount(count);
+  unwrap(await stub.readChanges({ cursor: 0 }));
+  return probe.messages;
+}
+
+async function addOne({ stub, title }: { stub: ProjectStub; title: string }): Promise<void> {
+  unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf(title)] }));
+}
+
+describe('ProjectStore fetch', () => {
+  test('a request without the upgrade header is refused with 426, an empty body and the upgrade header', async () => {
+    const response = await newProjectStub().fetch(SOCKET_URL);
+    expect(response.status).toBe(UPGRADE_REQUIRED_STATUS);
+    expect(await response.text()).toBe('');
+    expect(response.headers.get('Upgrade')).toBe(WEBSOCKET_UPGRADE);
+  });
+
+  test('a request with the upgrade header is answered 101 with the client socket', async () => {
+    const response = await newProjectStub().fetch(SOCKET_URL, { headers: { Upgrade: WEBSOCKET_UPGRADE } });
+    expect(response.status).toBe(SWITCHING_PROTOCOLS_STATUS);
+    expect(response.webSocket).not.toBeNull();
+    response.webSocket?.accept();
+  });
+});
+
+describe('ProjectStore socket broadcast', () => {
+  test('a socket receives exactly changed after each write that moved the change counter', async () => {
+    const stub = newProjectStub();
+    const probe = await openSocket(stub);
+    await addOne({ stub, title: 'First' });
+    await addOne({ stub, title: 'Sentinel' });
+    expect(await settled({ stub, probe, count: 2 })).toEqual([CHANGED, CHANGED]);
+  });
+
+  test('update, complete and reopen each broadcast changed', async () => {
+    const stub = newProjectStub();
+    await addOne({ stub, title: 'First' });
+    const probe = await openSocket(stub);
+    unwrap(await stub.updateTask({ actor: AGENT_ACTOR, number: 1, patch: { title: 'Renamed' } }));
+    unwrap(await stub.completeTasks({ actor: AGENT_ACTOR, numbers: [1], note: null }));
+    unwrap(await stub.reopenTasks({ actor: AGENT_ACTOR, numbers: [1] }));
+    expect(await settled({ stub, probe, count: 3 })).toEqual([CHANGED, CHANGED, CHANGED]);
+  });
+
+  test('a failed write then a successful one sends exactly one changed before the sentinel', async () => {
+    const stub = newProjectStub();
+    const probe = await openSocket(stub);
+    await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('  ')] });
+    await addOne({ stub, title: 'Written' });
+    await addOne({ stub, title: 'Sentinel' });
+    expect(await settled({ stub, probe, count: 2 })).toEqual([CHANGED, CHANGED]);
+  });
+
+  test('a replayed write sends nothing before the sentinel', async () => {
+    const stub = newProjectStub();
+    const probe = await openSocket(stub);
+    const keyedDraft = { ...draftOf('Once'), idempotencyKey: 'run-1' };
+    unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [keyedDraft] }));
+    unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [keyedDraft] }));
+    await addOne({ stub, title: 'Sentinel' });
+    expect(await settled({ stub, probe, count: 2 })).toEqual([CHANGED, CHANGED]);
+  });
+
+  test('two sockets on one project both receive changed', async () => {
+    const stub = newProjectStub();
+    const first = await openSocket(stub);
+    const second = await openSocket(stub);
+    await addOne({ stub, title: 'Shared' });
+    expect(await settled({ stub, probe: first, count: 1 })).toEqual([CHANGED]);
+    expect(await settled({ stub, probe: second, count: 1 })).toEqual([CHANGED]);
+  });
+
+  test('a socket on another project receives nothing from this project', async () => {
+    const writtenStub = newProjectStub();
+    const otherStub = newProjectStub();
+    const otherProbe = await openSocket(otherStub);
+    await addOne({ stub: writtenStub, title: 'Elsewhere' });
+    await addOne({ stub: otherStub, title: 'Sentinel' });
+    expect(await settled({ stub: otherStub, probe: otherProbe, count: 1 })).toEqual([CHANGED]);
+  });
+
+  test('a socket the client already closed does not fail the write or starve the others', async () => {
+    const stub = newProjectStub();
+    const closed = await openSocket(stub);
+    const open = await openSocket(stub);
+    closed.socket.close();
+    await addOne({ stub, title: 'After the close' });
+    expect(await settled({ stub, probe: open, count: 1 })).toEqual([CHANGED]);
   });
 });
 

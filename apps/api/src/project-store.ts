@@ -81,6 +81,10 @@ export class ProjectStore extends DurableObject<Env> {
     return this.run(() => nextTask({ store: this.store, today: trustedToday(today) }));
   }
 
+  fetch(request: Request): Response {
+    return new Response(request.method, { status: 501 });
+  }
+
   readChanges({ cursor }: { cursor: number }): ProjectResult<TaskChanges> {
     const lastChangeNumber = this.store.lastChangeNumber();
     const newestChangeNumber = lastChangeNumber === null ? NO_CHANGE_NUMBER : lastChangeNumber;
