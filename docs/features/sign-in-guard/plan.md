@@ -12,7 +12,7 @@
 
 | Group | Paths owned | Developer sub-agent |
 |-------|-------------|---------------------|
-| G1 | `apps/api/**`, `libs/types/src/**`, `tools/repository-shape/src/api-source.test.ts`, `tools/repository-shape/src/runbooks.test.ts`, `docs/runbooks/deploy-the-api.md`, `.gitleaks.toml` | `developer` (API lane, worktree `../todz-guard-api`) |
+| G1 | `apps/api/**`, `libs/types/src/**`, `tools/repository-shape/src/api-source.test.ts`, `tools/repository-shape/src/runbooks.test.ts`, `docs/runbooks/deploy-the-api.md`, `scripts/deploy-bodies/**`, `.gitleaks.toml` | `developer` (API lane, worktree `../todz-guard-api`) |
 | G2 | `apps/macos/**` | `developer` (app lane, worktree `../todz-guard-app`) |
 
 ## Sequencing
@@ -52,7 +52,7 @@ G1 and G2 run in parallel on the spec's contract. G2's walk against a real Worke
 | 13 | the web view navigates elsewhere or keeps cookies | the tester's network log or the data store | the policy denies; store non-persistent |
 | 13 | Turnstile never yields a token in WKWebView | Send stays disabled in the tester's walk | record a learning; fall back to the browser page (ADR 0046 alternative 2) |
 
-**Steps with no backout:** none; nothing remote changes in this feature.
+**Steps with no backout:** none in this feature; at deploy, rolling back reopens the unguarded routes (spec R18). Each lane returns its tester briefing section to the lead, who owns `tester-briefing.md` (spec R16).
 
 ## Z. Prove and ship
 

@@ -71,6 +71,37 @@ Mail link ─▶ browser GET /sign-in#token=… ─▶ page: widget(action sign_
 | The widget fails in the app | no token; Send stays disabled with its reason; the page posts `""` and the round can be retried by sending again after it reloads |
 | The held link's Turnstile token is spent when retried | `sign_in_refused`; the app asks to open the link from the mail again; the link stays unspent |
 
+## Plan review answers (2026-11-24)
+
+These bind the build and win over any line above that disagrees.
+
+- **R1, order.** Sending: client limit → configuration (R2) → body → Turnstile → address limit → global cap → D1 count → mail. Email session: client limit → configuration → body → Turnstile → global cap → spend. `GET /owner/sign-in-method`: client limit only. Fake session: none of it (local only).
+- **R2, configuration before the body.** Every 503 check runs before the body is read: the route's bindings (R4), `CF-Connecting-IP` on a public host, `PUBLIC_ORIGIN` through `publicOriginOf`, `TURNSTILE_SECRET_KEY`, and today's provider and sender checks.
+- **R3, more fail-closed branches.** `PUBLIC_ORIGIN` absent or invalid, `limiter.limit()` throwing, and siteverify `success:false` whose `error-codes` include `missing-input-secret`, `invalid-input-secret` or `internal-error` answer 503 `sign_in_unavailable`, one test each. `success:true` with a missing `hostname` or `action` is refused.
+- **R4, what each route needs on a public host.**
+
+  | Route | `SIGN_IN_LIMITER` | `SIGN_IN_ADDRESS_LIMITER` | `SIGN_IN_GLOBAL_LIMITER` | `TURNSTILE_SECRET_KEY` |
+  |---|---|---|---|---|
+  | `GET /owner/sign-in-method` | required | — | — | — |
+  | `POST /owner/sign-in-links` | required | required | required | required |
+  | `POST /owner/sessions` (email) | required | — | required | required |
+
+  A test per required cell: absent answers 503. A dash is never consulted.
+- **R5, one local predicate.** A shared `isLocalHost({ env, request })` (`PUBLIC_ORIGIN` and `request.url` both local, the conjunction inside `signInKindForRequest`, which then uses it) gates the limiter skip and the dummy token. A test: a public `PUBLIC_ORIGIN` with a localhost request URL gets no skip and no dummy token.
+- **R6, no `remoteip`.** siteverify gets `secret` and `response` only (ADR 0045 §2).
+- **R7, the `/sign-in` page.** The inline script runs first: it reads the fragment, calls `replaceState`, keeps the link token in a closure, then `api.js` loads (`async defer`, after the inline script). The Turnstile token must match `^[A-Za-z0-9._-]{1,2048}$` before `todz://` is built. `error-callback` and `timeout-callback` show "Couldn't check this browser. Reload the page."; `expired-callback` resets the widget. Both pages without a site key answer 503 with the unavailable copy and no widget.
+- **R8, two refusals in the app.** `SignInError.signInRefused` for a request; `redeem` maps it to `.linkRefused`, the way `identityRejected` becomes `linkRejected`; a refused redeem keeps `pendingLink` and does not hold the link. The shared token pattern is `^[A-Za-z0-9._-]{1,2048}$`, the same text in both lanes.
+- **R9, the parser and the model.** `SignInLink`: exactly two query items named `token` and `turnstile`, in any order, no duplicates. `requestSignInLink` with no held token returns at once and leaves `signInError` as it was. The challenge page wires `callback` (posts the token), and `expired-callback`, `error-callback` and `timeout-callback` (post `""`).
+- **R10, navigation in TodzKit.** A pure `ChallengeNavigation.isAllowed(url:apiBaseURL:)` in TodzKit, tested: allowed are the API origin's `/sign-in/challenge`, `https://challenges.cloudflare.com/…`, `about:blank`, `about:srcdoc`; refused are `http://challenges.cloudflare.com`, another API path, another host, `todz://`.
+- **R11, the runbook.** Step 12 adds `/sign-in/challenge` (503 until the site key is in `wrangler.jsonc`, then 200). Step 13 becomes a junk-token post expecting 503 `sign_in_unavailable` before the secret and 429 `sign_in_refused` after it; the real mail moves to the production smoke walk with the app. Step 14's body gains a `turnstile_token` and expects 429 from the eleventh post on. The owner's widget step names `todz.app`, which covers `api.todz.app`. G1 owns `scripts/deploy-bodies/**`.
+- **R12, red-first in Swift.** G2 commits the new signatures and cases as stubs (`fatalError("<name> is not implemented")` or a throwing body) first, then the red tests, then the implementation. G1 does the same in TypeScript.
+- **R13, more tests.** A `request_link` token on `/owner/sessions` is refused; siteverify down on the session route leaves the link unspent; a dummy token with a local request and a public `PUBLIC_ORIGIN` goes to siteverify; `SendOutcome` and `AppModel+Writes` drop `tooManyLinks` and `tooManyRequests`.
+- **R14, the secret everywhere.** The dev scripts and the Miniflare bindings pass both test keys; `api-source.test.ts` pins the scripts' flags.
+- **R15, stubbing.** `verifyTurnstileToken` takes a `fetcher: typeof fetch`; the routes pass the global `fetch`; route tests stub it with `vi.spyOn(globalThis, 'fetch')`.
+- **R16, ownership.** The lead owns the root `README.md`, the ADR status lines and `tester-briefing.md`; each lane returns its briefing section in its final report.
+- **R17.** `Retry-After: 60` everywhere (ADR 0045 §4).
+- **R18.** The deploy adds the namespaces `8602` and `8603`; rolling this feature back reopens the unguarded routes, so a rollback in production also closes sign-in (unset the secret).
+
 ## Open questions → answers
 
 | Question | Options | Owner's answer | Date |
