@@ -60,9 +60,17 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
   - [x] Cold-launch links with the app quit and a cache: `todz://task/<p>/6` → inspector "Sketch the poster"; `/8` → "Plan the retro" (pids new each time); no write in the server log
   - [x] Closed-window link: Orca closed the window (`click` on the close button, no `--restore-window`; `list-windows` then listed none, app still running) and `open -g todz://task/<p>/9` brought it back on "Tidy the backlog"
   - [x] `pnpm verify all` exit 0: "7 gates green at 1272189 (product)" (HEAD moved to 66c0dce during the run); `swift test` at 66c0dce: 463 tests in 32 suites passed
-- [ ] Not run: a FIFO as `widget-snapshot.json` (the extension's read), the "../" request name (unit-tested only), the time zone change, midnight (`NSCalendarDayChanged` unit-tested via `aDayChangeWritesTheNewDayOnce`), a closed main window plus a link
+- Not run, stated by the tester: a FIFO as `widget-snapshot.json` (the extension's read), the "../" request name (unit-tested only), the time zone change, midnight (`NSCalendarDayChanged` unit-tested via `aDayChangeWritesTheNewDayOnce`), a closed main window plus a link
 
 ## Adversarial review
+
+Reviewer (three rounds, at 7f0d5fc, beaaafa and b67b587) and security reviewer (three rounds), fresh contexts:
+
+- [x] Refuted at 7f0d5fc: "a task link works with the app quit, opening that task". By trace, a link followed while the model was loading landed on Today and was never followed again. Fixed in cd9b6b4 → 2973890 (red reproduced by the reviewer: `AppModelTests+Links.swift:83:9 selectedTask == dueTodayTask`); the inspector opening and the drop of a waiting link on navigation were fixed in c79ddc2 → 8a5e54a. The tester's beaaafa re-run landed cold-launch links on the task.
+- [x] Held at 7f0d5fc: "sign-out, another owner and an owner switch at launch erase the snapshot and the requests before the new owner's first write; a 401 keeps the requests" (red 6ad233f reproduced). It was refuted for what the desktop shows: there was no reload after an erase, fixed in 7c073a8 → 085d2a6.
+- [x] Partly refuted at 7f0d5fc: "a tap is taken once". The intent's snapshot write raced the app's (60cf5f0), a failed removal re-took a done/open pair (8916680), and a partial removal lost taps (66c0dce). Held after the fixes.
+- [x] Security: the oversized files (7c8badf), a widget erase blocking sign-out (7ca2723), symlinked folders (4082570), notification floods (af33c7c) and a spoofed snapshot (ADR 0033 risk line, 89c89ab) were all fixed or accepted. The tester re-ran the first four by hand at beaaafa. The final verdict was CLEAR.
+- [x] An unproven claim was removed: `fchmod` in the extension's sandbox. The extension now only checks the folder (92fd0cd → cd39f1f).
 
 ## Coverage honesty
 

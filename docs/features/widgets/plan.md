@@ -75,8 +75,8 @@ The plan review of 2026-11-24 (17 findings, 2 CRITICAL) is folded into the steps
 ## Z. Prove and ship
 
 - [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
-- [ ] **Security reviewer:** a fresh `security-reviewer` sub-agent returned its verdict.
+- [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
+- [x] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
+- [x] **Security reviewer:** a fresh `security-reviewer` sub-agent returned its verdict.
 - [ ] **/check-ui:** screenshots and video uploaded; the README gallery shots under `docs/screenshots/widgets/`.
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
