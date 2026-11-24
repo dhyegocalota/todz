@@ -27,10 +27,9 @@ struct WorkspaceSwitcher: View {
     private var menu: some View {
         Menu {
             Picker(selection: activeIdentifier) {
-                ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, candidate in
+                ForEach(model.workspaces, id: \.identifier) { candidate in
                     Text(candidate.name)
                         .tag(candidate.identifier)
-                        .keyboardShortcut(WorkspaceShortcuts.keyboardShortcut(number: number))
                 }
             } label: {
                 EmptyView()
@@ -59,7 +58,6 @@ struct WorkspaceSwitcher: View {
         Binding {
             workspace.identifier
         } set: { identifier in
-            guard identifier != workspace.identifier else { return }
             Task { await model.switchWorkspace(identifier: identifier) }
         }
     }

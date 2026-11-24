@@ -13,13 +13,13 @@ extension AppModel {
     }
 
     public func switchWorkspace(identifier: String) async {
+        guard identifier != activeWorkspaceIdentifier else { return }
         guard let workspace = workspaces.first(where: { $0.identifier == identifier }) else { return }
         await activate(workspace)
     }
 
     public func switchWorkspace(number: Int) async {
         guard let workspace = WorkspaceShortcuts.workspace(number: number, in: workspaces) else { return }
-        guard workspace.identifier != activeWorkspaceIdentifier else { return }
         await switchWorkspace(identifier: workspace.identifier)
     }
 
