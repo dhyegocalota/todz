@@ -1,6 +1,11 @@
 extension AppModel {
     func cachedOwner() -> OwnerCache? {
-        try? store.readOwner()
+        do {
+            return try store.readOwner()
+        } catch {
+            keepInCache { try store.erase() }
+            return nil
+        }
     }
 
     func cacheToOpen(for owner: Owner) throws -> OwnerCache? {
@@ -32,6 +37,8 @@ extension AppModel {
             outbox = try OwnerCoding.decoder().decode(Outbox.self, from: data)
         } catch {
             outbox = Outbox()
+            keepOutbox()
+            raise(.waitingChangesLost)
         }
     }
 
@@ -54,7 +61,7 @@ extension AppModel {
     }
 
     func keepInProjectFile(_ task: TaskRecord, projectIdentifier: String) {
-        guard let cached = try? store.readProject(identifier: projectIdentifier) else { return }
+        guard let cached = cachedProject(identifier: projectIdentifier) else { return }
         var merged = TaskBoard()
         merged.merge(projectIdentifier: projectIdentifier, tasks: cached.tasks)
         merged.replace(projectIdentifier: projectIdentifier, task: task)
@@ -72,13 +79,29 @@ extension AppModel {
     }
 
     private func loadCachedProject(identifier: String) {
-        guard let cached = try? store.readProject(identifier: identifier) else { return }
+        guard let cached = cachedProject(identifier: identifier) else { return }
         board.merge(projectIdentifier: identifier, tasks: cached.tasks)
         board = board.setting(cursor: cached.cursor, projectIdentifier: identifier)
         projectLoads[identifier] = .loaded
     }
 
+    private func cachedProject(identifier: String) -> ProjectCache? {
+        do {
+            return try store.readProject(identifier: identifier)
+        } catch {
+            keepInCache { try store.eraseProject(identifier: identifier) }
+            return nil
+        }
+    }
+
+    // NB ADR 0027: the window goes on from memory when the cache cannot be written, and says so once per launch.
     private func keepInCache(_ write: () throws -> Void) {
-        try? write()
+        do {
+            try write()
+        } catch {
+            guard !isCacheNotSavedRaised else { return }
+            isCacheNotSavedRaised = true
+            raise(.cacheNotSaved)
+        }
     }
 }

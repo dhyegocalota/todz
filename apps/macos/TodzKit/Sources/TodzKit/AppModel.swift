@@ -27,6 +27,7 @@ import Observation
     @ObservationIgnored var session: String?
     @ObservationIgnored var ownerIdentifier: String?
     @ObservationIgnored var isWorkspaceListOutdated = false
+    @ObservationIgnored var isCacheNotSavedRaised = false
     @ObservationIgnored var watches: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var watchAttempts: [String: Int] = [:]
     @ObservationIgnored var workspaceReload: Task<Void, Never>?
