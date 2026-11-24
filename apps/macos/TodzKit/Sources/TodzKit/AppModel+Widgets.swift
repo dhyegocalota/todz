@@ -23,6 +23,8 @@ extension AppModel {
         publishWidgets()
     }
 
+    public func takeWidgetRequests() async {}
+
     func observeWidgets() {
         withObservationTracking {
             _ = widgetSnapshot
