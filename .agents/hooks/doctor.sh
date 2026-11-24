@@ -64,6 +64,7 @@ fix_for() {
     skills) echo "ln -sfn ../.agents/skills .claude/skills" ;;
     gitleaks) install_with gitleaks "https://github.com/gitleaks/gitleaks#installing" ;;
     ffmpeg) install_with ffmpeg "https://ffmpeg.org/download.html" ;;
+    xcodegen) install_with xcodegen "https://github.com/yonaskolb/XcodeGen#installing" ;;
   esac
 }
 
@@ -72,6 +73,7 @@ lost_for() {
     node|pnpm) echo "everything" ;;
     git) echo "branches, commits and the local gate" ;;
     xcodebuild) echo "building and testing the native macOS app" ;;
+    xcodegen) echo "generating the macOS app's Xcode project" ;;
     swift) echo "compiling and testing Swift packages of the native macOS app" ;;
     jq) echo "the four hooks; the two guards block" ;;
     gh) echo "/open-pr and the recorder's media upload" ;;
@@ -94,7 +96,8 @@ check_node() { local installed_major; have node && installed_major=$(node_major)
 check_pnpm() { have pnpm && [[ "$(COREPACK_ENABLE_NETWORK=0 run pnpm -v 2>/dev/null)" == "$wanted_pnpm" ]]; }
 check_git() { have git; }
 check_jq() { have jq; }
-check_xcodebuild() { have xcodebuild; }
+check_xcodebuild() { have xcodebuild && run xcodebuild -version >/dev/null 2>&1; }
+check_xcodegen() { have xcodegen; }
 check_swift() { have swift; }
 gh_version_is_enough() {
   local installed
@@ -146,5 +149,6 @@ report gitleaks optional
 report ffmpeg optional
 report xcodebuild optional
 report swift optional
+report xcodegen optional
 echo "doctor: $missing_required missing required, $missing_optional missing optional"
 [[ "$missing_required" == 0 ]]

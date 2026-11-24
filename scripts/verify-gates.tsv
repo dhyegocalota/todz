@@ -17,6 +17,7 @@ apps/*/README.md	docs	-
 libs/*/README.md	docs	-
 .env.example	product	unit
 libs/types/*	product	typecheck unit
+apps/macos/*	product	macos
 apps/*	product	typecheck unit
 libs/*	product	typecheck unit
 .agents/hooks/*	tooling	hooks
