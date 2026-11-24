@@ -87,7 +87,7 @@ extension AppModelTests {
         #expect(harness.model.phase == .ready)
         #expect(harness.model.banner == nil)
         #expect(harness.model.taskViews?.inbox.count == 2)
-        #expect(harness.service.routes() == [.updateOwner, .listWorkspaces])
+        #expect(harness.service.routes() == [.updateOwner])
         harness.service.failures = [:]
         harness.service.calls = []
         harness.service.suspend(.readChanges)

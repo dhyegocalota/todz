@@ -82,6 +82,11 @@ extension AppModel {
             retryOwnerConfirmation()
         }
         try await confirmOwner()
+        let isAnotherOwnerPossible = !isOwnerConfirmed && ownerIdentifier != nil
+        guard !isAnotherOwnerPossible else {
+            isWorkspaceListOutdated = true
+            return
+        }
         let listed = try await request { try await service.listWorkspaces(session: $0) }
         isWorkspaceListOutdated = !isOwnerConfirmed
         workspaces = listed
