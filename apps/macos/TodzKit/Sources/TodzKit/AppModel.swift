@@ -24,6 +24,7 @@ import Observation
     var isOffline = false
     var isOwnerConfirmed = false
 
+    @ObservationIgnored var hasLaunched = false
     @ObservationIgnored var session: String?
     @ObservationIgnored var ownerIdentifier: String?
     @ObservationIgnored var isWorkspaceListOutdated = false
@@ -103,7 +104,10 @@ import Observation
         retry != nil
     }
 
+    // NB ADR 0031: the model launches once per process, whichever surface asks first; every later call returns at once.
     public func launch() async {
+        guard !hasLaunched else { return }
+        hasLaunched = true
         let secret: String?
         do {
             secret = try vault.read()
