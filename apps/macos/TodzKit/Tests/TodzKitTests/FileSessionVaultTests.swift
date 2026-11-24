@@ -5,6 +5,7 @@ import Testing
 private let sessionFileName = "session"
 private let privateMode = 0o600
 private let unreadableMode = 0o000
+private let folderNameWithASpace = "Application Support"
 
 private func temporaryFolder() -> URL {
     FileManager.default.temporaryDirectory.appending(path: "todz-vault-\(UUID().uuidString)")
@@ -38,6 +39,15 @@ private func modeOfFile(at url: URL) throws -> Int {
         #expect(try vault.read() == secret)
         #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path()) == [sessionFileName])
         #expect(try modeOfFile(at: folder.appending(path: sessionFileName)) == privateMode)
+    }
+
+    @Test func keepsTheSecretInAFolderWhoseNameHasASpace() throws {
+        let vault = FileSessionVault(folder: folder.appending(path: folderNameWithASpace))
+        let secret = UUID().uuidString
+        try vault.write(secret)
+        #expect(try vault.read() == secret)
+        try vault.erase()
+        #expect(try vault.read() == nil)
     }
 
     @Test func answersNilWhenNoSessionWasSaved() throws {
