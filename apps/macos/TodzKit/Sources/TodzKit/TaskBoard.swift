@@ -2,7 +2,7 @@ import Foundation
 
 private let keyPaddingDigit: Character = "0"
 
-private typealias Overlay = (board: TaskBoard, movedProjectIdentifiers: Set<String>)
+private typealias Overlay = (board: TaskBoard, movedTasks: Set<TaskKey>)
 
 private func displayOrderKey(position: Int, count: Int) -> String {
     let digits = String(position)
@@ -65,17 +65,21 @@ public struct TaskBoard: Sendable, Equatable {
     }
 
     public func applying(_ outbox: Outbox) -> TaskBoard {
-        let overlay = outbox.pendingChanges.reduce(into: Overlay(board: self, movedProjectIdentifiers: [])) { overlay, change in
+        let overlay = outbox.pendingChanges.reduce(into: Overlay(board: self, movedTasks: [])) { overlay, change in
             guard case let .field(key, .placement(placement)) = change else {
+                let reopened = overlay.board.reopenedAfterAMove(change, movedTasks: overlay.movedTasks)
                 overlay.board.apply(change)
+                guard let reopened else { return }
+                overlay.board.placeReopened(reopened, original: self, movedTasks: overlay.movedTasks)
                 return
             }
             let openNumbers = overlay.board.openNumbers(projectIdentifier: key.projectIdentifier)
             guard let moved = order(openNumbers, moving: key.number, to: placement) else { return }
             overlay.board.giveDisplayOrderKeys(projectIdentifier: key.projectIdentifier, openNumbers: moved)
-            overlay.movedProjectIdentifiers.insert(key.projectIdentifier)
+            overlay.movedTasks.insert(key)
         }
-        return overlay.movedProjectIdentifiers.reduce(into: overlay.board) { board, projectIdentifier in
+        let movedProjectIdentifiers = Set(overlay.movedTasks.map(\.projectIdentifier))
+        return movedProjectIdentifiers.reduce(into: overlay.board) { board, projectIdentifier in
             board.giveDisplayOrderKeys(projectIdentifier: projectIdentifier, openNumbers: board.openNumbers(projectIdentifier: projectIdentifier))
             board.restoreDoneOrderKeys(projectIdentifier: projectIdentifier, from: self)
         }
@@ -99,6 +103,30 @@ public struct TaskBoard: Sendable, Equatable {
         case let .state(key, .open, _):
             revise(key) { $0.setting(state: .open, completedAt: nil) }
         }
+    }
+
+    private func reopenedAfterAMove(_ change: PendingChange, movedTasks: Set<TaskKey>) -> TaskKey? {
+        guard case let .state(key, .open, _) = change else { return nil }
+        let isProjectMoved = movedTasks.contains { $0.projectIdentifier == key.projectIdentifier }
+        let isDoneUntilNow = task(projectIdentifier: key.projectIdentifier, number: key.number)?.state == .done
+        guard isProjectMoved, isDoneUntilNow else { return nil }
+        return key
+    }
+
+    private mutating func placeReopened(_ key: TaskKey, original: TaskBoard, movedTasks: Set<TaskKey>) {
+        guard let reopened = original.task(projectIdentifier: key.projectIdentifier, number: key.number) else { return }
+        let others = openNumbers(projectIdentifier: key.projectIdentifier).filter { $0 != key.number }
+        let laterIndex = others.firstIndex { number in
+            let isMoved = movedTasks.contains(TaskKey(projectIdentifier: key.projectIdentifier, number: number))
+            guard !isMoved, let held = original.task(projectIdentifier: key.projectIdentifier, number: number) else { return false }
+            return PositionedTask.isEarlierInManualOrder(reopened, held)
+        }
+        guard let laterIndex else {
+            giveDisplayOrderKeys(projectIdentifier: key.projectIdentifier, openNumbers: others + [key.number])
+            return
+        }
+        let placed = Array(others[..<laterIndex]) + [key.number] + Array(others[laterIndex...])
+        giveDisplayOrderKeys(projectIdentifier: key.projectIdentifier, openNumbers: placed)
     }
 
     private mutating func giveDisplayOrderKeys(projectIdentifier: String, openNumbers: [Int]) {
