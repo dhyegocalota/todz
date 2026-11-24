@@ -250,6 +250,21 @@ extension AppModelTests {
         #expect(harness.model.banner == nil)
     }
 
+    @Test func anAnswerBeforeAnUnreachableAttemptCountsNoAttemptForTheNextUncodedFailure() async throws {
+        let harness = try await outboxHarness()
+        harness.service.failures[.completeTasks] = .unreachable
+        await harness.model.complete(task: firstTask)
+        await harness.pause.started()
+        harness.service.failures[.completeTasks] = .unexpected(status: 503)
+        harness.pause.release()
+        await harness.pause.started(count: 2)
+        #expect(harness.model.outbox == Outbox().appending(.state(firstTask, .done, at: fixedInstant), isHeadSent: false))
+        harness.service.failures = [:]
+        harness.pause.release()
+        await harness.flushed()
+        #expect(harness.model.waitingChangeCount == 0)
+    }
+
     @Test(arguments: TransientFailure.allCases)
     func aTransientFailureWithNoAnswerBetweenNeverDropsTheChange(failure: TransientFailure) async throws {
         let harness = try await outboxHarness()
