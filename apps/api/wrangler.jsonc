@@ -15,5 +15,5 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ProjectStore"] }],
   "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["noreply@todz.app"] }],
-  "assets": { "directory": "./public", "run_worker_first": ["/owner/*", "/mcp", "/sign-in"] },
+  "assets": { "directory": "./public", "run_worker_first": ["/owner", "/owner/*", "/mcp", "/sign-in"] },
 }
