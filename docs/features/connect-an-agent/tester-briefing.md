@@ -271,3 +271,36 @@ The two views and the Cursor button live in the app, which has no test target; t
 
 - Both ⌘W paths rely on SwiftUI tearing the `Window` content down; a close that only hides the window would skip `.onDisappear`.
 - `reopenKeyScreen()` is a no-op while a visit is open, so a disappear without a following appear leaves the visit closed until the next appear.
+
+## Fix round 3
+
+### What changed
+
+| Finding | Change | Commits |
+|---------|--------|---------|
+| Reviewer: reopening on a project deleted or archived elsewhere shows a blank screen | `reopenKeyScreen()` reopens the remembered project only when it is still shown, else the Inbox | c94e317 red, ede2a94 |
+| Security: a stale list answer puts a revoked key back | `revokedKeyIdentifiers` collects the keys revoked in the visit (reset by `forgetKeys()`); every list answer is filtered through it | 779327f red and pin, dd42318 |
+| Reviewer: `keyIssueAnswers` names a count badly | renamed `keyIssueAnswerCount` | 083e162 |
+| Reviewer: handler lookup in `AddToCursorButton` | the handler application URL is unwrapped in its own guard, then its bundle identifier is checked in another; behaviour unchanged | cac040b |
+
+`swift test`: 539 before, 542 after, all green. The app builds with the gate's lines into a scratch derived data folder, with no warning.
+
+### Red today, green after
+
+| Test | Red commit and printed failure | Green commit |
+|------|--------------------------------|--------------|
+| `AppModelTests.reopeningTheScreenOfAProjectGoneElsewhereShowsTheInboxKeys` | c94e317: `Expectation failed: harness.model.keyScreenIdentifier != nil` (it was nil) and `harness.model.keyProjectIdentifier == inboxIdentifier` (it was `acme-launch`) | ede2a94 |
+| `AppModelTests.aListAnswerStartedBeforeTheRevokeDoesNotBringTheKeyBack` | 779327f: `Expectation failed: harness.model.keys == .loaded([])`, the list still held `launch-key` | dd42318 |
+| `AppModelTests.anIssuedKeyRevokedBeforeTheListAnswersIsNotAddedBack` | pin, green on landing: revoking clears the shown secret, so nothing is re-added | dd42318 |
+
+The rename and the Cursor button are behaviour-preserving; the build and the existing tests are their proof.
+
+### Hypotheses to attack
+
+1. Hypothesis: close the window on a project, delete that project from another device, reopen from the menu bar: the Inbox keys show and Create works. Break it by: archiving instead of deleting, and reopening before the project list refreshes.
+2. Hypothesis: revoking a key while Refresh is in flight never brings the row back. Break it by: a slow network, revoke at once after Refresh.
+3. Hypothesis: Add to Cursor shows "Cursor didn't open" when no application handles the link, and when another application does.
+
+### Known gaps
+
+- A key revoked on another device while a list is in flight still shows until the next Refresh; only revokes made in this window are remembered.
