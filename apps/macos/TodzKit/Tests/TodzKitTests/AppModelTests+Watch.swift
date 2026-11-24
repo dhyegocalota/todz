@@ -112,6 +112,22 @@ extension AppModelTests {
         await harness.model.workspaceReload?.value
     }
 
+    @Test func aCancelledReloadThatFinishesLeavesTheNewerReloadsHandle() async throws {
+        let harness = try await watchHarness()
+        harness.service.suspend(.listWorkspaces)
+        harness.model.requestWorkspaceReload()
+        let cancelled = try #require(harness.model.workspaceReload)
+        harness.model.stopWatching()
+        harness.model.requestWorkspaceReload()
+        await harness.service.held(.listWorkspaces, count: 2)
+        harness.service.resume(.listWorkspaces)
+        await cancelled.value
+        #expect(harness.model.workspaceReload != nil)
+        harness.service.unsuspend(.listWorkspaces)
+        harness.service.resume(.listWorkspaces)
+        await harness.model.workspaceReload?.value
+    }
+
     @Test func aSessionEndedOnASocketSignsOut() async throws {
         let harness = try await watchHarness()
         harness.signals.fail(harness.watchKey(inboxIdentifier), with: .unauthorized)
