@@ -21,6 +21,11 @@ struct MenuBarRow: View {
             }
             .onHover { isHovered = $0 }
             .onTapGesture(perform: reveal)
+            .focusable()
+            .onKeyPress(keys: [.return, .space]) { _ in
+                reveal()
+                return .handled
+            }
             .accessibilityHint(AccessibilityCopy.rowOpensWindow)
             .accessibilityAction(.default, reveal)
     }
