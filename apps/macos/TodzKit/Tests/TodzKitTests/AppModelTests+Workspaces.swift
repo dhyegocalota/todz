@@ -70,6 +70,16 @@ extension AppModelTests {
         #expect(harness.service.calls == [])
     }
 
+    @Test func switchingToTheActiveWorkspaceMakesNoCall() async throws {
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme")
+        harness.seedWorkspace(name: "side")
+        await harness.signedIn()
+        await harness.model.switchWorkspace(identifier: acme.identifier)
+        #expect(harness.model.activeWorkspace == acme)
+        #expect(harness.service.calls == [])
+    }
+
     @Test func switchingWorkspaceByTheActiveNumberMakesNoCall() async throws {
         let harness = try AppModelHarness()
         let acme = harness.seedWorkspace(name: "acme")
