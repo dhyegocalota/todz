@@ -1,4 +1,5 @@
-import { type SessionHandler, unbuiltHandler } from './owner-request';
+import { readChanges, watchChanges } from './owner-changes';
+import type { SessionHandler } from './owner-request';
 import { OwnerRoute } from './owner-routes';
 import { addTasks, completeTasks, readHistory, reopenTasks, updateTask } from './owner-task-writes';
 
@@ -17,6 +18,6 @@ export const TASK_HANDLERS: Record<TaskRoute, SessionHandler> = {
   [OwnerRoute.CompleteTasks]: completeTasks,
   [OwnerRoute.ReopenTasks]: reopenTasks,
   [OwnerRoute.ReadHistory]: readHistory,
-  [OwnerRoute.ReadChanges]: unbuiltHandler,
-  [OwnerRoute.WatchChanges]: unbuiltHandler,
+  [OwnerRoute.ReadChanges]: readChanges,
+  [OwnerRoute.WatchChanges]: watchChanges,
 };

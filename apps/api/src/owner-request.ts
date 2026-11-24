@@ -1,6 +1,5 @@
 import type { z } from 'zod';
 import type { Env } from './env';
-import { noRouteResponse } from './owner-errors';
 import type { OwnerRoute, RouteParam } from './owner-routes';
 import { parsedJson } from './parsed-json';
 import type { SessionOwner } from './project-routing';
@@ -31,8 +30,4 @@ export async function parsedBody<Schema extends z.ZodType>({
   const parsed = schema.safeParse(parsedJson(await request.text()));
   if (!parsed.success) return null;
   return parsed.data;
-}
-
-export async function unbuiltHandler(): Promise<Response> {
-  return noRouteResponse();
 }
