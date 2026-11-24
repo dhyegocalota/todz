@@ -14,6 +14,7 @@ import { MCP_COPY } from './mcp-copy';
 import { type McpServerScope, buildMcpServer, envelopeClientName } from './mcp-server';
 import { findSessionClientName, openMcpSession } from './mcp-sessions';
 import { calendarDateInTimeZone } from './owner-today';
+import { parsedJson } from './parsed-json';
 import { resultOf } from './project-result';
 import { type KeyProject, openKeyProject } from './project-routing';
 
@@ -72,14 +73,6 @@ function jsonRpcError({ status, id, code, message }: { status: number; id: Reque
   return Response.json({ jsonrpc: JSONRPC_VERSION, id, error: { code, message } }, { status });
 }
 
-async function parsedBody(request: Request): Promise<unknown> {
-  try {
-    return await request.clone().json();
-  } catch {
-    return null;
-  }
-}
-
 function validClientName(params: unknown): string | null {
   const parsedParams = InitializeParamsSchema.safeParse(params);
   if (!parsedParams.success) return null;
@@ -125,7 +118,7 @@ async function initializeSession({
 
 async function serveLegacy(legacyRequest: LegacyRequest): Promise<Response> {
   const { request, env, keyProject, now } = legacyRequest;
-  const body = await parsedBody(request);
+  const body = parsedJson(await request.clone().text());
   const initializeMessage = InitializeMessageSchema.safeParse(body);
   if (initializeMessage.success) {
     return initializeSession({ legacyRequest, body, id: initializeMessage.data.id, params: initializeMessage.data.params });
