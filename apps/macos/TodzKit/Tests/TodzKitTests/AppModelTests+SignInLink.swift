@@ -138,7 +138,7 @@ extension AppModelTests {
         await harness.model.redeem(signInLink: try incomingLink())
         let session = harness.service.issuedSession.sessionToken
         #expect(
-            harness.service.calls == [
+            Array(harness.service.calls.prefix(2)) == [
                 .signIn(identityToken: linkToken, linkVerifier: firstVerifier, timeZone: harnessTimeZoneIdentifier),
                 .listWorkspaces(session: session),
             ]

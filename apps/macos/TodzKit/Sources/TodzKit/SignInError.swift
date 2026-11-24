@@ -12,9 +12,10 @@ public enum SignInError: Equatable, Sendable {
         switch failure {
         case .identityRejected: self = .identityRejected
         case .signInUnavailable: self = .signInUnavailable
+        case .tooManyLinks: self = .tooManyLinks
         case .timeZoneInvalid: self = .timeZoneInvalid
         case .unreachable: self = .unreachable
-        case .unauthorized, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead, .ruleViolated, .invalidRequest, .tooManyLinks, .unexpected:
+        case .unauthorized, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead, .ruleViolated, .invalidRequest, .unexpected:
             self = .unexpected
         }
     }

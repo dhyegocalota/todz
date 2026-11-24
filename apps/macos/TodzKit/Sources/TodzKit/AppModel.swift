@@ -5,6 +5,7 @@ import Observation
     public internal(set) var phase: AppPhase = .loading
     public internal(set) var signInError: SignInError?
     public internal(set) var isSigningIn = false
+    public internal(set) var isRequestingLink = false
     public internal(set) var lastIdentity: String?
     public internal(set) var signInMethod: SignInMethod?
     public internal(set) var pendingLink: PendingSignInLink?
@@ -151,7 +152,14 @@ import Observation
     public func launch() async {
         guard !hasLaunched else { return }
         hasLaunched = true
+        await openLaunchSession()
+        isLaunchSettled = true
+        await redeemHeldSignInLink()
+    }
+
+    private func openLaunchSession() async {
         observeWidgets()
+        restorePendingLink()
         let secret: String?
         do {
             secret = try vault.read()
@@ -173,18 +181,23 @@ import Observation
 
     public func signIn(identity: String) async {
         lastIdentity = identity
+        await openSession { try await service.signIn(identityToken: identity, linkVerifier: nil, timeZone: timeZone.identifier) }
+    }
+
+    @discardableResult
+    func openSession(issuing: () async throws -> IssuedSession) async -> Bool {
         signInError = nil
         isSigningIn = true
         defer { isSigningIn = false }
         let issued: IssuedSession
         do {
-            issued = try await service.signIn(identityToken: identity, linkVerifier: nil, timeZone: timeZone.identifier)
+            issued = try await issuing()
         } catch let failure as OwnerAPIError {
             signInError = SignInError(failure)
-            return
+            return false
         } catch {
             signInError = .unexpected
-            return
+            return false
         }
         let cached: OwnerCache?
         do {
@@ -192,7 +205,7 @@ import Observation
         } catch {
             signInError = .unexpected
             try? await service.signOut(session: issued.sessionToken)
-            return
+            return false
         }
         session = issued.sessionToken
         ownerIdentifier = issued.owner.identifier
@@ -202,6 +215,7 @@ import Observation
         openCache(cached)
         startSending()
         await openWorkspaces()
+        return true
     }
 
     public func signOut() async {
