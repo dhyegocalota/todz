@@ -8,7 +8,11 @@ extension AppModel {
 
     func startSending() {
         sendWait?.cancel()
-        guard let session, isOwnerConfirmed, sendingSession == nil else { return }
+        guard let session, sendingSession == nil else { return }
+        guard isOwnerConfirmed else {
+            requestWorkspaceReload()
+            return
+        }
         sendingSession = session
         sendLoop = Task { await sendOutbox(session: session) }
     }
@@ -96,9 +100,10 @@ extension AppModel {
     private func recover(from error: any Error, sending change: PendingChange) async -> Bool {
         switch SendOutcome.of(error) {
         case .refused:
-            await refuse(change)
+            refuse(change)
             return true
         case .unreachable:
+            hasServerAnswered = false
             await waitToSend()
             return true
         case .unexpected:
@@ -119,7 +124,7 @@ extension AppModel {
         }
         let (counted, isAtLimit) = outbox.countingAttemptOnHead()
         guard !isAtLimit else {
-            await refuse(change)
+            refuse(change)
             return
         }
         outbox = counted
@@ -127,12 +132,12 @@ extension AppModel {
         await waitToSend()
     }
 
-    private func refuse(_ change: PendingChange) async {
+    private func refuse(_ change: PendingChange) {
         sendFailures = 0
         removeHead(change)
         countRefusals(1)
         guard isShown(projectIdentifier: change.projectIdentifier) else { return }
-        await pullFromStart(projectIdentifier: change.projectIdentifier)
+        pullFromStart(projectIdentifier: change.projectIdentifier)
     }
 
     private func waitToSend() async {

@@ -318,3 +318,34 @@ From `apps/macos/TodzKit`: `swift test` (290 tests). App: `xcodegen generate --s
 | A project that leaves the list keeps its file | `followActiveProjects()` erases the project file and board rows of each project that left (`forgetProject(identifier:)` in `AppModel+Cache.swift`); a workspace switch stops the watches first and erases nothing. Tests `aProjectThatLeavesTheListHasItsProjectFileErased` (red), `aWorkspaceSwitchErasesNoProjectFile` (pin) | `Expectation failed: harness.store.calls.contains(.eraseProject(identifier: launchIdentifier))` and `Expectation failed: harness.model.board.tasks(projectIdentifier: launchIdentifier).isEmpty` |
 
 Re-check D1: sign in with the server up and nothing waiting, stop the server, touch nothing. The status shows Offline within the first reconnect delay and clears on the next opened socket. Known gap: the board cursor of a left project stays in memory until the next sign-in.
+
+## Review fixes (lane `lane/mac-sync-review`)
+
+The unit suite: 329 tests in 22 suites at f906eba; the app builds.
+
+| Fix | What changed | Red text | Commits |
+|---|---|---|---|
+| 1. An unconfirmed owner stops the outbox for good | `startSending()` with the owner unconfirmed calls `requestWorkspaceReload()` (which confirms first), so an opened socket, a successful pull, a new write and ⌘R all retry; no reload is requested while a listing runs (`workspaceListingsInFlight`). A refused `time_zone_invalid` confirms through `GET /owner` (`OwnerService.readOwner`, new). Unconfirmed with changes waiting, `syncStatus` is `.offline(waiting: n)`. ADR 0027 point 4 says so | `Expectation failed: harness.model.syncStatus == .offline(waiting: 2)` and `.offline(waiting: 1)`; `Expectation failed: harness.service.calls.contains(.completeTasks(…numbers: [2]))`, `…contains(.updateTask(…"Waiting"…))`, `…waitingChangeCount == 0`; `Expectation failed: Array(harness.service.calls.prefix(2)) == [.updateOwner(…), .readOwner(…)]`; `aRefusedZoneAtLaunchShowsNothingAndGoesOn` now asserts the send: `…waitingChangeCount == 0`, `…tasksOfProject["acme-inbox"]?.first?.title == "Waiting"`; `OwnerAPI.swift:72: Fatal error: OwnerAPI.readOwner is not implemented` | 0dd226e → cfe3bcb |
+| 2. A 404 on a pull never reloads | `ProjectPull.notFound`: counts as an answer, no banner, one workspace reload; also on the refusal's pull from 0 | `Expectation failed: harness.model.activeWorkspace?.projects.map(\.identifier) == [inboxIdentifier]` (both tests); `Expectation failed: harness.model.syncStatus == .online` | 371464f → 4c35147 |
+| 3. Offline flaps behind a proxy that blocks sockets | A watch failure marks Offline only when no HTTP answer arrived since that watch's previous failure or opening (`isWatchAnswered`); a watch that never opened nor failed still marks Offline | `Expectation failed: harness.model.syncStatus == .online` | 5a989c9 → 19d6b05 |
+| 4. Callers await the whole drain | Each pull is its own task after the one before; a trigger joins the one waiting pull or queues it and gets that pull back; `refresh()` and activation await only the pulls they joined, in turn on the main actor; a refusal asks for its pull from 0 without waiting | `Expectation failed: harness.model.isRefreshing == false`; `Expectation failed: harness.service.routes() == [.completeTasks, .updateTask, .readChanges]` | 05ab764 → 966f2f0 |
+| 5. The write budget allowed 100 ms | `FileSyncStoreTests` budget is 16 ms (median printed 0.0076 s) | pin | f906eba |
+| 6. A cancelled reload erases a newer reload's handle | Each reload takes an identifier; it clears `workspaceReload` only while the identifier is still its own | `Expectation failed: harness.model.workspaceReload != nil` | 916cb6c → d7ba644 |
+| D2. An answer before an outage counts an attempt | An unreachable send clears `hasServerAnswered`, so the next uncoded failure without an answer counts nothing | `Expectation failed: harness.model.outbox == Outbox().appending(.state(firstTask, .done, at: fixedInstant), isHeadSent: false)` | 30b23da → ddf86a0 |
+
+The earlier known gaps "a 404 on a pull does not ask for a workspace reload" and "an owner whose zone is refused is never confirmed" are closed by fixes 2 and 1.
+
+### Hypotheses to attack
+
+1. Hypothesis: a cached launch whose `PATCH /owner` fails (5xx) after a socket opened still sends. Break it by: a proxy answering `PATCH /owner` with a bare 503 once, launching with changes waiting; the status says Offline with the count, and the first ⌘R, write or `changed` after the proxy forwards again sends `PATCH /owner`, `GET /owner/workspaces`, then the changes.
+2. Hypothesis: a refused zone confirms the owner. Break it by: a proxy answering `PATCH /owner` with `400 {"error":"time_zone_invalid"}`; `GET /owner` follows and the outbox is sent.
+3. Hypothesis: a cached launch sends one `PATCH /owner` and one listing even when sockets open first. Break it by: counting requests at the proxy during a cached launch.
+4. Hypothesis: a project deleted elsewhere leaves the sidebar on its next pull. Break it by: deleting a project through the API while the window shows it, then ⌘R.
+5. Hypothesis: behind a proxy that refuses WebSocket upgrades, Offline does not reappear on the reconnect right after an HTTP answer. Break it by: such a proxy, then ⌘R; the status stays online across the next reconnect.
+6. Hypothesis: ⌘R ends while an agent writes steadily through MCP; the Refresh button never spins past its own pull.
+
+### Known gaps
+
+- Fix 1: a trigger that arrives while a listing runs requests no reload; if that listing's confirmation failed, the next trigger after it retries.
+- Fix 3: with sockets blocked and no HTTP traffic, the second failure after an answer still marks Offline; the status stays Offline until the next answer.
+- Fix 6: after fix 1's guard, a newer reload can no longer start while another lists; the test reaches the race by cancelling through `stopWatching()` before the first reload runs.

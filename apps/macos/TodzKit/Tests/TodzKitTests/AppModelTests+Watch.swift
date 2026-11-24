@@ -18,7 +18,7 @@ extension AppModelTests {
         return harness
     }
 
-    @MainActor private func withoutLaunch(_ harness: AppModelHarness) {
+    @MainActor func withoutLaunch(_ harness: AppModelHarness) {
         harness.service.workspaces = harness.service.workspaces.map { workspace in
             let kept = workspace.projects.filter { $0.identifier != launchIdentifier }
             return Workspace(identifier: workspace.identifier, name: workspace.name, createdAt: workspace.createdAt, projects: kept)
@@ -112,6 +112,22 @@ extension AppModelTests {
         await harness.model.workspaceReload?.value
     }
 
+    @Test func aCancelledReloadThatFinishesLeavesTheNewerReloadsHandle() async throws {
+        let harness = try await watchHarness()
+        harness.service.suspend(.listWorkspaces)
+        harness.model.requestWorkspaceReload()
+        let cancelled = try #require(harness.model.workspaceReload)
+        harness.model.stopWatching()
+        harness.model.requestWorkspaceReload()
+        await harness.service.held(.listWorkspaces, count: 2)
+        harness.service.resume(.listWorkspaces)
+        await cancelled.value
+        #expect(harness.model.workspaceReload != nil)
+        harness.service.unsuspend(.listWorkspaces)
+        harness.service.resume(.listWorkspaces)
+        await harness.model.workspaceReload?.value
+    }
+
     @Test func aSessionEndedOnASocketSignsOut() async throws {
         let harness = try await watchHarness()
         harness.signals.fail(harness.watchKey(inboxIdentifier), with: .unauthorized)
@@ -136,6 +152,22 @@ extension AppModelTests {
         harness.signals.fail(harness.watchKey(inboxIdentifier), with: .unreachable)
         await harness.pause.started()
         #expect(harness.model.syncStatus == .offline(waiting: 0))
+        harness.pause.release()
+    }
+
+    @Test func anAnswerBetweenTwoWatchFailuresKeepsTheModelOnline() async throws {
+        let harness = try await watchHarness()
+        let inbox = harness.watchKey(inboxIdentifier)
+        harness.signals.fail(inbox, with: .unreachable)
+        await harness.pause.started()
+        #expect(harness.model.syncStatus == .offline(waiting: 0))
+        await harness.model.refresh()
+        #expect(harness.model.syncStatus == .online)
+        harness.pause.release()
+        await harness.signals.opened(inbox, count: 2)
+        harness.signals.fail(inbox, with: .unreachable)
+        await harness.pause.started(count: 2)
+        #expect(harness.model.syncStatus == .online)
         harness.pause.release()
     }
 

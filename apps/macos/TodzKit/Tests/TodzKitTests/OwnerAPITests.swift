@@ -65,6 +65,14 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
         try expectOnlyRequest(ExpectedRequest(method: "DELETE", path: "/owner/sessions/current", session: session, body: nil))
     }
 
+    @Test func readOwnerGetsTheOwner() async throws {
+        let ownerIdentifier = UUID().uuidString
+        let body = "{\"owner\":\(OwnerFixtures.ownerJSON(identifier: ownerIdentifier, timeZone: timeZone))}"
+        let owner = try await api(answering: .response(status: 200, body: body)).readOwner(session: session)
+        try expectOnlyRequest(ExpectedRequest(method: "GET", path: "/owner", session: session, body: nil))
+        #expect(owner == Owner(identifier: ownerIdentifier, timeZone: timeZone))
+    }
+
     @Test func updateOwnerPatchesTheTimeZone() async throws {
         let ownerIdentifier = UUID().uuidString
         let body = "{\"owner\":\(OwnerFixtures.ownerJSON(identifier: ownerIdentifier, timeZone: timeZone))}"

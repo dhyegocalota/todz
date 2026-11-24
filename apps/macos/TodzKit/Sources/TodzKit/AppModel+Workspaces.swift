@@ -76,6 +76,8 @@ extension AppModel {
     }
 
     private func openListedWorkspaces() async throws {
+        workspaceListingsInFlight += 1
+        defer { workspaceListingsInFlight -= 1 }
         await confirmOwner()
         let listed = try await request { try await service.listWorkspaces(session: $0) }
         isWorkspaceListOutdated = !isOwnerConfirmed

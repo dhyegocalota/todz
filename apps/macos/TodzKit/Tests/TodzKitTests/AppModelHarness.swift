@@ -73,6 +73,10 @@ final class Captured<Value> {
         await model.sendLoop?.value
     }
 
+    func pulled(_ projectIdentifier: String) async {
+        _ = await model.pullGates[projectIdentifier]?.task.value
+    }
+
     func launchedFromCache() async {
         vault.secret = session
         await model.launch()

@@ -4,6 +4,7 @@ import Testing
 
 private let inboxIdentifier = "acme-inbox"
 private let firstTask = TaskKey(projectIdentifier: inboxIdentifier, number: 1)
+private let secondTask = TaskKey(projectIdentifier: inboxIdentifier, number: 2)
 private let cachedOwnerIdentifier = "cached-owner"
 
 enum CachedOwner: CaseIterable, Sendable {
@@ -185,6 +186,62 @@ extension AppModelTests {
         #expect(harness.store.routes().contains(.erase))
         #expect(harness.model.waitingChangeCount == 0)
         #expect(harness.store.owner?.ownerIdentifier == harness.ownerIdentifier)
+    }
+
+    @Test func aCachedLaunchWhoseOwnerUpdateFailsAfterASocketOpenedConfirmsOnALaterWriteAndSends() async throws {
+        let harness = try harnessWithAWaitingChange()
+        harness.vault.secret = harness.session
+        harness.service.failures[.updateOwner] = .unexpected(status: 503)
+        harness.service.suspend(.updateOwner)
+        harness.service.suspend(.readChanges)
+        let launching = Task { await harness.model.launch() }
+        await harness.service.held(.updateOwner)
+        harness.signals.send(.opened, to: harness.watchKey(inboxIdentifier))
+        await harness.service.held(.readChanges)
+        harness.service.unsuspend(.readChanges)
+        harness.service.resume(.readChanges)
+        harness.service.unsuspend(.updateOwner)
+        harness.service.resume(.updateOwner)
+        await launching.value
+        await harness.model.complete(task: secondTask)
+        await harness.model.workspaceReload?.value
+        #expect(harness.model.syncStatus == .offline(waiting: 2))
+        harness.service.failures = [:]
+        await harness.model.refresh()
+        await harness.model.workspaceReload?.value
+        await harness.flushed()
+        #expect(harness.service.calls.contains(.completeTasks(session: harness.session, projectIdentifier: inboxIdentifier, numbers: [2])))
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.model.syncStatus == .online)
+    }
+
+    @Test func aLaunchWhoseOwnerUpdateFailsOnceConfirmsOnALaterPullAndSends() async throws {
+        let harness = try harnessWithAWaitingChange()
+        harness.service.failures[.updateOwner] = .unexpected(status: 503)
+        await harness.launchedFromCache()
+        #expect(harness.model.syncStatus == .offline(waiting: 1))
+        harness.service.failures = [:]
+        await harness.model.pullProject(identifier: inboxIdentifier)
+        await harness.model.workspaceReload?.value
+        await harness.flushed()
+        #expect(harness.service.calls.contains(.updateTask(session: harness.session, projectIdentifier: inboxIdentifier, number: 1, patch: .title("Waiting"))))
+        #expect(harness.model.waitingChangeCount == 0)
+    }
+
+    @Test func aLaunchWhoseZoneIsRefusedConfirmsTheOwnerByReadingItAndSends() async throws {
+        let harness = try harnessWithAWaitingChange()
+        harness.service.failures[.updateOwner] = .timeZoneInvalid
+        harness.vault.secret = harness.session
+        await harness.model.launch()
+        await harness.flushed()
+        #expect(
+            Array(harness.service.calls.prefix(2)) == [
+                .updateOwner(session: harness.session, timeZone: harnessTimeZoneIdentifier),
+                .readOwner(session: harness.session),
+            ]
+        )
+        #expect(harness.service.calls.contains(.updateTask(session: harness.session, projectIdentifier: inboxIdentifier, number: 1, patch: .title("Waiting"))))
+        #expect(harness.model.waitingChangeCount == 0)
     }
 
     @Test func aLaunchAsAnotherOwnerWhoseListingFailsSaysSoWithTryAgain() async throws {

@@ -1,5 +1,6 @@
 enum ProjectPull: Sendable {
     case loaded(projectIdentifier: String, changes: ProjectChanges)
+    case notFound(projectIdentifier: String)
     case unreachable(projectIdentifier: String)
     case failed(projectIdentifier: String)
 
@@ -9,6 +10,8 @@ enum ProjectPull: Sendable {
             return .loaded(projectIdentifier: projectIdentifier, changes: changes)
         } catch OwnerAPIError.unauthorized {
             throw OwnerAPIError.unauthorized
+        } catch OwnerAPIError.notFound {
+            return .notFound(projectIdentifier: projectIdentifier)
         } catch OwnerAPIError.unreachable {
             return .unreachable(projectIdentifier: projectIdentifier)
         } catch {
@@ -18,7 +21,7 @@ enum ProjectPull: Sendable {
 
     var failedProjectIdentifier: String? {
         switch self {
-        case .loaded: nil
+        case .loaded, .notFound: nil
         case let .unreachable(projectIdentifier), let .failed(projectIdentifier): projectIdentifier
         }
     }

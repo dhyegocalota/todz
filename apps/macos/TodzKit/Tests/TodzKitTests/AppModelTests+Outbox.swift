@@ -210,12 +210,24 @@ extension AppModelTests {
         harness.service.failures[.completeTasks] = refusal
         await harness.model.complete(task: firstTask)
         await harness.flushed()
+        await harness.pulled(inboxIdentifier)
         #expect(harness.model.waitingChangeCount == 0)
         #expect(try harness.store.storedOutbox() == Outbox())
         #expect(harness.service.calls.contains(.readChanges(session: harness.session, projectIdentifier: inboxIdentifier, cursor: 0)))
         #expect(harness.model.taskViews?.inbox.map(\.task.number) == [1, 2])
         #expect(harness.model.banner == .changesRefused(count: 1))
         #expect(harness.pause.durations == [])
+    }
+
+    @Test func aRefusalAsksForItsPullFromZeroWithoutWaitingForIt() async throws {
+        let harness = try await outboxHarness()
+        harness.service.failures[.completeTasks] = .invalidRequest
+        await harness.model.complete(task: firstTask)
+        await harness.model.updateTitle(task: secondTask, title: "B")
+        await harness.flushed()
+        await harness.pulled(inboxIdentifier)
+        #expect(harness.service.routes() == [.completeTasks, .updateTask, .readChanges])
+        #expect(harness.service.calls.last == .readChanges(session: harness.session, projectIdentifier: inboxIdentifier, cursor: 0))
     }
 
     @Test func anUnreachableServerKeepsTheChangeAndWaitsWithoutCountingAnAttempt() async throws {
@@ -236,6 +248,21 @@ extension AppModelTests {
         await harness.flushed()
         #expect(harness.model.waitingChangeCount == 0)
         #expect(harness.model.banner == nil)
+    }
+
+    @Test func anAnswerBeforeAnUnreachableAttemptCountsNoAttemptForTheNextUncodedFailure() async throws {
+        let harness = try await outboxHarness()
+        harness.service.failures[.completeTasks] = .unreachable
+        await harness.model.complete(task: firstTask)
+        await harness.pause.started()
+        harness.service.failures[.completeTasks] = .unexpected(status: 503)
+        harness.pause.release()
+        await harness.pause.started(count: 2)
+        #expect(harness.model.outbox == Outbox().appending(.state(firstTask, .done, at: fixedInstant), isHeadSent: false))
+        harness.service.failures = [:]
+        harness.pause.release()
+        await harness.flushed()
+        #expect(harness.model.waitingChangeCount == 0)
     }
 
     @Test(arguments: TransientFailure.allCases)

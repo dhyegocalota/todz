@@ -210,6 +210,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         harness.service.failures[.updateOwner] = .timeZoneInvalid
+        harness.service.failures[.readOwner] = .unexpected(status: 500)
         await harness.signedIn()
         #expect(harness.model.phase == .ready)
         #expect(harness.store.routes().contains(.writeOwner) == false)

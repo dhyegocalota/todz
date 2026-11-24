@@ -14,7 +14,7 @@ private let brokenJSON = "{"
 private let outboxBytes = Data("outbox".utf8)
 private let largeTaskCount = 1_000
 private let timedWriteCount = 5
-private let medianBudget = Duration.milliseconds(100)
+private let medianBudget = Duration.milliseconds(16)
 private let invalidIdentifiers = ["../escape", "", "a/b", "a.b", String(repeating: "a", count: 65)]
 
 private func temporaryFolder() -> URL {

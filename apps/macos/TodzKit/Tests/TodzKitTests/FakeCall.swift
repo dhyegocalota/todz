@@ -3,6 +3,7 @@
 enum FakeRoute: Hashable, Sendable {
     case signIn
     case signOut
+    case readOwner
     case updateOwner
     case listWorkspaces
     case createWorkspace
@@ -19,6 +20,7 @@ enum FakeRoute: Hashable, Sendable {
 enum FakeCall: Equatable, Sendable {
     case signIn(identityToken: String, timeZone: String)
     case signOut(session: String)
+    case readOwner(session: String)
     case updateOwner(session: String, timeZone: String)
     case listWorkspaces(session: String)
     case createWorkspace(session: String, name: String)
@@ -35,6 +37,7 @@ enum FakeCall: Equatable, Sendable {
         switch self {
         case .signIn: .signIn
         case .signOut: .signOut
+        case .readOwner: .readOwner
         case .updateOwner: .updateOwner
         case .listWorkspaces: .listWorkspaces
         case .createWorkspace: .createWorkspace
@@ -59,7 +62,7 @@ enum FakeCall: Equatable, Sendable {
             let .readHistory(_, projectIdentifier, _),
             let .readChanges(_, projectIdentifier, _):
             projectIdentifier
-        case .signIn, .signOut, .updateOwner, .listWorkspaces, .createWorkspace, .createProject:
+        case .signIn, .signOut, .readOwner, .updateOwner, .listWorkspaces, .createWorkspace, .createProject:
             nil
         }
     }
