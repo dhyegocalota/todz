@@ -22,6 +22,10 @@ describe('clientRateKey', () => {
     expect(clientRateKey({ address: '2001:db8::1' })).toBe('2001:db8:0:0');
   });
 
+  test('returns an address with too many groups unchanged', () => {
+    expect(clientRateKey({ address: '1:2:3:4:5:6::7:8:9' })).toBe('1:2:3:4:5:6::7:8:9');
+  });
+
   test('keys two addresses of one 64-bit prefix alike', () => {
     expect(clientRateKey({ address: '2001:DB8:1:2::1' })).toBe(clientRateKey({ address: '2001:db8:1:2:ffff:eeee:dddd:cccc' }));
   });

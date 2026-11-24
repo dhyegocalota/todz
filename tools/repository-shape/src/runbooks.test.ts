@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { posix } from 'node:path';
 import { describe, expect, test } from 'vitest';
@@ -27,7 +28,9 @@ const FENCED_BLOCK_PATTERN = /```[\s\S]*?```/g;
 const CODE_FENCE = '```';
 const WRAPPER_PATH = 'scripts/todz-cloudflare.sh';
 const WRAPPED_WRANGLER = `${WRAPPER_PATH} pnpm --filter @todz/api exec wrangler `;
-const SHELL_GUARD_PATTERN = /[$`{}]|<</;
+const GUARD_HOOK = '.agents/hooks/guard-secrets.sh';
+const BLOCKED_EXIT_CODE = 2;
+const BASH_TOOL_NAME = 'Bash';
 const SHARED_TEMPORARY_PATTERN = /TMPDIR|\/tmp\b/;
 const WRANGLER_CONFIGURATION = 'apps/api/wrangler.jsonc';
 const ACCOUNT_ID_PATTERN = /"account_id": "([0-9a-f]{32})"/;
@@ -92,6 +95,11 @@ function commandLines(text: string): string[] {
       .map((line) => line.trim())
       .filter((line) => line !== '' && !line.startsWith(CODE_FENCE)),
   );
+}
+
+function isBlockedByGuard(command: string): boolean {
+  const input = JSON.stringify({ tool_name: BASH_TOOL_NAME, tool_input: { command } });
+  return spawnSync(repositoryPath(GUARD_HOOK), { input }).status === BLOCKED_EXIT_CODE;
 }
 
 function rootScripts(): string[] {
@@ -169,10 +177,15 @@ describe('runbooks', () => {
     expect(readRunbook(DEPLOY_RUNBOOK).text).not.toMatch(DEPLOY_WITH_VARIABLE_PATTERN);
   });
 
-  test('the deploy runbook has command lines, none with a character the loop shell guard refuses or a shared temporary folder', () => {
+  test('the deploy runbook has command lines, none the secrets guard hook blocks or with a shared temporary folder', () => {
     const lines = commandLines(readRunbook(DEPLOY_RUNBOOK).text);
     expect(lines.length).toBeGreaterThan(0);
-    expect(lines.filter((line) => SHELL_GUARD_PATTERN.test(line) || SHARED_TEMPORARY_PATTERN.test(line))).toEqual([]);
+    expect(lines.filter((line) => isBlockedByGuard(line) || SHARED_TEMPORARY_PATTERN.test(line))).toEqual([]);
+  });
+
+  test('the guard hook helper blocks a command that writes a dotenv file and passes a plain read', () => {
+    expect(isBlockedByGuard('touch .env')).toBe(true);
+    expect(isBlockedByGuard('git status')).toBe(false);
   });
 
   test('every wrangler call of the deploy runbook goes through the wrapper, and no line calls the Cloudflare API directly', () => {
