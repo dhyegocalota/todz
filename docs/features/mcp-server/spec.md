@@ -113,7 +113,7 @@ A modern request whose envelope has no client name gets a tool error with the `c
 
 ### The server
 
-A fresh `McpServer` per request, named `todz`, with `instructions` from the copy, built from `{ project, today, clientNameOf }` where `clientNameOf(ctx)` returns the envelope's `io.modelcontextprotocol/clientInfo` name on the modern leg (throwing when the SDK let a modern request through without it) and the session's name on the legacy leg. Writes send `{ kind: ActorKind.Agent, clientName }` to the Durable Object, which validates it (an invalid name → the `client_name_invalid` tool error). No tool takes a project or workspace id, and no answer names a project, a workspace or a count beyond this project.
+A fresh `McpServer` per request, named `todz`, with `instructions` from the copy, built from `{ project, today, clientNameOf }` where `clientNameOf(ctx)` returns the envelope's `io.modelcontextprotocol/clientInfo` name on the modern leg (`null` when the envelope names no client, which write tools answer with the `client_unnamed` tool error before calling the project) and the session's name on the legacy leg. Writes send `{ kind: ActorKind.Agent, clientName }` to the Durable Object, which validates it (an invalid name → the `client_name_invalid` tool error). No tool takes a project or workspace id, and no answer names a project, a workspace or a count beyond this project.
 
 | Tool | Input (zod) | Calls | Answer |
 |---|---|---|---|
