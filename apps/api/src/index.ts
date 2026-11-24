@@ -1,10 +1,10 @@
 import type { Env } from './env';
+import { HttpStatus } from './http-status';
 import { serveMcp } from './mcp-endpoint';
 import { serveOwner } from './owner-endpoint';
 
 export { ProjectStore } from './project-store';
 
-const NOT_FOUND_STATUS = 404;
 const MCP_PATH = '/mcp';
 const OWNER_PATH = '/owner';
 
@@ -23,7 +23,7 @@ export default {
     const { pathname } = new URL(request.url);
     if (isOwnerPath(pathname)) return serveOwner({ request, env, now: Date.now() });
     const route = ROUTE_OF_PATH[pathname];
-    if (route === undefined) return new Response(null, { status: NOT_FOUND_STATUS });
+    if (route === undefined) return new Response(null, { status: HttpStatus.NotFound });
     return route({ request, env });
   },
 } satisfies ExportedHandler<Env>;
