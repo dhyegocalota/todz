@@ -1,3 +1,4 @@
+import Foundation
 import TodzKit
 
 enum KeyScreenCopy {
@@ -15,10 +16,12 @@ enum KeyScreenCopy {
     static let claudeCode = "Claude Code"
     static let codex = "Codex"
     static let cursor = "Cursor"
-    static let claudeCodeCaption = "Run in Terminal"
-    static let codexConfigCaption = "Add to ~/.codex/config.toml"
-    static let codexShellCaption = "Add to your shell profile"
-    static let cursorCaption = "Or add to mcp.json"
+    static let claudeCodeCaption = AttributedString(
+        localized: "Run it in your project's folder. To replace a key there, run `claude mcp remove todz` first."
+    )
+    static let codexConfigCaption = AttributedString(localized: "Add to ~/.codex/config.toml")
+    static let codexShellCaption = AttributedString(localized: "Add to your shell profile")
+    static let cursorCaption = AttributedString(localized: "Or add to mcp.json")
     static let addToCursor = "Add to Cursor"
     static let cursorDidNotOpen = "Cursor didn't open. Copy the JSON below instead."
     static let secretPlaceholder = "<new key>"

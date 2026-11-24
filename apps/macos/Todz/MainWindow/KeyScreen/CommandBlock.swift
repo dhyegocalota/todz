@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CommandBlock: View {
     let name: String
-    let caption: String?
+    let caption: AttributedString?
     let text: String
     let holdsSecret: Bool
     let disabledReason: String?

@@ -52,7 +52,7 @@ struct ClientCommands: View {
         return KeyScreenCopy.createKeyFirst
     }
 
-    private func secretBlock(name: String, caption: String, text: String) -> CommandBlock {
+    private func secretBlock(name: String, caption: AttributedString, text: String) -> CommandBlock {
         CommandBlock(name: name, caption: caption, text: text, holdsSecret: secret != nil, disabledReason: disabledReason)
     }
 }
