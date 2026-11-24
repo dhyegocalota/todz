@@ -39,6 +39,7 @@ extension AppModel {
         guard activeWorkspaceIdentifier == workspace.identifier else { return created }
         projectLoads[created.identifier] = .loaded
         selectedItem = .project(identifier: created.identifier)
+        followActiveProjects()
         return created
     }
 
