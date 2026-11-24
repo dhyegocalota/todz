@@ -34,6 +34,7 @@ export function noRouteResponse(): Response {
 }
 
 export function failureResponse(failure: ProjectFailure): Response {
+  if (failure.kind === ProjectFailureKind.CursorAhead) return errorResponse(OwnerErrorCode.CursorAhead);
   if (failure.kind === ProjectFailureKind.TaskNotFound) {
     return Response.json(
       { error: OwnerErrorCode.TaskNotFound, number: failure.number },
