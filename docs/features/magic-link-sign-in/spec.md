@@ -1,6 +1,6 @@
 # Sign in with an email link
 
-**Status:** In review
+**Status:** Shipped 2026-11-24
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-24 by the owner's queue (publish todz on `todz.app`: "an email magic link becomes the real `SignInProvider` behind the existing port; the fake provider stays for development; Sign in with Apple comes later"), within [the product design](../../product/README.md); the flow, the device binding and the email port are [ADR 0040](../../adr/0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md) and [ADR 0041](../../adr/0041-outgoing-email-goes-through-a-port-with-a-console-sender-for-development.md), the loop's calls, listed in the loop's questions for the owner
 **ADRs:** [0040](../../adr/0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md), [0041](../../adr/0041-outgoing-email-goes-through-a-port-with-a-console-sender-for-development.md), [0020](../../adr/0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md), [0021](../../adr/0021-owner-sessions-are-bearer-secrets-that-last-90-days.md), [0025](../../adr/0025-the-session-secret-lives-in-a-private-file-until-the-app-has-a-team.md)
