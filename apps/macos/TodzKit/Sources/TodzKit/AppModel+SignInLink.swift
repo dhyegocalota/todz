@@ -75,7 +75,7 @@ extension AppModel {
     func restorePendingLink() {
         guard let stored = try? pendingLinks.read() else { return }
         guard !isExpired(stored) else {
-            discardPendingLink()
+            try? pendingLinks.erase()
             return
         }
         pendingLink = stored
