@@ -19,7 +19,7 @@ The data is small: one owner, a few workspaces, a few projects, hundreds of task
    - `projects/<project id>.json`: that project's last cursor and its tasks as the server sent them;
    - `outbox.json`: the writes not yet confirmed by the server (ADR 0028).
 3. Every file is JSON in the owner API's own shapes (snake_case keys, epoch milliseconds), written atomically (a `0600` draft file, then `rename`), and excluded from backups. The folder is `0700`.
-4. The cache belongs to one owner. Signing in as a different owner, or signing out, erases the whole folder before anything else is written. A session that ends with a 401 keeps it, so the same owner signing in again resumes with the outbox.
+4. The cache belongs to one owner. Signing in as a different owner, or with no readable `owner.json`, empties the app's in-memory state and erases the whole folder **before the new session is stored**; if the erase fails, the sign-in fails, so a session never sits beside another owner's cache. A launch whose server names a different owner than the cache erases it too. Signing out erases the folder before the session. A session that ends with a 401 keeps it, so the same owner signing in again resumes with the outbox.
 5. A project file that cannot be read or decoded is erased and that project is pulled again from cursor 0. An `owner.json` that cannot be read erases the folder. An `outbox.json` that cannot be read erases it and tells the owner once that waiting changes were lost.
 6. When the owner adds a signing team, the folder moves to the App Group container in the same format, so the widgets read it (feature 8 `widgets`).
 

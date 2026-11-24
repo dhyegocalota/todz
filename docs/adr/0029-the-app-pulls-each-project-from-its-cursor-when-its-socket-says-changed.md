@@ -13,14 +13,14 @@ Each project numbers its changes and offers a socket that only says `changed` (A
 
 1. Each project's cursor is kept with its tasks in the cache (ADR 0027). A pull asks for the changes after that cursor, follows `has_more`, and stores the new cursor with the merged tasks.
 2. `cursor_ahead` means the server lost changes the app saw: the app pulls that project from 0 and replaces its tasks instead of merging them.
-3. While the window shows a workspace, the app keeps one socket per project of that workspace: `GET /owner/projects/:id/socket` with the session as `Authorization: Bearer`, through `URLSessionWebSocketTask`.
-4. A pull runs when:
+3. While the window shows a workspace, the app keeps one socket per project of that workspace: `GET /owner/projects/:id/socket` with the session as `Authorization: Bearer`, through `URLSessionWebSocketTask`. The sockets follow the project list: a created project gets one, a project that leaves loses its own. A launch from the cache opens the cached workspace's sockets at once, before any other request, so a launch with the server down recovers on its own.
+4. A socket is open when its delegate reports `didOpenWithProtocol`. A pull runs when:
    - the socket says `changed`;
-   - the socket opens or reopens, which also sends the outbox (ADR 0028), since it proves the server is reachable;
+   - the socket opens or reopens, which also sends the outbox (ADR 0028) and, after a launch that could not list the workspaces, lists them, since it proves the server is reachable;
    - the app launches (after showing the cache), the workspace changes, or the owner presses ⌘R.
-5. One pull per project at a time. A trigger during a pull of that project runs one more pull after it, however many triggers arrive.
-6. A socket that closes or fails reopens after 1, 2, 4, 8, 16, then every 30 seconds, while its workspace is shown. A 401 on the upgrade ends the session; a 404 reloads the workspaces.
-7. Sockets close on a workspace switch, at sign-out and when the session ends. There is no polling timer.
+5. One pull per project at a time, whatever triggered it. A trigger during a pull of that project runs one more pull after it, however many triggers arrive.
+6. A socket that closes or fails, with the server unreachable or answering 404, reopens after 1, 2, 4, 8, 16, then every 30 seconds, per project, while its workspace is shown; a 404 also asks for one workspace reload. A 401 on the upgrade ends the session, but only if the socket's session is still the current one.
+7. Sockets close on a workspace switch, at sign-out and when the session ends; a closed socket never reopens. There is no polling timer.
 
 ## Alternatives considered
 
@@ -36,6 +36,7 @@ Each project numbers its changes and offers a socket that only says `changed` (A
 - A task an agent changes appears in the open window without a click.
 - A server that is down costs one upgrade attempt per project every 30 seconds.
 - Socket tests need a fake signal source in `TodzKit`; the live suite proves the real one against `wrangler dev`.
+- `URLSessionWebSocketTask` sends no ping, so a socket the network drops without a close stays silent until its next failure; changes made meanwhile show on the next pull (⌘R, a write's answer, a reopen). A ping is the fix if this shows up.
 
 ## Evidence
 

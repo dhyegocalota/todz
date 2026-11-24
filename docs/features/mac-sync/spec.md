@@ -67,19 +67,19 @@ owner writes ─▶ outbox.append (coalesce) ─▶ store.writeOutbox ─▶ scr
 | File | Holds |
 |---|---|
 | `OwnerModels.swift`, `OwnerEnums.swift`, `CalendarDate.swift`, `TaskDraft.swift`, `TaskPatch.swift`, `TaskPlacement.swift` | become `Codable` where the cache needs them, encoding the owner API's own shapes (snake_case, epoch milliseconds) so a cached file decodes with the same decoder as an answer |
-| `OwnerCoding.swift` | gains `encoder()`, the mirror of `decoder()` |
-| `SyncStore.swift` | the port (ADR 0027): `readOwner() throws -> OwnerCache?`, `writeOwner(_:)`, `readProject(identifier:) throws -> ProjectCache?`, `writeProject(_:)`, `readOutbox() throws -> [PendingChange]`, `writeOutbox(_:)`, `erase()` |
-| `FileSyncStore.swift` | the `Cache` folder in Application Support: `owner.json`, `projects/<id>.json`, `outbox.json`; `0700` folder, `0600` files written atomically, excluded from backups; the shared write with `FileSessionVault` is one helper |
+| `OwnerCoding.swift` | `encoder()`, which already encodes request bodies, writes dates as epoch milliseconds, the mirror of `decoder()`; request bodies are unchanged |
+| `SyncStore.swift` | the port (ADR 0027): `readOwner() throws -> OwnerCache?`, `writeOwner(_:)`, `readProject(identifier:) throws -> ProjectCache?`, `writeProject(_:)`, `eraseProject(identifier:)`, `readOutbox() throws -> Data?`, `writeOutbox(_ data: Data)`, `erase()`; the outbox crosses the port encoded |
+| `FileSyncStore.swift` | the `Cache` folder in Application Support: `owner.json`, `projects/<id>.json` (an id is a file name only after it matches `^[A-Za-z0-9-]{1,64}$`), `outbox.json`; `0700` folders, `0600` files written atomically, excluded from backups, through `PrivateFile`, the write `FileSessionVault` now shares |
 | `OwnerCache.swift`, `ProjectCache.swift` | `OwnerCache { ownerIdentifier, workspaces, activeWorkspaceIdentifier }`, `ProjectCache { projectIdentifier, cursor, tasks }` |
-| `PendingChange.swift` | `enum PendingChange: Codable`: `add(projectIdentifier:draft:)`, `field(TaskKey, TaskPatch)` for title, notes, due date and order, `state(TaskKey, TaskState)` for complete and reopen; its `WriteTarget` and project |
-| `Outbox.swift` | value type over `[PendingChange]`: `appending(_:)` coalesces a waiting change of the same task and field in place, except order changes, which are always appended (moves are relative, so their sequence must match the screen's); `head`, `removingHead()`, attempts per head; `pendingAdds(projectIdentifier:)` |
-| `TaskBoard.swift` | gains `cursor(projectIdentifier:)` and `applying(_ outbox:) -> TaskBoard`: each waiting field replaces the server's value; a project with waiting moves applies them in outbox order to its open tasks and gives them display order keys in that order |
+| `PendingChange.swift` | `enum PendingChange: Codable`: `add(projectIdentifier:draft:)`, `field(TaskKey, TaskPatch)` for title, notes, due date and order, `state(TaskKey, TaskState, at: Date)` for complete and reopen, with the time of the click |
+| `Outbox.swift` | value type over the changes and their attempts: `appending(_:isHeadSent:)` replaces the last waiting change of the same task and field that is not the head being sent, except order changes, which are always appended (moves are relative, so their sequence must match the screen's); `head`, `removingHead()`, attempts per head (3), `droppingChanges(projectIdentifier:)`, `pendingTasks` |
+| `TaskBoard.swift` | gains each project's cursor and `applying(_ outbox:) -> TaskBoard`: every change applies in outbox order against the board the previous ones left, so a move is placed where the server will place it; a project that had moves gives its open tasks display order keys in the resulting order |
 | `ProjectFeed.swift` | `pull(session:projectIdentifier:cursor:)` returns `ProjectChanges { tasks, cursor, isFromStart }`, where `isFromStart` says the pull restarted from 0 after `cursorAhead` |
-| `ChangeSignal.swift` | the port for sockets: `ChangeSignals.watch(session:projectIdentifier:) -> AsyncThrowingStream<ChangeSignalEvent, Error>` with `opened` and `changed`; ends with `OwnerAPIError.unauthorized`, `notFound` or `unreachable` |
-| `SocketChangeSignals.swift` | `URLSessionWebSocketTask` on `ws://…/owner/projects/<id>/socket` with `Authorization: Bearer`; a failed upgrade reads the task's `response` status |
+| `ChangeSignals.swift` | the port for sockets: `watch(session:projectIdentifier:) -> AsyncThrowingStream<ChangeSignalEvent, Error>` with `opened` and `changed`; ends with `OwnerAPIError.unauthorized`, `notFound` or `unreachable`, or `CancellationError` when cancelled |
+| `SocketChangeSignals.swift` | `URLSessionWebSocketTask` on `ws://…/owner/projects/<id>/socket` with `Authorization: Bearer`; `opened` from the delegate's `didOpenWithProtocol`; a failure reads the task's `response` status in `didCompleteWithError` |
 | `ReconnectDelay.swift` | 1, 2, 4, 8, 16, then 30 seconds, by attempt |
-| `TaskViews.swift` | reads the overlaid board; pending adds show at the end of their project's open list, in Today when due today or earlier, in Upcoming when due later, and nowhere in Done |
-| `AppModel*.swift` | `AppModel` gains a `SyncStore`, a `ChangeSignals` and an injected `pause(Duration)`; new extensions `AppModel+Cache.swift`, `AppModel+Outbox.swift`, `AppModel+Watch.swift`; task writes go through the outbox instead of `write(target:)`; `syncStatus` for the design's indicator |
+| `TaskViews.swift` | reads the overlaid board; `pendingTasks(for:)` gives the pending adds of the Inbox, a project or Today, `upcomingPendingDays` those due later; none in Done |
+| `AppModel*.swift` | `AppModel` gains a `SyncStore`, a `ChangeSignals` and an injected `pause(Duration)`; new extensions `AppModel+Cache.swift`, `AppModel+Outbox.swift`, `AppModel+Watch.swift`, `AppModel+Pull.swift`; task writes go through the outbox instead of `write(target:)`; one pull gate per project; `syncStatus`, `isRefreshing` and `waitingChangeCount` for the design's states. The rules are `plan.md` steps 12 to 18 |
 
 ### `Todz` (app target)
 
@@ -91,9 +91,12 @@ Copy keys are those of [`design.md`](design.md).
 
 - **Unreachable** on a pull with a cache → the cached rows stay; the status says offline; no banner. Without a cache → the shell's banners, unchanged.
 - **Unreachable** on a send → the change stays at the head; the status says offline with the count waiting.
-- **Refused** on a send (`rule_violated`, `task_not_found`, `not_found`, `invalid_request`) → the change is dropped, its project is pulled from 0, and the refused-change notice shows once.
-- **Unexpected** on a send → kept; the third failure of the same change drops it as refused.
-- **401** anywhere → the shell's sign-in screen with "session ended"; sockets close; the cache and outbox stay. The next sign-in as the same owner shows the cache and sends the outbox; as another owner, it erases them first.
+- **Refused** on a send (`rule_violated`, `task_not_found`, `not_found`, `invalid_request`, `inbox_is_fixed`, `cursor_ahead`, `time_zone_invalid`, `identity_rejected`) → the change is dropped, its project is pulled from 0 when shown, and the refused-change notice shows once per flush with the count.
+- **Unreachable** or **unexpected** (including 503 and an answer that does not decode) on a send → kept; the send waits the reconnect delay and tries again, cut short by an opening socket, a successful pull, a new write or ⌘R; the third unexpected failure of one change, each after a wait, drops it as refused.
+- **An answer after a workspace switch** → the change still leaves the outbox; a project no longer shown takes the record into its cache file, not the board.
+- **A cached launch with the server down** → the watches of the cached workspace open at launch, so the first socket that opens lists the workspaces, sends the outbox and pulls.
+- **401** anywhere → the shell's sign-in screen with "session ended" and the count of waiting changes; sockets and the send loop stop; the cache and outbox stay. The next sign-in as the same owner loads the cache and sends the outbox. A sign-in as another owner, or with no `owner.json`, empties the in-memory state and erases the cache before the new session is stored; if the erase fails, the sign-in fails.
+- **Stale work** → a send loop, pull or watch started under another session drops its result and writes nothing; a stale watch's 401 never ends the new session.
 - **Sign-out** with changes waiting → the design's confirmation; confirmed, the cache and outbox are erased, then the session.
 - **Unreadable cache files** → ADR 0027 § 5: a project file is erased and pulled from 0; an owner file erases the cache; an outbox file is erased and `ErrorCopy.waitingChangesLost` shows once.
 - **Unwritable cache** → the app goes on in memory and raises `ErrorCopy.cacheNotSaved` once per launch (`design.md` § 1.9).

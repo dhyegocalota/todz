@@ -12,15 +12,15 @@ In the shell every task write waits for the server, and an unreachable server en
 ## Decision
 
 1. Every task write the owner makes (add, complete, reopen, title, notes, due date, order) becomes a pending change appended to the outbox, which is written to `outbox.json` (ADR 0027) before the screen shows it.
-2. The screen shows the server's records with the outbox applied on top, field by field. A pending add shows as a pending row: it has no task number until the server answers, so it cannot be opened, completed or edited until then.
-3. A change for a task and field that is already waiting, and not yet sent, replaces the waiting one in place. Complete and reopen are the same field.
-4. The outbox is sent one change at a time, oldest first, while the server is reachable:
-   - an answer removes the change and replaces the task with the server's record;
-   - unreachable stops sending and keeps the change; sending resumes when a project socket opens (ADR 0029), on ⌘R and at launch;
-   - a refusal (`rule_violated`, `task_not_found`, `not_found`, `invalid_request`) drops the change, pulls its project from cursor 0 so the screen shows the server's truth, and tells the owner once;
-   - an unexpected server answer keeps the change; after three attempts on the same change it is dropped as a refusal, so one change cannot block the outbox forever;
+2. The screen shows the server's records with the outbox applied on top, every change in outbox order, so a sequence of moves lands where the server will put it. A pending add shows as a pending row: it has no task number until the server answers, so it cannot be opened, completed or edited until then.
+3. A change for a task and field that is already waiting, and not the one being sent, replaces the waiting one in place. Complete and reopen are the same field. Moves are never replaced: they are relative to other tasks, so they keep their sequence.
+4. The outbox is sent one change at a time, oldest first, by one loop bound to the session it started with:
+   - an answer removes the change and replaces the task with the server's record (in the cache file, when its project is no longer shown);
+   - unreachable keeps the change and tries again after the reconnect delay of ADR 0029, sooner when a socket opens, a pull succeeds, the owner writes or presses ⌘R;
+   - a refusal (`rule_violated`, `task_not_found`, `not_found`, `invalid_request`, `inbox_is_fixed`, `cursor_ahead`, `time_zone_invalid`, `identity_rejected`) drops the change, pulls its project from cursor 0 so the screen shows the server's truth, and tells the owner once per flush;
+   - an unexpected answer (a 5xx, a 503, a body that does not decode) keeps the change and waits as above; the third, each after a wait, drops it as a refusal, so one change cannot block the outbox forever;
    - a 401 stops sending and keeps the outbox for the same owner (ADR 0027).
-5. An add keeps its idempotency key in the outbox, so a resend after a lost answer or a relaunch returns the first task and never duplicates it.
+5. An add keeps its idempotency key in the outbox, so a resend after a lost answer or a relaunch returns the first task and never duplicates it. Completing and reopening are idempotent on the server. A title, notes, due date or `first` placement resent after a lost answer is applied again, which can overwrite an agent's write made in between; that is the per-field rule of point 6, not a duplicate.
 6. "By server time" means the order in which the server applies the writes. A change made offline and sent later overwrites what an agent wrote meanwhile to the same field; other fields of the task are untouched, because each change carries one field.
 7. Workspace and project creation, project renames and sign-in still wait for the server, as in the shell.
 

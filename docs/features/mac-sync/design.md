@@ -79,7 +79,7 @@ Sign Out (switcher menu, app menu) with an empty outbox signs out at once, as in
 
 ### 1.8 Session ended (401) with changes waiting
 
-Sign in shows `SignInCopy.sessionEndedWaiting(count:)` in place of `SignInCopy.sessionEnded`, the field prefilled with the last identity as in the shell. Signing in as the same owner returns to the cached window and the outbox flushes; signing in as another owner erases them first, with no extra dialog (minor call).
+Sign in shows `SignInCopy.sessionEndedWaiting(count:)` in place of `SignInCopy.sessionEnded`, the field prefilled with the last identity as in the shell. After a relaunch the same line shows whenever changes are still waiting on this Mac. Signing in as the same owner returns to the cached window and the outbox flushes; signing in as another owner erases them first, with no extra dialog (minor call).
 
 ### 1.9 The cache itself fails (added by the loop for the spec's failure handling)
 
@@ -97,8 +97,8 @@ Sign in shows `SignInCopy.sessionEndedWaiting(count:)` in place of `SignInCopy.s
 | `TaskRow`, `TaskCheckbox` (`Shared`) | `MainWindow/TaskList` | the pending variant; the in-flight `ProgressView` and `.disabled` go |
 | `TitleField`, `NotesEditor`, `DueDatePicker` | `MainWindow/Inspector` | the saving `ProgressView` and read-only state go; a focused field keeps the owner's text on a live update |
 | `AddTaskField` | `MainWindow/TaskList` | the `ProgressView` goes |
-| `ErrorBanner`, `AppBanner+Copy` | `MainWindow/TaskList`, `Copy` | `.changeNotSaved` gains a count and a body |
-| `WorkspaceSwitcher`, the app menu's Sign Out | `MainWindow/Sidebar` | the confirmation |
+| `ErrorBanner`, `AppBanner+Copy` | `MainWindow/TaskList`, `Copy` | a new `AppBanner.changesRefused(count:)` shows `ErrorCopy.changeNotSaved` or `changesNotSaved(count:)` with `changeNotSavedBody`; `.cacheNotSaved` and `.waitingChangesLost` |
+| `WorkspaceSwitcher`, the app menu's Sign Out, `FirstWorkspaceScreen`'s Sign Out | `MainWindow/Sidebar`, `Onboarding` | the confirmation |
 | `SignInScreen` | `SignIn` | the waiting-changes line |
 
 System components only: `ToolbarItemGroup`, `Button`, `Label`, `Image(systemName:)`, `.confirmationDialog`, `List` animations.
