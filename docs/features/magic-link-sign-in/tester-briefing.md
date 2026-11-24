@@ -68,3 +68,56 @@ The tests of step 3 were corrected in the green commit dbd0e02: addresses made u
 - A spent link is not restored if creating the owner fails after the spend (a thrown D1 error); the owner asks again.
 - The mail's text copy lives in `src/sign-in-mail-copy.ts`, a file the plan's file map did not list.
 - `SIGN_IN_PROVIDER=email` is not set in `wrangler.jsonc` (that is `deploy-ready`).
+
+## App (G2 and G3, lane `feat/magic-link-sign-in-app`, merged in c5fae02)
+
+### What changed
+
+- TodzKit (G2):
+  - `IncomingLink` and `SignInLink` parse `todz://sign-in?token=…`.
+  - `PendingSignInLink` and `FilePendingLinkVault` keep the pending link in the private file `sign-in-link` beside the session file. `AppModel` takes the vault as `pendingLinks:`.
+  - `AppModel` gains `signInMethod`, `pendingLink`, `isRequestingLink`, `loadSignInMethod()`, `requestSignInLink(email:)`, `redeem(signInLink:)` and `discardPendingLink()`. `signIn(identity:)` and `redeem` share `openSession(issuing:)`.
+  - New `SignInError` cases: `tooManyLinks`, `linkRejected`, `linkNotRequested`.
+  - `SignInLinkTiming`: a lifetime of 15 minutes and a cooldown of 30 seconds. The pending link is kept until 20 minutes.
+  - Red/green: 75de111 → edd0faa (types, vault, API calls), 7fa8b38 → a284d99 (the model: 21 tests).
+- Todz (G3, e15c0b0):
+  - `SignInStage`, `AddressSlot`, `InboxSlot` and `EmailAddressFormat` are new.
+  - `SignInScreen` switches on the stage.
+  - The copy lives in `SignInCopy` and `SignInError+Copy`.
+  - `AppDelegate` passes `FilePendingLinkVault(folder: AppConfiguration.sessionFolder)` and routes `IncomingLink`: sign-in first, then widgets as before.
+
+### How to run
+
+1. Run `pnpm --filter @todz/api dev:email`. The console prints one JSON line per mail, and its `text` holds `http://localhost:8787/sign-in#token=…`.
+2. Build and run the Todz scheme. `TodzAPIBaseURL` is already `http://localhost:8787`.
+3. Open the printed link in a browser and press Open todz.
+
+The owner's session file lives in the same folder as `sign-in-link`. Back it up before a walk against a fresh Worker, and restore it afterwards (run 12's brand-glass tester lost the cache mirror this way).
+
+### Hypotheses
+
+- The screen shows "Getting ready…", then the form for the method. A Worker that is down shows "Can't reach todz" with Try Again.
+- Address entry:
+  - an empty field disables Send Link;
+  - `a@b` and `a b@c.d` show "Enter a valid email address.", send nothing and keep focus.
+- A valid address shows "Sending…", then Check your inbox with the address in bold.
+  - Send Again is disabled for 30 seconds, with a countdown line.
+  - Use a Different Email returns to the prefilled field and erases the pending file.
+- The browser link signs in. The pending file is then gone.
+- A relaunch within 20 minutes opens on the inbox. After that, it opens on the address stage.
+- Link outcomes:
+  - a link with no pending request shows `linkNotRequested`;
+  - a spent or expired link shows `linkRejected`;
+  - the sixth request in 15 minutes shows `tooManyLinks`.
+- Launch and signed-in cases:
+  - a link that cold-launches the app ends signed in;
+  - a sign-in link while signed in does nothing;
+  - `todz://today` and `todz://task/…` still work.
+
+### Known gaps (G3)
+
+1. Offline redeem falls back to the inbox with the error line. Its Try Again sends a new link with the same verifier, rather than retrying the held link.
+2. A Worker 400 maps to `.unexpected`. The local address check normally catches it first.
+3. An expired pending link at launch is cleared before the view appears, so the address field is not prefilled.
+4. The cooldown starts when the app sends and is not restored after a relaunch.
+5. `EmailAddressFormat` sits in the app target, untested.
