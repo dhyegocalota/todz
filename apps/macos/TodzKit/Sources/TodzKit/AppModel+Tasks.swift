@@ -4,7 +4,7 @@ extension AppModel {
         ruleIssues[.newTask(projectIdentifier: projectIdentifier)] = issue
         guard issue == nil else { return }
         let draft = TaskDraft(title: title, notes: nil, dueDate: dueDate, idempotencyKey: makeIdempotencyKey())
-        selectionsAtAdd.updateValue(selectedTask, forKey: draft.idempotencyKey)
+        if selection == .selectWhenSaved { selectionsAtAdd.updateValue(selectedTask, forKey: draft.idempotencyKey) }
         enqueue(.add(projectIdentifier: projectIdentifier, draft: draft))
     }
 

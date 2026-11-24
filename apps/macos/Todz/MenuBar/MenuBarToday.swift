@@ -23,7 +23,7 @@ struct MenuBarToday: View {
                     ErrorBanner(banner: banner)
                 }
                 if let destination, !state.isFailed {
-                    AddTaskField(destination: destination, focus: focus, focusedValue: .addField, onEscape: closeWhenEmpty)
+                    AddTaskField(destination: destination, selection: .keepSelection, focus: focus, focusedValue: .addField, onEscape: closeWhenEmpty)
                 }
                 if case .rows = state, let taskViews = model.taskViews {
                     MenuBarTodayHeading(openCount: taskViews.today.open.count)

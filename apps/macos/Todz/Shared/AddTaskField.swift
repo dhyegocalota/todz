@@ -5,6 +5,7 @@ private let clearedTitle = ""
 
 struct AddTaskField<Focus: Hashable>: View {
     let destination: AddTaskDestination
+    let selection: AddedTaskSelection
     let focus: FocusState<Focus?>.Binding
     let focusedValue: Focus
     let onEscape: (AddTaskFieldEscape) -> Void
@@ -52,6 +53,6 @@ struct AddTaskField<Focus: Hashable>: View {
         guard localIssue == nil else { return }
         let submitted = title
         title = clearedTitle
-        Task { await model.addTask(title: submitted, projectIdentifier: destination.projectIdentifier, dueDate: destination.dueDate) }
+        Task { await model.addTask(title: submitted, projectIdentifier: destination.projectIdentifier, dueDate: destination.dueDate, selection: selection) }
     }
 }

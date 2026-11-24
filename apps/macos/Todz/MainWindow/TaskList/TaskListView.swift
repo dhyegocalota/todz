@@ -15,7 +15,7 @@ struct TaskListView: View {
                 ErrorBanner(banner: banner)
             }
             if let destination = model.addTaskDestination(for: model.selectedItem), !state.isFailed {
-                AddTaskField(destination: destination, focus: focus, focusedValue: .addField) { _ in
+                AddTaskField(destination: destination, selection: .selectWhenSaved, focus: focus, focusedValue: .addField) { _ in
                     focus.wrappedValue = .list
                 }
                 .id(destination)
