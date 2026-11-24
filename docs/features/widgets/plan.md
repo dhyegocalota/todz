@@ -2,15 +2,15 @@
 
 **Spec:** spec.md
 **Tier:** 🔴
-**Seam:** `apps/macos/TodzKit` (the snapshot, the request, the store port and its file implementation, the toggle rule, and `AppModel`'s publishing and intake), `apps/macos/project.yml` (the `TodzWidgets` extension target, the App Group entitlements, the prefix setting, the URL scheme), `apps/macos/Copy` (moved from `Todz/Copy`, compiled into both targets, `design.md` O11), `apps/macos/TodzWidgets` (new), and `apps/macos/Todz` (injection, activation and Darwin-notification intake, deep links). Nothing outside `apps/macos` changes but this folder's docs, the root README gallery and `docs/screenshots/widgets/`.
+**Seam:** `apps/macos/TodzKit` (the snapshot, the request, the store port and its file implementation, the toggle rule, and `AppModel`'s publishing and intake), `apps/macos/project.yml` (the `TodzWidgets` extension target, the shared folder's sandbox exception, the URL scheme), `apps/macos/Copy` (moved from `Todz/Copy`, compiled into both targets, `design.md` O11), `apps/macos/TodzWidgets` (new), and `apps/macos/Todz` (injection, activation and Darwin-notification intake, deep links). Nothing outside `apps/macos` changes but this folder's docs, the root README gallery and `docs/screenshots/widgets/`.
 **Assumptions (decided, owner can override):**
-- ADR 0032 and `design.md` § 7 are the loop's calls, listed in the loop's questions. No third-party Swift dependency.
+- ADR 0033 (superseding ADR 0032's location after step 0) and `design.md` § 7 are the loop's calls, listed in the loop's questions. No third-party Swift dependency.
 - Swift 6 strict concurrency, Swift Testing, `swift test` from `apps/macos/TodzKit` run directly (not from a zsh script, see the menu bar learning); the conventions of the earlier plans hold word for word.
 - Files with the Write and Edit tools; commits with `git commit -F`.
 - Red-first: each red commit holds the failing test alone plus `fatalError("<name> is not implemented")` stubs, and its body records the printed failure. A green-on-landing test is a `pin`.
 - Every group leaves `swift test` and the app build (now with the extension) green at its last commit.
-- The group's files live in a `Widgets` folder inside the group container, written through `PrivateFile` (draft then rename in the same folder). The spike's `String.write(atomically: true)` at the container root failed silently once; step 2's test proves `PrivateFile` in a folder, and step 7's check proves it in the real group.
-- The prefix: build setting `TODZ_TEAM_PREFIX = TODZLOCAL0`; the group is `$(TODZ_TEAM_PREFIX).dev.todz` in both entitlements and in an Info.plist key `TodzAppGroup` that both targets read, so no identifier is repeated in Swift.
+- The shared files live in `~/Library/Application Support/dev.todz.widgets/`, written through `PrivateFile` (draft then rename in the same folder). Step 3's test proves `PrivateFile` in a folder, and step 8's check proves it in the real folder.
+- The folder: both targets carry `com.apple.security.temporary-exception.files.home-relative-path.read-write: [/Library/Application Support/dev.todz.widgets/]`, and an Info.plist key `TodzSharedFolder` (`Library/Application Support/dev.todz.widgets`) that both read, so no path is repeated in Swift; the absolute path is built from the account's home (`getpwuid`), not the sandbox's (ADR 0033).
 
 ## File map
 
@@ -21,7 +21,7 @@
 
 ## Sequencing
 
-G0 first, by the lead, with the owner's OK (a widget on his desktop): if the extension cannot read the group, nothing else starts. Then G1 (the extension and the app read its types), then G2 after the lead has merged G1 on the branch. One lane at a time.
+G0 first, by the lead. ~~With the owner's OK (a widget on his desktop): if the extension cannot read the group, nothing else starts.~~ Run 10 ran G0 and G1 side by side, because G1's model takes a folder and holds whichever place step 0 chose. Then G2 after the lead has merged G1 on the branch. One lane at a time.
 
 ## Steps
 
@@ -31,7 +31,7 @@ The plan review of 2026-11-24 (17 findings, 2 CRITICAL) is folded into the steps
 
 ### G0 proof (before any code)
 
-- [ ] **Step 0:** a throwaway spike in the scratchpad, never committed, with the owner's OK because it puts a widget on his desktop: the spike app (ad hoc, `TODZLOCAL0.wspike` group) writes a string in the group; a widget of its extension, placed on the desktop, shows the string it read from the group. Record in ADR 0032's Evidence: whether the widget read it, whether any consent prompt appeared (macOS group container protection), and whether a `Button(intent:)` tap ran the intent in the extension (a file it writes in the group). If the extension cannot read the group, stop the plan and amend ADR 0032 before G1. [2, 15]
+- [x] **Step 0:** ~~a widget placed on the desktop~~ (no widget was placed: the extension is only launched for a placed widget or the gallery, both on the owner's screen). Done by the lead on 2026-11-24 with two sandboxed ad-hoc apps instead: the group raised "would like to access data from other apps" for the rebuilt app and for the second app, and blocked until answered; a sandbox-exception folder in Application Support was shared with no prompt, across a rebuild. ADR 0032 superseded by ADR 0033 before G2; the extension's own read is proven by the tester's walk. Original step: a throwaway spike in the scratchpad, never committed, with the owner's OK because it puts a widget on his desktop: the spike app (ad hoc, `TODZLOCAL0.wspike` group) writes a string in the group; a widget of its extension, placed on the desktop, shows the string it read from the group. Record in ADR 0032's Evidence: whether the widget read it, whether any consent prompt appeared (macOS group container protection), and whether a `Button(intent:)` tap ran the intent in the extension (a file it writes in the group). If the extension cannot read the group, stop the plan and amend ADR 0032 before G1. [2, 15]
 
 ### G1 model
 
@@ -45,9 +45,9 @@ The plan review of 2026-11-24 (17 findings, 2 CRITICAL) is folded into the steps
 
 ### G2 targets
 
-- [ ] **Step 8:** the project: `TodzWidgets` app-extension target (WidgetKit, macOS 14), embedded in `Todz`, with the TodzKit package dependency, ad hoc and sandboxed like the app, both with `com.apple.security.application-groups: [$(TODZ_TEAM_PREFIX).dev.todz]`; `TODZ_TEAM_PREFIX: TODZLOCAL0` in the base settings; `TodzAppGroup` in both Info.plists; the URL scheme `todz` in the app's Info.plist. `apps/macos/Todz/Copy` moves to `apps/macos/Copy`, listed in both targets' `sources` (O11) [17]. `TodzApp` injects `FileWidgetStore(folder: <group container>/Widgets)` when the container exists (else a store that keeps nothing, so the app runs) and `WidgetCenter.shared.reloadAllTimelines`. Prove with one hidden launch (`open -g -j`, so no window draws on the owner's screen [11]) that `~/Library/Group Containers/TODZLOCAL0.dev.todz/Widgets/widget-snapshot.json` appears with mode `0600` and that `pluginkit -m -i dev.todz.Todz.widgets` lists the extension. The briefing says the `macos` gate builds the extension only as the `Todz` scheme's embedded dependency and only locally [17].
+- [ ] **Step 8:** the project: `TodzWidgets` app-extension target (WidgetKit, macOS 14), embedded in `Todz`, with the TodzKit package dependency, ad hoc and sandboxed like the app, both with the shared folder's temporary exception (ADR 0033) and `TodzSharedFolder` in both Info.plists, read through one TodzKit helper that builds the absolute folder from the account's home; the URL scheme `todz` in the app's Info.plist. `apps/macos/Todz/Copy` moves to `apps/macos/Copy`, listed in both targets' `sources` (O11) [17]. `TodzApp` injects `FileWidgetStore(folder: <the shared folder>)` when the folder can be created (else a store that keeps nothing, so the app runs) and `WidgetCenter.shared.reloadAllTimelines`. Prove with one hidden launch (`open -g -j`, so no window draws on the owner's screen [11]) that `~/Library/Application Support/dev.todz.widgets/widget-snapshot.json` appears with mode `0600`, that no consent prompt appeared, and that `pluginkit -m -i dev.todz.Todz.widgets` lists the extension. The briefing says the `macos` gate builds the extension only as the `Todz` scheme's embedded dependency and only locally [17].
 - [ ] **Step 9:** the four widgets in `TodzWidgets/` drawing `WidgetContent` (step 2) per `design.md` §§ 1–5 and every string of § 8: one `TimelineProvider` over `FileWidgetStore` (entries now and at the next midnight of the snapshot's time zone), the small ring, small Next up, medium and large lists, the gallery sample (O12), `widgetURL` and `Link` per O2 (`todz://today`, `todz://task/<project>/<number>`).
-- [ ] **Step 10:** `ToggleTaskIntent` (`AppIntent`; parameters project, number and target state) in the extension: `WidgetToggle.setting` on the stored snapshot, `addRequest`, `writeSnapshot`, then post the Darwin notification named `<TodzAppGroup>.widget-requests`, declared once in TodzKit (sandboxed IPC names are group-scoped) [13]; no extra `reloadAllTimelines` (the system reloads after an interactive intent) [15]; the checkboxes are `Button(intent:)`. The app: `takeWidgetRequests()` after the launch reaches `.ready`, on `NSApplication.didBecomeActiveNotification`, and on that Darwin notification (its C callback hops to the main actor; a forged post only triggers an intake) [13]; `publishWidgets()` on `NSCalendarDayChanged` [6]. Deep links are handled in `AppDelegate.application(_:open:)`, alive with the main window closed or the app just launched by the link [8]: `todz://today` selects Today and opens the main window; `todz://task/<p>/<n>` → `reveal(task:)` only for a task of the active workspace, else Today; no `todz://` path ever writes.
+- [ ] **Step 10:** `ToggleTaskIntent` (`AppIntent`; parameters project, number and target state) in the extension: `WidgetToggle.setting` on the stored snapshot, `addRequest`, `writeSnapshot`, then post the Darwin notification named `dev.todz.widgets.requests`, declared once in TodzKit (ADR 0033) [13]; no extra `reloadAllTimelines` (the system reloads after an interactive intent) [15]; the checkboxes are `Button(intent:)`. The app: `takeWidgetRequests()` after the launch reaches `.ready`, on `NSApplication.didBecomeActiveNotification`, and on that Darwin notification (its C callback hops to the main actor; a forged post only triggers an intake) [13]; `publishWidgets()` on `NSCalendarDayChanged` [6]. Deep links are handled in `AppDelegate.application(_:open:)`, alive with the main window closed or the app just launched by the link [8]: `todz://today` selects Today and opens the main window; `todz://task/<p>/<n>` → `reveal(task:)` only for a task of the active workspace, else Today; no `todz://` path ever writes.
 - [ ] **Step 11:** `apps/macos/README.md` names the widgets; `tester-briefing.md`: what changed, how to run, how to put the widgets on the desktop (the owner's OK first), how to read the snapshot and request files, red texts, hypotheses (the reload delay of a background app's widgets is a hypothesis, not a pass or fail [15]), known gaps (ADR 0032's local risk until a team).
 
 
@@ -55,21 +55,22 @@ The plan review of 2026-11-24 (17 findings, 2 CRITICAL) is folded into the steps
 
 | Step | What breaks | How I notice (the concrete signal) | How I back out |
 |------|-------------|------------------------------------|----------------|
-| 0 | the extension cannot read the group, or a consent prompt blocks it | the spike widget shows no string, or a prompt appears | stop; amend ADR 0032 before any code |
-| 3 | an atomic write fails in the group container | no `widget-snapshot.json` after step 8's launch | `PrivateFile` drafts in the same folder; else a plain write with `0600` |
+| 0 | the extension cannot read the group, or a consent prompt blocks it | the spike widget shows no string, or a prompt appears | stop; amend ADR 0032 before any code (it happened: ADR 0033) |
+| 3 | an atomic write fails in the shared folder | no `widget-snapshot.json` after step 8's launch | `PrivateFile` drafts in the same folder; else a plain write with `0600` |
 | 3 | a tap is lost between the app's read and its clear | the add-between-read-and-remove test loses a request | one file per request; remove only the names read |
 | 5 | the snapshot is written on every observation tick | the reload counter climbs on a pull that changed nothing | write only when it differs, except after an intake |
 | 5 | the observation loop runs twice or stops after one change | two writes per change, or none on the second add | one loop, started by `launch()` behind a guard, re-armed in `onChange` |
 | 6 | a tap made while the app is quit never reaches the server | the cold-launch test makes no outbox change | intake checks the model's current Today after `.ready`, not an in-memory snapshot |
 | 6 | a forged request completes a task of another workspace | the forged-request test enqueues a change | only tasks in the current Today |
-| 7 | another owner's Today stays in the group | the owner-switch tests read the old snapshot before the first new write | erase with the cache, at sign-in and at launch |
-| 8 | the extension needs a provisioning profile | `xcodebuild` asks for one | the prefixed group, not `group.` (ADR 0032) |
+| 7 | another owner's Today stays in the shared folder | the owner-switch tests read the old snapshot before the first new write | erase with the cache, at sign-in and at launch |
+| 8 | the extension needs a provisioning profile, or the exception is refused | `xcodebuild` asks for one, or no snapshot file after the launch | the folder exception, no group (ADR 0033) |
+| 8 | a consent prompt appears at launch | Orca finds a UserNotificationCenter alert naming todz | no group entitlement left in either target |
 | 8 | the extension is not registered | `pluginkit -m -i dev.todz.Todz.widgets` lists nothing | check the embed phase and the extension point key |
 | 10 | the intent runs in the app, not the extension, or not at all | no request file after a tap | `Button(intent:)` with the intent in the extension target; step 0 recorded where it runs |
 | 10 | a `todz://` link selects a task of another workspace, or does nothing with the window closed | the walk sees a foreign task selected, or no window | `reveal` only for the active workspace's tasks; the handler lives in the app delegate |
 | 10 | widgets show yesterday at midnight with the app running | "Open todz" after midnight | `publishWidgets()` on `NSCalendarDayChanged` |
 
-**Steps with no backout:** none; nothing is deployed. Reverting leaves the group folder on disk (spec → Rollback).
+**Steps with no backout:** none; nothing is deployed. Reverting leaves the shared folder on disk (spec → Rollback).
 
 ## Z. Prove and ship
 

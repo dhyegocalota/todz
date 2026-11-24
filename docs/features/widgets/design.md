@@ -42,7 +42,7 @@ Rows are top-aligned: a list with fewer rows than slots leaves the space under t
 |---|---|---|---|---|
 | Placeholder (the system's first draw, before the timeline answers) | the sample entry (§ 1.8) drawn `.redacted(reason: .placeholder)`: track and arc as grey shapes, caption as a bar; the label stays unredacted | redacted sample; label unredacted | redacted sample: header bar, three checkbox circles and title bars; header text unredacted | the same with seven rows |
 | Gallery preview | the snapshot if one exists, else the sample entry, not redacted (option O12) | same | same | same |
-| No snapshot: never opened, signed out (the snapshot is erased), naming the first workspace, the group container missing, an unreadable snapshot | prompt | prompt | prompt | prompt |
+| No snapshot: never opened, signed out (the snapshot is erased), naming the first workspace, the shared folder missing, an unreadable snapshot | prompt | prompt | prompt | prompt |
 | Snapshot older than today (the app was quit across midnight) | prompt (option O9) | prompt | prompt | prompt |
 | Switching to a workspace whose Today is not loaded yet (first load, or load failed with no cache) | prompt: the app erases the snapshot and writes the new one once Today is known (minor call) | prompt | prompt | prompt |
 | Today empty, nothing done today | track only; caption `MainWindowCopy.todayEmptyTitle` | label; `MainWindowCopy.todayEmptyTitle` in `.secondary` where the title goes; no checkbox, no caption | header `MainWindowCopy.today`, no count; `MainWindowCopy.todayEmptyTitle` and, under it in `.subheadline`, `MainWindowCopy.todayEmptyBody`, both `.secondary`, centred in the row area | header with the workspace name, no count; the same two lines |

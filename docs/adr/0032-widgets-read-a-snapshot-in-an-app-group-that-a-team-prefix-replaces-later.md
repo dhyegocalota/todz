@@ -1,6 +1,6 @@
 # 0032. Widgets read a snapshot in an App Group that a team prefix replaces later
 
-- Status: Proposed
+- Status: Superseded by [0033](0033-without-a-team-the-widgets-share-a-folder-in-application-support-that-an-app-group-replaces-later.md)
 - Date: 2026-11-24
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) may overturn it
 - Inspired by: [the v1 product design](../product/README.md) (macOS app → Widgets and Sync), [ADR 0027](0027-the-app-caches-each-owner-s-data-as-json-files-in-its-own-container-until-it-has-a-team.md), [ADR 0028](0028-the-app-s-task-writes-are-optimistic-and-go-through-a-persisted-outbox.md), [ADR 0031](0031-the-menu-bar-extra-is-a-swiftui-window-over-the-app-s-one-model.md), the `widgets` spike of 2026-11-24
