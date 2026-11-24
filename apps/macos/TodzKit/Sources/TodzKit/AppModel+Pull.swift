@@ -127,6 +127,9 @@ extension AppModel {
             noteAnswer()
             keepProject(identifier: projectIdentifier)
             startSending()
+        case .notFound:
+            noteAnswer()
+            requestWorkspaceReload()
         case let .unreachable(projectIdentifier), let .failed(projectIdentifier):
             isOffline = true
             guard projectLoads[projectIdentifier] != .loaded else { return }
