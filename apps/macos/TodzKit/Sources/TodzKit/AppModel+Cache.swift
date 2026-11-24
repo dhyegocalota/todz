@@ -14,6 +14,7 @@ extension AppModel {
             forgetWindow()
             outbox = Outbox()
             try store.erase()
+            eraseWidgets()
             return nil
         }
         return cached
@@ -84,6 +85,7 @@ extension AppModel {
         outbox = Outbox()
         phase = .loading
         try store.erase()
+        eraseWidgets()
     }
 
     private func loadCachedProject(identifier: String) {

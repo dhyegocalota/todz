@@ -8,8 +8,14 @@ import Observation
     public internal(set) var lastIdentity: String?
     public internal(set) var workspaces: [Workspace] = []
     public internal(set) var activeWorkspaceIdentifier: String?
-    public var selectedItem: SidebarItem = .inbox
-    public var selectedTask: TaskKey?
+    public var selectedItem: SidebarItem = .inbox {
+        didSet { waitingLink = nil }
+    }
+
+    public var selectedTask: TaskKey? {
+        didSet { waitingLink = nil }
+    }
+
     public internal(set) var board = TaskBoard()
     public internal(set) var projectLoads: [String: ProjectLoad] = [:]
     public internal(set) var writesInFlight: Set<WriteTarget> = []
@@ -17,6 +23,7 @@ import Observation
     public internal(set) var unsavedNotes: [TaskKey: String] = [:]
     public internal(set) var banner: AppBanner?
     public internal(set) var histories: [TaskKey: HistoryLoad] = [:]
+    public internal(set) var linkRevealCount = 0
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
     var outbox = Outbox()
@@ -48,9 +55,16 @@ import Observation
     @ObservationIgnored var projectsToPullFromStart: Set<String> = []
     @ObservationIgnored var pullGates: [String: PullGate] = [:]
     @ObservationIgnored var queuedPulls: Set<String> = []
+    @ObservationIgnored var widgetPublication: Task<Void, Never>?
+    @ObservationIgnored var widgetIntake: Task<Void, Never>?
+    @ObservationIgnored var linkFollowing: Task<Void, Never>?
+    @ObservationIgnored var waitingLink: WidgetLink?
+    @ObservationIgnored var publishedWidgetSnapshot: WidgetSnapshotState?
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let store: any SyncStore
+    @ObservationIgnored let widgetStore: any WidgetStore
+    @ObservationIgnored let reloadWidgets: @Sendable () -> Void
     @ObservationIgnored let signals: any ChangeSignals
     @ObservationIgnored public let timeZone: TimeZone
     @ObservationIgnored let now: () -> Date
@@ -61,6 +75,8 @@ import Observation
         service: any OwnerService,
         vault: any SessionVault,
         store: any SyncStore,
+        widgetStore: any WidgetStore,
+        reloadWidgets: @escaping @Sendable () -> Void,
         signals: any ChangeSignals,
         timeZone: TimeZone,
         now: @escaping () -> Date = Date.init,
@@ -70,6 +86,8 @@ import Observation
         self.service = service
         self.vault = vault
         self.store = store
+        self.widgetStore = widgetStore
+        self.reloadWidgets = reloadWidgets
         self.signals = signals
         self.timeZone = timeZone
         self.now = now
@@ -108,6 +126,7 @@ import Observation
     public func launch() async {
         guard !hasLaunched else { return }
         hasLaunched = true
+        observeWidgets()
         let secret: String?
         do {
             secret = try vault.read()
@@ -124,11 +143,7 @@ import Observation
         session = secret
         phase = .loading
         openCache(cachedOwner())
-        guard phase == .ready else {
-            await loadWorkspaces()
-            return
-        }
-        await reloadWorkspacesQuietly()
+        await openWorkspaces()
     }
 
     public func signIn(identity: String) async {
@@ -161,11 +176,7 @@ import Observation
         keep(secret: issued.sessionToken)
         openCache(cached)
         startSending()
-        guard phase == .ready else {
-            await loadWorkspaces()
-            return
-        }
-        await reloadWorkspacesQuietly()
+        await openWorkspaces()
     }
 
     public func signOut() async {
@@ -176,6 +187,7 @@ import Observation
             raise(.signOutFailed)
             return
         }
+        eraseWidgets()
         outbox = Outbox()
         clearSession()
         phase = .signedOut(notice: nil)
@@ -270,6 +282,20 @@ import Observation
         isOwnerConfirmed = true
         ownerConfirmationFailures = 0
         ownerIdentifier = owner.identifier
+    }
+
+    private func openWorkspaces() async {
+        await takeWidgetRequests()
+        await loadOrReloadWorkspaces()
+        await takeWidgetRequests()
+    }
+
+    private func loadOrReloadWorkspaces() async {
+        guard phase == .ready else {
+            await loadWorkspaces()
+            return
+        }
+        await reloadWorkspacesQuietly()
     }
 
     private func confirmedOwner() async throws -> Owner {

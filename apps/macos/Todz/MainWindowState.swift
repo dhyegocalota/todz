@@ -10,6 +10,7 @@ private let completionLinger: Duration = .seconds(1)
     var focusRequest: MainWindowFocus?
     var isConfirmingSignOut = false
     var lingers = CompletionLingers()
+    var waitingLink: WidgetLink?
     @ObservationIgnored private var lingerTimers: [TaskKey: Task<Void, Never>] = [:]
 
     var inspectorToggleTitle: String {
@@ -28,6 +29,11 @@ private let completionLinger: Duration = .seconds(1)
             return
         }
         Task { await model.signOut() }
+    }
+
+    func follow(_ link: WidgetLink, model: AppModel) {
+        waitingLink = nil
+        model.follow(link)
     }
 
     func openInspectorTitle() {

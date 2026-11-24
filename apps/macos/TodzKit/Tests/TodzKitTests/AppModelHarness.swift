@@ -22,13 +22,19 @@ final class Captured<Value> {
     var value: Value?
 }
 
+final class HarnessClock {
+    var now = fixedInstant
+}
+
 @MainActor struct AppModelHarness {
     let service = FakeOwnerService()
     let vault = InMemorySessionVault()
     let store = InMemorySyncStore()
+    let widgets = InMemoryWidgetStore()
     let signals = FakeChangeSignals()
     let pause = HeldPause()
     let keys = KeySequence()
+    let clock = HarnessClock()
     let session = UUID().uuidString
     let model: AppModel
 
@@ -36,13 +42,17 @@ final class Captured<Value> {
         let timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
         let keys = keys
         let pause = pause
+        let widgets = widgets
+        let clock = clock
         model = AppModel(
             service: service,
             vault: vault,
             store: store,
+            widgetStore: widgets,
+            reloadWidgets: { MainActor.assumeIsolated { widgets.recordReload() } },
             signals: signals,
             timeZone: timeZone,
-            now: { fixedInstant },
+            now: { clock.now },
             pause: { try await pause.pause($0) },
             makeIdempotencyKey: { keys.next() }
         )
@@ -71,6 +81,10 @@ final class Captured<Value> {
 
     func flushed() async {
         await model.sendLoop?.value
+    }
+
+    func published() async {
+        await model.widgetPublication?.value
     }
 
     func pulled(_ projectIdentifier: String) async {

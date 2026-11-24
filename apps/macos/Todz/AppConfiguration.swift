@@ -1,4 +1,5 @@
 import Foundation
+import TodzKit
 
 private let baseURLKey = "TodzAPIBaseURL"
 
@@ -19,5 +20,10 @@ enum AppConfiguration {
         } catch {
             fatalError("The app's Application Support folder cannot be opened: \(error.localizedDescription)")
         }
+    }
+
+    static var widgetStore: any WidgetStore {
+        guard let sharedFolder = SharedFolder.of(bundle: .main), let folder = SharedFolder.created(sharedFolder) else { return UnavailableWidgetStore() }
+        return FileWidgetStore(folder: folder)
     }
 }
