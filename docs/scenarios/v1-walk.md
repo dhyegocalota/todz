@@ -3,10 +3,10 @@ name: v1-walk
 title: From an empty workspace to tasks an agent added and the owner completed
 authors: 2
 paths:
-  - apps/macos/**
-  - apps/api/src/**
-  - libs/core/src/**
-  - libs/types/src/**
+  - "apps/macos/**"
+  - "apps/api/src/**"
+  - "libs/core/src/**"
+  - "libs/types/src/**"
 ---
 
 # v1 walk
