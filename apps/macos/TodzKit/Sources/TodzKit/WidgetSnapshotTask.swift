@@ -55,6 +55,19 @@ public struct WidgetSnapshotTask: Codable, Equatable, Sendable {
         )
     }
 
+    func setting(state: TaskState) -> WidgetSnapshotTask {
+        WidgetSnapshotTask(
+            projectIdentifier: projectIdentifier,
+            projectName: projectName,
+            number: number,
+            title: title,
+            dueDate: dueDate,
+            creatorLabel: creatorLabel,
+            isOverdue: isOverdue,
+            state: state
+        )
+    }
+
     private static func creatorLabel(of creator: ChangeActor) -> String? {
         switch creator {
         case .owner: nil
