@@ -1,0 +1,49 @@
+name: Todz
+options:
+  bundleIdPrefix: dev.todz
+  deploymentTarget:
+    macOS: "14.0"
+packages:
+  TodzKit:
+    path: TodzKit
+targets:
+  Todz:
+    type: application
+    platform: macOS
+    sources: [Todz]
+    dependencies:
+      - package: TodzKit
+    settings:
+      base:
+        PRODUCT_NAME: Todz
+        PRODUCT_BUNDLE_IDENTIFIER: dev.todz.Todz
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        SWIFT_VERSION: "6.0"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        ENABLE_HARDENED_RUNTIME: NO
+        GENERATE_INFOPLIST_FILE: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    entitlements:
+      path: Todz/Todz.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+    info:
+      path: Todz/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        TodzAPIBaseURL: http://localhost:8787
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+schemes:
+  Todz:
+    build:
+      targets:
+        Todz: all
+    test:
+      targets:
+        - package: TodzKit/TodzKitTests

@@ -206,6 +206,7 @@ stub_all() {
   stub git 'exit 0'
   stub xcodebuild 'exit 0'
   stub swift 'exit 0'
+  stub xcodegen 'exit 0'
   rm -rf "$doctor_home/Library" "$doctor_home/.cache"
   mkdir -p "$doctor_home/Library/Caches/ms-playwright/chromium-1247" "$doctor_home/.cache/ms-playwright/chromium-1247"
 }
@@ -286,6 +287,18 @@ expect_match "doctor: xcodebuild and swift are optional and counted apart" "$rep
 expect_match "doctor: xcodebuild says what is lost" "$(doctor_line Darwin xcodebuild)" '^xcodebuild \| missing \| optional \| lost: building and testing the native macOS app \| fix: xcode-select --install'
 expect_match "doctor: swift on Linux points at the Swift site" "$(doctor_line Linux swift)" '^swift \| missing \| optional \| lost: [^|]+ \| fix: https://www\.swift\.org/install/'
 doctor_exit "doctor: missing Apple tools exit 0" 0 Darwin
+
+stub_all; rm "$doctor_bin/xcodegen"
+report=$(doctor Darwin)
+expect_match "doctor: xcodegen is optional and counted" "$report" 'doctor: 0 missing required, 1 missing optional'
+expect_match "doctor: xcodegen says what is lost and names brew" "$(doctor_line Darwin xcodegen)" '^xcodegen \| missing \| optional \| lost: generating the macOS app.s Xcode project \| fix: brew install xcodegen$'
+doctor_exit "doctor: a missing xcodegen exits 0" 0 Darwin
+
+stub_all
+expect_match "doctor: xcodegen present is ok" "$(doctor_line Darwin xcodegen)" '^xcodegen \| ok \| optional \|'
+
+stub_all; stub xcodebuild '[[ "$1" == -version ]] && exit 1; exit 0'
+expect_match "doctor: an xcodebuild whose -version fails is missing" "$(doctor_line Darwin xcodebuild)" '^xcodebuild \| missing \| optional \|'
 
 nvmrc_file=$(mktemp)
 doctor_nvmrc() { DOCTOR_NVMRC="$nvmrc_file" DOCTOR_PATH="$doctor_bin" DOCTOR_HOME="$doctor_home" "$here/doctor.sh" 2>&1; }

@@ -34,7 +34,7 @@ const ROOT_ENTRIES = [
   'tools',
   'tsconfig.base.json',
 ];
-const FEATURE_PACKAGES = ['apps/api', 'libs/core', 'libs/types'];
+const FEATURE_PACKAGES = ['apps/api', 'apps/macos', 'libs/core', 'libs/types'];
 const NESTED_PATH_PATTERN = /\/.*$/;
 const TEMPORARY_SEGMENT_PATTERN =
   /(^|\/)(spikes?|poc|prototypes?|experiments?|scratch|scratchpad|playground|sandbox|tmp|temp|wip|backups?)(\/|$)/i;

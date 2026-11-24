@@ -1,0 +1,44 @@
+import SwiftUI
+import TodzKit
+
+struct TaskMenuItems: View {
+    let model: AppModel
+
+    var body: some View {
+        Button(markTitle) {
+            guard let selectedTask = model.selectedTask else { return }
+            Task { await model.toggleDone(task: selectedTask) }
+        }
+        .keyboardShortcut(.return, modifiers: .command)
+        .disabled(!canToggle)
+        Button(MainWindowCopy.moveUp) { move(.up) }
+            .keyboardShortcut(.upArrow, modifiers: [.command, .option])
+            .disabled(!canMove(.up))
+        Button(MainWindowCopy.moveDown) { move(.down) }
+            .keyboardShortcut(.downArrow, modifiers: [.command, .option])
+            .disabled(!canMove(.down))
+    }
+
+    private var markTitle: String {
+        guard let selectedBoardTask = model.selectedBoardTask else { return MainWindowCopy.markDone }
+        guard selectedBoardTask.isDone else { return MainWindowCopy.markDone }
+        return MainWindowCopy.markNotDone
+    }
+
+    private var canToggle: Bool {
+        guard model.isReady, let selectedTask = model.selectedTask else { return false }
+        let isKnownTask = model.boardTask(selectedTask) != nil
+        return isKnownTask && !model.isWriting(task: selectedTask)
+    }
+
+    private func canMove(_ direction: TaskMoveDirection) -> Bool {
+        guard model.isReady, let selectedTask = model.selectedTask else { return false }
+        let hasPlacement = model.placement(task: selectedTask, direction: direction) != nil
+        return hasPlacement && !model.isWriting(task: selectedTask)
+    }
+
+    private func move(_ direction: TaskMoveDirection) {
+        guard let selectedTask = model.selectedTask else { return }
+        Task { await model.move(task: selectedTask, direction: direction) }
+    }
+}

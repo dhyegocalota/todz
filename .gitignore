@@ -15,3 +15,6 @@ playwright-report/
 .DS_Store
 build/
 .wrangler/
+apps/macos/Todz.xcodeproj/
+apps/macos/TodzKit/.build/
+apps/macos/TodzKit/.swiftpm/

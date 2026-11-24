@@ -14,7 +14,8 @@ stub_path="$repository/node_modules/.bin:$stub_bin:$linked_bin:/usr/bin:/bin"
 
 DEFAULT_NODE_VERSION=v24.7.0
 OTHER_NODE_VERSION=v25.0.0
-ALL_GATES="doctor format secrets typecheck audit unit"
+ALL_GATES="doctor format secrets typecheck audit unit macos"
+MACOS_GATES="doctor format secrets audit shape macos"
 DOCS_GATES="doctor format secrets audit shape"
 TYPES_PACKAGES="@todz/example @todz/types"
 PRODUCT_GATES="doctor format secrets typecheck audit shape unit"
@@ -57,6 +58,9 @@ install_stubs() {
   write_stub pnpm 'echo "pnpm $* TZ=${TZ:-}" >> "$STUB_LOG"; [[ -n "${STUB_MUTATE:-}" ]] && eval "$STUB_MUTATE"; [[ "$*" == "${STUB_FAIL:-}" ]] && exit 1; exit 0'
   write_stub node 'echo "$STUB_NODE_VERSION"'
   write_stub gitleaks 'echo "gitleaks $*" >> "$STUB_LOG"'
+  write_stub swift 'echo "swift $*" >> "$STUB_LOG"'
+  write_stub xcodegen 'echo "xcodegen $*" >> "$STUB_LOG"'
+  write_stub xcodebuild 'echo "xcodebuild $*" >> "$STUB_LOG"; [[ "$*" == "${STUB_XCODEBUILD_FAIL:-}" ]] && exit 1; exit 0'
   ln -sf "$(command -v git)" "$linked_bin/git"
   ln -sf "$(command -v jq)" "$linked_bin/jq"
 }
@@ -150,6 +154,39 @@ classify libs/types/src/x.ts
 expect_line "a types file" "$output" class product
 expect_line "a types file" "$output" packages "$TYPES_PACKAGES"
 expect_line "a types file" "$output" gates "$PRODUCT_GATES"
+
+classify apps/macos/Todz/TodzApp.swift
+expect_line "a macOS application file" "$output" class product
+expect_line "a macOS application file" "$output" gates "$MACOS_GATES"
+expect_line "a macOS application file" "$output" packages -
+
+classify apps/macos/README.md
+expect_line "the macOS README" "$output" class docs
+expect_line "the macOS README" "$output" gates "$DOCS_GATES"
+
+new_repository
+commit_change apps/macos/Todz/TodzApp.swift
+run_verify
+expect_equal "a macOS change exits 0" "$status" 0
+expect_match "a macOS change tests, generates and builds in order" "$(calls)" 'swift test --package-path apps/macos/TodzKit.*xcodegen generate --spec apps/macos/project\.yml.*xcodebuild build -project apps/macos/Todz\.xcodeproj -scheme Todz -configuration Debug -derivedDataPath apps/macos/build'
+expect_no_match "a macOS change never runs the unit suites" "$(calls)" 'test:unit'
+
+new_repository
+commit_change apps/macos/Todz/TodzApp.swift
+rm "$stub_bin/xcodegen"
+run_verify
+expect_equal "a missing xcodegen exits 1" "$status" 1
+expect_match "a missing xcodegen names the fix" "$output" 'verify: macos failed: xcodegen is not installed\. fix: install xcodegen'
+expect_no_match "a missing xcodegen runs no Swift" "$(calls)" 'swift test'
+
+new_repository
+commit_change apps/macos/Todz/TodzApp.swift
+STUB_XCODEBUILD_FAIL=-version
+export STUB_XCODEBUILD_FAIL
+run_verify
+unset STUB_XCODEBUILD_FAIL
+expect_equal "an xcodebuild whose -version fails exits 1" "$status" 1
+expect_match "an xcodebuild whose -version fails names the fix" "$output" 'verify: macos failed: xcodebuild is not installed\. fix: install xcodebuild'
 
 classify libs/types/README.md
 expect_line "a library README" "$output" class docs

@@ -1,0 +1,15 @@
+enum SignInCopy {
+    static let title = "Welcome to todz"
+    static let subtitle = "Your tasks, shared with your agents."
+    static let identityPlaceholder = "Identity"
+    static let signIn = "Sign In"
+    static let signingIn = "Signing in…"
+    static let developmentNotice = "Development sign-in. Sign in with Apple comes later."
+    static let identityRequired = "Enter an identity to sign in."
+    static let identityFormat = "Use up to \(IdentityFormat.maxLength) letters, digits, dots, dashes or underscores."
+    static let identityRejected = "That identity wasn't accepted."
+    static let signInUnavailable = "Sign-in isn't available on this server."
+    static let sessionEnded = "Your session has ended. Sign in again."
+    static let sessionUnreadable = "Your saved session couldn't be read. Sign in again."
+    static let timeZoneInvalid = "This Mac's time zone wasn't accepted."
+}
