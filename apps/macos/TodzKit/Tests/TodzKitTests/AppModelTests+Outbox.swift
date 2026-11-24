@@ -168,8 +168,11 @@ extension AppModelTests {
     }
 
     @Test func anAnswerAfterASwitchLeavesTheOtherProjectsFileWithAllItsTasks() async throws {
-        let harness = try await outboxHarness()
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "side")
+        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 2)
+        await harness.signedIn()
         harness.service.suspend(.completeTasks)
         await harness.model.complete(task: firstTask)
         await harness.service.held(.completeTasks)

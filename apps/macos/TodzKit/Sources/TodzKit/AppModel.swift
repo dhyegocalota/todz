@@ -29,6 +29,12 @@ import Observation
     @ObservationIgnored var watches: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var sendLoop: Task<Void, Never>?
     @ObservationIgnored var sendingSession: String?
+    @ObservationIgnored var sendWait: Task<Void, any Error>?
+    @ObservationIgnored var headInFlightSession: String?
+    @ObservationIgnored var sendFailures = 0
+    @ObservationIgnored var refusalsInFlush = 0
+    @ObservationIgnored var selectionsAtAdd: [String: TaskKey?] = [:]
+    @ObservationIgnored var projectsToPullFromStart: Set<String> = []
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let store: any SyncStore
@@ -138,6 +144,7 @@ import Observation
         phase = .loading
         keep(secret: issued.sessionToken)
         openCache(cached)
+        startSending()
         guard phase == .ready else {
             await loadWorkspaces()
             return
@@ -202,6 +209,9 @@ import Observation
 
     func forgetWindow() {
         stopWatching()
+        stopSending()
+        selectionsAtAdd = [:]
+        projectsToPullFromStart = []
         isWorkspaceListOutdated = false
         workspaces = []
         activeWorkspaceIdentifier = nil

@@ -19,6 +19,7 @@ extension AppModel {
 
     public func refresh() async {
         guard let activeWorkspace else { return }
+        startSending()
         await pull(projectIdentifiers: activeWorkspace.projects.map(\.identifier), workspaceIdentifier: activeWorkspace.identifier)
     }
 
@@ -82,6 +83,7 @@ extension AppModel {
         isWorkspaceListOutdated = false
         workspaces = listed
         keepOwner()
+        startSending()
         guard let workspace = preferredWorkspace else {
             phase = .naming
             return
@@ -155,8 +157,20 @@ extension AppModel {
         raiseFailures(of: pulls, workspaceIdentifier: workspaceIdentifier)
     }
 
+    func isShown(projectIdentifier: String) -> Bool {
+        guard let activeWorkspace else { return false }
+        return activeWorkspace.projects.contains { $0.identifier == projectIdentifier }
+    }
+
+    func pullFromStart(projectIdentifier: String) async {
+        guard let activeWorkspaceIdentifier else { return }
+        projectsToPullFromStart.insert(projectIdentifier)
+        await pull(projectIdentifiers: [projectIdentifier], workspaceIdentifier: activeWorkspaceIdentifier)
+    }
+
     private func storedCursor(projectIdentifier: String) -> Int {
-        guard let cursor = board.cursor(projectIdentifier: projectIdentifier) else { return ProjectFeed.firstCursor }
+        let isPulledFromStart = projectsToPullFromStart.remove(projectIdentifier) != nil
+        guard !isPulledFromStart, let cursor = board.cursor(projectIdentifier: projectIdentifier) else { return ProjectFeed.firstCursor }
         return cursor
     }
 
@@ -185,6 +199,7 @@ extension AppModel {
             board = board.setting(cursor: changes.cursor, projectIdentifier: projectIdentifier)
             projectLoads[projectIdentifier] = .loaded
             keepProject(identifier: projectIdentifier)
+            startSending()
         case let .unreachable(projectIdentifier), let .failed(projectIdentifier):
             guard projectLoads[projectIdentifier] != .loaded else { return }
             projectLoads[projectIdentifier] = pulled.isUnreachable ? .unreachable : .failed

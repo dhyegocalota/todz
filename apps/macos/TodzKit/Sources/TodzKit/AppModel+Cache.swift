@@ -53,6 +53,15 @@ extension AppModel {
         keepInCache { try store.writeProject(cache) }
     }
 
+    func keepInProjectFile(_ task: TaskRecord, projectIdentifier: String) {
+        guard let cached = try? store.readProject(identifier: projectIdentifier) else { return }
+        var merged = TaskBoard()
+        merged.merge(projectIdentifier: projectIdentifier, tasks: cached.tasks)
+        merged.replace(projectIdentifier: projectIdentifier, task: task)
+        let cache = ProjectCache(projectIdentifier: projectIdentifier, cursor: cached.cursor, tasks: merged.tasks(projectIdentifier: projectIdentifier))
+        keepInCache { try store.writeProject(cache) }
+    }
+
     func keepOutbox() {
         keepInCache { try store.writeOutbox(OwnerCoding.encoder().encode(outbox)) }
     }

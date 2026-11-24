@@ -28,6 +28,7 @@ extension AppModelTests {
         let harness = try await notesHarness()
         await harness.model.commitNotes(task: firstTask, draft: tooLongNotes)
         await harness.model.commitNotes(task: firstTask, draft: "Short")
+        await harness.flushed()
         #expect(harness.service.routes() == [.updateTask])
         #expect(harness.model.unsavedNotes == [:])
         #expect(harness.model.ruleIssues[notesTarget] == nil)

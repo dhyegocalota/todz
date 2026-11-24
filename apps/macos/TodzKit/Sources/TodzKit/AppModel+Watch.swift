@@ -33,6 +33,7 @@ extension AppModel {
     private func take(_ event: ChangeSignalEvent, projectIdentifier: String) async {
         switch event {
         case .opened:
+            startSending()
             guard isWorkspaceListOutdated else { return }
             await reloadWorkspacesQuietly()
         case .changed:
