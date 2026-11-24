@@ -1,17 +1,19 @@
 public struct UnavailableWidgetStore: WidgetStore {
-    public init() {
-        fatalError("UnavailableWidgetStore is not implemented")
-    }
+    public init() {}
 
     public func readSnapshot() throws -> WidgetSnapshot? {
         nil
     }
 
-    public func writeSnapshot(_ snapshot: WidgetSnapshot) throws {}
+    public func writeSnapshot(_ snapshot: WidgetSnapshot) throws {
+        throw WidgetStoreError.unwritable
+    }
 
     public func eraseSnapshot() throws {}
 
-    public func addRequest(_ request: WidgetRequest) throws {}
+    public func addRequest(_ request: WidgetRequest) throws {
+        throw WidgetStoreError.unwritable
+    }
 
     public func requests() throws -> [StoredWidgetRequest] {
         []
