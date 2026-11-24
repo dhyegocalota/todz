@@ -13,7 +13,7 @@ Written by the developer sub-agents when their steps were done. The developers d
   - `RefreshButton` and the Refresh command read TodzKit's `isRefreshing` (the app's shadow over `pullsInFlight` is gone); `TaskListState` reads `model.taskViews`, the board with the outbox applied.
   - The shell's in-flight `ProgressView`s, read-only fields and disabled rows are gone from `TaskRow`, `TaskCheckbox`, the Task menu, `TitleField`, `NotesEditor`, `DueDatePicker` and `AddTaskField`.
   - `PendingTaskRow` (new), `TaskRowTitle` (new, shared by both rows), `TaskSection.pendingTasks`, `TaskSections` (pending adds in Inbox, a project, Today and the Upcoming day groups), `TaskRows` (pending rows after the confirmed ones, selection disabled, no move; a double-click on no selection opens nothing).
-  - TodzKit, new files of G3: `UpcomingDay.swift` and `TaskViews+Upcoming.swift` (`upcomingSchedule`: `upcomingDays` and `upcomingPendingDays` merged by day, confirmed tasks first), `CompletionLingers.swift` (per task, the list and place where it was checked; puts the done task back there, last when the list got shorter, never twice); tests `TaskViewsTests+Upcoming.swift` and `CompletionLingersTests.swift`.
+  - TodzKit, new files of G3: `UpcomingDay.swift` and `TaskViews+Upcoming.swift` (`upcomingSchedule`: `upcomingDays` and `upcomingPendingDays` merged by day, confirmed tasks first), `CompletionLingers.swift` (per task, the list and place where it was checked; puts the done task back there, last when the list got shorter, never twice; `placement(moving:toOffset:in:)` turns a drag into a placement over the open tasks only, so a lingering row is never an anchor, never counted and never moved); tests `TaskViewsTests+Upcoming.swift` and `CompletionLingersTests.swift`.
   - `MainWindowState`: the checked row's linger (`completionLinger`, one second, per task, its own timer; animated unless Reduce Motion) over one `CompletionLingers`; every toggle goes through `MainWindowState.toggleDone(task:model:)`.
   - `TitleField`, `NotesEditor`: a focused field the owner has typed in keeps its text on a live update; one the owner has not typed in follows it.
   - `RootView`: the sign-out `.confirmationDialog`; `MainWindowState.requestSignOut(model:)` from the app menu, `WorkspaceSwitcher` and `FirstWorkspaceScreen`. `SignInScreen`: the waiting line.
@@ -41,7 +41,7 @@ open apps/macos/build/Build/Products/Debug/Todz.app
 
 Quit it with ⌘Q or `pkill -f Todz.app/Contents/MacOS/Todz`. The session file is `~/Library/Containers/dev.todz.Todz/Data/Library/Application Support/session`; the cache is the `Cache` folder beside it (`owner.json`, `projects/<id>.json`, `outbox.json`).
 
-The unit suite: `swift test --package-path apps/macos/TodzKit` (304 tests in 22 suites at `53aab63`). The live suite: `TODZ_LIVE_API_URL=http://localhost:8787 swift test --package-path apps/macos/TodzKit --filter LiveOwnerAPITests`.
+The unit suite: `swift test --package-path apps/macos/TodzKit` (308 tests in 22 suites at `429b77e`). The live suite: `TODZ_LIVE_API_URL=http://localhost:8787 swift test --package-path apps/macos/TodzKit --filter LiveOwnerAPITests`.
 
 ### A refused change: the forwarding proxy
 
@@ -139,6 +139,7 @@ Each red row was committed alone; the text is what the red run printed, copied f
 | `TaskBoardOverlayTests::aTaskReopenedAfterAMoveTakesItsPlaceByItsKeyAmongTheMovedTasks` (`8207230`) | `Expectation failed: try openTitles(applied) == ["B", "X", "Y", "A"]` | `61348c7` |
 | `TaskViewsUpcomingTests` (`68b8173`) | `TodzKit/TaskViews+Upcoming.swift:3: Fatal error: TaskViews.upcomingSchedule is not implemented` | `8687e2a` |
 | `CompletionLingersTests` (`209c8b9`) | `TodzKit/CompletionLingers.swift:9: Fatal error: CompletionLingers.toggling is not implemented` | `53aab63` |
+| `CompletionLingersTests` drag placement (`9ab8ef0`) | `TodzKit/CompletionLingers.swift:62: Fatal error: CompletionLingers.placement is not implemented` | `429b77e`: `TaskRows` computes its moves with it |
 | App views, G3 (`ad0a52f`, `c8848e4`, `2d11f33`) | no unit test: the app target has no test target and the `macos` gate runs `swift test` and `xcodebuild build` only, so the rest of steps 19 and 20 (the sign-in waiting line, the rows, the dialog, the status item) is proven by the walk | — |
 
 ## Hypotheses to attack
@@ -149,7 +150,7 @@ Every "it works" is a hypothesis. The lane sections hold the model's; these are 
 2. Hypothesis: VoiceOver announces `Offline` once when the item appears and nothing when it goes. Break it by: narrowing the window until the item moves to the toolbar's overflow and back while offline (a re-created item may announce again).
 3. Hypothesis: a pending add sits last in Inbox, a project or Today with `circle.dashed` and no id; it cannot be selected, ↑ ↓ skip it, Return, Space, ⌘↩, a double-click, a right-click and a drag do nothing on it; VoiceOver reads its title, then `Not saved yet`. Break it by: adding three tasks offline, then arrowing through the list and dragging a confirmed row below them.
 4. Hypothesis: on confirmation the pending row becomes a normal row in place, selected only if the selection did not move. Break it by: adding offline, selecting another task, then going online.
-5. Hypothesis: a task checked in Inbox, a project or Today stays where it was, filled and struck through, for about a second, then leaves; a second click within the second reopens it in place; in Today it never shows in Done Today and the open list at once. Break it by: checking three rows quickly, by Space, ⌘↩, the inspector's checkbox and the VoiceOver action; with Reduce Motion on (the linger stays, the slide goes).
+5. Hypothesis: a task checked in Inbox, a project or Today stays where it was, filled and struck through, for about a second, then leaves; a second click within the second reopens it in place; in Today it never shows in Done Today and the open list at once. Break it by: checking three rows quickly, by Space, ⌘↩, the inspector's checkbox and the VoiceOver action; with Reduce Motion on (the linger stays, the slide goes); dragging another row just below or above a lingering one (the move lands among the open tasks and is not refused).
 6. Hypothesis: a focused title or notes field the owner has typed in keeps the typed text when an agent changes that field; on commit the owner's text wins; a focused field the owner has not typed in takes the agent's value. Break it by: focusing the title, letting the MCP script change it, then leaving the field without typing (the agent's title must survive).
 7. Hypothesis: Sign Out signs out at once with no change waiting, and asks `Sign out and lose N changes?` when changes wait, from the app menu, the workspace switcher and the first-workspace screen; Return and Escape cancel; confirming shows Sign in with an empty cache. Break it by: offline with changes, pressing Return in the dialog.
 8. Hypothesis: the sign-in screen says `Your session has ended. Sign in again to send N waiting changes.` whenever changes wait, after a 401 and after a relaunch; with none waiting it shows the shell's notice. Break it by: the session-ended walk with one and with two changes.
@@ -161,7 +162,6 @@ Every "it works" is a hypothesis. The lane sections hold the model's; these are 
 - No socket ping (ADR 0029): a socket the network drops silently is noticed only by the next failure (a write, ⌘R, a pull); changes made meanwhile show on the next pull.
 - The views of steps 19 and 20 have no unit test (no app test target); only the Upcoming merge and the linger, moved into TodzKit, are unit-tested. The linger's one-second timer and its animation live in the app.
 - An Upcoming pending row cannot be produced from the window: an add carries no due date, or today's in Today, so `upcomingPendingDays` is empty in practice; the merge is there for a pending add with a later due date.
-- Dragging a row while another row lingers counts the lingering (done) row in the offsets, so the move can be anchored on a done task and come back refused.
 - Live inserts, moves and removals are applied without an explicit animation; whether the system `List` animates them is for the walk to see.
 - The offline announcement is posted when the item appears, so a toolbar that re-creates it (overflow) may announce again.
 - Counts are formatted in the Mac's locale (`1.000 changes` in Portuguese settings).
