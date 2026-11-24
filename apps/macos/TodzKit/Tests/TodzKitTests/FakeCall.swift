@@ -1,6 +1,8 @@
 @testable import TodzKit
 
 enum FakeRoute: Hashable, Sendable {
+    case signInMethod
+    case requestSignInLink
     case signIn
     case signOut
     case readOwner
@@ -21,7 +23,9 @@ enum FakeRoute: Hashable, Sendable {
 }
 
 enum FakeCall: Equatable, Sendable {
-    case signIn(identityToken: String, timeZone: String)
+    case signInMethod
+    case requestSignInLink(email: String, challenge: String)
+    case signIn(identityToken: String, linkVerifier: String?, timeZone: String)
     case signOut(session: String)
     case readOwner(session: String)
     case updateOwner(session: String, timeZone: String)
@@ -41,6 +45,8 @@ enum FakeCall: Equatable, Sendable {
 
     var route: FakeRoute {
         switch self {
+        case .signInMethod: .signInMethod
+        case .requestSignInLink: .requestSignInLink
         case .signIn: .signIn
         case .signOut: .signOut
         case .readOwner: .readOwner
@@ -74,7 +80,7 @@ enum FakeCall: Equatable, Sendable {
             let .issueKey(_, projectIdentifier),
             let .revokeKey(_, projectIdentifier, _):
             projectIdentifier
-        case .signIn, .signOut, .readOwner, .updateOwner, .listWorkspaces, .createWorkspace, .createProject:
+        case .signInMethod, .requestSignInLink, .signIn, .signOut, .readOwner, .updateOwner, .listWorkspaces, .createWorkspace, .createProject:
             nil
         }
     }

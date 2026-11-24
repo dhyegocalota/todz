@@ -11,7 +11,7 @@ public enum SignInError: Equatable, Sendable {
         case .signInUnavailable: self = .signInUnavailable
         case .timeZoneInvalid: self = .timeZoneInvalid
         case .unreachable: self = .unreachable
-        case .unauthorized, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead, .ruleViolated, .invalidRequest, .unexpected:
+        case .unauthorized, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead, .ruleViolated, .invalidRequest, .tooManyLinks, .unexpected:
             self = .unexpected
         }
     }

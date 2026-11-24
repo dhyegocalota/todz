@@ -168,7 +168,7 @@ import Observation
         defer { isSigningIn = false }
         let issued: IssuedSession
         do {
-            issued = try await service.signIn(identityToken: identity, timeZone: timeZone.identifier)
+            issued = try await service.signIn(identityToken: identity, linkVerifier: nil, timeZone: timeZone.identifier)
         } catch let failure as OwnerAPIError {
             signInError = SignInError(failure)
             return

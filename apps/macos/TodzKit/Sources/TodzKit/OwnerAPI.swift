@@ -2,6 +2,8 @@ import Foundation
 
 private let ownerPath = "/owner"
 private let sessionsPath = "/owner/sessions"
+private let signInMethodPath = "/owner/sign-in-method"
+private let signInLinksPath = "/owner/sign-in-links"
 private let currentSessionPath = "/owner/sessions/current"
 private let workspacesPath = "/owner/workspaces"
 private let cursorParameter = "cursor"
@@ -26,8 +28,12 @@ private func keysPath(_ projectIdentifier: String) -> String {
     "\(projectPath(projectIdentifier))/keys"
 }
 
+struct NotImplemented: Error {}
+
 public protocol OwnerService: Sendable {
-    func signIn(identityToken: String, timeZone: String) async throws -> IssuedSession
+    func signInMethod() async throws -> SignInMethod
+    func requestSignInLink(email: String, challenge: String) async throws
+    func signIn(identityToken: String, linkVerifier: String?, timeZone: String) async throws -> IssuedSession
     func signOut(session: String) async throws
     func readOwner(session: String) async throws -> Owner
     func updateOwner(session: String, timeZone: String) async throws -> Owner
@@ -66,8 +72,16 @@ public struct OwnerAPI: OwnerService {
         return URLSession(configuration: configuration)
     }
 
-    public func signIn(identityToken: String, timeZone: String) async throws -> IssuedSession {
-        let body = SignInBody(identityToken: identityToken, timeZone: timeZone)
+    public func signInMethod() async throws -> SignInMethod {
+        throw NotImplemented()
+    }
+
+    public func requestSignInLink(email: String, challenge: String) async throws {
+        throw NotImplemented()
+    }
+
+    public func signIn(identityToken: String, linkVerifier: String?, timeZone: String) async throws -> IssuedSession {
+        let body = SignInBody(identityToken: identityToken, linkVerifier: nil, timeZone: timeZone)
         return try await answer(IssuedSession.self, to: OwnerRequest(method: .post, path: sessionsPath, session: nil, body: body))
     }
 
