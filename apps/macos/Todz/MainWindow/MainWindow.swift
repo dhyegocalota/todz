@@ -14,25 +14,25 @@ struct MainWindow: View {
     let workspace: Workspace
     @Environment(MainWindowState.self) private var windowState
     @FocusState private var focus: MainWindowFocus?
-    @State private var sidebarInset: CGFloat = .zero
-    @State private var inspectorWidth: CGFloat = .zero
     @State private var toolbarHeight: CGFloat = .zero
 
     var body: some View {
         @Bindable var windowState = windowState
-        NavigationSplitView {
-            SidebarView(workspace: workspace)
-                .navigationSplitViewColumnWidth(min: sidebarMinimumWidth, ideal: sidebarIdealWidth, max: sidebarMaximumWidth)
-        } detail: {
-            TaskListView(workspace: workspace, focus: $focus)
-                .onGeometryChange(for: CGFloat.self, of: \.safeAreaInsets.leading) { sidebarInset = $0 }
-                .inspector(isPresented: $windowState.isInspectorPresented) {
-                    InspectorView(focus: $focus)
-                        .inspectorColumnWidth(min: inspectorMinimumWidth, ideal: inspectorIdealWidth, max: inspectorMaximumWidth)
-                        .onGeometryChange(for: CGFloat.self, of: \.size.width) { inspectorWidth = $0 }
-                }
+        ZStack {
+            Color.clear
+                .frame(minWidth: minimumContentWidth)
+            NavigationSplitView {
+                SidebarView(workspace: workspace)
+                    .navigationSplitViewColumnWidth(min: sidebarMinimumWidth, ideal: sidebarIdealWidth, max: sidebarMaximumWidth)
+            } detail: {
+                TaskListView(workspace: workspace, focus: $focus)
+                    .inspector(isPresented: $windowState.isInspectorPresented) {
+                        InspectorView(focus: $focus)
+                            .inspectorColumnWidth(min: inspectorMinimumWidth, ideal: inspectorIdealWidth, max: inspectorMaximumWidth)
+                    }
+            }
         }
-        .frame(minWidth: minimumWidth, minHeight: windowMinimumHeight - toolbarHeight)
+        .frame(minHeight: windowMinimumHeight - toolbarHeight)
         .onGeometryChange(for: CGFloat.self, of: \.safeAreaInsets.top) { toolbarHeight = $0 }
         .task { windowState.focusRequest = .addField }
         .sheet(item: $windowState.sheet) { kind in
@@ -45,8 +45,8 @@ struct MainWindow: View {
         }
     }
 
-    private var minimumWidth: CGFloat {
-        guard windowState.isInspectorPresented else { return sidebarInset + listMinimumWidth }
-        return sidebarInset + listMinimumWidth + inspectorWidth
+    private var minimumContentWidth: CGFloat {
+        guard windowState.isInspectorPresented else { return listMinimumWidth }
+        return listMinimumWidth + inspectorIdealWidth
     }
 }
