@@ -19,7 +19,7 @@ extension AppModel {
 
     public func refresh() async {
         guard let activeWorkspace else { return }
-        await pull(projectIdentifiers: activeWorkspace.projects.map(\.identifier))
+        await pull(projectIdentifiers: activeWorkspace.projects.map(\.identifier), workspaceIdentifier: activeWorkspace.identifier)
     }
 
     @discardableResult
@@ -76,14 +76,16 @@ extension AppModel {
         if isAnotherWorkspace { forgetActiveWorkspace() }
         activeWorkspaceIdentifier = workspace.identifier
         keepSelection(in: workspace)
-        await pull(projectIdentifiers: workspace.projects.map(\.identifier))
+        await pull(projectIdentifiers: workspace.projects.map(\.identifier), workspaceIdentifier: workspace.identifier)
     }
 
     private func forgetActiveWorkspace() {
+        guard activeWorkspaceIdentifier != nil else { return }
         board = TaskBoard()
         projectLoads = [:]
         histories = [:]
         selectedTask = nil
+        dismissBanner()
     }
 
     private func keepSelection(in workspace: Workspace) {
@@ -93,10 +95,10 @@ extension AppModel {
         selectedItem = .inbox
     }
 
-    private func pull(projectIdentifiers: [String]) async {
-        guard let session, let workspaceIdentifier = activeWorkspaceIdentifier else { return }
-        pullsInFlight.formUnion(projectIdentifiers)
-        defer { pullsInFlight.subtract(projectIdentifiers) }
+    private func pull(projectIdentifiers: [String], workspaceIdentifier: String) async {
+        guard let session, activeWorkspaceIdentifier == workspaceIdentifier else { return }
+        startPulls(projectIdentifiers: projectIdentifiers)
+        defer { endPulls(projectIdentifiers: projectIdentifiers) }
         let feed = ProjectFeed(service: service)
         do {
             try await withThrowingTaskGroup(of: ProjectPull.self) { group in
@@ -112,7 +114,19 @@ extension AppModel {
             endSession()
             return
         }
-        raisePullFailures(projectIdentifiers: projectIdentifiers)
+        raisePullFailures(projectIdentifiers: projectIdentifiers, workspaceIdentifier: workspaceIdentifier)
+    }
+
+    private func startPulls(projectIdentifiers: [String]) {
+        projectIdentifiers.forEach { pullsInFlight[$0, default: 0] += 1 }
+    }
+
+    private func endPulls(projectIdentifiers: [String]) {
+        projectIdentifiers.forEach { projectIdentifier in
+            guard let count = pullsInFlight[projectIdentifier] else { return }
+            let isLastPull = count == 1
+            pullsInFlight[projectIdentifier] = isLastPull ? nil : count - 1
+        }
     }
 
     private func record(_ pulled: ProjectPull, session: String, workspaceIdentifier: String) {
@@ -127,10 +141,10 @@ extension AppModel {
         }
     }
 
-    private func raisePullFailures(projectIdentifiers: [String]) {
+    private func raisePullFailures(projectIdentifiers: [String], workspaceIdentifier: String) {
         let failedIdentifiers = projectIdentifiers.filter { projectLoads[$0] == .failed }
         guard !failedIdentifiers.isEmpty else { return }
-        raise(.someProjectsFailed, retry: { await self.pull(projectIdentifiers: failedIdentifiers) })
+        raise(.someProjectsFailed, retry: { await self.pull(projectIdentifiers: failedIdentifiers, workspaceIdentifier: workspaceIdentifier) })
     }
 
     private func replaceProjects(workspaceIdentifier: String, change: ([Project]) -> [Project]) {

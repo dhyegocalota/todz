@@ -12,7 +12,7 @@ import Observation
     public var selectedTask: TaskKey?
     public internal(set) var board = TaskBoard()
     public internal(set) var projectLoads: [String: ProjectLoad] = [:]
-    public internal(set) var pullsInFlight: Set<String> = []
+    public internal(set) var pullsInFlight: [String: Int] = [:]
     public internal(set) var writesInFlight: Set<WriteTarget> = []
     public internal(set) var ruleIssues: [WriteTarget: RuleIssue] = [:]
     public internal(set) var banner: AppBanner?
@@ -127,6 +127,7 @@ import Observation
             guard self.session == session else { throw CancellationError() }
             return value
         } catch OwnerAPIError.unauthorized {
+            guard self.session == session else { throw CancellationError() }
             endSession()
             throw OwnerAPIError.unauthorized
         }

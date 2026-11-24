@@ -5,6 +5,13 @@ public enum WriteTarget: Hashable, Sendable {
     case newTask(projectIdentifier: String)
     case taskField(TaskKey, TaskWriteField)
 
+    var belongsToTheActiveWorkspace: Bool {
+        switch self {
+        case .newWorkspace: false
+        case .newProject, .projectName, .newTask, .taskField: true
+        }
+    }
+
     var goneBanner: AppBanner {
         switch self {
         case .newWorkspace, .newProject: .workspaceGone

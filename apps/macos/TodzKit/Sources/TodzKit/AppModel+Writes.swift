@@ -7,12 +7,21 @@ extension AppModel {
         writesInFlight.insert(target)
         defer { writesInFlight.remove(target) }
         ruleIssues[target] = nil
+        let workspaceIdentifier = activeWorkspaceIdentifier
         do {
-            return try await request(operation)
+            let value = try await request(operation)
+            guard isAnswerable(target: target, sentIn: workspaceIdentifier) else { return nil }
+            return value
         } catch {
+            guard isAnswerable(target: target, sentIn: workspaceIdentifier) else { return nil }
             await recover(from: error, target: target, retry: retry)
             return nil
         }
+    }
+
+    private func isAnswerable(target: WriteTarget, sentIn workspaceIdentifier: String?) -> Bool {
+        let isSameWorkspace = activeWorkspaceIdentifier == workspaceIdentifier
+        return isSameWorkspace || !target.belongsToTheActiveWorkspace
     }
 
     func raiseLoadFailure(_ error: any Error, retry: @escaping @MainActor () async -> Void) {

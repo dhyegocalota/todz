@@ -59,7 +59,7 @@ extension AppModelTests {
         #expect(isSameCallSet(harness.service.calls, pulls))
         #expect(harness.model.taskViews?.inbox.count == 2)
         #expect(harness.model.banner == .someProjectsFailed)
-        #expect(harness.model.pullsInFlight == [])
+        #expect(harness.model.pullsInFlight == [:])
     }
 
     @Test func createProjectAddsItToTheWorkspaceAndSelectsIt() async throws {
