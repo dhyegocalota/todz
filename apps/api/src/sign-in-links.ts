@@ -40,7 +40,7 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   const isEmailProvider = signInKindOf(env.SIGN_IN_PROVIDER) === SignInProviderKind.Email;
   const isLinkUnsendable = !isEmailProvider || publicOrigin === null;
   if (isLinkUnsendable) return errorResponse(OwnerErrorCode.SignInUnavailable);
-  const sender = emailSenderOf({ configured: env.EMAIL_SENDER, publicOrigin });
+  const sender = emailSenderOf({ configured: env.EMAIL_SENDER, publicOrigin, requestUrl: request.url });
   if (sender === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
   const body = await parsedPublicBody({ request, schema: RequestBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
