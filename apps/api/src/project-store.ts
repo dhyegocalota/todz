@@ -31,10 +31,22 @@ import { SqliteTaskStore } from './sqlite-task-store';
 
 export const CHANGE_PAGE_SIZE = 100;
 const NO_CHANGE_NUMBER = 0;
+const CHANGED_MESSAGE = 'changed';
+const WEBSOCKET_UPGRADE = 'websocket';
+const UPGRADE_REQUIRED_STATUS = 426;
+const SWITCHING_PROTOCOLS_STATUS = 101;
 
 export type TaskChanges = { tasks: Task[]; cursor: number; hasMore: boolean };
 
 const SYSTEM_CLOCK: Clock = { now: () => Date.now() };
+
+function sendChanged(socket: WebSocket): void {
+  try {
+    socket.send(CHANGED_MESSAGE);
+  } catch {
+    return;
+  }
+}
 
 function trustedActor(actor: Actor): Actor {
   if (actor.kind === ActorKind.Owner) return OWNER_ACTOR;
@@ -58,19 +70,19 @@ export class ProjectStore extends DurableObject<Env> {
   }
 
   addTasks({ actor, drafts }: { actor: Actor; drafts: TaskDraft[] }): ProjectResult<AddedTask[]> {
-    return this.run(() => addTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), drafts }));
+    return this.runWrite(() => addTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), drafts }));
   }
 
   updateTask({ actor, number, patch }: { actor: Actor; number: number; patch: TaskPatch }): ProjectResult<Task> {
-    return this.run(() => updateTask({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), number, patch }));
+    return this.runWrite(() => updateTask({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), number, patch }));
   }
 
   completeTasks({ actor, numbers, note }: { actor: Actor; numbers: number[]; note: string | null }): ProjectResult<CompletedTask[]> {
-    return this.run(() => completeTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers, note }));
+    return this.runWrite(() => completeTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers, note }));
   }
 
   reopenTasks({ actor, numbers }: { actor: Actor; numbers: number[] }): ProjectResult<ReopenedTask[]> {
-    return this.run(() => reopenTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers }));
+    return this.runWrite(() => reopenTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers }));
   }
 
   listTasks({ today, filter }: { today: string; filter: TaskFilter }): ProjectResult<TaskList> {
@@ -82,8 +94,14 @@ export class ProjectStore extends DurableObject<Env> {
   }
 
   fetch(request: Request): Response {
-    return new Response(request.method, { status: 501 });
+    const isSocketUpgrade = request.headers.get('Upgrade')?.toLowerCase() === WEBSOCKET_UPGRADE;
+    if (!isSocketUpgrade) return new Response(null, { status: UPGRADE_REQUIRED_STATUS, headers: { Upgrade: WEBSOCKET_UPGRADE } });
+    const { 0: client, 1: server } = new WebSocketPair();
+    this.ctx.acceptWebSocket(server);
+    return new Response(null, { status: SWITCHING_PROTOCOLS_STATUS, webSocket: client });
   }
+
+  webSocketMessage(): void {}
 
   readChanges({ cursor }: { cursor: number }): ProjectResult<TaskChanges> {
     const lastChangeNumber = this.store.lastChangeNumber();
@@ -106,5 +124,13 @@ export class ProjectStore extends DurableObject<Env> {
 
   private run<Value>(useCase: () => Value): ProjectResult<Value> {
     return resultOf(() => this.ctx.storage.transactionSync(useCase));
+  }
+
+  private runWrite<Value>(useCase: () => Value): ProjectResult<Value> {
+    const changeNumberBefore = this.store.lastChangeNumber();
+    const result = this.run(useCase);
+    const hasMovedChangeNumber = result.ok && this.store.lastChangeNumber() !== changeNumberBefore;
+    if (hasMovedChangeNumber) this.ctx.getWebSockets().forEach(sendChanged);
+    return result;
   }
 }
