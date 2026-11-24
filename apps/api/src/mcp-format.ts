@@ -6,6 +6,10 @@ import { type ProjectFailure, ProjectFailureKind } from './project-result';
 const LINE_BREAK = '\n';
 const PARAGRAPH_BREAK = '\n\n';
 
+function escapedMarkup(text: string): string {
+  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
+
 function lines(texts: string[]): string {
   return texts.join(LINE_BREAK);
 }
@@ -59,7 +63,7 @@ export function nextAnswer(task: Task | null): string {
 
 export function nextPromptText(task: Task | null): string {
   if (task === null) return MCP_COPY.nothingToDo;
-  const fencedTask = lines([MCP_COPY.taskOpeningTag, taskBlock(task), MCP_COPY.taskClosingTag]);
+  const fencedTask = lines([MCP_COPY.taskOpeningTag, escapedMarkup(taskBlock(task)), MCP_COPY.taskClosingTag]);
   return paragraphs([MCP_COPY.workOnTask, fencedTask, MCP_COPY.finishWith(formatShortId(task.number))]);
 }
 
