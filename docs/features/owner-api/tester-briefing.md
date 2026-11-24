@@ -84,7 +84,36 @@ Every "it works" is a hypothesis the tester tries to break.
 - G1 added one line to `mcp-format.ts` that throws for `CursorAhead`; the MCP tools never read changes.
 - `Asia/Kolkata` canonicalises to `Asia/Calcutta` on this runtime; that name is stored.
 - Names collapse a line break to a space, so a name is never refused for one.
-- `HttpStatus` has no entry for 101; the socket tests use a local constant because `http-status.ts` belongs to G2.
 - `WatchChanges` forwards the request to the project and takes its 426 and 101 answers as they come; the Worker itself does not read the `Upgrade` header.
-- Task numbers in `complete` and `reopen` bodies are any JSON number; a fractional or non-positive number reaches the core, which answers 422 `task_number_invalid`, not 400. No test pins it.
 - No test sends an update with an explicit `placement` plus other fields in one body.
+
+## Fix round 1
+
+What changed:
+
+- `apps/api/package.json` — `dev` applies the directory migrations locally before `wrangler dev`; a pin in `tools/repository-shape/src/api-source.test.ts`. Checked by hand against a fresh `--persist-to` directory: the apply runs without a prompt and lists 0001 to 0003 as applied.
+- `owner-changes.ts` — a repeated `cursor` query answers 400 `invalid_request`.
+- `owner-task-writes.ts` — `numbers` and `placement.anchor` must be positive integers, else 400 `invalid_request`.
+- `directory-workspaces.ts`, `owner-workspaces.ts` — every workspace and project write carries the owner and answers whether a row changed; none changed answers 404 `not_found`. `findOwnedWorkspace` moved here from `directory.ts`; renaming a workspace reads only that workspace and its projects (`findOwnerWorkspace`).
+- Refactors with no behaviour change: `task-field-patch.ts` (`fieldPatchOf`, shared by the MCP update tool and the owner update route), `FORMATTER_LOCALE` in `libs/types`, `HttpStatus` gains 101 and 405, `LAST_INDEX` in the change page, the concurrent first sign-in test renamed a smoke test.
+
+Red texts:
+
+| Test | Red before the change because | Green after because |
+|------|--------------------------------|---------------------|
+| `api-source.test.ts` dev script | `AssertionError: expected -1 to be greater than or equal to 0` | the script names the migrations command before `wrangler dev` |
+| `owner-changes.test.ts` repeated cursors | `expected 409 to be 400` (`cursor=1&cursor=2`); `expected 200 to be 400` (`cursor=0&cursor=abc`) | `getAll` must hold exactly one value |
+| `owner-tasks.test.ts` numbers and anchors | `expected 422 to be 400`, nine times (fractional, zero and negative numbers and anchors) | the schemas are positive integers |
+| `directory-workspaces.test.ts` | `expected true to be false` (4x); `D1_ERROR: FOREIGN KEY constraint failed`; `findOwnerWorkspace is not implemented` (2x) | the writes check the owner and count changed rows |
+
+Hypotheses to attack:
+
+1. Hypothesis: `pnpm --filter @todz/api dev` works on a fresh checkout with no local state. Break it by: deleting `.wrangler`, running it, signing in with the fake provider, creating a workspace and adding a task; then running it a second time (the apply must be a no-op).
+2. Hypothesis: a repeated `cursor` is always 400. Break it by: `cursor=0&cursor=0`, `cursor=0&Cursor=1`, `cursor=0&cursor=`.
+3. Hypothesis: a task number or anchor that is not a positive integer never reaches the core. Break it by: `1e0`, `1.0`, `9007199254740993`, `true`, `null`, a string.
+4. Hypothesis: no directory write changes another owner's workspace or project. Break it by: racing a rename with a session of another owner on the same ids; renaming a project of one's own workspace by an id of another's.
+
+Known gaps:
+
+- `insertWorkspaceWithInbox` still trusts the ids it is handed; the workspace row carries the owner and the Inbox row carries the new workspace id.
+- `findProject` reads by id after ownership was proven; it carries no owner of its own.
