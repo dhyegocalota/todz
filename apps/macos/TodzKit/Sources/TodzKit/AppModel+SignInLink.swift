@@ -2,25 +2,26 @@ import Foundation
 
 extension AppModel {
     public func loadSignInMethod() async {
-        signInError = nil
+        signInMethodError = nil
         do {
             signInMethod = try await service.signInMethod()
         } catch let failure as OwnerAPIError {
-            signInError = SignInError(failure)
+            signInMethodError = SignInError(failure)
         } catch {
-            signInError = .unexpected
+            signInMethodError = .unexpected
         }
     }
 
     public func requestSignInLink(email: String) async {
         signInError = nil
+        heldSignInLink = nil
         isRequestingLink = true
         defer { isRequestingLink = false }
         let verifier = verifierToSend(to: email)
         do {
             try await service.requestSignInLink(email: email, challenge: SignInLinkChallenge.challenge(for: verifier))
         } catch let failure as OwnerAPIError {
-            signInError = SignInError(failure)
+            signInError = SignInError(asking: failure)
             return
         } catch {
             signInError = .unexpected
@@ -35,6 +36,7 @@ extension AppModel {
             return
         }
         guard case .signedOut = phase, !isSigningIn else { return }
+        heldSignInLink = nil
         guard let pendingLink, !isExpired(pendingLink) else {
             discardPendingLink()
             signInError = .linkNotRequested
@@ -43,22 +45,26 @@ extension AppModel {
         let isOpened = await openSession {
             try await service.signIn(identityToken: signInLink.token, linkVerifier: pendingLink.verifier, timeZone: timeZone.identifier)
         }
-        guard !isOpened else {
-            discardPendingLink()
-            return
-        }
+        guard !isOpened else { return }
         if signInError == .identityRejected { signInError = .linkRejected }
         if isExpired(pendingLink) { discardPendingLink() }
+        let isRetryable = signInError == .unreachable && self.pendingLink != nil
+        guard isRetryable else { return }
+        heldSignInLink = signInLink
     }
 
     public var canRedeemAgain: Bool {
-        false
+        heldSignInLink != nil
     }
 
-    public func useDifferentEmail() {}
+    public func useDifferentEmail() {
+        discardPendingLink()
+        signInError = nil
+    }
 
     public func discardPendingLink() {
         pendingLink = nil
+        heldSignInLink = nil
         try? pendingLinks.erase()
     }
 
@@ -78,9 +84,13 @@ extension AppModel {
     }
 
     private func verifierToSend(to email: String) -> String {
-        guard let pendingLink, pendingLink.email == email else { return makeLinkVerifier() }
+        guard let pendingLink, normalized(pendingLink.email) == normalized(email) else { return makeLinkVerifier() }
         guard now() < pendingLink.expiresAt.addingTimeInterval(-SignInLinkTiming.margin) else { return makeLinkVerifier() }
         return pendingLink.verifier
+    }
+
+    private func normalized(_ email: String) -> String {
+        email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
     private func keep(_ link: PendingSignInLink) {

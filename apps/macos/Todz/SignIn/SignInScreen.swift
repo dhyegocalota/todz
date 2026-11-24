@@ -81,8 +81,8 @@ struct SignInScreen: View {
             ProgressView(SignInCopy.gettingReady)
                 .controlSize(.small)
         case .methodUnavailable:
-            if let signInError = model.signInError {
-                SignInErrorLine(signInError: signInError) { Task { await model.loadSignInMethod() } }
+            if let signInMethodError = model.signInMethodError {
+                SignInErrorLine(signInError: signInMethodError) { Task { await model.loadSignInMethod() } }
             }
         case .identity:
             CredentialSlot()

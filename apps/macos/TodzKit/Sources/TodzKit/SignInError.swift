@@ -9,6 +9,14 @@ public enum SignInError: Equatable, Sendable {
     case unreachable
     case unexpected
 
+    init(asking failure: OwnerAPIError) {
+        guard failure == .invalidRequest else {
+            self.init(failure)
+            return
+        }
+        self = .invalidAddress
+    }
+
     init(_ failure: OwnerAPIError) {
         switch failure {
         case .identityRejected: self = .identityRejected

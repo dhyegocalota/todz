@@ -16,10 +16,10 @@ struct InboxSlot: View {
             if !model.isRequestingLink {
                 sendAgainButton
             }
-            Button(SignInCopy.useDifferentEmail, action: model.discardPendingLink)
+            Button(SignInCopy.useDifferentEmail, action: model.useDifferentEmail)
                 .buttonStyle(.plain)
             if let signInError = model.signInError {
-                SignInErrorLine(signInError: signInError, tryAgain: sendAgain)
+                SignInErrorLine(signInError: signInError, tryAgain: tryAgain)
             }
             Text(SignInCopy.linkLifetime)
                 .font(.footnote)
@@ -52,6 +52,14 @@ struct InboxSlot: View {
         let remaining = linkSentAt.addingTimeInterval(SignInLinkTiming.cooldown).timeIntervalSince(date)
         guard remaining > 0 else { return nil }
         return SignInCopy.sendAgainWaiting(seconds: Int(remaining.rounded(.up)))
+    }
+
+    private func tryAgain() {
+        guard model.canRedeemAgain else {
+            sendAgain()
+            return
+        }
+        Task { await model.redeemHeldSignInLink() }
     }
 
     private func sendAgain() {

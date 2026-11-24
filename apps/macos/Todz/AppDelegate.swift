@@ -31,7 +31,7 @@ private let cacheFolderName = "Cache"
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let link = urls.compactMap(IncomingLink.init(url:)).last else { return }
         switch link {
-        case let .signIn(signInLink): Task { await model.redeem(signInLink: signInLink) }
+        case let .signIn(signInLink): windowState.waitingSignInLink = signInLink
         case let .widget(widgetLink): windowState.waitingLink = widgetLink
         }
     }
