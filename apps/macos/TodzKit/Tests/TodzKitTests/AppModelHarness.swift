@@ -69,6 +69,10 @@ final class Captured<Value> {
         store.projects[projectIdentifier] = ProjectCache(projectIdentifier: projectIdentifier, cursor: cursor, tasks: tasks)
     }
 
+    func flushed() async {
+        await model.sendLoop?.value
+    }
+
     func launchedFromCache() async {
         vault.secret = session
         await model.launch()

@@ -27,6 +27,8 @@ import Observation
     @ObservationIgnored var ownerIdentifier: String?
     @ObservationIgnored var isWorkspaceListOutdated = false
     @ObservationIgnored var watches: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored var sendLoop: Task<Void, Never>?
+    @ObservationIgnored var sendingSession: String?
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let store: any SyncStore

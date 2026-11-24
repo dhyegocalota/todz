@@ -4,9 +4,13 @@ import Foundation
 private let tickSeconds: TimeInterval = 1
 private let inboxName = "Inbox"
 
+struct UndecodableAnswer: Error {}
+
 @MainActor final class FakeOwnerService: OwnerService {
     var calls: [FakeCall] = []
     var failures: [FakeRoute: OwnerAPIError] = [:]
+    var undecodableRoutes: Set<FakeRoute> = []
+    var isReplayingAdds = false
     var projectFailures: [String: OwnerAPIError] = [:]
     var changeScripts: [String: [Result<ChangePage, OwnerAPIError>]] = [:]
     var onCall: ((FakeCall) -> Void)?
@@ -76,7 +80,7 @@ private let inboxName = "Inbox"
             return task.record
         }
         tasksOfProject[projectIdentifier] = held + added
-        return added.map { AddedTask(task: $0, replayed: false) }
+        return added.map { AddedTask(task: $0, replayed: isReplayingAdds) }
     }
 
     func updateTask(session: String, projectIdentifier: String, number: Int, patch: TaskPatch) async throws -> TaskRecord {
@@ -168,6 +172,7 @@ private let inboxName = "Inbox"
         onCall?(call)
         if suspendedRoutes.contains(call.route) { await hold(call.route) }
         if let failure = failures[call.route] { throw failure }
+        if undecodableRoutes.contains(call.route) { throw UndecodableAnswer() }
         guard let projectIdentifier = call.projectIdentifier else { return }
         if let failure = projectFailures[projectIdentifier] { throw failure }
     }

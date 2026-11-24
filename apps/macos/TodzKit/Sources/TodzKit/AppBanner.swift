@@ -8,4 +8,5 @@ public enum AppBanner: Equatable, Sendable {
     case taskGone
     case projectGone
     case workspaceGone
+    case changesRefused(count: Int)
 }
