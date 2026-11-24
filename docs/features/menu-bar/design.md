@@ -240,8 +240,8 @@ The owner asked the build loop to take every call (2026-11-24, "take every decis
 | O3 | A: done-today rows after the open rows, reopenable, the count in the foot | 2026-11-24 |
 | O4 | A: rows scroll between the pinned header, field and foot; at most 520 points high, 360 wide | 2026-11-24 |
 | O5 | A: the add field takes focus on open; ⌘N still focuses it | 2026-11-24 |
-| O6 | A: one workspace shows its name as plain text and no hint; the menu and ⌘1 to ⌘N from two | 2026-11-24 |
-| O7 | B: ⌘1 to ⌘9 also in the main window's View menu; the spec's non-goal is amended | 2026-11-24 |
+| O6 | A: one workspace shows its name as plain text and no hint; the menu and the foot's hint `⌘1–N` from two. Amended after the code review: the switcher's items carry no key, the View menu is the one registration | 2026-11-24 |
+| O7 | B: ⌘1 to ⌘9 also in the main window's View menu, the only place they are registered and shown; the spec's non-goal is amended | 2026-11-24 |
 | O8 | A: one line and Open todz | 2026-11-24 |
 | O9 | A: always a Dock icon, no Quit item | 2026-11-24 |
 | O10 | A: the shell's `TaskRow` unchanged | 2026-11-24 |
