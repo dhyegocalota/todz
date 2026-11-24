@@ -15,7 +15,8 @@ const SIGN_IN_LINK_LIFETIME_MINUTES = 15;
 const SIGN_IN_LINK_LIFETIME_MS = SIGN_IN_LINK_LIFETIME_MINUTES * MILLISECONDS_PER_MINUTE;
 const SIGN_IN_LINKS_PER_ADDRESS_MAX = 5;
 const ADDRESS_LENGTH_MAX = 254;
-const ADDRESS_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ADDRESS_CHARACTER = '[^@<>,"\\x00-\\x20\\x7f-\\uffff]';
+const ADDRESS_PATTERN = new RegExp(`^${ADDRESS_CHARACTER}+@${ADDRESS_CHARACTER}+\\.${ADDRESS_CHARACTER}+$`);
 const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
 
 const RequestBodySchema = z.object({ email: z.string(), link_challenge: z.string() });
