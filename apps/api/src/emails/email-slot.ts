@@ -28,7 +28,7 @@ function escapedHtmlOf(value: string): string {
 function filledOf(input: { template: string; values: EmailSlotValues }): string {
   return input.template.replace(SLOT_PATTERN, (slot) => {
     const value = input.values[slot as EmailSlot];
-    if (value === undefined) return slot;
+    if (value === undefined) throw new Error(`no value for ${slot}`);
     return value;
   });
 }
