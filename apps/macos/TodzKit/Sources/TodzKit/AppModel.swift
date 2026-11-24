@@ -72,6 +72,7 @@ import Observation
     @ObservationIgnored var waitingLink: WidgetLink?
     @ObservationIgnored var publishedWidgetSnapshot: WidgetSnapshotState?
     @ObservationIgnored var keyScreenIdentifier: UUID?
+    @ObservationIgnored var keyIssueAnswers = 0
     @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault

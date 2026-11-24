@@ -13,11 +13,13 @@ extension AppModel {
     public func loadKeys() async {
         guard let projectIdentifier = keyProjectIdentifier, let visit = keyScreenIdentifier else { return }
         let isListShown = keys?.isLoaded == true
+        let issueAnswersAtStart = keyIssueAnswers
         if !isListShown { keys = .loading }
         do {
             let listed = try await request { try await service.listKeys(session: $0, projectIdentifier: projectIdentifier) }
             guard keyScreenIdentifier == visit else { return }
-            keys = .loaded(including(key: issuedKey?.key, in: listed))
+            let isIssueNewerThanList = keyIssueAnswers != issueAnswersAtStart
+            keys = .loaded(including(key: isIssueNewerThanList ? issuedKey?.key : nil, in: listed))
             keyReloadFailure = nil
         } catch {
             guard keyScreenIdentifier == visit else { return }
@@ -43,6 +45,7 @@ extension AppModel {
             guard keyScreenIdentifier == visit else { return }
             isIssuing = false
             issuedKey = issued
+            keyIssueAnswers += 1
             await list(issued.key)
         } catch {
             guard keyScreenIdentifier == visit else { return }
