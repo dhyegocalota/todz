@@ -5,7 +5,7 @@ extension AppModel {
         case .inbox: return AddTaskDestination(projectIdentifier: inbox.identifier, dueDate: nil)
         case .today: return AddTaskDestination(projectIdentifier: inbox.identifier, dueDate: today)
         case let .project(identifier): return AddTaskDestination(projectIdentifier: identifier, dueDate: nil)
-        case .upcoming, .done: return nil
+        case .upcoming, .done, .connectAgent: return nil
         }
     }
 

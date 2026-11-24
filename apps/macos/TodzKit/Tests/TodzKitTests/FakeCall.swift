@@ -15,6 +15,9 @@ enum FakeRoute: Hashable, Sendable {
     case reopenTasks
     case readHistory
     case readChanges
+    case listKeys
+    case issueKey
+    case revokeKey
 }
 
 enum FakeCall: Equatable, Sendable {
@@ -32,6 +35,9 @@ enum FakeCall: Equatable, Sendable {
     case reopenTasks(session: String, projectIdentifier: String, numbers: [Int])
     case readHistory(session: String, projectIdentifier: String, number: Int)
     case readChanges(session: String, projectIdentifier: String, cursor: Int)
+    case listKeys(session: String, projectIdentifier: String)
+    case issueKey(session: String, projectIdentifier: String)
+    case revokeKey(session: String, projectIdentifier: String, keyIdentifier: String)
 
     var route: FakeRoute {
         switch self {
@@ -49,6 +55,9 @@ enum FakeCall: Equatable, Sendable {
         case .reopenTasks: .reopenTasks
         case .readHistory: .readHistory
         case .readChanges: .readChanges
+        case .listKeys: .listKeys
+        case .issueKey: .issueKey
+        case .revokeKey: .revokeKey
         }
     }
 
@@ -60,7 +69,10 @@ enum FakeCall: Equatable, Sendable {
             let .completeTasks(_, projectIdentifier, _),
             let .reopenTasks(_, projectIdentifier, _),
             let .readHistory(_, projectIdentifier, _),
-            let .readChanges(_, projectIdentifier, _):
+            let .readChanges(_, projectIdentifier, _),
+            let .listKeys(_, projectIdentifier),
+            let .issueKey(_, projectIdentifier),
+            let .revokeKey(_, projectIdentifier, _):
             projectIdentifier
         case .signIn, .signOut, .readOwner, .updateOwner, .listWorkspaces, .createWorkspace, .createProject:
             nil

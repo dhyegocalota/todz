@@ -31,6 +31,7 @@ extension AppModel {
         defer { refreshesInFlight -= 1 }
         startSending()
         await pull(projectIdentifiers: activeWorkspace.projects.map(\.identifier), workspaceIdentifier: activeWorkspace.identifier)
+        await loadKeys()
     }
 
     func pull(projectIdentifiers: [String], workspaceIdentifier: String) async {

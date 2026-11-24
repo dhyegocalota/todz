@@ -12,6 +12,7 @@ private let contentMinimumHeight: CGFloat = 480
 
 struct MainWindow: View {
     let workspace: Workspace
+    @Environment(AppModel.self) private var model
     @Environment(MainWindowState.self) private var windowState
     @FocusState private var focus: MainWindowFocus?
 
@@ -24,11 +25,16 @@ struct MainWindow: View {
                 SidebarView(workspace: workspace)
                     .navigationSplitViewColumnWidth(min: sidebarMinimumWidth, ideal: sidebarIdealWidth, max: sidebarMaximumWidth)
             } detail: {
-                TaskListView(workspace: workspace, focus: $focus)
-                    .inspector(isPresented: $windowState.isInspectorPresented) {
-                        InspectorView(focus: $focus)
-                            .inspectorColumnWidth(min: inspectorMinimumWidth, ideal: inspectorIdealWidth, max: inspectorMaximumWidth)
-                    }
+                if isOnKeyScreen {
+                    KeyScreen(workspace: workspace)
+                }
+                if !isOnKeyScreen {
+                    TaskListView(workspace: workspace, item: model.selectedItem, focus: $focus)
+                        .inspector(isPresented: $windowState.isInspectorPresented) {
+                            InspectorView(item: model.selectedItem, focus: $focus)
+                                .inspectorColumnWidth(min: inspectorMinimumWidth, ideal: inspectorIdealWidth, max: inspectorMaximumWidth)
+                        }
+                }
             }
         }
         .task { windowState.focusRequest = .addField }
@@ -42,8 +48,13 @@ struct MainWindow: View {
         }
     }
 
+    private var isOnKeyScreen: Bool {
+        model.selectedItem == .connectAgent
+    }
+
     private var minimumContentWidth: CGFloat {
-        guard windowState.isInspectorPresented else { return listMinimumWidth }
+        let isInspectorShown = windowState.isInspectorPresented && !isOnKeyScreen
+        guard isInspectorShown else { return listMinimumWidth }
         return listMinimumWidth + inspectorIdealWidth
     }
 }

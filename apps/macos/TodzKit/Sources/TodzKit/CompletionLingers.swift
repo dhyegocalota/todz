@@ -81,7 +81,7 @@ public struct CompletionLingers: Sendable, Equatable {
         case .inbox: views.inbox
         case let .project(identifier): views.project(identifier: identifier)
         case .today: views.today.open
-        case .upcoming, .done: nil
+        case .upcoming, .done, .connectAgent: nil
         }
     }
 }

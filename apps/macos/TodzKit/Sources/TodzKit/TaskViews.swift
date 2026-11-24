@@ -38,7 +38,7 @@ public struct TaskViews: Sendable {
             return workspacePendingTasks.filter { $0.projectIdentifier == identifier }
         case .today:
             return pendingTasksDue { $0 <= day }
-        case .upcoming, .done:
+        case .upcoming, .done, .connectAgent:
             return []
         }
     }

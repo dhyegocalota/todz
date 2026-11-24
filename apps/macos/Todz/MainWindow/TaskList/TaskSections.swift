@@ -30,6 +30,8 @@ enum TaskSections {
                 let title = doneTitle(day: taskDay.day, today: today, timeZone: timeZone)
                 return daySection(day: taskDay.day, tasks: taskDay.tasks, pendingTasks: [], title: title)
             }
+        case .connectAgent:
+            return []
         }
     }
 

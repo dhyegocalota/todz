@@ -23,6 +23,10 @@ struct SidebarView: View {
             } header: {
                 ProjectsHeader()
             }
+            Section {
+                Label(KeyScreenCopy.title, systemImage: SidebarItem.connectAgent.symbol)
+                    .tag(SidebarItem.connectAgent)
+            }
         }
         .listStyle(.sidebar)
         .safeAreaInset(edge: .top) {
