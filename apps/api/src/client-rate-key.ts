@@ -15,13 +15,14 @@ function splitGroups({ text }: { text: string }): string[] {
   return text.split(IPV6_SEPARATOR);
 }
 
-function expandGroups({ address }: { address: string }): string[] {
+function expandGroups({ address }: { address: string }): string[] | null {
   const compressionIndex = address.indexOf(IPV6_COMPRESSION);
   if (compressionIndex === -1) return splitGroups({ text: address });
   const headGroups = splitGroups({ text: address.slice(0, compressionIndex) });
   const tailGroups = splitGroups({ text: address.slice(compressionIndex + IPV6_COMPRESSION.length) });
-  const fill = Array<string>(IPV6_GROUP_COUNT - headGroups.length - tailGroups.length).fill('0');
-  return [...headGroups, ...fill, ...tailGroups];
+  const fillCount = IPV6_GROUP_COUNT - headGroups.length - tailGroups.length;
+  if (fillCount < 0) return null;
+  return [...headGroups, ...Array<string>(fillCount).fill('0'), ...tailGroups];
 }
 
 function mappedIpv4Of({ address }: { address: string }): string | null {
@@ -41,6 +42,8 @@ export function clientRateKey({ address }: { address: string }): string {
   if (!address.includes(IPV6_SEPARATOR)) return address;
   const mappedIpv4 = mappedIpv4Of({ address });
   if (mappedIpv4 !== null) return mappedIpv4;
-  const prefixGroups = expandGroups({ address }).slice(0, IPV6_PREFIX_GROUPS);
+  const groups = expandGroups({ address });
+  if (groups === null) return address;
+  const prefixGroups = groups.slice(0, IPV6_PREFIX_GROUPS);
   return prefixGroups.map((group) => parseInt(group, HEXADECIMAL_RADIX).toString(HEXADECIMAL_RADIX)).join(IPV6_SEPARATOR);
 }
