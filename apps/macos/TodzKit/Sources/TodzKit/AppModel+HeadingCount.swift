@@ -1,5 +1,7 @@
 extension AppModel {
     public var todayHeadingCount: Int? {
-        fatalError("AppModel.todayHeadingCount is not implemented")
+        guard let workspace = activeWorkspace, let taskViews else { return nil }
+        guard !isFirstLoad(of: workspace), loadFailure(of: workspace) == nil else { return nil }
+        return taskViews.today.open.count
     }
 }

@@ -13,6 +13,6 @@ public enum MenuBarBadge {
     }
 
     public static func registerDefault(in defaults: UserDefaults) {
-        fatalError("MenuBarBadge.registerDefault is not implemented")
+        defaults.register(defaults: [storageKey: isEnabledByDefault])
     }
 }
