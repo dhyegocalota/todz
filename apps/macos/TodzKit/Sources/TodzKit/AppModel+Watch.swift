@@ -18,6 +18,7 @@ extension AppModel {
             .filter { watches[$0] == nil }
             .forEach { projectIdentifier in
                 let events = signals.watch(session: session, projectIdentifier: projectIdentifier)
+                isWatchAnswered[projectIdentifier] = hasServerAnswered
                 watches[projectIdentifier] = Task { await self.follow(events, projectIdentifier: projectIdentifier, session: session) }
             }
     }
