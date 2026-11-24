@@ -15,6 +15,7 @@ A history line says "via Claude Code". A 2026-07-28 client sends its name on eve
 2. Every other 2025-era request must carry that header. Its session must exist, be unexpired, and belong to the key the request carries; otherwise the answer is 404 and the client opens a new session, as the protocol prescribes. A request without the header is a 400.
 3. A modern request names its client from its envelope and touches no session.
 4. A revoked key ends its sessions, because the key is checked before the session.
+5. A session is stored only after the SDK accepted the `initialize`, and a key keeps at most 20: storing one deletes the key's expired rows and its oldest beyond the cap in the same batch, so no key holder can grow the directory every tenant shares.
 
 ## Alternatives considered
 
@@ -29,7 +30,7 @@ A history line says "via Claude Code". A 2026-07-28 client sends its name on eve
 ## Consequences
 
 - The directory gains `mcp_sessions`, which holds no task data.
-- Expired rows stay until a cleanup job exists; v1 has none.
+- Expired rows of a key are deleted when that key opens a new session; a key that never returns leaves its rows, at most 20, until a cleanup job exists.
 
 ## Evidence
 
