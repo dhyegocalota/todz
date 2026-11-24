@@ -88,12 +88,14 @@ export function projectCall({
   path,
   body,
   rawBody,
+  headers,
 }: {
   project: OwnedProject;
   method: string;
   path: string;
   body?: unknown;
   rawBody?: string;
+  headers?: Record<string, string>;
 }): Promise<Response> {
-  return ownerCall({ method, path: `/owner/projects/${project.projectId}${path}`, token: project.token, body, rawBody });
+  return ownerCall({ method, path: `/owner/projects/${project.projectId}${path}`, token: project.token, body, rawBody, headers });
 }
