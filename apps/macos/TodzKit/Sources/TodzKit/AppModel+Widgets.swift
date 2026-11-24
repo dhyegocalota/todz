@@ -114,6 +114,7 @@ extension AppModel {
     func eraseWidgets() {
         try? widgetStore.erase()
         publishedWidgetSnapshot = nil
+        reloadWidgets()
     }
 
     func writeWidgetSnapshot(_ snapshot: WidgetSnapshot) {
