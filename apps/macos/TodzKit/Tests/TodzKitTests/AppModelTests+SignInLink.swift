@@ -195,6 +195,20 @@ extension AppModelTests {
         #expect(harness.model.phase == .ready)
     }
 
+    @Test func anIncomingLinkIsShownOnlyWhileTheOwnerIsNotSignedIn() async throws {
+        let harness = try harnessWithAPendingLink()
+        #expect(harness.model.showsIncomingSignInLink)
+        await harness.model.launch()
+        #expect(harness.model.showsIncomingSignInLink)
+    }
+
+    @Test func anIncomingLinkIsNotShownOnceTheOwnerIsSignedIn() async throws {
+        let harness = try harnessWithAPendingLink()
+        harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        #expect(harness.model.showsIncomingSignInLink == false)
+    }
+
     @Test func aRejectedLinkKeepsAnUnexpiredPendingLinkAndSaysTheLinkWasRejected() async throws {
         let harness = try harnessWithAPendingLink()
         await harness.model.launch()
@@ -241,6 +255,15 @@ extension AppModelTests {
         await harness.model.launch()
         #expect(harness.service.calls.first == .signIn(identityToken: linkToken, linkVerifier: firstVerifier, timeZone: harnessTimeZoneIdentifier))
         #expect(harness.model.phase == .ready)
+        #expect(harness.pendingLinks.link == nil)
+    }
+
+    @Test func aLinkHeldBeforeLaunchSurvivesAnExpiredStoredPendingLinkAndSaysSo() async throws {
+        let harness = try harnessWithAPendingLink(at: fixedInstant)
+        await harness.model.redeem(signInLink: try incomingLink())
+        await harness.model.launch()
+        #expect(harness.service.calls == [])
+        #expect(harness.model.signInError == .linkNotRequested)
         #expect(harness.pendingLinks.link == nil)
     }
 

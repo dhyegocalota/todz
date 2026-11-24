@@ -57,6 +57,10 @@ extension AppModel {
         heldSignInLink != nil
     }
 
+    public var showsIncomingSignInLink: Bool {
+        phase != .naming && phase != .ready
+    }
+
     public func useDifferentEmail() {
         discardPendingLink()
         signInError = nil
@@ -71,7 +75,7 @@ extension AppModel {
     func restorePendingLink() {
         guard let stored = try? pendingLinks.read() else { return }
         guard !isExpired(stored) else {
-            discardPendingLink()
+            try? pendingLinks.erase()
             return
         }
         pendingLink = stored
