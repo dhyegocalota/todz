@@ -84,3 +84,60 @@ The red runs that hit a `fatalError` stub crashed the test helper with signal co
 - Call `await model.takeWidgetRequests()` when the app becomes active and when the Darwin notification `WidgetNotification.requestsAdded` arrives. A launch and a sign-in already take them.
 - In the extension: read with `FileWidgetStore.readSnapshot()`, draw `WidgetContent.of(snapshot:family:on:)` with the day of the snapshot's time zone, and in `ToggleTaskIntent` call `WidgetToggle.setting(...)`, then `addRequest`, then `writeSnapshot`, then post `WidgetNotification.requestsAdded`.
 - Deviations to mirror in `plan.md`: the snapshot holds `open`, `pending` and `doneToday` instead of one `tasks` list (step 1), so the pending adds stay between the two sections after a row flips in place. The port gains `eraseSnapshot()` (step 3), so a 401 erases the snapshot and keeps the requests (step 7). `WidgetNotification` is the constant of ADR 0033, not a name built from a group identifier.
+
+## G2 app and extension (steps 8 to 11)
+
+### What changed
+
+- `apps/macos/project.yml`: the `TodzWidgets` app extension (`dev.todz.Todz.widgets`, WidgetKit, macOS 14), embedded in `Todz`, linked to `TodzKit`, ad hoc and sandboxed. Both targets carry `com.apple.security.temporary-exception.files.home-relative-path.read-write` for `/Library/Application Support/dev.todz.widgets/` and the Info.plist key `TodzSharedFolder`; the app's Info.plist gains the URL scheme `todz`. The `Todz` scheme builds the extension only as the app's embedded dependency, and only locally (the `macos` gate's build line is unchanged).
+- `apps/macos/Copy/`: the old `Todz/Copy`, compiled into both targets (O11), plus `WidgetCopy`, `WidgetSampleCopy` and `AccessibilityCopy.todayIn(workspace:)`.
+- `TodzKit`: `SharedFolder` (the folder from the Info.plist key under the account's home, from `getpwuid(getuid())`, and its `0700` creation), `UnavailableWidgetStore` (keeps nothing, so the app runs when the folder cannot be made), `WidgetLink` (`todz://today`, `todz://task/<project>/<number>`, both ways), `AppModel.follow(_:)` (Today with no task, or the task when it is in the current Today).
+- `TodzWidgets/`: the bundle, `TodayTimelineProvider` (entries now and at the next midnight of the snapshot's time zone, policy `.never`; the gallery gets the sample when there is no snapshot), the three kinds, the views of design.md §§ 1 to 5, and `ToggleTaskIntent`.
+- `Todz/`: `AppDelegate` now owns the model and the window state. It takes the widget requests on `applicationDidBecomeActive` and on the Darwin notification, calls `dayChanged()` on `NSCalendarDayChanged`, and receives the links in `application(_:open:)`. `MenuBarLabel`, alive for the whole process, follows the waiting link and opens the main window as the popover does.
+
+### How to run
+
+The server and the app as in the mac-sync briefing (`wrangler dev --var SIGN_IN_PROVIDER:fake` on 8787, then the `macos` gate's `xcodegen generate` and `xcodebuild build` lines). Launch without drawing on the owner's screen with `open -g -j apps/macos/build/Build/Products/Debug/Todz.app`; quit with `pkill -x Todz`.
+
+- The files: `~/Library/Application Support/dev.todz.widgets/widget-snapshot.json` and `requests/<UUID>.json` (`stat -f %Lp` prints `600`, the folder `700`). JSON keys are snake case; `at` is milliseconds since 1970.
+- A widget tap without a widget: write `requests/<UPPERCASE-UUID>.json` with `{"project_identifier": "<id>", "number": <n>, "state": "done", "at": <ms>}` (mode 600), then `notifyutil -p dev.todz.widgets.requests`.
+- The widgets on the desktop (they draw on the owner's screen, so ask him first): right-click the desktop, Edit Widgets, search "todz", add Today's Progress, Next Up and Today (medium and large).
+- The links: `open -g todz://today` and `open -g "todz://task/<project id>/<number>"` (these open the main window).
+
+The developer's hidden launch at `9f01710` (signed in against a seeded local server, two tasks due today): `widget-snapshot.json` appeared with mode `600` in a `700` folder, holding both tasks; `pluginkit -m -i dev.todz.Todz.widgets` printed `dev.todz.Todz.widgets(0.1.0)` at the build's `PlugIns/TodzWidgets.appex`; no consent alert (`orca … get-app-state --app com.apple.UserNotificationCenter` found no window). A request file for task 1 plus `notifyutil -p dev.todz.widgets.requests` emptied `requests/`, the server logged `POST …/tasks/complete 200`, and the snapshot moved task 1 to `done_today`. The owner's earlier session file was restored and the proof's cache and shared folder removed afterwards.
+
+The unit suite went from 417 tests to 442 in 31 suites, all green.
+
+### Red today, green after
+
+| Red commit | Test | Red failure printed | Green commit |
+|---|---|---|---|
+| `e0edf4f` | `SharedFolderTests` (8 tests) | `TodzKit/SharedFolder.swift:5: Fatal error: SharedFolder.of is not implemented` | `c96e6be` |
+| `e0edf4f` | `UnavailableWidgetStoreTests` (5 tests) | `TodzKit/UnavailableWidgetStore.swift:3: Fatal error: UnavailableWidgetStore is not implemented` | `c96e6be` |
+| `0c31a14` | `WidgetLinkTests` (5 tests) | `TodzKit/WidgetLink.swift:8: Fatal error: WidgetLink.init is not implemented` and `TodzKit/WidgetLink.swift:12: Fatal error: WidgetLink.url is not implemented` | `28d70ba` |
+| `0c31a14` | `AppModelTests` link tests (7 tests) | `TodzKit/AppModel+Links.swift:3: Fatal error: AppModel.follow is not implemented` | `28d70ba` |
+
+Views, the intent and the project wiring have no unit seam: `94f9343`, `b45a1b8` and `9f01710` carry the build output.
+
+### Hypotheses to attack
+
+1. Hypothesis: a placed widget reads the shared folder from inside its own sandbox with no consent prompt. Break it by placing each widget after a fresh build.
+2. Hypothesis: a checkbox flips its row in place at once, the counts move, a second tap reopens it, and with the app running the app takes the request within a second or two and moves the row into the done group. Break it by tapping fast, twice, and on the last open task.
+3. Hypothesis: with the app quit, a tapped row stays done until the next launch, which sends it once.
+4. Hypothesis: a snapshot of another day, a missing or unreadable snapshot, and a signed-out app all draw the prompt with no checkbox. Break it by editing `day`, writing `{` into the file, symlinking it, and signing out.
+5. Hypothesis: `todz://today` opens the main window on Today with no task; a task link opens it with that task and the inspector shown only when the task is in the current Today, else Today; both work with the main window closed and with the app quit; no link writes. Break it with another workspace's task, a task due tomorrow, a malformed link and a non-numeric number.
+6. Hypothesis: a forged `notifyutil -p dev.todz.widgets.requests` only triggers an intake.
+7. Hypothesis: the app writes the new day's snapshot at midnight (`NSCalendarDayChanged`), and the widgets' midnight entry shows the prompt at most until then.
+8. Hypothesis, not a pass or fail: how long the system takes to redraw the widgets of a background app after `reloadAllTimelines`.
+
+### Known gaps
+
+- ADR 0033's local risk until a team: any process the owner runs outside the sandbox can read today's titles in the shared folder and drop a request for one of today's tasks.
+- The extension's own read of the folder is unobserved until a widget is placed; only the app's write and intake were run.
+- The deep links, the widget views and the checkbox were never drawn: no widget was placed and no link was opened, so nothing drew on the owner's screen.
+- Deviations from the steps, for `plan.md`: ~~"the files move unchanged (they depend only on Foundation and TodzKit)" (O11)~~: two copy files used `ChangeActor+Line` and `IdentityFormat`, so both moved to `Copy` with `DayFormat`, which the widgets need for the overdue label. ~~Copy strings only in `Copy`~~: the intent's title and parameter titles are literals in `ToggleTaskIntent`, because the App Intents metadata processor refuses anything but a literal; they are never shown. The model and the window state moved from `TodzApp` to `AppDelegate`, so the delegate's notifications and links reach them; the window is opened by the menu bar label, the one view alive for the whole process, because only a view holds `openWindow`. The checkbox is beside the row's link, not inside it, so each is its own accessibility element. `AppModel+Links.swift` is a new `TodzKit` file beyond the two helpers the step named.
+- A Today holding only pending adds draws the ring's caption as "0 of 0 done".
+- The gallery shows the prompt, not the sample, when the stored snapshot is of another day.
+- No time zone change observer; `NSCalendarDayChanged` only.
+- `AGENTS.md`'s layout line for `apps/macos` still names only the `Todz` target over `TodzKit`; it is outside this lane's files.
+- The old placeholder folder `Application Support/Widgets` inside the app's container, if G1's builds ever wrote it, is not removed.
