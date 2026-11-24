@@ -1,6 +1,6 @@
 import Foundation
 
-private let linkScheme = "todz"
+let linkScheme = "todz"
 private let pathSeparator: Character = "/"
 private let taskLinkComponentCount = 2
 private let firstTaskNumber = 1

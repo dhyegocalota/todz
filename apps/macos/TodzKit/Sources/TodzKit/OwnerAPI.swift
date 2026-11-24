@@ -28,8 +28,6 @@ private func keysPath(_ projectIdentifier: String) -> String {
     "\(projectPath(projectIdentifier))/keys"
 }
 
-struct NotImplemented: Error {}
-
 public protocol OwnerService: Sendable {
     func signInMethod() async throws -> SignInMethod
     func requestSignInLink(email: String, challenge: String) async throws
@@ -73,15 +71,16 @@ public struct OwnerAPI: OwnerService {
     }
 
     public func signInMethod() async throws -> SignInMethod {
-        throw NotImplemented()
+        try await answer(SignInMethodAnswer.self, to: OwnerRequest(method: .get, path: signInMethodPath, session: nil)).method
     }
 
     public func requestSignInLink(email: String, challenge: String) async throws {
-        throw NotImplemented()
+        let body = SignInLinkRequestBody(email: email, linkChallenge: challenge)
+        _ = try await send(OwnerRequest(method: .post, path: signInLinksPath, session: nil, body: body))
     }
 
     public func signIn(identityToken: String, linkVerifier: String?, timeZone: String) async throws -> IssuedSession {
-        let body = SignInBody(identityToken: identityToken, linkVerifier: nil, timeZone: timeZone)
+        let body = SignInBody(identityToken: identityToken, linkVerifier: linkVerifier, timeZone: timeZone)
         return try await answer(IssuedSession.self, to: OwnerRequest(method: .post, path: sessionsPath, session: nil, body: body))
     }
 
