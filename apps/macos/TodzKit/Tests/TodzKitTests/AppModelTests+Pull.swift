@@ -26,6 +26,7 @@ extension AppModelTests {
         harness.service.unsuspend(.readChanges)
         harness.service.resume(.readChanges)
         _ = await first.value
+        _ = await triggers.last?.value
         #expect(triggers.count == 3)
         let inboxPulls = harness.service.calls.filter { $0.projectIdentifier == inboxIdentifier }
         #expect(
@@ -80,6 +81,23 @@ extension AppModelTests {
         #expect(harness.model.isRefreshing == false)
         harness.service.resume(.readChanges)
         _ = await pulling.value
+    }
+
+    @Test func aRefreshEndsWithItsOwnPullWhileAPullQueuedAfterItWaits() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 2)
+        await harness.signedIn()
+        harness.service.suspend(.readChanges)
+        let refreshing = Task { await harness.model.refresh() }
+        await harness.service.held(.readChanges)
+        harness.model.requestPull(projectIdentifier: inboxIdentifier)
+        harness.service.resume(.readChanges)
+        await harness.service.held(.readChanges)
+        #expect(harness.model.isRefreshing == false)
+        harness.service.unsuspend(.readChanges)
+        harness.service.resume(.readChanges)
+        await refreshing.value
     }
 
     @Test func aFailedPullOfProjectsWithRowsRaisesNoBanner() async throws {
