@@ -72,7 +72,7 @@ The Worker's default export is `fetch(request, env)`. It dispatches on the pathn
 | any other 2025-era `POST` whose session is unknown, expired or belongs to another key | 404, a JSON-RPC error `-32001`, the `session_not_found` copy `Session not found`, `id: null` |
 | any other 2025-era `POST` with a live session of this key | the SDK's stateless legacy answer |
 
-The body is parsed from `request.clone()` so the SDK still reads the original. A body that is not JSON or is a batch array is not an `initialize`. The two JSON-RPC codes are named constants at the top of `mcp-endpoint.ts`; the SDK exports `INVALID_PARAMS`. A key keeps at most `MCP_SESSIONS_PER_KEY_MAX` (20) sessions: storing a new one deletes, in the same D1 batch, the key's expired rows and its oldest rows beyond the cap, so a key holder cannot grow the shared directory (security review, 2026-11-23). The constant sits at the top of `mcp-sessions.ts`.
+The body is parsed from `request.clone()` so the SDK still reads the original. A body that is not JSON or is a batch array is not an `initialize`. The two JSON-RPC codes are named constants at the top of `mcp-endpoint.ts`; the SDK exports `INVALID_PARAMS`. A key keeps at most `MCP_SESSIONS_PER_KEY_MAX` (20) sessions: storing a new one deletes, in the same D1 batch, the key's expired rows and its oldest rows beyond the cap, never the session just stored, so a key holder cannot grow the shared directory (security review, 2026-11-23). The constant sits at the top of `mcp-sessions.ts`.
 
 A modern request whose envelope has no client name gets a tool error with the `client_unnamed` copy, `This client sent no name.`; it is never an internal string.
 
@@ -84,7 +84,7 @@ A modern request whose envelope has no client name gets a tool error with the `c
 
 | Table | Columns |
 |---|---|
-| `mcp_sessions` | `digest TEXT PRIMARY KEY CHECK (length(digest) = 64)`, `key_digest TEXT NOT NULL REFERENCES project_keys (digest)`, `client_name TEXT NOT NULL`, `created_at INTEGER NOT NULL`, `expires_at INTEGER NOT NULL`; `STRICT` |
+| `mcp_sessions` | `digest TEXT PRIMARY KEY CHECK (length(digest) = 64)`, `key_digest TEXT NOT NULL REFERENCES project_keys (digest)`, `client_name TEXT NOT NULL`, `created_at INTEGER NOT NULL`, `expires_at INTEGER NOT NULL`; `STRICT`; index `mcp_sessions_key_digest (key_digest, created_at)` for the cap's deletes |
 
 `directory.ts`, each function one named object with `directory: D1Database`:
 
