@@ -93,7 +93,7 @@ extension AppModelTests {
         harness.service.suspend(.readChanges)
         harness.signals.send(.opened, to: harness.watchKey(launchIdentifier))
         await harness.service.held(.readChanges, count: 2)
-        #expect(harness.service.calls.first == .listWorkspaces(session: harness.session))
+        #expect(Array(harness.service.routes().prefix(2)) == [.updateOwner, .listWorkspaces])
         #expect(harness.service.calls.contains(.readChanges(session: harness.session, projectIdentifier: launchIdentifier, cursor: 1)))
         harness.service.unsuspend(.readChanges)
         harness.service.resume(.readChanges)

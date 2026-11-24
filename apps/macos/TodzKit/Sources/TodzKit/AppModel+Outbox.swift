@@ -8,7 +8,7 @@ extension AppModel {
 
     func startSending() {
         sendWait?.cancel()
-        guard let session, sendingSession == nil else { return }
+        guard let session, isOwnerConfirmed, sendingSession == nil else { return }
         sendingSession = session
         sendLoop = Task { await sendOutbox(session: session) }
     }
