@@ -74,7 +74,7 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 Every rule below is a test in the named file. "The current session" is `AppModel.session` at the moment of the check; a task started under another session drops its result and writes nothing.
 
-- [ ] **Step 12:** red then green, the harness and the cached launch (`AppModelTests+Cache`):
+- [x] **Step 12 — evidence: red 269e7e8, green 5a495cb:** red then green, the harness and the cached launch (`AppModelTests+Cache`):
   - `InMemorySyncStore` (contents, every call recorded in order, any call can throw a set error), `FakeChangeSignals` (one controllable stream per `(session, projectIdentifier)`, records opens and cancellations), `HeldPause`; `AppModel(service:vault:store:signals:timeZone:now:pause:makeIdempotencyKey:)`; `TodzApp.swift` injects `FileSyncStore(folder: <Application Support>/Cache)`, `SocketChangeSignals(baseURL:)` and `{ try await Task.sleep(for: $0) }`.
   - Launch with a session and an `OwnerCache` whose active workspace has two projects with files: before any service call answers, `phase == .ready`, `taskViews` holds the cached rows, `projectLoads` is `.loaded` for both, the outbox from `readOutbox` is applied, and one watch per cached project is open. Then `updateOwner`, `listWorkspaces`, and one `readChanges` per project with its stored cursor; `writeProject` stores each new cursor; `writeOwner` follows `listWorkspaces`.
   - The cached launch with `listWorkspaces` unreachable keeps the cached window; the next `opened` from any watch runs `listWorkspaces`, sends the outbox and pulls that project.
@@ -83,12 +83,12 @@ Every rule below is a test in the named file. "The current session" is `AppModel
   - A launch with no session reads only the outbox (never `readOwner` or a project file) and sets `waitingChangeCount` for the sign-in line.
   - `activate` of a workspace reads its project files before its pull, so switching to a cached workspace shows its rows at once; a workspace without files shows the first-load state.
   - `writeOwner` runs after every change to `workspaces` or `activeWorkspaceIdentifier` (list, create, rename, switch); the owner identifier comes from `IssuedSession.owner` or `updateOwner`, and with neither known `writeOwner` is not called.
-- [ ] **Step 13:** red then green, owners and privacy (`AppModelTests+Owners`):
+- [x] **Step 13 — evidence: red ce28d60, green 93c6df1:** red then green, owners and privacy (`AppModelTests+Owners`):
   - Sign-in reads `readOwner()` before `vault.write`. When the cached owner differs from `IssuedSession.owner.identifier`, or there is no `owner.json`, or `readOwner` throws: the in-memory board, workspaces, outbox, cursors and pending selection are emptied, the watches cancelled, and `store.erase()` runs, all before `vault.write` and before any send. If `erase` throws, the sign-in fails with `SignInError.unexpected`, `session` stays `nil` and the vault is untouched.
   - Sign-in as the cache's owner loads `owner.json`, the project files and the outbox, goes `.ready` as a cached launch does, then sends the outbox and pulls.
   - `signOut()` cancels the watches and any send, then `store.erase()`, then `vault.erase()`, then `SignOut`; no store write happens after it (a held pull answering later writes nothing).
   - A 401 anywhere → `phase == .signedOut(notice: .sessionEnded)`, the store is not erased, every watch is cancelled, the send loop exits, `waitingChangeCount` stays.
-- [ ] **Step 14:** red then green, the outbox (`AppModelTests+Outbox`):
+- [x] **Step 14 — evidence: red 3859ae1, green 39f2c63:** red then green, the outbox (`AppModelTests+Outbox`):
   - `complete`, `reopen`, `updateTitle`, `updateNotes`, `updateDueDate`, `move` and `addTask` append to the outbox and call `store.writeOutbox` before any service call; `taskViews` shows the change while the service call is held; `TextCheck` still refuses a title or notes over the limit inline, before anything is queued.
   - One send at a time, oldest first. The send loop carries the session it started with and exits when `session` changes; its flag is cleared on exit; a sign-in, an `opened`, a successful pull and a new write start it when it is not running.
   - An answer always removes its head and writes the outbox. The board takes the record when its project belongs to the active workspace; otherwise the project's file is read, the record merged, and the file written back with its stored cursor unchanged. A switch during a held send therefore removes the head and leaves the other project's file with all its tasks.
@@ -105,20 +105,20 @@ Every rule below is a test in the named file. "The current session" is `AppModel
     A wait is cut short by an `opened`, a successful pull, a new write or `refresh()`.
   - Refusals in one flush (from the first send until the outbox is empty or the loop stops) raise one banner `.changesRefused(count:)` with the total (two refusals → one banner with 2).
   - Tests: each row of the table; three `unexpected` with `HeldPause` released twice between them → dropped; `unreachable` then an `opened` → sent at once; a 401 mid-flush keeps the rest.
-- [ ] **Step 15:** red then green, pulls (`AppModelTests+Pull`):
+- [x] **Step 15 — evidence: red 5423899, green 6146b42:** red then green, pulls (`AppModelTests+Pull`):
   - Every pull (launch, activate, `refresh()`, `opened`, `changed`, refused-change, sign-in) goes through `pullProject(identifier:)`: one in flight per project, at most one queued; three triggers during one pull → two pulls in all, the second from the first's stored cursor.
   - A pull merges `ProjectChanges.tasks` into the board, or resets the project first when `isFromStart`; stores the cursor in the board and `writeProject`; a pull answered after a switch, a sign-out or a 401 writes nothing.
   - `isRefreshing` is true only while a `refresh()` the owner started sends the outbox and pulls; background pulls leave it false.
   - With cached rows, a failed pull raises no banner and sets `syncStatus` offline; the shell's banners stay for projects with nothing cached (`design.md` § 1.6).
-- [ ] **Step 16:** red then green, watches (`AppModelTests+Watch`):
+- [x] **Step 16 — evidence: red fa5688f, green a1a3867:** red then green, watches (`AppModelTests+Watch`):
   - After any change to the active workspace's projects (activate, `createProject`, a reload), watches are matched to the list: missing ones open, extra ones are cancelled, the rest are kept; a switch cancels all of the old workspace's.
   - A project that leaves the active workspace's list has its waiting changes removed with `droppingChanges(projectIdentifier:)`, counted in the refused banner.
   - `changed` → pull that project; `opened` → reset its attempt, start the send loop, pull that project.
   - A watch that finishes `unreachable` or `notFound` reopens after `pause(ReconnectDelay.after(attempt:))`, the attempt growing per project (1, 2, 4 seconds on three failures; 1 again after an `opened`); `notFound` also asks for a workspace reload, coalesced to one in flight.
   - `unauthorized` ends the session only when the watch's session is current; a stale watch's 401 after a new sign-in does nothing.
   - A watch stream that ends without an error was cancelled (G1b, step 11: a cancelled `AsyncThrowingStream` ends, it cannot throw): it ends the loop with no reopen.
-- [ ] **Step 17:** red then green, the cache failing (`AppModelTests+Cache`): a `writeProject`, `writeOwner` or `writeOutbox` that throws raises `.cacheNotSaved` once per launch and the model goes on; `readProject` throwing → `eraseProject` and a pull from 0; `readOwner` throwing at launch → `erase` and the shell's loading path; `readOutbox` throwing or not decoding → an empty outbox written and `.waitingChangesLost` raised once.
-- [ ] **Step 18:** red then green, the status (`AppModelTests+Pull`): `syncStatus` is `.online` after any answer from the server and `.offline(waiting: n)` after a send or pull that ended unreachable or transient; `n` follows the outbox's count.
+- [x] **Step 17 — evidence: red ea9768a, green 658762c:** red then green, the cache failing (`AppModelTests+Cache`): a `writeProject`, `writeOwner` or `writeOutbox` that throws raises `.cacheNotSaved` once per launch and the model goes on; `readProject` throwing → `eraseProject` and a pull from 0; `readOwner` throwing at launch → `erase` and the shell's loading path; `readOutbox` throwing or not decoding → an empty outbox written and `.waitingChangesLost` raised once.
+- [x] **Step 18 — evidence: red f39d02a, green 965585f:** red then green, the status (`AppModelTests+Pull`): `syncStatus` is `.online` after any answer from the server and `.offline(waiting: n)` after a send or pull that ended unreachable or transient; `n` follows the outbox's count.
 
 ### G3 app
 
