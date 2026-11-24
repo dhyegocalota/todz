@@ -9,7 +9,10 @@ import Observation
     public internal(set) var workspaces: [Workspace] = []
     public internal(set) var activeWorkspaceIdentifier: String?
     public var selectedItem: SidebarItem = .inbox {
-        didSet { waitingLink = nil }
+        didSet {
+            waitingLink = nil
+            followKeyScreen(from: oldValue)
+        }
     }
 
     public var selectedTask: TaskKey? {
@@ -265,6 +268,7 @@ import Observation
         isOffline = false
         workspaces = []
         activeWorkspaceIdentifier = nil
+        forgetKeys()
         selectedItem = .inbox
         selectedTask = nil
         board = TaskBoard()
