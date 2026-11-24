@@ -199,10 +199,10 @@ describe('brand assets', () => {
   test('every layer image is a byte copy of its brand source at the squircle view box', () => {
     const layers = iconLayers();
     expect(layers).not.toHaveLength(0);
+    const differing = layers.filter((layer) => !readFile(iconLayerAsset(layer)).equals(readFile(brandLayerSource(layer.name))));
+    expect(differing.map(iconLayerAsset)).toEqual([]);
     layers.forEach((layer) => {
-      const image = readFile(iconLayerAsset(layer));
-      const svg = image.toString('utf8');
-      expect(image.equals(readFile(brandLayerSource(layer.name)))).toBe(true);
+      const svg = readFile(iconLayerAsset(layer)).toString('utf8');
       expect(svg).toContain(`viewBox="${ICON_LAYER_VIEW_BOX}"`);
       expect(svg).toContain(`width="${ICON_LAYER_PIXELS}"`);
       expect(svg).toContain(`height="${ICON_LAYER_PIXELS}"`);
