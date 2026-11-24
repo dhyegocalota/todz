@@ -66,7 +66,7 @@ None yet.
 
 ## Adversarial review
 
-- [ ] Plan review (2026-11-24, before building): 24 findings (5 CRITICAL, 11 IMPORTANT, 8 MINOR), all answered in `plan.md`, `spec.md`, ADRs 0027 to 0029, `design.md` and this file before any code; its three refutations were the overlay order, resent patches (now stated in ADR 0028 § 5) and the cross-owner outbox
+- [x] Plan review (2026-11-24, before building): 24 findings (5 CRITICAL, 11 IMPORTANT, 8 MINOR), all answered in `plan.md`, `spec.md`, ADRs 0027 to 0029, `design.md` and this file before any code; its three refutations were the overlay order, resent patches (now stated in ADR 0028 § 5) and the cross-owner outbox — evidence: `5ad0326` (the answers), first code commit `e8cbbad` after it
 - [ ] The three claims most likely to be wrong, attacked by the code reviewer, with the outcome: (1) the screen and the server end in the same order after a sequence of offline changes of every kind; (2) no add is duplicated after a lost answer and a relaunch, and a resent patch only re-applies its own field; (3) another owner's sign-in never shows or sends the first owner's data, even across a crash between the erase and the new session
 
 ## Coverage honesty
