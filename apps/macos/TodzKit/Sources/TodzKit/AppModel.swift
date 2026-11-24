@@ -32,6 +32,7 @@ import Observation
     public internal(set) var issuedKey: IssuedKey?
     public internal(set) var isIssuing = false
     public internal(set) var issueFailure: KeyFailure?
+    public internal(set) var keyReloadFailure: KeyFailure?
     public internal(set) var revokingKeyIdentifiers: Set<String> = []
     public internal(set) var failedRevokeIdentifiers: Set<String> = []
     var retry: (@MainActor () async -> Void)?

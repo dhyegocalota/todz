@@ -36,6 +36,7 @@ private let inboxTask = TaskKey(projectIdentifier: inboxIdentifier, number: 1)
     #expect(model.keys == nil)
     #expect(model.issuedKey == nil)
     #expect(model.issueFailure == nil)
+    #expect(model.keyReloadFailure == nil)
 }
 
 extension AppModelTests {
@@ -354,6 +355,47 @@ extension AppModelTests {
         harness.service.resume(.listKeys)
         await reloading.value
         #expect(harness.model.keys == .loaded([launchKey]))
+    }
+
+    @Test(arguments: [(OwnerAPIError.unreachable, KeyFailure.unreachable), (.unexpected(status: 500), .unexpected)])
+    func aFailedReloadKeepsTheListedKeysUnderTheFailure(failure: OwnerAPIError, expected: KeyFailure) async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.service.failures[.listKeys] = failure
+        await harness.model.loadKeys()
+        #expect(harness.model.keys == .loaded([launchKey]))
+        #expect(harness.model.keyReloadFailure == expected)
+        harness.service.failures[.listKeys] = nil
+        await harness.model.loadKeys()
+        #expect(harness.model.keyReloadFailure == nil)
+    }
+
+    @Test func choosingAnotherProjectForgetsTheReloadFailure() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.service.failures[.listKeys] = .unreachable
+        await harness.model.loadKeys()
+        harness.service.failures[.listKeys] = nil
+        harness.model.showKeys(projectIdentifier: inboxIdentifier)
+        await harness.model.keyLoading?.value
+        #expect(harness.model.keyReloadFailure == nil)
+        #expect(harness.model.keys == .loaded([]))
+    }
+
+    @Test func refreshingReloadsTheShownKeys() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        let otherKey = OwnerFixtures.projectKey(identifier: "other-key")
+        harness.service.keysOfProject[launchIdentifier] = [launchKey, otherKey]
+        await harness.model.refresh()
+        #expect(harness.model.keys == .loaded([launchKey, otherKey]))
+    }
+
+    @Test func refreshingAwayFromTheKeyScreenListsNoKeys() async throws {
+        let harness = try await keyHarness()
+        harness.service.calls = []
+        await harness.model.refresh()
+        #expect(harness.service.routes().contains(.listKeys) == false)
     }
 
     @Test func aLateListForAProjectNoLongerShownIsDropped() async throws {
