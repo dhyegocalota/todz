@@ -139,6 +139,22 @@ extension AppModelTests {
         harness.pause.release()
     }
 
+    @Test func anAnswerBetweenTwoWatchFailuresKeepsTheModelOnline() async throws {
+        let harness = try await watchHarness()
+        let inbox = harness.watchKey(inboxIdentifier)
+        harness.signals.fail(inbox, with: .unreachable)
+        await harness.pause.started()
+        #expect(harness.model.syncStatus == .offline(waiting: 0))
+        await harness.model.refresh()
+        #expect(harness.model.syncStatus == .online)
+        harness.pause.release()
+        await harness.signals.opened(inbox, count: 2)
+        harness.signals.fail(inbox, with: .unreachable)
+        await harness.pause.started(count: 2)
+        #expect(harness.model.syncStatus == .online)
+        harness.pause.release()
+    }
+
     @Test func aStaleWatchsFailureLeavesTheNewSessionOnline() async throws {
         let harness = try await watchHarness()
         harness.signals.fail(harness.watchKey(inboxIdentifier), with: .unreachable)
