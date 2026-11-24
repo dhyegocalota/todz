@@ -5,6 +5,8 @@ import type { ProjectStore } from './project-store';
 
 export type SessionOwner = { readonly ownerId: string } & { readonly sessionOwner: unique symbol };
 
+export type KeyProject = { project: DurableObjectStub<ProjectStore>; keyDigest: string; timeZone: string };
+
 const resolvedOwners = new WeakSet<SessionOwner>();
 
 function isBlankSecret(secret: unknown): boolean {
@@ -15,11 +17,12 @@ function openProject({ env, projectId }: { env: Env; projectId: string }): Durab
   return env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(projectId));
 }
 
-export async function openKeyProject({ env, secret }: { env: Env; secret: string }): Promise<DurableObjectStub<ProjectStore> | null> {
+export async function openKeyProject({ env, secret }: { env: Env; secret: string }): Promise<KeyProject | null> {
   if (isBlankSecret(secret)) return null;
-  const projectId = await findKeyProject({ directory: env.DIRECTORY, digest: await digestCredential(secret) });
-  if (projectId === null) return null;
-  return openProject({ env, projectId });
+  const keyDigest = await digestCredential(secret);
+  const keyProjectRecord = await findKeyProject({ directory: env.DIRECTORY, digest: keyDigest });
+  if (keyProjectRecord === null) return null;
+  return { project: openProject({ env, projectId: keyProjectRecord.projectId }), keyDigest, timeZone: keyProjectRecord.timeZone };
 }
 
 export async function resolveSessionOwner({ env, secret, now }: { env: Env; secret: string; now: number }): Promise<SessionOwner | null> {

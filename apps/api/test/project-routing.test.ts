@@ -8,6 +8,7 @@ import { AGENT_ACTOR, CLOCK_NOW, TODAY, draftOf, openTasksFilter, unwrap } from 
 
 const EMPTY_SECRET = '';
 const BLANK_SECRET = '   ';
+const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
 
 function newSecret(): string {
   return crypto.randomUUID();
@@ -19,13 +20,23 @@ describe('openKeyProject', () => {
     const projectId = await seedProject({ ownerId });
     const secret = newSecret();
     await seedKey({ projectId, secret });
-    const keyStub = await openKeyProject({ env, secret });
-    if (keyStub === null) throw new Error('the key should open its project');
-    unwrap(await keyStub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Through the key')] }));
+    const keyProject = await openKeyProject({ env, secret });
+    if (keyProject === null) throw new Error('the key should open its project');
+    unwrap(await keyProject.project.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Through the key')] }));
     const ownerStub = await openOwnedProject({ env, owner: await seedLiveOwner({ ownerId }), projectId });
     if (ownerStub === null) throw new Error('the owner should open the project');
     const listed = unwrap(await ownerStub.listTasks({ today: TODAY, filter: openTasksFilter() }));
     expect(listed.tasks.map((task) => task.title)).toEqual(['Through the key']);
+  });
+
+  test('a key names its digest and its owner time zone', async () => {
+    const projectId = await seedProject({ ownerId: await seedOwner(SAO_PAULO_TIME_ZONE) });
+    const secret = newSecret();
+    await seedKey({ projectId, secret });
+    expect(await openKeyProject({ env, secret })).toMatchObject({
+      keyDigest: await digestCredential(secret),
+      timeZone: SAO_PAULO_TIME_ZONE,
+    });
   });
 
   test('an unknown secret and a revoked key open nothing', async () => {

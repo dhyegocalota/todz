@@ -3,7 +3,8 @@ import { describe, expect, test } from 'vitest';
 
 const WORKER_ORIGIN = 'https://api.todz.test';
 const NOT_FOUND_STATUS = 404;
-const DIRECTORY_TABLES = ['owners', 'project_keys', 'projects', 'sessions', 'workspaces'];
+const UNAUTHORIZED_STATUS = 401;
+const DIRECTORY_TABLES = ['mcp_sessions', 'owners', 'project_keys', 'projects', 'sessions', 'workspaces'];
 const TASK_COLUMNS = ['title', 'notes', 'note', 'due_date', 'order_key'];
 
 type TableRow = { name: string };
@@ -23,15 +24,15 @@ describe('the worker', () => {
     expect(await response.text()).toBe('');
   });
 
-  test('POST /mcp with a bearer header answers 404 with an empty body', async () => {
+  test('POST /mcp with an unknown bearer key answers 401 with an empty body', async () => {
     const response = await exports.default.fetch(`${WORKER_ORIGIN}/mcp`, { method: 'POST', headers: { Authorization: 'Bearer secret' } });
-    expect(response.status).toBe(NOT_FOUND_STATUS);
+    expect(response.status).toBe(UNAUTHORIZED_STATUS);
     expect(await response.text()).toBe('');
   });
 });
 
 describe('the directory', () => {
-  test('lists exactly the five directory tables', async () => {
+  test('lists exactly the six directory tables', async () => {
     expect(await directoryTables()).toEqual(DIRECTORY_TABLES);
   });
 

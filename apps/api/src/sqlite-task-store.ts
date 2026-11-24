@@ -1,5 +1,6 @@
 import { type Actor, type HistoryEntry, OWNER_ACTOR, type Task, type TaskStore, parseCalendarDate } from '@todz/core';
 import { ActorKind, HistoryAction, TaskField, TaskState } from '@todz/types';
+import { parsedJson } from './parsed-json';
 
 type TaskRow = {
   number: number;
@@ -80,14 +81,6 @@ function dueDateOf({ raw, taskNumber }: { raw: string | null; taskNumber: number
   const dueDate = parseCalendarDate(raw);
   if (dueDate === null) throw invalidColumn({ column: 'tasks.due_date', taskNumber });
   return dueDate;
-}
-
-function parsedJson(raw: string): unknown {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
 }
 
 function fieldsOf({ raw, taskNumber }: { raw: string; taskNumber: number }): TaskField[] {

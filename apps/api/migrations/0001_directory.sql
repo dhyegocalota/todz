@@ -1,5 +1,6 @@
 CREATE TABLE owners (
   id TEXT PRIMARY KEY,
+  time_zone TEXT NOT NULL CHECK (time_zone <> ''),
   created_at INTEGER NOT NULL
 ) STRICT;
 

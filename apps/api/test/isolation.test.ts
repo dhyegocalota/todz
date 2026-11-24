@@ -27,9 +27,9 @@ function newSecret(): string {
 }
 
 async function openKey(secret: string): Promise<Stub> {
-  const stub = await openKeyProject({ env, secret });
-  if (stub === null) throw new Error('the key should open a project');
-  return stub;
+  const keyProject = await openKeyProject({ env, secret });
+  if (keyProject === null) throw new Error('the key should open a project');
+  return keyProject.project;
 }
 
 async function seedWorld(): Promise<World> {

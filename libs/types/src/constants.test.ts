@@ -3,15 +3,19 @@ import {
   ABSENT_INDEX,
   HOURS_PER_DAY,
   LAST_INDEX,
+  LIST_LIMIT_DEFAULT,
+  LIST_LIMIT_MAX,
   MILLISECONDS_PER_DAY,
   MILLISECONDS_PER_HOUR,
   MILLISECONDS_PER_MINUTE,
   MILLISECONDS_PER_SECOND,
+  PROJECT_KEY_PREFIX,
 } from './index';
 
 const MILLISECONDS_IN_A_DAY = 86_400_000;
 const MILLISECONDS_IN_AN_HOUR = 3_600_000;
 const MILLISECONDS_IN_A_MINUTE = 60_000;
+const DEFAULT_LIST_SIZE = 20;
 
 describe('index constants', () => {
   test('an absent index and the last index are both -1 (pin)', () => {
@@ -38,5 +42,16 @@ describe('time constants', () => {
     expect(MILLISECONDS_PER_MINUTE % MILLISECONDS_PER_SECOND).toBe(0);
     expect(MILLISECONDS_PER_HOUR % MILLISECONDS_PER_MINUTE).toBe(0);
     expect(MILLISECONDS_PER_DAY % MILLISECONDS_PER_HOUR).toBe(0);
+  });
+});
+
+describe('mcp constants', () => {
+  test('a project key starts with todz_ (pin)', () => {
+    expect(PROJECT_KEY_PREFIX).toBe('todz_');
+  });
+
+  test('a list shows twenty tasks by default, within the list limit (pin)', () => {
+    expect(LIST_LIMIT_DEFAULT).toBe(DEFAULT_LIST_SIZE);
+    expect(LIST_LIMIT_DEFAULT).toBeLessThanOrEqual(LIST_LIMIT_MAX);
   });
 });

@@ -1,12 +1,13 @@
 import { MILLISECONDS_PER_HOUR } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { digestCredential } from '../src/credential-digest';
+import { issueProjectKey } from '../src/project-keys';
 import { type SessionOwner, resolveSessionOwner } from '../src/project-routing';
 import { CLOCK_NOW } from './task-fixtures';
 
-export async function seedOwner(): Promise<string> {
+export async function seedOwner(timeZone = 'UTC'): Promise<string> {
   const ownerId = crypto.randomUUID();
-  await env.DIRECTORY.prepare('INSERT INTO owners (id, created_at) VALUES (?, ?)').bind(ownerId, CLOCK_NOW).run();
+  await env.DIRECTORY.prepare('INSERT INTO owners (id, time_zone, created_at) VALUES (?, ?, ?)').bind(ownerId, timeZone, CLOCK_NOW).run();
   return ownerId;
 }
 
@@ -42,6 +43,18 @@ export async function seedKey({
   const digest = await digestCredential(secret);
   await env.DIRECTORY.prepare('INSERT INTO project_keys (digest, project_id, created_at, revoked_at) VALUES (?, ?, ?, ?)')
     .bind(digest, projectId, CLOCK_NOW, revokedAt)
+    .run();
+}
+
+export async function seedIssuedKey(timeZone = 'UTC'): Promise<{ projectId: string; key: string }> {
+  const projectId = await seedProject({ ownerId: await seedOwner(timeZone) });
+  const key = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+  return { projectId, key };
+}
+
+export async function revokeKey(key: string): Promise<void> {
+  await env.DIRECTORY.prepare('UPDATE project_keys SET revoked_at = ? WHERE digest = ?')
+    .bind(CLOCK_NOW, await digestCredential(key))
     .run();
 }
 
