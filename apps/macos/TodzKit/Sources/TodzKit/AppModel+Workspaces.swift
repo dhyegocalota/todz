@@ -37,7 +37,10 @@ extension AppModel {
             try await service.createProject(session: $0, workspaceIdentifier: workspace.identifier, name: name)
         }
         guard let created else { return nil }
-        replaceProjects(workspaceIdentifier: workspace.identifier) { $0 + [created] }
+        replaceProjects(workspaceIdentifier: workspace.identifier) { projects in
+            let isAlreadyListed = projects.contains { $0.identifier == created.identifier }
+            return isAlreadyListed ? projects : projects + [created]
+        }
         guard activeWorkspaceIdentifier == workspace.identifier else { return created }
         projectLoads[created.identifier] = .loaded
         selectedItem = .project(identifier: created.identifier)
