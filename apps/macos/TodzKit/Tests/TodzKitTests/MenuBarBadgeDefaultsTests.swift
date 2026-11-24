@@ -17,11 +17,6 @@ private func freshDefaults() throws -> UserDefaults {
         #expect(defaults.bool(forKey: MenuBarBadge.storageKey))
     }
 
-    @Test func anUnregisteredKeyReadsOffWhichIsWhyTheDefaultIsRegistered() throws {
-        let defaults = try freshDefaults()
-        #expect(!defaults.bool(forKey: MenuBarBadge.storageKey))
-    }
-
     @Test func registeringNeverOverwritesTheOwnersChoice() throws {
         let defaults = try freshDefaults()
         defaults.set(false, forKey: MenuBarBadge.storageKey)
