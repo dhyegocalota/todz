@@ -7,6 +7,7 @@ const README_FILE = 'README.md';
 const SCREENSHOTS_FOLDER = 'docs/screenshots';
 const FEATURES_FOLDER = 'docs/features';
 const WALK_HEADING = '## A walk through todz';
+const HERO_SCREENSHOT = 'docs/screenshots/mac-app-shell/04-inspector-notes-and-history.png';
 const PNG_EXTENSION = '.png';
 const SCREENSHOT_PATH_PATTERN = /^docs\/screenshots\/(?<slug>[^/]+)\/\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.png$/;
 const WIDTH_OFFSET = 16;
@@ -47,7 +48,14 @@ describe('product screenshots', () => {
 
   test('the root README shows every screenshot', () => {
     const readme = readRepositoryFile(README_FILE);
-    expect(SCREENSHOTS.filter((path) => !readme.includes(`](${posix.normalize(path)})`))).toEqual([]);
+    expect(SCREENSHOTS.filter((path) => !readme.includes(posix.normalize(path)))).toEqual([]);
+  });
+
+  test('the root README opens with the hero screenshot above the walk section', () => {
+    const readme = readRepositoryFile(README_FILE);
+    const heroIndex = readme.indexOf(`<img src="${HERO_SCREENSHOT}"`);
+    expect(heroIndex).toBeGreaterThanOrEqual(0);
+    expect(heroIndex).toBeLessThan(readme.indexOf(WALK_HEADING));
   });
 
   test('the root README has the walk section', () => {
