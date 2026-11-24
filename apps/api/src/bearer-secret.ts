@@ -1,4 +1,5 @@
-const UNAUTHORIZED_STATUS = 401;
+import { HttpStatus } from './http-status';
+
 const BEARER_PATTERN = /^Bearer (.+)$/i;
 const BEARER_SECRET_GROUP = 1;
 const BEARER_CHALLENGE = 'Bearer';
@@ -12,5 +13,5 @@ export function bearerSecret(request: Request): string | null {
 }
 
 export function unauthorized(): Response {
-  return new Response(null, { status: UNAUTHORIZED_STATUS, headers: { 'WWW-Authenticate': BEARER_CHALLENGE } });
+  return new Response(null, { status: HttpStatus.Unauthorized, headers: { 'WWW-Authenticate': BEARER_CHALLENGE } });
 }

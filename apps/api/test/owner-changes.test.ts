@@ -9,7 +9,6 @@ import { type OwnedProject, createOwnedProject, issueMcpKey, ownerCall, projectC
 
 const WEBSOCKET_UPGRADE = 'websocket';
 const CHANGED = 'changed';
-const SWITCHING_PROTOCOLS_STATUS = 101;
 const FAR_AHEAD_CURSOR = 9;
 const UNSAFE_CURSOR = '9007199254740992';
 const INVALID_REQUEST = { error: 'invalid_request' };
@@ -181,7 +180,7 @@ describe('GET /owner/projects/:projectId/socket', () => {
   test('answers 101 with a live socket when the upgrade header is present', async () => {
     const project = await createOwnedProject();
     const response = await projectCall({ project, method: 'GET', path: '/socket', headers: { Upgrade: WEBSOCKET_UPGRADE } });
-    expect(response.status).toBe(SWITCHING_PROTOCOLS_STATUS);
+    expect(response.status).toBe(HttpStatus.SwitchingProtocols);
     expect(response.webSocket).not.toBeNull();
     response.webSocket?.accept();
   });

@@ -256,7 +256,7 @@ describe('POST /owner/sessions', () => {
     expect(await response.json()).toEqual(expected);
   });
 
-  test('two first sign-ins of one identity racing make one owner and one identity row', async () => {
+  test('two concurrent first sign-ins of one identity make one owner and one identity row (smoke test, not the race)', async () => {
     const identityToken = crypto.randomUUID();
     const owners = await ownerCount();
     const [first, second] = await Promise.all([

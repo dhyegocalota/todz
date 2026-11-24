@@ -8,6 +8,7 @@ import { historyEntryJson, taskJson } from './owner-json';
 import { ownedProjectOf } from './owner-project';
 import { type SessionContext, parsedBody, routeParam } from './owner-request';
 import { RouteParam } from './owner-routes';
+import { fieldPatchOf } from './task-field-patch';
 
 const TaskNumberSchema = z.number().int().positive();
 
@@ -28,12 +29,7 @@ const CompleteBodySchema = z.object({ numbers: z.array(TaskNumberSchema), note: 
 const ReopenBodySchema = z.object({ numbers: z.array(TaskNumberSchema) });
 
 function patchOf(body: z.output<typeof UpdateBodySchema>): TaskPatch {
-  return {
-    ...('title' in body && { title: body.title }),
-    ...('notes' in body && { notes: body.notes }),
-    ...('due_date' in body && { dueDate: body.due_date }),
-    ...('placement' in body && { placement: body.placement }),
-  };
+  return { ...fieldPatchOf(body), ...('placement' in body && { placement: body.placement }) };
 }
 
 function taskNumberOf(context: SessionContext): number {

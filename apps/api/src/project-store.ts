@@ -22,9 +22,10 @@ import {
   reopenTasks,
   updateTask,
 } from '@todz/core';
-import { ActorKind } from '@todz/types';
+import { ActorKind, LAST_INDEX } from '@todz/types';
 import { DurableObject } from 'cloudflare:workers';
 import type { Env } from './env';
+import { HttpStatus } from './http-status';
 import { applyProjectSchema } from './project-schema';
 import { ProjectFailureKind, type ProjectResult, resultOf } from './project-result';
 import { SqliteTaskStore } from './sqlite-task-store';
@@ -33,8 +34,6 @@ export const CHANGE_PAGE_SIZE = 100;
 const NO_CHANGE_NUMBER = 0;
 const CHANGED_MESSAGE = 'changed';
 const WEBSOCKET_UPGRADE = 'websocket';
-const UPGRADE_REQUIRED_STATUS = 426;
-const SWITCHING_PROTOCOLS_STATUS = 101;
 
 export type TaskChanges = { tasks: Task[]; cursor: number; hasMore: boolean };
 
@@ -95,10 +94,10 @@ export class ProjectStore extends DurableObject<Env> {
 
   fetch(request: Request): Response {
     const isSocketUpgrade = request.headers.get('Upgrade')?.toLowerCase() === WEBSOCKET_UPGRADE;
-    if (!isSocketUpgrade) return new Response(null, { status: UPGRADE_REQUIRED_STATUS, headers: { Upgrade: WEBSOCKET_UPGRADE } });
+    if (!isSocketUpgrade) return new Response(null, { status: HttpStatus.UpgradeRequired, headers: { Upgrade: WEBSOCKET_UPGRADE } });
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server);
-    return new Response(null, { status: SWITCHING_PROTOCOLS_STATUS, webSocket: client });
+    return new Response(null, { status: HttpStatus.SwitchingProtocols, webSocket: client });
   }
 
   webSocketMessage(): void {}
@@ -110,7 +109,7 @@ export class ProjectStore extends DurableObject<Env> {
     if (isCursorAhead) return { ok: false, failure: { kind: ProjectFailureKind.CursorAhead } };
     const changes = this.store.listChangesSince({ cursor, limit: CHANGE_PAGE_SIZE + 1 });
     const page = changes.slice(0, CHANGE_PAGE_SIZE);
-    const lastOnPage = page.at(-1);
+    const lastOnPage = page.at(LAST_INDEX);
     const nextCursor = lastOnPage === undefined ? cursor : lastOnPage.changeNumber;
     return { ok: true, value: { tasks: page.map(({ task }) => task), cursor: nextCursor, hasMore: changes.length > CHANGE_PAGE_SIZE } };
   }

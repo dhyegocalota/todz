@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   ABSENT_INDEX,
+  FORMATTER_LOCALE,
   HOURS_PER_DAY,
   LAST_INDEX,
   LIST_LIMIT_DEFAULT,
@@ -21,6 +22,12 @@ describe('index constants', () => {
   test('an absent index and the last index are both -1 (pin)', () => {
     expect(ABSENT_INDEX).toBe(-1);
     expect(LAST_INDEX).toBe(-1);
+  });
+});
+
+describe('formatting constants', () => {
+  test('dates and zones are formatted in en-US (pin)', () => {
+    expect(FORMATTER_LOCALE).toBe('en-US');
   });
 });
 

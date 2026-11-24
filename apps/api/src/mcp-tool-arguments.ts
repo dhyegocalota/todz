@@ -2,6 +2,7 @@ import { type Placement, type TaskDraft, type TaskPatch, parseShortId } from '@t
 import { DueWindow, LIST_LIMIT_DEFAULT, TaskPlacement, TaskState } from '@todz/types';
 import { z } from 'zod';
 import { MCP_COPY } from './mcp-copy';
+import { fieldPatchOf } from './task-field-patch';
 
 export const AddArgumentsSchema = z.object({
   tasks: z.array(
@@ -61,11 +62,7 @@ export function taskNumbers(ids: string[]): number[] | null {
 }
 
 export function patchOf(args: UpdateArguments): TaskPatch | null {
-  const fields: TaskPatch = {
-    ...('title' in args && { title: args.title }),
-    ...('notes' in args && { notes: args.notes }),
-    ...('due_date' in args && { dueDate: args.due_date }),
-  };
+  const fields = fieldPatchOf(args);
   if (args.placement === undefined) return fields;
   const placement = placementOf(args.placement);
   if (placement === null) return null;
