@@ -8,6 +8,7 @@ import { HttpStatus } from './http-status';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
 import { type OwnerContext, parsedPublicBody } from './owner-request';
 import { SIGN_IN_MAIL_SUBJECT, signInMailText } from './sign-in-mail-copy';
+import { SIGN_IN_PAGE_PATH } from './sign-in-page';
 import { SignInProviderKind, signInKindOf } from './sign-in-provider';
 
 const SIGN_IN_LINK_LIFETIME_MINUTES = 15;
@@ -16,7 +17,6 @@ const SIGN_IN_LINKS_PER_ADDRESS_MAX = 5;
 const ADDRESS_LENGTH_MAX = 254;
 const ADDRESS_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
-const SIGN_IN_PAGE_PATH = '/sign-in';
 
 const RequestBodySchema = z.object({ email: z.string(), link_challenge: z.string() });
 
@@ -38,14 +38,15 @@ function normalizedAddress(email: string): string | null {
 export async function requestSignInLink({ request, env, now }: OwnerContext): Promise<Response> {
   const publicOrigin = publicOriginOf(env.PUBLIC_ORIGIN);
   const isEmailProvider = signInKindOf(env.SIGN_IN_PROVIDER) === SignInProviderKind.Email;
-  if (!isEmailProvider || publicOrigin === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
+  const isLinkUnsendable = !isEmailProvider || publicOrigin === null;
+  if (isLinkUnsendable) return errorResponse(OwnerErrorCode.SignInUnavailable);
   const sender = emailSenderOf({ configured: env.EMAIL_SENDER, publicOrigin });
   if (sender === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
   const body = await parsedPublicBody({ request, schema: RequestBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const address = normalizedAddress(body.email);
-  const isChallenge = LINK_CHALLENGE_PATTERN.test(body.link_challenge);
-  if (address === null || !isChallenge) return errorResponse(OwnerErrorCode.InvalidRequest);
+  const isMalformedAsk = address === null || !LINK_CHALLENGE_PATTERN.test(body.link_challenge);
+  if (isMalformedAsk) return errorResponse(OwnerErrorCode.InvalidRequest);
   const token = generateCredentialSecret();
   const digest = await digestCredential(token);
   const isWithinLimit = await insertSignInLinkWithinLimit({

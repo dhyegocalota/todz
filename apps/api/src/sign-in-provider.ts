@@ -1,5 +1,6 @@
 import { digestCredential } from './credential-digest';
 import { spendSignInLink } from './directory-sign-in-links';
+import { enumValueOf } from './enum-value';
 
 const FAKE_SUBJECT_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 
@@ -46,7 +47,5 @@ export const SIGN_IN_PROVIDER_OF_KIND: Record<SignInProviderKind, SignInProvider
 };
 
 export function signInKindOf(configured: string | undefined): SignInProviderKind | null {
-  const kind = Object.values(SignInProviderKind).find((candidate) => candidate === configured);
-  if (kind === undefined) return null;
-  return kind;
+  return enumValueOf({ enumeration: SignInProviderKind, configured });
 }

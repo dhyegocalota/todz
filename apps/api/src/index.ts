@@ -2,13 +2,12 @@ import type { Env } from './env';
 import { HttpStatus } from './http-status';
 import { serveMcp } from './mcp-endpoint';
 import { serveOwner } from './owner-endpoint';
-import { serveSignInPage } from './sign-in-page';
+import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
 
 export { ProjectStore } from './project-store';
 
 const MCP_PATH = '/mcp';
 const OWNER_PATH = '/owner';
-const SIGN_IN_PAGE_PATH = '/sign-in';
 
 type Route = ({ request, env }: { request: Request; env: Env }) => Promise<Response>;
 

@@ -1,6 +1,7 @@
 import { noRouteResponse } from './owner-errors';
 import { SIGN_IN_PAGE_COPY } from './sign-in-page-copy';
 
+export const SIGN_IN_PAGE_PATH = '/sign-in';
 const PAGE_METHOD = 'GET';
 const HASH_ALGORITHM = 'SHA-256';
 const TOKEN_PARAMETER = 'token';

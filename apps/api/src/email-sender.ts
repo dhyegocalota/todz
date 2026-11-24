@@ -1,3 +1,5 @@
+import { enumValueOf } from './enum-value';
+
 const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1'];
 
 export enum EmailSenderKind {
@@ -17,14 +19,8 @@ const EMAIL_SENDER_OF_KIND: Record<EmailSenderKind, EmailSender> = {
   },
 };
 
-function emailSenderKindOf(configured: string | undefined): EmailSenderKind | null {
-  const kind = Object.values(EmailSenderKind).find((candidate) => candidate === configured);
-  if (kind === undefined) return null;
-  return kind;
-}
-
 export function emailSenderOf({ configured, publicOrigin }: { configured: string | undefined; publicOrigin: string }): EmailSender | null {
-  const kind = emailSenderKindOf(configured);
+  const kind = enumValueOf({ enumeration: EmailSenderKind, configured });
   if (kind === null) return null;
   const isConsoleOnPublicOrigin = kind === EmailSenderKind.Console && !LOCAL_HOSTNAMES.includes(new URL(publicOrigin).hostname);
   if (isConsoleOnPublicOrigin) return null;
