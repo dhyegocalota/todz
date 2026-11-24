@@ -30,6 +30,12 @@ private func views(done doneNumbers: Set<Int>, dueDate: CalendarDate? = nil) thr
     return TaskViews(projects: [inbox], board: board, day: today, timeZone: timeZone)
 }
 
+private func shown(_ states: [(number: Int, state: TaskState)]) -> [BoardTask] {
+    states.map { number, state in
+        BoardTask(project: inbox, task: MutableTask(number: number, state: state, completedAt: state == .done ? fixedInstant : nil).record)
+    }
+}
+
 private func labels(_ tasks: [BoardTask]) -> [String] {
     tasks.map { $0.task.state == .done ? "\($0.task.title) done" : $0.task.title }
 }
@@ -96,5 +102,25 @@ private func labels(_ tasks: [BoardTask]) -> [String] {
         let lingers = CompletionLingers().toggling(task: key(3), in: .inbox, views: try views(done: []))
         let shorter = try views(done: [1, 3])
         #expect(labels(lingers.placed(into: shorter.inbox, item: .inbox, views: shorter)) == ["B", "C done"])
+    }
+
+    @Test func aMoveIsAnchoredOnAnOpenTaskNotOnALingeringOne() {
+        let tasks = shown([(1, .open), (2, .done), (3, .open), (4, .open)])
+        #expect(CompletionLingers.placement(moving: 3, toOffset: 2, in: tasks) == .after(anchor: 1))
+    }
+
+    @Test func aMoveBelowALingeringFirstRowIsFirst() {
+        let tasks = shown([(2, .done), (1, .open), (3, .open)])
+        #expect(CompletionLingers.placement(moving: 2, toOffset: 1, in: tasks) == .first)
+    }
+
+    @Test func aLingeringRowIsNotMoved() {
+        let tasks = shown([(1, .open), (2, .done), (3, .open)])
+        #expect(CompletionLingers.placement(moving: 1, toOffset: 0, in: tasks) == nil)
+    }
+
+    @Test func withNoLingeringRowAMoveIsTheListsOwn() {
+        let tasks = shown([(1, .open), (2, .open), (3, .open)])
+        #expect(CompletionLingers.placement(moving: 0, toOffset: 3, in: tasks) == .after(anchor: 3))
     }
 }

@@ -58,6 +58,10 @@ public struct CompletionLingers: Sendable, Equatable {
         Set(lingeringTasks(item: item, views: views).map { keyOf($0.task) })
     }
 
+    public static func placement(moving index: Int, toOffset offset: Int, in shownTasks: [BoardTask]) -> TaskPlacement? {
+        fatalError("CompletionLingers.placement is not implemented")
+    }
+
     private func lingeringTasks(item: SidebarItem, views: TaskViews) -> [LingeringTask] {
         let itemLingers = lingers.filter { $0.value.item == item }
         guard !itemLingers.isEmpty else { return [] }
