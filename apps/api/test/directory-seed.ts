@@ -13,24 +13,20 @@ export async function seedOwner(timeZone = 'UTC'): Promise<string> {
   return ownerId;
 }
 
-export async function seedProject({ ownerId }: { ownerId: string }): Promise<string> {
+export async function seedWorkspace({ ownerId }: { ownerId: string }): Promise<string> {
   const workspaceId = crypto.randomUUID();
+  await env.DIRECTORY.prepare('INSERT INTO workspaces (id, owner_id, name, created_at) VALUES (?, ?, ?, ?)')
+    .bind(workspaceId, ownerId, 'Workspace', CLOCK_NOW)
+    .run();
+  return workspaceId;
+}
+
+export async function seedProject({ ownerId }: { ownerId: string }): Promise<string> {
+  const workspaceId = await seedWorkspace({ ownerId });
   const projectId = crypto.randomUUID();
-  await env.DIRECTORY.batch([
-    env.DIRECTORY.prepare('INSERT INTO workspaces (id, owner_id, name, created_at) VALUES (?, ?, ?, ?)').bind(
-      workspaceId,
-      ownerId,
-      'Workspace',
-      CLOCK_NOW,
-    ),
-    env.DIRECTORY.prepare('INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) VALUES (?, ?, ?, ?, ?)').bind(
-      projectId,
-      workspaceId,
-      'Project',
-      0,
-      CLOCK_NOW,
-    ),
-  ]);
+  await env.DIRECTORY.prepare('INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) VALUES (?, ?, ?, ?, ?)')
+    .bind(projectId, workspaceId, 'Project', 0, CLOCK_NOW)
+    .run();
   return projectId;
 }
 
@@ -51,8 +47,8 @@ export async function seedKey({
 
 export async function seedIssuedKey(timeZone = 'UTC'): Promise<{ projectId: string; key: string }> {
   const projectId = await seedProject({ ownerId: await seedOwner(timeZone) });
-  const key = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
-  return { projectId, key };
+  const { secret } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+  return { projectId, key: secret };
 }
 
 export async function revokeKey(key: string): Promise<void> {

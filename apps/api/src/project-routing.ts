@@ -34,6 +34,14 @@ export async function resolveSessionOwner({ env, secret, now }: { env: Env; secr
   return owner;
 }
 
+export async function findOwnedProjectId(_parameters: { env: Env; owner: SessionOwner; projectId: string }): Promise<string | null> {
+  throw new Error('findOwnedProjectId is not implemented');
+}
+
+export async function findOwnedWorkspaceId(_parameters: { env: Env; owner: SessionOwner; workspaceId: string }): Promise<string | null> {
+  throw new Error('findOwnedWorkspaceId is not implemented');
+}
+
 export async function openOwnedProject({
   env,
   owner,

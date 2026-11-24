@@ -276,7 +276,7 @@ describe('a later legacy request', () => {
 
   test('with a session of another key of the same project answers 404 session not found', async () => {
     const { projectId, key } = await seedIssuedKey();
-    const otherKey = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+    const { secret: otherKey } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
     const sessionId = await openSession(otherKey);
     const response = await toolsList({ key, sessionId });
     expect(response.status).toBe(NOT_FOUND_STATUS);

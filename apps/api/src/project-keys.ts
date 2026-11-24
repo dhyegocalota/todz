@@ -14,7 +14,7 @@ export async function issueProjectKey({
   directory: D1Database;
   projectId: string;
   now: number;
-}): Promise<string> {
+}): Promise<{ id: string; secret: string }> {
   const secret = `${PROJECT_KEY_PREFIX}${generateCredentialSecret()}`;
   await insertProjectKey({
     directory,
@@ -24,5 +24,5 @@ export async function issueProjectKey({
     projectId,
     now,
   });
-  return secret;
+  return { id: '', secret };
 }
