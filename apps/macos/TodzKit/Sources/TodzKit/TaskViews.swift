@@ -30,16 +30,45 @@ public struct TaskViews: Sendable {
     }
 
     public func pendingTasks(for item: SidebarItem) -> [PendingTask] {
-        fatalError("TaskViews.pendingTasks is not implemented")
+        switch item {
+        case .inbox:
+            guard let inboxProject else { return [] }
+            return workspacePendingTasks.filter { $0.projectIdentifier == inboxProject.identifier }
+        case let .project(identifier):
+            return workspacePendingTasks.filter { $0.projectIdentifier == identifier }
+        case .today:
+            return pendingTasksDue { $0 <= day }
+        case .upcoming, .done:
+            return []
+        }
     }
 
     public var upcomingPendingDays: [PendingTaskDay] {
-        fatalError("TaskViews.upcomingPendingDays is not implemented")
+        let dueLater = pendingTasksDue { $0 > day }
+        return Set(dueLater.compactMap(\.dueDate)).sorted().map { dueDay in
+            PendingTaskDay(day: dueDay, tasks: dueLater.filter { $0.dueDate == dueDay })
+        }
     }
 
     public var inbox: [BoardTask] {
-        guard let inboxProject = projects.first(where: \.isInbox) else { return [] }
+        guard let inboxProject else { return [] }
         return project(identifier: inboxProject.identifier)
+    }
+
+    private var inboxProject: Project? {
+        projects.first(where: \.isInbox)
+    }
+
+    private var workspacePendingTasks: [PendingTask] {
+        let projectIdentifiers = Set(projects.map(\.identifier))
+        return pendingTasks.filter { projectIdentifiers.contains($0.projectIdentifier) }
+    }
+
+    private func pendingTasksDue(within isInWindow: (CalendarDate) -> Bool) -> [PendingTask] {
+        workspacePendingTasks.filter { pendingTask in
+            guard let dueDate = pendingTask.dueDate else { return false }
+            return isInWindow(dueDate)
+        }
     }
 
     public func project(identifier: String) -> [BoardTask] {
