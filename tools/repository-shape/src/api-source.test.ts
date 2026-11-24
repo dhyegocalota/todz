@@ -16,7 +16,7 @@ const CLOUDFLARE_SENDER_VARIABLE = '--var EMAIL_SENDER:cloudflare';
 const SEND_EMAIL_BINDING_PATTERN =
   /"send_email":\s*\[\s*\{\s*"name":\s*"EMAIL",\s*"allowed_sender_addresses":\s*\["noreply@todz\.app"\]\s*,?\s*\}\s*,?\s*\]/;
 const ASSETS_PATTERN =
-  /"assets":\s*\{\s*"directory":\s*"\.\/public",\s*"run_worker_first":\s*\["\/owner\/\*",\s*"\/mcp",\s*"\/sign-in"\]\s*,?\s*\}/;
+  /"assets":\s*\{\s*"directory":\s*"\.\/public",\s*"run_worker_first":\s*\["\/owner",\s*"\/owner\/\*",\s*"\/mcp",\s*"\/sign-in"\]\s*,?\s*\}/;
 const CONSOLE_IDENTIFIER = /\bconsole\b/;
 const CONSOLE_EMAIL_SENDER = 'apps/api/src/email-sender.ts';
 const PROJECT_STORE_IDENTIFIER = /\bPROJECT_STORE\b/;
