@@ -56,3 +56,68 @@ Pins (green when they landed in `e4858aa`): the within-limit, no-header, no-bind
 - The shape test pins the limiter's numbers as literals (10, 60, `"1001"`) because `tools/repository-shape` does not depend on `@todz/types`; changing the constants without `wrangler.jsonc` is caught only by the Miniflare test, which reads the binding's real limit.
 - Release is development-signed, so the Release build runs only on a Mac with that identity; no Release app was launched, only built.
 - The feature's `spec.md` status and its row in `docs/features/README.md` still read `Approved`; the flip to `Building` is the lead's (not on G1's list).
+
+## Fix round 1
+
+Red commits `f6e5ebc` (api and shape pins), `34861cb` (identities), `285806f` (wrapper), `786e1a6` (runbook); green commits `21b9103`, `1d28a80`, `abdbb35` and the commit that carries the runbook rewrite, the ADR status lines, this briefing and the helper fix in `runbooks.test.ts`.
+
+### What changed
+
+- Limiter: `apps/api/src/client-rate-key.ts` (`clientRateKey`, ported from the owner's zapbip helper, `prefixGroupCount` dropped as unused) keys an IPv6 address by its /64 and unwraps an IPv4-mapped one; `signInLimitRefusal` keys `<route>:<clientRateKey>` and returns early when `isLocalOrigin(request.url)`, before the header and binding skips. `isLocalOrigin` now answers false for an unparsable string instead of throwing.
+- Fake provider: `signInKindForRequest({ env, request })` in `sign-in-provider.ts` yields `fake` only when `PUBLIC_ORIGIN` is set and both it and `request.url` are local; `readSignInMethod` and `signIn` use it. `signInKindOf` stays for the link request's email check.
+- `wrangler.jsonc`: `account_id`, `namespace_id` `"8601"`, `preview_database_id` the nil uuid. `SIGN_IN_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE`.
+- Test helper: `owner-client.ts` now calls the Worker on `http://localhost:8787` by default (a test that wants a public host passes `origin`); `owner-sign-in.test.ts` sets `PUBLIC_ORIGIN` where it uses the fake.
+- macOS: `project.yml` has project-level per-configuration settings `TODZ_APP_BUNDLE_IDENTIFIER`, `TODZ_WIDGETS_BUNDLE_IDENTIFIER`, `TODZ_APP_GROUP`, `TODZ_ALLOWS_LOCAL_NETWORKING`; both targets' `PRODUCT_BUNDLE_IDENTIFIER`, the entitlements' application groups, `TodzAppGroup` and `NSAllowsLocalNetworking` use them; the four generated plists were regenerated with `xcodegen generate`. `apps/macos/README.md` says Debug and Release are separate apps and the first Release launch signs out.
+- `scripts/todz-cloudflare.sh` (token from the Keychain item `todz-cloudflare` into one child, or `api <METHOD> <path> [json-body-file]` with the header on standard input), its test `scripts/todz-cloudflare.test.sh` (fake `security` and `curl`, no network, no Keychain; wired into `pnpm test:verify`), `scripts/deploy-bodies/` (two fixed JSON bodies), `scripts/README.md`.
+- `docs/runbooks/deploy-the-api.md` rewritten: fifteen steps, every command through the wrapper, literal paths, no dollar sign, backtick, brace or heredoc, rollback guarded by `SELECT COUNT(*) FROM owners`, rotate-the-token note. `runbooks.test.ts` gained three tests (no guarded character or shared temporary folder in a command line, every wrangler call wrapped and no direct Cloudflare API call, every named script exists and the wrapper holds `wrangler.jsonc`'s account).
+- ADRs 0020, 0041 and 0008 carry "amended by 0044" in their status line; 0044 gained decisions 7 to 9 and the corrected local-state sentence; `spec.md` D1 and D2 are amended and a "Fix round 1" section lists the rest.
+
+### Red today, green after
+
+| Test | Red text | Green |
+|------|----------|-------|
+| `client-rate-key.test.ts` (6 tests) | `Error: clientRateKey is not implemented for 203.0.113.7` (and the other addresses) | `21b9103` |
+| `sign-in-limiter.test.ts` shared /64 bucket | `expected 'sign_in:2001:db8:1:2:3:4:5:6' to be 'sign_in:2001:db8:1:2:ffff:eeee:dddd:c…'` | `21b9103` |
+| same, IPv4-mapped | `expected 'sign_in:203.0.113.7' to be 'sign_in:::ffff:203.0.113.7'` | `21b9103` |
+| same, local host skip (link and session) | `expected 429 not to be 429` | `21b9103` |
+| `sign-in-method.test.ts` fake with a public origin, no origin, a public host | `expected 200 to be 503` | `21b9103` |
+| `owner-sign-in.test.ts` fake with a public origin, no origin, a public host | `expected 201 to be 503` | `21b9103` |
+| `api-source.test.ts` account, preview id, namespace | `expected undefined to be 'e2035d8e0b7173d520ccf643f6f4661c'`, `expected undefined to be '00000000-0000-0000-0000-000000000000'`, `expected [ { name: 'SIGN_IN_LIMITER', …(2) } ] to deeply equal [ { name: 'SIGN_IN_LIMITER', …(2) } ]` | `21b9103` |
+| `macos-identities.test.ts` (5 tests) | `expected undefined to be 'dev.todz.Todz.debug'`, `expected +0 to be 2`, `expected '<?xml …' to contain '$(TeamIdentifierPrefix)$(TODZ_APP_GROUP)'`, `expected undefined to be 'YES'`, `expected 'name: Todz…' to contain 'PRODUCT_BUNDLE_IDENTIFIER: $(TODZ_APP_BUNDLE_IDENTIFIER)'` | `1d28a80` |
+| `todz-cloudflare.test.sh` | `todz-cloudflare: not implemented`, `FAIL the child sees the token: expected 'fake-token-value', got ''`, `todz-cloudflare: 13 check(s) failed` | `abdbb35` |
+| `runbooks.test.ts` three new tests | `expected [ …(22) ] to deeply equal []` (command lines; the helper also kept the closing fences, fixed with the runbook), `expected [ …(5) ] to deeply equal []` (unwrapped wrangler calls), `expected 0 to be greater than 0` (no script named) | the runbook commit |
+
+Pins: the ADR status lines, the README sentence, `SECONDS_PER_MINUTE` (the existing shape test already read 60), and the earlier limiter tests that only moved to a public origin.
+
+### Builds recorded (Debug and Release, 0 `warning:` lines each, `BUILD SUCCEEDED`)
+
+| | Debug | Release |
+|---|---|---|
+| App `CFBundleIdentifier` | `dev.todz.Todz.debug` | `dev.todz.Todz` |
+| Widgets `CFBundleIdentifier` | `dev.todz.Todz.debug.widgets` | `dev.todz.Todz.widgets` |
+| `TodzAppGroup` (app and widgets) | `XFWR794VS8.dev.todz.debug` | `XFWR794VS8.dev.todz` |
+| `TodzAPIBaseURL` | `http://localhost:8787` | `https://api.todz.app` |
+| `NSAllowsLocalNetworking` | `"YES"` | `"NO"` |
+| App entitlements (`codesign -d --entitlements :-`) | sandbox, application-groups `XFWR794VS8.dev.todz.debug`, get-task-allow, network.client | sandbox, application-groups `XFWR794VS8.dev.todz`, get-task-allow, network.client |
+| Widgets entitlements | sandbox, application-groups `XFWR794VS8.dev.todz.debug`, get-task-allow | sandbox, application-groups `XFWR794VS8.dev.todz`, get-task-allow |
+
+`NSAllowsLocalNetworking` is a string in the built Info.plist (XcodeGen and Xcode cannot split a boolean per configuration, and a post-build script was not worth it): Release says `"NO"`, Debug `"YES"`. Apple's rule that ATS does not apply to unqualified host names such as `localhost` means Debug does not depend on it; neither app was launched.
+
+### Local runs
+
+`wrangler dev` on port 8795 (inspector 9395, state in the scratchpad, stopped after): `GET /owner/sign-in-method` answered `{"method":"identity"}` with `preview_database_id` in the configuration, and twelve `POST /owner/sessions` with `CF-Connecting-IP: 203.0.113.9` all answered 201, so the limiter no longer fires locally (the tester's edge case 1). No remote command ran. The wrapper and the runbook were never executed against Cloudflare.
+
+### Hypotheses for the tester
+
+- A request on a local host is never limited, whatever `CF-Connecting-IP` says; a request on `api.todz.app` is, per route and per client prefix.
+- On a public request host or a public `PUBLIC_ORIGIN`, `GET /owner/sign-in-method` and `POST /owner/sessions` answer 503 `sign_in_unavailable` with the fake provider; `pnpm dev` still answers `identity`.
+- `wrangler deploy --dry-run` still lists the same bindings, now with the account and the new namespace.
+- Debug and Release install side by side and share no container or keychain item.
+- Every command line in the runbook runs under the loop's guard hook, and each wrapped call finds the token on its own.
+
+### Gaps
+
+- The wrapper and the new runbook steps are unproven against Cloudflare: the `GET /accounts/<id>/d1/database/<id>`, `GET /accounts/<id>/workers/domains`, `DELETE .../workers/domains/<id>`, `PATCH /zones/<zone>/settings/always_use_https` and `GET .../workers/subdomain` calls follow Cloudflare's public API from memory (Context7 was unavailable). `wrangler d1 migrations apply` and `wrangler delete` may ask for a confirmation that a non-interactive shell answers by default; not verified.
+- `wrangler whoami`'s exact wording with an API token was not run.
+- Both apps still register the `todz` URL scheme, so with both installed a sign-in link opens whichever macOS picks.
+- The apex-SPF rule rests on the assumption that Cloudflare Email Sending's records sit on subdomains; step 10 stops if `dns get` says otherwise.

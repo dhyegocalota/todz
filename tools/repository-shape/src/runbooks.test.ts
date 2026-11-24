@@ -89,8 +89,8 @@ function commandLines(text: string): string[] {
   return [...text.matchAll(FENCED_BLOCK_PATTERN)].flatMap(([block]) =>
     block
       .split(LINE_SEPARATOR)
-      .filter((line) => !line.startsWith(CODE_FENCE) && line.trim() !== '')
-      .map((line) => line.trim()),
+      .map((line) => line.trim())
+      .filter((line) => line !== '' && !line.startsWith(CODE_FENCE)),
   );
 }
 
