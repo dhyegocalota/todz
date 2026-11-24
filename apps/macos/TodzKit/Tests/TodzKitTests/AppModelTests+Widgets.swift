@@ -286,6 +286,12 @@ extension AppModelTests {
         #expect(harness.widgets.snapshot == nil)
     }
 
+    @Test func aWidgetEraseReloadsTheWidgetsAtOnce() async throws {
+        let harness = try await launchedWidgetHarness()
+        await harness.model.signOut()
+        #expect(harness.widgets.routes().prefix(2) == [.erase, .reload])
+    }
+
     @Test func aSignOutWhoseWidgetEraseFailsStillSignsOut() async throws {
         let harness = try await launchedWidgetHarness()
         harness.widgets.failures[.erase] = .unwritable
