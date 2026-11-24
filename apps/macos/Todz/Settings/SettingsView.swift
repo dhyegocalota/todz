@@ -13,5 +13,6 @@ struct SettingsView: View {
             .toggleStyle(.switch)
         }
         .formStyle(.grouped)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
