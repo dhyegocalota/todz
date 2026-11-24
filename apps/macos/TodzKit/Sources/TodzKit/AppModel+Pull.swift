@@ -6,7 +6,16 @@ extension AppModel {
     }
 
     public var syncStatus: SyncStatus {
-        fatalError("AppModel.syncStatus is not implemented")
+        guard isOffline else { return .online }
+        return .offline(waiting: outbox.count)
+    }
+
+    func noteConnection(after failure: any Error) {
+        switch SendOutcome.of(failure) {
+        case .unreachable, .unexpected: isOffline = true
+        case .refused: isOffline = false
+        case .sessionGone: return
+        }
     }
 
     public func refresh() async {
@@ -109,9 +118,11 @@ extension AppModel {
             board.merge(projectIdentifier: projectIdentifier, tasks: changes.tasks)
             board = board.setting(cursor: changes.cursor, projectIdentifier: projectIdentifier)
             projectLoads[projectIdentifier] = .loaded
+            isOffline = false
             keepProject(identifier: projectIdentifier)
             startSending()
         case let .unreachable(projectIdentifier), let .failed(projectIdentifier):
+            isOffline = true
             guard projectLoads[projectIdentifier] != .loaded else { return }
             projectLoads[projectIdentifier] = pulled.isUnreachable ? .unreachable : .failed
         }

@@ -23,6 +23,7 @@ import Observation
     var retryTarget: WriteTarget?
     var outbox = Outbox()
     var refreshesInFlight = 0
+    var isOffline = false
 
     @ObservationIgnored var session: String?
     @ObservationIgnored var ownerIdentifier: String?
@@ -192,11 +193,16 @@ import Observation
         do {
             let value = try await operation(session)
             guard self.session == session else { throw CancellationError() }
+            isOffline = false
             return value
         } catch OwnerAPIError.unauthorized {
             guard self.session == session else { throw CancellationError() }
             endSession()
             throw OwnerAPIError.unauthorized
+        } catch {
+            guard self.session == session else { throw CancellationError() }
+            noteConnection(after: error)
+            throw error
         }
     }
 
@@ -219,6 +225,7 @@ import Observation
         stopPulling()
         selectionsAtAdd = [:]
         isWorkspaceListOutdated = false
+        isOffline = false
         workspaces = []
         activeWorkspaceIdentifier = nil
         selectedItem = .inbox
