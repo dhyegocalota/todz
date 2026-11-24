@@ -20,11 +20,11 @@ One group, after `menu-bar-count` merges (it touches the popover).
 
 ### G1
 
-- [ ] **Step 1:** Red: `HistoryFailureTests`: offline → `.offline`; online → `.failed`. Commit with a stub that fails with `HistoryFailure is not implemented`.
-- [ ] **Step 2:** Green: `HistoryFailure.of(isOffline:)`; `HistoryList` shows `InspectorCopy.historyOffline` in the secondary style for `.offline` and today's red line for `.failed`, Try Again under both.
-- [ ] **Step 3:** `CredentialSlot` focuses the identity field when it appears after a sign-out (the window may already be key, or become key later); the developer reproduces the note in a build first and states the cause in the commit.
+- [x] **Step 1:** Red: `HistoryFailureTests`: offline → `.offline`; online → `.failed`. Commit with a stub that fails with `HistoryFailure is not implemented`. (892249a)
+- [x] **Step 2:** Green: `HistoryFailure.of(isOffline:)`; `HistoryList` shows `InspectorCopy.historyOffline` in the secondary style for `.offline` and today's red line for `.failed`, Try Again under both. (967c600)
+- [x] **Step 3:** `CredentialSlot` focuses the identity field when it appears after a sign-out (the window may already be key, or become key later); the developer reproduces the note in a build first and states the cause in the commit. (be47d33; not reproduced, the app was not launched because a tester holds the screen, so the cause is a hypothesis)
 - [ ] **Step 4:** Note 4: the developer checks in a build whether ⌘2 reaches the popover opened while another app is in front, with a real key event (`osascript` key code through System Events). If it works, no code: state it in the briefing. If not, the popover's window becomes key on open, in its own commit.
-- [ ] **Step 5:** `mac-app-shell/design.md` § 1.1 and § 7 record the measured minimum, 976 × 532 (the owner's check, 2026-11-24), next to the earlier 848 and the reason it grew (the sidebar measured 308 wide with the Connect an Agent section). Tester briefing.
+- [x] **Step 5:** `mac-app-shell/design.md` § 1.1 and § 7 record the measured minimum, 976 × 532 (the owner's check, 2026-11-24), next to the earlier 848 and the reason it grew (the sidebar measured 308 wide with the Connect an Agent section). Tester briefing. (docs commit after be47d33)
 
 ## Failure modes
 
@@ -37,7 +37,7 @@ One group, after `menu-bar-count` merges (it touches the popover).
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
 - [ ] **/check-ui:** screenshots of the offline history line and the sign-in focus.
