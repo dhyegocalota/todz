@@ -103,6 +103,7 @@ extension AppModel {
             refuse(change)
             return true
         case .unreachable:
+            hasServerAnswered = false
             await waitToSend()
             return true
         case .unexpected:
