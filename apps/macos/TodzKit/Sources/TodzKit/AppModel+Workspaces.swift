@@ -23,6 +23,10 @@ extension AppModel {
         await switchWorkspace(identifier: workspace.identifier)
     }
 
+    func isFirstLoad(of workspace: Workspace) -> Bool {
+        workspace.projects.contains { projectLoads[$0.identifier] == nil }
+    }
+
     public func loadFailure(of workspace: Workspace) -> AppBanner? {
         let loads = workspace.projects.map { projectLoads[$0.identifier] }
         let isNothingLoaded = loads.allSatisfy { $0 == .unreachable || $0 == .failed }

@@ -15,8 +15,7 @@ extension AppModel {
     }
 
     private func isTodayKnown(in workspace: Workspace) -> Bool {
-        let isFirstLoad = workspace.projects.contains { projectLoads[$0.identifier] == nil }
-        return !isFirstLoad && loadFailure(of: workspace) == nil
+        !isFirstLoad(of: workspace) && loadFailure(of: workspace) == nil
     }
 
     public func dayChanged() {

@@ -51,6 +51,7 @@ import Observation
     @ObservationIgnored var widgetPublication: Task<Void, Never>?
     @ObservationIgnored var widgetIntake: Task<Void, Never>?
     @ObservationIgnored var linkFollowing: Task<Void, Never>?
+    @ObservationIgnored var waitingLink: WidgetLink?
     @ObservationIgnored var publishedWidgetSnapshot: WidgetSnapshotState?
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
