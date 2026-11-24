@@ -195,6 +195,20 @@ extension AppModelTests {
         #expect(harness.model.phase == .ready)
     }
 
+    @Test func anIncomingLinkIsShownOnlyWhileTheOwnerIsNotSignedIn() async throws {
+        let harness = try harnessWithAPendingLink()
+        #expect(harness.model.showsIncomingSignInLink)
+        await harness.model.launch()
+        #expect(harness.model.showsIncomingSignInLink)
+    }
+
+    @Test func anIncomingLinkIsNotShownOnceTheOwnerIsSignedIn() async throws {
+        let harness = try harnessWithAPendingLink()
+        harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        #expect(harness.model.showsIncomingSignInLink == false)
+    }
+
     @Test func aRejectedLinkKeepsAnUnexpiredPendingLinkAndSaysTheLinkWasRejected() async throws {
         let harness = try harnessWithAPendingLink()
         await harness.model.launch()

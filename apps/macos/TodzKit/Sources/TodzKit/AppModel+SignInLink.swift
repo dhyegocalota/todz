@@ -57,6 +57,10 @@ extension AppModel {
         heldSignInLink != nil
     }
 
+    public var showsIncomingSignInLink: Bool {
+        true
+    }
+
     public func useDifferentEmail() {
         discardPendingLink()
         signInError = nil
