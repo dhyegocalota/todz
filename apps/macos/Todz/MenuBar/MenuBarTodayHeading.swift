@@ -9,7 +9,6 @@ struct MenuBarTodayHeading: View {
             Text(MenuBarCopy.left(count: openCount))
                 .foregroundStyle(.secondary)
         }
-        .font(.headline)
         .accessibilityElement(children: .combine)
         .padding(.horizontal)
         .padding(.top)

@@ -18,10 +18,10 @@ struct MenuBarTodayBody: View {
         case .empty:
             VStack {
                 Text(MainWindowCopy.todayEmptyTitle)
-                    .foregroundStyle(.secondary)
                 Text(MainWindowCopy.todayEmptyBody)
                     .font(.subheadline)
             }
+            .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity)
             .padding()
         case let .rows(sections):
