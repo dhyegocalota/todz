@@ -102,7 +102,7 @@ extension AppModelTests {
 
     @Test func aHistoryThatFailsToLoadSaysSo() async throws {
         let harness = try await readyHarness()
-        harness.service.failures[.readHistory] = .unreachable
+        harness.service.failures[.readHistory] = .taskNotFound(number: 1)
         await harness.model.loadHistory(task: firstTask)
         #expect(harness.model.histories[firstTask] == .failed(.failed))
     }
