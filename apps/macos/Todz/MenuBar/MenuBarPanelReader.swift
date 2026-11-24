@@ -1,9 +1,11 @@
 import AppKit
 import SwiftUI
+import TodzKit
 
 struct MenuBarPanelReader: NSViewRepresentable {
     let panel: MenuBarPanel
     let onBecomeKey: () -> Void
+    let onWorkspaceNumber: (Int) -> Void
 
     func makeNSView(context: Context) -> MenuBarPanelView {
         MenuBarPanelView()
@@ -12,6 +14,7 @@ struct MenuBarPanelReader: NSViewRepresentable {
     func updateNSView(_ view: MenuBarPanelView, context: Context) {
         view.panel = panel
         view.onBecomeKey = onBecomeKey
+        view.onWorkspaceNumber = onWorkspaceNumber
         panel.window = view.window
     }
 }
@@ -19,7 +22,17 @@ struct MenuBarPanelReader: NSViewRepresentable {
 final class MenuBarPanelView: NSView {
     var panel: MenuBarPanel?
     var onBecomeKey: (() -> Void)?
+    var onWorkspaceNumber: ((Int) -> Void)?
     private var keyObservation: (any NSObjectProtocol)?
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let isCommandOnly = event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command
+        guard isCommandOnly, let key = event.charactersIgnoringModifiers, let number = WorkspaceShortcuts.number(forKey: key) else {
+            return super.performKeyEquivalent(with: event)
+        }
+        onWorkspaceNumber?(number)
+        return true
+    }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()

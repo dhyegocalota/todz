@@ -68,7 +68,7 @@ extension AppModel {
             histories[key] = .loaded(entries)
         } catch {
             guard session != nil else { return }
-            histories[key] = .failed
+            histories[key] = .failed(HistoryFailure.of(isOffline: isOffline))
         }
     }
 }

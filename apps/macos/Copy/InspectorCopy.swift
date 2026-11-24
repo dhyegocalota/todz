@@ -11,6 +11,7 @@ enum InspectorCopy {
     static let noSelection = "No task selected"
     static let noSelectionBody = "Select a task to see its details."
     static let historyFailed = "Couldn't load the history."
+    static let historyOffline = "History shows when todz is back online."
 
     static func byYou(time: String) -> String {
         "\(time) by you"
