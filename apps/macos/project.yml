@@ -3,6 +3,18 @@ options:
   bundleIdPrefix: dev.todz
   deploymentTarget:
     macOS: "14.0"
+settings:
+  configs:
+    Debug:
+      TODZ_APP_BUNDLE_IDENTIFIER: dev.todz.Todz.debug
+      TODZ_WIDGETS_BUNDLE_IDENTIFIER: dev.todz.Todz.debug.widgets
+      TODZ_APP_GROUP: dev.todz.debug
+      TODZ_ALLOWS_LOCAL_NETWORKING: "YES"
+    Release:
+      TODZ_APP_BUNDLE_IDENTIFIER: dev.todz.Todz
+      TODZ_WIDGETS_BUNDLE_IDENTIFIER: dev.todz.Todz.widgets
+      TODZ_APP_GROUP: dev.todz
+      TODZ_ALLOWS_LOCAL_NETWORKING: "NO"
 packages:
   TodzKit:
     path: TodzKit
@@ -17,7 +29,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: Todz
-        PRODUCT_BUNDLE_IDENTIFIER: dev.todz.Todz
+        PRODUCT_BUNDLE_IDENTIFIER: $(TODZ_APP_BUNDLE_IDENTIFIER)
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
@@ -40,19 +52,19 @@ targets:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
         com.apple.security.application-groups:
-          - $(TeamIdentifierPrefix)dev.todz
+          - $(TeamIdentifierPrefix)$(TODZ_APP_GROUP)
     info:
       path: Todz/Info.plist
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         TodzAPIBaseURL: $(TODZ_API_BASE_URL)
-        TodzAppGroup: $(TeamIdentifierPrefix)dev.todz
+        TodzAppGroup: $(TeamIdentifierPrefix)$(TODZ_APP_GROUP)
         CFBundleURLTypes:
           - CFBundleURLName: dev.todz.Todz
             CFBundleURLSchemes: [todz]
         NSAppTransportSecurity:
-          NSAllowsLocalNetworking: true
+          NSAllowsLocalNetworking: $(TODZ_ALLOWS_LOCAL_NETWORKING)
   TodzWidgets:
     type: app-extension
     platform: macOS
@@ -62,7 +74,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: TodzWidgets
-        PRODUCT_BUNDLE_IDENTIFIER: dev.todz.Todz.widgets
+        PRODUCT_BUNDLE_IDENTIFIER: $(TODZ_WIDGETS_BUNDLE_IDENTIFIER)
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
@@ -78,13 +90,13 @@ targets:
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.application-groups:
-          - $(TeamIdentifierPrefix)dev.todz
+          - $(TeamIdentifierPrefix)$(TODZ_APP_GROUP)
     info:
       path: TodzWidgets/Info.plist
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        TodzAppGroup: $(TeamIdentifierPrefix)dev.todz
+        TodzAppGroup: $(TeamIdentifierPrefix)$(TODZ_APP_GROUP)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 schemes:
