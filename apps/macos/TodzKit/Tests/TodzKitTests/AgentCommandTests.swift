@@ -106,6 +106,11 @@ private func serverURL() throws -> URL {
         #expect(url.absoluteString == serverText)
     }
 
+    @Test(arguments: [("com.todesktop.230313mzl4w4u92", true), ("com.apple.Safari", false), (nil, false)])
+    func onlyCursorTakesTheCursorLink(bundleIdentifier: String?, isCursor: Bool) {
+        #expect(AgentCommand.isCursor(bundleIdentifier: bundleIdentifier) == isCursor)
+    }
+
     @Test(arguments: secretsOutsideTodzAndBase64URL)
     func anIssuedKeyWhoseSecretTheQuotingWouldBreakOnIsRefused(refusedSecret: String) throws {
         let encodedSecret = try #require(String(data: try JSONEncoder().encode(refusedSecret), encoding: .utf8))

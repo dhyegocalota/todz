@@ -58,4 +58,8 @@ public enum AgentCommand: Equatable, Sendable {
     public static func serverURL(apiBase: URL) -> URL {
         apiBase.appending(path: serverPath)
     }
+
+    public static func isCursor(bundleIdentifier: String?) -> Bool {
+        fatalError("AgentCommand.isCursor is not implemented")
+    }
 }
