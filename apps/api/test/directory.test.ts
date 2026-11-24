@@ -173,6 +173,81 @@ describe('the mcp sessions table', () => {
   });
 });
 
+describe('the owner api schema (pin)', () => {
+  const UNIQUE_FAILURE = 'UNIQUE constraint failed';
+  const IDENTITY_PROVIDER = 'fake';
+  const EXPECTED_INDEXES = ['project_keys_project', 'projects_inbox', 'projects_workspace', 'sessions_owner', 'workspaces_owner'];
+
+  type WorkspaceRow = { workspace_id: string };
+
+  async function workspaceIdOf(projectId: string): Promise<string> {
+    const row = await env.DIRECTORY.prepare('SELECT workspace_id FROM projects WHERE id = ?').bind(projectId).first<WorkspaceRow>();
+    if (row === null) throw new Error('the seeded project has a workspace');
+    return row.workspace_id;
+  }
+
+  function insertProject({ workspaceId, isInbox }: { workspaceId: string; isInbox: number }): Promise<D1Result> {
+    return env.DIRECTORY.prepare('INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(crypto.randomUUID(), workspaceId, 'Name', isInbox, CLOCK_NOW)
+      .run();
+  }
+
+  function insertKey({ projectId, id, hint }: { projectId: string; id: string; hint: string }): Promise<D1Result> {
+    return env.DIRECTORY.prepare('INSERT INTO project_keys (digest, id, hint, project_id, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(crypto.randomUUID().replaceAll('-', '').repeat(2), id, hint, projectId, CLOCK_NOW)
+      .run();
+  }
+
+  function insertIdentity({ subject, ownerId }: { subject: string; ownerId: string }): Promise<D1Result> {
+    return env.DIRECTORY.prepare('INSERT INTO owner_identities (provider, subject, owner_id, created_at) VALUES (?, ?, ?, ?)')
+      .bind(IDENTITY_PROVIDER, subject, ownerId, CLOCK_NOW)
+      .run();
+  }
+
+  test('lists the owner api indexes', async () => {
+    const { results } = await env.DIRECTORY.prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'index' AND name IN ('project_keys_project', 'projects_inbox', 'projects_workspace', 'sessions_owner', 'workspaces_owner') ORDER BY name",
+    ).all<{ name: string }>();
+    expect(results.map((row) => row.name)).toEqual(EXPECTED_INDEXES);
+  });
+
+  test('is_inbox accepts 0 and 1 and refuses 2', async () => {
+    const workspaceId = await workspaceIdOf(await seedProject({ ownerId: await seedOwner() }));
+    await insertProject({ workspaceId, isInbox: 0 });
+    await insertProject({ workspaceId, isInbox: 1 });
+    await expect(insertProject({ workspaceId, isInbox: 2 })).rejects.toThrow(CHECK_FAILURE);
+  });
+
+  test('a workspace holds at most one inbox and any number of regular projects', async () => {
+    const workspaceId = await workspaceIdOf(await seedProject({ ownerId: await seedOwner() }));
+    await insertProject({ workspaceId, isInbox: 1 });
+    await insertProject({ workspaceId, isInbox: 0 });
+    await insertProject({ workspaceId, isInbox: 0 });
+    await expect(insertProject({ workspaceId, isInbox: 1 })).rejects.toThrow(UNIQUE_FAILURE);
+  });
+
+  test('a key hint of three or five characters is refused and four is stored', async () => {
+    const projectId = await seedProject({ ownerId: await seedOwner() });
+    await expect(insertKey({ projectId, id: crypto.randomUUID(), hint: 'abc' })).rejects.toThrow(CHECK_FAILURE);
+    await expect(insertKey({ projectId, id: crypto.randomUUID(), hint: 'abcde' })).rejects.toThrow(CHECK_FAILURE);
+    await insertKey({ projectId, id: crypto.randomUUID(), hint: 'abcd' });
+  });
+
+  test('a key id is unique', async () => {
+    const projectId = await seedProject({ ownerId: await seedOwner() });
+    const id = crypto.randomUUID();
+    await insertKey({ projectId, id, hint: 'abcd' });
+    await expect(insertKey({ projectId, id, hint: 'abcd' })).rejects.toThrow(UNIQUE_FAILURE);
+  });
+
+  test('an identity is unique by provider and subject and names an existing owner', async () => {
+    const subject = newSecret();
+    await insertIdentity({ subject, ownerId: await seedOwner() });
+    await expect(insertIdentity({ subject, ownerId: await seedOwner() })).rejects.toThrow(UNIQUE_FAILURE);
+    await expect(insertIdentity({ subject: newSecret(), ownerId: crypto.randomUUID() })).rejects.toThrow(FOREIGN_KEY_FAILURE);
+  });
+});
+
 describe('findOwnedProject', () => {
   test('the owner of the project gets its id', async () => {
     const ownerId = await seedOwner();

@@ -1,14 +1,22 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
-import { type SessionOwner, openKeyProject, openOwnedProject, resolveSessionOwner } from '../src/project-routing';
+import {
+  type SessionOwner,
+  findOwnedProjectId,
+  findOwnedWorkspaceId,
+  openKeyProject,
+  openOwnedProject,
+  resolveSessionOwner,
+} from '../src/project-routing';
 import { countingEnv } from './counting-namespace';
-import { seedKey, seedLiveOwner, seedOwner, seedProject, seedSession } from './directory-seed';
+import { seedKey, seedLiveOwner, seedOwner, seedProject, seedSession, seedWorkspace } from './directory-seed';
 import { AGENT_ACTOR, CLOCK_NOW, TODAY, draftOf, openTasksFilter, unwrap } from './task-fixtures';
 
 const EMPTY_SECRET = '';
 const BLANK_SECRET = '   ';
 const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
+const KEY_HINT = 'seed';
 
 function newSecret(): string {
   return crypto.randomUUID();
@@ -130,6 +138,62 @@ describe('openOwnedProject', () => {
   });
 });
 
+describe('findOwnedProjectId', () => {
+  test('the owner of a project gets its id and addresses no Durable Object', async () => {
+    const { countedEnv, addressingCalls } = countingEnv();
+    const ownerId = await seedOwner();
+    const projectId = await seedProject({ ownerId });
+    const owner = await seedLiveOwner({ ownerId });
+    expect(await findOwnedProjectId({ env: countedEnv, owner, projectId })).toBe(projectId);
+    expect(addressingCalls).toEqual([]);
+  });
+
+  test('another owner and a project id that never existed get nothing', async () => {
+    const projectId = await seedProject({ ownerId: await seedOwner() });
+    const stranger = await seedLiveOwner({ ownerId: await seedOwner() });
+    expect(await findOwnedProjectId({ env, owner: stranger, projectId })).toBeNull();
+    expect(await findOwnedProjectId({ env, owner: stranger, projectId: crypto.randomUUID() })).toBeNull();
+  });
+
+  test('a forged session owner gets nothing even for its own project', async () => {
+    const ownerId = await seedOwner();
+    const projectId = await seedProject({ ownerId });
+    const forgedOwner = { ownerId } as SessionOwner;
+    expect(await findOwnedProjectId({ env, owner: forgedOwner, projectId })).toBeNull();
+  });
+});
+
+describe('findOwnedWorkspaceId', () => {
+  test('the owner of a workspace gets its id and addresses no Durable Object', async () => {
+    const { countedEnv, addressingCalls } = countingEnv();
+    const ownerId = await seedOwner();
+    const workspaceId = await seedWorkspace({ ownerId });
+    const owner = await seedLiveOwner({ ownerId });
+    expect(await findOwnedWorkspaceId({ env: countedEnv, owner, workspaceId })).toBe(workspaceId);
+    expect(addressingCalls).toEqual([]);
+  });
+
+  test('another owner and a workspace id that never existed get nothing', async () => {
+    const workspaceId = await seedWorkspace({ ownerId: await seedOwner() });
+    const stranger = await seedLiveOwner({ ownerId: await seedOwner() });
+    expect(await findOwnedWorkspaceId({ env, owner: stranger, workspaceId })).toBeNull();
+    expect(await findOwnedWorkspaceId({ env, owner: stranger, workspaceId: crypto.randomUUID() })).toBeNull();
+  });
+
+  test('a forged session owner gets nothing even for its own workspace', async () => {
+    const ownerId = await seedOwner();
+    const workspaceId = await seedWorkspace({ ownerId });
+    const forgedOwner = { ownerId } as SessionOwner;
+    expect(await findOwnedWorkspaceId({ env, owner: forgedOwner, workspaceId })).toBeNull();
+  });
+
+  test('a project id is not a workspace id', async () => {
+    const ownerId = await seedOwner();
+    const projectId = await seedProject({ ownerId });
+    expect(await findOwnedWorkspaceId({ env, owner: await seedLiveOwner({ ownerId }), workspaceId: projectId })).toBeNull();
+  });
+});
+
 describe('a secret that is not a usable string', () => {
   test('a whitespace-only secret opens nothing even when rows hold its digest', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
@@ -144,8 +208,8 @@ describe('a secret that is not a usable string', () => {
   test('a secret that is not a string opens nothing even when rows hold the digest of nothing', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
     const emptyDigest = await digestCredential(EMPTY_SECRET);
-    await env.DIRECTORY.prepare('INSERT OR IGNORE INTO project_keys (digest, project_id, created_at) VALUES (?, ?, ?)')
-      .bind(emptyDigest, projectId, CLOCK_NOW)
+    await env.DIRECTORY.prepare('INSERT OR IGNORE INTO project_keys (digest, id, hint, project_id, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(emptyDigest, crypto.randomUUID(), KEY_HINT, projectId, CLOCK_NOW)
       .run();
     await env.DIRECTORY.prepare('INSERT OR IGNORE INTO sessions (digest, owner_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
       .bind(emptyDigest, await seedOwner(), CLOCK_NOW, CLOCK_NOW + 1)

@@ -9,6 +9,7 @@ import {
 import { agentActor } from '@todz/core';
 import { ActorKind, RuleIssue } from '@todz/types';
 import { z } from 'zod';
+import { bearerSecret, unauthorized } from './bearer-secret';
 import type { Env } from './env';
 import { MCP_COPY } from './mcp-copy';
 import { type McpServerScope, buildMcpServer, envelopeClientName } from './mcp-server';
@@ -19,14 +20,10 @@ import { resultOf } from './project-result';
 import { type KeyProject, openKeyProject } from './project-routing';
 
 const BAD_REQUEST_STATUS = 400;
-const UNAUTHORIZED_STATUS = 401;
 const NOT_FOUND_STATUS = 404;
 const METHOD_NOT_ALLOWED_STATUS = 405;
 const SESSION_REQUIRED_CODE = -32000;
 const SESSION_NOT_FOUND_CODE = -32001;
-const BEARER_PATTERN = /^Bearer (.+)$/i;
-const BEARER_SECRET_GROUP = 1;
-const BEARER_CHALLENGE = 'Bearer';
 const SESSION_HEADER = 'Mcp-Session-Id';
 const MCP_METHOD = 'POST';
 const INITIALIZE_METHOD = 'initialize';
@@ -52,18 +49,6 @@ const InitializeParamsSchema = z.object({ clientInfo: z.object({ name: z.string(
 type RequestId = z.infer<typeof InitializeMessageSchema>['id'];
 
 type LegacyRequest = { request: Request; env: Env; keyProject: KeyProject; today: string; now: number };
-
-function bearerSecret(request: Request): string | null {
-  const authorization = request.headers.get('Authorization');
-  if (authorization === null) return null;
-  const secret = BEARER_PATTERN.exec(authorization)?.[BEARER_SECRET_GROUP];
-  if (secret === undefined) return null;
-  return secret;
-}
-
-function unauthorized(): Response {
-  return new Response(null, { status: UNAUTHORIZED_STATUS, headers: { 'WWW-Authenticate': BEARER_CHALLENGE } });
-}
 
 function methodNotAllowed(): Response {
   return new Response(null, { status: METHOD_NOT_ALLOWED_STATUS, headers: { Allow: MCP_METHOD } });

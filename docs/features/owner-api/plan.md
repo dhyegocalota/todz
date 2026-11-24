@@ -40,13 +40,13 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ### G2
 
-- [ ] **Step 5:** pin: `0001_directory.sql` gains `projects.is_inbox`, `project_keys.id` and `project_keys.hint`; `0003_owner_api.sql`; `seedProject`, `seedKey` and every caller follow; `worker.test.ts` lists the seven tables; schema pins in `directory.test.ts`; `bearerSecret` moves to `bearer-secret.ts` and joins the shared-helper line of `AGENTS.md`; `api-source.test.ts` fails when `wrangler.jsonc` names `SIGN_IN_PROVIDER`. All existing tests stay green.
-- [ ] **Step 6:** red then green: `issueProjectKey` returns `{ id, secret }` and stores `id` and `hint`; its callers in `directory-seed.ts` and `mcp-endpoint.test.ts` follow (`project-keys.test.ts`); `findOwnedProjectId` and `findOwnedWorkspaceId` in `project-routing.ts`, brand-checked, opening no stub (`project-routing.test.ts`).
-- [ ] **Step 7:** red then green: `canonicalTimeZone` (`time-zone.test.ts`) and the fake provider (`sign-in-provider.test.ts`).
-- [ ] **Step 8:** red then green: the JSON shapes (`owner-json.test.ts`) and the route table matching, including `:number` bounds and the empty 404 (`owner-routes.test.ts`).
-- [ ] **Step 9:** red then green: `SignIn`, `SignOut`, `ReadOwner`, `UpdateOwner`, the session cap and expiry, the 503 without a provider and with `apple`, the check order, the race on a first sign-in (`owner-sign-in.test.ts`, helper `owner-client.ts`).
-- [ ] **Step 10:** red then green: `ListWorkspaces`, `CreateWorkspace` with its Inbox, `RenameWorkspace`, `CreateProject`, `RenameProject` with `inbox_is_fixed` (`owner-workspaces.test.ts`).
-- [ ] **Step 11:** red then green: `ListKeys`, `IssueKey`, `RevokeKey`; a revoked key answers 401 on `/mcp` and loses its MCP sessions (`owner-keys.test.ts`).
+- [x] **Step 5** (pin, `2bab72f`): pin: `0001_directory.sql` gains `projects.is_inbox`, `project_keys.id` and `project_keys.hint`; `0003_owner_api.sql`; `seedProject`, `seedKey` and every caller follow; `worker.test.ts` lists the seven tables; schema pins in `directory.test.ts`; `bearerSecret` moves to `bearer-secret.ts` and joins the shared-helper line of `AGENTS.md`; `api-source.test.ts` fails when `wrangler.jsonc` names `SIGN_IN_PROVIDER`. All existing tests stay green.
+- [x] **Step 6** (red `99be949`, green `815f26d`): red then green: `issueProjectKey` returns `{ id, secret }` and stores `id` and `hint`; its callers in `directory-seed.ts` and `mcp-endpoint.test.ts` follow (`project-keys.test.ts`); `findOwnedProjectId` and `findOwnedWorkspaceId` in `project-routing.ts`, brand-checked, opening no stub (`project-routing.test.ts`).
+- [x] **Step 7** (red `a7170ba`, green `f37cfc1`, refactor `c7f7b0a` renames `signInProviderOf` to `signInKindOf`): red then green: `canonicalTimeZone` (`time-zone.test.ts`) and the fake provider (`sign-in-provider.test.ts`).
+- [x] **Step 8** (red `ad7d7b4`, green `5d61236`): red then green: the JSON shapes (`owner-json.test.ts`) and the route table matching, including `:number` bounds and the empty 404 (`owner-routes.test.ts`).
+- [x] **Step 9** (red `920084c`, green `c95025d`): red then green: `SignIn`, `SignOut`, `ReadOwner`, `UpdateOwner`, the session cap and expiry, the 503 without a provider and with `apple`, the check order, the race on a first sign-in (`owner-sign-in.test.ts`, helper `owner-client.ts`).
+- [x] **Step 10** (red `1e1a7bd`, green `0936992`): red then green: `ListWorkspaces`, `CreateWorkspace` with its Inbox, `RenameWorkspace`, `CreateProject`, `RenameProject` with `inbox_is_fixed` (`owner-workspaces.test.ts`).
+- [x] **Step 11** (red `e2e2f87`, green `0a759a0`): red then green: `ListKeys`, `IssueKey`, `RevokeKey`; a revoked key answers 401 on `/mcp` and loses its MCP sessions (`owner-keys.test.ts`).
 
 ### G3
 

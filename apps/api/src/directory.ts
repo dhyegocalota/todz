@@ -19,17 +19,21 @@ export async function findKeyProject({ directory, digest }: { directory: D1Datab
 export async function insertProjectKey({
   directory,
   digest,
+  id,
+  hint,
   projectId,
   now,
 }: {
   directory: D1Database;
   digest: string;
+  id: string;
+  hint: string;
   projectId: string;
   now: number;
 }): Promise<void> {
   await directory
-    .prepare('INSERT INTO project_keys (digest, project_id, created_at, revoked_at) VALUES (?, ?, ?, NULL)')
-    .bind(digest, projectId, now)
+    .prepare('INSERT INTO project_keys (digest, id, hint, project_id, created_at, revoked_at) VALUES (?, ?, ?, ?, ?, NULL)')
+    .bind(digest, id, hint, projectId, now)
     .run();
 }
 
@@ -113,6 +117,23 @@ export async function findOwnedProject({
       'SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.id = ? AND workspaces.owner_id = ?',
     )
     .bind(projectId, ownerId)
+    .first<ProjectRow>();
+  if (row === null) return null;
+  return row.id;
+}
+
+export async function findOwnedWorkspace({
+  directory,
+  ownerId,
+  workspaceId,
+}: {
+  directory: D1Database;
+  ownerId: string;
+  workspaceId: string;
+}): Promise<string | null> {
+  const row = await directory
+    .prepare('SELECT id FROM workspaces WHERE id = ? AND owner_id = ?')
+    .bind(workspaceId, ownerId)
     .first<ProjectRow>();
   if (row === null) return null;
   return row.id;
