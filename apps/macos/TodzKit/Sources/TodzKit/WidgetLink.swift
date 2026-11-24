@@ -2,6 +2,8 @@ import Foundation
 
 private let linkScheme = "todz"
 private let pathSeparator: Character = "/"
+private let taskLinkComponentCount = 2
+private let firstTaskNumber = 1
 private let pathComponentAllowed = CharacterSet.urlPathAllowed.subtracting(CharacterSet(charactersIn: String(pathSeparator)))
 private let encodingFailure = "a Swift string always percent-encodes"
 private let linkFailure = "a todz link always has a scheme, a host and an absolute path"
@@ -31,8 +33,8 @@ public enum WidgetLink: Equatable, Sendable {
             guard components.isEmpty else { return nil }
             self = .today
         case .task:
-            guard components.count == 2, let projectIdentifier = components[0], let numberText = components[1] else { return nil }
-            guard !projectIdentifier.isEmpty, let number = Int(numberText), number > 0 else { return nil }
+            guard components.count == taskLinkComponentCount, let projectIdentifier = components[0], let numberText = components[1] else { return nil }
+            guard !projectIdentifier.isEmpty, let number = Int(numberText), number >= firstTaskNumber else { return nil }
             self = .task(TaskKey(projectIdentifier: projectIdentifier, number: number))
         }
     }
