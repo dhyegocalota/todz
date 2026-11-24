@@ -326,6 +326,23 @@ extension AppModelTests {
         #expect(harness.model.keys == .loaded([]))
     }
 
+    @Test func aRevokeAnswerAfterTheProjectChangedLeavesTheNewListAlone() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.service.failures[.revokeKey] = .unreachable
+        harness.service.suspend(.revokeKey)
+        let revoking = Task { await harness.model.revokeKey(launchKey) }
+        await harness.service.held(.revokeKey)
+        harness.model.showKeys(projectIdentifier: inboxIdentifier)
+        await harness.model.keyLoading?.value
+        harness.service.resume(.revokeKey)
+        await revoking.value
+        #expect(harness.model.keyProjectIdentifier == inboxIdentifier)
+        #expect(harness.model.failedRevokeIdentifiers == [])
+        #expect(harness.model.revokingKeyIdentifiers == [])
+        #expect(harness.model.keys == .loaded([]))
+    }
+
     @Test func aListForAGoneProjectFallsBackToTheInbox() async throws {
         let harness = try await keyHarness()
         harness.service.projectFailures[launchIdentifier] = .notFound
