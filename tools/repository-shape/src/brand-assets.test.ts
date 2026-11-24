@@ -199,7 +199,7 @@ describe('brand assets', () => {
   });
 
   test('the widget glyph names an image set that exists in the catalog', () => {
-    const imageSetName = readRepositoryFile(WIDGET_BRAND_GLYPH_FILE).match(/Image\("([^"]+)"\)/)?.[1];
+    const imageSetName = readRepositoryFile(WIDGET_BRAND_GLYPH_FILE).match(/GlyphName = "([^"]+)"/)?.[1];
     expect(imageSetName).toBeDefined();
     expect(existsSync(repositoryPath(posix.join(ASSET_CATALOG, `${imageSetName}.imageset`)))).toBe(true);
   });

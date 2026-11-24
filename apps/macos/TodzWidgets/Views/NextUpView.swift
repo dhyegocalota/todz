@@ -31,10 +31,13 @@ struct NextUpView: View {
 
     private func labeled(@ViewBuilder _ body: () -> some View) -> some View {
         VStack(alignment: .leading) {
-            Text(WidgetCopy.nextUp)
-                .font(.headline)
-                .unredacted()
-                .accessibilityAddTraits(.isHeader)
+            HStack {
+                WidgetBrandGlyph()
+                Text(WidgetCopy.nextUp)
+                    .font(.headline)
+                    .unredacted()
+                    .accessibilityAddTraits(.isHeader)
+            }
             body()
             Spacer()
         }

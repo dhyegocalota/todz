@@ -6,9 +6,12 @@ struct WidgetPrompt<Accessory: View>: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text(title)
-                .font(.headline)
-                .unredacted()
+            HStack {
+                WidgetBrandGlyph()
+                Text(title)
+                    .font(.headline)
+                    .unredacted()
+            }
             accessory
             Spacer()
             Text(WidgetCopy.noSnapshot)
