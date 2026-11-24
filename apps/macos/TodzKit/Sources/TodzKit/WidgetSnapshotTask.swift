@@ -28,6 +28,10 @@ public struct WidgetSnapshotTask: Codable, Equatable, Sendable {
         self.state = state
     }
 
+    public var isProjectTagShown: Bool {
+        true
+    }
+
     static func of(_ boardTask: BoardTask, day: CalendarDate) -> WidgetSnapshotTask {
         let task = boardTask.task
         return WidgetSnapshotTask(

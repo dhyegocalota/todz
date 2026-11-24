@@ -103,6 +103,18 @@ private func snapshot(_ tasks: [TaskRecord], pendingTasks: [PendingTask] = []) t
         #expect(try OwnerCoding.decoder().decode(WidgetSnapshot.self, from: data) == snapshot)
     }
 
+    @Test func aTaskWithACreatorLabelShowsNoProjectTag() throws {
+        var agentTask = MutableTask(number: 1, title: "Task 1", dueDate: today)
+        agentTask.createdBy = .agent(clientName: agentClientName)
+        let snapshot = try snapshot([agentTask.record, open(2)])
+        #expect(snapshot.open.map(\.isProjectTagShown) == [false, true])
+    }
+
+    @Test func aPendingTaskShowsItsProjectTag() throws {
+        let snapshot = try snapshot([], pendingTasks: [pending("Draft", dueDate: today)])
+        #expect(snapshot.pending.map(\.isProjectTagShown) == [true])
+    }
+
     @Test func isCurrentOnlyOnItsOwnDay() throws {
         let snapshot = try snapshot([open(1)])
         #expect(snapshot.isCurrent(on: today))
