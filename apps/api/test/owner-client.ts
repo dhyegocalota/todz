@@ -35,6 +35,21 @@ export function serveOwnerCall({ call, now, workerEnv = env }: { call: OwnerCall
   return serveOwner({ request: requestOf(call), env: workerEnv, now });
 }
 
+export function recordingEnv(): { workerEnv: Env; statements: string[] } {
+  const statements: string[] = [];
+  const directory = new Proxy(env.DIRECTORY, {
+    get(target, property) {
+      const member = Reflect.get(target, property);
+      if (typeof member !== 'function') return member;
+      return (...parameters: unknown[]) => {
+        if (property === 'prepare') statements.push(String(parameters[0]));
+        return member.apply(target, parameters);
+      };
+    },
+  }) as D1Database;
+  return { workerEnv: { DIRECTORY: directory, PROJECT_STORE: env.PROJECT_STORE }, statements };
+}
+
 export function signInCall({ identityToken, timeZone }: { identityToken: string; timeZone: string }): OwnerCall {
   return { method: 'POST', path: '/owner/sessions', body: { identity_token: identityToken, time_zone: timeZone } };
 }
