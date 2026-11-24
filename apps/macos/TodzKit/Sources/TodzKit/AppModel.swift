@@ -28,6 +28,7 @@ import Observation
     @ObservationIgnored var ownerIdentifier: String?
     @ObservationIgnored var isWorkspaceListOutdated = false
     @ObservationIgnored var watches: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored var workspaceReload: Task<Void, Never>?
     @ObservationIgnored var sendLoop: Task<Void, Never>?
     @ObservationIgnored var sendingSession: String?
     @ObservationIgnored var sendWait: Task<Void, any Error>?
