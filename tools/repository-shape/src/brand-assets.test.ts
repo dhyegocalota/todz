@@ -75,15 +75,14 @@ describe('brand assets', () => {
   });
 
   test('every app icon file is a png at the pixel size its size and scale give', () => {
-    const wrong = appIconImages()
-      .filter((image) => !isPng(imageFilename(image)))
-      .map((image) => imageFilename(image));
-    const mismatched = appIconImages()
-      .filter((image) => {
-        const { width, height } = pngDimensions(imageFilename(image));
-        return width !== expectedPixels(image) || height !== expectedPixels(image);
-      })
-      .map((image) => imageFilename(image));
+    const files = appIconImages().map((image) => {
+      const filename = imageFilename(image);
+      return { image, filename, ...pngDimensions(filename) };
+    });
+    const wrong = files.filter(({ filename }) => !isPng(filename)).map(({ filename }) => filename);
+    const mismatched = files
+      .filter(({ image, width, height }) => width !== expectedPixels(image) || height !== expectedPixels(image))
+      .map(({ filename }) => filename);
     expect(wrong).toEqual([]);
     expect(mismatched).toEqual([]);
   });
