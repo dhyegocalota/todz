@@ -3,6 +3,7 @@ import {
   INVALID_PARAMS,
   JSONRPC_VERSION,
   createMcpHandler,
+  isInitializeRequest,
   isLegacyRequest,
 } from '@modelcontextprotocol/server';
 import { agentActor } from '@todz/core';
@@ -99,10 +100,12 @@ function legacyScope({ legacyRequest, clientName }: { legacyRequest: LegacyReque
 
 async function initializeSession({
   legacyRequest,
+  body,
   id,
   params,
 }: {
   legacyRequest: LegacyRequest;
+  body: unknown;
   id: RequestId;
   params: unknown;
 }): Promise<Response> {
@@ -111,8 +114,10 @@ async function initializeSession({
   if (clientName === null) {
     return jsonRpcError({ status: BAD_REQUEST_STATUS, id, code: INVALID_PARAMS, message: MCP_COPY.ruleIssue[RuleIssue.ClientNameInvalid] });
   }
-  const sessionId = await openMcpSession({ directory: env.DIRECTORY, keyDigest: keyProject.keyDigest, clientName, now });
   const response = await serveScope({ request, scope: legacyScope({ legacyRequest, clientName }), era: ProtocolEra.Legacy });
+  const isAcceptedInitialize = isInitializeRequest(body) && response.ok;
+  if (!isAcceptedInitialize) return response;
+  const sessionId = await openMcpSession({ directory: env.DIRECTORY, keyDigest: keyProject.keyDigest, clientName, now });
   const sessionResponse = new Response(response.body, response);
   sessionResponse.headers.set(SESSION_HEADER, sessionId);
   return sessionResponse;
@@ -120,9 +125,10 @@ async function initializeSession({
 
 async function serveLegacy(legacyRequest: LegacyRequest): Promise<Response> {
   const { request, env, keyProject, now } = legacyRequest;
-  const initializeMessage = InitializeMessageSchema.safeParse(await parsedBody(request));
+  const body = await parsedBody(request);
+  const initializeMessage = InitializeMessageSchema.safeParse(body);
   if (initializeMessage.success) {
-    return initializeSession({ legacyRequest, id: initializeMessage.data.id, params: initializeMessage.data.params });
+    return initializeSession({ legacyRequest, body, id: initializeMessage.data.id, params: initializeMessage.data.params });
   }
   const sessionId = request.headers.get(SESSION_HEADER);
   const isMissingSession = sessionId === null || sessionId.trim() === '';
