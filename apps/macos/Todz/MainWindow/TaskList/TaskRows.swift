@@ -37,7 +37,7 @@ struct TaskRows: View {
             }
             .onChange(of: model.selectedTask) { _, selectedTask in
                 guard let selectedTask else { return }
-                proxy.scrollTo(selectedTask)
+                Task { proxy.scrollTo(selectedTask) }
             }
         }
     }
