@@ -27,4 +27,43 @@ public struct WidgetSnapshotTask: Codable, Equatable, Sendable {
         self.isOverdue = isOverdue
         self.state = state
     }
+
+    static func of(_ boardTask: BoardTask, day: CalendarDate) -> WidgetSnapshotTask {
+        let task = boardTask.task
+        return WidgetSnapshotTask(
+            projectIdentifier: boardTask.project.identifier,
+            projectName: boardTask.project.name,
+            number: task.number,
+            title: task.title,
+            dueDate: task.dueDate,
+            creatorLabel: creatorLabel(of: task.createdBy),
+            isOverdue: isOverdue(dueDate: task.dueDate, day: day),
+            state: task.state
+        )
+    }
+
+    static func of(_ pendingTask: PendingTask, project: Project, day: CalendarDate) -> WidgetSnapshotTask {
+        WidgetSnapshotTask(
+            projectIdentifier: project.identifier,
+            projectName: project.name,
+            number: nil,
+            title: pendingTask.title,
+            dueDate: pendingTask.dueDate,
+            creatorLabel: nil,
+            isOverdue: isOverdue(dueDate: pendingTask.dueDate, day: day),
+            state: .open
+        )
+    }
+
+    private static func creatorLabel(of creator: ChangeActor) -> String? {
+        switch creator {
+        case .owner: nil
+        case let .agent(clientName): clientName
+        }
+    }
+
+    private static func isOverdue(dueDate: CalendarDate?, day: CalendarDate) -> Bool {
+        guard let dueDate else { return false }
+        return dueDate < day
+    }
 }

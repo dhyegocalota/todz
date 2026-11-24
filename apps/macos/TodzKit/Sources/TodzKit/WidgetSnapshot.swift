@@ -25,10 +25,23 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     }
 
     public static func of(views: TaskViews, workspace: Workspace, day: CalendarDate, timeZone: TimeZone) -> WidgetSnapshot {
-        fatalError("WidgetSnapshot.of is not implemented")
+        let today = views.today
+        let pending = views.pendingTasks(for: .today).compactMap { pendingTask in
+            workspace.projects
+                .first { $0.identifier == pendingTask.projectIdentifier }
+                .map { WidgetSnapshotTask.of(pendingTask, project: $0, day: day) }
+        }
+        return WidgetSnapshot(
+            workspaceName: workspace.name,
+            day: day,
+            timeZoneIdentifier: timeZone.identifier,
+            open: today.open.map { WidgetSnapshotTask.of($0, day: day) },
+            pending: pending,
+            doneToday: today.doneToday.map { WidgetSnapshotTask.of($0, day: day) }
+        )
     }
 
     public func isCurrent(on day: CalendarDate) -> Bool {
-        fatalError("WidgetSnapshot.isCurrent is not implemented")
+        self.day == day
     }
 }
