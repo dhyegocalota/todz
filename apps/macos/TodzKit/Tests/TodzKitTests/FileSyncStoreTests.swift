@@ -97,8 +97,7 @@ private func projectCache(taskCount: Int = 2) -> ProjectCache {
         #expect(throws: SyncStoreError.unwritable) { try store.writeProject(escaping) }
         #expect(try store.readProject(identifier: identifier) == nil)
         try store.eraseProject(identifier: identifier)
-        #expect(FileManager.default.fileExists(atPath: folder.path(percentEncoded: false)) == false)
-        #expect(try FileManager.default.contentsOfDirectory(atPath: container.path(percentEncoded: false)) == [])
+        #expect(FileManager.default.fileExists(atPath: container.path(percentEncoded: false)) == false)
     }
 
     @Test func throwsUnreadableWhenAFileHoldsBrokenJSON() throws {
