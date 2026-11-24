@@ -17,7 +17,7 @@ extension AppModel {
         do {
             let listed = try await request { try await service.listKeys(session: $0, projectIdentifier: projectIdentifier) }
             guard keyScreenIdentifier == visit else { return }
-            keys = .loaded(listed)
+            keys = .loaded(including(key: issuedKey?.key, in: listed))
             keyReloadFailure = nil
         } catch {
             guard keyScreenIdentifier == visit else { return }
@@ -128,7 +128,14 @@ extension AppModel {
             await loadKeys()
             return
         }
-        keys = .loaded(listed + [key])
+        keys = .loaded(including(key: key, in: listed))
+    }
+
+    private func including(key: ProjectKey?, in listed: [ProjectKey]) -> [ProjectKey] {
+        guard let key else { return listed }
+        let isListed = listed.contains { $0.identifier == key.identifier }
+        guard !isListed else { return listed }
+        return listed + [key]
     }
 
     private func forget(_ key: ProjectKey) {
