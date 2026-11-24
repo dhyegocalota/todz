@@ -11,6 +11,7 @@ private let completionLinger: Duration = .seconds(1)
     var isConfirmingSignOut = false
     var lingers = CompletionLingers()
     var waitingLink: WidgetLink?
+    var agentClient: AgentClient = .claudeCode
     @ObservationIgnored private var lingerTimers: [TaskKey: Task<Void, Never>] = [:]
 
     var inspectorToggleTitle: String {
