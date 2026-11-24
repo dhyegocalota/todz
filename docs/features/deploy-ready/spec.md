@@ -53,6 +53,33 @@ macOS Release build: TodzAPIBaseURL = https://api.todz.app
 | Email Sending onboarding fails or is pending | link requests answer 503 until it completes; the runbook waits for the records to verify |
 | Over the per-client limit | 429 `too_many_requests` |
 
+## Plan review answers (2026-11-24)
+
+These bind the build and win over any line above that disagrees.
+
+- **D1, the limiter's key.** A named helper reads the client address from `CF-Connecting-IP`, which Cloudflare sets on every production request. With no header (`wrangler dev`, Miniflare tests, the v1 scenario) the limit is skipped by an explicit branch, and a test pins that. The key is `<route>:<address>`, so the two posts have separate buckets. Limiter tests send distinct addresses.
+- **D2, the limiter's answer.** Over the limit answers 429 `too_many_requests` (a new `OwnerErrorCode`, apart from `too_many_links`) with a `Retry-After` of the period. The limit (10) and the period (60 seconds, one of the two values Wrangler accepts) are constants in `libs/types`. `namespace_id` is `"1001"`. The app maps `too_many_requests` to a new `SignInError.tooManyRequests` with its own copy.
+- **D3, one public origin.** `wrangler.jsonc` sets `workers_dev: false` and `preview_urls: false`, both pinned by the shape test; the runbook's smoke check confirms the `workers.dev` host does not answer.
+- **D4, renames and the scenario.** The local migration command names `todz-directory` in `dev`, `dev:email` and `dev:email:cloudflare`. Every dev script passes `--var` for the provider, the sender and a local origin. `docs/scenarios/v1-walk.md`'s boot line follows (G1 owns it). The README says the new database id leaves earlier local state behind. The shape tests that said "never names" are inverted. A new shape test: no `package.json` script contains `--remote`.
+- **D5, `wrangler dev` with production routes.** Step 0 is a local spike: with the production `routes`, a request to `localhost:8787` must reach the Worker with a `localhost` `request.url`, so the console-sender guard still sees a local host. If it does not, the scripts pass `--host localhost` or `--local-upstream`. The answer goes into ADR 0044's Evidence.
+- **D6, the runbook's rollback and safety.** Its steps:
+  - check that the tree is clean and on `main`;
+  - pass the token from the Keychain item `todz-cloudflare` without echoing it, with `CLOUDFLARE_ACCOUNT_ID` set explicitly;
+  - verify that the database id exists (idempotent);
+  - take a `d1 time-travel info` bookmark, and a `d1 export --remote` before any migration;
+  - run migrations, always with `--remote`;
+  - deploy with no `--var`;
+  - for a first deploy, the backout is to detach the custom domain and `wrangler delete`, which loses nothing while the database is empty;
+  - for a later deploy, the backout is `wrangler rollback`. Migrations are forward-only and must stay compatible with the previous Worker;
+  - Durable Object classes are never deleted.
+- **D7, Email Sending onboarding.** The runbook's call, path, body and permission are checked against Cloudflare's documentation through Context7 before writing it. It names the onboarded domain (`todz.app`, for `noreply@todz.app`), and its expected result is a poll until the records verify. The last smoke step is one real `POST /owner/sign-in-links` to an address the owner controls.
+- **D8, the custom domain.** Wrangler creates the DNS record and certificate. The runbook first lists the zone's DNS records named `api` and stops if one exists. `If it fails` names Workers Routes and DNS edit.
+- **D9, the app.** `project.yml` sets `TODZ_API_BASE_URL` under the Todz target's `settings.configs` (Debug and Release), and `Info.plist` is regenerated. `scripts/verify.sh` builds Debug only, so the Release box is an explicit `xcodebuild -configuration Release`. The README says the Release build is development-signed and not yet distributable.
+- **D10, runbooks and ADRs.**
+  - `docs/runbooks/README.md` says agents never run runbooks, except `deploy-the-api`, which the loop runs under the owner's authorization. `runbooks.test.ts` follows in the same commit.
+  - ADR 0044 turns `Accepted` on the branch at ship, alongside the amended ADRs' lines.
+  - The adversarial claim 2 is attacked against a `--var` or dashboard override. The runbook deploys with no `--var` and smoke-checks `{"method":"link"}`.
+
 ## Open questions → answers
 
 | Question | Options | Owner's answer | Date |
