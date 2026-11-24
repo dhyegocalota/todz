@@ -56,3 +56,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0033](0033-without-a-team-the-widgets-share-a-folder-in-application-support-that-an-app-group-replaces-later.md) | Without a team, the widgets share a folder in Application Support that an App Group replaces later | Superseded by [0035](0035-with-the-personal-team-the-widgets-share-the-app-group.md) | 2026-11-24 |
 | [0034](0034-the-key-screen-shows-a-new-key-once-inside-each-client-s-command.md) | The key screen shows a new key once, inside each client's command | Proposed | 2026-11-24 |
 | [0035](0035-with-the-personal-team-the-widgets-share-the-app-group.md) | With the Personal Team, the widgets share the App Group | Proposed | 2026-11-24 |
+| [0037](0037-the-v1-scenario-walks-the-native-app-with-computer-use-and-the-agent-with-an-mcp-client.md) | The v1 scenario walks the native app with computer use and the agent with an MCP client | Proposed | 2026-11-24 |
