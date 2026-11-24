@@ -6,10 +6,16 @@ private let transientType = NSPasteboard.PasteboardType("org.nspasteboard.Transi
 enum Pasteboard {
     static func copy(text: String, holdsSecret: Bool) {
         let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
-        guard holdsSecret else { return }
-        pasteboard.setData(Data(), forType: concealedType)
-        pasteboard.setData(Data(), forType: transientType)
+        guard holdsSecret else {
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
+            return
+        }
+        pasteboard.prepareForNewContents(with: .currentHostOnly)
+        let item = NSPasteboardItem()
+        item.setString(text, forType: .string)
+        item.setData(Data(), forType: concealedType)
+        item.setData(Data(), forType: transientType)
+        pasteboard.writeObjects([item])
     }
 }
