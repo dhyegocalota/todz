@@ -20,4 +20,8 @@ enum AccessibilityCopy {
     static func openCount(count: Int) -> String {
         "\(count) open"
     }
+
+    static func todayIn(workspace: String) -> String {
+        "Today in \(workspace)"
+    }
 }
