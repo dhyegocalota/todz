@@ -17,7 +17,7 @@ The owner API exists, but nothing a person can use talks to it. The product need
 - A first sign-in with no workspace asks for the workspace's name (ADR 0022).
 - The main window of the product design: the workspace switcher, Inbox, Today, Upcoming, Done, the projects; the task list; the inspector with project, due date, how the task was added, notes and history.
 - The owner's task writes: add, complete, reopen, edit title, notes and due date, reorder by drag in the Inbox and project views. Create and switch workspaces, create and rename projects (the Inbox cannot be renamed).
-- Views computed in the app from each project's change feed, read from cursor 0 into memory, in the Mac's own calendar. Launch, a workspace switch and ⌘R reset the board and pull each project of the active workspace from 0; the shell keeps no cursor between pulls.
+- Views computed in the app from each project's change feed, read from cursor 0 into memory, in the Mac's own calendar. Launch and a workspace switch reset the board and pull each project of the active workspace from 0; ⌘R pulls each project from 0 into the held board, so rows stay while it runs; the shell keeps no cursor between pulls.
 - The Mac's time zone reaches the server at sign-in and, when a session exists, with `PATCH /owner` at every launch, so the app's Today and the agents' due windows (ADR 0018) agree.
 - A `macos` gate in `pnpm verify` (ADR 0024).
 
