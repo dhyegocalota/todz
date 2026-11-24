@@ -7,6 +7,7 @@ import {
   LINK_CHALLENGE,
   freshAddress,
   EMAIL_SETTINGS,
+  PUBLIC_ORIGIN,
   consoleOutput,
   emailEnv,
   linkRows,
@@ -151,7 +152,7 @@ describe('POST /owner/sign-in-links', () => {
   ])('%s answers 400 invalid_request', async (_name, payload) => {
     const output = consoleOutput();
     const response = await serveOwnerCall({
-      call: { method: 'POST', path: '/owner/sign-in-links', ...payload },
+      call: { method: 'POST', path: '/owner/sign-in-links', origin: PUBLIC_ORIGIN, ...payload },
       now: CLOCK_NOW,
       workerEnv: emailEnv(),
     });
@@ -169,6 +170,7 @@ describe('POST /owner/sign-in-links', () => {
         call: {
           method: 'POST',
           path: '/owner/sign-in-links',
+          origin: PUBLIC_ORIGIN,
           rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE }),
           headers: { 'Content-Type': contentType },
         },
@@ -188,6 +190,7 @@ describe('POST /owner/sign-in-links', () => {
       call: {
         method: 'POST',
         path: '/owner/sign-in-links',
+        origin: PUBLIC_ORIGIN,
         rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE }),
         headers: { 'Content-Type': 'Application/JSON; charset=utf-8' },
       },
@@ -203,6 +206,7 @@ describe('POST /owner/sign-in-links', () => {
       call: {
         method: 'POST',
         path: '/owner/sign-in-links',
+        origin: PUBLIC_ORIGIN,
         body: { email: freshAddress(), link_challenge: LINK_CHALLENGE },
         token: 'unknown',
       },
@@ -298,15 +302,26 @@ describe('a link that cannot be asked for', () => {
     const statuses = await Promise.all(
       ['http://localhost:8787', 'http://127.0.0.1:8787'].map(
         async (origin) =>
-          (await requestLink({ email: `origin-${origin.length}@example.com`, workerEnv: emailEnv({ PUBLIC_ORIGIN: origin }) })).status,
+          (await requestLink({ email: `origin-${origin.length}@example.com`, origin, workerEnv: emailEnv({ PUBLIC_ORIGIN: origin }) }))
+            .status,
       ),
     );
     expect(statuses).toEqual([ACCEPTED_STATUS, ACCEPTED_STATUS]);
   });
 
+  test('the console sender is refused when the request itself arrives on a public host', async () => {
+    const output = consoleOutput();
+    const before = await totalLinks();
+    const response = await requestLink({ origin: 'https://api.todz.test' });
+    expect(response.status).toBe(UNAVAILABLE_STATUS);
+    expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
+    expect(output).not.toHaveBeenCalled();
+    expect(await totalLinks()).toBe(before);
+  });
+
   test('is checked before the body', async () => {
     const response = await serveOwnerCall({
-      call: { method: 'POST', path: '/owner/sign-in-links', rawBody: 'not json' },
+      call: { method: 'POST', path: '/owner/sign-in-links', origin: PUBLIC_ORIGIN, rawBody: 'not json' },
       now: CLOCK_NOW,
       workerEnv: emailEnv({ PUBLIC_ORIGIN: undefined }),
     });
