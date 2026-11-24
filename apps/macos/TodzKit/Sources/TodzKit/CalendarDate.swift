@@ -1,23 +1,30 @@
 import Foundation
 
-private let separator: Character = "-"
+private let textFormat = "%04d-%02d-%02d"
+
+private func gregorianCalendar(in timeZone: TimeZone) -> Calendar {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = timeZone
+    return calendar
+}
 
 public struct CalendarDate: Decodable, Sendable, Hashable, Comparable {
-    public static func < (lhs: CalendarDate, rhs: CalendarDate) -> Bool {
-        fatalError("CalendarDate ordering is not implemented")
-    }
-
-    public static func today(in timeZone: TimeZone, at instant: Date) -> CalendarDate {
-        fatalError("CalendarDate.today is not implemented")
-    }
-
-    public var text: String {
-        fatalError("CalendarDate.text is not implemented")
-    }
-
     public let year: Int
     public let month: Int
     public let day: Int
+
+    public static func < (lhs: CalendarDate, rhs: CalendarDate) -> Bool {
+        [lhs.year, lhs.month, lhs.day].lexicographicallyPrecedes([rhs.year, rhs.month, rhs.day])
+    }
+
+    public static func today(in timeZone: TimeZone, at instant: Date) -> CalendarDate {
+        let calendar = gregorianCalendar(in: timeZone)
+        return CalendarDate(
+            year: calendar.component(.year, from: instant),
+            month: calendar.component(.month, from: instant),
+            day: calendar.component(.day, from: instant)
+        )
+    }
 
     public init(year: Int, month: Int, day: Int) {
         self.year = year
@@ -26,9 +33,11 @@ public struct CalendarDate: Decodable, Sendable, Hashable, Comparable {
     }
 
     public init?(text: String) {
-        let parts = text.split(separator: separator).compactMap { Int($0) }
-        guard parts.count == 3 else { return nil }
-        self.init(year: parts[0], month: parts[1], day: parts[2])
+        guard let match = text.wholeMatch(of: /([0-9]{4})-([0-9]{2})-([0-9]{2})/) else { return nil }
+        guard let year = Int(match.1), let month = Int(match.2), let day = Int(match.3) else { return nil }
+        let components = DateComponents(calendar: gregorianCalendar(in: .gmt), year: year, month: month, day: day)
+        guard components.isValidDate else { return nil }
+        self.init(year: year, month: month, day: day)
     }
 
     public init(from decoder: any Decoder) throws {
@@ -38,5 +47,9 @@ public struct CalendarDate: Decodable, Sendable, Hashable, Comparable {
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "a due date is not a calendar date")
         }
         self = date
+    }
+
+    public var text: String {
+        String(format: textFormat, year, month, day)
     }
 }
