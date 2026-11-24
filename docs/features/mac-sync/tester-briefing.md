@@ -309,3 +309,12 @@ From `apps/macos/TodzKit`: `swift test` (290 tests). App: `xcodegen generate --s
 - An owner whose `PATCH /owner` is refused with `time_zone_invalid` is never confirmed, so their outbox waits until a later launch confirms (sign-in refuses that zone too, so only a zone that turns invalid after sign-in hits this). Each opened socket reloads the workspaces in that state. The Worker has a read-only owner route that could confirm instead.
 - When the owner is confirmed as another owner inside a reload started by a socket (an offline launch after two failed erases), the erase cancels that reload, so its listing fails and the load failure shows with Try again.
 - `plan.md`'s outcome table (transient row) and `test-plan.md` still describe the old counting rule; they are the lead's to update.
+
+## Tester pass 1 fixes
+
+| Fix | What changed | Red text |
+|---|---|---|
+| D1: Offline never appears while only sockets fail | A current watch's failure other than `unauthorized` now notes the connection (`AppModel+Watch.swift`), so `unreachable` sets Offline with nothing waiting; a coded `notFound` stays online. Test `anUnreachableWatchMarksTheModelOfflineBeforeItReconnects`; pins: `aStaleWatchsFailureLeavesTheNewSessionOnline`, `aMissingProjectKeepsTheModelOnlineWhileItsWatchReloads` | `Expectation failed: harness.model.syncStatus == .offline(waiting: 0)` |
+| A project that leaves the list keeps its file | `followActiveProjects()` erases the project file and board rows of each project that left (`forgetProject(identifier:)` in `AppModel+Cache.swift`); a workspace switch stops the watches first and erases nothing. Tests `aProjectThatLeavesTheListHasItsProjectFileErased` (red), `aWorkspaceSwitchErasesNoProjectFile` (pin) | `Expectation failed: harness.store.calls.contains(.eraseProject(identifier: launchIdentifier))` and `Expectation failed: harness.model.board.tasks(projectIdentifier: launchIdentifier).isEmpty` |
+
+Re-check D1: sign in with the server up and nothing waiting, stop the server, touch nothing. The status shows Offline within the first reconnect delay and clears on the next opened socket. Known gap: the board cursor of a left project stays in memory until the next sign-in.

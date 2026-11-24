@@ -69,6 +69,11 @@ extension AppModel {
         keepInCache { try store.writeProject(cache) }
     }
 
+    func forgetProject(identifier: String) {
+        board.reset(projectIdentifier: identifier)
+        keepInCache { try store.eraseProject(identifier: identifier) }
+    }
+
     func keepOutbox() {
         keepInCache { try store.writeOutbox(OwnerCoding.encoder().encode(outbox)) }
     }

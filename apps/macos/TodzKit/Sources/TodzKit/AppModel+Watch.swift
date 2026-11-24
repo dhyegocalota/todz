@@ -10,6 +10,7 @@ extension AppModel {
             watchAttempts[projectIdentifier] = nil
         }
         dropChanges(projectIdentifiers: leftIdentifiers)
+        leftIdentifiers.forEach { forgetProject(identifier: $0) }
         listedIdentifiers
             .filter { watches[$0] == nil }
             .forEach { projectIdentifier in
