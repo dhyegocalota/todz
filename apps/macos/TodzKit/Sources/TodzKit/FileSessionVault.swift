@@ -35,7 +35,8 @@ public struct FileSessionVault: SessionVault, Sendable {
 
     public func write(_ secret: String) throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let draftPath = folder.appending(path: draftFilePrefix + UUID().uuidString).path(percentEncoded: false)
+        let draftFile = folder.appending(path: draftFilePrefix + UUID().uuidString)
+        let draftPath = draftFile.path(percentEncoded: false)
         let descriptor = open(draftPath, draftFlags, privateMode)
         guard descriptor >= 0 else { throw SessionVaultError.unwritable }
         defer { unlink(draftPath) }
@@ -43,15 +44,19 @@ public struct FileSessionVault: SessionVault, Sendable {
         try draft.write(contentsOf: Data(secret.utf8))
         try draft.synchronize()
         try draft.close()
+        try excludeFromBackup(draftFile)
         guard rename(draftPath, sessionPath) == 0 else { throw SessionVaultError.unwritable }
-        try excludeFromBackup()
     }
 
-    private func excludeFromBackup() throws {
+    private func excludeFromBackup(_ draftFile: URL) throws {
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
-        var file = sessionFile
-        try file.setResourceValues(values)
+        var file = draftFile
+        do {
+            try file.setResourceValues(values)
+        } catch {
+            throw SessionVaultError.unwritable
+        }
     }
 
     public func erase() throws {
