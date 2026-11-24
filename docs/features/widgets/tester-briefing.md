@@ -139,5 +139,62 @@ Views, the intent and the project wiring have no unit seam: `94f9343`, `b45a1b8`
 - A Today holding only pending adds draws the ring's caption as "0 of 0 done".
 - The gallery shows the prompt, not the sample, when the stored snapshot is of another day.
 - No time zone change observer; `NSCalendarDayChanged` only.
-- `AGENTS.md`'s layout line for `apps/macos` still names only the `Todz` target over `TodzKit`; it is outside this lane's files.
+- ~~`AGENTS.md`'s layout line for `apps/macos` still names only the `Todz` target over `TodzKit`; it is outside this lane's files.~~ Fixed in `7f0d5fc`.
 - The old placeholder folder `Application Support/Widgets` inside the app's container, if G1's builds ever wrote it, is not removed.
+
+## Fix round 1 (review and security findings)
+
+### What changed
+
+- S1 `FileWidgetStore`: a snapshot reads at most 1 MiB and a request at most 4 KiB. After `fstat`, a file past its cap is unreadable (an oversized request is removed by the existing path); the read asks for the cap plus one byte.
+- S2 `AppModel`, `AppModel+Cache`, `AppModel+Widgets`: `eraseWidgets()` no longer throws. Sign-out clears the session, the vault and the server's session whatever the widget erase does; a sign-in or a launch that finds another owner goes on. Only the cache erase still gates them.
+- S3 `FolderStatus` (new), `SharedFolder.owned`, `FileWidgetStore`, the extension's `FileWidgetStore.shared`: the shared folder and `requests/` are opened with `O_NOFOLLOW | O_DIRECTORY`, must be directories owned by `getuid()`, and are set to `0700` through the descriptor. A refused shared folder leaves the app on `UnavailableWidgetStore` and the extension with no store; a refused `requests/` is unreadable (no listing, no removal).
+- S4 `AppModel.widgetRequestsAdded()`, `AppDelegate+Widgets`, `FileWidgetStore`: the Darwin notification starts one intake and skips while one runs; the store walks `requests/` with an enumerator and examines at most 500 entries a pass before keeping the 50 oldest. An intake that finds nothing writes nothing.
+- R1 `AppModel+Links`: a link followed while the launch is loading, or while the active workspace's first load is pending, waits in the model and is followed once that settles. `isFirstLoad(of:)` moved to `AppModel+Workspaces` and is shared with the widget snapshot.
+- R2 `ToggleTaskIntent`: writes the snapshot, then the request. After a notification's intake, the app reads the snapshot file and republishes when it no longer holds what the app last published or cannot be read (signed out, that erases it). Deviation: the finding asked to republish without any equality check; comparing with the file instead keeps a flood of forged notifications to one read each, never a write and a reload (S4).
+- R3 `eraseWidgets()` reloads the widgets.
+- R4 the intake removes the request files first and takes them only when the removal succeeded.
+- R5 the six `NB ADR 0032` pointers name ADR 0033; the store's pointer also names the size cap.
+- R6 `IdentityFormat` moved from `apps/macos/Copy` to TodzKit (public); `SignInCopy` imports TodzKit. For `plan.md` step 8's deviation note: `IdentityFormat` no longer lives in `Copy`.
+
+The unit suite went from 442 tests in 31 suites to 461 in 32, all green, eight repeated runs of `AppModelTests` stable. The `macos` gate's `xcodegen generate` and `xcodebuild build` lines built with no warning.
+
+### Red today, green after
+
+| Red commit | Test | Red failure printed | Green commit |
+|---|---|---|---|
+| `bda3d64` | `FileWidgetStoreTests.refusesASnapshotLargerThanItsCap` | `Expectation failed: an error was expected but none was thrown and "Optional(TodzKit.WidgetSnapshot(...))" was returned` | `7c8badf` |
+| `bda3d64` | `FileWidgetStoreTests.removesARequestLargerThanItsCapAndReadsTheOthers` | `Expectation failed: try store.requests().map(\.request) == [request(2)]` | `7c8badf` |
+| `7c8badf` | `FileWidgetStoreTests.refusesASparseHundredGigabyteSnapshotWithoutReadingIt` | landed with the fix: on the red code it would read 100 GiB | — |
+| `02cae6f` | `AppModelTests.aSignOutWhoseWidgetEraseFailsStillSignsOut` | `Expectation failed: harness.model.phase == .signedOut(notice: nil)` | `7ca2723` |
+| `02cae6f` | `AppModelTests.aSignInAsAnotherOwnerGoesOnWhenTheWidgetEraseFails` | `Expectation failed: harness.model.signInError == nil` | `7ca2723` |
+| `02cae6f` | `AppModelTests.aLaunchWhoseServerNamesAnotherOwnerGoesOnWhenTheWidgetEraseFails` | `Expectation failed: harness.model.phase == .ready` | `7ca2723` |
+| `14669f7` | `SharedFolderTests.aFolderThatExistsOpenToOthersIsMadePrivate` | `Expectation failed: try modeOfFile(at: folder) == privateFolderMode` | `4082570` |
+| `14669f7` | `SharedFolderTests.aSymlinkedFolderIsRefusedAndItsTargetLeftAlone` | `Expectation failed: SharedFolder.created(folder) == nil` | `4082570` |
+| `14669f7` | `FileWidgetStoreTests.refusesASymlinkedRequestsFolderAndRemovesNothingInIt` | `Expectation failed: an error was expected but none was thrown` (the removal) | `4082570` |
+| `20ce210` | `AppModelTests.aRequestWhoseRemovalFailsIsNotTaken` | `Expectation failed: harness.model.waitingChangeCount == 0` | `8916680` |
+| `85ffdc2` | `AppModelTests.aFloodOfNotificationsRunsOneIntakeAtATime` | `Expectation failed: harness.widgets.routes().filter { $0 == .requests }.count == 1` | `af33c7c` |
+| `4eb70b9` | `AppModelTests.aSnapshotRedrawnByTheExtensionIsRewrittenAfterTheNotification` | `Expectation failed: harness.widgets.snapshot == truth` | `60cf5f0` |
+| `4eb70b9` | `AppModelTests.aNotificationWithNothingRedrawnWritesNothing` | `Expectation failed: harness.widgets.routes() == [.requests, .readSnapshot]` | `60cf5f0` |
+| `4eb70b9` | `AppModelTests.aSnapshotLeftAfterASignOutIsErasedOnTheNextNotification` | `Expectation failed: harness.widgets.snapshot == nil` | `60cf5f0` |
+| `7c073a8` | `AppModelTests.aWidgetEraseReloadsTheWidgetsAtOnce` | `Expectation failed: harness.widgets.routes().prefix(2) == [.erase, .reload]` | `085d2a6` |
+| `cd9b6b4` | `AppModelTests.aLinkFollowedBeforeTheLaunchFinishesRevealsTheTaskOnceTodayIsLoaded` | `Expectation failed: harness.model.selectedTask == dueTodayTask` | `2973890` |
+| `c4eb218` | `IdentityFormatTests` (3 tests) | pin: green on landing (the rule moved unchanged) | — |
+
+R5, the intent's reorder and the 500-entry cap have no unit seam: the build is their proof, and the enumeration order is the file system's.
+
+### Hypotheses to attack
+
+1. Hypothesis: a sparse 100 GB `widget-snapshot.json` or `requests/<UUID>.json` never grows the app's or the extension's memory; the snapshot draws the prompt and the request file disappears at the next intake. Break it with `truncate -s 100G`.
+2. Hypothesis: with `widget-snapshot.json` made immutable (`chflags uchg`), sign-out still reaches the sign-in screen, the session file is gone and a sign-in as another owner opens their workspace.
+3. Hypothesis: replacing `~/Library/Application Support/dev.todz.widgets` or its `requests/` with a symlink to another folder makes the app write and remove nothing there, and the folder's mode goes back to `700` when it was opened wider.
+4. Hypothesis: a loop of `notifyutil -p dev.todz.widgets.requests` with nothing waiting writes no snapshot and reloads nothing (watch the file's modification time); with 10,000 junk files in `requests/` an intake stays quick.
+5. Hypothesis: `open -g "todz://task/<project>/<number>"` with the app quit opens the main window and, once Today has loaded, shows that task.
+6. Hypothesis: a snapshot edited by hand while the app runs is rewritten after the next `notifyutil -p dev.todz.widgets.requests`.
+7. Hypothesis: a request file the app cannot remove (`chflags uchg`) is never sent to the server, however many activations follow.
+
+### Known gaps
+
+- The owner check (`st_uid == getuid()`) has no test: making a folder owned by another account needs root.
+- A link followed while loading waits in the model; the inspector is shown only if the owner had not hidden it, because `MainWindowState.follow` sees no task yet when it decides.
+- ADR 0033 does not yet state the best-effort erase, the size caps or the symlink refusal. The erase pointer in `AppModel+Widgets` says "a failed erase never keeps a session or a cache", which the record should say too; the symlink rule carries no pointer.
