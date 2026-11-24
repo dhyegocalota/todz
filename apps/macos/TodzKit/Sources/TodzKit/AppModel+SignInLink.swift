@@ -13,11 +13,30 @@ extension AppModel {
     }
 
     public func acceptChallenge(token: String) {
-        fatalError("AppModel.acceptChallenge(token:) is not implemented")
+        signInChallengeToken = ChallengeToken.isWellFormed(token) ? token : nil
     }
 
     public func requestSignInLink(email: String) async {
-        fatalError("AppModel.requestSignInLink(email:) is not implemented")
+        guard let turnstileToken = signInChallengeToken else { return }
+        signInChallengeToken = nil
+        signInError = nil
+        heldSignInLink = nil
+        isRequestingLink = true
+        defer {
+            isRequestingLink = false
+            challengeRound += 1
+        }
+        let verifier = verifierToSend(to: email)
+        do {
+            try await service.requestSignInLink(email: email, challenge: SignInLinkChallenge.challenge(for: verifier), turnstileToken: turnstileToken)
+        } catch let failure as OwnerAPIError {
+            signInError = SignInError(asking: failure)
+            return
+        } catch {
+            signInError = .unexpected
+            return
+        }
+        keep(PendingSignInLink(email: email, verifier: verifier, expiresAt: now().addingTimeInterval(SignInLinkTiming.keepDuration)))
     }
 
     public func redeem(signInLink: SignInLink) async {
@@ -37,6 +56,7 @@ extension AppModel {
         }
         guard !isOpened else { return }
         if signInError == .identityRejected { signInError = .linkRejected }
+        if signInError == .signInRefused { signInError = .linkRefused }
         if isExpired(pendingLink) { discardPendingLink() }
         let isRetryable = signInError == .unreachable && self.pendingLink != nil
         guard isRetryable else { return }

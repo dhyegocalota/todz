@@ -37,7 +37,7 @@ G1 and G2 run in parallel on the spec's contract. G2's walk against a real Worke
 ### G2
 
 - [x] **Step 11 (red commit, see git log):** Red: TodzKit tests: `SignInLink` parses `token` + `turnstile`, refuses a link without `turnstile`, with an extra parameter, a malformed or 2049-character token; `SignInLinkRequestBody` and `SignInBody` encode `turnstile_token`; `OwnerAPIError` decodes `sign_in_refused`; `SignInError.signInRefused` maps; `AppModel.acceptChallenge` keeps a valid token and clears on `""` or malformed; `requestSignInLink` without a token sends nothing; with one it sends it, then clears it and advances `challengeRound` on success and on failure; `redeem` sends the link's Turnstile token. Commit red.
-- [ ] **Step 12:** Green in TodzKit: the model, service, bodies, errors, copy keys; remove `tooManyLinks` and `tooManyRequests`.
+- [x] **Step 12 (green commit, see git log):** Green in TodzKit: the model, service, bodies, errors, copy keys; remove `tooManyLinks` and `tooManyRequests`.
 - [ ] **Step 13:** The app: `Todz/SignIn/ChallengeView.swift` (`NSViewRepresentable` over `WKWebView`, non-persistent store, message handler `turnstile`, navigation policy per ADR 0046 §3, reload on `challengeRound`), placed in `AddressSlot` and `InboxSlot`; Send disabled with "Complete the check first." while no token; `SignInErrorLine` copy for `signInRefused`; WebKit linked in `project.yml` if needed. The app builds with no warnings; `swift test` green.
 - [ ] **Step 14:** Tester briefing section for G2.
 
