@@ -52,3 +52,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0029](0029-the-app-pulls-each-project-from-its-cursor-when-its-socket-says-changed.md) | The app pulls each project from its cursor when its socket says "changed" | Proposed | 2026-11-24 |
 | [0030](0030-product-screenshots-live-in-docs-screenshots-and-the-readme-walks-them.md) | Product screenshots live in docs/screenshots, and the README walks them | Proposed | 2026-11-24 |
 | [0031](0031-the-menu-bar-extra-is-a-swiftui-window-over-the-app-s-one-model.md) | The menu bar extra is a SwiftUI window over the app's one model | Proposed | 2026-11-24 |
+| [0032](0032-widgets-read-a-snapshot-in-an-app-group-that-a-team-prefix-replaces-later.md) | Widgets read a snapshot in an App Group that a team prefix replaces later | Proposed | 2026-11-24 |
