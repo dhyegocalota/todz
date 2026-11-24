@@ -97,7 +97,7 @@ Plus one prompt, `next`, that starts a coding session from the next task. Respon
 - SwiftUI, macOS 14 or later (interactive widgets need it), the Glass direction of the approved mockups in [`mockups/glass-screens.html`](mockups/glass-screens.html): translucent materials, the system font, one cobalt accent (`#2F5BFF`).
 - **Main window:** sidebar with the workspace switcher, Inbox, Today, Upcoming, Done, the projects and "Connect an agent" at the bottom; the task list; an inspector with project, due date, how it was added, notes and history.
 - **Connect an agent:** copy a ready command for Claude Code, Codex or Cursor, the server URL, the tool list, and the keys of the selected project with "Revoke".
-- **Menu bar extra:** Today of the active workspace and an "Add a task" field; ⌘1 to ⌘9 switch workspaces.
+- **Menu bar extra:** Today of the active workspace and an "Add a task" field; ⌘1 to ⌘9 switch workspaces. The icon shows how many of Today's tasks are still open, behind a setting the owner can turn off, on by default (owner, 2026-11-24; [ADR 0036](../adr/0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md)).
 - **Widgets:** small "Today" progress ring, small "Next up", medium and large lists. Their checkboxes complete tasks through an App Intent without opening the app.
 - **Sync:** the server is the source of truth. The app keeps a local cache in the App Group container that the widgets read, queues writes while offline, and pulls each project's changes from a cursor. While the app is open, a WebSocket from the project's Durable Object only says "changed", and the app pulls. Conflicts resolve last write wins, per field, by server time. Every local change reloads the widget timelines.
 
