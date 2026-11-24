@@ -11,9 +11,9 @@ The owner wants the menu bar item to show how many tasks are pending, with a set
 
 ## Decision
 
-1. The count is the open tasks of Today in the active workspace, overdue included: the number the popover's heading shows as "N left". One definition, so the icon and the popover never disagree.
+1. The count is the open tasks of Today in the active workspace, overdue included: the number the popover's heading shows as "N left". The item and the heading read one shared function, so they never disagree, during a partial load included.
 2. The count sits after the icon in the status item. At zero, while signed out, loading or without a workspace, the item shows the icon only. Above 99 it reads "99+".
-3. A SwiftUI `Settings` scene, opened with ⌘, and the app menu's "Settings…", holds one toggle, "Show pending count in the menu bar", on by default, stored as a `UserDefaults` boolean in the app's own container. Off shows the icon only at once.
+3. A SwiftUI `Settings` scene, opened with ⌘, and the app menu's "Settings…", holds one toggle, "Show pending count in the menu bar", on by default, stored as a `UserDefaults` boolean in the app's own container, its default registered at launch. Off shows the icon only at once.
 4. The status item's accessibility label names the count ("todz, 3 left today") when it shows.
 
 ## Alternatives considered
