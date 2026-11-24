@@ -160,9 +160,15 @@ import Observation
 
     public func signOut() async {
         guard let session else { return }
+        do {
+            try store.erase()
+        } catch {
+            raise(.signOutFailed)
+            return
+        }
+        outbox = Outbox()
         clearSession()
         phase = .signedOut(notice: nil)
-        forgetCache()
         try? vault.erase()
         try? await service.signOut(session: session)
     }

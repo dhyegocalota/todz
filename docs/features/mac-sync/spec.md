@@ -97,7 +97,7 @@ Copy keys are those of [`design.md`](design.md).
 - **A cached launch with the server down** → the watches of the cached workspace open at launch, so the first socket that opens confirms the owner, lists the workspaces, sends the outbox and pulls. Nothing is sent before the server has named the session's owner; a different owner than the cache's erases it first.
 - **401** anywhere → the shell's sign-in screen with "session ended" and the count of waiting changes; sockets and the send loop stop; the cache and outbox stay. The next sign-in as the same owner loads the cache and sends the outbox. A sign-in as another owner, or with no `owner.json`, empties the in-memory state and erases the cache before the new session is stored; if the erase fails, the sign-in fails.
 - **Stale work** → a send loop, pull or watch started under another session drops its result and writes nothing; a stale watch's 401 never ends the new session.
-- **Sign-out** with changes waiting → the design's confirmation; confirmed, the cache and outbox are erased, then the session.
+- **Sign-out** with changes waiting → the design's confirmation; confirmed, the cache and outbox are erased, then the session. If the erase fails, the session, the vault and the window stay, and `ErrorCopy.signOutFailed` shows.
 - **Unreadable cache files** → ADR 0027 § 5: a project file is erased and pulled from 0; an owner file erases the cache; an outbox file is erased and `ErrorCopy.waitingChangesLost` shows once.
 - **Unwritable cache** → the app goes on in memory and raises `ErrorCopy.cacheNotSaved` once per launch (`design.md` § 1.9).
 - **A pull's answer for a task with a waiting change** → the board takes the server's record; the screen keeps the waiting field on top until its answer arrives.

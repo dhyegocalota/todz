@@ -97,28 +97,32 @@ extension AppModelTests {
         #expect(harness.store.routes().contains(.erase) == false)
     }
 
-    @Test func signOutCancelsTheWatchesThenErasesTheCacheThenTheVaultThenSignsOut() async throws {
+    @Test func signOutErasesTheCacheThenCancelsTheWatchesThenErasesTheVaultThenSignsOut() async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         harness.seedTasks(projectIdentifier: inboxIdentifier, count: 1)
         await harness.signedIn()
-        let isWatchingAtErase = Captured<Bool>()
+        harness.store.calls = []
         let vaultErasesAtStoreErase = Captured<Int>()
+        let isWatchingAtVaultErase = Captured<Bool>()
         let isStoreErasedAtVaultErase = Captured<Bool>()
         let vaultErasesAtSignOut = Captured<Int>()
         harness.store.onCall = { call in
             guard call == .erase else { return }
-            isWatchingAtErase.value = !harness.model.watches.isEmpty
             vaultErasesAtStoreErase.value = harness.vault.eraseCount
         }
-        harness.vault.onErase = { isStoreErasedAtVaultErase.value = harness.store.routes().contains(.erase) }
+        harness.vault.onErase = {
+            isWatchingAtVaultErase.value = !harness.model.watches.isEmpty
+            isStoreErasedAtVaultErase.value = harness.store.routes().contains(.erase)
+        }
         harness.service.onCall = { call in
             guard call.route == .signOut else { return }
             vaultErasesAtSignOut.value = harness.vault.eraseCount
         }
         await harness.model.signOut()
-        #expect(isWatchingAtErase.value == false)
+        #expect(harness.store.routes() == [.erase])
         #expect(vaultErasesAtStoreErase.value == 0)
+        #expect(isWatchingAtVaultErase.value == false)
         #expect(isStoreErasedAtVaultErase.value == true)
         #expect(vaultErasesAtSignOut.value == 1)
         #expect(harness.service.calls == [.signOut(session: harness.session)])
