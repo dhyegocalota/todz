@@ -10,9 +10,9 @@ struct HistoryList: View {
         case .none, .loading:
             ProgressView()
                 .controlSize(.small)
-        case .failed:
+        case let .failed(failure):
             VStack(alignment: .leading) {
-                failureLine
+                failureLine(failure)
                 Button(MainWindowCopy.tryAgain) {
                     Task { await model.loadHistory(task: task.key) }
                 }
@@ -26,8 +26,8 @@ struct HistoryList: View {
         }
     }
 
-    @ViewBuilder private var failureLine: some View {
-        switch HistoryFailure.of(isOffline: model.isOffline) {
+    @ViewBuilder private func failureLine(_ failure: HistoryFailure) -> some View {
+        switch failure {
         case .offline:
             Text(InspectorCopy.historyOffline)
                 .foregroundStyle(.secondary)
