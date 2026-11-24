@@ -47,13 +47,6 @@ enum WidgetStoreCall: Equatable, Sendable {
         calls.map(\.route)
     }
 
-    func writtenSnapshots() -> [WidgetSnapshot] {
-        calls.compactMap { call in
-            guard case let .writeSnapshot(snapshot) = call else { return nil }
-            return snapshot
-        }
-    }
-
     func recordReload() {
         calls.append(.reload)
         onCall?(.reload)
