@@ -100,7 +100,7 @@ extension AppModel {
     private func recover(from error: any Error, sending change: PendingChange) async -> Bool {
         switch SendOutcome.of(error) {
         case .refused:
-            await refuse(change)
+            refuse(change)
             return true
         case .unreachable:
             await waitToSend()
@@ -123,7 +123,7 @@ extension AppModel {
         }
         let (counted, isAtLimit) = outbox.countingAttemptOnHead()
         guard !isAtLimit else {
-            await refuse(change)
+            refuse(change)
             return
         }
         outbox = counted
@@ -131,12 +131,12 @@ extension AppModel {
         await waitToSend()
     }
 
-    private func refuse(_ change: PendingChange) async {
+    private func refuse(_ change: PendingChange) {
         sendFailures = 0
         removeHead(change)
         countRefusals(1)
         guard isShown(projectIdentifier: change.projectIdentifier) else { return }
-        await pullFromStart(projectIdentifier: change.projectIdentifier)
+        pullFromStart(projectIdentifier: change.projectIdentifier)
     }
 
     private func waitToSend() async {

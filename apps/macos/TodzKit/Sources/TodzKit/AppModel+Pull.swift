@@ -36,21 +36,18 @@ extension AppModel {
     func pull(projectIdentifiers: [String], workspaceIdentifier: String) async {
         guard let session, activeWorkspaceIdentifier == workspaceIdentifier else { return }
         let gates = projectIdentifiers.compactMap { requestPull(projectIdentifier: $0) }
-        let pulls = await withTaskGroup(of: ProjectPull?.self) { group in
-            gates.forEach { gate in group.addTask { await gate.value } }
-            var pulls: [ProjectPull] = []
-            for await case let pulled? in group {
-                pulls.append(pulled)
-            }
-            return pulls
+        var pulls: [ProjectPull] = []
+        for gate in gates {
+            guard let pulled = await gate.value else { continue }
+            pulls.append(pulled)
         }
         guard isCurrent(session: session, workspaceIdentifier: workspaceIdentifier) else { return }
         raiseFailures(of: pulls, workspaceIdentifier: workspaceIdentifier)
     }
 
-    func pullFromStart(projectIdentifier: String) async {
+    func pullFromStart(projectIdentifier: String) {
         projectsToPullFromStart.insert(projectIdentifier)
-        await pullProject(identifier: projectIdentifier)
+        requestPull(projectIdentifier: projectIdentifier)
     }
 
     @discardableResult
@@ -61,13 +58,15 @@ extension AppModel {
     @discardableResult
     func requestPull(projectIdentifier: String) -> Task<ProjectPull?, Never>? {
         guard let session else { return nil }
+        let gate = pullGates[projectIdentifier]
+        let isGateOfThisSession = gate?.session == session
+        let isNextPullWaiting = isGateOfThisSession && queuedPulls.contains(projectIdentifier)
+        guard !isNextPullWaiting else { return gate?.task }
+        let running = isGateOfThisSession ? gate?.task : nil
         queuedPulls.insert(projectIdentifier)
-        guard let gate = pullGates[projectIdentifier], gate.session == session else {
-            let pulling = Task { await drainPulls(projectIdentifier: projectIdentifier, session: session) }
-            pullGates[projectIdentifier] = (session: session, task: pulling)
-            return pulling
-        }
-        return gate.task
+        let pulling = Task { await pull(after: running, projectIdentifier: projectIdentifier, session: session) }
+        pullGates[projectIdentifier] = (session: session, task: pulling)
+        return pulling
     }
 
     func stopPulling() {
@@ -77,18 +76,12 @@ extension AppModel {
         projectsToPullFromStart = []
     }
 
-    private func drainPulls(projectIdentifier: String, session: String) async -> ProjectPull? {
-        var pulled: ProjectPull?
-        while self.session == session, queuedPulls.remove(projectIdentifier) != nil {
-            pulled = await pullOnce(projectIdentifier: projectIdentifier, session: session)
-        }
-        closePullGate(projectIdentifier: projectIdentifier, session: session)
-        return pulled
-    }
-
-    private func closePullGate(projectIdentifier: String, session: String) {
-        guard pullGates[projectIdentifier]?.session == session else { return }
-        pullGates[projectIdentifier] = nil
+    private func pull(after running: Task<ProjectPull?, Never>?, projectIdentifier: String, session: String) async -> ProjectPull? {
+        _ = await running?.value
+        let isStillQueued = self.session == session && !Task.isCancelled && queuedPulls.contains(projectIdentifier)
+        guard isStillQueued else { return nil }
+        queuedPulls.remove(projectIdentifier)
+        return await pullOnce(projectIdentifier: projectIdentifier, session: session)
     }
 
     private func pullOnce(projectIdentifier: String, session: String) async -> ProjectPull? {
