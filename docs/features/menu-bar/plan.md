@@ -81,9 +81,9 @@ Fix round 1 (2026-11-24, after the tester's walk and the review; the app was not
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
-- [ ] **Security reviewer:** a fresh `security-reviewer` sub-agent returned its verdict.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md` — evidence: e1dff1c (G2), the fix round 1 section in 09f01fb.
+- [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence — evidence: pass 1 09e1764 (stopped at the owner's request), pass 2 e664df1 with his OK; 41 ticked, 12 open (BLOCKED or not reached, and the D1 timing gap accepted as the loop's call), each stated in the PR.
+- [x] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md` — evidence: WITH RESERVATIONS at b699270 (answered by fix round 1), WITH RESERVATIONS at e0e79b3 (docs fixed in e0e79b3, D1 accepted); refutations under Adversarial review.
+- [x] **Security reviewer:** a fresh `security-reviewer` sub-agent returned its verdict — evidence: CLEAR at b699270.
 - [ ] **/check-ui:** screenshots and video recorded from the Orca walk and uploaded; the README gallery shot under `docs/screenshots/menu-bar/` and its cell in the root README, by the lead after the tester's walk. [13]
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
