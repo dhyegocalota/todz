@@ -2,7 +2,7 @@
 
 **Spec:** spec.md
 **Tier:** 🔴
-**Seam:** `apps/api` only, plus `PROJECT_SCHEMA_VERSION` in `libs/types`; the Worker's `fetch` gains every path under `/owner`
+**Seam:** `apps/api`, one guard in `tools/repository-shape` and one line of `AGENTS.md`; the Worker's `fetch` gains every path under `/owner`
 **Assumptions (decided, owner can override):**
 - ADRs 0020 to 0023 are the loop's calls, listed in the loop's questions. No new dependency: `zod` and `URLPattern` are already available.
 - Tests drive the Worker through `exports.default.fetch` from `cloudflare:workers`, as the MCP tests do. The fake provider is switched on by a Miniflare binding in `vitest.config.mts`; the one 503 test calls `serveOwner` with an `Env` copy whose `SIGN_IN_PROVIDER` is removed.
@@ -15,11 +15,13 @@
 
 | Group | Paths owned | Developer sub-agent |
 |-------|-------------|---------------------|
-| G1 | `libs/types/src/{constants,constants.test}.ts` (`PROJECT_SCHEMA_VERSION` only), `apps/api/src/{project-schema,sqlite-task-store,project-store}.ts`, `apps/api/test/{project-schema,sqlite-task-store,project-store,project-changes}.test.ts` | `developer-store`, worktree lane |
-| G2 | `apps/api/migrations/{0001_directory,0003_owner_api}.sql`, `apps/api/package.json`, `apps/api/vitest.config.mts`, `apps/api/src/{env,index,bearer-secret,mcp-endpoint,directory,project-keys,project-routing,time-zone,sign-in-provider,owner-errors,owner-json,owner-routes,owner-endpoint,owner-request,owner-sessions,owner-workspaces,owner-keys}.ts`, `apps/api/test/{directory-seed,owner-client}.ts`, `apps/api/test/{worker,directory,project-keys,time-zone,sign-in-provider,owner-json,owner-routes,owner-sign-in,owner-workspaces,owner-keys}.test.ts` | `developer-owner`, worktree lane |
+| G1 | `apps/api/src/{project-schema,sqlite-task-store,project-store,project-result}.ts`, `apps/api/test/task-fixtures.ts`, `apps/api/test/{project-schema,sqlite-task-store,project-store,project-changes}.test.ts` | `developer-store`, worktree lane |
+| G2 | `apps/api/migrations/{0001_directory,0003_owner_api}.sql`, `apps/api/package.json`, `apps/api/vitest.config.mts`, `apps/api/src/{env,index,bearer-secret,mcp-endpoint,directory,project-keys,project-routing,time-zone,sign-in-provider,owner-errors,owner-json,owner-routes,owner-endpoint,owner-request,owner-sessions,owner-workspaces,owner-keys}.ts`, `apps/api/test/{directory-seed,owner-client}.ts`, `apps/api/test/{worker,directory,project-keys,project-routing,mcp-endpoint,time-zone,sign-in-provider,owner-json,owner-routes,owner-sign-in,owner-workspaces,owner-keys}.test.ts`, `tools/repository-shape/src/api-source.test.ts`, `AGENTS.md` (the shared-helper line) | `developer-owner`, worktree lane |
 | G3 | `apps/api/src/owner-tasks.ts` (and `owner-endpoint.ts`'s handler record, handed over by G2), `apps/api/test/{owner-tasks,owner-changes,owner-isolation}.test.ts`, `apps/api/README.md`, `docs/features/owner-api/tester-briefing.md` | `developer-owner`, after the lead merges G1 |
 
 A G2 source file past about 150 lines may be split; the split is named in the briefing.
+
+**Briefing.** G1 and G2 never write `tester-briefing.md`: each red commit's body carries the failure text its red run printed, and G3 copies those texts from `git log` into the briefing with its own.
 
 ## Sequencing
 
@@ -31,18 +33,18 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ### G1
 
-- [ ] **Step 1:** red then green: project schema version 2 (`change_number`, its index, `change_counter`), applied to a new store and to a version-1 store; `PROJECT_SCHEMA_VERSION` is 2 (`project-schema.test.ts`, `constants.test.ts`).
+- [ ] **Step 1:** red then green: project schema version 2 (`change_number` numbered by task number, its unique index, `change_counter` seeded with the highest number), applied inside `transactionSync` to a new store and to a version-1 store; `PROJECT_SCHEMA_VERSION` in `project-schema.ts` is 2 (`project-schema.test.ts`).
 - [ ] **Step 2:** red then green: `insertTask` and `replaceTask` stamp increasing change numbers; `lastChangeNumber()` (`null` before any write) and `listChangesSince({ cursor, limit })` (`sqlite-task-store.test.ts`).
-- [ ] **Step 3:** red then green: `ProjectStore.readChanges({ cursor })` with `CHANGE_PAGE_SIZE` 100 at the top of `project-store.ts`, answering `{ tasks, cursor, hasMore }`; `readHistory({ number })` with `TaskNotFound` for a missing number (`project-changes.test.ts`).
+- [ ] **Step 3:** red then green: `ProjectStore.readChanges({ cursor })` with `CHANGE_PAGE_SIZE` 100 at the top of `project-store.ts`, answering `{ tasks, cursor, hasMore }`, and `ProjectFailureKind.CursorAhead` for a cursor above the last change number; `readHistory({ number })` with `TaskNotFound` for a missing number (`project-changes.test.ts`).
 - [ ] **Step 4:** red then green: `ProjectStore.fetch` accepts a socket upgrade and answers 426 without one; every write that moves the change counter sends `changed` to each socket, a write that fails or replays sends nothing (`project-changes.test.ts`).
 
 ### G2
 
-- [ ] **Step 5:** pin: `0001_directory.sql` gains `projects.is_inbox`, `project_keys.id` and `project_keys.hint`; `0003_owner_api.sql`; `seedProject`, `seedKey` and every caller follow; `worker.test.ts` lists the seven tables; schema pins in `directory.test.ts`; `bearerSecret` moves to `bearer-secret.ts`. All existing tests stay green.
-- [ ] **Step 6:** red then green: `issueProjectKey` returns `{ id, secret }` and stores `id` and `hint`; the MCP callers follow (`project-keys.test.ts`).
+- [ ] **Step 5:** pin: `0001_directory.sql` gains `projects.is_inbox`, `project_keys.id` and `project_keys.hint`; `0003_owner_api.sql`; `seedProject`, `seedKey` and every caller follow; `worker.test.ts` lists the seven tables; schema pins in `directory.test.ts`; `bearerSecret` moves to `bearer-secret.ts` and joins the shared-helper line of `AGENTS.md`; `api-source.test.ts` fails when `wrangler.jsonc` names `SIGN_IN_PROVIDER`. All existing tests stay green.
+- [ ] **Step 6:** red then green: `issueProjectKey` returns `{ id, secret }` and stores `id` and `hint`; its callers in `directory-seed.ts` and `mcp-endpoint.test.ts` follow (`project-keys.test.ts`); `findOwnedProjectId` and `findOwnedWorkspaceId` in `project-routing.ts`, brand-checked, opening no stub (`project-routing.test.ts`).
 - [ ] **Step 7:** red then green: `canonicalTimeZone` (`time-zone.test.ts`) and the fake provider (`sign-in-provider.test.ts`).
 - [ ] **Step 8:** red then green: the JSON shapes (`owner-json.test.ts`) and the route table matching, including `:number` bounds and the empty 404 (`owner-routes.test.ts`).
-- [ ] **Step 9:** red then green: `SignIn`, `SignOut`, `ReadOwner`, `UpdateOwner`, the session cap and expiry, the 503 without a provider, the race on a first sign-in (`owner-sign-in.test.ts`, helper `owner-client.ts`).
+- [ ] **Step 9:** red then green: `SignIn`, `SignOut`, `ReadOwner`, `UpdateOwner`, the session cap and expiry, the 503 without a provider and with `apple`, the check order, the race on a first sign-in (`owner-sign-in.test.ts`, helper `owner-client.ts`).
 - [ ] **Step 10:** red then green: `ListWorkspaces`, `CreateWorkspace` with its Inbox, `RenameWorkspace`, `CreateProject`, `RenameProject` with `inbox_is_fixed` (`owner-workspaces.test.ts`).
 - [ ] **Step 11:** red then green: `ListKeys`, `IssueKey`, `RevokeKey`; a revoked key answers 401 on `/mcp` and loses its MCP sessions (`owner-keys.test.ts`).
 

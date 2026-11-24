@@ -11,8 +11,8 @@ The app keeps a local cache and must learn what changed in a project since its l
 
 ## Decision
 
-1. Project schema version 2 adds `tasks.change_number` and a `change_counter`. The SQLite adapter gives every inserted or replaced task row the next number, inside the use case's transaction, so a number is never seen before its write commits.
-2. `GET /owner/projects/<id>/changes?cursor=<n>` answers the tasks whose `change_number` is greater than `n`, in that order, at most `CHANGE_PAGE_SIZE` (100), with the new `cursor` (the last number returned, or `n` when nothing changed) and `has_more`. A cursor of `0` is the whole project. The cursor is an integer the app stores per project; a task appears once per page, in its latest state.
+1. Project schema version 2 adds `tasks.change_number`, unique, and a `change_counter`. The upgrade of an existing store numbers its tasks by their task number, so cursor `0` still returns them all. The SQLite adapter gives every inserted or replaced task row the next number, inside the use case's transaction, so a number is never seen before its write commits.
+2. `GET /owner/projects/<id>/changes?cursor=<n>` answers the tasks whose `change_number` is greater than `n`, in that order, at most `CHANGE_PAGE_SIZE` (100), with the new `cursor` (the last number returned, or `n` when nothing changed) and `has_more`. A cursor of `0` is the whole project. The cursor is an integer the app stores per project; a task appears once per page, in its latest state. A cursor above the project's last change number (a store reset in development) answers 409 `cursor_ahead`, and the app pulls again from `0`.
 3. `GET /owner/projects/<id>/socket` with `Upgrade: websocket` is accepted by the project's Durable Object through the hibernation API. After a write that moved the project's change counter, from the owner or an agent, the object sends the text `changed` to every socket of that project. The socket carries nothing else and ignores what the app sends.
 4. Conflicts resolve last write wins per field by arrival at the Durable Object: the app sends only the fields the owner changed, and the object applies writes one at a time.
 

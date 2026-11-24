@@ -71,14 +71,16 @@ MCP write (agent) ──▶ the same ProjectStore methods ──▶ the same bro
 ### Sign-in
 
 - `sign-in-provider.ts`: `enum SignInProviderKind { Fake = 'fake' }`; `type SignInProvider = { verify(identityToken: string): Promise<string | null> }`; `SIGN_IN_PROVIDER_OF_KIND: Record<SignInProviderKind, SignInProvider>`. The fake accepts `^[A-Za-z0-9._-]{1,64}$` and answers the token itself as the subject.
-- `Env` gains `SIGN_IN_PROVIDER?: string`. An absent or unknown value → 503 `sign_in_unavailable`. `apps/api/package.json`'s `dev` script becomes `wrangler dev --var SIGN_IN_PROVIDER:fake`; the Vitest configuration sets the binding; `wrangler.jsonc` never names it (ADR 0020).
+- `Env` gains `SIGN_IN_PROVIDER?: string`. An absent or unknown value (such as `apple`) → 503 `sign_in_unavailable`. `apps/api/package.json`'s `dev` script becomes `wrangler dev --var SIGN_IN_PROVIDER:fake`; the Vitest configuration sets the binding; `wrangler.jsonc` never names it, which `tools/repository-shape/src/api-source.test.ts` pins (ADR 0020).
+- Sign-in checks run in this order, and the first failure answers: provider (503), body (400), identity (401), time zone (422).
 - `time-zone.ts`: `canonicalTimeZone(raw: string): string | null` → `new Intl.DateTimeFormat('en-US', { timeZone: raw }).resolvedOptions().timeZone` when that does not throw and the result starts with a letter (an offset such as `+01:00` is refused: it ignores daylight saving), else `null`. Input longer than `TIME_ZONE_MAX_LENGTH` (64) is refused before `Intl` sees it. The canonical name is what is stored (`america/sao_paulo` → `America/Sao_Paulo`).
-- Sign-in: find the identity; if absent, insert `owners` and `owner_identities` in one batch; else update the owner's `time_zone`. Then store the session (`digest`, `owner_id`, `now`, `now + OWNER_SESSION_LIFETIME_MS`) with the cap batch of ADR 0021. Two first sign-ins racing on one subject: the second insert fails the primary key, and the handler reads the identity again and proceeds as an existing owner.
-- `bearer-secret.ts`: the MCP endpoint's `bearerSecret` moves here unchanged and both endpoints import it.
+- Sign-in: find the identity; if absent, insert `owners` and `owner_identities` in one batch; else update the owner's `time_zone`. Then store the session (`digest`, `owner_id`, `now`, `now + OWNER_SESSION_LIFETIME_MS`) with the cap batch of ADR 0021, whose oldest-first delete orders by `created_at DESC, rowid DESC` as `insertMcpSession` does. Two first sign-ins racing on one subject: when the insert batch rejects, the handler reads the identity again; found, it proceeds as an existing owner; still absent, it rethrows.
+- `OWNER_SESSION_LIFETIME_MS` (90 days, from `MILLISECONDS_PER_DAY`) and `OWNER_SESSIONS_PER_OWNER_MAX` (20) sit at the top of `owner-sessions.ts`; `TIME_ZONE_MAX_LENGTH` (64) at the top of `time-zone.ts`; none goes to `libs/types`.
+- `bearer-secret.ts`: the MCP endpoint's `bearerSecret` moves here unchanged, both endpoints import it, and its name joins the shared-helper line of `AGENTS.md`.
 
 ### Routes
 
-`owner-endpoint.ts` receives every path under `/owner` from `index.ts` (`ROUTE_OF_PATH` becomes a prefix check for `/owner`, the `/mcp` entry unchanged). `owner-routes.ts` holds `enum OwnerRoute` and `OWNER_ROUTES: Record<OwnerRoute, { method: string; pattern: URLPattern }>`; `OWNER_HANDLERS: Record<OwnerRoute, OwnerHandler>` lives with the handlers. The first route whose method and pattern match wins; none → 404 with an empty body. `:number` matches `[1-9][0-9]{0,8}`.
+`owner-endpoint.ts` exports `serveOwner({ request, env, now }): Promise<Response>`, mirroring `serveMcp`, and receives from `index.ts` every request whose pathname is `/owner` or starts with `/owner/` (`/ownerx` stays a 404); the `/mcp` entry is unchanged. `owner-routes.ts` holds `enum OwnerRoute` and `OWNER_ROUTES: Record<OwnerRoute, { method: string; pattern: URLPattern }>`; `OWNER_HANDLERS: Record<OwnerRoute, OwnerHandler>` lives with the handlers. The first route whose method and pattern match wins; none → 404 with an empty body. `:number` matches `[1-9][0-9]{0,8}`.
 
 | Route | Method and path | Session | Body or query | Answer |
 |---|---|---|---|---|
@@ -86,7 +88,7 @@ MCP write (agent) ──▶ the same ProjectStore methods ──▶ the same bro
 | `SignOut` | `DELETE /owner/sessions/current` | yes | — | 204 |
 | `ReadOwner` | `GET /owner` | yes | — | 200 `{ owner }` |
 | `UpdateOwner` | `PATCH /owner` | yes | `{ time_zone: string }` | 200 `{ owner }` |
-| `ListWorkspaces` | `GET /owner/workspaces` | yes | — | 200 `{ workspaces }`, each with its `projects`, oldest first |
+| `ListWorkspaces` | `GET /owner/workspaces` | yes | — | 200 `{ workspaces }`, oldest first, each with its `projects`, the Inbox first |
 | `CreateWorkspace` | `POST /owner/workspaces` | yes | `{ name: string }` | 201 `{ workspace }` with its Inbox |
 | `RenameWorkspace` | `PATCH /owner/workspaces/:workspaceId` | yes | `{ name: string }` | 200 `{ workspace }` |
 | `CreateProject` | `POST /owner/workspaces/:workspaceId/projects` | yes | `{ name: string }` | 201 `{ project }` |
@@ -96,13 +98,17 @@ MCP write (agent) ──▶ the same ProjectStore methods ──▶ the same bro
 | `CompleteTasks` | `POST /owner/projects/:projectId/tasks/complete` | yes | `{ numbers: number[], note?: string \| null }` | 200 `{ tasks: [{ task, already_done }] }` |
 | `ReopenTasks` | `POST /owner/projects/:projectId/tasks/reopen` | yes | `{ numbers: number[] }` | 200 `{ tasks: [{ task, already_open }] }` |
 | `ReadHistory` | `GET /owner/projects/:projectId/tasks/:number/history` | yes | — | 200 `{ history }`, oldest first |
-| `ReadChanges` | `GET /owner/projects/:projectId/changes?cursor=<n>` | yes | `cursor`: a non-negative safe integer | 200 `{ tasks, cursor, has_more }` |
+| `ReadChanges` | `GET /owner/projects/:projectId/changes?cursor=<n>` | yes | `cursor`: `0` or digits without a leading zero, a safe integer | 200 `{ tasks, cursor, has_more }`; a cursor above the project's last change number → 409 `cursor_ahead`, so the app pulls again from `0` |
 | `WatchChanges` | `GET /owner/projects/:projectId/socket` | yes | `Upgrade: websocket` | 101 from the project's Durable Object; without the header 426 |
 | `ListKeys` | `GET /owner/projects/:projectId/keys` | yes | — | 200 `{ keys }`, unrevoked, oldest first |
 | `IssueKey` | `POST /owner/projects/:projectId/keys` | yes | — | 201 `{ key, secret }`, the secret only here |
 | `RevokeKey` | `DELETE /owner/projects/:projectId/keys/:keyId` | yes | — | 204; its MCP sessions are deleted in the same batch |
 
-Bodies are parsed with zod from `parsedJson(await request.text())`; optional task fields use `.nullable().default(null)` as the MCP tools do, and `UpdateTask` copies a key only when it is present, so `null` clears notes or the due date. `placement` is `{ kind, anchor? }` with `kind` from `TaskPlacement` and `anchor` a task number. Names and texts go to the core unbounded; its rule issues are the only limits.
+Bodies are parsed with zod from `parsedJson(await request.text())`. In `AddTasks` and `CompleteTasks` the optional fields use `.nullable().default(null)`, as the MCP `add` and `done` tools do. `UpdateTask` uses `.nullable().optional()` with no default, as the MCP `update` tool does, and copies a key into the `TaskPatch` only when the body has it: `{ title }` leaves notes and the due date untouched, and `null` clears them. `placement` is a discriminated union on `kind` from `TaskPlacement`, with `anchor` a task number for `before` and `after`. Names and texts go to the core unbounded; its rule issues are the only limits.
+
+**Order of checks on a project or workspace route:** session (401), route parameters and body (400), ownership in the directory (404 `not_found`), then the route's own rules (409 `inbox_is_fixed`, 409 `cursor_ahead`, the core's 404 and 422). Another owner's Inbox therefore answers 404, never 409. A regular project may be named or renamed `Inbox`; only `is_inbox` marks the Inbox.
+
+**Ownership reads.** Routes that touch only the directory (`RenameProject`, `CreateProject`, the key routes) call a new `findOwnedProjectId({ env, owner, projectId })` in `project-routing.ts`, which checks the `SessionOwner` brand as `openOwnedProject` does and returns the id or `null` without opening a stub. Workspace routes call `findOwnedWorkspaceId({ env, owner, workspaceId })` in the same module. Task, history, change and socket routes call `openOwnedProject`.
 
 ### JSON shapes (`owner-json.ts`, pure functions)
 
@@ -131,6 +137,7 @@ Times are epoch milliseconds; enum values are the `libs/types` values.
 | 404 | `not_found` | a workspace, project or key the owner does not have, including another owner's |
 | 404 | `task_not_found`, `number` | the core's `TaskNotFound` |
 | 409 | `inbox_is_fixed` | renaming an Inbox project |
+| 409 | `cursor_ahead` | a change cursor above the project's last change number |
 | 422 | `rule_violated`, `issue`, `index` | the core's `RuleViolated` |
 | 422 | `time_zone_invalid` | `canonicalTimeZone` answered `null` |
 | 426 | — (empty body, `Upgrade: websocket`) | `WatchChanges` without the upgrade header |
@@ -138,13 +145,17 @@ Times are epoch milliseconds; enum values are the `libs/types` values.
 
 ### Project store
 
-- Project schema version 2 (ADR 0023): `ALTER TABLE tasks ADD COLUMN change_number INTEGER NOT NULL DEFAULT 0`, index `tasks_change_number`, table `change_counter (last_change_number INTEGER NOT NULL)`. `applyProjectSchema` applies version 1 then 2 on a new store and only 2 on a version-1 store; `PROJECT_SCHEMA_VERSION` becomes 2.
+- Project schema version 2 (ADR 0023): `ALTER TABLE tasks ADD COLUMN change_number INTEGER NOT NULL DEFAULT 0`; `UPDATE tasks SET change_number = number`; table `change_counter (last_change_number INTEGER NOT NULL)` seeded with `MAX(number)` when the store has tasks; unique index `tasks_change_number`; `UPDATE schema_version SET version = 2`. `applyProjectSchema` runs inside `ctx.storage.transactionSync`, applies version 1 then 2 on a new store and only 2 on a version-1 store, so a half-applied upgrade never persists and an upgraded store's tasks all appear at cursor `0`. `PROJECT_SCHEMA_VERSION` stays in `project-schema.ts` and becomes 2.
 - `SqliteTaskStore.insertTask` and `replaceTask` stamp the next change number; new reads `lastChangeNumber()`, `listChangesSince({ cursor, limit })` and the existing `listHistory(number)`.
-- `ProjectStore` gains `readChanges({ cursor })`, `readHistory({ number })` (a missing task → `TaskNotFound`), and `fetch(request)` that accepts a socket upgrade with `ctx.acceptWebSocket` and answers 426 otherwise. Every write method compares `lastChangeNumber()` before and after its transaction and, when it moved, sends `changed` to `ctx.getWebSockets()`; a socket whose send throws is skipped. `webSocketMessage` does nothing.
+- `ProjectStore` gains `readChanges({ cursor })` (a cursor above `lastChangeNumber()`, counting `null` as 0, → a new `ProjectFailureKind.CursorAhead`), `readHistory({ number })` (a missing task → `TaskNotFound`), and `fetch(request)` that accepts a socket upgrade with `ctx.acceptWebSocket` and answers 426 otherwise. Every write method compares `lastChangeNumber()` before and after its transaction and, when it moved, sends `changed` to `ctx.getWebSockets()`; a socket whose send throws is skipped. `webSocketMessage` does nothing.
 
 ### Keys
 
-`issueProjectKey` now returns `{ id, secret }`, writing `id` (`crypto.randomUUID()`) and `hint` (the secret's last four characters). Listing returns unrevoked keys. Revoking sets `revoked_at` and deletes the key's `mcp_sessions` in one batch; an already revoked or another project's key → 404 `not_found`.
+`issueProjectKey` now returns `{ id, secret }`, writing `id` (`crypto.randomUUID()`) and `hint` (the secret's last four characters). Listing returns unrevoked keys, oldest first. Revoking is one D1 batch: first `DELETE FROM mcp_sessions WHERE key_digest IN (SELECT digest FROM project_keys WHERE id = ? AND project_id = ? AND revoked_at IS NULL)`, then `UPDATE project_keys SET revoked_at = ? WHERE id = ? AND project_id = ? AND revoked_at IS NULL`; when the update's `meta.changes` is 0 the key was unknown, already revoked or another project's, and the answer is 404 `not_found`.
+
+### Listing
+
+`ListWorkspaces` reads the owner's workspaces in one query and all their projects in a second, never one query per workspace: workspaces `ORDER BY created_at, rowid`, projects `ORDER BY is_inbox DESC, created_at, rowid`, so each workspace lists its Inbox first.
 
 ### Failure handling
 
