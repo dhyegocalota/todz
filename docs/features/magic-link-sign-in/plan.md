@@ -42,8 +42,8 @@ G1 and G2 run in parallel in their own worktrees; G2's lane merges into `feat/ma
 
 ### G3 App views
 
-- [ ] **Step 13:** The sign-in screen by method per `design.md`: the address form, the inbox state, send again, use a different email, redeeming; copy in `SignInCopy` and `SignInError+Copy`; `AppDelegate` routes `SignInLink` before `WidgetLink`. Build with no warning.
-- [ ] **Step 14:** `apps/macos/README.md` (purpose only); tester briefing section for G2 and G3.
+- [x] **Step 13:** The sign-in screen by method per `design.md`: the address form, the inbox state, send again, use a different email, redeeming; copy in `SignInCopy` and `SignInError+Copy`; `AppDelegate` routes `SignInLink` before `WidgetLink`. Build with no warning. (e15c0b0)
+- [x] **Step 14:** `apps/macos/README.md` (purpose only); tester briefing section for G2 and G3. (e15c0b0, briefing section reported to the lead)
 
 ## Failure modes
 
