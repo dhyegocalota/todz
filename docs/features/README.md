@@ -40,4 +40,4 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 | [`v1-walk`](v1-walk/) | The scenario that walks the whole v1, from an empty Mac to tasks an agent added and the owner completed, and its run | Shipped 2026-11-24 ([PR #16](https://github.com/dhyegocalota/todz/pull/16)) |
 | [`brand-glass`](brand-glass/) | The app icon as a layered Liquid Glass document with the flat set as fallback, and the todz glyph in every widget's header | Shipped 2026-11-24 ([PR #17](https://github.com/dhyegocalota/todz/pull/17)) |
 | [`magic-link-sign-in`](magic-link-sign-in/) | Sign-in by an email link bound to the Mac that asked for it, behind the provider port, with a console sender for development | Approved |
-| [`transactional-email`](transactional-email/) | The sign-in and welcome mails as React Email templates rendered at build time, sent through Cloudflare Email Service from noreply@todz.app | Approved |
+| [`transactional-email`](transactional-email/) | The sign-in and welcome mails as React Email templates rendered at build time, sent through Cloudflare Email Service from noreply@todz.app | Building |
