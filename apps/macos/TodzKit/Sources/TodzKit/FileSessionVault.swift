@@ -17,8 +17,12 @@ public struct FileSessionVault: SessionVault, Sendable {
         folder.appending(path: sessionFileName)
     }
 
+    private var sessionPath: String {
+        sessionFile.path(percentEncoded: false)
+    }
+
     public func read() throws -> String? {
-        guard FileManager.default.fileExists(atPath: sessionFile.path()) else { return nil }
+        guard FileManager.default.fileExists(atPath: sessionPath) else { return nil }
         let secret: String
         do {
             secret = try String(contentsOf: sessionFile, encoding: .utf8)
@@ -31,7 +35,7 @@ public struct FileSessionVault: SessionVault, Sendable {
 
     public func write(_ secret: String) throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let draftPath = folder.appending(path: draftFilePrefix + UUID().uuidString).path()
+        let draftPath = folder.appending(path: draftFilePrefix + UUID().uuidString).path(percentEncoded: false)
         let descriptor = open(draftPath, draftFlags, privateMode)
         guard descriptor >= 0 else { throw SessionVaultError.unwritable }
         defer { unlink(draftPath) }
@@ -39,11 +43,11 @@ public struct FileSessionVault: SessionVault, Sendable {
         try draft.write(contentsOf: Data(secret.utf8))
         try draft.synchronize()
         try draft.close()
-        guard rename(draftPath, sessionFile.path()) == 0 else { throw SessionVaultError.unwritable }
+        guard rename(draftPath, sessionPath) == 0 else { throw SessionVaultError.unwritable }
     }
 
     public func erase() throws {
-        guard FileManager.default.fileExists(atPath: sessionFile.path()) else { return }
+        guard FileManager.default.fileExists(atPath: sessionPath) else { return }
         try FileManager.default.removeItem(at: sessionFile)
     }
 }
