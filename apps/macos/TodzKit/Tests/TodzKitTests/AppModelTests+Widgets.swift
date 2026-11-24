@@ -213,4 +213,69 @@ extension AppModelTests {
         #expect(harness.service.calls.contains(.reopenTasks(session: harness.session, projectIdentifier: inboxIdentifier, numbers: [1])))
         #expect(harness.model.taskViews?.today.open.map(\.task.number) == [1, 2])
     }
+
+    @Test func aSignOutErasesTheSnapshotAndTheRequests() async throws {
+        let harness = try await launchedWidgetHarness()
+        harness.widgets.storedRequests = [stored(number: 1, state: .done)]
+        await harness.model.signOut()
+        await harness.published()
+        #expect(harness.widgets.calls.first == .erase)
+        #expect(harness.widgets.storedRequests == [])
+        #expect(harness.widgets.snapshot == nil)
+    }
+
+    @Test func aSignInAsAnotherOwnerErasesTheWidgetFilesBeforeTheFirstNewWrite() async throws {
+        let harness = try widgetHarness()
+        harness.store.owner = OwnerCache(ownerIdentifier: "someone-else", workspaces: [], activeWorkspaceIdentifier: nil)
+        await harness.model.launch()
+        await harness.published()
+        harness.widgets.calls = []
+        harness.widgets.storedRequests = [stored(number: 1, state: .done)]
+        await harness.model.signIn(identity: "dhyego")
+        await harness.published()
+        let routes = harness.widgets.routes()
+        let firstWrite = try #require(routes.firstIndex(of: .writeSnapshot))
+        #expect(routes.firstIndex(of: .erase).map { $0 < firstWrite } == true)
+        #expect(harness.widgets.storedRequests == [])
+        #expect(harness.service.routes().contains(.completeTasks) == false)
+    }
+
+    @Test func aLaunchWhoseServerNamesAnotherOwnerErasesBeforeTheirFirstWrite() async throws {
+        let harness = try widgetHarness()
+        let acme = try #require(harness.service.workspaces.first)
+        harness.cache([acme], active: acme, ownerIdentifier: "someone-else")
+        harness.store.projects[inboxIdentifier] = ProjectCache(projectIdentifier: inboxIdentifier, cursor: 1, tasks: dueToday(1, prefix: "Theirs"))
+        harness.widgets.storedRequests = [stored(number: 1, state: .done)]
+        harness.vault.secret = harness.session
+        await harness.model.launch()
+        await harness.published()
+        await harness.flushed()
+        let routes = harness.widgets.routes()
+        let erase = try #require(routes.firstIndex(of: .erase))
+        let writtenAfterErase = harness.widgets.calls.suffix(from: erase).compactMap { call -> WidgetSnapshot? in
+            guard case let .writeSnapshot(snapshot) = call else { return nil }
+            return snapshot
+        }
+        #expect(writtenAfterErase.flatMap(\.open).map(\.title) == ["Task 1", "Task 2"])
+        #expect(harness.widgets.snapshot?.open.map(\.title) == ["Task 1", "Task 2"])
+        #expect(harness.service.routes().contains(.completeTasks) == false)
+    }
+
+    @Test func aSessionEndedByTheServerErasesTheSnapshotAndKeepsTheRequestsForTheSameOwner() async throws {
+        let harness = try await launchedWidgetHarness()
+        let waiting = stored(number: 1, state: .done)
+        harness.widgets.storedRequests = [waiting]
+        harness.service.failures[.readChanges] = .unauthorized
+        await harness.model.refresh()
+        await harness.published()
+        #expect(harness.model.phase == .signedOut(notice: .sessionEnded))
+        #expect(harness.widgets.snapshot == nil)
+        #expect(harness.widgets.storedRequests == [waiting])
+        #expect(harness.widgets.routes().contains(.erase) == false)
+        harness.service.failures = [:]
+        await harness.model.signIn(identity: "dhyego")
+        await harness.flushed()
+        #expect(harness.widgets.storedRequests == [])
+        #expect(harness.service.calls.contains(.completeTasks(session: harness.service.issuedSession.sessionToken, projectIdentifier: inboxIdentifier, numbers: [1])))
+    }
 }
