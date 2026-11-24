@@ -8,7 +8,7 @@ struct TaskListView: View {
     @Environment(MainWindowState.self) private var windowState
 
     var body: some View {
-        let state = TaskListState.of(workspace: workspace, model: model, lingering: windowState.lingeringTasks(model: model))
+        let state = TaskListState.of(workspace: workspace, model: model, lingers: windowState.lingers)
         VStack(alignment: .leading, spacing: .zero) {
             TaskListHeader(workspace: workspace)
             if let banner = model.banner, !state.isFailed {

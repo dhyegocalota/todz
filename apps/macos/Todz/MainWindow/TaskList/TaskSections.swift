@@ -10,18 +10,19 @@ enum TaskSections {
     static func sections(
         item: SidebarItem,
         views: TaskViews,
-        lingering: LingeringTasks,
+        lingers: CompletionLingers,
         today: CalendarDate,
         timeZone: TimeZone
     ) -> [TaskSection] {
         let pendingTasks = views.pendingTasks(for: item)
         switch item {
         case .inbox:
-            return [manualSection(tasks: lingering.placed(into: views.inbox), pendingTasks: pendingTasks)]
+            return [manualSection(tasks: lingers.placed(into: views.inbox, item: item, views: views), pendingTasks: pendingTasks)]
         case let .project(identifier):
-            return [manualSection(tasks: lingering.placed(into: views.project(identifier: identifier)), pendingTasks: pendingTasks)]
+            let tasks = lingers.placed(into: views.project(identifier: identifier), item: item, views: views)
+            return [manualSection(tasks: tasks, pendingTasks: pendingTasks)]
         case .today:
-            return todaySections(views.today, lingering: lingering, pendingTasks: pendingTasks)
+            return todaySections(views: views, lingers: lingers, pendingTasks: pendingTasks)
         case .upcoming:
             return upcomingSections(views: views, today: today, timeZone: timeZone)
         case .done:
@@ -36,13 +37,15 @@ enum TaskSections {
         TaskSection(identifier: openSection, title: nil, count: nil, tasks: tasks, pendingTasks: pendingTasks, hasManualOrder: true)
     }
 
-    private static func todaySections(_ today: TodayTasks, lingering: LingeringTasks, pendingTasks: [PendingTask]) -> [TaskSection] {
-        let doneToday = today.doneToday.filter { !lingering.keys.contains($0.key) }
+    private static func todaySections(views: TaskViews, lingers: CompletionLingers, pendingTasks: [PendingTask]) -> [TaskSection] {
+        let today = views.today
+        let lingeringKeys = lingers.lingeringKeys(item: .today, views: views)
+        let doneToday = today.doneToday.filter { !lingeringKeys.contains($0.key) }
         let open = TaskSection(
             identifier: openSection,
             title: nil,
             count: nil,
-            tasks: lingering.placed(into: today.open),
+            tasks: lingers.placed(into: today.open, item: .today, views: views),
             pendingTasks: pendingTasks,
             hasManualOrder: false
         )

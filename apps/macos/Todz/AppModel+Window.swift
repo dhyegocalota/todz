@@ -24,15 +24,6 @@ extension AppModel {
         }
     }
 
-    var openListTasks: [BoardTask]? {
-        guard let taskViews else { return nil }
-        switch selectedItem {
-        case .inbox, .project: return manualOrderTasks
-        case .today: return taskViews.today.open
-        case .upcoming, .done: return nil
-        }
-    }
-
     var addTaskDestination: AddTaskDestination? {
         guard let inbox = activeWorkspace?.projects.first(where: \.isInbox) else { return nil }
         switch selectedItem {

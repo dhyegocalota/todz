@@ -9,7 +9,7 @@ private let completionLinger: Duration = .seconds(1)
     var sheet: NameSheetKind?
     var focusRequest: MainWindowFocus?
     var isConfirmingSignOut = false
-    var lingers: [TaskKey: TaskLinger] = [:]
+    var lingers = CompletionLingers()
     @ObservationIgnored private var lingerTimers: [TaskKey: Task<Void, Never>] = [:]
 
     var inspectorToggleTitle: String {
@@ -37,25 +37,15 @@ private let completionLinger: Duration = .seconds(1)
 
     func toggleDone(task key: TaskKey, model: AppModel) {
         lingerTimers[key]?.cancel()
-        lingers[key] = startedLinger(task: key, model: model)
+        lingers = toggledLingers(task: key, model: model)
         Task { await model.toggleDone(task: key) }
-        guard lingers[key] != nil else { return }
+        guard lingers.contains(task: key) else { return }
         lingerTimers[key] = Task { await endLinger(task: key) }
     }
 
-    func lingeringTasks(model: AppModel) -> LingeringTasks {
-        let entries = lingers
-            .filter { $0.value.item == model.selectedItem }
-            .sorted { $0.value.index < $1.value.index }
-            .compactMap { key, linger in model.boardTask(key).map { (index: linger.index, task: $0) } }
-        return LingeringTasks(entries: entries)
-    }
-
-    private func startedLinger(task key: TaskKey, model: AppModel) -> TaskLinger? {
-        guard let openTasks = model.openListTasks else { return nil }
-        let shownTasks = lingeringTasks(model: model).placed(into: openTasks)
-        guard let index = shownTasks.firstIndex(where: { $0.key == key && !$0.isDone }) else { return nil }
-        return TaskLinger(item: model.selectedItem, index: index)
+    private func toggledLingers(task key: TaskKey, model: AppModel) -> CompletionLingers {
+        guard let taskViews = model.taskViews else { return lingers.ending(task: key) }
+        return lingers.toggling(task: key, in: model.selectedItem, views: taskViews)
     }
 
     private func endLinger(task key: TaskKey) async {
@@ -66,6 +56,6 @@ private let completionLinger: Duration = .seconds(1)
         }
         lingerTimers[key] = nil
         let animation: Animation? = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? nil : .default
-        withAnimation(animation) { lingers[key] = nil }
+        withAnimation(animation) { lingers = lingers.ending(task: key) }
     }
 }

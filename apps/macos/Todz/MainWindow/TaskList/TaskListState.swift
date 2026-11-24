@@ -6,7 +6,7 @@ enum TaskListState {
     case empty
     case rows([TaskSection])
 
-    @MainActor static func of(workspace: Workspace, model: AppModel, lingering: LingeringTasks) -> TaskListState {
+    @MainActor static func of(workspace: Workspace, model: AppModel, lingers: CompletionLingers) -> TaskListState {
         let loads = workspace.projects.map { model.projectLoads[$0.identifier] }
         let isFirstLoad = loads.contains(nil)
         guard !isFirstLoad else { return .loading }
@@ -15,7 +15,7 @@ enum TaskListState {
         let sections = TaskSections.sections(
             item: model.selectedItem,
             views: views,
-            lingering: lingering,
+            lingers: lingers,
             today: model.today,
             timeZone: model.timeZone
         )
