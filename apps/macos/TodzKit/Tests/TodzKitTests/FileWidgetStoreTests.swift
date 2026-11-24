@@ -172,6 +172,18 @@ private let snapshot = WidgetSnapshot(
         #expect(exists(target))
     }
 
+    @Test func refusesASymlinkedRequestsFolderAndRemovesNothingInIt() throws {
+        let elsewhere = container.appending(path: "Elsewhere")
+        let elsewhereStore = FileWidgetStore(folder: elsewhere)
+        try elsewhereStore.addRequest(request(1))
+        let name = try #require(try elsewhereStore.requests().first?.name)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: requestsFolder, withDestinationURL: elsewhere.appending(path: requestsFolderName))
+        #expect(throws: WidgetStoreError.unreadable) { try store.requests() }
+        #expect(throws: WidgetStoreError.unreadable) { try store.removeRequests([name]) }
+        #expect(try elsewhereStore.requests().map(\.request) == [request(1)])
+    }
+
     @Test func readsAtMostFiftyRequestsAPassOldestFirst() throws {
         try (1...manyRequestCount).forEach { try store.addRequest(request($0)) }
         let firstPass = try store.requests()

@@ -6,6 +6,7 @@ private let relativePathKey = "TodzSharedFolder"
 private let relativePath = "Library/Application Support/dev.todz.widgets"
 private let home = URL(filePath: "/Users/maria", directoryHint: .isDirectory)
 private let privateFolderMode = 0o700
+private let openFolderMode = 0o755
 private let pathsOutsideTheHome = ["", "/", "/Library/Application Support/dev.todz.widgets", "Library/../../bob", ".."]
 
 private func temporaryFolder() -> URL {
@@ -55,6 +56,24 @@ private func modeOfFile(at url: URL) throws -> Int {
         defer { try? FileManager.default.removeItem(at: folder.deletingLastPathComponent()) }
         _ = SharedFolder.created(folder)
         #expect(SharedFolder.created(folder) == folder)
+    }
+
+    @Test func aFolderThatExistsOpenToOthersIsMadePrivate() throws {
+        let folder = temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder.deletingLastPathComponent()) }
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true, attributes: [.posixPermissions: openFolderMode])
+        #expect(SharedFolder.created(folder) == folder)
+        #expect(try modeOfFile(at: folder) == privateFolderMode)
+    }
+
+    @Test func aSymlinkedFolderIsRefusedAndItsTargetLeftAlone() throws {
+        let folder = temporaryFolder()
+        let target = folder.deletingLastPathComponent().appending(path: "elsewhere")
+        defer { try? FileManager.default.removeItem(at: folder.deletingLastPathComponent()) }
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true, attributes: [.posixPermissions: openFolderMode])
+        try FileManager.default.createSymbolicLink(at: folder, withDestinationURL: target)
+        #expect(SharedFolder.created(folder) == nil)
+        #expect(try modeOfFile(at: target) == openFolderMode)
     }
 
     @Test func aFileInTheFolderPlaceCannotBeCreated() throws {
