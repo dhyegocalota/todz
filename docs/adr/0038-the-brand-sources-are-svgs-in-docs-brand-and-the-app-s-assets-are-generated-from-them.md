@@ -14,7 +14,7 @@ The owner drew three SVGs: the app icon (1024, a cobalt squircle with a white ch
 1. The three SVGs live in `docs/brand/`, the one source. They are never edited by hand in the asset catalog.
 2. The app icon set `AppIcon.appiconset` holds PNGs at 16, 32, 64, 128, 256, 512 and 1024 pixels (the macOS sizes at 1× and 2×), rendered from `todz-icon.svg` with `rsvg-convert`, and committed.
 3. The status item's glyph is `MenuBarGlyph.imageset`: one PDF rendered from `todz-menubar.svg` with `rsvg-convert -f pdf`, marked as a template image that preserves its vector data. Like the SF Symbol before it, it tints with the menu bar, and the count of ADR 0036 sits after it.
-4. The README's header is `todz-lockup.svg`, and the app icon at 128 points sits above the product screenshot as its hero. Both are linked from `docs/brand/`.
+4. The README's header is `todz-lockup.png`, the owner's own render of `todz-lockup.svg`, because the SVG sets its word in SF Pro Rounded and GitHub renders README images without that font; the SVG stays as the source. The app icon at 128 points sits above the product screenshot as its hero. Both are linked from `docs/brand/`.
 5. How to render the assets again is a runbook, `docs/runbooks/render-the-brand-assets.md`, because a person changes the logo, not an agent's build. The build never renders them, so no tool joins the machine's required list.
 
 ## Alternatives considered

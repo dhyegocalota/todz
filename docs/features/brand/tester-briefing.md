@@ -47,3 +47,11 @@ Red run printed, four times: `Error: ENOENT: no such file or directory, open '..
 - The runbook's `magick` fallback was not exercised, because `rsvg-convert` kept the shadow.
 - `docs/screenshots/menu-bar-count/01-count.png` still shows the SF Symbol; the tester replaces it.
 - ADR 0038 is still `Proposed`.
+
+## Fix round 1
+
+- `MenuBarGlyph.pdf` was 13.5 pt square (`rsvg-convert` read pixels at 90 dpi). Red `brand-assets.test.ts::the menu bar glyph page is 18 points square` printed `AssertionError: expected null not to be null` (the PDF 1.7 file hides its `/MediaBox` in a compressed object stream); green after rendering `-f pdf1.4 --dpi-x 72 --dpi-y 72 -w 18 -h 18`, where `pdfinfo` reads `18 x 18 pts`. The runbook's step 4 command and expected result follow.
+- The README header is now `docs/brand/todz-lockup.png` (1200 by 400, the owner's render, no text or EXIF chunks, shown at 360 wide) because the SVG's SF Pro Rounded lettering does not render on GitHub. The SVG stays as the source; the runbook and ADR 0038 decision 4 say so.
+- `brand-assets.test.ts` reads the app icon files in one pass (pin, green when it landed).
+- Build after the fix: `** BUILD SUCCEEDED **`, actool ran for both `Todz` and `TodzWidgets`, zero `warning:` lines. Shape tests: 172 passed.
+- Hypothesis to attack: the glyph at 18 pt sits at menu bar height next to the count; the README on GitHub shows the PNG lockup.

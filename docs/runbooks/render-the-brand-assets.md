@@ -29,6 +29,8 @@ Render the app icon and the menu bar glyph again from the SVGs in [docs/brand](.
    Expected: one PDF of about a kilobyte whose `pdfinfo` page size reads `18 x 18 pts`; the imageset's `Contents.json` keeps `template-rendering-intent` as `template` and `preserves-vector-representation` as `true`.
    If it fails: a page of 13.5 points means the dpi flags are missing, because `rsvg-convert` reads pixels at 90 dpi; render it again with them. PDF 1.4 keeps the page box readable as plain text for `brand-assets.test.ts`. A glyph that is black on a dark menu bar means the template intent is missing from `Contents.json`; restore it.
 
+   The README header uses `docs/brand/todz-lockup.png`, the owner's own render, because the lettering of `todz-lockup.svg` depends on installed fonts and GitHub has none of them; replace the PNG with the owner's new render when the lockup changes, never with a render from this machine.
+
 5. **Prove the catalog.** Run `pnpm verify`.
    Expected: the `shape` gate passes `brand-assets.test.ts` and the `macos` gate builds with no `actool` warning.
    If it fails: the test names the image whose file is missing or whose pixel size disagrees with its slot; render that size again.

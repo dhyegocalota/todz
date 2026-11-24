@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/brand/todz-lockup.svg" alt="todz" width="360">
+  <img src="docs/brand/todz-lockup.png" alt="todz" width="360">
 </p>
 
 <p align="center">
