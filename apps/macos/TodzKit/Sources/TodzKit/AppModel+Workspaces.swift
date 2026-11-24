@@ -22,6 +22,10 @@ extension AppModel {
         await pull(projectIdentifiers: activeWorkspace.projects.map(\.identifier), workspaceIdentifier: activeWorkspace.identifier)
     }
 
+    public func loadFailure(of workspace: Workspace) -> AppBanner? {
+        fatalError("AppModel.loadFailure is not implemented")
+    }
+
     @discardableResult
     public func createProject(name: String) async -> Project? {
         guard let workspace = activeWorkspace else { return nil }

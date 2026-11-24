@@ -83,7 +83,7 @@ extension AppModelTests {
         #expect(harness.model.taskViews?.inbox.count == 1)
         #expect(harness.model.taskViews?.project(identifier: "acme-alpha").count == 2)
         #expect(harness.model.taskViews?.project(identifier: "acme-beta") == [])
-        #expect(harness.model.projectLoads == [inboxIdentifier: .loaded, "acme-alpha": .loaded, "acme-beta": .failed])
+        #expect(harness.model.projectLoads == [inboxIdentifier: .loaded, "acme-alpha": .loaded, "acme-beta": .unreachable])
         #expect(harness.model.banner == .someProjectsFailed)
         harness.service.projectFailures["acme-beta"] = nil
         await harness.model.tryAgain()
