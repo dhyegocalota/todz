@@ -1,6 +1,8 @@
 import { enumValueOf } from './enum-value';
 
 const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1'];
+const SENDER_ADDRESS: EmailAddress = { name: 'todz', email: 'noreply@todz.app' };
+const REPLY_TO_ADDRESS = 'hello@todz.app';
 
 export enum EmailSenderKind {
   Console = 'console',
@@ -20,11 +22,14 @@ const EMAIL_SENDER_FACTORY_OF_KIND: Record<EmailSenderKind, EmailSenderFactory> 
       console.log(JSON.stringify({ to, text }));
     },
   }),
-  [EmailSenderKind.Cloudflare]: () => ({
-    async send() {
-      throw new Error('the cloudflare sender is not implemented');
-    },
-  }),
+  [EmailSenderKind.Cloudflare]: (binding) => {
+    if (binding === undefined) return null;
+    return {
+      async send({ to, subject, html, text }) {
+        await binding.send({ from: SENDER_ADDRESS, replyTo: REPLY_TO_ADDRESS, to, subject, html, text });
+      },
+    };
+  },
 };
 
 export function isLocalOrigin(origin: string): boolean {

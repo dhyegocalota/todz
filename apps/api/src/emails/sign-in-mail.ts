@@ -1,6 +1,8 @@
 import type { EmailMessage } from '../email-sender';
-import { SIGN_IN_MAIL_SUBJECT, signInMailText } from '../sign-in-mail-copy';
+import { EmailSlot } from './email-slot';
+import { filledEmailOf } from './filled-email';
+import { SIGN_IN_EMAIL } from './generated/email-templates';
 
-export function signInMail({ to, link }: { to: string; link: string; origin: string }): EmailMessage {
-  return { to, subject: SIGN_IN_MAIL_SUBJECT, html: '', text: signInMailText(link) };
+export function signInMail({ to, link, origin }: { to: string; link: string; origin: string }): EmailMessage {
+  return filledEmailOf({ email: SIGN_IN_EMAIL, values: { [EmailSlot.Link]: link, [EmailSlot.Origin]: origin }, to });
 }

@@ -6,7 +6,6 @@ const NODE_TESTS = ['test/emails/**/*.test.ts', 'test/brand-asset.test.ts'];
 
 export default defineConfig(async () => {
   const migrations = await readD1Migrations('migrations');
-  const timeouts = { testTimeout: LOADED_MACHINE_TEST_TIMEOUT_MS, hookTimeout: LOADED_MACHINE_TEST_TIMEOUT_MS };
   return {
     test: {
       projects: [
@@ -29,10 +28,19 @@ export default defineConfig(async () => {
             include: ['test/**/*.test.ts'],
             exclude: [...configDefaults.exclude, ...NODE_TESTS],
             setupFiles: ['test/apply-migrations.ts'],
-            ...timeouts,
+            testTimeout: LOADED_MACHINE_TEST_TIMEOUT_MS,
+            hookTimeout: LOADED_MACHINE_TEST_TIMEOUT_MS,
           },
         },
-        { test: { name: 'node', environment: 'node', include: NODE_TESTS, ...timeouts } },
+        {
+          test: {
+            name: 'node',
+            environment: 'node',
+            include: NODE_TESTS,
+            testTimeout: LOADED_MACHINE_TEST_TIMEOUT_MS,
+            hookTimeout: LOADED_MACHINE_TEST_TIMEOUT_MS,
+          },
+        },
       ],
     },
   };

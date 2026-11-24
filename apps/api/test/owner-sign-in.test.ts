@@ -633,6 +633,7 @@ describe('the welcome mail', () => {
     expect(welcome.html).toContain(link.email.toLowerCase());
     expect(welcome.html).toContain(`src="${PUBLIC_HTTPS_ORIGIN}/brand/todz-lockup.png"`);
     expect(welcome.text).toContain(link.email.toLowerCase());
+    expect(welcome.text).not.toMatch(/sign-in#token=/);
   });
 
   test('a returning owner by link gets none', async () => {

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "wrangler d1 migrations apply directory --local && wrangler dev --var SIGN_IN_PROVIDER:fake",
     "dev:email": "wrangler d1 migrations apply directory --local && wrangler dev --var SIGN_IN_PROVIDER:email --var EMAIL_SENDER:console --var PUBLIC_ORIGIN:http://localhost:8787",
+    "dev:email:cloudflare": "wrangler d1 migrations apply directory --local && wrangler dev --var SIGN_IN_PROVIDER:email --var EMAIL_SENDER:cloudflare --var PUBLIC_ORIGIN:http://localhost:8787",
     "emails:generate": "tsx scripts/emails/cli.ts generate",
     "emails:check": "tsx scripts/emails/cli.ts check",
     "emails:preview": "tsx scripts/emails/cli.ts preview",
