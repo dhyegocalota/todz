@@ -5,9 +5,10 @@ struct TaskListView: View {
     let workspace: Workspace
     let focus: FocusState<MainWindowFocus?>.Binding
     @Environment(AppModel.self) private var model
+    @Environment(MainWindowState.self) private var windowState
 
     var body: some View {
-        let state = TaskListState.of(workspace: workspace, model: model)
+        let state = TaskListState.of(workspace: workspace, model: model, lingering: windowState.lingeringTasks(model: model))
         VStack(alignment: .leading, spacing: .zero) {
             TaskListHeader(workspace: workspace)
             if let banner = model.banner, !state.isFailed {

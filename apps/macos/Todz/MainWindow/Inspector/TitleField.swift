@@ -33,7 +33,9 @@ struct TitleField: View {
             guard isLeavingTheField else { return }
             commit()
         }
-        .onChange(of: task.task.title) { _, saved in
+        .onChange(of: task.task.title) { previous, saved in
+            let isOwnerTyping = focus.wrappedValue == .inspectorTitle && draft != previous
+            guard !isOwnerTyping else { return }
             draft = saved
         }
         .onDisappear(perform: commit)

@@ -1,23 +1,17 @@
 import SwiftUI
 import TodzKit
 
-private let titleLineLimit = 2
-private let spokenSeparator = ", "
-
 struct TaskRow: View {
     let task: BoardTask
     let item: SidebarItem
     @Environment(AppModel.self) private var model
+    @Environment(MainWindowState.self) private var windowState
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             TaskCheckbox(task: task)
             VStack(alignment: .leading) {
-                Text(task.task.title)
-                    .lineLimit(titleLineLimit)
-                    .truncationMode(.tail)
-                    .strikethrough(task.isDone)
-                    .foregroundStyle(task.isDone ? Color.secondary : Color.primary)
+                TaskRowTitle(title: task.task.title, isDone: task.isDone)
                 if !details.isEmpty {
                     TaskRowSubline(details: details)
                 }
@@ -29,10 +23,10 @@ struct TaskRow: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(task.task.title)
-        .accessibilityValue(spokenValue)
+        .accessibilityValue(details.spokenValue(state: spokenState, today: model.today, timeZone: model.timeZone))
         .accessibilityActions {
             Button(task.isDone ? MainWindowCopy.markNotDone : MainWindowCopy.markDone) {
-                Task { await model.toggleDone(task: task.key) }
+                windowState.toggleDone(task: task.key, model: model)
             }
             if item.hasManualOrder {
                 Button(MainWindowCopy.moveUp) {
@@ -49,9 +43,7 @@ struct TaskRow: View {
         TaskRowDetails(task: task, item: item, today: model.today)
     }
 
-    private var spokenValue: String {
-        let state = task.isDone ? AccessibilityCopy.rowValueDone : AccessibilityCopy.rowValueOpen
-        let dueText = details.dueDate.map { DueLabel.text(dueDate: $0, today: model.today, timeZone: model.timeZone) }
-        return ([state] + details.spokenParts(dueText: dueText)).joined(separator: spokenSeparator)
+    private var spokenState: String {
+        task.isDone ? AccessibilityCopy.rowValueDone : AccessibilityCopy.rowValueOpen
     }
 }

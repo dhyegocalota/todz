@@ -13,10 +13,8 @@ struct AppCommands: Commands {
         SidebarCommands()
         CommandGroup(after: .appInfo) {
             Divider()
-            Button(MainWindowCopy.signOut) {
-                Task { await model.signOut() }
-            }
-            .disabled(!model.isSignedIn)
+            Button(MainWindowCopy.signOut) { windowState.requestSignOut(model: model) }
+                .disabled(!model.isSignedIn)
         }
         CommandGroup(replacing: .newItem) {
             Button(MainWindowCopy.newTask) { windowState.requestNewTask(model: model) }
@@ -39,7 +37,7 @@ struct AppCommands: Commands {
                 .disabled(!model.isReady)
         }
         CommandMenu(MainWindowCopy.taskMenu) {
-            TaskMenuItems(model: model)
+            TaskMenuItems(model: model, windowState: windowState)
         }
     }
 }

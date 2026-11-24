@@ -17,7 +17,12 @@ struct SyncStatusItem: View {
             .foregroundStyle(.secondary)
             .help(SyncCopy.offlineHelp)
             .accessibilityHint(SyncCopy.offlineHelp)
+            .onAppear(perform: announce)
         }
+    }
+
+    private func announce() {
+        AccessibilityNotification.Announcement(SyncCopy.offline).post()
     }
 
     private static func text(waiting: Int) -> String {

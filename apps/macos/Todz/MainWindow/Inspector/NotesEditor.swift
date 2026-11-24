@@ -47,8 +47,9 @@ struct NotesEditor: View {
             guard !isNowFocused else { return }
             commit()
         }
-        .onChange(of: task.task.notes) { _, saved in
-            guard !isEditing else { return }
+        .onChange(of: task.task.notes) { previous, saved in
+            let isOwnerTyping = isEditing && draft != Self.editableText(previous)
+            guard !isOwnerTyping else { return }
             draft = Self.editableText(saved)
         }
         .onDisappear(perform: commit)

@@ -7,10 +7,11 @@ private let doneSymbol = "checkmark.circle.fill"
 struct TaskCheckbox: View {
     let task: BoardTask
     @Environment(AppModel.self) private var model
+    @Environment(MainWindowState.self) private var windowState
 
     var body: some View {
         Button {
-            Task { await model.toggleDone(task: task.key) }
+            windowState.toggleDone(task: task.key, model: model)
         } label: {
             Image(systemName: task.isDone ? doneSymbol : openSymbol)
                 .foregroundStyle(task.isDone ? Color.accentColor : Color.secondary)

@@ -6,6 +6,7 @@ private let noName = ""
 
 struct FirstWorkspaceScreen: View {
     @Environment(AppModel.self) private var model
+    @Environment(MainWindowState.self) private var windowState
     @State private var name = noName
     @FocusState private var isNameFocused: Bool
 
@@ -41,7 +42,7 @@ struct FirstWorkspaceScreen: View {
                     .disabled(because: NameIssue.disabledReason(name: name))
             }
             Button(FirstWorkspaceCopy.signOut) {
-                Task { await model.signOut() }
+                windowState.requestSignOut(model: model)
             }
             .buttonStyle(.link)
         }

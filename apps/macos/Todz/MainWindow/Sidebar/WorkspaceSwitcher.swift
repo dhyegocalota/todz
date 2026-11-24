@@ -23,7 +23,7 @@ struct WorkspaceSwitcher: View {
             }
             Divider()
             Button(MainWindowCopy.signOut) {
-                Task { await model.signOut() }
+                windowState.requestSignOut(model: model)
             }
         } label: {
             Text(workspace.name)

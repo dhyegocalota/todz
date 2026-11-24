@@ -3,11 +3,12 @@ import TodzKit
 
 struct TaskMenuItems: View {
     let model: AppModel
+    let windowState: MainWindowState
 
     var body: some View {
         Button(markTitle) {
             guard let selectedTask = model.selectedTask else { return }
-            Task { await model.toggleDone(task: selectedTask) }
+            windowState.toggleDone(task: selectedTask, model: model)
         }
         .keyboardShortcut(.return, modifiers: .command)
         .disabled(!canToggle)
