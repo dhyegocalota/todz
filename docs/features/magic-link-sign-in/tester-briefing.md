@@ -79,7 +79,7 @@ The tests of step 3 were corrected in the green commit dbd0e02: addresses made u
   - `AppModel` gains `signInMethod`, `pendingLink`, `isRequestingLink`, `loadSignInMethod()`, `requestSignInLink(email:)`, `redeem(signInLink:)` and `discardPendingLink()`. `signIn(identity:)` and `redeem` share `openSession(issuing:)`.
   - New `SignInError` cases: `tooManyLinks`, `linkRejected`, `linkNotRequested`.
   - `SignInLinkTiming`: a lifetime of 15 minutes and a cooldown of 30 seconds. The pending link is kept until 20 minutes.
-  - Red/green: 75de111 → edd0faa (types, vault, API calls), 7fa8b38 → a284d99 (the model: 21 tests).
+  - Red/green: 75de111 → edd0faa (types, vault, API calls), 7fa8b38 → a284d99 (the model: 21 tests, of which 3 were green at red and are pins: `discardingThePendingLinkErasesItFromMemoryAndFromTheVault`, `aLinkWhileSignedInIsDroppedWithNothingSentOrShown`, `aLinkThatArrivesBeforeLaunchSettlesIsDroppedOnceSignedIn`).
 - Todz (G3, e15c0b0):
   - `SignInStage`, `AddressSlot`, `InboxSlot` and `EmailAddressFormat` are new.
   - `SignInScreen` switches on the stage.
@@ -150,3 +150,25 @@ Refactor without behaviour change: b39081a (named conditions `isLinkUnsendable` 
 - The `test-plan.md` boxes at lines 38, 41, 43 and 61 already carried the lead's R6 wording when this round began, so no box text was changed.
 - The icon is a copy of `docs/brand/todz-icon.svg`, with no test tying the two together.
 - Nothing was walked in a browser; the page needs the tester's Playwright run at 375 and 1280, light and dark.
+
+## Fix round 1 (app, merged in 7acf551)
+
+- Red 849d8b9 (45 issues), green a173065. `swift test`: 629 passing. The app builds with no warnings.
+- Changes:
+  - An offline redeem keeps the link (`heldSignInLink`, `canRedeemAgain`), and the inbox's Try Again redeems it again.
+  - Verifier reuse folds case and spaces.
+  - A sign-in link opens the main window through `windowState.waitingSignInLink`.
+  - `SignInStage` and `EmailAddressFormat` moved into TodzKit, with tests.
+  - `signInMethodError` is apart from `signInError`, and a redeem in flight shows Redeeming first.
+  - A 400 on asking maps to `.invalidAddress`, which shows the address hint.
+  - Use a Different Email clears the error.
+  - Any successful sign-in erases the pending link.
+- Pins at 849d8b9: `beforeTheMethodIsKnownItIsLoading`, the failing-address cases of `anythingElseFails`, `aRedeemThatFailsForAnotherReasonKeepsNoLinkToRedeemAgain`, `sendingAnotherMailLetsGoOfTheHeldLink`, `aFailedSignInByIdentityKeepsThePendingLink`, `aMethodReadThatSucceedsAfterAFailureClearsTheMethodError`, `anInvalidRequestAnswerOnRedeemingStaysUnexpected`.
+- Hypotheses:
+  - Worker unreachable on redeem: the inbox shows the offline line, and Try Again redeems the same link with no new mail.
+  - The same address in other case or spacing reuses the verifier.
+  - With the main window closed, a sign-in link brings it forward and a refused link shows its line there.
+  - A 400 shows "Enter a valid email address." with no Try Again.
+  - The 429 line goes after Use a Different Email.
+  - After an identity sign-in, the pending file is gone.
+- Gaps: the window-opening path and the Try Again branch in `InboxSlot` are view code with no automated test.
