@@ -12,22 +12,12 @@ extension AppModel {
         }
     }
 
+    public func acceptChallenge(token: String) {
+        fatalError("AppModel.acceptChallenge(token:) is not implemented")
+    }
+
     public func requestSignInLink(email: String) async {
-        signInError = nil
-        heldSignInLink = nil
-        isRequestingLink = true
-        defer { isRequestingLink = false }
-        let verifier = verifierToSend(to: email)
-        do {
-            try await service.requestSignInLink(email: email, challenge: SignInLinkChallenge.challenge(for: verifier))
-        } catch let failure as OwnerAPIError {
-            signInError = SignInError(asking: failure)
-            return
-        } catch {
-            signInError = .unexpected
-            return
-        }
-        keep(PendingSignInLink(email: email, verifier: verifier, expiresAt: now().addingTimeInterval(SignInLinkTiming.keepDuration)))
+        fatalError("AppModel.requestSignInLink(email:) is not implemented")
     }
 
     public func redeem(signInLink: SignInLink) async {
@@ -43,7 +33,7 @@ extension AppModel {
             return
         }
         let isOpened = await openSession {
-            try await service.signIn(identityToken: signInLink.token, linkVerifier: pendingLink.verifier, timeZone: timeZone.identifier)
+            try await service.signIn(identityToken: signInLink.token, linkVerifier: pendingLink.verifier, turnstileToken: signInLink.turnstileToken, timeZone: timeZone.identifier)
         }
         guard !isOpened else { return }
         if signInError == .identityRejected { signInError = .linkRejected }

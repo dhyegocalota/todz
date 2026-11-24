@@ -4,6 +4,7 @@ public enum OwnerAPIError: Error, Equatable, Sendable {
     case signInUnavailable
     case tooManyLinks
     case tooManyRequests
+    case signInRefused
     case notFound
     case taskNotFound(number: Int)
     case inboxIsFixed

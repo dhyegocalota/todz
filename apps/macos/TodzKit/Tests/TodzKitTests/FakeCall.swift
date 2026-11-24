@@ -24,8 +24,8 @@ enum FakeRoute: Hashable, Sendable {
 
 enum FakeCall: Equatable, Sendable {
     case signInMethod
-    case requestSignInLink(email: String, challenge: String)
-    case signIn(identityToken: String, linkVerifier: String?, timeZone: String)
+    case requestSignInLink(email: String, challenge: String, turnstileToken: String)
+    case signIn(identityToken: String, linkVerifier: String?, turnstileToken: String?, timeZone: String)
     case signOut(session: String)
     case readOwner(session: String)
     case updateOwner(session: String, timeZone: String)

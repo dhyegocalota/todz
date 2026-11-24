@@ -94,7 +94,7 @@ import Testing
         #expect(harness.model.phase == .naming)
         #expect(
             harness.service.calls == [
-                .signIn(identityToken: "dhyego", linkVerifier: nil, timeZone: harnessTimeZoneIdentifier),
+                .signIn(identityToken: "dhyego", linkVerifier: nil, turnstileToken: nil, timeZone: harnessTimeZoneIdentifier),
                 .listWorkspaces(session: harness.service.issuedSession.sessionToken),
             ]
         )

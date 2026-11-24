@@ -7,6 +7,10 @@ private let tokenLength = 43
 public struct SignInLink: Equatable, Sendable {
     public let token: String
 
+    public var turnstileToken: String {
+        fatalError("SignInLink.turnstileToken is not implemented")
+    }
+
     public init?(url: URL) {
         guard url.scheme == linkScheme, url.host() == linkHost, url.path().isEmpty else { return nil }
         let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems

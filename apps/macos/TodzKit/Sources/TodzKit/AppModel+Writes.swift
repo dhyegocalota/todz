@@ -45,7 +45,7 @@ extension AppModel {
             return
         case .unreachable:
             raise(.network, retry: retry)
-        case .identityRejected, .signInUnavailable, .tooManyLinks, .tooManyRequests, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead,
+        case .identityRejected, .signInUnavailable, .tooManyLinks, .tooManyRequests, .signInRefused, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead,
             .ruleViolated, .timeZoneInvalid, .invalidRequest, .unexpected:
             raise(.server, retry: retry)
         }
@@ -70,7 +70,7 @@ extension AppModel {
             raise(.network, retry: retry, retryTarget: target)
         case .inboxIsFixed:
             raise(.inboxIsFixed)
-        case .identityRejected, .signInUnavailable, .tooManyLinks, .tooManyRequests, .cursorAhead, .timeZoneInvalid, .invalidRequest, .unexpected:
+        case .identityRejected, .signInUnavailable, .tooManyLinks, .tooManyRequests, .signInRefused, .cursorAhead, .timeZoneInvalid, .invalidRequest, .unexpected:
             raise(.changeNotSaved)
         }
     }

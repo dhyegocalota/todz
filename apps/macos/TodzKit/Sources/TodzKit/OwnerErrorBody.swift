@@ -33,6 +33,7 @@ struct OwnerErrorBody: Decodable {
         case .signInUnavailable: .signInUnavailable
         case .tooManyLinks: .tooManyLinks
         case .tooManyRequests: .tooManyRequests
+        case .signInRefused: nil
         }
     }
 }

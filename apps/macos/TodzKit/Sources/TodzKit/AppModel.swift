@@ -10,6 +10,8 @@ import Observation
     public internal(set) var signInMethod: SignInMethod?
     public internal(set) var signInMethodError: SignInError?
     public internal(set) var pendingLink: PendingSignInLink?
+    public internal(set) var signInChallengeToken: String?
+    public internal(set) var challengeRound = 0
     public internal(set) var workspaces: [Workspace] = []
     public internal(set) var activeWorkspaceIdentifier: String?
     public var selectedItem: SidebarItem = .inbox {
@@ -182,7 +184,7 @@ import Observation
 
     public func signIn(identity: String) async {
         lastIdentity = identity
-        await openSession { try await service.signIn(identityToken: identity, linkVerifier: nil, timeZone: timeZone.identifier) }
+        await openSession { try await service.signIn(identityToken: identity, linkVerifier: nil, turnstileToken: nil, timeZone: timeZone.identifier) }
     }
 
     @discardableResult

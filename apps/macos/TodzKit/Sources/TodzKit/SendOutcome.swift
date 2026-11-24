@@ -13,7 +13,7 @@ enum SendOutcome: Equatable, Sendable {
             return .refused
         case .unreachable:
             return .unreachable
-        case .unexpected, .signInUnavailable, .tooManyLinks, .tooManyRequests:
+        case .unexpected, .signInUnavailable, .tooManyLinks, .tooManyRequests, .signInRefused:
             return .unexpected
         case .unauthorized:
             return .sessionGone

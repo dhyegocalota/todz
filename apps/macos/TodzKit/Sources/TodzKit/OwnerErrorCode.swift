@@ -10,4 +10,5 @@ enum OwnerErrorCode: String, Decodable {
     case signInUnavailable = "sign_in_unavailable"
     case tooManyLinks = "too_many_links"
     case tooManyRequests = "too_many_requests"
+    case signInRefused = "sign_in_refused"
 }

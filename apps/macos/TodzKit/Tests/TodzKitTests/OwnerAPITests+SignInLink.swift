@@ -15,7 +15,7 @@ extension OwnerAPITests {
     }
 
     @Test func requestSignInLinkPostsTheAddressAndTheChallengeWithoutASession() async throws {
-        try await api(answering: .response(status: 202, body: "{}")).requestSignInLink(email: "maria@example.com", challenge: challenge)
+        try await api(answering: .response(status: 202, body: "{}")).requestSignInLink(email: "maria@example.com", challenge: challenge, turnstileToken: "token")
         try expectOnlyRequest(
             ExpectedRequest(
                 method: "POST",
@@ -28,7 +28,7 @@ extension OwnerAPITests {
 
     @Test func signInSendsTheLinkVerifierWhenThereIsOne() async throws {
         let body = "{\"session_token\":\"secret\",\"owner\":\(OwnerFixtures.ownerJSON(identifier: "owner-1", timeZone: zone))}"
-        _ = try await api(answering: .response(status: 201, body: body)).signIn(identityToken: "token", linkVerifier: verifier, timeZone: zone)
+        _ = try await api(answering: .response(status: 201, body: body)).signIn(identityToken: "token", linkVerifier: verifier, turnstileToken: nil, timeZone: zone)
         try expectOnlyRequest(
             ExpectedRequest(
                 method: "POST",
@@ -42,21 +42,21 @@ extension OwnerAPITests {
     @Test func aSixthLinkIsRefusedAsTooManyLinks() async throws {
         let answer = StubAnswer.response(status: 429, body: "{\"error\":\"too_many_links\"}")
         await #expect(throws: OwnerAPIError.tooManyLinks) {
-            try await api(answering: answer).requestSignInLink(email: "maria@example.com", challenge: challenge)
+            try await api(answering: answer).requestSignInLink(email: "maria@example.com", challenge: challenge, turnstileToken: "token")
         }
     }
 
     @Test func aRateLimitedLinkRequestIsRefusedAsTooManyRequests() async throws {
         let answer = StubAnswer.response(status: 429, body: "{\"error\":\"too_many_requests\"}")
         await #expect(throws: OwnerAPIError.tooManyRequests) {
-            try await api(answering: answer).requestSignInLink(email: "maria@example.com", challenge: challenge)
+            try await api(answering: answer).requestSignInLink(email: "maria@example.com", challenge: challenge, turnstileToken: "token")
         }
     }
 
     @Test func aRateLimitedSignInIsRefusedAsTooManyRequests() async throws {
         let answer = StubAnswer.response(status: 429, body: "{\"error\":\"too_many_requests\"}")
         await #expect(throws: OwnerAPIError.tooManyRequests) {
-            try await api(answering: answer).signIn(identityToken: "token", linkVerifier: verifier, timeZone: zone)
+            try await api(answering: answer).signIn(identityToken: "token", linkVerifier: verifier, turnstileToken: nil, timeZone: zone)
         }
     }
 }

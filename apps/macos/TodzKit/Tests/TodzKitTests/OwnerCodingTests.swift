@@ -39,17 +39,17 @@ private func encodedText(_ value: some Encodable) throws -> String {
     }
 
     @Test func signInBodyPinsItsJson() throws {
-        let body = SignInBody(identityToken: identityToken, linkVerifier: nil, timeZone: timeZone)
+        let body = SignInBody(identityToken: identityToken, linkVerifier: nil, turnstileToken: nil, timeZone: timeZone)
         #expect(try encodedText(body) == #"{"identity_token":"identity-token","time_zone":"America\/Sao_Paulo"}"#)
     }
 
     @Test func signInBodyWithAVerifierPinsItsJson() throws {
-        let body = SignInBody(identityToken: identityToken, linkVerifier: "verifier", timeZone: timeZone)
+        let body = SignInBody(identityToken: identityToken, linkVerifier: "verifier", turnstileToken: nil, timeZone: timeZone)
         #expect(try encodedText(body) == #"{"identity_token":"identity-token","link_verifier":"verifier","time_zone":"America\/Sao_Paulo"}"#)
     }
 
     @Test func signInLinkRequestBodyPinsItsJson() throws {
-        let body = SignInLinkRequestBody(email: "maria@example.com", linkChallenge: "challenge")
+        let body = SignInLinkRequestBody(email: "maria@example.com", linkChallenge: "challenge", turnstileToken: "token")
         #expect(try encodedText(body) == #"{"email":"maria@example.com","link_challenge":"challenge"}"#)
     }
 

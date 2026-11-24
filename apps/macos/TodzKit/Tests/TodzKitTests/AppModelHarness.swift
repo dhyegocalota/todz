@@ -3,6 +3,7 @@ import Testing
 @testable import TodzKit
 
 let harnessTimeZoneIdentifier = "America/Sao_Paulo"
+let harnessChallengeToken = "challenge-token"
 
 final class KeySequence {
     private(set) var issued: [String] = []
