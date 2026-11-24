@@ -24,6 +24,13 @@ import Observation
     public internal(set) var banner: AppBanner?
     public internal(set) var histories: [TaskKey: HistoryLoad] = [:]
     public internal(set) var linkRevealCount = 0
+    public internal(set) var keyProjectIdentifier: String?
+    public internal(set) var keys: KeyList?
+    public internal(set) var issuedKey: IssuedKey?
+    public internal(set) var isIssuing = false
+    public internal(set) var issueFailure: KeyFailure?
+    public internal(set) var revokingKeyIdentifiers: Set<String> = []
+    public internal(set) var failedRevokeIdentifiers: Set<String> = []
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
     var outbox = Outbox()
@@ -60,6 +67,8 @@ import Observation
     @ObservationIgnored var linkFollowing: Task<Void, Never>?
     @ObservationIgnored var waitingLink: WidgetLink?
     @ObservationIgnored var publishedWidgetSnapshot: WidgetSnapshotState?
+    @ObservationIgnored var keyScreenIdentifier: UUID?
+    @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let store: any SyncStore
