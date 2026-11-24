@@ -2,6 +2,7 @@ import { MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
+import { publicOriginOf } from '../src/sign-in-links';
 import { seedEmailIdentity, seedOwner } from './directory-seed';
 import {
   LINK_CHALLENGE,
@@ -295,6 +296,7 @@ describe('a link that cannot be asked for', () => {
     ['an origin with a path', { PUBLIC_ORIGIN: 'http://localhost:8787/app' }],
     ['an origin with a trailing slash', { PUBLIC_ORIGIN: 'http://localhost:8787/' }],
     ['an origin that is not a URL', { PUBLIC_ORIGIN: 'todz' }],
+    ['an http origin on a public host', { PUBLIC_ORIGIN: 'http://todz.app' }],
     ['the console sender on a public origin', { PUBLIC_ORIGIN: 'https://todz.app' }],
     ['the console sender on a look-alike host', { PUBLIC_ORIGIN: 'https://localhost.todz.app' }],
   ])('%s answers 503 sign_in_unavailable, stores nothing and sends nothing', async (_name, settings) => {
@@ -348,6 +350,22 @@ describe('a link that cannot be asked for', () => {
     expect(response.status).toBe(UNAVAILABLE_STATUS);
     expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
     expect(await linkRows(email)).toEqual([]);
+  });
+});
+
+describe('the public origin', () => {
+  test.each([
+    ['https://todz.app', 'https://todz.app'],
+    ['http://localhost:8787', 'http://localhost:8787'],
+    ['http://127.0.0.1:9000', 'http://127.0.0.1:9000'],
+    ['https://localhost:8787', 'https://localhost:8787'],
+    ['http://todz.app', null],
+    ['http://localhost.todz.app', null],
+    ['ftp://todz.app', null],
+    ['https://todz.app/', null],
+    [undefined, null],
+  ])('%j is kept as %j', (configured, expected) => {
+    expect(publicOriginOf(configured)).toBe(expected);
   });
 });
 

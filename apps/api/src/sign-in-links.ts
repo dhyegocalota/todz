@@ -21,7 +21,7 @@ const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
 
 const RequestBodySchema = z.object({ email: z.string(), link_challenge: z.string() });
 
-function publicOriginOf(configured: string | undefined): string | null {
+export function publicOriginOf(configured: string | undefined): string | null {
   if (configured === undefined) return null;
   if (!URL.canParse(configured)) return null;
   if (new URL(configured).origin !== configured) return null;
