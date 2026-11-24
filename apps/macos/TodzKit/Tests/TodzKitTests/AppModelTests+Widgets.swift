@@ -224,6 +224,43 @@ extension AppModelTests {
         #expect(harness.widgets.snapshot == nil)
     }
 
+    @Test func aSignOutWhoseWidgetEraseFailsStillSignsOut() async throws {
+        let harness = try await launchedWidgetHarness()
+        harness.widgets.failures[.erase] = .unwritable
+        await harness.model.signOut()
+        #expect(harness.model.phase == .signedOut(notice: nil))
+        #expect(harness.model.banner == nil)
+        #expect(harness.model.session == nil)
+        #expect(harness.vault.secret == nil)
+        #expect(harness.vault.eraseCount == 1)
+        #expect(harness.store.routes().contains(.erase))
+        #expect(harness.service.calls.contains(.signOut(session: harness.session)))
+    }
+
+    @Test func aSignInAsAnotherOwnerGoesOnWhenTheWidgetEraseFails() async throws {
+        let harness = try widgetHarness()
+        harness.store.owner = OwnerCache(ownerIdentifier: "someone-else", workspaces: [], activeWorkspaceIdentifier: nil)
+        await harness.model.launch()
+        harness.widgets.failures[.erase] = .unwritable
+        await harness.model.signIn(identity: "dhyego")
+        #expect(harness.model.signInError == nil)
+        #expect(harness.model.phase == .ready)
+        #expect(harness.store.owner?.ownerIdentifier == harness.ownerIdentifier)
+        #expect(harness.model.taskViews?.today.open.map(\.task.number) == [1, 2])
+    }
+
+    @Test func aLaunchWhoseServerNamesAnotherOwnerGoesOnWhenTheWidgetEraseFails() async throws {
+        let harness = try widgetHarness()
+        let acme = try #require(harness.service.workspaces.first)
+        harness.cache([acme], active: acme, ownerIdentifier: "someone-else")
+        harness.widgets.failures[.erase] = .unwritable
+        harness.vault.secret = harness.session
+        await harness.model.launch()
+        #expect(harness.model.phase == .ready)
+        #expect(harness.store.owner?.ownerIdentifier == harness.ownerIdentifier)
+        #expect(harness.model.taskViews?.today.open.map(\.task.title) == ["Task 1", "Task 2"])
+    }
+
     @Test func aSignInAsAnotherOwnerErasesTheWidgetFilesBeforeTheFirstNewWrite() async throws {
         let harness = try widgetHarness()
         harness.store.owner = OwnerCache(ownerIdentifier: "someone-else", workspaces: [], activeWorkspaceIdentifier: nil)
