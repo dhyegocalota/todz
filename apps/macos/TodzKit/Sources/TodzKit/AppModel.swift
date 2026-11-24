@@ -39,7 +39,7 @@ import Observation
     var retryTarget: WriteTarget?
     var outbox = Outbox()
     var refreshesInFlight = 0
-    var isOffline = false
+    public internal(set) var isOffline = false
     var isOwnerConfirmed = false
 
     @ObservationIgnored var hasLaunched = false
