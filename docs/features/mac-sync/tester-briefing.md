@@ -268,3 +268,44 @@ From `apps/macos/TodzKit`: `swift test` (290 tests). App: `xcodegen generate --s
 - The refused-change count of a project dropped from the list while no flush runs carries into the next flush's banner.
 - `waitingChangesLost` is raised each time an unreadable outbox is read (launch, then sign-in), not once per launch; the empty outbox written at the first read makes the second read succeed in practice.
 - The overlay places a reopened task by the server keys of the tasks the outbox did not move; where it lands among moved tasks the server's new keys decide, which the overlay cannot know.
+
+## Security fixes (lane `lane/mac-sync-security`)
+
+### What changed
+
+- **Uncoded failures never drop a change.** `OwnerErrorBody`'s status map keeps only 401 → `unauthorized` and 503 → `signInUnavailable`; a bare 400 or 404 is now `unexpected(status:)`, so only a todz error body with a refusal code is refused. `AppModel.hasServerAnswered` is set by `noteAnswer()` (a request with a decoded answer, a loaded pull, a coded refusal) and read once per failed attempt by the send loop's `countAttempt`: without an answer since the change's previous attempt the loop waits without counting. ADR 0028 point 4, the `// NB ADR 0028:` line in `SendOutcome.swift` and the spec's failure handling say so.
+- **Nothing is sent before the owner is confirmed.** `AppModel.isOwnerConfirmed` is set by sign-in's issued owner and by `confirmOwner()` (the old `sendTimeZone`, `PATCH /owner`), cleared with the session; `startSending` requires it, so an `opened` before the answer sends nothing. The launch now confirms at the top of `openListedWorkspaces` (no separate call), so a reload after an offline launch confirms before it lists and sends; a list that follows an unconfirmed owner stays outdated, so the next opened socket reloads again. A quiet reload that fails after another owner's cache was erased (phase `loading`) raises the load failure with Try again, as the launch did before. ADR 0027 point 4 and the spec's cached-launch bullet say so.
+- **Sign-out never hides a failed erase.** `signOut` calls `store.erase()` first and directly; on failure the session, the vault, the window and its watches stay and `AppBanner.signOutFailed` shows `ErrorCopy.signOutFailed`. The watches are cancelled after the erase now, before the vault erase. ADR 0027 point 4 and the spec's sign-out bullet say so.
+- **A sign-in whose erase fails signs the issued session out** (`try? await service.signOut(session:)`).
+- ADR 0027 Consequences: a remote revocation (401) never removes the cached tasks; no UI change.
+
+### Red today, green after
+
+| Test | Red text | Commits |
+| --- | --- | --- |
+| `AppModelTests+Outbox::aTransientFailureWithNoAnswerBetweenNeverDropsTheChange` (7 failures) | `Expectation failed: waitingAtFourthAttempt.value == 1`, `harness.pause.durations == [.seconds(1), .seconds(2), .seconds(4)]`, `harness.model.banner == nil`, for every case | 16cf8b7 → 917bcd5 |
+| `AppModelTests+Outbox::aThirdTransientFailureEachAfterAnAnswerDropsTheChangeAsRefused` | `Expectation failed: harness.service.routes().filter { $0 == .completeTasks }.count == 3` for `.bareNotFound` and `.bareBadRequest`; the other five cases are pins | 16cf8b7 → 917bcd5 |
+| `AppModelTests+Outbox::aCodedRefusalDropsTheChangeAtOnce` | pin | 16cf8b7 |
+| `OwnerAPITests::mapsEachRowOfTheErrorTable` | `expected error ".unexpected(status: 404)" of type OwnerAPIError, but ".notFound" of type OwnerAPIError was thrown instead`, and the same for 400 / `.invalidRequest`; the 511 row is a pin | 16cf8b7 → 917bcd5 |
+| `AppModelTests+Owners::aLaunchSendsNothingBeforeTheSessionsOwnerIsConfirmedThenErasesAnotherOwnersCache` | `Expectation failed: harness.service.routes().contains(.updateTask) == false` (before and after the answer) | 4891427 → 9bcf56e |
+| `AppModelTests+Owners::aLaunchAsAnotherOwnerWhoseListingFailsSaysSoWithTryAgain` | pin | 4891427 |
+| `AppModelTests+Owners::aSignOutWhoseEraseFailsStaysSignedInWithTheVaultAndSaysSo` | `Expectation failed: harness.model.banner == .signOutFailed` and seven more | 0bc800d → 9730dcc |
+| `AppModelTests+Owners::aSignInWhoseEraseFailsFailsSignsTheIssuedSessionOutAndLeavesTheVaultUntouched` | `Expectation failed: harness.service.calls.dropFirst() == [.signOut(session: harness.service.issuedSession.sessionToken)]` | 8963388 → c3395d2 |
+
+`aThirdTransientFailureDropsTheChangeAsRefused` was replaced by the two transient tests above; `signOutCancelsTheWatchesThenErasesTheCacheThenTheVaultThenSignsOut` became `signOutErasesTheCacheThenCancelsTheWatchesThenErasesTheVaultThenSignsOut`; `aCachedLaunchWithTheServerDownWaitsForASocketToOpen` now expects `updateOwner` before `listWorkspaces` after the socket opens. The unit suite: 313 tests in 22 suites at c3395d2.
+
+### Hypotheses to attack
+
+1. Hypothesis: a captive portal never drops a waiting change. Break it by: changing the proxy above to answer every task write with `511` and an HTML page (and, separately, `200` with an HTML page, and a bare `404`), making three changes, pressing ⌘R several times; `outbox.json` keeps all three, no refused-change notice shows, and they land once the proxy forwards again.
+2. Hypothesis: one change the real server keeps failing is still dropped at its third counted attempt. Break it by: answering only one task's `PATCH` with a bare `500` while everything else forwards (pulls succeed between attempts); the third attempt drops it with the notice and the others are sent.
+3. Hypothesis: a stopped server never drops a change. Break it by: stopping `wrangler dev` behind the proxy (the proxy answers a bare `502`) for a minute with changes waiting; none is dropped.
+4. Hypothesis: a cached launch whose session belongs to another owner sends nothing of the cache's outbox. Break it by: putting owner A's `session` file beside owner B's `Cache` folder with a waiting change, launching; the server never receives B's change and the folder is erased once `PATCH /owner` answers.
+5. Hypothesis: an offline cached launch sends its outbox once the server returns. Break it by: launching with the server stopped and changes waiting, then starting it; `PATCH /owner` then `GET /owner/workspaces` precede the sends.
+6. Hypothesis: a sign-out whose erase fails leaves the owner signed in and says so. Break it by: making the `Cache` folder unremovable (`chflags uchg` on a file inside it), signing out; the banner shows, the window stays, and the session file is still there.
+
+### Known gaps
+
+- A bare 401 still ends the session (vault erased, signed-out screen); the cache and outbox are kept, so nothing is lost and the same owner resumes, but a portal or proxy answering 401 would sign the owner out. The Worker's 401 always carries `WWW-Authenticate: Bearer`, which a hardening could require; not done.
+- An owner whose `PATCH /owner` is refused with `time_zone_invalid` is never confirmed, so their outbox waits until a later launch confirms (sign-in refuses that zone too, so only a zone that turns invalid after sign-in hits this). Each opened socket reloads the workspaces in that state. The Worker has a read-only owner route that could confirm instead.
+- When the owner is confirmed as another owner inside a reload started by a socket (an offline launch after two failed erases), the erase cancels that reload, so its listing fails and the load failure shows with Try again.
+- `plan.md`'s outcome table (transient row) and `test-plan.md` still describe the old counting rule; they are the lead's to update.

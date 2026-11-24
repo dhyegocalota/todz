@@ -19,7 +19,7 @@ The data is small: one owner, a few workspaces, a few projects, hundreds of task
    - `projects/<project id>.json`: that project's last cursor and its tasks as the server sent them;
    - `outbox.json`: the writes not yet confirmed by the server (ADR 0028).
 3. Every file is JSON in the owner API's own shapes (snake_case keys, epoch milliseconds), written atomically (a `0600` draft file, then `rename`), and excluded from backups. The folder is `0700`.
-4. The cache belongs to one owner. Signing in as a different owner, or with no readable `owner.json`, empties the app's in-memory state and erases the whole folder **before the new session is stored**; if the erase fails, the sign-in fails, so a session never sits beside another owner's cache. A launch whose server names a different owner than the cache erases it too. Signing out erases the folder before the session. A session that ends with a 401 keeps it, so the same owner signing in again resumes with the outbox.
+4. The cache belongs to one owner. Signing in as a different owner, or with no readable `owner.json`, empties the app's in-memory state and erases the whole folder **before the new session is stored**; if the erase fails, the sign-in fails, so a session never sits beside another owner's cache. A launch whose server names a different owner than the cache erases it too; until the server has named the session's owner (the sign-in's answer, or the owner update a launch sends before it lists the workspaces), the cached window shows and its sockets open, but nothing in the outbox is sent. Signing out erases the folder before the session; if that erase fails, the owner stays signed in and is told, so a sign-out never leaves the data behind unseen. A session that ends with a 401 keeps it, so the same owner signing in again resumes with the outbox.
 5. A project file that cannot be read or decoded is erased and that project is pulled again from cursor 0. An `owner.json` that cannot be read erases the folder. An `outbox.json` that cannot be read erases it and tells the owner once that waiting changes were lost.
 6. When the owner adds a signing team, the folder moves to the App Group container in the same format, so the widgets read it (feature 8 `widgets`).
 
@@ -38,6 +38,7 @@ The data is small: one owner, a few workspaces, a few projects, hundreds of task
 
 - Tasks are on disk as plaintext JSON in the sandbox container, as safe as the user's account, like the session (ADR 0025).
 - Sign-out loses changes that never reached the server; the window says so before it signs out (see `docs/features/mac-sync/design.md`).
+- A session revoked from elsewhere ends in a 401, which keeps the cache, and the sign-in screen cannot erase it, so a remote revocation never removes the tasks already on this Mac; only a sign-in as another owner, or a sign-out, does. Whether the sign-in screen should offer an erase is the owner's call.
 - Moving to the App Group is required before `widgets`; it is listed for the owner with the signing team.
 
 ## Evidence

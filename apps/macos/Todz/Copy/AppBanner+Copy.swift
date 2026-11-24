@@ -15,6 +15,7 @@ extension AppBanner {
         case let .changesRefused(count): Self.refusedTitle(count: count)
         case .cacheNotSaved: ErrorCopy.cacheNotSaved
         case .waitingChangesLost: ErrorCopy.waitingChangesLost
+        case .signOutFailed: ErrorCopy.signOutFailed
         }
     }
 
@@ -24,7 +25,7 @@ extension AppBanner {
         case .server: ErrorCopy.serverBody
         case .changesRefused: ErrorCopy.changeNotSavedBody
         case .someProjectsFailed, .changeNotSaved, .sessionNotSaved, .inboxIsFixed, .taskGone, .projectGone, .workspaceGone, .cacheNotSaved,
-            .waitingChangesLost:
+            .waitingChangesLost, .signOutFailed:
             nil
         }
     }

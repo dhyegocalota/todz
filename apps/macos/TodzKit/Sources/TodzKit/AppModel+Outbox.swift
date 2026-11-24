@@ -8,7 +8,7 @@ extension AppModel {
 
     func startSending() {
         sendWait?.cancel()
-        guard let session, sendingSession == nil else { return }
+        guard let session, isOwnerConfirmed, sendingSession == nil else { return }
         sendingSession = session
         sendLoop = Task { await sendOutbox(session: session) }
     }
@@ -21,6 +21,7 @@ extension AppModel {
         sendingSession = nil
         headInFlightSession = nil
         sendFailures = 0
+        hasServerAnswered = false
         refusalsInFlush = 0
     }
 
@@ -110,6 +111,12 @@ extension AppModel {
 
     private func countAttempt(sending change: PendingChange) async {
         guard outbox.head == change else { return }
+        let isAnsweredSinceLastAttempt = hasServerAnswered
+        hasServerAnswered = false
+        guard isAnsweredSinceLastAttempt else {
+            await waitToSend()
+            return
+        }
         let (counted, isAtLimit) = outbox.countingAttemptOnHead()
         guard !isAtLimit else {
             await refuse(change)

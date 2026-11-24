@@ -25,6 +25,7 @@ import Observation
 
     @ObservationIgnored var session: String?
     @ObservationIgnored var ownerIdentifier: String?
+    @ObservationIgnored var isOwnerConfirmed = false
     @ObservationIgnored var isWorkspaceListOutdated = false
     @ObservationIgnored var isCacheNotSavedRaised = false
     @ObservationIgnored var watches: [String: Task<Void, Never>] = [:]
@@ -35,6 +36,7 @@ import Observation
     @ObservationIgnored var sendWait: Task<Void, any Error>?
     @ObservationIgnored var headInFlightSession: String?
     @ObservationIgnored var sendFailures = 0
+    @ObservationIgnored var hasServerAnswered = false
     @ObservationIgnored var refusalsInFlush = 0
     @ObservationIgnored var selectionsAtAdd: [String: TaskKey?] = [:]
     @ObservationIgnored var projectsToPullFromStart: Set<String> = []
@@ -113,8 +115,6 @@ import Observation
         session = secret
         phase = .loading
         openCache(cachedOwner())
-        await sendTimeZone()
-        guard session == secret else { return }
         guard phase == .ready else {
             await loadWorkspaces()
             return
@@ -142,10 +142,12 @@ import Observation
             cached = try cacheToOpen(for: issued.owner)
         } catch {
             signInError = .unexpected
+            try? await service.signOut(session: issued.sessionToken)
             return
         }
         session = issued.sessionToken
         ownerIdentifier = issued.owner.identifier
+        isOwnerConfirmed = true
         phase = .loading
         keep(secret: issued.sessionToken)
         openCache(cached)
@@ -159,9 +161,15 @@ import Observation
 
     public func signOut() async {
         guard let session else { return }
+        do {
+            try store.erase()
+        } catch {
+            raise(.signOutFailed)
+            return
+        }
+        outbox = Outbox()
         clearSession()
         phase = .signedOut(notice: nil)
-        forgetCache()
         try? vault.erase()
         try? await service.signOut(session: session)
     }
@@ -191,7 +199,7 @@ import Observation
         do {
             let value = try await operation(session)
             guard self.session == session else { throw CancellationError() }
-            isOffline = false
+            noteAnswer()
             return value
         } catch OwnerAPIError.unauthorized {
             guard self.session == session else { throw CancellationError() }
@@ -214,6 +222,7 @@ import Observation
     private func clearSession() {
         session = nil
         ownerIdentifier = nil
+        isOwnerConfirmed = false
         forgetWindow()
     }
 
@@ -236,8 +245,11 @@ import Observation
         dismissBanner()
     }
 
-    private func sendTimeZone() async {
+    // NB ADR 0027: nothing is sent before this session's owner is confirmed, and another owner's cache is erased first.
+    func confirmOwner() async {
+        guard !isOwnerConfirmed else { return }
         guard let owner = try? await request({ try await service.updateOwner(session: $0, timeZone: timeZone.identifier) }) else { return }
+        isOwnerConfirmed = true
         let cachedOwnerIdentifier = ownerIdentifier
         ownerIdentifier = owner.identifier
         guard let cachedOwnerIdentifier, cachedOwnerIdentifier != owner.identifier else { return }

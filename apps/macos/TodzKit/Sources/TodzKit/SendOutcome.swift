@@ -4,7 +4,7 @@ enum SendOutcome: Equatable, Sendable {
     case unexpected
     case sessionGone
 
-    // NB ADR 0028: a refusal drops the change, unreachable waits, the third unexpected failure drops it as refused.
+    // NB ADR 0028: a refusal drops the change, unreachable waits, an unexpected failure counts only after an answer since the last, and the third drops it.
     static func of(_ error: any Error) -> SendOutcome {
         guard !(error is CancellationError) else { return .sessionGone }
         guard let failure = error as? OwnerAPIError else { return .unexpected }
