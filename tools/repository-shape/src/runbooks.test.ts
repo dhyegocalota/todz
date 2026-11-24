@@ -24,6 +24,17 @@ const LINK_PATTERN = /\]\(([^)\s]+)\)/g;
 const EXTERNAL_LINK_PATTERN = /^(https?:|mailto:|#)/;
 const PNPM_COMMAND_PATTERN = /\bpnpm ([a-z][\w:-]*)/g;
 const FENCED_BLOCK_PATTERN = /```[\s\S]*?```/g;
+const CODE_FENCE = '```';
+const WRAPPER_PATH = 'scripts/todz-cloudflare.sh';
+const WRAPPED_WRANGLER = `${WRAPPER_PATH} pnpm --filter @todz/api exec wrangler `;
+const SHELL_GUARD_PATTERN = /[$`{}]|<</;
+const SHARED_TEMPORARY_PATTERN = /TMPDIR|\/tmp\b/;
+const WRANGLER_CONFIGURATION = 'apps/api/wrangler.jsonc';
+const ACCOUNT_ID_PATTERN = /"account_id": "([0-9a-f]{32})"/;
+const REPOSITORY_SCRIPT_PATTERN = /(scripts\/[\w./-]+)/g;
+const LINE_SEPARATOR = '\n';
+const ACCOUNT_ID_CAPTURE = 1;
+const CLOUDFLARE_API_HOST = 'api.cloudflare.com';
 
 type Runbook = { file: string; text: string };
 
@@ -72,6 +83,15 @@ function brokenLinks({ file, text }: Runbook): string[] {
     .filter((target) => !EXTERNAL_LINK_PATTERN.test(target))
     .filter((target) => isBrokenLink({ file, target }))
     .map((target) => `${file}: ${target}`);
+}
+
+function commandLines(text: string): string[] {
+  return [...text.matchAll(FENCED_BLOCK_PATTERN)].flatMap(([block]) =>
+    block
+      .split(LINE_SEPARATOR)
+      .filter((line) => !line.startsWith(CODE_FENCE) && line.trim() !== '')
+      .map((line) => line.trim()),
+  );
 }
 
 function rootScripts(): string[] {
@@ -147,6 +167,30 @@ describe('runbooks', () => {
 
   test('the deploy runbook never deploys with --var, so the deployed variables are the ones in the configuration', () => {
     expect(readRunbook(DEPLOY_RUNBOOK).text).not.toMatch(DEPLOY_WITH_VARIABLE_PATTERN);
+  });
+
+  test('the deploy runbook has command lines, none with a character the loop shell guard refuses or a shared temporary folder', () => {
+    const lines = commandLines(readRunbook(DEPLOY_RUNBOOK).text);
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.filter((line) => SHELL_GUARD_PATTERN.test(line) || SHARED_TEMPORARY_PATTERN.test(line))).toEqual([]);
+  });
+
+  test('every wrangler call of the deploy runbook goes through the wrapper, and no line calls the Cloudflare API directly', () => {
+    const lines = commandLines(readRunbook(DEPLOY_RUNBOOK).text);
+    expect(lines.filter((line) => line.includes('wrangler ') && !line.startsWith(WRAPPED_WRANGLER))).toEqual([]);
+    expect(lines.filter((line) => line.includes(CLOUDFLARE_API_HOST))).toEqual([]);
+  });
+
+  test('every repository script the deploy runbook names exists, and the wrapper holds the account of wrangler.jsonc', () => {
+    const named = capturedNames({
+      text: commandLines(readRunbook(DEPLOY_RUNBOOK).text).join(LINE_SEPARATOR),
+      pattern: REPOSITORY_SCRIPT_PATTERN,
+    });
+    expect(named.length).toBeGreaterThan(0);
+    expect(named.filter((path) => !existsSync(repositoryPath(path)))).toEqual([]);
+    const accountId = ACCOUNT_ID_PATTERN.exec(readRepositoryFile(WRANGLER_CONFIGURATION))?.[ACCOUNT_ID_CAPTURE];
+    expect(accountId).toBeDefined();
+    expect(readRepositoryFile(WRAPPER_PATH)).toContain(`"${accountId}"`);
   });
 
   test('the deploy runbook ends with a run log table for the lead', () => {
