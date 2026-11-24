@@ -23,7 +23,7 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.widgetkit-extension</string>
 	</dict>
-	<key>TodzSharedFolder</key>
-	<string>Library/Application Support/dev.todz.widgets</string>
+	<key>TodzAppGroup</key>
+	<string>$(TeamIdentifierPrefix)dev.todz</string>
 </dict>
 </plist>

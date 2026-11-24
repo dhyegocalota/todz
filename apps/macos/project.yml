@@ -22,7 +22,8 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         SWIFT_VERSION: "6.0"
-        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: XFWR794VS8
+        CODE_SIGN_IDENTITY: Apple Development
         CODE_SIGN_STYLE: Manual
         ENABLE_HARDENED_RUNTIME: NO
         GENERATE_INFOPLIST_FILE: YES
@@ -32,15 +33,15 @@ targets:
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
-        com.apple.security.temporary-exception.files.home-relative-path.read-write:
-          - /Library/Application Support/dev.todz.widgets/
+        com.apple.security.application-groups:
+          - $(TeamIdentifierPrefix)dev.todz
     info:
       path: Todz/Info.plist
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         TodzAPIBaseURL: http://localhost:8787
-        TodzSharedFolder: Library/Application Support/dev.todz.widgets
+        TodzAppGroup: $(TeamIdentifierPrefix)dev.todz
         CFBundleURLTypes:
           - CFBundleURLName: dev.todz.Todz
             CFBundleURLSchemes: [todz]
@@ -60,7 +61,8 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         SWIFT_VERSION: "6.0"
-        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: XFWR794VS8
+        CODE_SIGN_IDENTITY: Apple Development
         CODE_SIGN_STYLE: Manual
         ENABLE_HARDENED_RUNTIME: NO
         GENERATE_INFOPLIST_FILE: YES
@@ -69,14 +71,14 @@ targets:
       path: TodzWidgets/TodzWidgets.entitlements
       properties:
         com.apple.security.app-sandbox: true
-        com.apple.security.temporary-exception.files.home-relative-path.read-write:
-          - /Library/Application Support/dev.todz.widgets/
+        com.apple.security.application-groups:
+          - $(TeamIdentifierPrefix)dev.todz
     info:
       path: TodzWidgets/Info.plist
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        TodzSharedFolder: Library/Application Support/dev.todz.widgets
+        TodzAppGroup: $(TeamIdentifierPrefix)dev.todz
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 schemes:
