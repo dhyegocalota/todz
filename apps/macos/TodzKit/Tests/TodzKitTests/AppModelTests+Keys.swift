@@ -133,6 +133,15 @@ extension AppModelTests {
         #expect(harness.model.keys == .loaded([launchKey, issued.key]))
     }
 
+    @Test func aReloadStartedAfterTheIssueDropsAKeyRevokedElsewhere() async throws {
+        let harness = try await keyHarness()
+        let issued = try await issuedKeyOfLaunch(harness)
+        harness.service.keysOfProject[launchIdentifier] = [launchKey]
+        await harness.model.loadKeys()
+        #expect(harness.model.issuedKey == issued)
+        #expect(harness.model.keys == .loaded([launchKey]))
+    }
+
     @Test func aReloadThatListedTheIssuedKeyFirstListsItOnce() async throws {
         let harness = try await keyHarness()
         await openKeys(harness, from: .project(identifier: launchIdentifier))
