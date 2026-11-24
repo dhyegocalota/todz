@@ -29,7 +29,7 @@ public struct WidgetSnapshotTask: Codable, Equatable, Sendable {
     }
 
     public var isProjectTagShown: Bool {
-        true
+        creatorLabel == nil
     }
 
     static func of(_ boardTask: BoardTask, day: CalendarDate) -> WidgetSnapshotTask {
