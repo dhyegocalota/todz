@@ -164,10 +164,15 @@ struct StatusFailure: Sendable {
     }
 
     func nextIssuedKey() -> IssuedKey {
+        let identifier = nextKeyIdentifier()
         issuedKeyCount += 1
         let secret = "todz_fake-secret-\(issuedKeyCount)"
-        let key = ProjectKey(identifier: "project-key-\(issuedKeyCount)", hint: String(secret.suffix(keyHintLength)), createdAt: tick())
+        let key = ProjectKey(identifier: identifier, hint: String(secret.suffix(keyHintLength)), createdAt: tick())
         return IssuedKey(key: key, secret: secret)
+    }
+
+    func nextKeyIdentifier() -> String {
+        "project-key-\(issuedKeyCount + 1)"
     }
 
     private func page(projectIdentifier: String, cursor: Int) -> ChangePage {

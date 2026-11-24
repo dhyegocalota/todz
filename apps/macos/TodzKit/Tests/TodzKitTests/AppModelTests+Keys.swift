@@ -118,6 +118,36 @@ extension AppModelTests {
         #expect(harness.model.keys == .loaded([launchKey, issued.key]))
     }
 
+    @Test func aReloadThatMissedTheIssuedKeyKeepsItListed() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.service.suspend(.listKeys)
+        let reloading = Task { await harness.model.loadKeys() }
+        await harness.service.held(.listKeys)
+        await harness.model.issueKey()
+        let issued = try #require(harness.model.issuedKey)
+        harness.service.keysOfProject[launchIdentifier] = [launchKey]
+        harness.service.resume(.listKeys)
+        await reloading.value
+        #expect(harness.model.issuedKey == issued)
+        #expect(harness.model.keys == .loaded([launchKey, issued.key]))
+    }
+
+    @Test func aReloadThatListedTheIssuedKeyFirstListsItOnce() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.service.suspend(.issueKey)
+        let issuing = Task { await harness.model.issueKey() }
+        await harness.service.held(.issueKey)
+        let committed = OwnerFixtures.projectKey(identifier: harness.service.nextKeyIdentifier())
+        harness.service.keysOfProject[launchIdentifier] = [launchKey, committed]
+        await harness.model.loadKeys()
+        harness.service.resume(.issueKey)
+        await issuing.value
+        #expect(harness.model.issuedKey?.key.identifier == committed.identifier)
+        #expect(harness.model.keys == .loaded([launchKey, committed]))
+    }
+
     @Test func aFailedIssueShowsNoSecretAndListsAKeyTheServerCommitted() async throws {
         let harness = try await keyHarness()
         await openKeys(harness, from: .project(identifier: launchIdentifier))
