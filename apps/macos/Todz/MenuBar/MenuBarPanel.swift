@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import SwiftUI
 
 @MainActor @Observable final class MenuBarPanel {
     @ObservationIgnored weak var window: NSWindow?
@@ -7,6 +8,11 @@ import Observation
     func close() {
         guard let window, window.isVisible else { return }
         statusItemButton?.performClick(nil)
+    }
+
+    func openMainWindow(_ openWindow: OpenWindowAction) {
+        close()
+        openWindow.mainWindow()
     }
 
     private var statusItemButton: NSStatusBarButton? {
