@@ -85,6 +85,15 @@ private func modeOfFile(at url: URL) throws -> Int {
         #expect(try modeOfFile(at: folder) == openFolderMode)
     }
 
+    @Test func aSymlinkedFolderIsNotOwned() throws {
+        let folder = temporaryFolder()
+        let target = folder.deletingLastPathComponent().appending(path: "elsewhere")
+        defer { try? FileManager.default.removeItem(at: folder.deletingLastPathComponent()) }
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true, attributes: [.posixPermissions: privateFolderMode])
+        try FileManager.default.createSymbolicLink(at: folder, withDestinationURL: target)
+        #expect(SharedFolder.owned(folder) == nil)
+    }
+
     @Test func aSymlinkedFolderIsRefusedAndItsTargetLeftAlone() throws {
         let folder = temporaryFolder()
         let target = folder.deletingLastPathComponent().appending(path: "elsewhere")
