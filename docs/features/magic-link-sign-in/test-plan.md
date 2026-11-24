@@ -15,7 +15,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] `  Maria@Example.COM ` is stored as `maria@example.com`
 - [ ] The console text carries `<PUBLIC_ORIGIN>/sign-in#token=<43 base64url>` and the digest of that token is the row's; D1 holds no token
 - [ ] 400 `invalid_request`: empty, no `@`, no dot after `@`, two lines, 255 characters, challenge of 63 characters, challenge with upper case
-- [ ] Fourth request for one address within 15 minutes: 429 `too_many_links`, no new row, nothing logged; a request at `now + 15 min + 1 ms` after the first: 202
+- [ ] Sixth request for one address within 15 minutes: 429 `too_many_links`, no new row, nothing logged; a request at `now + 15 min + 1 ms` after the first: 202
 - [ ] 503 `sign_in_unavailable` with `SIGN_IN_PROVIDER=fake`, with no `PUBLIC_ORIGIN`, with no `EMAIL_SENDER`
 - [ ] A sender that rejects: 503, no row left
 - [ ] Redeem: 201 with a session; `owner_identities` holds `("email", "maria@example.com")`; a second link for the address signs into the same owner id
@@ -45,7 +45,13 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] Open the same link again: the app, now signed in, ignores it
 - [ ] Sign out, ask again, quit the app, open the link: the app launches and signs in (the pending link survived the quit)
 - [ ] An expired link (Worker `now` past 15 minutes, or wait): the expired line
-- [ ] Ask four times in a row: the fourth shows the too-many line
+- [ ] Ask six times past the cooldown: the sixth shows the too-many line
+- [ ] Five parallel link requests with one already made: four 202 and one 429
+- [ ] A POST with `Content-Type: text/plain`: 400, no row
+- [ ] An invalid time zone on redeem: 422, then the same link signs in
+- [ ] `EMAIL_SENDER=console` with `PUBLIC_ORIGIN=https://todz.app`: 503; `PUBLIC_ORIGIN=http://localhost:8787/`: 503
+- [ ] Send Again within 15 minutes, then click the first mail's link: it signs in (one verifier per window)
+- [ ] A link opened while the app is still launching: held, then redeemed
 - [ ] "Use a different email" returns to an empty, focused field
 - [ ] Worker with `fake`: the identity field as before, the development notice shown; the v1 walk's sign-in still works
 - [ ] Console and logs: the Worker log shows no token outside the console sender's line; the app log shows none
@@ -58,7 +64,7 @@ Empty on purpose. The tester adds one checkbox per new case (input, exact expect
 
 - [ ] Claim 1: a link cannot be redeemed twice — attack: <how>; result: <refuted | held>
 - [ ] Claim 2: the link request never reveals whether an owner exists — attack: <how>; result: <refuted | held>
-- [ ] Claim 3: a token caught through `todz://` cannot sign in without the verifier — attack: <how>; result: <refuted | held>
+- [ ] Claim 3: a token caught through `todz://` cannot sign in without the verifier — attack: the attacker asks for the link with its own challenge (R1, the accepted residual risk) and, separately, replays a token the owner asked for with a guessed verifier; result: <refuted | held>
 
 ## Coverage honesty
 
