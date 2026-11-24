@@ -3,6 +3,7 @@ import Foundation
 private let serverName = "todz"
 private let keyVariable = "TODZ_API_KEY"
 private let serverPath = "mcp"
+private let cursorBundleIdentifier = "com.todesktop.230313mzl4w4u92"
 private let cursorInstallAddress = "cursor://anysphere.cursor-deeplink/mcp/install?name=\(serverName)&config="
 private let linkFailure = "base64 percent-encodes into an install link always"
 private let unreservedCharacters = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
@@ -60,6 +61,6 @@ public enum AgentCommand: Equatable, Sendable {
     }
 
     public static func isCursor(bundleIdentifier: String?) -> Bool {
-        fatalError("AgentCommand.isCursor is not implemented")
+        bundleIdentifier == cursorBundleIdentifier
     }
 }
