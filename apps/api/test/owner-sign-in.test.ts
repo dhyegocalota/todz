@@ -1,6 +1,7 @@
 import { DueWindow, MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@todz/types';
+import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env, exports } from 'cloudflare:workers';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import { generateCredentialSecret } from '../src/credential-secret';
 import type { Env } from '../src/env';
@@ -8,7 +9,17 @@ import { McpToolName } from '../src/mcp-copy';
 import { calendarDateInTimeZone } from '../src/owner-today';
 import { issueProjectKey } from '../src/project-keys';
 import { seedIssuedKey, seedProject } from './directory-seed';
-import { askedLink, freshAddress, linkRows, redeemLink } from './email-sign-in-client';
+import {
+  CLOUDFLARE_SETTINGS,
+  PUBLIC_HTTPS_ORIGIN,
+  askedLink,
+  emailEnv,
+  freshAddress,
+  linkRows,
+  messageSent,
+  recordingBinding,
+  redeemLink,
+} from './email-sign-in-client';
 import { ClientEra, callTool, connectClient } from './mcp-client';
 import { ownerCall, serveOwnerCall, signInCall, signInOwner } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
@@ -103,7 +114,15 @@ function envWithProvider(provider: string | undefined): Env {
   return { DIRECTORY: env.DIRECTORY, PROJECT_STORE: env.PROJECT_STORE, SIGN_IN_PROVIDER: provider };
 }
 
-function directoryRunning({ beforeIdentityRead, failBatch }: { beforeIdentityRead?: () => Promise<void>; failBatch?: Error }): Env {
+function directoryRunning({
+  beforeIdentityRead,
+  failBatch,
+  settings = { SIGN_IN_PROVIDER: FAKE_PROVIDER },
+}: {
+  beforeIdentityRead?: () => Promise<void>;
+  failBatch?: Error;
+  settings?: Partial<Env>;
+}): Env {
   let hasRaced = false;
   const directory = new Proxy(env.DIRECTORY, {
     get(target, property) {
@@ -125,7 +144,7 @@ function directoryRunning({ beforeIdentityRead, failBatch }: { beforeIdentityRea
       };
     },
   }) as D1Database;
-  return { DIRECTORY: directory, PROJECT_STORE: env.PROJECT_STORE, SIGN_IN_PROVIDER: FAKE_PROVIDER };
+  return { DIRECTORY: directory, PROJECT_STORE: env.PROJECT_STORE, ...settings };
 }
 
 describe('POST /owner/sessions', () => {
@@ -593,6 +612,119 @@ describe('the owner time zone and the MCP today', () => {
     expect((await listToday()).text).not.toContain('Due on the Kiritimati date');
     await updateOwner({ token, body: { time_zone: KIRITIMATI_TIME_ZONE } });
     expect((await listToday()).text).toContain('Due on the Kiritimati date');
+  });
+});
+
+describe('the welcome mail', () => {
+  const WELCOME_SUBJECT = 'Welcome to todz';
+
+  function welcomeEnv({ binding, settings = {} }: { binding: SendEmail; settings?: Partial<Env> }): Env {
+    return emailEnv({ ...CLOUDFLARE_SETTINGS, EMAIL: binding, ...settings });
+  }
+
+  test('a new owner by link gets exactly one welcome to the address, with the lockup of the public origin', async () => {
+    const { binding, sent } = recordingBinding();
+    const link = await askedLink({ email: `Maria.${crypto.randomUUID()}@Example.com` });
+    const response = await redeemLink({ ...link, workerEnv: welcomeEnv({ binding }) });
+    expect(response.status).toBe(CREATED_STATUS);
+    const welcome = messageSent(sent);
+    expect(welcome.to).toBe(link.email.toLowerCase());
+    expect(welcome.subject).toBe(WELCOME_SUBJECT);
+    expect(welcome.html).toContain(link.email.toLowerCase());
+    expect(welcome.html).toContain(`src="${PUBLIC_HTTPS_ORIGIN}/brand/todz-lockup.png"`);
+    expect(welcome.text).toContain(link.email.toLowerCase());
+  });
+
+  test('a returning owner by link gets none', async () => {
+    const { binding, sent } = recordingBinding();
+    const email = freshAddress();
+    const first = await askedLink({ email });
+    const second = await askedLink({ email });
+    await redeemLink({ ...first, workerEnv: welcomeEnv({ binding }) });
+    await redeemLink({ ...second, workerEnv: welcomeEnv({ binding }) });
+    expect(sent).toHaveLength(1);
+  });
+
+  test('the fake provider gets none, because a fake subject is not an address', async () => {
+    const { binding, sent } = recordingBinding();
+    const response = await serveOwnerCall({
+      call: signInCall({ identityToken: crypto.randomUUID(), timeZone: 'UTC' }),
+      now: CLOCK_NOW,
+      workerEnv: welcomeEnv({ binding, settings: { SIGN_IN_PROVIDER: FAKE_PROVIDER } }),
+    });
+    expect(response.status).toBe(CREATED_STATUS);
+    expect(sent).toEqual([]);
+  });
+
+  test('a first sign-in that loses the insert to a rival gets none', async () => {
+    const { binding, sent } = recordingBinding();
+    const link = await askedLink();
+    const rivalOwnerId = crypto.randomUUID();
+    const racingEnv = directoryRunning({
+      settings: { ...CLOUDFLARE_SETTINGS, EMAIL: binding },
+      beforeIdentityRead: async () => {
+        await env.DIRECTORY.batch([
+          env.DIRECTORY.prepare('INSERT INTO owners (id, time_zone, created_at) VALUES (?, ?, ?)').bind(rivalOwnerId, 'UTC', CLOCK_NOW),
+          env.DIRECTORY.prepare('INSERT INTO owner_identities (provider, subject, owner_id, created_at) VALUES (?, ?, ?, ?)').bind(
+            'email',
+            link.email,
+            rivalOwnerId,
+            CLOCK_NOW,
+          ),
+        ]);
+      },
+    });
+    const response = await redeemLink({ ...link, workerEnv: racingEnv });
+    expect(response.status).toBe(CREATED_STATUS);
+    expect(sent).toEqual([]);
+  });
+
+  test('a welcome that throws after the session opened still answers 201 with a session that reads the owner', async () => {
+    const send = vi.fn(async () => {
+      throw new Error('the binding is down');
+    });
+    const link = await askedLink();
+    const response = await redeemLink({ ...link, workerEnv: welcomeEnv({ binding: { send } }) });
+    expect(response.status).toBe(CREATED_STATUS);
+    expect(send).toHaveBeenCalledTimes(1);
+    const body = await response.json<{ session_token: string }>();
+    expect((await readOwner(body.session_token)).status).toBe(OK_STATUS);
+  });
+
+  test.each([
+    ['no sender kind', { EMAIL_SENDER: undefined }],
+    ['no public origin', { PUBLIC_ORIGIN: undefined }],
+    ['an unknown sender kind', { EMAIL_SENDER: 'carrier-pigeon' }],
+  ])('%s skips the welcome and still answers 201', async (_name, settings) => {
+    const { binding, sent } = recordingBinding();
+    const link = await askedLink();
+    const response = await redeemLink({ ...link, workerEnv: welcomeEnv({ binding, settings }) });
+    expect(response.status).toBe(CREATED_STATUS);
+    expect(sent).toEqual([]);
+  });
+
+  test('the cloudflare kind without the binding skips the welcome and still answers 201', async () => {
+    const link = await askedLink();
+    const response = await redeemLink({ ...link, workerEnv: emailEnv(CLOUDFLARE_SETTINGS) });
+    expect(response.status).toBe(CREATED_STATUS);
+  });
+
+  test('the sign-in answers while the welcome is still being sent, and the welcome settles through waitUntil', async () => {
+    let release = (): void => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const send = vi.fn(async () => {
+      await gate;
+      return { messageId: crypto.randomUUID() };
+    });
+    const link = await askedLink();
+    const executionContext = createExecutionContext();
+    const response = await redeemLink({ ...link, workerEnv: welcomeEnv({ binding: { send } }), executionContext });
+    expect(response.status).toBe(CREATED_STATUS);
+    expect(send).toHaveBeenCalledTimes(1);
+    release();
+    await waitOnExecutionContext(executionContext);
   });
 });
 

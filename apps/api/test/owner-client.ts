@@ -1,3 +1,4 @@
+import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env, exports } from 'cloudflare:workers';
 import { z } from 'zod';
 import type { Env } from '../src/env';
@@ -34,8 +35,22 @@ export function ownerCall(call: OwnerCall): Promise<Response> {
   return exports.default.fetch(requestOf(call));
 }
 
-export function serveOwnerCall({ call, now, workerEnv = env }: { call: OwnerCall; now: number; workerEnv?: Env }): Promise<Response> {
-  return serveOwner({ request: requestOf(call), env: workerEnv, now });
+export async function serveOwnerCall({
+  call,
+  now,
+  workerEnv = env,
+  executionContext,
+}: {
+  call: OwnerCall;
+  now: number;
+  workerEnv?: Env;
+  executionContext?: ExecutionContext;
+}): Promise<Response> {
+  if (executionContext !== undefined) return serveOwner({ request: requestOf(call), env: workerEnv, now, executionContext });
+  const settledContext = createExecutionContext();
+  const response = await serveOwner({ request: requestOf(call), env: workerEnv, now, executionContext: settledContext });
+  await waitOnExecutionContext(settledContext);
+  return response;
 }
 
 export function workerEnvWith(settings: Partial<Env>): Env {

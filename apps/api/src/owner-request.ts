@@ -8,7 +8,13 @@ export type PublicRoute = OwnerRoute.SignIn | OwnerRoute.ReadSignInMethod | Owne
 
 export type SessionRoute = Exclude<OwnerRoute, PublicRoute>;
 
-export type OwnerContext = { request: Request; env: Env; now: number; params: Record<string, string> };
+export type OwnerContext = {
+  request: Request;
+  env: Env;
+  now: number;
+  executionContext: ExecutionContext;
+  params: Record<string, string>;
+};
 
 export type PublicHandler = (context: OwnerContext) => Promise<Response>;
 

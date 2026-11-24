@@ -21,9 +21,9 @@ function isOwnerPath(pathname: string): boolean {
 }
 
 export default {
-  async fetch(request, env): Promise<Response> {
+  async fetch(request, env, executionContext): Promise<Response> {
     const { pathname } = new URL(request.url);
-    if (isOwnerPath(pathname)) return serveOwner({ request, env, now: Date.now() });
+    if (isOwnerPath(pathname)) return serveOwner({ request, env, now: Date.now(), executionContext });
     const route = ROUTE_OF_PATH[pathname];
     if (route === undefined) return new Response(null, { status: HttpStatus.NotFound });
     return route({ request, env });

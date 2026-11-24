@@ -11,6 +11,12 @@ const PACKAGE_MANIFEST = 'apps/api/package.json';
 const DEV_SCRIPT = 'dev';
 const MIGRATIONS_COMMAND = 'wrangler d1 migrations apply directory --local';
 const DEV_COMMAND = 'wrangler dev';
+const DEV_EMAIL_CLOUDFLARE_SCRIPT = 'dev:email:cloudflare';
+const CLOUDFLARE_SENDER_VARIABLE = '--var EMAIL_SENDER:cloudflare';
+const SEND_EMAIL_BINDING_PATTERN =
+  /"send_email":\s*\[\s*\{\s*"name":\s*"EMAIL",\s*"allowed_sender_addresses":\s*\["noreply@todz\.app"\]\s*,?\s*\}\s*,?\s*\]/;
+const ASSETS_PATTERN =
+  /"assets":\s*\{\s*"directory":\s*"\.\/public",\s*"run_worker_first":\s*\["\/owner\/\*",\s*"\/mcp",\s*"\/sign-in"\]\s*,?\s*\}/;
 const CONSOLE_IDENTIFIER = /\bconsole\b/;
 const CONSOLE_EMAIL_SENDER = 'apps/api/src/email-sender.ts';
 const PROJECT_STORE_IDENTIFIER = /\bPROJECT_STORE\b/;
@@ -36,6 +42,25 @@ describe('the api source', () => {
 
   test('the wrangler configuration never names the email sender, so a deployed worker has none', () => {
     expect(readRepositoryFile(WRANGLER_CONFIGURATION)).not.toContain(EMAIL_SENDER_VARIABLE);
+  });
+
+  test('the wrangler configuration binds EMAIL to the one allowed sender', () => {
+    const configuration = readRepositoryFile(WRANGLER_CONFIGURATION);
+    expect(configuration).toMatch(SEND_EMAIL_BINDING_PATTERN);
+  });
+
+  test('the static assets never answer before the Worker on an API path', () => {
+    const configuration = readRepositoryFile(WRANGLER_CONFIGURATION);
+    expect(configuration).toMatch(ASSETS_PATTERN);
+  });
+
+  test('the dev:email:cloudflare script applies the migrations, then runs wrangler dev with the cloudflare sender', () => {
+    const { scripts } = JSON.parse(readRepositoryFile(PACKAGE_MANIFEST)) as { scripts: Record<string, string> };
+    const cloudflareScript = scripts[DEV_EMAIL_CLOUDFLARE_SCRIPT];
+    if (cloudflareScript === undefined) throw new Error('the api has no dev:email:cloudflare script');
+    expect(cloudflareScript.indexOf(MIGRATIONS_COMMAND)).toBeGreaterThanOrEqual(0);
+    expect(cloudflareScript.indexOf(MIGRATIONS_COMMAND)).toBeLessThan(cloudflareScript.indexOf(DEV_COMMAND));
+    expect(cloudflareScript).toContain(CLOUDFLARE_SENDER_VARIABLE);
   });
 
   test('the dev script applies the directory migrations locally before it starts wrangler dev', () => {
