@@ -1,6 +1,8 @@
 import Foundation
 
 private let textFormat = "%04d-%02d-%02d"
+private let startFailure = "a Gregorian calendar date always has a start"
+private let arithmeticFailure = "a Gregorian calendar date always moves by whole days"
 
 private func gregorianCalendar(in timeZone: TimeZone) -> Calendar {
     var calendar = Calendar(identifier: .gregorian)
@@ -59,10 +61,14 @@ public struct CalendarDate: Codable, Sendable, Hashable, Comparable {
     }
 
     public func start(in timeZone: TimeZone) -> Date {
-        fatalError("CalendarDate.start(in:) is not implemented")
+        let components = DateComponents(year: year, month: month, day: day)
+        guard let start = gregorianCalendar(in: timeZone).date(from: components) else { preconditionFailure(startFailure) }
+        return start
     }
 
     public func adding(days: Int) -> CalendarDate {
-        fatalError("CalendarDate.adding(days:) is not implemented")
+        let moved = gregorianCalendar(in: .gmt).date(byAdding: .day, value: days, to: start(in: .gmt))
+        guard let moved else { preconditionFailure(arithmeticFailure) }
+        return CalendarDate.today(in: .gmt, at: moved)
     }
 }

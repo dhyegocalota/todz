@@ -9,7 +9,7 @@ extension AppModel {
         selectedItem = .inbox
         phase = .ready
         await activate(created)
-        return nil
+        return created
     }
 
     public func switchWorkspace(identifier: String) async {
@@ -32,7 +32,7 @@ extension AppModel {
         replaceProjects(workspaceIdentifier: workspace.identifier) { $0 + [created] }
         projectLoads[created.identifier] = .loaded
         selectedItem = .project(identifier: created.identifier)
-        return nil
+        return created
     }
 
     @discardableResult
@@ -46,7 +46,7 @@ extension AppModel {
         replaceProjects(workspaceIdentifier: workspace.identifier) { projects in
             projects.map { $0.identifier == renamed.identifier ? renamed : $0 }
         }
-        return nil
+        return renamed
     }
 
     func loadWorkspaces() async {

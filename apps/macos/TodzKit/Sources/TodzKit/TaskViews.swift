@@ -2,6 +2,7 @@ import Foundation
 
 private typealias DatedTask = (dueDate: CalendarDate, positioned: PositionedTask)
 private typealias FinishedTask = (completedAt: Date, positioned: PositionedTask)
+private typealias DayEntry = (day: CalendarDate, task: BoardTask)
 
 private func isEarlierDue(_ lhs: DatedTask, _ rhs: DatedTask) -> Bool {
     guard lhs.dueDate == rhs.dueDate else { return lhs.dueDate < rhs.dueDate }
@@ -52,11 +53,11 @@ public struct TaskViews: Sendable {
     }
 
     public var upcomingDays: [TaskDay] {
-        fatalError("TaskViews.upcomingDays is not implemented")
+        groupedByDay(datedOpenTasks { $0 > day }.map { (day: $0.dueDate, task: $0.positioned.boardTask) })
     }
 
     public var doneDays: [TaskDay] {
-        fatalError("TaskViews.doneDays is not implemented")
+        groupedByDay(finishedTasks.map { (day: CalendarDate.today(in: timeZone, at: $0.completedAt), task: $0.positioned.boardTask) })
     }
 
     private var positionedTasks: [PositionedTask] {
@@ -79,10 +80,23 @@ public struct TaskViews: Sendable {
     }
 
     private func openTasksDue(within isInWindow: (CalendarDate) -> Bool) -> [BoardTask] {
+        datedOpenTasks(within: isInWindow).map(\.positioned.boardTask)
+    }
+
+    private func datedOpenTasks(within isInWindow: (CalendarDate) -> Bool) -> [DatedTask] {
         openTasks
             .compactMap { positioned in positioned.task.dueDate.map { (dueDate: $0, positioned: positioned) } }
             .filter { isInWindow($0.dueDate) }
             .sorted(by: isEarlierDue)
-            .map(\.positioned.boardTask)
+    }
+
+    private func groupedByDay(_ entries: [DayEntry]) -> [TaskDay] {
+        entries.reduce(into: []) { days, entry in
+            guard let last = days.last, last.day == entry.day else {
+                days.append(TaskDay(day: entry.day, tasks: [entry.task]))
+                return
+            }
+            days[days.count - 1] = TaskDay(day: last.day, tasks: last.tasks + [entry.task])
+        }
     }
 }
