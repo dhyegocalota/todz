@@ -7,6 +7,9 @@ import { CLOCK_NOW } from './task-fixtures';
 
 const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
 const CLIENT_NAME = 'Claude Code';
+const CHECK_FAILURE = 'CHECK constraint failed';
+const NOT_NULL_FAILURE = 'NOT NULL constraint failed';
+const FOREIGN_KEY_FAILURE = 'FOREIGN KEY constraint failed';
 
 function newSecret(): string {
   return crypto.randomUUID();
@@ -123,8 +126,8 @@ describe('the owner time zone', () => {
     const missingZone = env.DIRECTORY.prepare('INSERT INTO owners (id, created_at) VALUES (?, ?)')
       .bind(crypto.randomUUID(), CLOCK_NOW)
       .run();
-    await expect(emptyZone).rejects.toThrow();
-    await expect(missingZone).rejects.toThrow();
+    await expect(emptyZone).rejects.toThrow(CHECK_FAILURE);
+    await expect(missingZone).rejects.toThrow(NOT_NULL_FAILURE);
   });
 
   test('a named time zone is stored', async () => {
@@ -141,7 +144,7 @@ describe('the mcp sessions table', () => {
     )
       .bind(await digestCredential(newSecret()), await digestCredential(newSecret()), CLIENT_NAME, CLOCK_NOW, CLOCK_NOW + 1)
       .run();
-    await expect(insertion).rejects.toThrow();
+    await expect(insertion).rejects.toThrow(FOREIGN_KEY_FAILURE);
   });
 
   test('a digest of 63 characters is refused', async () => {
@@ -153,7 +156,7 @@ describe('the mcp sessions table', () => {
     )
       .bind(shortDigest, await digestCredential(keySecret), CLIENT_NAME, CLOCK_NOW, CLOCK_NOW + 1)
       .run();
-    await expect(insertion).rejects.toThrow();
+    await expect(insertion).rejects.toThrow(CHECK_FAILURE);
   });
 });
 

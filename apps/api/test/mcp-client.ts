@@ -4,7 +4,7 @@ import { onTestFinished } from 'vitest';
 
 const MCP_URL = new URL('https://api.todz.test/mcp');
 const CLIENT_VERSION = '1.0.0';
-const MODERN_PROTOCOL_VERSION = '2026-07-28';
+export const MODERN_PROTOCOL_VERSION = '2026-07-28';
 
 export enum ClientEra {
   Legacy = 'legacy',

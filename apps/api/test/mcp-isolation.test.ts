@@ -1,4 +1,5 @@
 import type { Client } from '@modelcontextprotocol/client';
+import { TaskPlacement } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { MCP_COPY, McpToolName } from '../src/mcp-copy';
 import { seedIssuedKey } from './directory-seed';
@@ -55,6 +56,44 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with the key of
     const { clientA, clientB } = await twoProjects(era);
     expect((await callTool({ client: clientA, name: McpToolName.Add, args: { tasks: [{ title: 'Mine' }] } })).text).toBe('Added T-1 Mine');
     expect((await listOpen(clientB)).text).toBe('Open tasks: 2 of 2\nT-1 Secret B\nT-2 B two');
+  });
+
+  test('an idempotency key B used adds a new task to A, and an anchor of B answers what a number never issued answers', async () => {
+    const projectA = await seedIssuedKey();
+    const projectB = await seedIssuedKey();
+    const clientA = await connectClient({ era, key: projectA.key });
+    const clientB = await connectClient({ era, key: projectB.key });
+    const sharedKey = 'shared-key';
+    await callTool({
+      client: clientB,
+      name: McpToolName.Add,
+      args: { tasks: [{ title: SECRET_TITLE, idempotency_key: sharedKey }, { title: 'B two' }] },
+    });
+    const mine = await callTool({
+      client: clientA,
+      name: McpToolName.Add,
+      args: { tasks: [{ title: 'Mine', idempotency_key: sharedKey }] },
+    });
+    expect(mine.text).toBe('Added T-1 Mine');
+    const afterAnchor = (anchor: string) =>
+      clientA.callTool({ name: McpToolName.Update, arguments: { id: 'T-1', placement: { kind: TaskPlacement.After, anchor } } });
+    const missingAnchor = await afterAnchor('T-79');
+    expect(missingAnchor).toMatchObject(notFoundResult('T-79 not found.'));
+    expect(await afterAnchor('T-2')).toEqual({ ...missingAnchor, ...notFoundResult('T-2 not found.') });
+  });
+
+  test("arguments naming B's project or workspace are dropped and the task lands in A", async () => {
+    const projectA = await seedIssuedKey();
+    const projectB = await seedIssuedKey();
+    const clientA = await connectClient({ era, key: projectA.key });
+    const clientB = await connectClient({ era, key: projectB.key });
+    const args = {
+      tasks: [{ title: 'Mine', project_id: projectB.projectId }],
+      project_id: projectB.projectId,
+      workspace_id: projectB.projectId,
+    };
+    expect((await callTool({ client: clientA, name: McpToolName.Add, args })).text).toBe('Added T-1 Mine');
+    expect((await listOpen(clientB)).text).toBe('Open tasks: 0 of 0');
   });
 });
 

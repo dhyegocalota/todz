@@ -1,4 +1,4 @@
-import { INVALID_PARAMS, JSONRPC_VERSION, LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/server';
+import { DEFAULT_MAX_REQUEST_BODY_SIZE, INVALID_PARAMS, JSONRPC_VERSION, LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/server';
 import { CLIENT_NAME_MAX_LENGTH, MILLISECONDS_PER_DAY, PROJECT_KEY_PREFIX, RuleIssue } from '@todz/types';
 import { env, exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
@@ -27,6 +27,9 @@ const BAD_REQUEST_STATUS = 400;
 const UNAUTHORIZED_STATUS = 401;
 const NOT_FOUND_STATUS = 404;
 const METHOD_NOT_ALLOWED_STATUS = 405;
+const PAYLOAD_TOO_LARGE_STATUS = 413;
+const UNSUPPORTED_PROTOCOL_VERSION = '1999-01-01';
+const JSON_RPC_ERROR_MARK = '"error"';
 
 type SessionRow = { digest: string; key_digest: string; client_name: string; created_at: number; expires_at: number };
 
@@ -40,6 +43,10 @@ function initializeParams(clientInfo: unknown): unknown {
 
 function initializeOf(name: unknown): unknown {
   return initializeBody(initializeParams({ name, version: '1.0.0' }));
+}
+
+function initializeMessage(fields: Record<string, unknown>): unknown {
+  return { ...(initializeOf(CLIENT_NAME) as Record<string, unknown>), ...fields };
 }
 
 const TOOLS_LIST_BODY = { jsonrpc: JSONRPC_VERSION, id: TOOLS_LIST_REQUEST_ID, method: 'tools/list', params: {} };
@@ -291,5 +298,151 @@ describe('a later legacy request', () => {
     const response = await toolsList({ key, sessionId });
     await response.body?.cancel();
     expect(response.status).toBe(OK_STATUS);
+  });
+});
+
+describe('edge cases found during execution', () => {
+  test.each(['/constructor', '/__proto__', '/toString', '/mcp/', '/MCP'])(
+    'POST %s with a valid key and an initialize answers 404 and stores no session',
+    async (path) => {
+      const { key } = await seedIssuedKey();
+      const headers = { Authorization: bearer(key), 'Content-Type': 'application/json' };
+      const response = await exports.default.fetch(`${WORKER_ORIGIN}${path}`, {
+        method: 'POST',
+        headers,
+        body: requestText(initializeOf(CLIENT_NAME)),
+      });
+      expect(response.status).toBe(NOT_FOUND_STATUS);
+      expect(await response.text()).toBe('');
+      expect(await sessionRowsOf(key)).toEqual([]);
+    },
+  );
+
+  test('a tab after the scheme answers 401 and addresses no Durable Object', async () => {
+    const { key } = await seedIssuedKey();
+    const { countedEnv, addressingCalls } = countingEnv();
+    const request = mcpRequest({ authorization: `Bearer\t${key}`, body: initializeOf(CLIENT_NAME) });
+    const response = await serveMcp({ request, env: countedEnv, now: CLOCK_NOW });
+    expect(response.status).toBe(UNAUTHORIZED_STATUS);
+    expect(addressingCalls).toEqual([]);
+    expect(await sessionRowsOf(key)).toEqual([]);
+  });
+
+  test('a trailing space after the key is dropped by the platform and the key opens a session', async () => {
+    const { key } = await seedIssuedKey();
+    const response = await exports.default.fetch(mcpRequest({ authorization: `${bearer(key)} `, body: initializeOf(CLIENT_NAME) }));
+    await response.body?.cancel();
+    expect(response.status).toBe(OK_STATUS);
+    expect(await sessionRowsOf(key)).toHaveLength(1);
+  });
+
+  test.each(['PUT', 'PATCH', 'OPTIONS', 'HEAD'])('%s with a valid key answers 405 allowing POST', async (method) => {
+    const { key } = await seedIssuedKey();
+    const response = await exports.default.fetch(new Request(MCP_URL, { method, headers: { Authorization: bearer(key) } }));
+    expect(response.status).toBe(METHOD_NOT_ALLOWED_STATUS);
+    expect(response.headers.get('Allow')).toBe('POST');
+  });
+
+  test('an initialize with a protocol version the server does not know opens a session on the version it answers', async () => {
+    const { key } = await seedIssuedKey();
+    const params = { protocolVersion: UNSUPPORTED_PROTOCOL_VERSION, capabilities: {}, clientInfo: { name: CLIENT_NAME, version: '1.0.0' } };
+    const response = await exports.default.fetch(mcpRequest({ authorization: bearer(key), body: initializeBody(params) }));
+    const text = await response.text();
+    expect(response.status).toBe(OK_STATUS);
+    expect(text).toContain(`"protocolVersion":"${LATEST_PROTOCOL_VERSION}"`);
+    expect(response.headers.get(SESSION_HEADER)).toMatch(SESSION_ID_PATTERN);
+    expect(await sessionRowsOf(key)).toHaveLength(1);
+  });
+
+  test.each([
+    { name: 'a protocol version that is not a string', params: { protocolVersion: 5, capabilities: {} } },
+    { name: 'no capabilities', params: { protocolVersion: LATEST_PROTOCOL_VERSION } },
+  ])('an initialize with $name that the SDK answers with an error opens no session', async ({ params }) => {
+    const { key } = await seedIssuedKey();
+    const body = initializeBody({ ...params, clientInfo: { name: CLIENT_NAME, version: '1.0.0' } });
+    const response = await exports.default.fetch(mcpRequest({ authorization: bearer(key), body }));
+    expect(await response.text()).toContain(JSON_RPC_ERROR_MARK);
+    expect(response.headers.get(SESSION_HEADER)).toBeNull();
+    expect(await sessionRowsOf(key)).toEqual([]);
+  });
+
+  test.each([
+    { name: 'an initialize without an id', body: initializeMessage({ id: undefined }) },
+    { name: 'an initialize whose id is null', body: initializeMessage({ id: null }) },
+    { name: 'an initialize whose id is an object', body: initializeMessage({ id: {} }) },
+    { name: 'a batch of two initializes', body: [initializeOf(CLIENT_NAME), initializeOf(CLIENT_NAME)] },
+    { name: 'a body of null', body: 'null' },
+    { name: 'an empty body', body: '' },
+  ])('$name answers 400 and opens no session', async ({ body }) => {
+    const { key } = await seedIssuedKey();
+    const response = await exports.default.fetch(mcpRequest({ authorization: bearer(key), body }));
+    await response.body?.cancel();
+    expect(response.status).toBe(BAD_REQUEST_STATUS);
+    expect(response.headers.get(SESSION_HEADER)).toBeNull();
+    expect(await sessionRowsOf(key)).toEqual([]);
+  });
+
+  test('a batch with a live session of its key is served, and with a session of another project is not found', async () => {
+    const projectA = await seedIssuedKey();
+    const projectB = await seedIssuedKey();
+    const sessionId = await openSession(projectA.key);
+    const body = [TOOLS_LIST_BODY, { ...TOOLS_LIST_BODY, id: TOOLS_LIST_REQUEST_ID + 1 }];
+    const served = await exports.default.fetch(mcpRequest({ authorization: bearer(projectA.key), body, sessionId }));
+    await served.body?.cancel();
+    expect(served.status).toBe(OK_STATUS);
+    const foreign = await exports.default.fetch(mcpRequest({ authorization: bearer(projectB.key), body, sessionId }));
+    expect(foreign.status).toBe(NOT_FOUND_STATUS);
+    expect(await foreign.json()).toEqual(SESSION_NOT_FOUND);
+  });
+
+  test('a session id with surrounding spaces is trimmed by the platform, and two session ids are not found', async () => {
+    const { key } = await seedIssuedKey();
+    const sessionId = await openSession(key);
+    const padded = await toolsList({ key, sessionId: `  ${sessionId}  ` });
+    await padded.body?.cancel();
+    expect(padded.status).toBe(OK_STATUS);
+    const doubled = mcpRequest({ authorization: bearer(key), body: TOOLS_LIST_BODY, sessionId });
+    doubled.headers.append(SESSION_HEADER, sessionId);
+    const response = await exports.default.fetch(doubled);
+    expect(response.status).toBe(NOT_FOUND_STATUS);
+    expect(await response.json()).toEqual(SESSION_NOT_FOUND);
+  });
+
+  test('a session is served one millisecond before its expiry and not found at it', async () => {
+    const { key } = await seedIssuedKey();
+    const sessionId = generateCredentialSecret();
+    const expiresAt = CLOCK_NOW + MCP_SESSION_LIFETIME_MS;
+    await insertMcpSession({
+      directory: env.DIRECTORY,
+      digest: await digestCredential(sessionId),
+      keyDigest: await digestCredential(key),
+      clientName: CLIENT_NAME,
+      now: CLOCK_NOW,
+      expiresAt,
+    });
+    const request = () => mcpRequest({ authorization: bearer(key), body: TOOLS_LIST_BODY, sessionId });
+    const beforeExpiry = await serveMcp({ request: request(), env, now: expiresAt - 1 });
+    await beforeExpiry.body?.cancel();
+    expect(beforeExpiry.status).toBe(OK_STATUS);
+    const atExpiry = await serveMcp({ request: request(), env, now: expiresAt });
+    expect(atExpiry.status).toBe(NOT_FOUND_STATUS);
+    expect(await atExpiry.json()).toEqual(SESSION_NOT_FOUND);
+  });
+
+  test('a body over the size limit answers 413 with a key, opens no session, and 401 without a key', async () => {
+    const { key } = await seedIssuedKey();
+    const sessionId = await openSession(key);
+    const padding = 'x'.repeat(DEFAULT_MAX_REQUEST_BODY_SIZE);
+    const hugeList = await exports.default.fetch(
+      mcpRequest({ authorization: bearer(key), body: { ...TOOLS_LIST_BODY, padding }, sessionId }),
+    );
+    await hugeList.body?.cancel();
+    expect(hugeList.status).toBe(PAYLOAD_TOO_LARGE_STATUS);
+    const hugeInitialize = await exports.default.fetch(mcpRequest({ authorization: bearer(key), body: initializeMessage({ padding }) }));
+    await hugeInitialize.body?.cancel();
+    expect(hugeInitialize.status).toBe(PAYLOAD_TOO_LARGE_STATUS);
+    expect(await sessionRowsOf(key)).toHaveLength(1);
+    const withoutKey = await exports.default.fetch(mcpRequest({ authorization: null, body: padding }));
+    expect(withoutKey.status).toBe(UNAUTHORIZED_STATUS);
   });
 });
