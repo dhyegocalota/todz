@@ -2,72 +2,92 @@
 
 Every checkbox states the input and the exact expected outcome. A ticked box carries evidence after ` — evidence: ` (commit hash, log path, counts, screenshot path).
 
+Run by the tester at 601962d. Scratch folder `W` = `/private/tmp/claude-501/-Users-dhyegocalota-Projects-todz-todz/a0aaee1e-8780-4839-975e-a470d60f7ec7/scratchpad/tester-magic/`. Playwright MCP could not run (its Chrome for Testing build is not installed, on all three servers), so the browser page was walked by a scripted headless Chrome for Testing (`W/walk.cjs`, throwaway, not in the repository; log `W/walk.log`). The app was driven through Orca against a build from this worktree (`W/derived`), with `todz://` links opened by `open -a <that build>`.
+
 ## The failing test first
 
-- [ ] Worker red commits (steps 1, 3, 5, 7): each run in a throwaway worktree fails on the named assertion, not on a missing import; failure text recorded
-- [ ] App red commits (steps 9, 11): same, with `swift test --filter` on the named suites
+- [x] Worker red commits (steps 1, 3, 5, 7): each run in a throwaway worktree fails on the named assertion, not on a missing import; failure text recorded — evidence: throwaway worktree, `W/red-run.log`, `W/red2.zsh`: c08dde9 `readSignInMethod is not implemented` (5 failed); 91d157e `requestSignInLink is not implemented` x21 and `no such table: sign_in_links` x4 (54 failed); 83a0c03 `the email provider verify is not implemented` x11, `expected 401 to be 422`, `expected 201 to be 401`, `expected 201 to be 400` (20 failed, 78 passed); 3a0071a `serveSignInPage is not implemented` (15 failed); `credential-digest.test.ts` at 83a0c03 is green (3 passed), a pin as the briefing says. All match the briefing's text
+- [x] App red commits (steps 9, 11): same, with `swift test --filter` on the named suites — evidence: whole `swift test` in the throwaway worktree, `W/swift-red-75de111.log` and `W/swift-red-7fa8b38.log`: 75de111 580 tests, 19 issues, failing on `Expectation failed` lines in `FilePendingLinkVaultTests`, `SignInLinkTests`, `SignInLinkChallengeTests`, `OwnerAPITests+SignInLink`; 7fa8b38 601 tests, 49 issues, all in `AppModelTests+SignInLink` (for example `signInMethod == method`, `signInError == .tooManyLinks`, `pendingLink?.verifier == firstVerifier`). Assertion failures, not compile errors. Note 75de111 already carries the source with stubbed behaviour, so it is the red-with-source commit
 
 ## Unit — Worker (Miniflare, real D1)
 
-- [ ] `GET /owner/sign-in-method`: `email` → 200 `{"method":"link"}`; `fake` → 200 `{"method":"identity"}`; none → 503 `sign_in_unavailable`; no `Authorization` header needed
-- [ ] Ask for a link, unknown address `maria@example.com`: 202 `{}`; one `sign_in_links` row: 64-hex digest, `maria@example.com`, the challenge, `expires_at = now + 15 min`, `consumed_at` null
-- [ ] Ask for a known owner's address: the same 202 `{}`, byte for byte
-- [ ] `  Maria@Example.COM ` is stored as `maria@example.com`
-- [ ] The console text carries `<PUBLIC_ORIGIN>/sign-in#token=<43 base64url>` and the digest of that token is the row's; D1 holds no token
-- [ ] 400 `invalid_request`: empty, no `@`, no dot after `@`, two lines, 255 characters, challenge of 63 characters, challenge with upper case
-- [ ] Sixth request for one address within 15 minutes: 429 `too_many_links`, no new row, nothing logged; a request at `now + 15 min + 1 ms` after the first: 202
-- [ ] 503 `sign_in_unavailable` with `SIGN_IN_PROVIDER=fake`, with no `PUBLIC_ORIGIN`, with no `EMAIL_SENDER`
-- [ ] A sender that rejects: 503, no row left
-- [ ] Redeem: 201 with a session; `owner_identities` holds `("email", "maria@example.com")`; a second link for the address signs into the same owner id
-- [ ] Redeem refusals, each 401 `identity_rejected` with an identical body: the link spent; `now` past `expires_at`; an unknown token; a wrong verifier; no verifier
-- [ ] Two concurrent redeems of one link: one 201, one 401
-- [ ] The fake provider still signs in with `{identity_token, time_zone}` and ignores a `link_verifier`
-- [ ] `GET /sign-in?token=leak`: 200 HTML with `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, a CSP whose `script-src` hash matches the inline script; the body holds no `leak`
-- [ ] `pnpm verify all`: green, gates recorded
+Suite run: `cd apps/api && npx vitest run` at 601962d, 31 files, 766 tests passed (`W/vitest-api.log`); `pnpm typecheck` exit 0 (`W/typecheck.log`). Each box below was also driven by hand against a live `dev:email` Worker (`W/api1.log`, `W/api3.log`, `W/api4.log`).
+
+- [x] `GET /owner/sign-in-method`: `email` → 200 `{"method":"link"}`; `fake` → 200 `{"method":"identity"}`; none → 503 `sign_in_unavailable`; no `Authorization` header needed — evidence: `W/api1.log` (link, with and without a junk bearer), `W/api4.log` fake `{"method":"identity"}`, no provider 503 `sign_in_unavailable`
+- [x] Ask for a link, unknown address `maria@example.com`: 202 `{}`; one `sign_in_links` row: 64-hex digest, `maria@example.com`, the challenge, `expires_at = now + 15 min`, `consumed_at` null — evidence: `W/api1.log` row query: digest length 64, challenge equal to the vector, `life` 900000 ms, `consumed_at` null (the local D1 held an older maria row from a prior run, so the query listed two rows, both correct)
+- [x] Ask for a known owner's address: the same 202 `{}`, byte for byte — evidence: `W/enum-known.txt` and `W/enum-unknown.txt` (full response, Date removed) are identical (`diff` clean), `W/api3.log`
+- [x] `  Maria@Example.COM ` is stored as `maria@example.com` — evidence: `W/api1.log` (rows grouped by email: one address, count rose to 3)
+- [x] The console text carries `<PUBLIC_ORIGIN>/sign-in#token=<43 base64url>` and the digest of that token is the row's; D1 holds no token — evidence: `W/api1.log`: token length 43, `shasum -a 256` of the token equals the stored digest `a1fce98a…f2f0`, a count of rows whose digest, email or challenge equals the token is 0
+- [x] 400 `invalid_request`: empty, no `@`, no dot after `@`, two lines, 255 characters, challenge of 63 characters, challenge with upper case — evidence: `W/api1.log`, every case 400 `invalid_request`; a 254-character address answers 202
+- [x] Sixth request for one address within 15 minutes: 429 `too_many_links`, no new row, nothing logged; a request at `now + 15 min + 1 ms` after the first: 202 — evidence: `W/api3.log`: requests 1 to 5 are 202, the sixth and the `  RL@Example.com ` variant 429, rows stay 5, the Worker log holds 5 mail lines for the address. The exact millisecond boundary is the unit test `a request one millisecond before the first link is 15 minutes old answers 429, and at 15 minutes it answers 202` (green); by hand, with rows moved back in D1, 20 s before the window end gave 429 and 901 s after gave 202
+- [x] 503 `sign_in_unavailable` with `SIGN_IN_PROVIDER=fake`, with no `PUBLIC_ORIGIN`, with no `EMAIL_SENDER` — evidence: `W/api4.log`: fake, no origin, no sender, no provider, unknown sender kind `bogus`: each 503, zero rows, zero mail lines
+- [x] A sender that rejects: 503, no row left — evidence: unit test `a sender that rejects leaves no row and answers 503 sign_in_unavailable` (`test/sign-in-links.test.ts:316`), green in the 766. Not reproducible by hand: the console sender never rejects
+- [x] Redeem: 201 with a session; `owner_identities` holds `("email", "maria@example.com")`; a second link for the address signs into the same owner id — evidence: `W/api1.log` 201 `{"session_token":…,"owner":{"id":"85d32d97-…"}}`; `owner_identities` row `provider=email, subject=maria@example.com, owner_id=85d32d97-…` (the column is `provider`); second link redeemed to the same id, owners count 1
+- [x] Redeem refusals, each 401 `identity_rejected` with an identical body: the link spent; `now` past `expires_at`; an unknown token; a wrong verifier; no verifier — evidence: `W/api1.log` and `W/api3.log`: all 401 `{"error":"identity_rejected"}`; also a malformed verifier 401
+- [x] Two concurrent redeems of one link: one 201, one 401 — evidence: `W/api3.log` `201401`
+- [x] The fake provider still signs in with `{identity_token, time_zone}` and ignores a `link_verifier` — evidence: `W/api4.log` fake sign-in 201; `W/api5.zsh` run: a valid 43-character verifier is ignored (201). A malformed verifier is a 401 under fake too (see edge cases)
+- [x] `GET /sign-in?token=leak`: 200 HTML with `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, a CSP whose `script-src` hash matches the inline script; the body holds no `leak` — evidence: `W/signin-page.http`: headers as listed plus `X-Content-Type-Options: nosniff`; `W/hash.py` run: script and style hashes both match; `grep -c leak` 0
+- [x] `pnpm verify all`: green, gates recorded — evidence: `W/verify-all.log`: `verify: 7 gates green at 601962d (product)`, exit 0
 
 ## Unit — App (TodzKit)
 
-- [ ] `SignInLink(url:)`: accepts `todz://sign-in?token=<43>`; refuses `todz://today`, `todz://sign-in`, a 42-character token, `todz://sign-in/x?token=…`, `https://…`
-- [ ] `FilePendingLinkVault`: round-trip; the file is 0600; erase removes it
-- [ ] Asking sends the hex SHA-256 of the kept verifier; the pending link holds the address and an expiry 15 minutes ahead
-- [ ] Redeeming posts the kept verifier, opens the session through the same path as the identity sign-in (cache check, vault, outbox, workspaces) and erases the pending link
-- [ ] No pending link → no request, the "open on the Mac that asked" notice
-- [ ] Pending link expired → no request, the expired notice, the pending link erased
-- [ ] Signed in → the link is ignored, no request
-- [ ] 401 on redeem → the expired notice, the pending link erased
-- [ ] 429 on ask → the too-many error; 503 → the unavailable error; offline → the offline error
+Suite run: `cd apps/macos/TodzKit && swift test` at 601962d: 601 tests in 43 suites passed (`W/swift-test.log`). The behaviours below were also exercised for real in the app walk where marked.
+
+- [x] `SignInLink(url:)`: accepts `todz://sign-in?token=<43>`; refuses `todz://today`, `todz://sign-in`, a 42-character token, `todz://sign-in/x?token=…`, `https://…` — evidence: `SignInLinkTests` red at 75de111 and green at 601962d in the 601
+- [x] `FilePendingLinkVault`: round-trip; the file is 0600; erase removes it — evidence: `FilePendingLinkVaultTests` green; the real file in the app container was `-rw-------` and was gone after a redeem (`W/pending.zsh` listings during the walk)
+- [x] Asking sends the hex SHA-256 of the kept verifier; the pending link holds the address and an expiry (corrected by the lead per R6/R12: the server link lives 15 minutes and the app keeps the pending link until 20 minutes after it was made) — evidence: `AppModelTests+SignInLink` green; the real pending file held `expires_at` 1200 s after it was made (1795558406 against a make time of 1795557206), and a 202 for the same address followed by the redeem proved the challenge matched
+- [x] Redeeming posts the kept verifier, opens the session through the same path as the identity sign-in (cache check, vault, outbox, workspaces) and erases the pending link — evidence: `AppModelTests+SignInLink` green (`redeemingAsAnotherOwnerThanTheCachesErasesTheCacheBeforeTheSessionIsStored`); in the app the link led to "Name your first workspace", `session` written 0600, `sign-in-link` gone
+- [x] No pending link → no request, the "open on the Mac that asked" notice — evidence: in the app, link opened with no pending file: "Open the link on the Mac that asked for it, or send a new one." and the Worker's `POST /owner/sessions` count stayed 16; unit green
+- [x] Pending link expired → no request, the expired notice, the pending link erased — evidence: unit `aLinkAfterThePendingLinkExpiredSendsNothingAndClearsIt` green. Not reproduced by hand: it needs a pending link older than 20 minutes and the wall clock was not waited out
+- [x] Signed in → the link is ignored, no request — evidence: in the app, the already-spent link opened while signed in: window unchanged, `POST /owner/sessions` count unchanged (`W/worker.log`)
+- [x] 401 on redeem → the expired notice, the pending link KEPT while younger than 20 minutes (corrected by the lead per R6/R12) — evidence: in the app, the server row expired in D1 and the link opened: "That link has expired or was already used. Send a new one.", address stage prefilled with `maria@example.com`, the `sign-in-link` file still present
+- [x] 429 on ask → the too-many error; 503 → the unavailable error; offline → the offline error — evidence: 429 shown in the app twice (address stage, and inbox stage on Send Again: line shown, pending kept, cooldown restarted to 30 s). 503 and offline by unit tests (green) only: not driven in the app
 
 ## Prove it for real — the app against a development Worker (ADR 0026)
 
-- [ ] Worker with `SIGN_IN_PROVIDER=email`, `EMAIL_SENDER=console`, `PUBLIC_ORIGIN=http://localhost:8787`: the app shows the address form, not the identity field
-- [ ] Type an address, Return: the inbox state shows the address; the Worker console prints the link
-- [ ] Open the link in a browser: the page shows the todz icon and "Open todz"; the app comes forward and is signed in on the first-workspace screen; screenshot light and dark of the address form, the inbox state and the page
-- [ ] Open the same link again: the app, now signed in, ignores it
-- [ ] Sign out, ask again, quit the app, open the link: the app launches and signs in (the pending link survived the quit)
-- [ ] An expired link (Worker `now` past 15 minutes, or wait): the expired line
-- [ ] Ask six times past the cooldown: the sixth shows the too-many line
-- [ ] Five parallel link requests with one already made: four 202 and one 429
-- [ ] A POST with `Content-Type: text/plain`: 400, no row
-- [ ] An invalid time zone on redeem: 422, then the same link signs in
-- [ ] `EMAIL_SENDER=console` with `PUBLIC_ORIGIN=https://todz.app`: 503; `PUBLIC_ORIGIN=http://localhost:8787/`: 503
-- [ ] Send Again within 15 minutes, then click the first mail's link: it signs in (one verifier per window)
-- [ ] A link opened while the app is still launching: held, then redeemed
-- [ ] "Use a different email" returns to an empty, focused field
-- [ ] Worker with `fake`: the identity field as before, the development notice shown; the v1 walk's sign-in still works
-- [ ] Console and logs: the Worker log shows no token outside the console sender's line; the app log shows none
+- [x] Worker with `SIGN_IN_PROVIDER=email`, `EMAIL_SENDER=console`, `PUBLIC_ORIGIN=http://localhost:8787`: the app shows the address form, not the identity field — evidence: Orca tree: "Welcome to todz", text field "Email address", "Send Link" disabled while empty, footnote "We'll email you a link. No password needed."; `W/01-address-form.png`, `W/04-address-form-dark.png`
+- [x] Type an address, Return: the inbox state shows the address; the Worker console prints the link — evidence: "Check your inbox", "maria@example.com" bold, Send Again disabled with "You can send another in 30 seconds."; the Worker log held the mail line; `W/02-check-your-inbox.png`, `W/05-check-your-inbox-dark.png`
+- [x] Open the link in a browser: the page shows the todz icon and "Open todz"; the app comes forward and is signed in on the first-workspace screen; screenshot light and dark of the address form, the inbox state and the page — evidence: the page showed a heading "Opening todz" and an "Open todz" link, with a generic blue check circle, not the todz app icon (see defects D1); `W/03-sign-in-page.png`, `W/06-sign-in-page-dark.png`, `W/page-*-375.png`; the app, handed the link with `open -a <the build> 'todz://sign-in?token=…'` (the headless browser cannot launch a `todz://` link, so the browser-to-app hop is not proven end to end), came to "Name your first workspace" signed in. All six shots present
+- [x] Open the same link again: the app, now signed in, ignores it — evidence: no window change, no new `POST /owner/sessions` (`W/worker.log`), the D1 row stays `consumed_at` set
+- [x] Sign out, ask again, quit the app, open the link: the app launches and signs in (the pending link survived the quit) — evidence: `sign-in-link` present after the quit (`W/pending.zsh`), then `open -a` launched a new process (pid 88220) that landed on "Name your first workspace"; the pending file gone
+- [x] An expired link (Worker `now` past 15 minutes, or wait): the expired line — evidence: row set past `expires_at` in D1, link opened in the app: the expired line (see the 401 box above)
+- [x] Ask six times past the cooldown: the sixth shows the too-many line — evidence: four asks by curl plus the app's fifth, then Send Again after the cooldown as the sixth: "Too many links. Wait a few minutes and try again." in the inbox stage. Earlier, a sixth ask from the address stage showed the same line
+- [x] Five parallel link requests with one already made: four 202 and one 429 — evidence: `W/api3.log` `202202202202429`, rows 5
+- [x] A POST with `Content-Type: text/plain`: 400, no row — evidence: `W/api1.log` 400, count 0; also no content type 400; `Application/JSON; charset=utf-8` 202
+- [x] An invalid time zone on redeem: 422, then the same link signs in — evidence: `W/api1.log` `Not/AZone` 422 `time_zone_invalid`, then the same token and verifier 201
+- [x] `EMAIL_SENDER=console` with `PUBLIC_ORIGIN=https://todz.app`: 503; `PUBLIC_ORIGIN=http://localhost:8787/`: 503 — evidence: `W/api4.log` `prodorigin` and `trailingslash` both 503, zero rows, zero mail lines
+- [x] Send Again within 15 minutes, then click the first mail's link: it signs in (one verifier per window) — evidence: in the app, mail A, Send Again for mail B (same verifier hash `a611cce5` before and after), then link A: signed in
+- [x] A link opened while the app is still launching: held, then redeemed — evidence: the cold launch by `open -a` with the link signed in (see the quit-and-open box). The held-during-`launch()` path itself is the unit test `aLinkThatArrivesBeforeLaunchWithNoPendingRequestSaysSoOnceSignedOut` and neighbours, green
+- [x] "Use a different email" returns to the last address, prefilled, and focused (corrected by the lead per R6/R12, `design.md`) — evidence: Orca tree after the click: field "Email address, Value: six@example.com", the `sign-in-link` file erased. The field showed the previous "Too many links" line still (see edge cases)
+- [x] Worker with `fake`: the identity field as before, the development notice shown; the v1 walk's sign-in still works — evidence: `pnpm --filter @todz/api dev`: app showed "Identity" field and "Development sign-in. Sign in with Apple comes later."; `carol` signed in to "Name your first workspace". The older v1 walk was not rerun in full
+- [x] Console and logs: the Worker log shows no token outside the console sender's line; the app log shows none — evidence: `W/logs.zsh`: 0 lines in the Worker log name a token, verifier or session outside the 34 mail lines. The app log check is weak: `log show` returned 0 lines for the process at all, so absence is unproven; the app writes no log of its own that I could find
 
 ## Edge cases found during execution
 
-Empty on purpose. The tester adds one checkbox per new case (input, exact expected outcome) and a regression test for each.
+- [x] Browser page, link with a missing, short, long or illegal fragment (42 or 44 characters, `code=`, `token=…&x=1`, a trailing `!`) — evidence: `W/walk.log`: the page always reads "Opening todz" with an "Open todz" button pointing at `todz://sign-in`, no "incomplete link" message; design.md §5 calls for `missingToken`. DEFECT D1
+- [x] Browser page, a malformed fragment is not removed from the address bar (`history.replaceState` runs only for a valid token) — evidence: `W/walk.log` urls keep `#token=…` for the 42-character and illegal cases. MINOR, D1
+- [x] Browser page, token only in the query string (`?token=…`) is ignored and never reaches the body — evidence: `W/walk.log` `token in html: false`, link stays `todz://sign-in`
+- [x] Browser page, valid token: fragment removed (`url: /sign-in`), the link is `todz://sign-in?token=…`, no horizontal overflow at 375, dark background `rgb(28, 28, 30)`, no CSP error; the only console error is Chrome's "Not allowed to launch 'todz://…' because a user gesture is required" for the automatic launch — evidence: `W/walk.log`
+- [x] An old session of the owner against a fresh Worker on launch: "Your session has ended. Sign in again." and the app deleted its `session` and the widget snapshot — evidence: first launch listing; restored from the backup afterwards (`W/restore.zsh`). Expected behaviour, recorded because it is why the walk needs the backup
+- [x] Stale error across stages: "Too many links" from the inbox stays under the field after "Use a Different Email" — evidence: Orca tree after the click. MINOR, D2
+- [x] Pending link survives an identity sign-in with the fake provider: `sign-in-link` stays on disk for the rest of its 20 minutes — evidence: `W/pending.zsh` after the `carol` sign-in. MINOR, D3
+- [x] Resending reuses the verifier and moves the pending expiry forward (`expires_at` 1795558626 then 1795558661) — evidence: `W/pending.zsh`. Consistent with R6
+- [x] The fake provider with a malformed `link_verifier` (`zzz`): 401 `identity_rejected`, because R4 checks the shape before the provider; a well formed one is ignored — evidence: `W/api4.log`, `W/api5.zsh`. Behaviour follows R4, the test plan wording "ignores a link_verifier" is true only for a well formed one
+- [x] Known open defects from the lead, confirmed by the unit suite's own `Known gaps` and not re-driven: an offline redeem's Try Again sends a new mail; a sign-in link with the main window closed signs in without opening the window — evidence: lead's message, tester-briefing known gaps
+
+Regression tests to request for D1 to D3 are listed in the summary.
 
 ## Adversarial review
 
-- [ ] Claim 1: a link cannot be redeemed twice — attack: <how>; result: <refuted | held>
-- [ ] Claim 2: the link request never reveals whether an owner exists — attack: <how>; result: <refuted | held>
-- [ ] Claim 3: a token caught through `todz://` cannot sign in without the verifier — attack: the attacker asks for the link with its own challenge (R1, the accepted residual risk) and, separately, replays a token the owner asked for with a guessed verifier; result: <refuted | held>
+- [x] Claim 1: a link cannot be redeemed twice — attack: redeem the same token twice in sequence, twice in parallel, and replay the link into the signed-in app — result: held — evidence: second redeem 401 (`W/api1.log`), parallel redeems `201401` (`W/api3.log`), app replay sent no request
+- [x] Claim 2: the link request never reveals whether an owner exists — attack: the same request for a known address (`maria@example.com`, already an owner) and an unknown one, compared status, headers (without Date) and body; the rate limit keyed by address folded for case and spaces — result: held — evidence: `W/enum-known.txt` equals `W/enum-unknown.txt`; the 429 limit applies to known and unknown alike. Timing was not measured
+- [x] Claim 3: a token caught through `todz://` cannot sign in without the verifier — attack: the attacker asks for the link with its own challenge (R1, the accepted residual risk) and, separately, replays a token the owner asked for with a guessed verifier; result: held for the replay, and R1 behaves as accepted — evidence: `W/attack.zsh` run: with a fresh token asked with challenge A, verifiers `BBB…`, `AAA…A` minus one plus `B`, and `CCC…` all 401; a token with the other link's verifier 401 both ways; the real verifier then 201 (so the token was live all along). R1: the attacker's own challenge B redeems the intercepted mail token with verifier B: 201, onto the owner's same id. This is the documented residual risk, not a new defect
 
 ## Coverage honesty
 
 - The real mail path (Cloudflare Email Service, HTML) is `transactional-email`; here the link travels through the console sender only.
 - The rate limit is per address; a flood across many addresses is left to the zone's rules in `deploy-ready`.
 - Mail scanners are not simulated beyond a GET of the page, which spends nothing.
+- The browser-to-app hop (a real browser launching `todz://`) was not exercised: the Playwright MCP browser is not installed and the headless build cannot launch the scheme; the redeem was driven by `open -a`.
+- Not driven in the app: the 503 and offline error lines, an expired-pending-at-launch link, the 20-minute wait. They are covered by the green unit suites only.
+- The app walk used a Worker whose local D1 held rows from earlier runs, so it was not a fresh database.
