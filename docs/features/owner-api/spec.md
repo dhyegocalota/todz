@@ -1,6 +1,6 @@
 # Owner API
 
-**Status:** Approved
+**Status:** In review
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-23, by inheritance from [the v1 product design](../../product/README.md) (Order of delivery, item 4; Model; Views; Isolation; Sync; Calls made without the owner), approved by the owner on 2026-11-23; the calls below that the product design does not make are ADRs marked as the loop's calls and listed in the loop's questions for the owner
 **ADRs:** [0013](../../adr/0013-a-project-is-reached-only-through-the-directory.md), [0014](../../adr/0014-credentials-are-stored-as-sha-256-digests.md), [0015](../../adr/0015-the-project-store-answers-with-results-not-thrown-errors.md), [0018](../../adr/0018-the-mcp-server-reads-today-in-the-owner-s-time-zone.md), [0019](../../adr/0019-mcp-keys-are-prefixed-and-shown-once.md), [0020](../../adr/0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md), [0021](../../adr/0021-owner-sessions-are-bearer-secrets-that-last-90-days.md), [0022](../../adr/0022-the-owner-api-is-json-routes-and-the-app-builds-the-cross-project-views.md), [0023](../../adr/0023-each-project-numbers-its-changes-and-its-socket-only-says-changed.md)

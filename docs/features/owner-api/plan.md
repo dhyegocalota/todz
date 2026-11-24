@@ -74,8 +74,8 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
-- [ ] **/check-ui:** not applicable: no UI.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`. — evidence: 3914623, fix round 1 in f34d7f1
+- [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence. — evidence: two passes: 50382f7 (one defect, the dev script skipped the D1 migrations; fixed red-first in 0e9f463/6f4a275), b44529f (no defect)
+- [x] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`. — evidence: WITH RESERVATIONS at 50382f7 (8 MINOR), then Ship-ready YES at f34d7f1 (its one leftover fixed in 466b05a); security FINDINGS, MINOR only (4), MINOR 3 fixed, 1, 2 and 4 deferred to the owner
+- [x] **/check-ui:** not applicable: no UI.
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.

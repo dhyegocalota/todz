@@ -2,6 +2,7 @@
 - Date: 2026-11-23
 - Inspired by: `project-store` plan review and spike (`apps/api/src/project-schema.ts`)
 - Revisited: 2026-11-23 — still true on the workerd that `@cloudflare/vitest-plugin` 1.9.0 runs
+- Revisited: 2026-11-23 — still true in `owner-api`: version 2 is applied from the `schema_version` table inside `transactionSync`
 
 ## Signal
 `ctx.storage.sql.exec('PRAGMA user_version')`, reading or writing, throws `Error: not authorized: SQLITE_AUTH`, so a constructor that versions its schema that way breaks every call to the object.

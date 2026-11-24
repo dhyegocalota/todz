@@ -2,6 +2,7 @@
 - Date: 2026-11-23
 - Inspired by: `mcp-server` tester run (`apps/api/test/mcp-endpoint.test.ts`, red d53ee22, fixed 9a85ae4), [ADR 0017](../adr/0017-a-2025-era-client-is-named-by-a-session-in-the-directory.md)
 - Revisited: 2026-11-23 — still true with `@modelcontextprotocol/server` 2.4.0
+- Revisited: 2026-11-23 — unchanged by `owner-api`, which only moved `bearerSecret` and the status constants of `mcp-endpoint.ts`
 
 ## Signal
 A 2025-era `initialize` with a malformed `params.protocolVersion` or no `capabilities` comes back as `200` with an SSE `error` frame (`-32603`). Code that wraps the SDK's answer and trusts `response.ok` stores a session for a handshake that never happened.
