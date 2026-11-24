@@ -146,3 +146,84 @@ Every "it works" is a hypothesis the tester tries to break.
 - No app icon is set: the sign-in screen shows the system's generic application icon.
 - Copy not listed in `design.md` § 4 was added: the window title "todz" (`MainWindowCopy.windowTitle`), the Task menu's title "Task" (§ 5 names the menu), and "{count} open" for the badges (§ 5 names the reading) in `AccessibilityCopy.openCount`.
 - The project tag, the add field and the notes box use `.fill.quaternary` with no radius or padding of their own, as § 3 asks for system values only.
+
+## Fix round 1
+
+Written by `developer-fix` after the code review (R), the security review (S) and the tester's walk (W). Unit suite: 163 tests in 13 suites (`swift test --package-path apps/macos/TodzKit`). The app builds with no warning from its sources.
+
+### What changed
+
+| Finding | Change | Red | Green |
+|---|---|---|---|
+| R10, R11 | refactor: the five request bodies, `OwnerErrorCode` and `TaskDraft.newIdempotencyKey` in their own homes; the redundant `apps/macos/build/` line leaves `.gitignore` (the root `build/` covers it) | — | `60fa1f9`, `469502d` |
+| R4 | `FakeOwnerService` holds a call open per route: `suspend`, `held(route, count:)`, `resume`, `unsuspend` | — | `4a3957b`, `c859ca7` |
+| R1/S3 | a 401 answered to a request sent with an earlier session answers a cancellation; the current session stays | `4a3957b` | `e390665` |
+| R2/S2 | leaving a workspace dismisses its banner and Try Again; a pull carries the workspace it was started for and starts nothing once that workspace is not active | `4a3957b` | `e390665` |
+| R3/S2 | a write remembers the workspace it was sent in; after a switch neither its answer (board, selection) nor its failure (banner, rule issue) is applied; New Workspace is exempt | `4a3957b` | `e390665` |
+| R8 | `pullsInFlight` counts pulls per project (`[String: Int]`) | `4a3957b` | `e390665` |
+| R7 | `write` refuses a target already in flight | `c859ca7` | `7e04d51` |
+| W1 | a failed pull never turns a loaded project into a failed one; every project unreachable → `.network`, some failed → `.someProjectsFailed`; Try Again pulls the failed ones | `5dd07cf` | `d9e3d3f` |
+| W2, R6 | an add that did not land stays in `unconfirmedDrafts`: the add field puts its text back on any failure, the same title again reuses the same draft and idempotency key, the field empties when that draft lands through Try Again; the add field is hidden while nothing of the workspace has loaded, so no add can replace the load's Try Again | `5dd07cf` | `d9e3d3f` |
+| R9 | `ChangeActor` is `owner` or `agent(clientName:)`; an agent without a client name, or with an empty one, fails decoding; `ChangeSource` and the views' silent skips are gone | `f690830` | `71e4469` |
+| S4, S5 | the session file is excluded from backups; `OwnerAPI(baseURL:)` uses an ephemeral `URLSession` with no URL cache; ADR 0025 Consequences records that an offline sign-out leaves the server session alive until it expires | `c9a4893` | `345f17a` |
+| S1 | `NoteLink.isOpenable` accepts `http` and `https` only; `NotesPreview` discards every other link through `OpenURLAction` | `0ea87d6` | `76f8798` |
+| W6 | `AppModel.commitNotes` keeps notes over the limit in `unsavedNotes` with `notesTooLong` and sends nothing; the notes editor reopens with that text and the message when its task is selected again; Escape (`discardUnsavedNotes`), a workspace switch and a sign-out forget it | `d3c8534` | `b2251b7` |
+| W5 | inline `code` in the notes preview gets the monospaced body font | view only, no unit test | `f917535` |
+| W3 | the list no longer declares `frame(minWidth: 320)`; the window minimum is computed from the sidebar's inset on the list, the list's 320 and the inspector's width when shown; the minimum height is 480 less the toolbar | view only, no unit test | `d80830f` |
+| W4 | the scroll to a new selection waits one main-actor turn | view only, no unit test | `87fda68` |
+
+### Red today, green after (fix round 1)
+
+| Test | Red text the run printed | Green |
+|---|---|---|
+| `aSessionEndedAnswerToAnEarlierSessionLeavesTheCurrentOneSignedIn` (`4a3957b`) | `AppModelTests+Races.swift:22:9: Expectation failed: harness.vault.secret == harness.service.issuedSession.sessionToken`; `:23:9: … harness.model.phase == .ready` | `e390665` |
+| `tryAgainForAProjectOfAnEarlierWorkspaceChangesNothingInTheCurrentOne` (`4a3957b`) | `:38:9: … harness.model.banner == nil`; `:42:9: … harness.service.calls == []`; `:43:9: … harness.model.board == boardOfSide`; `:44:9: … harness.model.projectLoads == loadsOfSide` | `e390665` |
+| `anAddAnsweredAfterASwitchLeavesTheOtherWorkspaceUntouched` (`4a3957b`) | `:61:9: … harness.model.board == boardOfSide`; `:62:9: … harness.model.selectedTask == nil` | `e390665` |
+| `aWriteFailingAfterASwitchRaisesNothingInTheOtherWorkspace` (`4a3957b`) | `:78:9: … harness.model.banner == nil`; `:79:9: … harness.model.canTryAgain == false` | `e390665` |
+| `anEarlierPullEndingLeavesALaterOneInFlight` (`4a3957b`) | `:93:9: … harness.model.pullsInFlight.isEmpty == false` | `e390665` |
+| `aSecondNewWorkspaceWhileTheFirstIsInFlightSendsNothing`, `aSecondTitleSaveWhileTheFirstIsInFlightSendsNothing` (`c859ca7`) | `:92:9: … secondCreate == nil`; `:93:9: … routes().filter { $0 == .createWorkspace } == [.createWorkspace]`; `:94:9: … workspaces.count == 1`; `:109:9: … routes() == [.updateTask]` | `7e04d51` |
+| `AppModelTests+Offline` (`5dd07cf`) | `:25:9` and `:42:9: … projectLoads == loadsBefore`; `:26:9: … banner == .network`; `:54:9: … banner == .network`; `:65:9: … unconfirmedDrafts == [addToOrder: draft]`; `:82:9: … keys.issued == ["key-1", "key-2"]` | `d9e3d3f`; `refreshPullsEveryProjectFromZeroAndKeepsTheRows` now expects `.network` |
+| `refusesAnAgentActorWithoutAClientName` (`f690830`) | `an error was expected but none was thrown and "ChangeActor(kind: TodzKit.ActorKind.agent, clientName: nil)" was returned`, for `{"kind":"agent"}`, `client_name: null` and `""` | `71e4469` |
+| `keepsTheSessionFileOutOfBackups`, `theDefaultTransportKeepsNoCache` (`c9a4893`) | `FileSessionVaultTests.swift:56:9: … values.isExcludedFromBackup == true`; `OwnerAPITests.swift:222:9: … configuration.urlCache == nil`; `:223:9: … requestCachePolicy == .reloadIgnoringLocalCacheData` | `345f17a` |
+| `NoteLinkTests` (`0ea87d6`) | `TodzKit/NoteLink.swift:5: Fatal error: NoteLink.isOpenable is not implemented` | `76f8798` |
+| `AppModelTests+Notes` (`d3c8534`) | `TodzKit/AppModel+Tasks.swift:32: Fatal error: AppModel.commitNotes is not implemented` | `b2251b7`; `switchingWorkspaceForgetsUnsavedNotes` seeded its second workspace too late in the red commit and was fixed in the green one; dropping the forget line turns it red at `AppModelTests+Notes.swift:60` |
+
+### W3 and W4 measurements
+
+Measured on macOS 26 with System Events (`set size of window 1 to {760, 480}`, then read back) on the built app pointed at a scratch `wrangler dev` on 8799 (a copy of the bundle with `TodzAPIBaseURL` changed and re-signed ad hoc), workspace Acme with 29 tasks in Inbox and in Order:
+
+| State | Before | After |
+|---|---|---|
+| every column shown, sidebar at its 224 ideal | 1104 × 532 | 822 × 480 (the inspector squeezes to its minimum, the list keeps 320) |
+| every column shown, sidebar at its 180 minimum (a scratch build with ideal 180) | — | 778 × 480 |
+| inspector hidden | 784 × 532 (tester) | 552 × 480 |
+| sidebar collapsed and inspector hidden | — | 320 × 480 |
+
+Cause: on macOS 26 the floating sidebar is counted twice in the split view's minimum, once as its column and once as the list's leading safe-area inset, so `frame(minWidth: 320)` on the list made the minimum 2 × 224 + 16 + 320 + 320 = 1104. Screenshots: `w3-before-1104x532.png`, `w3-after-822x480-default-columns.png`, `w3-after-778x480-sidebar-at-minimum.png`, `w3-after-320x480-both-hidden.png` in the developer's scratchpad (`…/scratchpad/w3/`), not committed.
+
+W4 did not reproduce for the developer: four adds at 1100 × 700 (Inbox with 29 and 30 rows, Order with 29 and 30 rows) each selected the new row and scrolled it into view, before and after `87fda68`.
+
+### Hypotheses to attack (fix round 1)
+
+1. Hypothesis: ⌘R with the server stopped keeps every row and badge and shows `ErrorCopy.networkTitle` with Try Again; after a restart Try Again pulls again and the banner goes. Break it by: stopping the server mid-⌘R, a workspace whose Inbox answers and whose other project 500s.
+2. Hypothesis: an add with the server stopped shows `ErrorCopy.networkTitle` with Try Again, keeps the typed text in the field and adds no row; after a restart Try Again adds exactly one row (same idempotency key, see `wrangler` log), selects it and empties the field. Break it by: pressing Return again with the same text instead of Try Again (expect the same key, one task), editing the text before Return (expect a new key), a ⌘R failure followed by the add failure (the banner's Try Again must re-send the add).
+3. Hypothesis: when no project of the workspace has loaded, the list shows "Some projects didn't load." with Try Again that reloads and no add field. Break it by: switching to a second workspace with the server stopped.
+4. Hypothesis: the window shrinks to 822 × 480 with every column at default widths, 778 × 480 once the sidebar is dragged to its minimum, and to the list alone (320) with the sidebar and inspector hidden; nothing is clipped. Break it by: dragging the sidebar to 300 then shrinking, toggling ⌥⌘I and ⌃⌘S at the minimum.
+5. Hypothesis: a note with `[x](vscode://file/etc/hosts)`, `[x](file:///etc/hosts)` or `[x](x-apple.systempreferences:com.apple.preference.security)` opens nothing; `[x](https://example.com)` opens the browser. Break it by: upper-case schemes, a scheme-less link.
+6. Hypothesis: inline `code` in notes renders monospaced; bold, italic and links unchanged.
+7. Hypothesis: 20 001 characters of notes, then another task, then back: the editor shows the text and `ErrorCopy.notesTooLong`, and no `PATCH` was sent; Escape restores the saved notes and drops the message; trimming below the limit and leaving saves once. Break it by: switching workspace or signing out with such a draft (it must be gone).
+8. Hypothesis: double Return in the New Workspace sheet creates one workspace; Return then a click away from the inspector title sends one `PATCH`.
+9. Hypothesis: switching workspace while a pull, an add or a completion is in flight leaves the new workspace's board, selection and banner untouched, and a 401 on an old session's request after signing in again does not sign out.
+10. Hypothesis: the session file carries the backup exclusion (`xattr -l` shows `com.apple.metadata:com_apple_backup_excludeItem`), and `~/Library/Containers/dev.todz.Todz/Data/Library/Caches` gains no `Cache.db` holding answers.
+11. Hypothesis: an agent's history line, Added value and "via" always show; a history answer whose agent has no client name shows the history error instead of hiding lines.
+
+### Gaps (fix round 1)
+
+- W3: 760 × 480 with every column shown is not reached exactly: the floating sidebar keeps 8 pt of margin on each side and the inspector stops near 270, so the floor is 778 × 480 with the sidebar at its minimum and 822 × 480 at its default width (the sidebar holds its width while the window shrinks). Owner decision: accept, or lower a column's minimum.
+- W3: only measured on macOS 26. On a system whose sidebar does not float, the list's leading inset is 0, so the computed minimum leaves out the sidebar and the list could narrow below 320 there.
+- W4 is a hardening, not a proven fix: the miss did not reproduce.
+- A failed load and a later failed write share one banner: after the write's banner, the load failure's Try Again is gone until the next ⌘R. In the "nothing loaded" state the add field is hidden, so that state always keeps its own retry, unless a sheet's inline error takes the banner (then its button reads Dismiss).
+- The sheets' inline network error still takes and dismisses the window's banner, whatever it was (unchanged).
+- An offline sign-out erases the local file and leaves the server session alive until it expires (ADR 0025).
+- R9 is strict: one task whose creator is an agent without a client name makes its whole project fail to pull (`someProjectsFailed`), where it used to show without "via". The owner API contract says an agent always has one.
+- The "agent with no client name is left out" line of § Known gaps above no longer holds.
