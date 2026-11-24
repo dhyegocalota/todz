@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "wrangler d1 migrations apply directory --local && wrangler dev --var SIGN_IN_PROVIDER:fake",
     "dev:email": "wrangler d1 migrations apply directory --local && wrangler dev --var SIGN_IN_PROVIDER:email --var EMAIL_SENDER:console --var PUBLIC_ORIGIN:http://localhost:8787",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
     "test:unit": "vitest run"
   },
   "dependencies": {
