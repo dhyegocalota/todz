@@ -10,6 +10,7 @@ extension AppModel {
     }
 
     public func reveal(task key: TaskKey) {
-        fatalError("reveal(task:) is not implemented")
+        selectedItem = .today
+        selectedTask = key
     }
 }
