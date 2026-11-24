@@ -13,7 +13,7 @@ const SUCCESS_EXIT_CODE = 0;
 const STALE_MESSAGE = `${GENERATED_EMAILS_PATH} is stale; run pnpm emails:generate`;
 const PREVIEW_DIRECTORY = new URL('../../../../.pr-media/emails/', import.meta.url).pathname;
 const PREVIEW_VALUES = {
-  [EmailSlot.Link]: 'http://localhost:8787/sign-in#token=Zm9yLXByZXZpZXctb25seS1ub3QtYS1yZWFsLXRva2Vu',
+  [EmailSlot.Link]: 'http://localhost:8787/sign-in#token=preview-only-not-a-token',
   [EmailSlot.Email]: 'maria@example.com',
   [EmailSlot.Origin]: 'http://localhost:8787',
 };
