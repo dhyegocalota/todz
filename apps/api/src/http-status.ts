@@ -2,6 +2,7 @@ export enum HttpStatus {
   SwitchingProtocols = 101,
   Ok = 200,
   Created = 201,
+  Accepted = 202,
   NoContent = 204,
   BadRequest = 400,
   Unauthorized = 401,
@@ -10,5 +11,6 @@ export enum HttpStatus {
   Conflict = 409,
   Unprocessable = 422,
   UpgradeRequired = 426,
+  TooManyRequests = 429,
   Unavailable = 503,
 }

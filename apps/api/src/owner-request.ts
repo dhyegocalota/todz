@@ -22,6 +22,16 @@ export function routeParam({ context, name }: { context: OwnerContext; name: Rou
   return value;
 }
 
+const JSON_MEDIA_TYPE = 'application/json';
+const MEDIA_TYPE_PARAMETER_SEPARATOR = ';';
+
+function isJsonRequest(request: Request): boolean {
+  const contentType = request.headers.get('Content-Type');
+  if (contentType === null) return false;
+  const [mediaType] = contentType.split(MEDIA_TYPE_PARAMETER_SEPARATOR);
+  return mediaType?.trim().toLowerCase() === JSON_MEDIA_TYPE;
+}
+
 export async function parsedBody<Schema extends z.ZodType>({
   request,
   schema,
@@ -32,4 +42,15 @@ export async function parsedBody<Schema extends z.ZodType>({
   const parsed = schema.safeParse(parsedJson(await request.text()));
   if (!parsed.success) return null;
   return parsed.data;
+}
+
+export async function parsedPublicBody<Schema extends z.ZodType>({
+  request,
+  schema,
+}: {
+  request: Request;
+  schema: Schema;
+}): Promise<z.output<Schema> | null> {
+  if (!isJsonRequest(request)) return null;
+  return parsedBody({ request, schema });
 }

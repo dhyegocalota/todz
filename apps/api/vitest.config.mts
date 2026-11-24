@@ -9,7 +9,9 @@ export default defineConfig(async () => {
     plugins: [
       cloudflareTest({
         wrangler: { configPath: './wrangler.jsonc' },
-        miniflare: { bindings: { MIGRATIONS: migrations, SIGN_IN_PROVIDER: 'fake' } },
+        miniflare: {
+          bindings: { MIGRATIONS: migrations, SIGN_IN_PROVIDER: 'fake', EMAIL_SENDER: 'console', PUBLIC_ORIGIN: 'http://localhost:8787' },
+        },
       }),
     ],
     test: {

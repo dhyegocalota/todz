@@ -6,7 +6,6 @@ import { CLOCK_NOW } from './task-fixtures';
 
 export const PUBLIC_ORIGIN = 'http://localhost:8787';
 export const LINK_CHALLENGE = 'ab'.repeat(32);
-export const MAIL_ADDRESS = 'maria@example.com';
 
 const LINKS_PATH = '/owner/sign-in-links';
 const SESSIONS_PATH = '/owner/sessions';
@@ -24,6 +23,10 @@ export type LinkRow = {
   expires_at: number;
   consumed_at: number | null;
 };
+
+export function freshAddress(): string {
+  return `${crypto.randomUUID()}@example.com`;
+}
 
 export function emailEnv(settings: Partial<Env> = {}): Env {
   return workerEnvWith({ ...EMAIL_SETTINGS, ...settings });
@@ -50,7 +53,7 @@ export function tokenOfMail(mail: SentMail): string {
 }
 
 export function requestLink({
-  email = MAIL_ADDRESS,
+  email = freshAddress(),
   challenge = LINK_CHALLENGE,
   now = CLOCK_NOW,
   workerEnv = emailEnv(),

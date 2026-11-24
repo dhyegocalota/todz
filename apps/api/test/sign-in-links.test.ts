@@ -5,7 +5,7 @@ import { digestCredential } from '../src/credential-digest';
 import { seedEmailIdentity, seedOwner } from './directory-seed';
 import {
   LINK_CHALLENGE,
-  MAIL_ADDRESS,
+  freshAddress,
   EMAIL_SETTINGS,
   consoleOutput,
   emailEnv,
@@ -74,9 +74,10 @@ describe('POST /owner/sign-in-links', () => {
 
   test('mails the link on the configured origin with a short plain text that tells a stranger to ignore it', async () => {
     const output = consoleOutput();
-    await requestLink({ workerEnv: emailEnv({ PUBLIC_ORIGIN: 'http://127.0.0.1:9000' }) });
+    const email = freshAddress();
+    await requestLink({ email, workerEnv: emailEnv({ PUBLIC_ORIGIN: 'http://127.0.0.1:9000' }) });
     const mail = mailSent(output);
-    expect(mail.to).toBe(MAIL_ADDRESS);
+    expect(mail.to).toBe(email);
     expect(mail.text).toContain(`http://127.0.0.1:9000/sign-in#token=${tokenOfMail(mail)}`);
     expect(mail.text).toContain("If you didn't ask for this, ignore this email.");
     expect(output).toHaveBeenCalledTimes(1);
@@ -84,11 +85,12 @@ describe('POST /owner/sign-in-links', () => {
 
   test('every request makes a fresh token', async () => {
     const output = consoleOutput();
-    await requestLink();
-    await requestLink();
+    const email = freshAddress();
+    await requestLink({ email });
+    await requestLink({ email });
     const [first, second] = sentMail(output).map(tokenOfMail);
     expect(first).not.toBe(second);
-    expect(await linkRows(MAIL_ADDRESS)).toHaveLength(2);
+    expect(await linkRows(email)).toHaveLength(2);
   });
 
   test('accepts an address of exactly 254 characters', async () => {
@@ -111,7 +113,6 @@ describe('POST /owner/sign-in-links', () => {
     [`${'a'.repeat(ADDRESS_LENGTH_MAX - '@example.com'.length + 1)}@example.com`],
     [5],
     [null],
-    [undefined],
   ])('the address %j answers 400 invalid_request and sends nothing', async (email) => {
     const output = consoleOutput();
     const before = await totalLinks();
@@ -131,7 +132,6 @@ describe('POST /owner/sign-in-links', () => {
     [`${'ab'.repeat(31)}a\n`],
     [5],
     [null],
-    [undefined],
   ])('the challenge %j answers 400 invalid_request and sends nothing', async (challenge) => {
     const output = consoleOutput();
     const before = await totalLinks();
@@ -146,6 +146,8 @@ describe('POST /owner/sign-in-links', () => {
     ['a body that is not JSON', { rawBody: 'not json' }],
     ['an empty body', { rawBody: '' }],
     ['a JSON array', { rawBody: '[]' }],
+    ['a missing address', { body: { link_challenge: LINK_CHALLENGE } }],
+    ['a missing challenge', { body: { email: 'missing@example.com' } }],
   ])('%s answers 400 invalid_request', async (_name, payload) => {
     const output = consoleOutput();
     const response = await serveOwnerCall({
@@ -167,7 +169,7 @@ describe('POST /owner/sign-in-links', () => {
         call: {
           method: 'POST',
           path: '/owner/sign-in-links',
-          rawBody: JSON.stringify({ email: MAIL_ADDRESS, link_challenge: LINK_CHALLENGE }),
+          rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE }),
           headers: { 'Content-Type': contentType },
         },
         now: CLOCK_NOW,
@@ -186,7 +188,7 @@ describe('POST /owner/sign-in-links', () => {
       call: {
         method: 'POST',
         path: '/owner/sign-in-links',
-        rawBody: JSON.stringify({ email: MAIL_ADDRESS, link_challenge: LINK_CHALLENGE }),
+        rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE }),
         headers: { 'Content-Type': 'Application/JSON; charset=utf-8' },
       },
       now: CLOCK_NOW,
@@ -201,7 +203,7 @@ describe('POST /owner/sign-in-links', () => {
       call: {
         method: 'POST',
         path: '/owner/sign-in-links',
-        body: { email: MAIL_ADDRESS, link_challenge: LINK_CHALLENGE },
+        body: { email: freshAddress(), link_challenge: LINK_CHALLENGE },
         token: 'unknown',
       },
       now: CLOCK_NOW,
