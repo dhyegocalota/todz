@@ -11,4 +11,5 @@ public enum AppBanner: Equatable, Sendable {
     case changesRefused(count: Int)
     case cacheNotSaved
     case waitingChangesLost
+    case signOutFailed
 }

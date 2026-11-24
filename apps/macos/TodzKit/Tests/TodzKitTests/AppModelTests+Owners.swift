@@ -125,6 +125,23 @@ extension AppModelTests {
         await harness.signals.cancelled(harness.watchKey(inboxIdentifier))
     }
 
+    @Test func aSignOutWhoseEraseFailsStaysSignedInWithTheVaultAndSaysSo() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 1)
+        await harness.signedIn()
+        harness.store.failures[.erase] = .unwritable
+        await harness.model.signOut()
+        #expect(harness.model.banner == .signOutFailed)
+        #expect(harness.model.phase == .ready)
+        #expect(harness.model.session == harness.session)
+        #expect(harness.model.taskViews?.inbox.map(\.task.number) == [1])
+        #expect(harness.vault.secret == harness.session)
+        #expect(harness.vault.eraseCount == 0)
+        #expect(harness.service.calls == [])
+        #expect(harness.model.watches.keys.contains(inboxIdentifier))
+    }
+
     @Test func aPullAnsweredAfterASignOutWritesNothing() async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
