@@ -368,6 +368,34 @@ extension AppModelTests {
         )
     }
 
+    @Test func aListAnswerStartedBeforeTheRevokeDoesNotBringTheKeyBack() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.service.suspend(.listKeys)
+        let reloading = Task { await harness.model.loadKeys() }
+        await harness.service.held(.listKeys)
+        await harness.model.revokeKey(launchKey)
+        harness.service.keysOfProject[launchIdentifier] = [launchKey]
+        harness.service.resume(.listKeys)
+        await reloading.value
+        #expect(harness.model.keys == .loaded([]))
+    }
+
+    @Test func anIssuedKeyRevokedBeforeTheListAnswersIsNotAddedBack() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.service.suspend(.listKeys)
+        let reloading = Task { await harness.model.loadKeys() }
+        await harness.service.held(.listKeys)
+        await harness.model.issueKey()
+        let issued = try #require(harness.model.issuedKey)
+        await harness.model.revokeKey(issued.key)
+        harness.service.keysOfProject[launchIdentifier] = [launchKey]
+        harness.service.resume(.listKeys)
+        await reloading.value
+        #expect(harness.model.keys == .loaded([launchKey]))
+    }
+
     @Test func revokingAnotherKeyKeepsTheShownSecret() async throws {
         let harness = try await keyHarness()
         let issued = try await issuedKeyOfLaunch(harness)
