@@ -23,6 +23,10 @@ extension AppModel {
         publishWidgets()
     }
 
+    public func widgetRequestsAdded() {
+        widgetIntake = Task { await takeWidgetRequests() }
+    }
+
     public func takeWidgetRequests() async {
         guard case .ready = widgetSnapshot else { return }
         let stored: [StoredWidgetRequest]

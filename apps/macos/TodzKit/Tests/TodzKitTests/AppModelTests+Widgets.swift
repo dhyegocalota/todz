@@ -179,6 +179,24 @@ extension AppModelTests {
         #expect(harness.widgets.snapshot == truth)
     }
 
+    @Test func aFloodOfNotificationsRunsOneIntakeAtATime() async throws {
+        let harness = try await launchedWidgetHarness()
+        harness.service.suspend(.completeTasks)
+        harness.widgets.storedRequests = [stored(number: 1, state: .done)]
+        harness.model.widgetRequestsAdded()
+        harness.model.widgetRequestsAdded()
+        harness.model.widgetRequestsAdded()
+        await harness.model.widgetIntake?.value
+        #expect(harness.widgets.routes().filter { $0 == .requests }.count == 1)
+        #expect(harness.model.waitingChangeCount == 1)
+        harness.model.widgetRequestsAdded()
+        await harness.model.widgetIntake?.value
+        #expect(harness.widgets.routes().filter { $0 == .requests }.count == 2)
+        harness.service.unsuspend(.completeTasks)
+        harness.service.resume(.completeTasks)
+        await harness.flushed()
+    }
+
     @Test func aRequestWhoseRemovalFailsIsNotTaken() async throws {
         let harness = try await launchedWidgetHarness()
         let waiting = stored(number: 1, state: .done)
