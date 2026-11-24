@@ -196,5 +196,50 @@ R5, the intent's reorder and the 500-entry cap have no unit seam: the build is t
 ### Known gaps
 
 - The owner check (`st_uid == getuid()`) has no test: making a folder owned by another account needs root.
-- A link followed while loading waits in the model; the inspector is shown only if the owner had not hidden it, because `MainWindowState.follow` sees no task yet when it decides.
-- ADR 0033 does not yet state the best-effort erase, the size caps or the symlink refusal. The erase pointer in `AppModel+Widgets` says "a failed erase never keeps a session or a cache", which the record should say too; the symlink rule carries no pointer.
+- ~~A link followed while loading waits in the model; the inspector is shown only if the owner had not hidden it, because `MainWindowState.follow` sees no task yet when it decides.~~ Fixed in round 2 (`8a5e54a`).
+- ~~ADR 0033 does not yet state the best-effort erase, the size caps or the symlink refusal. The erase pointer in `AppModel+Widgets` says "a failed erase never keeps a session or a cache", which the record should say too; the symlink rule carries no pointer.~~ `beaaafa` added them as decision 3.
+
+## Fix round 2
+
+### What changed
+
+- `removeRequests` removes each name on its own and returns the names it removed (`WidgetStore`, `FileWidgetStore`, `UnavailableWidgetStore`, the test double). The intake takes exactly those requests; one that stays on disk is not taken and is read again at the next intake.
+- `FolderStatus.checked` decides whether a folder is usable: a real directory owned by `getuid()`, opened with `O_NOFOLLOW | O_DIRECTORY`, and nothing else. `FolderStatus.madePrivate` checks the same way and then sets `0700` best effort, so a failed `fchmod` never makes a verified folder unusable. `SharedFolder.owned` (the extension, through `FileWidgetStore.shared`) only checks; `SharedFolder.created` (the app) makes it private.
+- `AppModel.linkRevealCount` goes up each time a link reveals a task, including one that waited through loading; `MenuBarLabel` shows the inspector on each change. `MainWindowState.follow` no longer decides it. Changing `selectedItem` or `selectedTask` clears the model's waiting link.
+- `WidgetSnapshotTask.isProjectTagShown` is false for a task with a creator label. `NextUpTask` draws the due caption, the tag (only when shown) and the creator label each on its own line, so the small size truncates none. Deviation from the call "line 2 shows the due caption and the creator label": on one line both still truncated in the render ("Overdue…", "via Clau…"), so each has a line.
+- `docs/screenshots/widgets/02-next-up.png` re-rendered from the real view files; the README's four widget captions end with "(rendered)" and a line under the table says why.
+
+The unit suite went from 461 tests in 32 suites to 475 in 33, all green. The `macos` gate's `xcodegen generate` and `xcodebuild build` lines built with no warning.
+
+### Red today, green after
+
+| Red commit | Test | Red failure printed | Green commit |
+|---|---|---|---|
+| `c8d2dbe` | `AppModelTests.onlyTheRequestsRemovedAreTaken` | `Expectation failed: harness.model.waitingChangeCount == 1` | `66c0dce` |
+| `c8d2dbe` | `FileWidgetStoreTests.removesTheRequestsItCanAndNamesThem` | `Caught error: NSCocoaErrorDomain Code=513 "couldn't be removed because you don't have permission to access it."` | `66c0dce` |
+| `92fd0cd` | `SharedFolderTests.anOwnedFolderIsVerifiedWithoutChangingItsMode` | `Expectation failed: try modeOfFile(at: folder) == openFolderMode` | `cd39f1f` |
+| `92fd0cd` | `FolderStatusTests` (4 tests) | `TodzKit/FolderStatus.swift:12: Fatal error: FolderStatus.checked is not implemented` | `cd39f1f` |
+| `c79ddc2` | `AppModelTests.aLinkThatRevealsATaskCountsOneReveal` | `Expectation failed: harness.model.linkRevealCount == 1` | `8a5e54a` |
+| `c79ddc2` | `AppModelTests.aLinkThatWaitedThroughLoadingCountsOneRevealOnceTheTaskIsShown` | `Expectation failed: harness.model.linkRevealCount == 1` | `8a5e54a` |
+| `c79ddc2` | `AppModelTests.changingTheSelectedItemBeforeTheLinkIsFollowedDropsTheLink` | `Expectation failed: harness.model.selectedItem == .upcoming` and `harness.model.selectedTask == nil` | `8a5e54a` |
+| `c79ddc2` | `AppModelTests.changingTheSelectedTaskBeforeTheLinkIsFollowedDropsTheLink` | `Expectation failed: harness.model.selectedTask == dueTomorrowTask` | `8a5e54a` |
+| `c79ddc2` | `AppModelTests.aLinkThatRevealsNoTaskCountsNoReveal` | pin: green on landing | — |
+| `4da7bf2` | `WidgetSnapshotTests.aTaskWithACreatorLabelShowsNoProjectTag` | `Expectation failed: snapshot.open.map(\.isProjectTagShown) == [false, true]` | `2ad1586` |
+| `4da7bf2` | `WidgetSnapshotTests.aPendingTaskShowsItsProjectTag` | pin: green on landing | — |
+
+The Next up layout, `MenuBarLabel`'s inspector change and the extension's use of `owned` have no unit seam: the build and the render are their proof (`5e75d47`, `8dca819`).
+
+### Hypotheses to attack
+
+1. Hypothesis: the extension reads the folder without changing its mode, so a placed widget draws Today even when its sandbox refuses `fchmod`. Break it by placing a widget with the folder at `755` and then at `700`; the mode stays what it was.
+2. Hypothesis: with one request file the app cannot remove (`chflags uchg`) among three, the other two reach the server once and the stuck one is never sent, however many activations follow.
+3. Hypothesis: `open -g "todz://task/<project>/<number>"` with the app quit and the inspector hidden shows the inspector and the task once Today has loaded; a link to a task not in Today leaves the inspector as the owner left it.
+4. Hypothesis: clicking another sidebar item or task while a link waits for loading means the link never moves the selection afterwards.
+5. Hypothesis: Next up at the small size with a creator label draws title, due caption and "via <label>" with no project tag and no truncation; with no creator label it draws title, due caption and the project tag as before.
+
+### Known gaps
+
+- The extension's sandbox was never observed with the folder at a mode other than `700`: no widget was placed.
+- The AppModel test for a partial removal uses two requests, not three: the harness has two tasks in Today, and a request for a third would be dropped as not in Today whatever the removal did. The store's own test uses three real files.
+- `fchmod` failing inside the app is not tested: a folder the app owns cannot be made to refuse it.
+- A selection the model changes itself while a link waits (sign-out, a workspace switch) also drops the link.
