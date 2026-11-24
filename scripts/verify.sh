@@ -6,7 +6,7 @@ readonly REMOTE_NAME=origin
 readonly MAIN_BRANCH=main
 readonly MAIN_REF="$REMOTE_NAME/$MAIN_BRANCH"
 readonly FETCH_FAILED="verify: could not fetch origin main; the base is origin/main as last fetched"
-readonly ALL_GATES="doctor format secrets typecheck audit hooks shape unit"
+readonly ALL_GATES="doctor format secrets typecheck audit hooks shape unit macos"
 readonly ALWAYS_GATES="doctor format secrets audit shape"
 readonly ALREADY_GREEN_GATES="secrets audit"
 readonly EVERYTHING_GATES=all
@@ -145,6 +145,17 @@ gate_typecheck() { pnpm typecheck; }
 gate_audit() { pnpm security:audit; }
 gate_hooks() { pnpm test:hooks; }
 gate_shape() { pnpm --filter "$SHAPE_PACKAGE" exec vitest run; }
+
+gate_macos() {
+  local tool
+  for tool in swift xcodegen; do
+    command -v "$tool" >/dev/null || { failure_reason="$tool is not installed. fix: $("$root/.agents/hooks/doctor.sh" --fix "$tool")"; return 1; }
+  done
+  xcodebuild -version >/dev/null 2>&1 || { failure_reason="xcodebuild is not installed. fix: $("$root/.agents/hooks/doctor.sh" --fix xcodebuild)"; return 1; }
+  swift test --package-path apps/macos/TodzKit \
+    && xcodegen generate --spec apps/macos/project.yml \
+    && xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Debug -derivedDataPath apps/macos/build
+}
 
 unit_suites() {
   [[ $run_everything == true ]] && { pnpm test:unit; return; }

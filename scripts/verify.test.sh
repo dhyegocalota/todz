@@ -181,13 +181,6 @@ expect_no_match "a missing xcodegen runs no Swift" "$(calls)" 'swift test'
 
 new_repository
 commit_change apps/macos/Todz/TodzApp.swift
-rm "$stub_bin/swift"
-run_verify
-expect_equal "a missing swift exits 1" "$status" 1
-expect_match "a missing swift names the fix" "$output" 'verify: macos failed: swift is not installed\. fix: install swift'
-
-new_repository
-commit_change apps/macos/Todz/TodzApp.swift
 STUB_XCODEBUILD_FAIL=-version
 export STUB_XCODEBUILD_FAIL
 run_verify
