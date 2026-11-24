@@ -13,7 +13,7 @@ ADR 0006 keeps pull request media out of the repository: walks, videos and evide
 
 1. Each feature the owner can see keeps its screenshots in `docs/screenshots/<feature-slug>/NN-<what-it-shows>.png`, numbered in the order the README shows them. They are taken from the real build by the tester's walk (ADR 0026), of the window only, in the light appearance, with fictional but plausible content.
 2. A screenshot is at most 1 600 pixels wide and 1 MB. Larger captures are scaled down before they are committed.
-3. The root `README.md` has a section `## A walk through todz` with one subsection per shipped feature the owner can see, in the order of delivery, each showing its screenshots with one sentence each.
+3. The root `README.md` shows a hero screenshot of the main window under its title, then one compact gallery, `## A walk through todz`, a two-column table of the other screenshots in the order of delivery, each with a caption of a few words. The menu bar, the widgets, the key screen and an agent's MCP session join the gallery as their features ship.
 4. A feature that changes a screen replaces that screenshot in the same pull request. A pull request that ships a visible feature adds its subsection. A visible feature shipped without screenshots gets them in the next pull request that touches the README.
 5. ADR 0006 stands for everything else: walks, videos, before-and-after pairs and test evidence are attached to the pull request and never committed. The pull request body also embeds the new README screenshots, by their repository paths.
 6. `tools/repository-shape` checks that every file under `docs/screenshots` is a PNG within the limits and is shown by the root README, and the existing link checks fail on a README image that does not exist.

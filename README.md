@@ -11,6 +11,10 @@
 
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/mac-app-shell/04-inspector-notes-and-history.png" width="820" alt="The todz main window with a task's notes and history in the inspector">
+</p>
+
 ---
 
 todz is a to-do list that AI agents and their owner share. MCP-first and agentic-first: every action a person takes in the app, an agent can take through the MCP server (Claude Code, Codex, Cursor, any MCP client).
@@ -24,39 +28,11 @@ The approved design is in [docs/product](docs/product/); how each piece was buil
 
 ## A walk through todz
 
-The native macOS app, screen by screen, as it is built today.
-
-### The main window
-
-![Sign-in screen](docs/screenshots/mac-app-shell/01-sign-in.png)
-
-Signing in with the development identity.
-
-![Naming the first workspace](docs/screenshots/mac-app-shell/02-first-workspace.png)
-
-Naming the first workspace.
-
-![Today across the Inbox and a project](docs/screenshots/mac-app-shell/03-today-two-projects.png)
-
-Today across the Inbox and a project, with a task an agent added marked "via Claude Code".
-
-![The inspector with notes and history](docs/screenshots/mac-app-shell/04-inspector-notes-and-history.png)
-
-The inspector showing a task's notes and history.
-
-### Sync and offline
-
-![A task an agent adds appears live](docs/screenshots/mac-sync/01-agent-add-live.png)
-
-A task an agent adds appears in the window as it happens.
-
-![Offline with changes waiting](docs/screenshots/mac-sync/02-offline-changes-waiting.png)
-
-Offline, with changes waiting to sync and pending adds drawn with a dashed ring.
-
-![A refused change explained in a banner](docs/screenshots/mac-sync/03-refused-change-banner.png)
-
-A change the server refused is explained in a banner.
+|                                                                                                                    |                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| ![Sign in](docs/screenshots/mac-app-shell/01-sign-in.png)<br>Sign in                                               | ![Name your first workspace](docs/screenshots/mac-app-shell/02-first-workspace.png)<br>Name your first workspace       |
+| ![Today across projects](docs/screenshots/mac-app-shell/03-today-two-projects.png)<br>Today across projects       | ![An agent's task appears live](docs/screenshots/mac-sync/01-agent-add-live.png)<br>An agent's task appears live       |
+| ![Offline, changes waiting](docs/screenshots/mac-sync/02-offline-changes-waiting.png)<br>Offline, changes waiting | ![A refused change, explained](docs/screenshots/mac-sync/03-refused-change-banner.png)<br>A refused change, explained |
 
 ## How the work happens
 
