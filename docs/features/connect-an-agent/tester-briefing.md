@@ -186,3 +186,52 @@ The views have no test target; their proof is the build (e943194, b6c92e8) and t
 - The Cursor failure line clears when the secret changes or the button is pressed again, not on every other action on the screen.
 - G1's other gaps stand: a list answer started before an issue can overwrite the appended key until the next reload; the secret sits in an `@Observable` property while shown.
 - Names differ from the design: the plan's file map names the folder `MainWindow/KeyScreen` and the copy `KeyScreenCopy.swift`, so the design's `ConnectAgentView`, `ConnectAgentHeader` and `ConnectAgentCopy` are `KeyScreen`, `KeyScreenHeader` and `KeyScreenCopy`; the design's `KeyList` view is `KeyRows`, since `KeyList` is the model's load phase; the design's `AccessibilityCopy` lines live in `KeyScreenCopy` (`copyItem`, `keyEnding`, `revokeKeyLabel`, `revoking`, `hideKeyHint`), because `AccessibilityCopy.swift` is outside the lane; `InspectorSectionTitle` is reused where it is, not moved to `Shared`.
+
+## Fix round 1
+
+### What changed
+
+| Finding | Change | Commits |
+|---------|--------|---------|
+| D1 crash on Connect an Agent | `TaskListView` takes the item `MainWindow` built it for, inside the branch that exists only away from the key screen, instead of reading `model.selectedItem`; `SidebarItem.emptyTitle` and `emptyBody` give `KeyScreenCopy.title` and `KeyScreenCopy.intro` for `.connectAgent` instead of `preconditionFailure` | c94fad2 |
+| D2 secrets gate | `.gitleaks.toml` allowlists the exact `OwnerFixtures.keySecret`, anchored like the existing placeholder | c7809e6 |
+| R1 ⌘W keeps the secret | `KeyScreen` calls `model.hideKey()` from `.onDisappear`; no new model hook, so the model proof is the existing `hidingTheKeyForgetsTheSecretAndKeepsTheList` | fc52e52 |
+| R2 issue racing a reload | `list(_:)` skips a key already listed; a loaded answer lacking `issuedKey?.key` adds it back | 15324ed red, 63a9489 |
+| R3 docs | ADR 0034 decision 1 and design § 1.5 show the single-quoted forms; § 1.5 also says a block with a secret is never selectable, and § 8 carries the new caption | 3ae5fee |
+| R5 caption | `KeyScreenCopy.claudeCodeCaption` is "Run it in your project's folder. To replace a key there, run `claude mcp remove todz` first.", with the command in a monospaced run; the four captions are `AttributedString` | d249d98 |
+| R6 revoke visit guard | pin test | 317b0f2 |
+| S1 selectable secret | `CommandBlock` is selectable only when enabled and holding no secret | fbecb3c |
+| S2 pasteboard window | a secret is one `NSPasteboardItem` with `.string` and both markers in one `writeObjects`, after `prepareForNewContents(with: .currentHostOnly)` | af2a507 |
+| S3 Cursor handler | Add to Cursor resolves `urlForApplication(toOpen:)` and opens the link only when `AgentCommand.isCursor(bundleIdentifier:)` says Cursor (`com.todesktop.230313mzl4w4u92`); otherwise "Cursor didn't open" | 420b425 red, 600657f |
+| S4 / R4 secret shape | `IssuedKey` decodes only a secret of `todz_` plus base64url characters; anything else is a `DecodingError`, so the screen shows the unexpected failure | 72d51b0 red, 3430125 |
+
+`swift test`: 530 before, 534 after, all green. The app builds with the gate's lines into a scratch derived data folder, with no warning. The secrets gate's two commands (the probe, then `gitleaks git --log-opts=HEAD`) report no leaks over 517 commits; `pnpm verify` itself was not run, since its `macos` gate builds into `apps/macos/build`.
+
+### Red today, green after
+
+| Test | Red commit and printed failure | Green commit |
+|------|--------------------------------|--------------|
+| `AgentCommandTests.anIssuedKeyWhoseSecretTheQuotingWouldBreakOnIsRefused(refusedSecret:)`, six cases, replaces the pin `aSecretHoldsNoCharacterTheQuotingWouldBreakOn` | 72d51b0: `Expectation failed: an error was expected but none was thrown and "IssuedKey(key: …, secret: "todz_ab\'c;d\ne")" was returned`, one per case | 3430125 |
+| `AppModelTests.aReloadThatMissedTheIssuedKeyKeepsItListed` | 15324ed: `Expectation failed: harness.model.keys == .loaded([launchKey, issued.key])` | 63a9489 |
+| `AppModelTests.aReloadThatListedTheIssuedKeyFirstListsItOnce` | 15324ed: `Expectation failed: harness.model.keys == .loaded([launchKey, committed])` | 63a9489 |
+| `AgentCommandTests.onlyCursorTakesTheCursorLink(bundleIdentifier:isCursor:)` | 420b425: `TodzKit/AgentCommand.swift:63: Fatal error: AgentCommand.isCursor is not implemented` | 600657f |
+| `AppModelTests.aRevokeAnswerAfterTheProjectChangedLeavesTheNewListAlone` | pin, green on landing; removing the guard after the revoke answer turned it red with `Expectation failed: harness.model.failedRevokeIdentifiers == []`, restored | 317b0f2 |
+
+D1, R1, S1, S2 and R5 live in the app, which has no test target; their proof is the build and the walk.
+
+### Hypotheses to attack
+
+1. Hypothesis: clicking Connect an Agent, from a project, a view or with the keyboard, opens the key screen with no crash, and leaving it shows the task list as before. Break it by: switching rapidly between Connect an Agent and each other row, with tasks loading.
+2. Hypothesis: with a secret shown, ⌘W then reopening the window from the menu bar shows the placeholder, and the new key's row is still listed. Break it by: ⌘W, reopen with the menu bar's Open, and also by quitting the window with the red button.
+3. Hypothesis: no block holding the secret can be selected by drag, double-click or ⌘A; the server URL stays selectable. Break it by: dragging across each client block, then ⌘C and `pbpaste`.
+4. Hypothesis: a Copy of a block that holds the secret lists `public.utf8-plain-text`, `org.nspasteboard.ConcealedType` and `org.nspasteboard.TransientType` together, and the secret does not reach another device through Universal Clipboard. Break it by: the `osascript` line of G2, and pasting on a second Apple device signed in to the same account.
+5. Hypothesis: Add to Cursor with Cursor not installed shows "Cursor didn't open. Copy the JSON below instead." and opens nothing, even when another app claims the `cursor` scheme.
+6. Hypothesis: the Claude Code caption reads the new sentence with `claude mcp remove todz` in a monospaced run, and wraps at the narrowest width without moving Copy.
+7. Hypothesis: a reload racing Create a Key ends with the new key listed exactly once.
+
+### Known gaps
+
+- D1 has no hidden launch yet: the screen belongs to the tester's walk. The cause is read from the view tree (the task list kept observing `selectedItem` and ran once more with `.connectAgent`); with both changes, nothing in the app stops on that case any longer.
+- R1 relies on SwiftUI tearing the `Window` scene's content down when it closes, so `.onDisappear` fires; if a close only hides the window, the secret would survive a reopen.
+- The R2 duplicate test gives the listed key the fake's next identifier, not the issued key itself (the fake stamps its creation time on issue); the model compares by identifier.
+- The secret-shape check repeats the base64url alphabet in `IssuedKey.swift`, beside the different unreserved set `AgentCommand.swift` percent-encodes with.
