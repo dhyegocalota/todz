@@ -7,8 +7,8 @@ private let secret = OwnerFixtures.keySecret
 private let placeholder = "<new key>"
 private let base64PlusSlashSecret = "todz_???>>>~~~b"
 private let configParameter = "config"
-private let shellSpecialCharacters: Set<Character> = ["'", "\"", "$", "`", "\\"]
-private let base64URLAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+private let issuedKeyIdentifier = "key-1"
+private let secretsOutsideTodzAndBase64URL = ["todz_ab'cd", "todz_ab;cd", "todz_ab\ncd", "todz_ab'c;d\ne", "todz_", "key_abcd"]
 
 private let cursorLinkPrefix = "cursor://anysphere.cursor-deeplink/mcp/install?name=todz&config="
 private let secretLink =
@@ -106,9 +106,10 @@ private func serverURL() throws -> URL {
         #expect(url.absoluteString == serverText)
     }
 
-    @Test func aSecretHoldsNoCharacterTheQuotingWouldBreakOn() {
-        let secretCharacters = Set("todz_" + base64URLAlphabet)
-        #expect(secretCharacters.isDisjoint(with: shellSpecialCharacters))
-        #expect(secret.allSatisfy(secretCharacters.contains))
+    @Test(arguments: secretsOutsideTodzAndBase64URL)
+    func anIssuedKeyWhoseSecretTheQuotingWouldBreakOnIsRefused(refusedSecret: String) throws {
+        let encodedSecret = try #require(String(data: try JSONEncoder().encode(refusedSecret), encoding: .utf8))
+        let json = "{\"key\":\(OwnerFixtures.projectKeyJSON(identifier: issuedKeyIdentifier)),\"secret\":\(encodedSecret)}"
+        #expect(throws: DecodingError.self) { try OwnerFixtures.decoded(IssuedKey.self, from: json) }
     }
 }
