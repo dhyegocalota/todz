@@ -30,7 +30,7 @@ The `brand` feature gave the app a flat icon. On macOS 26 a flat icon sits in a 
 ### Interfaces
 
 - `AppIcon.icon/icon.json`: the background gradient, a sparkle group and a check group, each a glass layer, for the macOS square.
-- `WidgetBrandGlyph` (a view in the widget extension): the `MenuBarGlyph` image set as a template, resizable, a square of a named side constant beside the headline, accent-tinted, `widgetAccentable`, `unredacted`, a higher layout priority than the title so a long title truncates first, hidden from VoiceOver. `WidgetHeader`, `WidgetPrompt`, the Next up label and the Today ring's title draw it before their text, in an `HStack` aligned to the text's first baseline.
+- `WidgetBrandGlyph` (a view in the widget extension): the `MenuBarGlyph` image set as a template, resizable, a square of a named side constant beside the headline, accent-tinted, `widgetAccentable`, `unredacted`, a higher layout priority than the title so a long title truncates first, hidden from VoiceOver. `WidgetHeader`, `WidgetPrompt`, the Next up label and the Today ring's title draw it before their text, in an `HStack` centred on the title line, because an image has no baseline of its own.
 
 ### Failure handling
 

@@ -1,6 +1,6 @@
 # Render the brand assets
 
-Render the app icon, its glass layers and the menu bar glyph again from the SVGs in [docs/brand](../brand/), after the logo changes ([ADR 0038](../adr/0038-the-brand-sources-are-svgs-in-docs-brand-and-the-app-s-assets-are-generated-from-them.md)).
+Render the app icon, its glass layers and the menu bar glyph again from the SVGs in [docs/brand](../brand/), after the logo changes ([ADR 0038](../adr/0038-the-brand-sources-are-svgs-in-docs-brand-and-the-app-s-assets-are-generated-from-them.md), [ADR 0039](../adr/0039-the-app-icon-is-a-layered-icon-composer-document-with-the-flat-set-as-its-fallback.md)). Renders that are only looked at go to the git-ignored `.pr-media/`, never into the repository.
 
 1. **Check the tools.** Run `rsvg-convert --version`, `magick --version` and `xcodebuild -version` from the repository root, then `/Applications/Xcode.app/Contents/Applications/Icon\ Composer.app/Contents/Executables/ictool --version`.
    Expected: all four print a version, and Xcode reads 27 or later.
@@ -35,7 +35,15 @@ Render the app icon, its glass layers and the menu bar glyph again from the SVGs
    - `docs/brand/todz-icon-sparkle.svg` is the mint spark path of `todz-icon.svg` copied as is, under `<svg xmlns="http://www.w3.org/2000/svg" viewBox="80 80 864 864" width="1024" height="1024">`.
    - `docs/brand/todz-icon-check.svg` is the check as a filled outline of its stroke, because the compiler draws a stroked open path with a hairline closing edge. The stroke runs through `(300,532)`, `(448,680)` and `(724,404)` with a width of 96, so the half width is 48 and every offset is 48/√2, about 33.941. Start at the left side of the first segment at its start, `(266.059,565.941)`, and draw a line to the left side at the bend, `(414.059,713.941)`. Draw the outer join as an arc of radius 48 to `(481.941,713.941)`, a line to `(757.941,437.941)`, and the round cap as two arcs of radius 48 through `(757.941,370.059)` to `(690.059,370.059)`. Draw a line to the inner corner at the bend, `(448,612.118)`, then a line to `(333.941,498.059)`, and the first round cap as two arcs of radius 48 through `(266.059,498.059)` back to the start, then close the path. Fill it `#FFFFFF`.
 
-   Expected: render an SVG holding only the check's stroke path from `todz-icon.svg` and `todz-icon-check.svg` at 1024 with `rsvg-convert`, then `magick compare -metric AE -fuzz 10% stroke.png outline.png null:` reads `0`.
+   Expected: save the stroke alone as `.pr-media/stroke.svg`:
+
+   ```xml
+   <svg xmlns="http://www.w3.org/2000/svg" viewBox="80 80 864 864" width="1024" height="1024">
+     <path d="M300 532 L448 680 L724 404" fill="none" stroke="#FFFFFF" stroke-width="96" stroke-linecap="round" stroke-linejoin="round"/>
+   </svg>
+   ```
+
+   then `rsvg-convert -w 1024 -h 1024 .pr-media/stroke.svg -o .pr-media/stroke.png`, `rsvg-convert -w 1024 -h 1024 docs/brand/todz-icon-check.svg -o .pr-media/outline.png` and `magick compare -metric AE -fuzz 10% .pr-media/stroke.png .pr-media/outline.png null:` reads `0`. The stroke's path and width must match the check of `todz-icon.svg`; `brand-assets.test.ts` fails while they differ.
    If it fails: a non-zero count means an arc end or the inner corner is off; recompute the offsets from the half width. A hairline across the check in the icon means the check is still a stroked path.
 
 6. **Copy the layers into the document.** Copy `docs/brand/todz-icon-sparkle.svg` to `apps/macos/Todz/AppIcon.icon/Assets/sparkle.svg` and `docs/brand/todz-icon-check.svg` to `apps/macos/Todz/AppIcon.icon/Assets/check.svg`, byte for byte. `icon.json` keeps the gradient from `#4C6BFF` to `#1B2A9E` and one glass layer per group.
@@ -45,7 +53,7 @@ Render the app icon, its glass layers and the menu bar glyph again from the SVGs
 7. **Render the six looks.** From the repository root, once per rendition `Default`, `Dark`, `ClearLight`, `ClearDark`, `TintedLight` and `TintedDark`:
 
    ```bash
-   /Applications/Xcode.app/Contents/Applications/Icon\ Composer.app/Contents/Executables/ictool apps/macos/Todz/AppIcon.icon --export-image --output-file default.png --platform macOS --rendition Default --width 512 --height 512 --scale 1
+   /Applications/Xcode.app/Contents/Applications/Icon\ Composer.app/Contents/Executables/ictool apps/macos/Todz/AppIcon.icon --export-image --output-file .pr-media/icon-default.png --platform macOS --rendition Default --width 512 --height 512 --scale 1
    ```
 
    Add `--tint-color 0.6 --tint-strength 0.8` to the two tinted renditions.
