@@ -84,12 +84,12 @@ private func serverURL() throws -> URL {
     }
 
     @Test func theCursorLinkCarriesThePaddedBase64OfTheServerPercentEncoded() throws {
-        let link = try #require(AgentCommand.cursorLink(serverURL: try serverURL(), secret: secret))
+        let link = AgentCommand.cursorLink(serverURL: try serverURL(), secret: secret)
         #expect(link.absoluteString == secretLink)
     }
 
     @Test func theCursorLinkEncodesPlusSlashAndEqualsAndDecodesBackToTheServer() throws {
-        let link = try #require(AgentCommand.cursorLink(serverURL: try serverURL(), secret: base64PlusSlashSecret))
+        let link = AgentCommand.cursorLink(serverURL: try serverURL(), secret: base64PlusSlashSecret)
         #expect(link.absoluteString == plusSlashLink)
         let components = try #require(URLComponents(url: link, resolvingAgainstBaseURL: false))
         let encodedConfig = try #require(components.percentEncodedQueryItems?.first { $0.name == configParameter }?.value)

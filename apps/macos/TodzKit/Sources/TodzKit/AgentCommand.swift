@@ -4,6 +4,7 @@ private let serverName = "todz"
 private let keyVariable = "TODZ_API_KEY"
 private let serverPath = "mcp"
 private let cursorInstallAddress = "cursor://anysphere.cursor-deeplink/mcp/install?name=\(serverName)&config="
+private let linkFailure = "base64 percent-encodes into an install link always"
 private let unreservedCharacters = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
 
 private func codexConfiguration(server: String) -> String {
@@ -47,10 +48,11 @@ public enum AgentCommand: Equatable, Sendable {
         }
     }
 
-    public static func cursorLink(serverURL: URL, secret: String) -> URL? {
+    public static func cursorLink(serverURL: URL, secret: String) -> URL {
         let config = "{\"url\":\"\(serverURL.absoluteString)\",\"headers\":{\"Authorization\":\"Bearer \(secret)\"}}"
         let encodedConfig = Data(config.utf8).base64EncodedString().addingPercentEncoding(withAllowedCharacters: unreservedCharacters)
-        return encodedConfig.flatMap { URL(string: cursorInstallAddress + $0) }
+        guard let encodedConfig, let link = URL(string: cursorInstallAddress + encodedConfig) else { preconditionFailure(linkFailure) }
+        return link
     }
 
     public static func serverURL(apiBase: URL) -> URL {
