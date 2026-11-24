@@ -69,6 +69,7 @@ export function nextPromptText(task: Task | null): string {
 
 export function failureText(failure: ProjectFailure): string {
   if (failure.kind === ProjectFailureKind.TaskNotFound) return MCP_COPY.taskNotFound(formatShortId(failure.number));
+  if (failure.kind === ProjectFailureKind.CursorAhead) throw new Error('the MCP tools never read changes');
   const sentence = MCP_COPY.ruleIssue[failure.issue];
   if (failure.index === null) return sentence;
   return MCP_COPY.atTaskPosition({ position: failure.index + 1, sentence });

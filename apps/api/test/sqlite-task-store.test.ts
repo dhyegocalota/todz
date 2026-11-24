@@ -2,8 +2,9 @@ import { type HistoryEntry, OWNER_ACTOR, agentActor } from '@todz/core';
 import { ActorKind, HistoryAction, TaskField, TaskState } from '@todz/types';
 import { evictDurableObject, runInDurableObject } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
+import { PROJECT_SCHEMA_VERSION } from '../src/project-schema';
 import { SqliteTaskStore } from '../src/sqlite-task-store';
-import { AGENT_ACTOR, CLOCK_NOW, buildTask, calendarDate, newProjectStub } from './task-fixtures';
+import { AGENT_ACTOR, CLOCK_NOW, buildTask, calendarDate, draftOf, newProjectStub, unwrap } from './task-fixtures';
 
 type StoreContext = { store: SqliteTaskStore; sql: SqlStorage };
 
@@ -260,7 +261,78 @@ describe('SqliteTaskStore', () => {
       versions: state.storage.sql.exec<{ version: number }>('SELECT version FROM schema_version').toArray(),
       counters: state.storage.sql.exec('SELECT last_issued_number FROM task_counter').toArray().length,
     }));
-    expect(counts.versions).toEqual([{ version: 1 }]);
+    expect(counts.versions).toEqual([{ version: PROJECT_SCHEMA_VERSION }]);
     expect(counts.counters).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('SqliteTaskStore change numbers', () => {
+  const FIRST_TASK = buildTask({ number: 1, title: 'First', orderKey: 'a0' });
+  const SECOND_TASK = buildTask({ number: 2, title: 'Second', orderKey: 'a1' });
+  const PAGE_LIMIT = 10;
+
+  test('a project without writes has no change number and no changes', async () => {
+    const result = await inStore({
+      run: ({ store }) => ({ last: store.lastChangeNumber(), changes: store.listChangesSince({ cursor: 0, limit: PAGE_LIMIT }) }),
+    });
+    expect(result).toEqual({ last: null, changes: [] });
+  });
+
+  test('two inserts are stamped 1 and 2', async () => {
+    const changes = await inStore({
+      run: ({ store }) => {
+        store.insertTask(FIRST_TASK);
+        store.insertTask(SECOND_TASK);
+        return store.listChangesSince({ cursor: 0, limit: PAGE_LIMIT });
+      },
+    });
+    expect(changes).toEqual([
+      { task: FIRST_TASK, changeNumber: 1 },
+      { task: SECOND_TASK, changeNumber: 2 },
+    ]);
+  });
+
+  test('replacing the first task stamps 3, moves it last and raises the last change number to 3', async () => {
+    const renamed = { ...FIRST_TASK, title: 'Renamed' };
+    const result = await inStore({
+      run: ({ store }) => {
+        store.insertTask(FIRST_TASK);
+        store.insertTask(SECOND_TASK);
+        store.replaceTask(renamed);
+        return { last: store.lastChangeNumber(), changes: store.listChangesSince({ cursor: 0, limit: PAGE_LIMIT }) };
+      },
+    });
+    expect(result).toEqual({
+      last: 3,
+      changes: [
+        { task: SECOND_TASK, changeNumber: 2 },
+        { task: renamed, changeNumber: 3 },
+      ],
+    });
+  });
+
+  test('the cursor excludes what it has seen and the limit cuts the page', async () => {
+    const result = await inStore({
+      run: ({ store }) => {
+        [1, 2, 3].forEach((number) => store.insertTask(buildTask({ number, orderKey: `a${number}` })));
+        return {
+          afterOne: store.listChangesSince({ cursor: 1, limit: PAGE_LIMIT }).map(({ changeNumber }) => changeNumber),
+          firstTwo: store.listChangesSince({ cursor: 0, limit: 2 }).map(({ changeNumber }) => changeNumber),
+        };
+      },
+    });
+    expect(result).toEqual({ afterOne: [2, 3], firstTwo: [1, 2] });
+  });
+
+  test('a write the rules refuse and an idempotent replay leave the last change number unchanged', async () => {
+    const stub = newProjectStub();
+    const lastChangeNumber = () =>
+      runInDurableObject(stub, (_instance, state) => new SqliteTaskStore(state.storage.sql).lastChangeNumber());
+    unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [{ ...draftOf('Once'), idempotencyKey: 'run-1' }] }));
+    expect(await lastChangeNumber()).toBe(1);
+    await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('  ')] });
+    expect(await lastChangeNumber()).toBe(1);
+    unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [{ ...draftOf('Once'), idempotencyKey: 'run-1' }] }));
+    expect(await lastChangeNumber()).toBe(1);
   });
 });

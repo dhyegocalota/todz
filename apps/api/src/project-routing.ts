@@ -1,5 +1,6 @@
 import { digestCredential } from './credential-digest';
 import { findKeyProject, findOwnedProject, findSessionOwner } from './directory';
+import { findOwnedWorkspace } from './directory-workspaces';
 import type { Env } from './env';
 import type { ProjectStore } from './project-store';
 
@@ -34,6 +35,32 @@ export async function resolveSessionOwner({ env, secret, now }: { env: Env; secr
   return owner;
 }
 
+export async function findOwnedProjectId({
+  env,
+  owner,
+  projectId,
+}: {
+  env: Env;
+  owner: SessionOwner;
+  projectId: string;
+}): Promise<string | null> {
+  if (!resolvedOwners.has(owner)) return null;
+  return findOwnedProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId });
+}
+
+export async function findOwnedWorkspaceId({
+  env,
+  owner,
+  workspaceId,
+}: {
+  env: Env;
+  owner: SessionOwner;
+  workspaceId: string;
+}): Promise<string | null> {
+  if (!resolvedOwners.has(owner)) return null;
+  return findOwnedWorkspace({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId });
+}
+
 export async function openOwnedProject({
   env,
   owner,
@@ -43,8 +70,7 @@ export async function openOwnedProject({
   owner: SessionOwner;
   projectId: string;
 }): Promise<DurableObjectStub<ProjectStore> | null> {
-  if (!resolvedOwners.has(owner)) return null;
-  const ownedProjectId = await findOwnedProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId });
+  const ownedProjectId = await findOwnedProjectId({ env, owner, projectId });
   if (ownedProjectId === null) return null;
   return openProject({ env, projectId: ownedProjectId });
 }

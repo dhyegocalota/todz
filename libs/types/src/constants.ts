@@ -1,5 +1,6 @@
 export const ABSENT_INDEX = -1;
 export const LAST_INDEX = -1;
+export const FORMATTER_LOCALE = 'en-US';
 export const MILLISECONDS_PER_SECOND = 1_000;
 export const SECONDS_PER_MINUTE = 60;
 export const MINUTES_PER_HOUR = 60;

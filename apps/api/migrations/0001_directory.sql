@@ -15,11 +15,14 @@ CREATE TABLE projects (
   id TEXT PRIMARY KEY,
   workspace_id TEXT NOT NULL REFERENCES workspaces (id),
   name TEXT NOT NULL,
+  is_inbox INTEGER NOT NULL CHECK (is_inbox IN (0, 1)),
   created_at INTEGER NOT NULL
 ) STRICT;
 
 CREATE TABLE project_keys (
   digest TEXT PRIMARY KEY CHECK (length(digest) = 64),
+  id TEXT NOT NULL UNIQUE,
+  hint TEXT NOT NULL CHECK (length(hint) = 4),
   project_id TEXT NOT NULL REFERENCES projects (id),
   created_at INTEGER NOT NULL,
   revoked_at INTEGER

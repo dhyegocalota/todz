@@ -2,6 +2,7 @@
 - Date: 2026-11-23
 - Inspired by: `project-store` spike and step 3 (`apps/api/test/project-store.test.ts`), [ADR 0015](../adr/0015-the-project-store-answers-with-results-not-thrown-errors.md)
 - Revisited: 2026-11-23 — still true with `@cloudflare/vitest-plugin` 1.9.0 and Vitest 5.0.5
+- Revisited: 2026-11-23 — still true in `owner-api`: the red stubs of `readChanges`, `readHistory` and `fetch` returned wrong results instead of throwing
 
 ## Signal
 A test awaits a Durable Object stub method that throws, catches the rejection and asserts on it, and passes; yet the run ends red with an unhandled error, and the output prints `uncaught exception; source = Uncaught (in promise)` with the stack of the throw inside the object. The caught error has lost its class and its own fields.

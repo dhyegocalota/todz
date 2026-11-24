@@ -9,7 +9,9 @@ import {
 import { agentActor } from '@todz/core';
 import { ActorKind, RuleIssue } from '@todz/types';
 import { z } from 'zod';
+import { bearerSecret, unauthorized } from './bearer-secret';
 import type { Env } from './env';
+import { HttpStatus } from './http-status';
 import { MCP_COPY } from './mcp-copy';
 import { type McpServerScope, buildMcpServer, envelopeClientName } from './mcp-server';
 import { findSessionClientName, openMcpSession } from './mcp-sessions';
@@ -18,15 +20,8 @@ import { parsedJson } from './parsed-json';
 import { resultOf } from './project-result';
 import { type KeyProject, openKeyProject } from './project-routing';
 
-const BAD_REQUEST_STATUS = 400;
-const UNAUTHORIZED_STATUS = 401;
-const NOT_FOUND_STATUS = 404;
-const METHOD_NOT_ALLOWED_STATUS = 405;
 const SESSION_REQUIRED_CODE = -32000;
 const SESSION_NOT_FOUND_CODE = -32001;
-const BEARER_PATTERN = /^Bearer (.+)$/i;
-const BEARER_SECRET_GROUP = 1;
-const BEARER_CHALLENGE = 'Bearer';
 const SESSION_HEADER = 'Mcp-Session-Id';
 const MCP_METHOD = 'POST';
 const INITIALIZE_METHOD = 'initialize';
@@ -53,20 +48,8 @@ type RequestId = z.infer<typeof InitializeMessageSchema>['id'];
 
 type LegacyRequest = { request: Request; env: Env; keyProject: KeyProject; today: string; now: number };
 
-function bearerSecret(request: Request): string | null {
-  const authorization = request.headers.get('Authorization');
-  if (authorization === null) return null;
-  const secret = BEARER_PATTERN.exec(authorization)?.[BEARER_SECRET_GROUP];
-  if (secret === undefined) return null;
-  return secret;
-}
-
-function unauthorized(): Response {
-  return new Response(null, { status: UNAUTHORIZED_STATUS, headers: { 'WWW-Authenticate': BEARER_CHALLENGE } });
-}
-
 function methodNotAllowed(): Response {
-  return new Response(null, { status: METHOD_NOT_ALLOWED_STATUS, headers: { Allow: MCP_METHOD } });
+  return new Response(null, { status: HttpStatus.MethodNotAllowed, headers: { Allow: MCP_METHOD } });
 }
 
 function jsonRpcError({ status, id, code, message }: { status: number; id: RequestId | null; code: number; message: string }): Response {
@@ -105,7 +88,12 @@ async function initializeSession({
   const { request, env, keyProject, now } = legacyRequest;
   const clientName = validClientName(params);
   if (clientName === null) {
-    return jsonRpcError({ status: BAD_REQUEST_STATUS, id, code: INVALID_PARAMS, message: MCP_COPY.ruleIssue[RuleIssue.ClientNameInvalid] });
+    return jsonRpcError({
+      status: HttpStatus.BadRequest,
+      id,
+      code: INVALID_PARAMS,
+      message: MCP_COPY.ruleIssue[RuleIssue.ClientNameInvalid],
+    });
   }
   const response = await serveScope({ request, scope: legacyScope({ legacyRequest, clientName }), era: ProtocolEra.Legacy });
   const isAcceptedInitialize = isInitializeRequest(body) && response.ok;
@@ -126,11 +114,11 @@ async function serveLegacy(legacyRequest: LegacyRequest): Promise<Response> {
   const sessionId = request.headers.get(SESSION_HEADER);
   const isMissingSession = sessionId === null || sessionId.trim() === '';
   if (isMissingSession) {
-    return jsonRpcError({ status: BAD_REQUEST_STATUS, id: null, code: SESSION_REQUIRED_CODE, message: MCP_COPY.sessionRequired });
+    return jsonRpcError({ status: HttpStatus.BadRequest, id: null, code: SESSION_REQUIRED_CODE, message: MCP_COPY.sessionRequired });
   }
   const clientName = await findSessionClientName({ directory: env.DIRECTORY, sessionId, keyDigest: keyProject.keyDigest, now });
   if (clientName === null) {
-    return jsonRpcError({ status: NOT_FOUND_STATUS, id: null, code: SESSION_NOT_FOUND_CODE, message: MCP_COPY.sessionNotFound });
+    return jsonRpcError({ status: HttpStatus.NotFound, id: null, code: SESSION_NOT_FOUND_CODE, message: MCP_COPY.sessionNotFound });
   }
   return serveScope({ request, scope: legacyScope({ legacyRequest, clientName }), era: ProtocolEra.Legacy });
 }
