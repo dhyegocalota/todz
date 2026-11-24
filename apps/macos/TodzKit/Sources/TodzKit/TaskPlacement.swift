@@ -1,3 +1,5 @@
+private let unplacedKindDescription = "A task placement is first or after an anchor."
+
 public enum TaskPlacement: Codable, Sendable, Equatable {
     case first
     case after(anchor: Int)
@@ -8,7 +10,15 @@ public enum TaskPlacement: Codable, Sendable, Equatable {
     }
 
     public init(from decoder: any Decoder) throws {
-        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "TaskPlacement is not implemented"))
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(PlacementKind.self, forKey: .kind) {
+        case .first:
+            self = .first
+        case .after:
+            self = .after(anchor: try container.decode(Int.self, forKey: .anchor))
+        case .last, .before:
+            throw DecodingError.dataCorruptedError(forKey: .kind, in: container, debugDescription: unplacedKindDescription)
+        }
     }
 
     public func encode(to encoder: any Encoder) throws {
