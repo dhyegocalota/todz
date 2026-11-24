@@ -17,26 +17,23 @@ struct NextUpTask: View {
                     .fontWeight(.semibold)
                     .lineLimit(titleLineLimit)
                     .truncationMode(.tail)
-                if hasCaption {
-                    HStack {
-                        if let dueLine {
-                            Text(dueLine)
-                                .foregroundStyle(task.isOverdue ? Color.red : Color.secondary)
-                        }
-                        if let creatorLabel = task.creatorLabel {
-                            Text(TaskRowCopy.via(client: creatorLabel))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .font(.subheadline)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                if let dueLine {
+                    Text(dueLine)
+                        .font(.subheadline)
+                        .foregroundStyle(task.isOverdue ? Color.red : Color.secondary)
                 }
                 if task.isProjectTagShown {
                     Text(task.projectName)
+                        .background(.fill.quaternary)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .background(.fill.quaternary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                if let creatorLabel = task.creatorLabel {
+                    Text(TaskRowCopy.via(client: creatorLabel))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
@@ -54,10 +51,6 @@ struct NextUpTask: View {
         case .none:
             PendingMarker()
         }
-    }
-
-    private var hasCaption: Bool {
-        dueLine != nil || task.creatorLabel != nil
     }
 
     private var dueLine: String? {
