@@ -54,9 +54,8 @@ struct TaskRows: View {
 
     private func move(section: TaskSection, source: IndexSet, offset: Int) {
         guard let index = source.first else { return }
+        guard let placement = CompletionLingers.placement(moving: index, toOffset: offset, in: section.tasks) else { return }
         let moving = section.tasks[index]
-        let numbers = section.tasks.map(\.task.number)
-        guard let placement = TaskPlacementRequest.placement(openNumbers: numbers, moving: moving.task.number, toOffset: offset) else { return }
         Task { await model.move(task: moving.key, placement: placement) }
     }
 }

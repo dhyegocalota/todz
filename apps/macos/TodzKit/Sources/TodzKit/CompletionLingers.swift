@@ -59,7 +59,12 @@ public struct CompletionLingers: Sendable, Equatable {
     }
 
     public static func placement(moving index: Int, toOffset offset: Int, in shownTasks: [BoardTask]) -> TaskPlacement? {
-        fatalError("CompletionLingers.placement is not implemented")
+        guard shownTasks.indices.contains(index) else { return nil }
+        let moving = shownTasks[index]
+        guard moving.task.state == .open else { return nil }
+        let openNumbers = shownTasks.filter { $0.task.state == .open }.map(\.task.number)
+        let openOffset = shownTasks.prefix(offset).filter { $0.task.state == .open }.count
+        return TaskPlacementRequest.placement(openNumbers: openNumbers, moving: moving.task.number, toOffset: openOffset)
     }
 
     private func lingeringTasks(item: SidebarItem, views: TaskViews) -> [LingeringTask] {
