@@ -57,9 +57,9 @@ export async function insertMcpSession({
       .bind(digest, keyDigest, clientName, now, expiresAt),
     directory
       .prepare(
-        'DELETE FROM mcp_sessions WHERE key_digest = ? AND digest NOT IN (SELECT digest FROM mcp_sessions WHERE key_digest = ? ORDER BY created_at DESC, rowid DESC LIMIT ?)',
+        'DELETE FROM mcp_sessions WHERE key_digest = ? AND digest <> ? AND digest NOT IN (SELECT digest FROM mcp_sessions WHERE key_digest = ? AND digest <> ? ORDER BY created_at DESC, rowid DESC LIMIT ?)',
       )
-      .bind(keyDigest, keyDigest, sessionsPerKeyMax),
+      .bind(keyDigest, digest, keyDigest, digest, sessionsPerKeyMax - 1),
   ]);
 }
 
