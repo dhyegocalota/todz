@@ -4,6 +4,8 @@ private let snapshotFileName = "widget-snapshot.json"
 private let requestsFolderName = "requests"
 private let requestFileExtension = "json"
 private let requestsPerPass = 50
+private let snapshotMaxByteCount = 1_048_576
+private let requestMaxByteCount = 4_096
 private let readFlags = O_RDONLY | O_NOFOLLOW | O_NONBLOCK
 
 private typealias DatedFile = (modifiedAt: Date, file: URL)
@@ -34,7 +36,7 @@ public struct FileWidgetStore: WidgetStore {
     }
 
     public func readSnapshot() throws -> WidgetSnapshot? {
-        try read(WidgetSnapshot.self, from: snapshotFile)
+        try read(WidgetSnapshot.self, from: snapshotFile, maxByteCount: snapshotMaxByteCount)
     }
 
     public func writeSnapshot(_ snapshot: WidgetSnapshot) throws {
@@ -88,7 +90,7 @@ public struct FileWidgetStore: WidgetStore {
 
     private func storedRequest(in file: URL) -> StoredWidgetRequest? {
         do {
-            guard let request = try read(WidgetRequest.self, from: file) else { return nil }
+            guard let request = try read(WidgetRequest.self, from: file, maxByteCount: requestMaxByteCount) else { return nil }
             return StoredWidgetRequest(name: file.lastPathComponent, request: request)
         } catch {
             try? remove(file)
@@ -96,7 +98,7 @@ public struct FileWidgetStore: WidgetStore {
         }
     }
 
-    private func readData(from file: URL) throws -> Data? {
+    private func readData(from file: URL, maxByteCount: Int) throws -> Data? {
         let descriptor = open(file.path(percentEncoded: false), readFlags)
         guard descriptor >= 0 else {
             let isMissing = errno == ENOENT
@@ -106,17 +108,18 @@ public struct FileWidgetStore: WidgetStore {
         let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
         var status = stat()
         let isRegularFile = fstat(descriptor, &status) == 0 && status.st_mode & S_IFMT == S_IFREG
-        guard isRegularFile else { throw WidgetStoreError.unreadable }
+        let isWithinCap = status.st_size <= maxByteCount
+        guard isRegularFile, isWithinCap else { throw WidgetStoreError.unreadable }
         do {
-            guard let data = try handle.readToEnd() else { throw WidgetStoreError.unreadable }
+            guard let data = try handle.read(upToCount: maxByteCount + 1), data.count <= maxByteCount else { throw WidgetStoreError.unreadable }
             return data
         } catch {
             throw WidgetStoreError.unreadable
         }
     }
 
-    private func read<Value: Decodable>(_ type: Value.Type, from file: URL) throws -> Value? {
-        guard let data = try readData(from: file) else { return nil }
+    private func read<Value: Decodable>(_ type: Value.Type, from file: URL, maxByteCount: Int) throws -> Value? {
+        guard let data = try readData(from: file, maxByteCount: maxByteCount) else { return nil }
         do {
             return try OwnerCoding.decoder().decode(type, from: data)
         } catch {

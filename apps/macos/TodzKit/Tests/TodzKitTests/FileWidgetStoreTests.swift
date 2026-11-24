@@ -11,6 +11,7 @@ private let requestsPerPass = 50
 private let manyRequestCount = 60
 private let snapshotMaxByteCount = 1_048_576
 private let requestMaxByteCount = 4_096
+private let sparseByteCount: UInt64 = 100 * 1_024 * 1_024 * 1_024
 private let padding = UInt8(ascii: " ")
 private let today = CalendarDate(year: 2026, month: 11, day: 24)
 private let namesThatAreNotRequests = ["../\(snapshotFileName)", snapshotFileName, "", "a/b.json"]
@@ -127,6 +128,16 @@ private let snapshot = WidgetSnapshot(
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let encoded = try OwnerCoding.encoder().encode(snapshot)
         try padded(encoded, beyond: snapshotMaxByteCount).write(to: folder.appending(path: snapshotFileName))
+        #expect(throws: WidgetStoreError.unreadable) { try store.readSnapshot() }
+    }
+
+    @Test func refusesASparseHundredGigabyteSnapshotWithoutReadingIt() throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let file = folder.appending(path: snapshotFileName)
+        try Data().write(to: file)
+        let handle = try FileHandle(forWritingTo: file)
+        try handle.truncate(atOffset: sparseByteCount)
+        try handle.close()
         #expect(throws: WidgetStoreError.unreadable) { try store.readSnapshot() }
     }
 
