@@ -4,6 +4,7 @@ import {
   type CalendarDate,
   type Clock,
   type CompletedTask,
+  type HistoryEntry,
   OWNER_ACTOR,
   type ReopenedTask,
   type Task,
@@ -24,8 +25,12 @@ import { ActorKind } from '@todz/types';
 import { DurableObject } from 'cloudflare:workers';
 import type { Env } from './env';
 import { applyProjectSchema } from './project-schema';
-import { type ProjectResult, resultOf } from './project-result';
+import { ProjectFailureKind, type ProjectResult, resultOf } from './project-result';
 import { SqliteTaskStore } from './sqlite-task-store';
+
+export const CHANGE_PAGE_SIZE = 100;
+
+export type TaskChanges = { tasks: Task[]; cursor: number; hasMore: boolean };
 
 const SYSTEM_CLOCK: Clock = { now: () => Date.now() };
 
@@ -72,6 +77,14 @@ export class ProjectStore extends DurableObject<Env> {
 
   nextTask({ today }: { today: string }): ProjectResult<Task | null> {
     return this.run(() => nextTask({ store: this.store, today: trustedToday(today) }));
+  }
+
+  readChanges({ cursor }: { cursor: number }): ProjectResult<TaskChanges> {
+    return { ok: false, failure: { kind: ProjectFailureKind.TaskNotFound, number: cursor } };
+  }
+
+  readHistory({ number }: { number: number }): ProjectResult<HistoryEntry[]> {
+    return { ok: false, failure: { kind: ProjectFailureKind.TaskNotFound, number } };
   }
 
   private run<Value>(useCase: () => Value): ProjectResult<Value> {
