@@ -227,3 +227,52 @@ W4 did not reproduce for the developer: four adds at 1100 × 700 (Inbox with 29 
 - An offline sign-out erases the local file and leaves the server session alive until it expires (ADR 0025).
 - R9 is strict: one task whose creator is an agent without a client name makes its whole project fail to pull (`someProjectsFailed`), where it used to show without "via". The owner API contract says an agent always has one.
 - The "agent with no client name is left out" line of § Known gaps above no longer holds.
+
+## Fix round 2
+
+Written by `developer-fix` after code review round 2 (R, all minor) and the crash found in tester pass 2. Unit suite: 172 tests in 13 suites (`swift test --package-path apps/macos/TodzKit`), five repeated runs of `AppModelTests` green. The app builds with no warning from its sources.
+
+### What changed
+
+| Finding | Change | Red | Green |
+|---|---|---|---|
+| R1 | pin: the five first pages of a pull are held, then answered 401; the call log must not grow after those answers, nor after a refresh and a completion once signed out (the old count taken at the erase could not see a request sent between the first 401 and the end of the pull) | pin | `288f8ac` |
+| R7 | pin: an add refused with `titleTooLong` at index 0 raises the rule issue on the add field, adds no row, selects nothing, raises no banner and keeps the draft in `unconfirmedDrafts`, so the add field puts its text back | pin | `1141792` |
+| R3 | an add whose target is in flight returns before it touches `unconfirmedDrafts`; a network banner remembers the write it retries (`retryTarget`), and Try Again keeps the banner, its Try Again and sends nothing while that write is in flight, and dismisses the banner only when the retry goes out | `e70191b` | `eae2cf7` |
+| R4 | a created or renamed project always lands in the workspace it was sent from (`WriteTarget.keepsItsAnswerAcrossASwitch`); the selection and the new project's load follow only while that workspace is still shown; a failure answered after a switch is still dropped | `e70191b` | `eae2cf7` |
+| R8 | a write answered `notFound` or `taskNotFound` dismisses the banner, reloads the workspaces, then raises the gone banner, unless the reload raised its own banner (a load or pull failure, with its Try Again) or ended the session | `e70191b` | `eae2cf7` |
+| R2 | a pull that cannot reach the server loads its project as `ProjectLoad.unreachable`; `AppModel.loadFailure(of:)` answers `.network` when no project of the workspace loaded and every one was unreachable, `.someProjectsFailed` when any failed otherwise, and `nil` once one loaded or while one has not answered; the task list's nothing-loaded state shows that banner's copy with Try Again | `37a6c1f` | `6326079` |
+| R5 | the session draft gets its backup exclusion before the atomic rename; a failure to set it throws `SessionVaultError.unwritable` and leaves the previous file in place | no red: see Gaps | `8f5ff27` |
+| Crash (tester pass 2) | hiding the inspector, narrowing the window, then showing the inspector stopped the app with EXC_BREAKPOINT in `_postWindowNeedsUpdateConstraints`. The window minimum no longer reads geometry: the split view keeps its own minimum and a clear `ZStack` sibling adds a floor of the list's 320, plus the inspector's ideal 320 while it is shown. Measured with Orca and System Events, each inspector toggle three times, window resized to 200 × 200 after each, app alive throughout: both hidden 320 × 480; inspector only 640 × 480; sidebar only 528 × 480; every column 848 × 480 (the sidebar and inspector keep their ideal widths and the floating sidebar is counted twice), against the design's 760 | view only, no unit test | `44e110b` |
+
+### Red today, green after (fix round 2)
+
+| Test | Red text the run printed | Green |
+|---|---|---|
+| `anAddWhileAnotherIsInFlightKeepsTheFirstDraft` (`e70191b`) | `AppModelTests+Races.swift:123:9: Expectation failed: harness.model.unconfirmedDrafts == [addToInbox: first]` | `eae2cf7` |
+| `tryAgainWhileAnotherAddIsInFlightKeepsTheBannerUntilItsAddIsSent` (`e70191b`) | `:144:9: … harness.model.banner == .network`; `:145:9: … harness.model.canTryAgain`; `:146:9: … harness.model.unconfirmedDrafts == [addToInbox: second]`; `:151:9: … harness.service.calls == adds`; `:152:9: … harness.model.taskViews?.inbox.map(\.task.title).sorted() == ["First", "Second"]` | `eae2cf7` |
+| `aProjectCreatedAfterASwitchIsThereOnTheWayBack` (`e70191b`) | `AppModelTests+Races.swift:168:27: Expectation failed: await creating.value` (the `#require` on the created project) | `eae2cf7` |
+| `aProjectRenamedAfterASwitchIsRenamedOnTheWayBack` (`e70191b`) | `:189:9: … harness.model.activeWorkspace?.projects.map(\.name) == ["Inbox", "Ship"]` | `eae2cf7`; its `await renaming.value` became `#expect(await renaming.value?.name == "Ship")` there, to drop an unused-value warning |
+| `aWorkspaceGoneOnAWriteReloadsTheWorkspacesAndSaysSo` (`e70191b`) | `AppModelTests+Failures.swift:33:9: Expectation failed: harness.model.banner == .workspaceGone` | `eae2cf7` |
+| `aPullWhereOneOfThreeProjectsFailsShowsTheOtherTwoAndTriesAgainOnlyThatOne`, `aFirstPullWithTheServerUnreachableRaisesTheNetworkBanner`, `aWorkspaceWithOneProjectLoadedHasNoLoadFailure` (`37a6c1f`) | `AppModelTests+Failures.swift:86:9: … projectLoads == [inboxIdentifier: .loaded, "acme-alpha": .loaded, "acme-beta": .unreachable]` (was `.failed`); `AppModelTests+Offline.swift:53:9: … projectLoads == ["side-inbox": .unreachable, "side-garden": .unreachable]` (were `.failed`); `:84:9: … projectLoads == ["acme-inbox": .loaded, orderIdentifier: .unreachable]` | `6326079` |
+| `aWorkspaceNoneOfWhoseProjectsReachedTheServerFailsForTheNetwork`, `aWorkspaceWhereOneProjectFailedAndTheOthersWereUnreachableFailsForItsProjects`, `aWorkspaceWithOneProjectLoadedHasNoLoadFailure` (`37a6c1f`) | `TodzKit/AppModel+Workspaces.swift:26: Fatal error: AppModel.loadFailure is not implemented` (run apart from the rest, which the crash would hide) | `6326079` |
+
+### Hypotheses to attack (fix round 2)
+
+1. Hypothesis: switching to a second workspace with the server stopped shows `ErrorCopy.networkTitle` ("Can't reach todz") with its body and Try Again in the list, and no add field; after a restart Try Again loads the workspace and the message goes. Break it by: a workspace whose Inbox is unreachable and whose other project answers 500 (expect "Some projects didn't load."), a workspace whose Inbox loads and whose other project is unreachable (expect rows and the network banner), stopping the server during the first load of a workspace with several projects.
+2. Hypothesis: an add that failed for the network keeps its banner and Try Again while another add to the same project is in flight; once that add lands, Try Again sends the first add with its first idempotency key and both rows appear once. Break it by: pressing Try Again repeatedly during the second add, pressing Return twice quickly with two different titles (only the first is sent; the field keeps the first text if it fails).
+3. Hypothesis: creating a project, or renaming one, then switching workspace before the server answers leaves the shown workspace's selection, sidebar and list untouched; switching back shows the new project (its count loads) or the new name. Break it by: a slow server (`wrangler dev` behind a delaying proxy), a create that fails after the switch (expect no banner in the other workspace and no project on the way back).
+4. Hypothesis: a project create in a workspace deleted elsewhere (through the MCP server or the API) reloads the workspaces, opens the first remaining one and shows `ErrorCopy.workspaceGone` ("This workspace is no longer available."); a task write on a deleted project shows `ErrorCopy.projectGone` with the workspace reloaded. Break it by: deleting the workspace and stopping the server before the write (expect the network banner of the reload, with Try Again, instead of the gone banner).
+5. Hypothesis: after sign-in the session file carries the backup exclusion from its first byte (`xattr -l` on the file shows `com.apple.metadata:com_apple_backup_excludeItem`), and signing in again keeps it.
+6. Hypothesis: hiding the inspector, narrowing the window as far as it goes, then showing the inspector never crashes, at every column state (sidebar shown or collapsed, inspector shown or hidden, each toggled at the minimum width). Break it by: repeating the sequence with ⌥⌘I and ⌃⌘S, toggling during a live resize, toggling with a sheet open.
+7. Hypothesis: the window floors are 320 × 480 with both side columns hidden, 640 × 480 with the inspector only, 528 × 480 with the sidebar only and 848 × 480 with every column, and nothing is clipped at any of them. Break it by: dragging the sidebar to 300 then shrinking the window; dragging the inspector to 420 with the sidebar hidden then shrinking (the list may fall under 320 there, see Gaps).
+
+### Gaps (fix round 2)
+
+- R1's pin answers every held page 401. A sibling project whose page answers successfully after the first 401 can still ask for its next page before the task group cancels it; the fake has no point at which the test could know the model has seen the 401, so that ordering is not proven.
+- R5's mapping of a failed exclusion to `.unwritable` has no test: no failure of `setResourceValues` on a fresh draft can be provoked without a seam in the vault. `keepsTheSessionFileOutOfBackups` stays green and now proves the exclusion survives the rename.
+- R3: Try Again checks that the write it retries is not in flight before dismissing, then sends it in the same turn; it does not learn from the send itself. While the other add is in flight the Try Again button stays and does nothing visible.
+- R8: the gone banner gives way to any banner the reload raises (a failed workspace list, or a failed pull of the workspace it opens), so the owner sees that failure and its Try Again instead of why the write did not land.
+- The crash fix's numbers supersede the W3 lines of fix round 1 (822 × 480 with every column at default widths, 778 × 480 with the sidebar at its minimum): every column now floors at 848 × 480, above the design's 760, because the sidebar and inspector keep their ideal widths and the floating sidebar is counted twice.
+- The inspector's floor counts its ideal 320; dragged wider (up to 420) with the sidebar hidden, a shrinking window may squeeze the list under 320. Not measured.
+- The window floors are measured on macOS 26 only, by the lead, not by this developer.
