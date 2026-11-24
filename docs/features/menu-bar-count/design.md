@@ -16,7 +16,7 @@ Layout: the template symbol `checkmark.square`, then the count as text, in one `
 |---|---|---|
 | Toggle off, any phase | icon only, the width of today's item | `MainWindowCopy.windowTitle` |
 | `signedOut`, `loading` (no cache), `naming` | icon only | `MainWindowCopy.windowTitle` |
-| `ready`, the active workspace still loading, or a project of it failed to load | icon only (option O4) | `MainWindowCopy.windowTitle` |
+| `ready`, the first load not finished, or no project of the workspace loaded | icon only (option O4, B) | `MainWindowCopy.windowTitle` |
 | `ready`, offline with a cache | the cached count, as the popover's heading | as below |
 | `ready`, 0 open today | icon only (ADR 0036) | `MainWindowCopy.windowTitle` |
 | `ready`, 1 | icon, `1` | `AccessibilityCopy.menuBarCount(count: 1)` "todz, 1 left today" |
@@ -25,7 +25,7 @@ Layout: the template symbol `checkmark.square`, then the count as text, in one `
 | `ready`, 100 or more | icon, `99+` | the real number: "todz, 134 left today" (option O6) |
 | Popover open | the same content on the menu bar's highlight; the template image and the text tint together | unchanged |
 
-The count is `model.openCount(of: .today)` passed through `MenuBarBadge`: the same open set as the popover's "N left", overdue included, pending adds counted once confirmed (menu-bar § 1.3). It moves with every optimistic write, every pull and the day change, with the popover closed.
+The count is `model.todayHeadingCount`, the number the popover's heading reads, passed through `MenuBarBadge`: the same open set as the popover's "N left", overdue included, pending adds counted once confirmed (menu-bar § 1.3). It moves with every optimistic write, every pull and the day change, with the popover closed.
 
 **Light and dark menu bars.** The menu bar picks a light or dark appearance from the wallpaper and the system appearance; a template image and an untinted `Text` both take the bar's label colour, so the item reads black on a light bar and white on a dark one, like the clock beside it. The accent never appears in the status item (option O2).
 
@@ -130,6 +130,7 @@ Captures to take from the built app into `.pr-media/menu-bar-count/design/`, eac
 - A. Icon only until every project is loaded: `openCount(of: .today)`, the sidebar's Today badge. The popover shows no heading count then either, so the two never disagree, and the number never climbs project by project.
 - B. `taskViews.today.open.count` as soon as `taskViews` exists. Shows a number sooner, but a partial, growing one.
 - **Recommendation: A. Loop's call: A.**
+- ~~A~~ overturned in plan review: `openCount(of: .today)` is nil when one project failed while the popover heading still shows "N left" from `taskViews.today.open.count`, so the two disagreed. Decision: B, through the heading's own state: `AppModel.todayHeadingCount` (TodzKit) is the one number both the heading and the status item read; it is none on a first load, when no project loaded, and without a workspace.
 
 **O5. Settings window shape**
 - A. One pane, no tab bar. Honest for one control; a toolbar of tabs arrives with the second pane.
