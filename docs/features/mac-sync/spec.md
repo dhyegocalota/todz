@@ -1,6 +1,6 @@
 # Mac sync
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-24, by inheritance from [the v1 product design](../../product/README.md) (Order of delivery, item 6; macOS app → Sync; Calls made without the owner: last write wins per field), approved by the owner on 2026-11-23; the calls below that the product design does not make are ADRs or design decisions marked as the loop's calls and listed in the loop's questions for the owner
 **ADRs:** [0022](../../adr/0022-the-owner-api-is-json-routes-and-the-app-builds-the-cross-project-views.md), [0023](../../adr/0023-each-project-numbers-its-changes-and-its-socket-only-says-changed.md), [0025](../../adr/0025-the-session-secret-lives-in-a-private-file-until-the-app-has-a-team.md), [0027](../../adr/0027-the-app-caches-each-owner-s-data-as-json-files-in-its-own-container-until-it-has-a-team.md), [0028](../../adr/0028-the-app-s-task-writes-are-optimistic-and-go-through-a-persisted-outbox.md), [0029](../../adr/0029-the-app-pulls-each-project-from-its-cursor-when-its-socket-says-changed.md)
