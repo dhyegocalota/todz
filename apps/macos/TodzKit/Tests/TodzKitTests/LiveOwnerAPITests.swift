@@ -131,6 +131,15 @@ struct LiveOwnerAPITests {
         }
     }
 
+    @Test(.timeLimit(.minutes(1))) func aWatchOnAProjectTheOwnerDoesNotHaveFinishesNotFound() async throws {
+        let api = try liveAPI()
+        let (session, _) = try await signedInInbox(api: api)
+        let events = try liveSignals().watch(session: session, projectIdentifier: UUID().uuidString.lowercased())
+        await #expect(throws: OwnerAPIError.notFound) {
+            for try await _ in events {}
+        }
+    }
+
     @Test(.timeLimit(.minutes(1))) func aCancelledWatchEndsWithoutAnotherEvent() async throws {
         let api = try liveAPI()
         let (session, inbox) = try await signedInInbox(api: api)
