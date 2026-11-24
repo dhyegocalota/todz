@@ -27,6 +27,7 @@ extension AppModel {
         guard widgetIntake == nil else { return }
         widgetIntake = Task { [weak self] in
             await self?.takeWidgetRequests()
+            self?.republishRedrawnWidgets()
             self?.widgetIntake = nil
         }
     }
@@ -50,6 +51,23 @@ extension AppModel {
         }
         guard case let .ready(snapshot) = widgetSnapshot else { return }
         writeWidgetSnapshot(snapshot)
+    }
+
+    private func republishRedrawnWidgets() {
+        guard isWidgetSnapshotRedrawn else { return }
+        publishedWidgetSnapshot = nil
+        publishWidgets()
+    }
+
+    private var isWidgetSnapshotRedrawn: Bool {
+        let stored: WidgetSnapshot?
+        do {
+            stored = try widgetStore.readSnapshot()
+        } catch {
+            return true
+        }
+        guard let stored else { return publishedWidgetSnapshot != .absent }
+        return publishedWidgetSnapshot != .ready(stored)
     }
 
     // NB ADR 0032: a widget's request reaches the outbox only for a task in the current Today that is not already in that state.
