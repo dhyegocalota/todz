@@ -9,7 +9,7 @@ struct TaskRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            TaskCheckbox(task: task)
+            TaskCheckbox(task: task, item: item)
             VStack(alignment: .leading) {
                 TaskRowTitle(title: task.task.title, isDone: task.isDone)
                 if !details.isEmpty {
@@ -26,7 +26,7 @@ struct TaskRow: View {
         .accessibilityValue(details.spokenValue(state: spokenState, today: model.today, timeZone: model.timeZone))
         .accessibilityActions {
             Button(task.isDone ? MainWindowCopy.markNotDone : MainWindowCopy.markDone) {
-                windowState.toggleDone(task: task.key, model: model)
+                windowState.toggleDone(task: task.key, item: item, model: model)
             }
             if item.hasManualOrder {
                 Button(MainWindowCopy.moveUp) {

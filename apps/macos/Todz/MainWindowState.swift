@@ -35,17 +35,17 @@ private let completionLinger: Duration = .seconds(1)
         focusRequest = .inspectorTitle
     }
 
-    func toggleDone(task key: TaskKey, model: AppModel) {
+    func toggleDone(task key: TaskKey, item: SidebarItem, model: AppModel) {
         lingerTimers[key]?.cancel()
-        lingers = toggledLingers(task: key, model: model)
+        lingers = toggledLingers(task: key, item: item, model: model)
         Task { await model.toggleDone(task: key) }
         guard lingers.contains(task: key) else { return }
         lingerTimers[key] = Task { await endLinger(task: key) }
     }
 
-    private func toggledLingers(task key: TaskKey, model: AppModel) -> CompletionLingers {
+    private func toggledLingers(task key: TaskKey, item: SidebarItem, model: AppModel) -> CompletionLingers {
         guard let taskViews = model.taskViews else { return lingers.ending(task: key) }
-        return lingers.toggling(task: key, in: model.selectedItem, views: taskViews)
+        return lingers.toggling(task: key, in: item, views: taskViews)
     }
 
     private func endLinger(task key: TaskKey) async {

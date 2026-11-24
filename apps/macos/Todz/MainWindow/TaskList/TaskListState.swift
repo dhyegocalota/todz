@@ -6,14 +6,14 @@ enum TaskListState {
     case empty
     case rows([TaskSection])
 
-    @MainActor static func of(workspace: Workspace, model: AppModel, lingers: CompletionLingers) -> TaskListState {
+    @MainActor static func of(workspace: Workspace, item: SidebarItem, model: AppModel, lingers: CompletionLingers) -> TaskListState {
         let loads = workspace.projects.map { model.projectLoads[$0.identifier] }
         let isFirstLoad = loads.contains(nil)
         guard !isFirstLoad else { return .loading }
         if let loadFailure = model.loadFailure(of: workspace) { return .failed(loadFailure) }
         guard let views = model.taskViews else { return .loading }
         let sections = TaskSections.sections(
-            item: model.selectedItem,
+            item: item,
             views: views,
             lingers: lingers,
             today: model.today,

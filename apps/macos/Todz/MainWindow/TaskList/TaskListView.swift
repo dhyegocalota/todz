@@ -8,15 +8,17 @@ struct TaskListView: View {
     @Environment(MainWindowState.self) private var windowState
 
     var body: some View {
-        let state = TaskListState.of(workspace: workspace, model: model, lingers: windowState.lingers)
+        let state = TaskListState.of(workspace: workspace, item: model.selectedItem, model: model, lingers: windowState.lingers)
         VStack(alignment: .leading, spacing: .zero) {
             TaskListHeader(workspace: workspace)
             if let banner = model.banner, !state.isFailed {
                 ErrorBanner(banner: banner)
             }
             if let destination = model.addTaskDestination(for: model.selectedItem), !state.isFailed {
-                AddTaskField(destination: destination, focus: focus)
-                    .id(destination)
+                AddTaskField(destination: destination, focus: focus, focusedValue: .addField) { _ in
+                    focus.wrappedValue = .list
+                }
+                .id(destination)
             }
             TaskListBody(state: state, item: model.selectedItem, focus: focus)
         }
@@ -24,7 +26,7 @@ struct TaskListView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                SyncStatusItem()
+                SyncStatusItem(announcesChanges: true)
                 RefreshButton()
                 InspectorToggle()
             }

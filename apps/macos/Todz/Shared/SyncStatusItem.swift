@@ -4,6 +4,7 @@ import TodzKit
 private let offlineSymbol = "wifi.slash"
 
 struct SyncStatusItem: View {
+    let announcesChanges: Bool
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -22,6 +23,7 @@ struct SyncStatusItem: View {
     }
 
     private func announce() {
+        guard announcesChanges else { return }
         AccessibilityNotification.Announcement(SyncCopy.offline).post()
     }
 

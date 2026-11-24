@@ -3,10 +3,29 @@ import TodzKit
 
 struct WorkspaceSwitcher: View {
     let workspace: Workspace
+    let isMainWindow: Bool
     @Environment(AppModel.self) private var model
     @Environment(MainWindowState.self) private var windowState
 
     var body: some View {
+        switcher
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+    }
+
+    @ViewBuilder private var switcher: some View {
+        let isSoleWorkspaceInPopover = !isMainWindow && model.workspaces.count == 1
+        if isSoleWorkspaceInPopover {
+            Text(workspace.name)
+                .lineLimit(1)
+                .help(workspace.name)
+        }
+        if !isSoleWorkspaceInPopover {
+            menu
+        }
+    }
+
+    private var menu: some View {
         Menu {
             Picker(selection: activeIdentifier) {
                 ForEach(model.workspaces, id: \.identifier) { candidate in
@@ -17,13 +36,15 @@ struct WorkspaceSwitcher: View {
                 EmptyView()
             }
             .pickerStyle(.inline)
-            Divider()
-            Button(MainWindowCopy.newWorkspace) {
-                windowState.sheet = .newWorkspace
-            }
-            Divider()
-            Button(MainWindowCopy.signOut) {
-                windowState.requestSignOut(model: model)
+            if isMainWindow {
+                Divider()
+                Button(MainWindowCopy.newWorkspace) {
+                    windowState.sheet = .newWorkspace
+                }
+                Divider()
+                Button(MainWindowCopy.signOut) {
+                    windowState.requestSignOut(model: model)
+                }
             }
         } label: {
             Text(workspace.name)
@@ -32,8 +53,6 @@ struct WorkspaceSwitcher: View {
         .menuStyle(.borderlessButton)
         .fixedSize()
         .accessibilityLabel(AccessibilityCopy.switcher(name: workspace.name))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
     }
 
     private var activeIdentifier: Binding<String> {

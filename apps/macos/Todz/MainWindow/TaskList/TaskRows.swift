@@ -49,7 +49,7 @@ struct TaskRows: View {
 
     private func toggleSelectedTask() {
         guard let selectedTask = model.selectedTask else { return }
-        windowState.toggleDone(task: selectedTask, model: model)
+        windowState.toggleDone(task: selectedTask, item: item, model: model)
     }
 
     private func move(section: TaskSection, source: IndexSet, offset: Int) {
