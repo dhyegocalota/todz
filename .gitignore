@@ -16,6 +16,5 @@ playwright-report/
 build/
 .wrangler/
 apps/macos/Todz.xcodeproj/
-apps/macos/build/
 apps/macos/TodzKit/.build/
 apps/macos/TodzKit/.swiftpm/
