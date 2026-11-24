@@ -11,6 +11,7 @@ private let completionLinger: Duration = .seconds(1)
     var isConfirmingSignOut = false
     var lingers = CompletionLingers()
     var waitingLink: WidgetLink?
+    var agentClient: AgentClient = .claudeCode
     @ObservationIgnored private var lingerTimers: [TaskKey: Task<Void, Never>] = [:]
 
     var inspectorToggleTitle: String {
@@ -18,7 +19,7 @@ private let completionLinger: Duration = .seconds(1)
     }
 
     func requestNewTask(model: AppModel) {
-        let hasNoAddField = model.selectedItem == .upcoming || model.selectedItem == .done
+        let hasNoAddField = model.selectedItem == .upcoming || model.selectedItem == .done || model.selectedItem == .connectAgent
         if hasNoAddField { model.selectedItem = .inbox }
         focusRequest = .addField
     }

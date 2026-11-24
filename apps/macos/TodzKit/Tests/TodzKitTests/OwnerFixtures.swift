@@ -7,6 +7,8 @@ enum OwnerFixtures {
     static let completedAtMilliseconds: Int64 = 1_795_000_720_789
     static let agentClientName = "Claude Code"
     static let millisecondsPerSecond: Double = 1_000
+    static let keySecret = "todz_yMnKy8zNzs_Q0dLT1NXW19jZ2tvc3d7f4OHi4-Tl5uc"
+    static let keyHint = "l5uc"
 
     static func date(milliseconds: Int64) -> Date {
         Date(timeIntervalSince1970: Double(milliseconds) / millisecondsPerSecond)
@@ -83,6 +85,18 @@ enum OwnerFixtures {
             updatedAt: date(milliseconds: updatedAtMilliseconds),
             completedAt: date(milliseconds: completedAtMilliseconds)
         )
+    }
+
+    static func projectKeyJSON(identifier: String) -> String {
+        "{\"id\":\"\(identifier)\",\"hint\":\"\(keyHint)\",\"created_at\":\(createdAtMilliseconds)}"
+    }
+
+    static func issuedKeyJSON(identifier: String) -> String {
+        "{\"key\":\(projectKeyJSON(identifier: identifier)),\"secret\":\"\(keySecret)\"}"
+    }
+
+    static func projectKey(identifier: String) -> ProjectKey {
+        ProjectKey(identifier: identifier, hint: keyHint, createdAt: date(milliseconds: createdAtMilliseconds))
     }
 
     static func decoded<Value: Decodable>(_ type: Value.Type, from json: String) throws -> Value {

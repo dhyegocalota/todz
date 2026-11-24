@@ -22,6 +22,10 @@ private func taskPath(projectIdentifier: String, number: Int) -> String {
     "\(tasksPath(projectIdentifier))/\(number)"
 }
 
+private func keysPath(_ projectIdentifier: String) -> String {
+    "\(projectPath(projectIdentifier))/keys"
+}
+
 public protocol OwnerService: Sendable {
     func signIn(identityToken: String, timeZone: String) async throws -> IssuedSession
     func signOut(session: String) async throws
@@ -37,6 +41,9 @@ public protocol OwnerService: Sendable {
     func reopenTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [ReopenedTask]
     func readHistory(session: String, projectIdentifier: String, number: Int) async throws -> [HistoryEntry]
     func readChanges(session: String, projectIdentifier: String, cursor: Int) async throws -> ChangePage
+    func listKeys(session: String, projectIdentifier: String) async throws -> [ProjectKey]
+    func issueKey(session: String, projectIdentifier: String) async throws -> IssuedKey
+    func revokeKey(session: String, projectIdentifier: String, keyIdentifier: String) async throws
 }
 
 public struct OwnerAPI: OwnerService {
@@ -128,6 +135,19 @@ public struct OwnerAPI: OwnerService {
         let path = "\(projectPath(projectIdentifier))/changes"
         let queryItems = [URLQueryItem(name: cursorParameter, value: String(cursor))]
         return try await answer(ChangePage.self, to: OwnerRequest(method: .get, path: path, session: session, queryItems: queryItems))
+    }
+
+    public func listKeys(session: String, projectIdentifier: String) async throws -> [ProjectKey] {
+        try await answer(KeysAnswer.self, to: OwnerRequest(method: .get, path: keysPath(projectIdentifier), session: session)).keys
+    }
+
+    public func issueKey(session: String, projectIdentifier: String) async throws -> IssuedKey {
+        try await answer(IssuedKey.self, to: OwnerRequest(method: .post, path: keysPath(projectIdentifier), session: session))
+    }
+
+    public func revokeKey(session: String, projectIdentifier: String, keyIdentifier: String) async throws {
+        let path = "\(keysPath(projectIdentifier))/\(keyIdentifier)"
+        _ = try await send(OwnerRequest(method: .delete, path: path, session: session))
     }
 
     private func answer<Answer: Decodable>(_ type: Answer.Type, to request: OwnerRequest) async throws -> Answer {

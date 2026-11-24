@@ -1,6 +1,6 @@
 # The widgets share the App Group
 
-**Status:** Approved
+**Status:** In review
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-24, by inheritance from [the v1 product design](../../product/README.md) (macOS app → Sync: "a local cache in the App Group container that the widgets read"; Owner prerequisites: "The App Group identifier carries the Team ID prefix"), approved by the owner on 2026-11-23. Where the data lives until then and how the switch happens is ADR 0035, the loop's call, listed in the loop's questions for the owner
 **ADRs:** [0035](../../adr/0035-with-the-personal-team-the-widgets-share-the-app-group.md), [0033](../../adr/0033-without-a-team-the-widgets-share-a-folder-in-application-support-that-an-app-group-replaces-later.md), [0032](../../adr/0032-widgets-read-a-snapshot-in-an-app-group-that-a-team-prefix-replaces-later.md)

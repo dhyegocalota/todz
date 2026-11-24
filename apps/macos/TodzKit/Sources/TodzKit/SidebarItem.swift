@@ -4,4 +4,5 @@ public enum SidebarItem: Hashable, Sendable {
     case upcoming
     case done
     case project(identifier: String)
+    case connectAgent
 }

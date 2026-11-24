@@ -20,7 +20,7 @@ extension AppModel {
         switch selectedItem {
         case .inbox: return taskViews.inbox
         case let .project(identifier): return taskViews.project(identifier: identifier)
-        case .today, .upcoming, .done: return nil
+        case .today, .upcoming, .done, .connectAgent: return nil
         }
     }
 
@@ -68,7 +68,7 @@ extension AppModel {
         case .upcoming:
             guard isEveryProjectLoaded else { return nil }
             return taskViews.upcoming.count
-        case .done:
+        case .done, .connectAgent:
             return nil
         case let .project(identifier):
             guard projectLoads[identifier] == .loaded else { return nil }
