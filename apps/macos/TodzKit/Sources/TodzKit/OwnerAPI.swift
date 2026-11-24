@@ -40,7 +40,7 @@ public protocol OwnerService: Sendable {
 
 public struct OwnerAPI: OwnerService {
     private let baseURL: URL
-    private let transport: URLSession
+    let transport: URLSession
 
     public init(baseURL: URL, transport: URLSession = .shared) {
         self.baseURL = baseURL

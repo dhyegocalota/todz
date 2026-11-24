@@ -50,6 +50,12 @@ private func modeOfFile(at url: URL) throws -> Int {
         #expect(try vault.read() == nil)
     }
 
+    @Test func keepsTheSessionFileOutOfBackups() throws {
+        try FileSessionVault(folder: folder).write(UUID().uuidString)
+        let values = try folder.appending(path: sessionFileName).resourceValues(forKeys: [.isExcludedFromBackupKey])
+        #expect(values.isExcludedFromBackup == true)
+    }
+
     @Test func answersNilWhenNoSessionWasSaved() throws {
         #expect(try FileSessionVault(folder: folder).read() == nil)
     }

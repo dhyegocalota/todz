@@ -216,4 +216,10 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
             try await api.listWorkspaces(session: session)
         }
     }
+
+    @Test func theDefaultTransportKeepsNoCache() throws {
+        let configuration = OwnerAPI(baseURL: try #require(URL(string: baseText))).transport.configuration
+        #expect(configuration.urlCache == nil)
+        #expect(configuration.requestCachePolicy == .reloadIgnoringLocalCacheData)
+    }
 }
