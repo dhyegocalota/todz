@@ -1,7 +1,7 @@
 import SwiftUI
 import TodzKit
 
-private let statusSymbol = "checkmark.square"
+private let menuBarGlyphName = "MenuBarGlyph"
 
 struct MenuBarLabel: View {
     @Environment(AppModel.self) private var model
@@ -13,7 +13,7 @@ struct MenuBarLabel: View {
         let openCount = model.todayHeadingCount
         let badgeText = MenuBarBadge.text(openCount: openCount, isEnabled: isCountEnabled)
         HStack {
-            Image(systemName: statusSymbol)
+            Image(menuBarGlyphName)
             if let badgeText {
                 Text(badgeText)
                     .monospacedDigit()
