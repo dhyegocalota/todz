@@ -45,5 +45,5 @@ The lead creates the database; G1 builds; tester and reviewers; merge; the lead 
 - [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [x] **Reviewer:** verdict recorded; refutations in `test-plan.md`.
 - [x] **Security reviewer:** verdict recorded.
-- [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
+- [x] **/open-pr:** gates passed, learnings sweep stated, PR opened. Evidence: [PR #20](https://github.com/dhyegocalota/todz/pull/20).
 - [ ] **Runbook run from `main`:** each step's actual result recorded in the runbook's run log.
