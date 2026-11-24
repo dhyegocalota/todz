@@ -74,6 +74,7 @@ extension AppModel {
             endSession()
             return false
         }
+        noteConnection(after: failure)
         if ownerFailure == .notFound { requestWorkspaceReload() }
         let attempt = watchAttempts[projectIdentifier, default: 0] + 1
         watchAttempts[projectIdentifier] = attempt
