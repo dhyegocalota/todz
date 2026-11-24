@@ -47,4 +47,4 @@ One group, in order.
 - [x] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
 - [x] **Security reviewer:** verdict recorded.
 - [x] **/check-ui:** the two mails' screenshots recorded and uploaded.
-- [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
+- [x] **/open-pr:** gates passed, learnings sweep stated, PR opened. Evidence: [PR #19](https://github.com/dhyegocalota/todz/pull/19).

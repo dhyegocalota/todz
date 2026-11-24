@@ -1,6 +1,6 @@
 # Transactional email
 
-**Status:** In review
+**Status:** Shipped 2026-11-24
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-24 by the owner's queue (`transactional-email`: "magic-link and welcome templates, sent from the Worker through Cloudflare Email Service's `send_email` binding … behind a port, with a local fake"; the email direction "sexy and simple": the lockup header on dark `#0E1020`, one `#4C6BFF`→`#1B2A9E` button, a mint `#8CF7D0` accent, short copy, friendly in light and dark; React Email; a preview script; screenshots in the PR and the README). The build pattern and the sender are [ADR 0042](../../adr/0042-emails-are-react-email-templates-rendered-at-build-time-into-a-generated-module.md) and [ADR 0043](../../adr/0043-mail-leaves-through-cloudflare-email-service-from-noreply-at-todz-app.md), the loop's calls
 **ADRs:** [0042](../../adr/0042-emails-are-react-email-templates-rendered-at-build-time-into-a-generated-module.md), [0043](../../adr/0043-mail-leaves-through-cloudflare-email-service-from-noreply-at-todz-app.md), [0041](../../adr/0041-outgoing-email-goes-through-a-port-with-a-console-sender-for-development.md), [0040](../../adr/0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md)
