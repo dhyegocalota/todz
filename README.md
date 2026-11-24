@@ -46,6 +46,8 @@ The approved design is in [docs/product](docs/product/); how each piece was buil
 | ![The app icon in macOS 26's six looks](docs/screenshots/brand-glass/01-app-icon-looks.png)<br>The Liquid Glass app icon: default, dark, clear and tinted (rendered by Icon Composer) | ![Sign in, dark](docs/screenshots/brand-glass/02-sign-in-dark.png)<br>Sign in, dark |
 | ![The widgets in dark](docs/screenshots/brand-glass/03-widgets-dark.png)<br>The widgets in dark (rendered) | ![Check your inbox](docs/screenshots/magic-link-sign-in/01-check-your-inbox.png)<br>Check your inbox: the link works 15 minutes, on this Mac only |
 | ![The sign-in link opens todz](docs/screenshots/magic-link-sign-in/02-sign-in-page.png)<br>The sign-in link hands off to todz | ![An incomplete link](docs/screenshots/magic-link-sign-in/03-link-incomplete.png)<br>An incomplete link says so |
+| ![The sign-in mail](docs/screenshots/transactional-email/01-sign-in-mail.png)<br>The sign-in mail | ![The welcome mail](docs/screenshots/transactional-email/02-welcome-mail.png)<br>The welcome mail |
+| ![The welcome mail, dark](docs/screenshots/transactional-email/03-welcome-mail-dark.png)<br>The welcome mail, dark | |
 
 The widget shots are rendered from the widgets' own views until a desktop capture replaces them.
 
