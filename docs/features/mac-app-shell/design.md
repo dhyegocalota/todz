@@ -14,7 +14,7 @@ The app has one window. Its root shows exactly one of three screens, chosen by t
 - Layout: a two-column `NavigationSplitView` (sidebar, task list) plus a trailing inspector (option O1).
 - Column widths, from the mockup: sidebar min 180, ideal 224, max 300; list min 320; inspector min 260, ideal 320, max 420.
 - Collapse order when the window narrows: the sidebar collapses first (system toolbar button, ⌃⌘S), then the inspector hides (toolbar button, ⌥⌘I); the list never collapses. With both hidden the window can shrink to the list's 320 plus chrome. Selecting a task with the inspector hidden does not open it; Return or a double-click does.
-- The window restores the last active workspace and view on launch.
+- On launch the window shows the oldest workspace with its Inbox selected; nothing but the session is kept between launches until `mac-sync`.
 
 ### 1.2 Sign in
 
@@ -25,8 +25,9 @@ Centred column, 280 wide: the app icon, `SignInCopy.title`, `SignInCopy.subtitle
 | Empty | field focused, placeholder; Sign In disabled with `SignInCopy.identityRequired` as its help text |
 | Invalid input | local check against `^[A-Za-z0-9._-]{1,64}$` on submit; `SignInCopy.identityFormat` inline under the field in `.red`; field keeps focus |
 | Loading | button replaced by a small `ProgressView` with `SignInCopy.signingIn`; field read-only |
-| Error | inline under the slot: identity rejected, sign-in unavailable (503), network unreachable (with Try Again) |
-| Session ended | arriving from a 401: `SignInCopy.sessionEnded` above the slot, field prefilled with the last identity |
+| Error | inline under the slot: identity rejected (`SignInCopy.identityRejected`), sign-in unavailable (503, `SignInCopy.signInUnavailable`), time zone refused (422 `time_zone_invalid`, `SignInCopy.timeZoneInvalid`), network unreachable (`ErrorCopy.networkTitle` with Try Again) |
+| Session ended | arriving from a 401: `SignInCopy.sessionEnded` above the slot, field prefilled with the last identity of this launch |
+| Session unreadable | the session file exists but cannot be read at launch: `SignInCopy.sessionUnreadable` above the slot; signing in replaces the file |
 | Success | First workspace or Main window, no transition beyond the system crossfade |
 
 ### 1.3 First workspace
@@ -75,7 +76,7 @@ Header, in the content (as the mockup): the view name in `Font.title` bold, and 
 | Overloaded | hundreds of rows in a lazy `List`; two-line titles; long client names truncate in the sub-line |
 | Success | rows; the selection is single; a newly added task is selected and scrolled into view |
 
-**Banner:** a single non-modal strip under the header for network, server and not-found errors, with the error's copy and one button (Try Again or Dismiss). It never covers rows. A failed change rolls back on screen and raises the banner (option O4).
+**Banner:** a single non-modal strip under the header for network, server and not-found errors, with the error's copy and one button (Try Again or Dismiss). It never covers rows. A change waits for the server (§ 7, O4 = B): while it is in flight the row's checkbox is replaced by a small `ProgressView` and the row's controls are disabled; a refused change leaves the row as it was and raises the banner `ErrorCopy.changeNotSaved`, or the issue's copy for a 422.
 
 ### 1.6 Main window: inspector
 
@@ -90,7 +91,7 @@ From the mockup, top to bottom: checkbox and the **editable title** (`Font.title
 | No selection | `ContentUnavailableView` with `InspectorCopy.noSelection` |
 | Loading history | the properties and notes at once (they come with the task); a small `ProgressView` under History |
 | History error | `InspectorCopy.historyFailed` with Try Again, under History only |
-| Saving | no spinner; the optimistic value shows (O4) |
+| Saving | the field being saved is read-only and shows a small `ProgressView` at its trailing edge until the answer; the saved value then shows (§ 7, O4 = B) |
 | Not found | the task vanished: the inspector shows `ErrorCopy.taskGone`, the list refreshes |
 | Overloaded | 20 000 characters of notes and long histories scroll within the inspector; the title and properties stay at the top |
 
@@ -143,7 +144,7 @@ Dark mode comes from these system colours and materials; nothing is set per comp
 
 Placeholders in `{braces}` become function parameters. Dates and times use system formatters, never strings.
 
-**SignInCopy:** title "Welcome to todz" · subtitle "Your tasks, shared with your agents." · identityPlaceholder "Identity" · signIn "Sign In" · signingIn "Signing in…" · developmentNotice "Development sign-in. Sign in with Apple comes later." · identityRequired "Enter an identity to sign in." · identityFormat "Use up to 64 letters, digits, dots, dashes or underscores." · identityRejected "That identity wasn't accepted." · signInUnavailable "Sign-in isn't available on this server." · sessionEnded "Your session has ended. Sign in again."
+**SignInCopy:** title "Welcome to todz" · subtitle "Your tasks, shared with your agents." · identityPlaceholder "Identity" · signIn "Sign In" · signingIn "Signing in…" · developmentNotice "Development sign-in. Sign in with Apple comes later." · identityRequired "Enter an identity to sign in." · identityFormat "Use up to 64 letters, digits, dots, dashes or underscores." · identityRejected "That identity wasn't accepted." · signInUnavailable "Sign-in isn't available on this server." · sessionEnded "Your session has ended. Sign in again." · sessionUnreadable "Your saved session couldn't be read. Sign in again." · timeZoneInvalid "This Mac's time zone wasn't accepted."
 
 **FirstWorkspaceCopy:** title "Name your first workspace" · body "A workspace holds one company's projects. It starts with an Inbox." · namePlaceholder "Workspace name" · create "Create Workspace" · signOut "Sign Out"
 
@@ -158,7 +159,7 @@ Empty: inboxEmptyTitle "Inbox is empty" · inboxEmptyBody "Add a task with ⌘N.
 
 **SheetCopy:** newWorkspaceTitle "New Workspace" · newProjectTitle "New Project" · renameProjectTitle "Rename Project" · nameLabel "Name" · cancel "Cancel" · create "Create" · rename "Rename"
 
-**ErrorCopy:** networkTitle "Can't reach todz" · networkBody "Check your connection, then try again." · serverTitle "Something went wrong" · serverBody "todz couldn't finish that. Try again." · someProjectsFailed "Some projects didn't load." · changeNotSaved "Your change wasn't saved." · titleEmpty "A task needs a title." · titleTooLong "Titles can be up to 200 characters." · notesTooLong "Notes can be up to 20,000 characters." · nameEmpty "Add a name." · nameTooLong "Names can be up to 80 characters." · dueDateInvalid "That date isn't valid." · inboxIsFixed "The Inbox can't be renamed." · taskGone "This task is no longer available." · projectGone "This project is no longer available." · workspaceGone "This workspace is no longer available." · ruleUnexpected "todz couldn't save this change."
+**ErrorCopy:** networkTitle "Can't reach todz" · networkBody "Check your connection, then try again." · serverTitle "Something went wrong" · serverBody "todz couldn't finish that. Try again." · someProjectsFailed "Some projects didn't load." · changeNotSaved "Your change wasn't saved." · sessionNotSaved "You're signed in, but todz couldn't save your session for next time." · titleEmpty "A task needs a title." · titleTooLong "Titles can be up to 200 characters." · notesTooLong "Notes can be up to 20,000 characters." · nameEmpty "Add a name." · nameTooLong "Names can be up to 80 characters." · dueDateInvalid "That date isn't valid." · inboxIsFixed "The Inbox can't be renamed." · taskGone "This task is no longer available." · projectGone "This project is no longer available." · workspaceGone "This workspace is no longer available." · ruleUnexpected "todz couldn't save this change."
 The limits in these strings come from the shared constants (`TASK_TITLE_MAX_LENGTH`, `TASK_NOTES_MAX_LENGTH`, `NAME_MAX_LENGTH`), interpolated, never typed. Each `RuleIssue` the app can send maps to one string; `ruleUnexpected` is the explicit case for the issues the app never triggers (batch, idempotency, cursor), not a default.
 
 **AccessibilityCopy:** checkboxOpen "Mark {title} as done" · checkboxDone "Mark {title} as not done" · rowValueOpen "Open" · rowValueDone "Done" · refreshing "Refreshing" · switcher "Workspace, {name}" · addProject "New Project"
@@ -193,7 +194,7 @@ Menus mirror every command: File holds New Task, New Project…, New Workspace�
 - The banner is announced when it appears; the refreshing `ProgressView` says `refreshing`.
 - A disabled button carries its reason as help text and accessibility hint (Sign In: `identityRequired`; Create: `nameEmpty`).
 
-**Motion:** system `List` insert, move and remove animations. A task checked in Inbox, a project or Today stays in place, checked and struck through, then leaves (option O4). Reduce Motion: no fade, rows move at once.
+**Motion:** system `List` insert, move and remove animations. A task checked in Inbox, a project or Today shows its waiting state, then leaves once the server answers (§ 7, O4 = B). Reduce Motion: no fade, rows move at once.
 
 **Contrast**, light mode on the window background: `.primary` about 16:1; `.secondary` about 4:1 (below 4.5:1 for small text; this is the system's own and Increase Contrast raises it); accent `#2F5BFF` and white on it about 4.9:1, passing; `Color.red` (`#FF3B30`) about 3.5:1, so overdue is never colour alone: it carries the word "Overdue". No information is set in `.tertiary` (about 2:1). Dark mode: the accent as text on a dark background is about 3.4:1, so the accent is used for fills and symbols, never for body text (option O8).
 
