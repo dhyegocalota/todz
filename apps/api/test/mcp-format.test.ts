@@ -89,6 +89,12 @@ describe('the next answers', () => {
     );
   });
 
+  test('the prompt escapes ampersands and angle brackets of the task block, and the next answer keeps them', () => {
+    const task = { ...SHIP_IT, title: 'Ship <it> & go', notes: 'a > b' };
+    expect(nextPromptText(task)).toContain('<task>\nT-3 Ship &lt;it&gt; &amp; go\n\na &gt; b\n</task>');
+    expect(nextAnswer(task)).toBe('T-3 Ship <it> & go\n\na > b');
+  });
+
   test('the prompt without a task says there is nothing to do', () => {
     expect(nextPromptText(null)).toBe('There is nothing to do in todz right now: no open tasks.');
   });
