@@ -30,7 +30,7 @@ The product design asks for a menu bar extra that shows Today of the active work
 
 - The menu bar extra lives while the app runs. Quitting todz removes it; launching at login is not part of v1.
 - Closing the main window no longer quits the app. ⌘Q still does. A Dock click with no window open reopens it. Both go through an `NSApplicationDelegateAdaptor`.
-- macOS 14 has no SwiftUI call that closes a `.window` menu bar extra or says it opened, so a small `NSViewRepresentable` reads the panel's `NSWindow`: its `didBecomeKey` focuses the field, and its `close()` closes the panel after a row click or "Open todz". This is the only AppKit in the app.
+- macOS 14 has no SwiftUI call that closes a `.window` menu bar extra or says it opened, so a small `NSViewRepresentable` reads the panel's `NSWindow`: its `didBecomeKey` focuses the field. Closing it from code (a row click, "Open todz", ⌘0, the second Escape) clicks the status item's own button: a plain `close()` of the panel left the status item thinking it was open, so the next click did nothing (developer's check of 2026-11-24). This is the only AppKit in the app.
 - ⌘1 to ⌘9 are registered once, in the View menu; the popover and the main window both receive them while either is key.
 - When a team exists and the widgets move the cache to the App Group, the popover is unchanged: it reads the model, not the files.
 
