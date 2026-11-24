@@ -11,10 +11,10 @@ ADR 0038 made the app icon a set of flat PNGs rendered from `todz-icon.svg`. On 
 
 ## Decision
 
-1. `apps/macos/Todz/AppIcon.icon` holds the icon: the background is the document's own linear gradient from `#4C6BFF` to `#1B2A9E`, and two glass layer groups, the sparkle and the check, each an SVG on the full 1024 canvas with no margin, because the system draws the squircle and its margins.
-2. The two layer SVGs are cut from `todz-icon.svg` and live beside it in `docs/brand` as `todz-icon-check.svg` and `todz-icon-sparkle.svg`; the copies in `AppIcon.icon/Assets` are byte-identical, which a repository-shape test checks. The check is a filled outline of the original stroke, because the icon compiler draws a stroked open path with its closing edge.
-3. `AppIcon.appiconset` stays, under the same name, as the flat fallback: on macOS 26 the system draws the icon stack; earlier systems read the flat images from the same catalog. The `AppIcon.icns` the compiler flattens from the layers stops at 256 pixels and carries a specular streak, so it is not the fallback we rely on.
-4. The widgets show the menu bar's template glyph before their title, tinted with the accent and accentable, so it follows the widget's full-colour, accented and vibrant looks.
+1. `apps/macos/Todz/AppIcon.icon` holds the icon: the background is the document's own linear gradient from `#4C6BFF` to `#1B2A9E`, and two glass layer groups, the sparkle and the check, each an SVG of 1024 pixels whose view box is the squircle of `todz-icon.svg` (`80 80 864 864`), so the art fills the canvas with no margin, because the system draws the squircle and its margins.
+2. The two layer SVGs are cut from `todz-icon.svg` and live beside it in `docs/brand` as `todz-icon-check.svg` and `todz-icon-sparkle.svg`; the copies in `AppIcon.icon/Assets` are byte-identical, which a repository-shape test checks. The check is a filled outline of the original stroke, its arcs computed from the stroke's width, because the icon compiler draws a stroked open path with its closing edge. `todz-icon.svg` itself is not edited.
+3. `AppIcon.appiconset` stays, under the same name, as the flat fallback: on macOS 26 the system draws the icon stack; earlier systems read the flat images from the same catalog. The `AppIcon.icns` the compiler flattens from the layers stops at 256 pixels and carries a specular streak; it still ships, because the compiler writes it whenever an `.icon` is present, but macOS 11 and later read `CFBundleIconName` from the catalog before `CFBundleIconFile`.
+4. The widgets show the menu bar's template glyph (`MenuBarGlyph`) before every title they draw, the prompt's included, tinted with the accent and accentable, so it follows the widget's full-colour and accented looks.
 5. Light, dark, clear and tinted renders come from `ictool`, Icon Composer's command line, on the committed document; the runbook renders them.
 
 ## Alternatives considered
@@ -30,6 +30,8 @@ ADR 0038 made the app icon a set of flat PNGs rendered from `todz-icon.svg`. On 
 
 - A logo change also re-cuts the two layer SVGs; the runbook says how, and the shape test fails while the copies differ.
 - The widget extension already compiles the asset catalog, so it reaches the glyph with no new resource.
+- Building the app needs Xcode 27 or later, whose `actool` reads `.icon`; an older Xcode fails the `macos` gate at the asset step. The doctor keeps checking only that `xcodebuild` exists, because this Mac and every build the loop runs use Xcode 27.2.
+- The renders need `ictool`, inside Xcode's Icon Composer (`Xcode.app/Contents/Applications/Icon Composer.app/Contents/Executables/ictool`); only the runbook uses it.
 
 ## Evidence
 

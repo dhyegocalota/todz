@@ -25,12 +25,12 @@ The `brand` feature gave the app a flat icon. On macOS 26 a flat icon sits in a 
 
 ### Data flow
 
-`docs/brand/todz-icon-check.svg` and `todz-icon-sparkle.svg` (cut from `todz-icon.svg`) → copied by hand (the runbook) into `apps/macos/Todz/AppIcon.icon/Assets/`, beside `icon.json` and its gradient → `actool` at build time → the icon stack for macOS 26; `AppIcon.appiconset` → the flat images for older systems. `MenuBarGlyph` → the widgets' headers.
+`docs/brand/todz-icon-check.svg` and `todz-icon-sparkle.svg` (cut from `todz-icon.svg`) → copied by hand (the runbook) into `apps/macos/Todz/AppIcon.icon/Assets/`, beside `icon.json` → `actool` at build time → the icon stack for macOS 26; `AppIcon.appiconset` → the flat images for older systems. `MenuBarGlyph` → the widgets' headers.
 
 ### Interfaces
 
 - `AppIcon.icon/icon.json`: the background gradient, a sparkle group and a check group, each a glass layer, for the macOS square.
-- `WidgetBrandGlyph` (a view in the widget extension): the template glyph at the headline's size, accent-tinted, `widgetAccentable`, hidden from VoiceOver. `WidgetHeader`, the Next up label and the Today ring's title draw it before their text.
+- `WidgetBrandGlyph` (a view in the widget extension): the `MenuBarGlyph` image set as a template, resizable, a square of a named side constant beside the headline, accent-tinted, `widgetAccentable`, `unredacted`, a higher layout priority than the title so a long title truncates first, hidden from VoiceOver. `WidgetHeader`, `WidgetPrompt`, the Next up label and the Today ring's title draw it before their text, in an `HStack` aligned to the text's first baseline.
 
 ### Failure handling
 
