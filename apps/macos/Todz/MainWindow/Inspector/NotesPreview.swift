@@ -22,9 +22,19 @@ struct NotesPreview: View {
 
     private func rendered(_ notes: String) -> AttributedString {
         do {
-            return try AttributedString(markdown: notes, options: options)
+            return Self.withCodeInMonospace(try AttributedString(markdown: notes, options: options))
         } catch {
             return AttributedString(notes)
         }
+    }
+
+    private static func withCodeInMonospace(_ parsed: AttributedString) -> AttributedString {
+        var styled = parsed
+        let codeRanges = parsed.runs[\.inlinePresentationIntent].filter { intent, _ in
+            guard let intent else { return false }
+            return intent.contains(.code)
+        }
+        codeRanges.forEach { _, range in styled[range].font = .body.monospaced() }
+        return styled
     }
 }
