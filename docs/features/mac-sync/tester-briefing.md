@@ -371,3 +371,23 @@ The unit suite: 333 tests in 22 suites, green three runs in a row; the app build
 - D1 changes shape: with the server up and then stopped and nothing touched, Offline now shows at the second socket failure (after the first reconnect delay), not the first.
 - Fix 1: a workspace switch cancels the scheduled ask; the switch's own pulls ask again when they answer.
 - Fix 1: once a session's owner is confirmed it is never unconfirmed, so the reset on confirmation has no observable test.
+
+## Isolation fixes
+
+The unit suite: 335 tests in 22 suites, green three runs in a row; the app builds. Red commit 51c2c34 holds both tests.
+
+| Fix | What changed | Red text | Commits |
+|---|---|---|---|
+| 1. A failed `PATCH /owner` with a listing that answers wrote the session's workspaces and projects under the cached owner's label | `keepOwner()` and `keepProject(identifier:)` in `AppModel+Cache.swift` write only once `isOwnerConfirmed`; the outbox is still kept. Test `aLaunchWhoseOwnerUpdateFailsWritesNothingUnderTheCachedOwnerUntilTheOwnerIsConfirmed` | `Expectation failed: harness.store.routes().contains(.writeOwner) == false`, the same for `.writeProject` | 51c2c34 → 8a59e21 |
+| 2. A failed erase of another owner's cache still confirmed the owner | `confirmOwner()` throws: `forgetCache()` empties the window and the outbox, sets loading, then erases, all before `isOwnerConfirmed`/`ownerIdentifier` change; the listing stops and `raiseLoadFailure` shows `.cacheNotSaved` with Try again for a `SyncStoreError`. ADR 0027 point 4 says both rules. Test `aLaunchAsAnotherOwnerWhoseEraseFailsStaysUnconfirmedEmptiesTheWindowAndSaysSoWithTryAgain` | `Expectation failed:` on `.writeOwner`, `.writeProject`, `isOwnerConfirmed == false`, `workspaces.isEmpty`, `board == TaskBoard()`, `phase == .loading`, `canTryAgain` | 51c2c34 → 71d0153 |
+
+### Hypotheses to attack
+
+1. Hypothesis: with owner B's cache and owner A's session, a launch whose `PATCH /owner` fails leaves `owner.json` and every project file byte for byte B's; once A is confirmed the folder is erased before anything is written as A.
+2. Hypothesis: with the cache folder made unwritable and another owner's session, the launch shows the loading screen, the cache banner with Try again, sends nothing and writes nothing; Try again after the folder is writable again opens A's window.
+
+### Known gaps
+
+- While the owner is unconfirmed, changes made in the window still go to `outbox.json` under the cached label, so offline edits survive a relaunch; with another owner's session this outbox is erased at confirmation, and if that owner's session ends first, the cached owner signing in sends them and the server refuses them.
+- Fix 1: with the same owner and `PATCH /owner` failing, the owner and project files stay at their last state until the owner is confirmed; the next pull after it writes each project's whole board.
+- The `.cacheNotSaved` copy says changes are sent while todz is open, which does not describe the blocked confirmation; a dedicated banner would need copy in the app target.
