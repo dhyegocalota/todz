@@ -123,3 +123,50 @@ Every "it works" is a hypothesis the tester tries to break.
 - The "Today, 5 left" heading uses `.font(.headline)`, not the system `List` section header style (the popover has no `List`).
 - The switcher's shown keys (hypothesis 4) were not seen.
 - Not exercised by the developer: offline, the launch-failed and load-failed states, naming, a refused add, the banner's Dismiss across both surfaces, Reduce Motion, VoiceOver, light mode, ten workspaces.
+
+## Fix round 1
+
+Written by `developer-app` on 2026-11-24 after the tester's walk (defects D1, D2 and edge case 3) and the review (findings 1, 3, 4, 5, 6). The owner was working at this Mac, so the app was **not launched** in this round: no popover, no main window, no System Events or Orca. The proof is `swift test`, the app build and the reasoning below; every behaviour of the app target is a hypothesis for the rerun.
+
+### What changed
+
+| Fix | Commits | Where |
+|-----|---------|-------|
+| D2: a popover add selected the new task in the main window | red `8ab331c`, green `d324d2a` | `TodzKit/AddedTaskSelection.swift` (new: `selectWhenSaved`, `keepSelection`), `AppModel+Tasks.swift` (`addTask(…, selection:)`, default `selectWhenSaved`; only `selectWhenSaved` records the selection to restore), `Shared/AddTaskField.swift` (takes `selection`), `TaskListView.swift` passes `selectWhenSaved`, `MenuBarToday.swift` passes `keepSelection` |
+| D1: one click did not always reopen after Open todz or ⌘0 | `aea915b` | `MenuBar/MenuBarPanel.swift`: `openMainWindow` closes the panel, then opens the main window and activates the app in a `Task`, on the next main-actor turn |
+| Review 1: ⌘1 to ⌘9 registered twice; the active-workspace guard on one path | red `983217e`, green `c5258ae` | `Shared/WorkspaceSwitcher.swift`: its items carry no key and show none (the View menu is the one registration and the one place the keys show); its binding's guard goes. `AppModel+Workspaces.swift`: `switchWorkspace(identifier:)` returns before any call for the active workspace; `switchWorkspace(number:)` loses its own copy. `AppModelTests+Cache.swift`: the once-per-launch test switched to the already active workspace to write the owner file again, which is now a no-op, so it goes to a second workspace and back (mutation: with the once-per-launch guard removed it fails for `writeOwner` and `writeProject`) |
+| Review 4: shortcut logic in the app | red `1621b24`, green `69f58a2` | `TodzKit/WorkspaceShortcuts.swift`: `numbers` (1…9, replaces `count`), `numbered(_:)` (the first nine with their numbers), `lastNumber(of:)`; `Shared/WorkspaceShortcuts+Keyboard.swift` keeps only the `KeyboardShortcut`; `WorkspaceMenuItems.swift` no longer trims the list |
+| Review 3: rows not reachable by keyboard | `0445e1c` | `MenuBar/MenuBarRow.swift`: `.focusable()` and `onKeyPress` for Return and Space, both calling the click's `reveal()`; the VoiceOver default action and hint are unchanged |
+| Review 5: no ADR pointer on the close | `4a63f6f` | `MenuBarPanel.close()` carries `// NB ADR 0031` |
+| Review 6, edge case 3: heading and empty body styles | `0248a08` | `MenuBarTodayHeading.swift` drops `.font(.headline)` and reads as `TaskSectionHeader` (title primary, count secondary); `MenuBarTodayBody.swift`: both empty lines `.secondary`, the body still `.subheadline` |
+
+This supersedes two lines above: "the switcher shows the same keys on its first nine items" (What changed) and "Rows are not reachable with Tab" and "The switcher's shown keys" (Known gaps).
+
+### Red today, green after
+
+| Test | Red run | Green after |
+|------|---------|-------------|
+| `AppModelTests::anAddThatKeepsTheSelectionLeavesItWhenTheServerAnswers` | `8ab331c`: `AppModelTests+Outbox.swift:121:9: Expectation failed: harness.model.selectedTask == firstTask` (the confirmed add selected task 3) | `d324d2a` |
+| `AppModelTests::switchingToTheActiveWorkspaceMakesNoCall` | `983217e`: `AppModelTests+Workspaces.swift:80:9: Expectation failed: harness.service.calls == []` with `harness.service.calls → [readChanges(session: …, projectIdentifier: "acme-inbox", cursor: 0)]` | `c5258ae` |
+| `WorkspaceShortcutsTests::theFirstNineWorkspacesAreNumberedFromOne`, `aShortListIsNumberedWhole`, `theLastNumberIsTheListLengthUpToNine` | `1621b24`: `TodzKit/WorkspaceShortcuts.swift:12: Fatal error: numbered(_:) is not implemented` and `:16: Fatal error: lastNumber(of:) is not implemented` | `69f58a2` |
+
+`anAddShowsAPendingRowThenItsTaskSelectedWhenTheSelectionStayed` and `switchingWorkspaceByTheActiveNumberMakesNoCall` stay green. `swift test` from `apps/macos/TodzKit`: 360 tests in 23 suites, all green at `0248a08`. A clean `xcodebuild build` after `xcodegen generate` succeeds with no warning from `apps/macos/Todz/` or `TodzKit/Sources/` (only the usual `appintentsmetadataprocessor` line).
+
+### Why D1 should be gone (reasoning, not a run)
+
+Open todz, ⌘0 and a row click already shared `openMainWindow`; before this round it clicked the status item's button and then, in the same turn, opened the main window and called `NSApp.activate()`. Activating made the panel resign key while the status item was still toggling it shut, so the menu bar extra's own close-on-resign and the toggle raced: when the resign won, the item kept believing the panel was open and the next click only "closed" it (the 4 misses), or the panel reopened while the main window still held key (the 2 unfocused fields). A row click calls `model.reveal` first, which changes observed state and likely gave the toggle the time it needed, so it never lost (0 of 32); the tester's repro is `.pr-media/menu-bar/cycles-open-todz.log` and `cycles-window-open.log`. Now the toggle runs alone in the click's or the key's turn, and the window opens and the app activates in a `Task` queued after it on the main actor, so the panel is shut, with the item agreeing, before anything else takes key.
+
+### Hypotheses for the rerun
+
+1. D1: after Open todz, and separately after ⌘0, one click on the status item reopens the popover with the field focused, 30 cycles of each, with the main window open and with it closed, about 0.7 s between the close and the click as in the tester's repro; then the same with the click sent at once. Also check that Open todz still brings the main window to the front and makes it key every time, and a row click still selects its task with the inspector.
+2. D2: with a task selected in the main window, an add from the popover leaves the main window's selection on that task after the server answers (the POST in the log); an add from the main window's field still selects the new task.
+3. ⌘ digits: ⌘2 into the popover and into the main window each make exactly one round of pulls of the new workspace's Inbox (two `GET …/changes`, as at launch); ⌘ with the active workspace's number and choosing the active workspace in the switcher make none.
+4. The switcher's menu shows the workspaces without ⌘ keys; the View menu lists the first nine with ⌘1 to ⌘9.
+5. Tab from the add field reaches each popover row in turn (a focus ring on the row), and Return or Space on a focused row closes the popover and shows that task in the main window with the inspector. Untested whether Tab needs Full Keyboard Access (System Settings → Keyboard → Keyboard navigation); `design.md` § 5 says rows are reached with it. Space on a focused checkbox still toggles done, not the row.
+6. The Today heading reads in the body font like a main-window section header, and both lines of the empty Today are secondary.
+
+### Known gaps
+
+- `design.md` § 2 still says the switcher's items carry ⌘1 to ⌘9; after review finding 1 they do not. Not this lane's file: the lead amends it.
+- The heading matches `TaskSectionHeader`'s own view, which sets no font; in the main window the `List` adds its section header treatment, which a `VStack` in the popover does not inherit. If the rerun's screenshots show the two differ, the owner picks the font.
+- D1's fix and the keyboard rows have no unit seam (the app target has no test target); only the rerun proves them.

@@ -49,6 +49,16 @@ Answers to the plan review of 2026-11-24 (13 findings) are folded into the steps
 - [x] **Step 8:** `AppCommands`: the View menu lists the first nine workspaces with ⌘1 to ⌘9 (O7) through `model.switchWorkspace(number:)`, disabled unless the model is ready; this is the one registration of ⌘1 to ⌘9. Prove in the walk that a ⌘ digit pressed into the popover reaches it exactly once (one pull of the new workspace's projects); if the main menu does not receive key equivalents while the panel is key, add popover-local buttons, never both, and say so in the briefing. [2] — evidence: bba2120; ⌘1 to ⌘9 reached the popover through the View menu, one activation each, so no popover-local buttons (briefing → Mechanisms, risk c)
 - [x] **Step 9:** `apps/macos/README.md`'s purpose line names the menu bar extra; `tester-briefing.md`: what changed, how to start `wrangler dev` and the app, how to open the popover in the background (ADR 0031 § 5), the close and open-signal mechanism step 6 proved, the red texts from `git log`, hypotheses to attack, known gaps. — evidence: the `docs(menu-bar)` commit that ticks this box
 
+Fix round 1 (2026-11-24, after the tester's walk and the review; the app was not launched, proofs in `tester-briefing.md` → Fix round 1):
+
+- D2, a popover add selected the new task in the main window: red 8ab331c, green d324d2a (`AddedTaskSelection`, the popover passes `keepSelection`).
+- D1, one click did not always reopen after Open todz or ⌘0: aea915b (the main window opens and activates on the turn after the panel closes).
+- Review 1, ⌘1 to ⌘9 registered twice and the active-workspace guard on one path: red 983217e, green c5258ae.
+- Review 4, shortcut numbering moved into TodzKit: red 1621b24, green 69f58a2.
+- Review 3, popover rows by keyboard: 0445e1c.
+- Review 5, the ADR 0031 pointer on the close: 4a63f6f.
+- Review 6 and edge case 3, heading and empty body styles: 0248a08.
+
 ## Failure modes
 
 | Step | What breaks | How I notice (the concrete signal) | How I back out |
