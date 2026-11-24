@@ -303,6 +303,56 @@ extension AppModelTests {
         #expect(harness.model.canTryAgain)
     }
 
+    @Test func aLaunchWhoseOwnerUpdateFailsWritesNothingUnderTheCachedOwnerUntilTheOwnerIsConfirmed() async throws {
+        let harness = try harnessWithAWaitingChange()
+        let acme = try #require(harness.service.workspaces.first)
+        harness.cache([acme], active: acme, ownerIdentifier: cachedOwnerIdentifier)
+        harness.service.failures[.updateOwner] = .unexpected(status: 503)
+        harness.vault.secret = harness.session
+        await harness.model.launch()
+        #expect(harness.service.routes().contains(.listWorkspaces))
+        #expect(harness.store.routes().contains(.writeOwner) == false)
+        #expect(harness.store.routes().contains(.writeProject) == false)
+        #expect(harness.store.owner?.ownerIdentifier == cachedOwnerIdentifier)
+        harness.service.failures = [:]
+        harness.store.calls = []
+        let retry = try #require(harness.model.ownerConfirmationRetry)
+        await harness.pause.started()
+        harness.pause.release()
+        await retry.value
+        await harness.model.workspaceReload?.value
+        let routes = harness.store.routes()
+        let firstErase = try #require(routes.firstIndex(of: .erase))
+        let firstWrite = try #require(routes.firstIndex { $0 == .writeOwner || $0 == .writeProject })
+        #expect(firstErase < firstWrite)
+        #expect(harness.store.owner?.ownerIdentifier == harness.ownerIdentifier)
+    }
+
+    @Test func aLaunchAsAnotherOwnerWhoseEraseFailsStaysUnconfirmedEmptiesTheWindowAndSaysSoWithTryAgain() async throws {
+        let harness = try harnessWithAWaitingChange()
+        let acme = try #require(harness.service.workspaces.first)
+        harness.cache([acme], active: acme, ownerIdentifier: cachedOwnerIdentifier)
+        harness.store.failures[.erase] = .unwritable
+        harness.vault.secret = harness.session
+        await harness.model.launch()
+        await harness.flushed()
+        #expect(harness.service.routes().contains(.updateTask) == false)
+        #expect(harness.store.routes().contains(.writeOwner) == false)
+        #expect(harness.store.routes().contains(.writeOutbox) == false)
+        #expect(harness.store.routes().contains(.writeProject) == false)
+        #expect(harness.model.isOwnerConfirmed == false)
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.model.workspaces.isEmpty)
+        #expect(harness.model.board == TaskBoard())
+        #expect(harness.model.phase == .loading)
+        #expect(harness.model.banner == .cacheNotSaved)
+        #expect(harness.model.canTryAgain)
+        harness.store.failures = [:]
+        await harness.model.tryAgain()
+        #expect(harness.model.phase == .ready)
+        #expect(harness.store.owner?.ownerIdentifier == harness.ownerIdentifier)
+    }
+
     @Test func aSessionEndedKeepsTheCacheAndTheWaitingChanges() async throws {
         let harness = try harnessWithAWaitingChange()
         harness.service.failures[.updateTask] = .unreachable
