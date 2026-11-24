@@ -160,6 +160,20 @@ extension AppModelTests {
         #expect(harness.model.ruleIssues == [:])
     }
 
+    @Test func anAddRefusedForATitleTooLongRaisesTheRuleAndKeepsTheDraft() async throws {
+        let harness = try await readyHarness()
+        let target = WriteTarget.newTask(projectIdentifier: inboxIdentifier)
+        harness.service.failures[.addTasks] = .ruleViolated(issue: .titleTooLong, index: 0)
+        let boardBefore = harness.model.board
+        await harness.model.addTask(title: "Call the bank", projectIdentifier: inboxIdentifier, dueDate: nil)
+        let draft = TaskDraft(title: "Call the bank", notes: nil, dueDate: nil, idempotencyKey: "key-1")
+        #expect(harness.model.ruleIssues == [target: .titleTooLong])
+        #expect(harness.model.board == boardBefore)
+        #expect(harness.model.selectedTask == nil)
+        #expect(harness.model.unconfirmedDrafts == [target: draft])
+        #expect(harness.model.banner == nil)
+    }
+
     @Test func loadHistoryHoldsTheEntriesOfTheTask() async throws {
         let harness = try await readyHarness()
         let entry = HistoryEntry(at: fixedInstant, actor: .owner, action: .created, fields: [], note: nil)
