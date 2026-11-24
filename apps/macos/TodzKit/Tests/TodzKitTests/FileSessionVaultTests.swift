@@ -15,8 +15,12 @@ private func modeOfFile(at url: URL) throws -> Int {
     return try #require(attributes[.posixPermissions] as? Int)
 }
 
-@Suite struct FileSessionVaultTests {
+@Suite final class FileSessionVaultTests {
     let folder = temporaryFolder()
+
+    deinit {
+        try? FileManager.default.removeItem(at: folder)
+    }
 
     @Test func writesTheSecretWithModeSixHundredAndReadsItBack() throws {
         let vault = FileSessionVault(folder: folder)
