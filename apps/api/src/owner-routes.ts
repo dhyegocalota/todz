@@ -1,10 +1,15 @@
-const TASK_NUMBER_PATTERN = '[1-9][0-9]{0,8}';
-
 enum HttpMethod {
   Get = 'GET',
   Post = 'POST',
   Patch = 'PATCH',
   Delete = 'DELETE',
+}
+
+export enum RouteParam {
+  WorkspaceId = 'workspaceId',
+  ProjectId = 'projectId',
+  Number = 'number',
+  KeyId = 'keyId',
 }
 
 export enum OwnerRoute {
@@ -29,6 +34,11 @@ export enum OwnerRoute {
   RevokeKey = 'revoke_key',
 }
 
+const TASK_NUMBER_PATTERN = '[1-9][0-9]{0,8}';
+const WORKSPACE_PATH = `/owner/workspaces/:${RouteParam.WorkspaceId}`;
+const PROJECT_PATH = `/owner/projects/:${RouteParam.ProjectId}`;
+const TASK_PATH = `${PROJECT_PATH}/tasks/:${RouteParam.Number}(${TASK_NUMBER_PATTERN})`;
+
 type OwnerRouteDefinition = { method: HttpMethod; pattern: URLPattern };
 
 export type OwnerRouteMatch = { route: OwnerRoute; params: Record<string, string> };
@@ -44,25 +54,19 @@ export const OWNER_ROUTES: Record<OwnerRoute, OwnerRouteDefinition> = {
   [OwnerRoute.UpdateOwner]: definition({ method: HttpMethod.Patch, pathname: '/owner' }),
   [OwnerRoute.ListWorkspaces]: definition({ method: HttpMethod.Get, pathname: '/owner/workspaces' }),
   [OwnerRoute.CreateWorkspace]: definition({ method: HttpMethod.Post, pathname: '/owner/workspaces' }),
-  [OwnerRoute.RenameWorkspace]: definition({ method: HttpMethod.Patch, pathname: '/owner/workspaces/:workspaceId' }),
-  [OwnerRoute.CreateProject]: definition({ method: HttpMethod.Post, pathname: '/owner/workspaces/:workspaceId/projects' }),
-  [OwnerRoute.RenameProject]: definition({ method: HttpMethod.Patch, pathname: '/owner/projects/:projectId' }),
-  [OwnerRoute.AddTasks]: definition({ method: HttpMethod.Post, pathname: '/owner/projects/:projectId/tasks' }),
-  [OwnerRoute.UpdateTask]: definition({
-    method: HttpMethod.Patch,
-    pathname: `/owner/projects/:projectId/tasks/:number(${TASK_NUMBER_PATTERN})`,
-  }),
-  [OwnerRoute.CompleteTasks]: definition({ method: HttpMethod.Post, pathname: '/owner/projects/:projectId/tasks/complete' }),
-  [OwnerRoute.ReopenTasks]: definition({ method: HttpMethod.Post, pathname: '/owner/projects/:projectId/tasks/reopen' }),
-  [OwnerRoute.ReadHistory]: definition({
-    method: HttpMethod.Get,
-    pathname: `/owner/projects/:projectId/tasks/:number(${TASK_NUMBER_PATTERN})/history`,
-  }),
-  [OwnerRoute.ReadChanges]: definition({ method: HttpMethod.Get, pathname: '/owner/projects/:projectId/changes' }),
-  [OwnerRoute.WatchChanges]: definition({ method: HttpMethod.Get, pathname: '/owner/projects/:projectId/socket' }),
-  [OwnerRoute.ListKeys]: definition({ method: HttpMethod.Get, pathname: '/owner/projects/:projectId/keys' }),
-  [OwnerRoute.IssueKey]: definition({ method: HttpMethod.Post, pathname: '/owner/projects/:projectId/keys' }),
-  [OwnerRoute.RevokeKey]: definition({ method: HttpMethod.Delete, pathname: '/owner/projects/:projectId/keys/:keyId' }),
+  [OwnerRoute.RenameWorkspace]: definition({ method: HttpMethod.Patch, pathname: WORKSPACE_PATH }),
+  [OwnerRoute.CreateProject]: definition({ method: HttpMethod.Post, pathname: `${WORKSPACE_PATH}/projects` }),
+  [OwnerRoute.RenameProject]: definition({ method: HttpMethod.Patch, pathname: PROJECT_PATH }),
+  [OwnerRoute.AddTasks]: definition({ method: HttpMethod.Post, pathname: `${PROJECT_PATH}/tasks` }),
+  [OwnerRoute.UpdateTask]: definition({ method: HttpMethod.Patch, pathname: TASK_PATH }),
+  [OwnerRoute.CompleteTasks]: definition({ method: HttpMethod.Post, pathname: `${PROJECT_PATH}/tasks/complete` }),
+  [OwnerRoute.ReopenTasks]: definition({ method: HttpMethod.Post, pathname: `${PROJECT_PATH}/tasks/reopen` }),
+  [OwnerRoute.ReadHistory]: definition({ method: HttpMethod.Get, pathname: `${TASK_PATH}/history` }),
+  [OwnerRoute.ReadChanges]: definition({ method: HttpMethod.Get, pathname: `${PROJECT_PATH}/changes` }),
+  [OwnerRoute.WatchChanges]: definition({ method: HttpMethod.Get, pathname: `${PROJECT_PATH}/socket` }),
+  [OwnerRoute.ListKeys]: definition({ method: HttpMethod.Get, pathname: `${PROJECT_PATH}/keys` }),
+  [OwnerRoute.IssueKey]: definition({ method: HttpMethod.Post, pathname: `${PROJECT_PATH}/keys` }),
+  [OwnerRoute.RevokeKey]: definition({ method: HttpMethod.Delete, pathname: `${PROJECT_PATH}/keys/:${RouteParam.KeyId}` }),
 };
 
 function namedParams(groups: Record<string, string | undefined>): Record<string, string> {
