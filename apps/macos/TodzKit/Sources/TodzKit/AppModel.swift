@@ -12,35 +12,72 @@ import Observation
     public var selectedTask: TaskKey?
     public internal(set) var board = TaskBoard()
     public internal(set) var projectLoads: [String: ProjectLoad] = [:]
-    public internal(set) var pullsInFlight: [String: Int] = [:]
     public internal(set) var writesInFlight: Set<WriteTarget> = []
     public internal(set) var ruleIssues: [WriteTarget: RuleIssue] = [:]
-    public internal(set) var unconfirmedDrafts: [WriteTarget: TaskDraft] = [:]
     public internal(set) var unsavedNotes: [TaskKey: String] = [:]
     public internal(set) var banner: AppBanner?
     public internal(set) var histories: [TaskKey: HistoryLoad] = [:]
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
+    var outbox = Outbox()
+    var refreshesInFlight = 0
+    var isOffline = false
+    var isOwnerConfirmed = false
 
     @ObservationIgnored var session: String?
+    @ObservationIgnored var ownerIdentifier: String?
+    @ObservationIgnored var isWorkspaceListOutdated = false
+    @ObservationIgnored var workspaceListingsInFlight = 0
+    @ObservationIgnored var isCacheNotSavedRaised = false
+    @ObservationIgnored var watches: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored var watchAttempts: [String: Int] = [:]
+    @ObservationIgnored var isWatchAnswered: [String: Bool] = [:]
+    @ObservationIgnored var workspaceReload: Task<Void, Never>?
+    @ObservationIgnored var workspaceReloadIdentifier: UUID?
+    @ObservationIgnored var ownerConfirmationRetry: Task<Void, Never>?
+    @ObservationIgnored var ownerConfirmationFailures = 0
+    @ObservationIgnored var sendLoop: Task<Void, Never>?
+    @ObservationIgnored var sendingSession: String?
+    @ObservationIgnored var sendWait: Task<Void, any Error>?
+    @ObservationIgnored var headInFlightSession: String?
+    @ObservationIgnored var sendFailures = 0
+    @ObservationIgnored var hasServerAnswered = false
+    @ObservationIgnored var refusalsInFlush = 0
+    @ObservationIgnored var selectionsAtAdd: [String: TaskKey?] = [:]
+    @ObservationIgnored var projectsToPullFromStart: Set<String> = []
+    @ObservationIgnored var pullGates: [String: PullGate] = [:]
+    @ObservationIgnored var queuedPulls: Set<String> = []
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
+    @ObservationIgnored let store: any SyncStore
+    @ObservationIgnored let signals: any ChangeSignals
     @ObservationIgnored public let timeZone: TimeZone
     @ObservationIgnored let now: () -> Date
+    @ObservationIgnored let pause: @Sendable (Duration) async throws -> Void
     @ObservationIgnored let makeIdempotencyKey: () -> String
 
     public init(
         service: any OwnerService,
         vault: any SessionVault,
+        store: any SyncStore,
+        signals: any ChangeSignals,
         timeZone: TimeZone,
         now: @escaping () -> Date = Date.init,
+        pause: @escaping @Sendable (Duration) async throws -> Void,
         makeIdempotencyKey: @escaping () -> String = TaskDraft.newIdempotencyKey
     ) {
         self.service = service
         self.vault = vault
+        self.store = store
+        self.signals = signals
         self.timeZone = timeZone
         self.now = now
+        self.pause = pause
         self.makeIdempotencyKey = makeIdempotencyKey
+    }
+
+    public var waitingChangeCount: Int {
+        outbox.count
     }
 
     public var activeWorkspace: Workspace? {
@@ -53,7 +90,13 @@ import Observation
 
     public var taskViews: TaskViews? {
         guard let activeWorkspace else { return nil }
-        return TaskViews(projects: activeWorkspace.projects, board: board, day: today, timeZone: timeZone)
+        return TaskViews(
+            projects: activeWorkspace.projects,
+            board: board.applying(outbox),
+            pendingTasks: outbox.pendingTasks,
+            day: today,
+            timeZone: timeZone
+        )
     }
 
     public var canTryAgain: Bool {
@@ -65,17 +108,23 @@ import Observation
         do {
             secret = try vault.read()
         } catch {
+            loadOutbox()
             phase = .signedOut(notice: .sessionUnreadable)
             return
         }
         guard let secret else {
+            loadOutbox()
             phase = .signedOut(notice: nil)
             return
         }
         session = secret
         phase = .loading
-        await sendTimeZone()
-        await loadWorkspaces()
+        openCache(cachedOwner())
+        guard phase == .ready else {
+            await loadWorkspaces()
+            return
+        }
+        await reloadWorkspacesQuietly()
     }
 
     public func signIn(identity: String) async {
@@ -93,14 +142,37 @@ import Observation
             signInError = .unexpected
             return
         }
+        let cached: OwnerCache?
+        do {
+            cached = try cacheToOpen(for: issued.owner)
+        } catch {
+            signInError = .unexpected
+            try? await service.signOut(session: issued.sessionToken)
+            return
+        }
         session = issued.sessionToken
+        ownerIdentifier = issued.owner.identifier
+        isOwnerConfirmed = true
         phase = .loading
         keep(secret: issued.sessionToken)
-        await loadWorkspaces()
+        openCache(cached)
+        startSending()
+        guard phase == .ready else {
+            await loadWorkspaces()
+            return
+        }
+        await reloadWorkspacesQuietly()
     }
 
     public func signOut() async {
         guard let session else { return }
+        do {
+            try store.erase()
+        } catch {
+            raise(.signOutFailed)
+            return
+        }
+        outbox = Outbox()
         clearSession()
         phase = .signedOut(notice: nil)
         try? vault.erase()
@@ -132,11 +204,16 @@ import Observation
         do {
             let value = try await operation(session)
             guard self.session == session else { throw CancellationError() }
+            noteAnswer()
             return value
         } catch OwnerAPIError.unauthorized {
             guard self.session == session else { throw CancellationError() }
             endSession()
             throw OwnerAPIError.unauthorized
+        } catch {
+            guard self.session == session else { throw CancellationError() }
+            noteConnection(after: error)
+            throw error
         }
     }
 
@@ -149,6 +226,18 @@ import Observation
 
     private func clearSession() {
         session = nil
+        ownerIdentifier = nil
+        isOwnerConfirmed = false
+        forgetWindow()
+    }
+
+    func forgetWindow() {
+        stopWatching()
+        stopSending()
+        stopPulling()
+        selectionsAtAdd = [:]
+        isWorkspaceListOutdated = false
+        isOffline = false
         workspaces = []
         activeWorkspaceIdentifier = nil
         selectedItem = .inbox
@@ -156,14 +245,35 @@ import Observation
         board = TaskBoard()
         projectLoads = [:]
         ruleIssues = [:]
-        unconfirmedDrafts = [:]
         unsavedNotes = [:]
         histories = [:]
         dismissBanner()
     }
 
-    private func sendTimeZone() async {
-        _ = try? await request { try await service.updateOwner(session: $0, timeZone: timeZone.identifier) }
+    // NB ADR 0027: nothing is sent before this session's owner is confirmed, and another owner's cache is erased first.
+    func confirmOwner() async throws {
+        guard !isOwnerConfirmed else { return }
+        let owner: Owner
+        do {
+            owner = try await confirmedOwner()
+        } catch {
+            let isAnotherOwnerPossible = ownerIdentifier != nil
+            guard !isAnotherOwnerPossible else { throw error }
+            return
+        }
+        let isAnotherOwnersCache = ownerIdentifier != nil && ownerIdentifier != owner.identifier
+        if isAnotherOwnersCache { try forgetCache() }
+        isOwnerConfirmed = true
+        ownerConfirmationFailures = 0
+        ownerIdentifier = owner.identifier
+    }
+
+    private func confirmedOwner() async throws -> Owner {
+        do {
+            return try await request { try await service.updateOwner(session: $0, timeZone: timeZone.identifier) }
+        } catch OwnerAPIError.timeZoneInvalid {
+            return try await request { try await service.readOwner(session: $0) }
+        }
     }
 
     private func keep(secret: String) {

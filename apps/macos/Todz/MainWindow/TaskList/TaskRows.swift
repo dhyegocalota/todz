@@ -19,6 +19,10 @@ struct TaskRows: View {
                                 .tag(task.key)
                         }
                         .onMove(perform: section.hasManualOrder ? { move(section: section, source: $0, offset: $1) } : nil)
+                        ForEach(section.pendingTasks, id: \.idempotencyKey) { pendingTask in
+                            PendingTaskRow(task: pendingTask, item: item)
+                                .selectionDisabled()
+                        }
                     } header: {
                         TaskSectionHeader(section: section)
                     }
@@ -32,7 +36,8 @@ struct TaskRows: View {
             }
             .onKeyPress(keys: [.delete, .deleteForward]) { _ in .handled }
             .contextMenu(forSelectionType: TaskKey.self) { _ in
-            } primaryAction: { _ in
+            } primaryAction: { keys in
+                guard !keys.isEmpty else { return }
                 windowState.openInspectorTitle()
             }
             .onChange(of: model.selectedTask) { _, selectedTask in
@@ -44,14 +49,13 @@ struct TaskRows: View {
 
     private func toggleSelectedTask() {
         guard let selectedTask = model.selectedTask else { return }
-        Task { await model.toggleDone(task: selectedTask) }
+        windowState.toggleDone(task: selectedTask, model: model)
     }
 
     private func move(section: TaskSection, source: IndexSet, offset: Int) {
         guard let index = source.first else { return }
+        guard let placement = CompletionLingers.placement(moving: index, toOffset: offset, in: section.tasks) else { return }
         let moving = section.tasks[index]
-        let numbers = section.tasks.map(\.task.number)
-        guard let placement = TaskPlacementRequest.placement(openNumbers: numbers, moving: moving.task.number, toOffset: offset) else { return }
         Task { await model.move(task: moving.key, placement: placement) }
     }
 }

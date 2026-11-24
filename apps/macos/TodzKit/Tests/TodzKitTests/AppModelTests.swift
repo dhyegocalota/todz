@@ -42,10 +42,16 @@ import Testing
     @Test func aRefusedZoneAtLaunchShowsNothingAndGoesOn() async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
+        harness.seedTasks(projectIdentifier: "acme-inbox", count: 1)
+        let firstTask = TaskKey(projectIdentifier: "acme-inbox", number: 1)
+        try harness.store.keep(Outbox().appending(.field(firstTask, .title("Waiting")), isHeadSent: false))
         harness.service.failures[.updateOwner] = .timeZoneInvalid
         await harness.signedIn()
+        await harness.flushed()
         #expect(harness.model.phase == .ready)
         #expect(harness.model.banner == nil)
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.service.tasksOfProject["acme-inbox"]?.first?.title == "Waiting")
     }
 
     @Test func launchWithASecretAndNoWorkspaceAsksForItsName() async throws {

@@ -4,9 +4,19 @@ import Foundation
 private let tickSeconds: TimeInterval = 1
 private let inboxName = "Inbox"
 
+struct UndecodableAnswer: Error {}
+
+struct StatusFailure: Sendable {
+    let status: Int
+    let body: String
+}
+
 @MainActor final class FakeOwnerService: OwnerService {
     var calls: [FakeCall] = []
     var failures: [FakeRoute: OwnerAPIError] = [:]
+    var undecodableRoutes: Set<FakeRoute> = []
+    var statusFailures: [FakeRoute: StatusFailure] = [:]
+    var isReplayingAdds = false
     var projectFailures: [String: OwnerAPIError] = [:]
     var changeScripts: [String: [Result<ChangePage, OwnerAPIError>]] = [:]
     var onCall: ((FakeCall) -> Void)?
@@ -34,6 +44,11 @@ private let inboxName = "Inbox"
 
     func signOut(session: String) async throws {
         try await record(.signOut(session: session))
+    }
+
+    func readOwner(session: String) async throws -> Owner {
+        try await record(.readOwner(session: session))
+        return issuedSession.owner
     }
 
     func updateOwner(session: String, timeZone: String) async throws -> Owner {
@@ -76,7 +91,7 @@ private let inboxName = "Inbox"
             return task.record
         }
         tasksOfProject[projectIdentifier] = held + added
-        return added.map { AddedTask(task: $0, replayed: false) }
+        return added.map { AddedTask(task: $0, replayed: isReplayingAdds) }
     }
 
     func updateTask(session: String, projectIdentifier: String, number: Int, patch: TaskPatch) async throws -> TaskRecord {
@@ -168,6 +183,8 @@ private let inboxName = "Inbox"
         onCall?(call)
         if suspendedRoutes.contains(call.route) { await hold(call.route) }
         if let failure = failures[call.route] { throw failure }
+        if undecodableRoutes.contains(call.route) { throw UndecodableAnswer() }
+        if let failure = statusFailures[call.route] { throw OwnerErrorBody.failure(status: failure.status, body: Data(failure.body.utf8)) }
         guard let projectIdentifier = call.projectIdentifier else { return }
         if let failure = projectFailures[projectIdentifier] { throw failure }
     }

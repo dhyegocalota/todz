@@ -32,6 +32,10 @@ extension AppModel {
 
     func raiseLoadFailure(_ error: any Error, retry: @escaping @MainActor () async -> Void) {
         guard !(error is CancellationError) else { return }
+        guard !(error is SyncStoreError) else {
+            raise(.cacheNotSaved, retry: retry)
+            return
+        }
         guard let failure = error as? OwnerAPIError else {
             raise(.server, retry: retry)
             return

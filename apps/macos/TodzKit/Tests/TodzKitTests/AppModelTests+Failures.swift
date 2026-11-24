@@ -59,37 +59,13 @@ extension AppModelTests {
         #expect(harness.vault.eraseCount == 1)
     }
 
-    @Test func aTaskGoneOnAWriteReloadsTheWorkspaceAndSaysSo() async throws {
-        let harness = try AppModelHarness()
-        harness.seedWorkspace(name: "acme")
-        await harness.signedIn()
-        await harness.model.complete(task: firstTask)
-        #expect(harness.model.banner == .taskGone)
-        #expect(harness.service.routes() == [.completeTasks, .listWorkspaces, .readChanges])
-    }
-
-    @Test func anUnreachableServerKeepsTheBoardAndRaisesTheNetworkBanner() async throws {
-        let harness = try AppModelHarness()
-        harness.seedWorkspace(name: "acme")
-        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 2)
-        await harness.signedIn()
-        harness.service.failures[.completeTasks] = .unreachable
-        let boardBefore = harness.model.board
-        await harness.model.complete(task: firstTask)
-        #expect(harness.model.board == boardBefore)
-        #expect(harness.model.banner == .network)
-        harness.service.failures[.completeTasks] = nil
-        await harness.model.tryAgain()
-        #expect(harness.model.board.task(projectIdentifier: inboxIdentifier, number: 1)?.state == .done)
-    }
-
     @Test func dismissingABannerForgetsItsTryAgain() async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
-        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 1)
         await harness.signedIn()
-        harness.service.failures[.completeTasks] = .unreachable
-        await harness.model.complete(task: firstTask)
+        harness.service.failures[.createProject] = .unreachable
+        await harness.model.createProject(name: "Launch")
+        #expect(harness.model.canTryAgain)
         harness.model.dismissBanner()
         #expect(harness.model.banner == nil)
         #expect(harness.model.canTryAgain == false)
@@ -148,8 +124,10 @@ extension AppModelTests {
         await harness.signedIn()
         harness.service.failures[.completeTasks] = .unauthorized
         await harness.model.complete(task: firstTask)
+        await harness.flushed()
         await harness.model.tryAgain()
         await harness.model.updateTitle(task: firstTask, title: "Renamed")
+        await harness.flushed()
         #expect(harness.service.routes() == [.completeTasks])
         #expect(harness.vault.eraseCount == 1)
         #expect(harness.model.phase == .signedOut(notice: .sessionEnded))

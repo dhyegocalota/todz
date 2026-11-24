@@ -47,3 +47,7 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0024](0024-the-macos-app-is-an-xcodegen-project-over-a-local-swift-package.md) | The macOS app is an XcodeGen project over a local Swift package | Proposed | 2026-11-24 |
 | [0025](0025-the-session-secret-lives-in-a-private-file-until-the-app-has-a-team.md) | The session secret lives in a private file until the app has a team | Proposed | 2026-11-24 |
 | [0026](0026-a-native-app-is-walked-with-computer-use-and-recorded-from-its-screenshots.md) | A native app is walked with computer use and recorded from its screenshots | Proposed | 2026-11-24 |
+| [0027](0027-the-app-caches-each-owner-s-data-as-json-files-in-its-own-container-until-it-has-a-team.md) | The app caches each owner's data as JSON files in its own container until it has a team | Proposed | 2026-11-24 |
+| [0028](0028-the-app-s-task-writes-are-optimistic-and-go-through-a-persisted-outbox.md) | The app's task writes are optimistic and go through a persisted outbox | Proposed | 2026-11-24 |
+| [0029](0029-the-app-pulls-each-project-from-its-cursor-when-its-socket-says-changed.md) | The app pulls each project from its cursor when its socket says "changed" | Proposed | 2026-11-24 |
+| [0030](0030-product-screenshots-live-in-docs-screenshots-and-the-readme-walks-them.md) | Product screenshots live in docs/screenshots, and the README walks them | Proposed | 2026-11-24 |

@@ -3,7 +3,6 @@ import Testing
 @testable import TodzKit
 
 private let orderIdentifier = "acme-order"
-private let addToOrder = WriteTarget.newTask(projectIdentifier: orderIdentifier)
 
 extension AppModelTests {
     @MainActor private func orderHarness() async throws -> AppModelHarness {
@@ -15,7 +14,7 @@ extension AppModelTests {
         return harness
     }
 
-    @Test func aRefreshWithTheServerUnreachableKeepsTheBoardAndRaisesTheNetworkBanner() async throws {
+    @Test func aRefreshWithTheServerUnreachableKeepsTheBoardWithNoBanner() async throws {
         let harness = try await orderHarness()
         let boardBefore = harness.model.board
         let loadsBefore = harness.model.projectLoads
@@ -23,16 +22,10 @@ extension AppModelTests {
         await harness.model.refresh()
         #expect(harness.model.board == boardBefore)
         #expect(harness.model.projectLoads == loadsBefore)
-        #expect(harness.model.banner == .network)
-        #expect(harness.model.canTryAgain)
-        harness.service.failures[.readChanges] = nil
-        harness.service.calls = []
-        await harness.model.tryAgain()
-        #expect(harness.service.routes() == [.readChanges, .readChanges])
         #expect(harness.model.banner == nil)
     }
 
-    @Test func aRefreshWhereOneProjectFailsKeepsEveryProjectLoaded() async throws {
+    @Test func aRefreshWhereOneProjectFailsKeepsEveryProjectLoadedWithNoBanner() async throws {
         let harness = try await orderHarness()
         let boardBefore = harness.model.board
         let loadsBefore = harness.model.projectLoads
@@ -40,7 +33,7 @@ extension AppModelTests {
         await harness.model.refresh()
         #expect(harness.model.board == boardBefore)
         #expect(harness.model.projectLoads == loadsBefore)
-        #expect(harness.model.banner == .someProjectsFailed)
+        #expect(harness.model.banner == nil)
     }
 
     @Test func aFirstPullWithTheServerUnreachableRaisesTheNetworkBanner() async throws {
@@ -83,34 +76,5 @@ extension AppModelTests {
         await harness.signedIn()
         #expect(harness.model.projectLoads == ["acme-inbox": .loaded, orderIdentifier: .unreachable])
         #expect(harness.model.loadFailure(of: workspace) == nil)
-    }
-
-    @Test func anAddWhileTheServerIsUnreachableIsWhatTryAgainSendsAfterAFailedRefresh() async throws {
-        let harness = try await orderHarness()
-        harness.service.failures[.readChanges] = .unreachable
-        await harness.model.refresh()
-        harness.service.failures[.addTasks] = .unreachable
-        await harness.model.addTask(title: "Offline add", projectIdentifier: orderIdentifier, dueDate: nil)
-        let draft = TaskDraft(title: "Offline add", notes: nil, dueDate: nil, idempotencyKey: "key-1")
-        #expect(harness.model.banner == .network)
-        #expect(harness.model.unconfirmedDrafts == [addToOrder: draft])
-        harness.service.failures = [:]
-        harness.service.calls = []
-        await harness.model.tryAgain()
-        #expect(harness.service.calls == [.addTasks(session: harness.session, projectIdentifier: orderIdentifier, drafts: [draft])])
-        #expect(harness.model.taskViews?.project(identifier: orderIdentifier).count == 5)
-        #expect(harness.model.banner == nil)
-        #expect(harness.model.unconfirmedDrafts == [:])
-    }
-
-    @Test func addingTheSameTitleAgainAfterAFailedAddReusesItsIdempotencyKey() async throws {
-        let harness = try await orderHarness()
-        harness.service.failures[.addTasks] = .unreachable
-        await harness.model.addTask(title: "Offline add", projectIdentifier: orderIdentifier, dueDate: nil)
-        harness.service.failures = [:]
-        await harness.model.addTask(title: "Offline add", projectIdentifier: orderIdentifier, dueDate: nil)
-        await harness.model.addTask(title: "Next", projectIdentifier: orderIdentifier, dueDate: nil)
-        #expect(harness.keys.issued == ["key-1", "key-2"])
-        #expect(harness.model.unconfirmedDrafts == [:])
     }
 }

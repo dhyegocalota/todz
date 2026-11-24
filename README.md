@@ -11,6 +11,10 @@
 
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/mac-app-shell/04-inspector-notes-and-history.png" width="820" alt="The todz main window with a task's notes and history in the inspector">
+</p>
+
 ---
 
 todz is a to-do list that AI agents and their owner share. MCP-first and agentic-first: every action a person takes in the app, an agent can take through the MCP server (Claude Code, Codex, Cursor, any MCP client).
@@ -20,7 +24,15 @@ todz is a to-do list that AI agents and their owner share. MCP-first and agentic
 - **A native macOS app** with a menu bar extra and interactive WidgetKit widgets, simple and polished.
 - **For AI enthusiasts and programmers.**
 
-The product stack and every product decision have not been made yet. They arrive as features under [docs/features](docs/features/), starting with the brainstorming skill, and as [ADRs](docs/adr/).
+The approved design is in [docs/product](docs/product/); how each piece was built is in [docs/features](docs/features/) and the [ADRs](docs/adr/).
+
+## A walk through todz
+
+|                                                                                                                    |                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| ![Sign in](docs/screenshots/mac-app-shell/01-sign-in.png)<br>Sign in                                               | ![Name your first workspace](docs/screenshots/mac-app-shell/02-first-workspace.png)<br>Name your first workspace       |
+| ![Today across projects](docs/screenshots/mac-app-shell/03-today-two-projects.png)<br>Today across projects       | ![An agent's task appears live](docs/screenshots/mac-sync/01-agent-add-live.png)<br>An agent's task appears live       |
+| ![Offline, changes waiting](docs/screenshots/mac-sync/02-offline-changes-waiting.png)<br>Offline, changes waiting | ![A refused change, explained](docs/screenshots/mac-sync/03-refused-change-banner.png)<br>A refused change, explained |
 
 ## How the work happens
 

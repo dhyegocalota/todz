@@ -65,6 +65,14 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
         try expectOnlyRequest(ExpectedRequest(method: "DELETE", path: "/owner/sessions/current", session: session, body: nil))
     }
 
+    @Test func readOwnerGetsTheOwner() async throws {
+        let ownerIdentifier = UUID().uuidString
+        let body = "{\"owner\":\(OwnerFixtures.ownerJSON(identifier: ownerIdentifier, timeZone: timeZone))}"
+        let owner = try await api(answering: .response(status: 200, body: body)).readOwner(session: session)
+        try expectOnlyRequest(ExpectedRequest(method: "GET", path: "/owner", session: session, body: nil))
+        #expect(owner == Owner(identifier: ownerIdentifier, timeZone: timeZone))
+    }
+
     @Test func updateOwnerPatchesTheTimeZone() async throws {
         let ownerIdentifier = UUID().uuidString
         let body = "{\"owner\":\(OwnerFixtures.ownerJSON(identifier: ownerIdentifier, timeZone: timeZone))}"
@@ -186,7 +194,7 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
     @Test(arguments: [
         (401, "", OwnerAPIError.unauthorized),
         (401, "{\"error\":\"identity_rejected\"}", .identityRejected),
-        (404, "", .notFound),
+        (404, "", .unexpected(status: 404)),
         (404, "{\"error\":\"not_found\"}", .notFound),
         (404, "{\"error\":\"task_not_found\",\"number\":7}", .taskNotFound(number: 7)),
         (409, "{\"error\":\"inbox_is_fixed\"}", .inboxIsFixed),
@@ -195,9 +203,10 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
         (422, "{\"error\":\"rule_violated\",\"issue\":\"name_empty\",\"index\":null}", .ruleViolated(issue: .nameEmpty, index: nil)),
         (422, "{\"error\":\"time_zone_invalid\"}", .timeZoneInvalid),
         (400, "{\"error\":\"invalid_request\"}", .invalidRequest),
-        (400, "", .invalidRequest),
+        (400, "", .unexpected(status: 400)),
         (503, "{\"error\":\"sign_in_unavailable\"}", .signInUnavailable),
         (503, "", .signInUnavailable),
+        (511, "<html><body>Sign in to the network</body></html>", .unexpected(status: 511)),
         (500, "", .unexpected(status: 500)),
         (426, "", .unexpected(status: 426)),
         (418, "{\"error\":\"teapot\"}", .unexpected(status: 418)),

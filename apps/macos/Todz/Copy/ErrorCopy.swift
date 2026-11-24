@@ -19,4 +19,12 @@ enum ErrorCopy {
     static let projectGone = "This project is no longer available."
     static let workspaceGone = "This workspace is no longer available."
     static let ruleUnexpected = "todz couldn't save this change."
+    static let changeNotSavedBody = "todz now shows what it has saved."
+    static let cacheNotSaved = "Changes can't be kept on this Mac. They're sent while todz is open."
+    static let waitingChangesLost = "Changes waiting on this Mac couldn't be read and were lost."
+    static let signOutFailed = "todz couldn't erase this Mac's copy of your tasks, so you're still signed in. Try again."
+
+    static func changesNotSaved(count: Int) -> String {
+        InflectedCopy.text("^[\(count) change](inflect: true) weren't saved.")
+    }
 }

@@ -7,23 +7,18 @@ private let doneSymbol = "checkmark.circle.fill"
 struct TaskCheckbox: View {
     let task: BoardTask
     @Environment(AppModel.self) private var model
+    @Environment(MainWindowState.self) private var windowState
 
     var body: some View {
-        if model.isWriting(task: task.key) {
-            ProgressView()
-                .controlSize(.small)
+        Button {
+            windowState.toggleDone(task: task.key, model: model)
+        } label: {
+            Image(systemName: task.isDone ? doneSymbol : openSymbol)
+                .foregroundStyle(task.isDone ? Color.accentColor : Color.secondary)
         }
-        if !model.isWriting(task: task.key) {
-            Button {
-                Task { await model.toggleDone(task: task.key) }
-            } label: {
-                Image(systemName: task.isDone ? doneSymbol : openSymbol)
-                    .foregroundStyle(task.isDone ? Color.accentColor : Color.secondary)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(accessibilityLabel)
-            .accessibilityAddTraits(.isToggle)
-        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityAddTraits(.isToggle)
     }
 
     private var accessibilityLabel: String {

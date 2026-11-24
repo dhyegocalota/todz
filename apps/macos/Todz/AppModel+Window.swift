@@ -10,10 +10,6 @@ extension AppModel {
         phase == .ready
     }
 
-    var isRefreshing: Bool {
-        !pullsInFlight.isEmpty
-    }
-
     var selectedBoardTask: BoardTask? {
         guard let selectedTask else { return nil }
         return boardTask(selectedTask)
@@ -44,17 +40,6 @@ extension AppModel {
         return candidates.first { $0.key == key }
     }
 
-    func isWriting(task key: TaskKey) -> Bool {
-        writesInFlight.contains { target in
-            guard case let .taskField(writtenKey, _) = target else { return false }
-            return writtenKey == key
-        }
-    }
-
-    func isSaving(task key: TaskKey, field: TaskWriteField) -> Bool {
-        writesInFlight.contains(.taskField(key, field))
-    }
-
     func ruleIssue(task key: TaskKey, field: TaskWriteField) -> RuleIssue? {
         ruleIssues[.taskField(key, field)]
     }
@@ -73,7 +58,6 @@ extension AppModel {
 
     func toggleDone(task key: TaskKey) async {
         guard let boardTask = boardTask(key) else { return }
-        guard !isWriting(task: key) else { return }
         switch boardTask.task.state {
         case .open: await complete(task: key)
         case .done: await reopen(task: key)

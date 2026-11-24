@@ -3,11 +3,12 @@ import TodzKit
 
 struct TaskMenuItems: View {
     let model: AppModel
+    let windowState: MainWindowState
 
     var body: some View {
         Button(markTitle) {
             guard let selectedTask = model.selectedTask else { return }
-            Task { await model.toggleDone(task: selectedTask) }
+            windowState.toggleDone(task: selectedTask, model: model)
         }
         .keyboardShortcut(.return, modifiers: .command)
         .disabled(!canToggle)
@@ -27,14 +28,12 @@ struct TaskMenuItems: View {
 
     private var canToggle: Bool {
         guard model.isReady, let selectedTask = model.selectedTask else { return false }
-        let isKnownTask = model.boardTask(selectedTask) != nil
-        return isKnownTask && !model.isWriting(task: selectedTask)
+        return model.boardTask(selectedTask) != nil
     }
 
     private func canMove(_ direction: TaskMoveDirection) -> Bool {
         guard model.isReady, let selectedTask = model.selectedTask else { return false }
-        let hasPlacement = model.placement(task: selectedTask, direction: direction) != nil
-        return hasPlacement && !model.isWriting(task: selectedTask)
+        return model.placement(task: selectedTask, direction: direction) != nil
     }
 
     private func move(_ direction: TaskMoveDirection) {

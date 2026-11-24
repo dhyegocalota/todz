@@ -2,6 +2,7 @@ import SwiftUI
 import TodzKit
 
 private let windowIdentifier = "main"
+private let cacheFolderName = "Cache"
 private let defaultWidth: CGFloat = 1100
 private let defaultHeight: CGFloat = 700
 
@@ -10,7 +11,10 @@ struct TodzApp: App {
     @State private var model = AppModel(
         service: OwnerAPI(baseURL: AppConfiguration.baseURL),
         vault: FileSessionVault(folder: AppConfiguration.sessionFolder),
-        timeZone: .current
+        store: FileSyncStore(folder: AppConfiguration.sessionFolder.appending(path: cacheFolderName)),
+        signals: SocketChangeSignals(baseURL: AppConfiguration.baseURL),
+        timeZone: .current,
+        pause: { try await Task.sleep(for: $0) }
     )
     @State private var windowState = MainWindowState()
 
