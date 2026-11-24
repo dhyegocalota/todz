@@ -17,6 +17,7 @@ import Observation
     public internal(set) var unsavedNotes: [TaskKey: String] = [:]
     public internal(set) var banner: AppBanner?
     public internal(set) var histories: [TaskKey: HistoryLoad] = [:]
+    public internal(set) var linkRevealCount = 0
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
     var outbox = Outbox()

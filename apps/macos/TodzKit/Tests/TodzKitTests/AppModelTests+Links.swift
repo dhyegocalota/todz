@@ -25,6 +25,20 @@ extension AppModelTests {
         return harness
     }
 
+    @MainActor private func loadingLinkHarness() async throws -> (AppModelHarness, Task<Void, Never>) {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.service.tasksOfProject[inboxIdentifier] = [
+            MutableTask(number: 1, title: "Due today", dueDate: today).record,
+            MutableTask(number: 3, title: "Due tomorrow", dueDate: tomorrow).record,
+        ]
+        harness.service.suspend(.updateOwner)
+        harness.vault.secret = harness.session
+        let launching = Task { await harness.model.launch() }
+        await harness.service.held(.updateOwner)
+        return (harness, launching)
+    }
+
     @Test func theTodayLinkSelectsTodayWithNoTask() async throws {
         let harness = try await linkHarness()
         harness.model.follow(.today)
@@ -81,6 +95,52 @@ extension AppModelTests {
         await harness.model.linkFollowing?.value
         #expect(harness.model.selectedItem == .today)
         #expect(harness.model.selectedTask == dueTodayTask)
+    }
+
+    @Test func aLinkThatRevealsATaskCountsOneReveal() async throws {
+        let harness = try await linkHarness()
+        harness.model.follow(.task(dueTodayTask))
+        #expect(harness.model.linkRevealCount == 1)
+    }
+
+    @Test func aLinkThatRevealsNoTaskCountsNoReveal() async throws {
+        let harness = try await linkHarness()
+        harness.model.follow(.task(dueTomorrowTask))
+        harness.model.follow(.today)
+        #expect(harness.model.linkRevealCount == 0)
+    }
+
+    @Test func aLinkThatWaitedThroughLoadingCountsOneRevealOnceTheTaskIsShown() async throws {
+        let (harness, launching) = try await loadingLinkHarness()
+        harness.model.follow(.task(dueTodayTask))
+        #expect(harness.model.linkRevealCount == 0)
+        harness.service.resume(.updateOwner)
+        await launching.value
+        await harness.model.linkFollowing?.value
+        #expect(harness.model.linkRevealCount == 1)
+    }
+
+    @Test func changingTheSelectedItemBeforeTheLinkIsFollowedDropsTheLink() async throws {
+        let (harness, launching) = try await loadingLinkHarness()
+        harness.model.follow(.task(dueTodayTask))
+        harness.model.selectedItem = .upcoming
+        harness.service.resume(.updateOwner)
+        await launching.value
+        await harness.model.linkFollowing?.value
+        #expect(harness.model.selectedItem == .upcoming)
+        #expect(harness.model.selectedTask == nil)
+        #expect(harness.model.linkRevealCount == 0)
+    }
+
+    @Test func changingTheSelectedTaskBeforeTheLinkIsFollowedDropsTheLink() async throws {
+        let (harness, launching) = try await loadingLinkHarness()
+        harness.model.follow(.task(dueTodayTask))
+        harness.model.selectedTask = dueTomorrowTask
+        harness.service.resume(.updateOwner)
+        await launching.value
+        await harness.model.linkFollowing?.value
+        #expect(harness.model.selectedTask == dueTomorrowTask)
+        #expect(harness.model.linkRevealCount == 0)
     }
 
     @Test func aLinkNeverWrites() async throws {
