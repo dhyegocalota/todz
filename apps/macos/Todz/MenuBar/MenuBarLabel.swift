@@ -17,5 +17,8 @@ struct MenuBarLabel: View {
                 windowState.follow(link, model: model)
                 openWindow.mainWindow()
             }
+            .onChange(of: model.linkRevealCount) {
+                windowState.isInspectorPresented = true
+            }
     }
 }

@@ -8,8 +8,14 @@ import Observation
     public internal(set) var lastIdentity: String?
     public internal(set) var workspaces: [Workspace] = []
     public internal(set) var activeWorkspaceIdentifier: String?
-    public var selectedItem: SidebarItem = .inbox
-    public var selectedTask: TaskKey?
+    public var selectedItem: SidebarItem = .inbox {
+        didSet { waitingLink = nil }
+    }
+
+    public var selectedTask: TaskKey? {
+        didSet { waitingLink = nil }
+    }
+
     public internal(set) var board = TaskBoard()
     public internal(set) var projectLoads: [String: ProjectLoad] = [:]
     public internal(set) var writesInFlight: Set<WriteTarget> = []

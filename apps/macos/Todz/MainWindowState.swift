@@ -34,8 +34,6 @@ private let completionLinger: Duration = .seconds(1)
     func follow(_ link: WidgetLink, model: AppModel) {
         waitingLink = nil
         model.follow(link)
-        guard model.selectedTask != nil else { return }
-        isInspectorPresented = true
     }
 
     func openInspectorTitle() {

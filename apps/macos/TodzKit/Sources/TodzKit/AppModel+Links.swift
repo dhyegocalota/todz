@@ -43,6 +43,7 @@ extension AppModel {
             return
         }
         reveal(task: key)
+        linkRevealCount += 1
     }
 
     private func isInToday(_ key: TaskKey) -> Bool {
