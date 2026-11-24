@@ -54,7 +54,7 @@ async function renameWorkspace(context: SessionContext): Promise<Response> {
   if (workspaceId === null) return errorResponse(OwnerErrorCode.NotFound);
   const nameResult = resultOf(() => normalizeName(body.name));
   if (!nameResult.ok) return failureResponse(nameResult.failure);
-  await updateWorkspaceName({ directory: env.DIRECTORY, workspaceId, name: nameResult.value });
+  await updateWorkspaceName({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId, name: nameResult.value });
   const listings = await listOwnerWorkspaces({ directory: env.DIRECTORY, ownerId: owner.ownerId });
   const renamed = listings.find((listing) => listing.workspace.id === workspaceId);
   if (renamed === undefined) throw new Error('an owned workspace is missing from the owner listing');
@@ -70,7 +70,7 @@ async function createProject(context: SessionContext): Promise<Response> {
   const nameResult = resultOf(() => normalizeName(body.name));
   if (!nameResult.ok) return failureResponse(nameResult.failure);
   const project = { id: crypto.randomUUID(), name: nameResult.value, isInbox: false, createdAt: now };
-  await insertProject({ directory: env.DIRECTORY, projectId: project.id, workspaceId, name: project.name, now });
+  await insertProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId: project.id, workspaceId, name: project.name, now });
   return Response.json({ project: projectJson(project) }, { status: HttpStatus.Created });
 }
 
@@ -85,7 +85,7 @@ async function renameProject(context: SessionContext): Promise<Response> {
   if (project.isInbox) return errorResponse(OwnerErrorCode.InboxIsFixed);
   const nameResult = resultOf(() => normalizeName(body.name));
   if (!nameResult.ok) return failureResponse(nameResult.failure);
-  await updateProjectName({ directory: env.DIRECTORY, projectId, name: nameResult.value });
+  await updateProjectName({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId, name: nameResult.value });
   return Response.json({ project: projectJson({ ...project, name: nameResult.value }) });
 }
 

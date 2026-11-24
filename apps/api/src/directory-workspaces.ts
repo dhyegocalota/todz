@@ -59,10 +59,20 @@ export async function updateWorkspaceName({
   name,
 }: {
   directory: D1Database;
+  ownerId: string;
   workspaceId: string;
   name: string;
-}): Promise<void> {
+}): Promise<boolean> {
   await directory.prepare('UPDATE workspaces SET name = ? WHERE id = ?').bind(name, workspaceId).run();
+  return true;
+}
+
+export async function findOwnerWorkspace(_parameters: {
+  directory: D1Database;
+  ownerId: string;
+  workspaceId: string;
+}): Promise<WorkspaceListing | null> {
+  throw new Error('findOwnerWorkspace is not implemented');
 }
 
 export async function insertProject({
@@ -73,15 +83,17 @@ export async function insertProject({
   now,
 }: {
   directory: D1Database;
+  ownerId: string;
   projectId: string;
   workspaceId: string;
   name: string;
   now: number;
-}): Promise<void> {
+}): Promise<boolean> {
   await directory
     .prepare('INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) VALUES (?, ?, ?, 0, ?)')
     .bind(projectId, workspaceId, name, now)
     .run();
+  return true;
 }
 
 export async function findProject({ directory, projectId }: { directory: D1Database; projectId: string }): Promise<ProjectRecord | null> {
@@ -99,8 +111,10 @@ export async function updateProjectName({
   name,
 }: {
   directory: D1Database;
+  ownerId: string;
   projectId: string;
   name: string;
-}): Promise<void> {
+}): Promise<boolean> {
   await directory.prepare('UPDATE projects SET name = ? WHERE id = ? AND is_inbox = 0').bind(name, projectId).run();
+  return true;
 }
