@@ -11,7 +11,7 @@ enum TaskListState {
         let isFirstLoad = loads.contains(nil)
         guard !isFirstLoad else { return .loading }
         if let loadFailure = model.loadFailure(of: workspace) { return .failed(loadFailure) }
-        let views = TaskViews(projects: workspace.projects, board: model.board, day: model.today, timeZone: model.timeZone)
+        guard let views = model.taskViews else { return .loading }
         let sections = TaskSections.sections(item: model.selectedItem, views: views, today: model.today, timeZone: model.timeZone)
         let isEmpty = sections.allSatisfy { $0.tasks.isEmpty }
         guard !isEmpty else { return .empty }

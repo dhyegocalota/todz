@@ -8,34 +8,23 @@ struct DueDatePicker: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            HStack {
-                Button(action: open) {
-                    if let dueDate = task.task.dueDate {
-                        DueLabel(dueDate: dueDate)
-                    }
-                    if task.task.dueDate == nil {
-                        Text(InspectorCopy.noDueDate)
-                    }
+            Button(action: open) {
+                if let dueDate = task.task.dueDate {
+                    DueLabel(dueDate: dueDate)
                 }
-                .buttonStyle(.link)
-                .disabled(isSaving)
-                .popover(isPresented: isPresented) {
-                    DueDatePopover(pickedDate: pickedDate, hasDueDate: task.task.dueDate != nil, pick: pick, clear: clear)
+                if task.task.dueDate == nil {
+                    Text(InspectorCopy.noDueDate)
                 }
-                if isSaving {
-                    ProgressView()
-                        .controlSize(.small)
-                }
+            }
+            .buttonStyle(.link)
+            .popover(isPresented: isPresented) {
+                DueDatePopover(pickedDate: pickedDate, hasDueDate: task.task.dueDate != nil, pick: pick, clear: clear)
             }
             if let issue = model.ruleIssue(task: task.key, field: .dueDate) {
                 Text(issue.copy)
                     .foregroundStyle(.red)
             }
         }
-    }
-
-    private var isSaving: Bool {
-        model.isSaving(task: task.key, field: .dueDate)
     }
 
     private var isPresented: Binding<Bool> {

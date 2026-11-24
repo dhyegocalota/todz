@@ -10,10 +10,6 @@ extension AppModel {
         phase == .ready
     }
 
-    var isRefreshing: Bool {
-        !pullsInFlight.isEmpty
-    }
-
     var selectedBoardTask: BoardTask? {
         guard let selectedTask else { return nil }
         return boardTask(selectedTask)
@@ -73,7 +69,6 @@ extension AppModel {
 
     func toggleDone(task key: TaskKey) async {
         guard let boardTask = boardTask(key) else { return }
-        guard !isWriting(task: key) else { return }
         switch boardTask.task.state {
         case .open: await complete(task: key)
         case .done: await reopen(task: key)

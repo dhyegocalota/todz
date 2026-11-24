@@ -26,7 +26,6 @@ struct NotesEditor: View {
                         .scrollContentBackground(.hidden)
                         .frame(minHeight: editorMinimumHeight)
                         .focused($isFocused)
-                        .disabled(isSaving)
                         .onAppear { isFocused = true }
                         .onExitCommand(perform: restore)
                 }
@@ -35,11 +34,6 @@ struct NotesEditor: View {
                         NotesPreview(notes: task.task.notes, options: markdownOptions)
                     }
                     .buttonStyle(.plain)
-                    .disabled(isSaving)
-                }
-                if isSaving {
-                    ProgressView()
-                        .controlSize(.small)
                 }
             }
             .padding()
@@ -58,10 +52,6 @@ struct NotesEditor: View {
             draft = Self.editableText(saved)
         }
         .onDisappear(perform: commit)
-    }
-
-    private var isSaving: Bool {
-        model.isSaving(task: task.key, field: .notes)
     }
 
     private static func initialDraft(unsavedNotes: String?, savedNotes: String?) -> String {
@@ -86,7 +76,7 @@ struct NotesEditor: View {
     }
 
     private func commit() {
-        guard isEditing, !isSaving else { return }
+        guard isEditing else { return }
         Task {
             await model.commitNotes(task: task.key, draft: draft)
             guard model.ruleIssue(task: task.key, field: .notes) == nil else { return }

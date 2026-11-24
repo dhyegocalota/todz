@@ -27,7 +27,6 @@ struct TaskRow: View {
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
         }
-        .disabled(model.isWriting(task: task.key))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(task.task.title)
         .accessibilityValue(spokenValue)

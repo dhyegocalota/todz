@@ -12,4 +12,8 @@ enum SignInCopy {
     static let sessionEnded = "Your session has ended. Sign in again."
     static let sessionUnreadable = "Your saved session couldn't be read. Sign in again."
     static let timeZoneInvalid = "This Mac's time zone wasn't accepted."
+
+    static func sessionEndedWaiting(count: Int) -> String {
+        InflectedCopy.text("Your session has ended. Sign in again to send ^[\(count) waiting change](inflect: true).")
+    }
 }

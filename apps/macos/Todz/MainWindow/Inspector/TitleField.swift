@@ -16,20 +16,13 @@ struct TitleField: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            HStack(alignment: .firstTextBaseline) {
-                TextField(task.task.title, text: $draft, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .focused(focus, equals: .inspectorTitle)
-                    .disabled(isSaving)
-                    .onSubmit(commit)
-                    .onExitCommand(perform: restore)
-                if isSaving {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-            }
+            TextField(task.task.title, text: $draft, axis: .vertical)
+                .textFieldStyle(.plain)
+                .font(.title2)
+                .fontWeight(.semibold)
+                .focused(focus, equals: .inspectorTitle)
+                .onSubmit(commit)
+                .onExitCommand(perform: restore)
             if let shownIssue {
                 Text(shownIssue.copy)
                     .foregroundStyle(.red)
@@ -46,10 +39,6 @@ struct TitleField: View {
         .onDisappear(perform: commit)
     }
 
-    private var isSaving: Bool {
-        model.isSaving(task: task.key, field: .title)
-    }
-
     private var shownIssue: RuleIssue? {
         guard let localIssue else { return model.ruleIssue(task: task.key, field: .title) }
         return localIssue
@@ -62,7 +51,6 @@ struct TitleField: View {
     }
 
     private func commit() {
-        guard !isSaving else { return }
         guard draft != task.task.title else { return }
         localIssue = TextCheck.issue(ofTitle: draft)
         guard localIssue == nil else { return }

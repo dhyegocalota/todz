@@ -1,6 +1,8 @@
 enum TaskRowCopy {
     static let dueToday = "Today"
     static let dueTomorrow = "Tomorrow"
+    static let pending = "Not saved yet"
+    static let pendingHelp = "Not saved yet. It gets its number once todz has it."
 
     static func overdue(date: String) -> String {
         "Overdue · \(date)"

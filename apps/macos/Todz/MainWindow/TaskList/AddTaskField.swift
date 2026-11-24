@@ -12,34 +12,19 @@ struct AddTaskField: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            HStack {
-                TextField(MainWindowCopy.addPlaceholder, text: $title)
-                    .textFieldStyle(.plain)
-                    .focused(focus, equals: .addField)
-                    .onSubmit(submit)
-                    .onExitCommand(perform: clear)
-                if isAdding {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-            }
-            .padding()
-            .background(.fill.quaternary)
+            TextField(MainWindowCopy.addPlaceholder, text: $title)
+                .textFieldStyle(.plain)
+                .focused(focus, equals: .addField)
+                .onSubmit(submit)
+                .onExitCommand(perform: clear)
+                .padding()
+                .background(.fill.quaternary)
             if let shownIssue {
                 Text(shownIssue.copy)
                     .foregroundStyle(.red)
             }
         }
         .padding(.horizontal)
-        .onChange(of: model.unconfirmedDrafts[destination.target]) { unconfirmed, current in
-            let isTheShownAddConfirmed = current == nil && unconfirmed?.title == title
-            guard isTheShownAddConfirmed else { return }
-            title = clearedTitle
-        }
-    }
-
-    private var isAdding: Bool {
-        model.writesInFlight.contains(destination.target)
     }
 
     private var shownIssue: RuleIssue? {
@@ -55,15 +40,11 @@ struct AddTaskField: View {
 
     private func submit() {
         let isBlank = title.allSatisfy(\.isWhitespace)
-        guard !isBlank, !isAdding else { return }
+        guard !isBlank else { return }
         localIssue = TextCheck.issue(ofTitle: title)
         guard localIssue == nil else { return }
         let submitted = title
         title = clearedTitle
-        Task {
-            await model.addTask(title: submitted, projectIdentifier: destination.projectIdentifier, dueDate: destination.dueDate)
-            guard model.unconfirmedDrafts[destination.target] != nil else { return }
-            title = submitted
-        }
+        Task { await model.addTask(title: submitted, projectIdentifier: destination.projectIdentifier, dueDate: destination.dueDate) }
     }
 }

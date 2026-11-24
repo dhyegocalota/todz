@@ -9,21 +9,15 @@ struct TaskCheckbox: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if model.isWriting(task: task.key) {
-            ProgressView()
-                .controlSize(.small)
+        Button {
+            Task { await model.toggleDone(task: task.key) }
+        } label: {
+            Image(systemName: task.isDone ? doneSymbol : openSymbol)
+                .foregroundStyle(task.isDone ? Color.accentColor : Color.secondary)
         }
-        if !model.isWriting(task: task.key) {
-            Button {
-                Task { await model.toggleDone(task: task.key) }
-            } label: {
-                Image(systemName: task.isDone ? doneSymbol : openSymbol)
-                    .foregroundStyle(task.isDone ? Color.accentColor : Color.secondary)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(accessibilityLabel)
-            .accessibilityAddTraits(.isToggle)
-        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityAddTraits(.isToggle)
     }
 
     private var accessibilityLabel: String {

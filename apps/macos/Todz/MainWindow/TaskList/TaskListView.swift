@@ -23,6 +23,7 @@ struct TaskListView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
+                SyncStatusItem()
                 RefreshButton()
                 InspectorToggle()
             }

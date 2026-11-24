@@ -24,6 +24,6 @@ enum ErrorCopy {
     static let waitingChangesLost = "Changes waiting on this Mac couldn't be read and were lost."
 
     static func changesNotSaved(count: Int) -> String {
-        "\(count.formatted()) changes weren't saved."
+        InflectedCopy.text("^[\(count) change](inflect: true) weren't saved.")
     }
 }
