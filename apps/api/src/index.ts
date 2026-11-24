@@ -2,16 +2,19 @@ import type { Env } from './env';
 import { HttpStatus } from './http-status';
 import { serveMcp } from './mcp-endpoint';
 import { serveOwner } from './owner-endpoint';
+import { serveSignInPage } from './sign-in-page';
 
 export { ProjectStore } from './project-store';
 
 const MCP_PATH = '/mcp';
 const OWNER_PATH = '/owner';
+const SIGN_IN_PAGE_PATH = '/sign-in';
 
 type Route = ({ request, env }: { request: Request; env: Env }) => Promise<Response>;
 
 const ROUTE_OF_PATH: Record<string, Route> = {
   [MCP_PATH]: ({ request, env }) => serveMcp({ request, env, now: Date.now() }),
+  [SIGN_IN_PAGE_PATH]: ({ request }) => serveSignInPage(request),
 };
 
 function isOwnerPath(pathname: string): boolean {
