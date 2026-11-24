@@ -130,6 +130,54 @@ extension AppModelTests {
         #expect(harness.vault.secret == harness.service.issuedSession.sessionToken)
     }
 
+    @Test func anUnreachableWatchMarksTheModelOfflineBeforeItReconnects() async throws {
+        let harness = try await watchHarness()
+        #expect(harness.model.syncStatus == .online)
+        harness.signals.fail(harness.watchKey(inboxIdentifier), with: .unreachable)
+        await harness.pause.started()
+        #expect(harness.model.syncStatus == .offline(waiting: 0))
+        harness.pause.release()
+    }
+
+    @Test func aStaleWatchsFailureLeavesTheNewSessionOnline() async throws {
+        let harness = try await watchHarness()
+        harness.signals.fail(harness.watchKey(inboxIdentifier), with: .unreachable)
+        await harness.model.signOut()
+        await harness.model.signIn(identity: "walker-2")
+        await harness.model.refresh()
+        #expect(harness.model.syncStatus == .online)
+    }
+
+    @Test func aMissingProjectKeepsTheModelOnlineWhileItsWatchReloads() async throws {
+        let harness = try await watchHarness()
+        harness.service.suspend(.listWorkspaces)
+        harness.signals.fail(harness.watchKey(launchIdentifier), with: .notFound)
+        await harness.pause.started()
+        #expect(harness.model.syncStatus == .online)
+        await harness.service.held(.listWorkspaces)
+        harness.service.resume(.listWorkspaces)
+        await harness.model.workspaceReload?.value
+    }
+
+    @Test func aProjectThatLeavesTheListHasItsProjectFileErased() async throws {
+        let harness = try await watchHarness()
+        withoutLaunch(harness)
+        harness.service.failures[.renameProject] = .notFound
+        await harness.model.renameProject(projectIdentifier: inboxIdentifier, name: "Mine")
+        await harness.signals.cancelled(harness.watchKey(launchIdentifier))
+        #expect(harness.store.calls.contains(.eraseProject(identifier: launchIdentifier)))
+        #expect(!harness.store.calls.contains(.eraseProject(identifier: inboxIdentifier)))
+        #expect(harness.model.board.tasks(projectIdentifier: launchIdentifier).isEmpty)
+    }
+
+    @Test func aWorkspaceSwitchErasesNoProjectFile() async throws {
+        let harness = try await watchHarness()
+        harness.store.calls = []
+        await harness.model.switchWorkspace(identifier: "side")
+        await harness.signals.cancelled(harness.watchKey(inboxIdentifier))
+        #expect(!harness.store.routes().contains(.eraseProject))
+    }
+
     @Test func aWatchThatEndsWithoutAnErrorIsNotReopened() async throws {
         let harness = try await watchHarness()
         harness.signals.end(harness.watchKey(inboxIdentifier))
