@@ -7,4 +7,12 @@ public enum WorkspaceShortcuts {
         guard isShortcutNumber, workspaces.indices.contains(position) else { return nil }
         return workspaces[position]
     }
+
+    public static func numbered(_ workspaces: [Workspace]) -> [(number: Int, workspace: Workspace)] {
+        fatalError("numbered(_:) is not implemented")
+    }
+
+    public static func lastNumber(of workspaces: [Workspace]) -> Int {
+        fatalError("lastNumber(of:) is not implemented")
+    }
 }
