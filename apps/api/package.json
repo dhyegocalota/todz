@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "wrangler d1 migrations apply directory --local && wrangler dev --var SIGN_IN_PROVIDER:fake",
     "dev:email": "wrangler d1 migrations apply directory --local && wrangler dev --var SIGN_IN_PROVIDER:email --var EMAIL_SENDER:console --var PUBLIC_ORIGIN:http://localhost:8787",
+    "emails:generate": "tsx scripts/emails/cli.ts generate",
+    "emails:check": "tsx scripts/emails/cli.ts check",
+    "emails:preview": "tsx scripts/emails/cli.ts preview",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
     "test:unit": "vitest run"
   },
@@ -18,6 +21,13 @@
     "@cloudflare/vitest-plugin": "1.9.0",
     "@cloudflare/workers-types": "5.20261123.1",
     "@modelcontextprotocol/client": "2.4.0",
+    "@react-email/components": "1.0.12",
+    "@react-email/render": "2.0.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "tsx": "4.23.15",
     "vitest": "5.0.5",
     "wrangler": "4.167.0"
   }
