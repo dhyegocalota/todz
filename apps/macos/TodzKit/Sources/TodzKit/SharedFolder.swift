@@ -32,11 +32,12 @@ public enum SharedFolder {
         } catch {
             return nil
         }
-        return owned(folder)
+        guard FolderStatus.madePrivate(folder) == .owned else { return nil }
+        return folder
     }
 
     public static func owned(_ folder: URL) -> URL? {
-        guard FolderStatus.madePrivate(folder) == .owned else { return nil }
+        guard FolderStatus.checked(folder) == .owned else { return nil }
         return folder
     }
 }

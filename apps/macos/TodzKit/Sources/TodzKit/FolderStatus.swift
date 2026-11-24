@@ -9,10 +9,14 @@ enum FolderStatus: Equatable {
     case refused
 
     static func checked(_ folder: URL) -> FolderStatus {
-        fatalError("FolderStatus.checked is not implemented")
+        inspected(folder) { _ in }
     }
 
     static func madePrivate(_ folder: URL) -> FolderStatus {
+        inspected(folder) { _ = fchmod($0, privateFolderMode) }
+    }
+
+    private static func inspected(_ folder: URL, whenOwned: (Int32) -> Void) -> FolderStatus {
         let descriptor = folder.withUnsafeFileSystemRepresentation { path in
             path.map { open($0, openFlags) }
         }
@@ -21,7 +25,8 @@ enum FolderStatus: Equatable {
         defer { close(descriptor) }
         var status = stat()
         let isOwnedFolder = fstat(descriptor, &status) == 0 && status.st_mode & S_IFMT == S_IFDIR && status.st_uid == getuid()
-        guard isOwnedFolder, fchmod(descriptor, privateFolderMode) == 0 else { return .refused }
+        guard isOwnedFolder else { return .refused }
+        whenOwned(descriptor)
         return .owned
     }
 }
