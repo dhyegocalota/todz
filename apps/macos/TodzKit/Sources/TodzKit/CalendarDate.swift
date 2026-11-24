@@ -1,6 +1,20 @@
+import Foundation
+
 private let separator: Character = "-"
 
-public struct CalendarDate: Decodable, Sendable, Hashable {
+public struct CalendarDate: Decodable, Sendable, Hashable, Comparable {
+    public static func < (lhs: CalendarDate, rhs: CalendarDate) -> Bool {
+        fatalError("CalendarDate ordering is not implemented")
+    }
+
+    public static func today(in timeZone: TimeZone, at instant: Date) -> CalendarDate {
+        fatalError("CalendarDate.today is not implemented")
+    }
+
+    public var text: String {
+        fatalError("CalendarDate.text is not implemented")
+    }
+
     public let year: Int
     public let month: Int
     public let day: Int
