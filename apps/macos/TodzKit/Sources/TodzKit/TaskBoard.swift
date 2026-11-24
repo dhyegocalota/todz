@@ -4,10 +4,6 @@ private let keyPaddingDigit: Character = "0"
 
 private typealias Overlay = (board: TaskBoard, movedProjectIdentifiers: Set<String>)
 
-private func isEarlierInManualOrder(_ lhs: TaskRecord, _ rhs: TaskRecord) -> Bool {
-    (ByteOrderKey(lhs.orderKey), lhs.number) < (ByteOrderKey(rhs.orderKey), rhs.number)
-}
-
 private func displayOrderKey(position: Int, count: Int) -> String {
     let digits = String(position)
     return String(repeating: keyPaddingDigit, count: String(count).count - digits.count) + digits
@@ -88,7 +84,7 @@ public struct TaskBoard: Sendable, Equatable {
     private func openNumbers(projectIdentifier: String) -> [Int] {
         tasks(projectIdentifier: projectIdentifier)
             .filter { $0.state == .open }
-            .sorted(by: isEarlierInManualOrder)
+            .sorted(by: PositionedTask.isEarlierInManualOrder)
             .map(\.number)
     }
 

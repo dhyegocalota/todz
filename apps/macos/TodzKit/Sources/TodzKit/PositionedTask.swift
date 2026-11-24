@@ -11,7 +11,11 @@ struct PositionedTask {
     }
 
     static func isEarlierInManualOrder(_ lhs: PositionedTask, _ rhs: PositionedTask) -> Bool {
-        (lhs.orderKey, lhs.task.number) < (rhs.orderKey, rhs.task.number)
+        isEarlierInManualOrder(lhs.task, rhs.task)
+    }
+
+    static func isEarlierInManualOrder(_ lhs: TaskRecord, _ rhs: TaskRecord) -> Bool {
+        (ByteOrderKey(lhs.orderKey), lhs.number) < (ByteOrderKey(rhs.orderKey), rhs.number)
     }
 
     static func isEarlierInSidebarOrder(_ lhs: PositionedTask, _ rhs: PositionedTask) -> Bool {
