@@ -36,7 +36,7 @@ The approved design is in [docs/product](docs/product/); how each piece was buil
 
 |                                                                                                                   |                                                                                                                       |
 | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| ![Sign in](docs/screenshots/mac-app-shell/01-sign-in.png)<br>Sign in                                              | ![Name your first workspace](docs/screenshots/mac-app-shell/02-first-workspace.png)<br>Name your first workspace      |
+| ![Sign in with your email](docs/screenshots/mac-app-shell/01-sign-in.png)<br>Sign in with your email | ![Name your first workspace](docs/screenshots/mac-app-shell/02-first-workspace.png)<br>Name your first workspace      |
 | ![Today across projects](docs/screenshots/mac-app-shell/03-today-two-projects.png)<br>Today across projects       | ![An agent's task appears live](docs/screenshots/mac-sync/01-agent-add-live.png)<br>An agent's task appears live      |
 | ![Offline, changes waiting](docs/screenshots/mac-sync/02-offline-changes-waiting.png)<br>Offline, changes waiting | ![A refused change, explained](docs/screenshots/mac-sync/03-refused-change-banner.png)<br>A refused change, explained |
 | ![Today from the menu bar](docs/screenshots/menu-bar/01-today-popover.png)<br>Today from the menu bar             | ![Today ring](docs/screenshots/widgets/01-today-ring.png)<br>Today ring (rendered)                                    |
@@ -44,7 +44,8 @@ The approved design is in [docs/product](docs/product/); how each piece was buil
 | ![Large Today list](docs/screenshots/widgets/04-large-today.png)<br>Large Today list (rendered)                   | ![Connect an agent](docs/screenshots/connect-an-agent/01-key-screen.png)<br>Connect an agent                          |
 | ![Today's open tasks on the menu bar icon](docs/screenshots/menu-bar-count/01-count.png)<br>Today's open tasks on the menu bar icon | ![An agent's tasks in a project, via Claude Code](docs/screenshots/v1-walk/01-agent-tasks-in-a-project.png)<br>An agent's tasks in a project, via Claude Code |
 | ![The app icon in macOS 26's six looks](docs/screenshots/brand-glass/01-app-icon-looks.png)<br>The Liquid Glass app icon: default, dark, clear and tinted (rendered by Icon Composer) | ![Sign in, dark](docs/screenshots/brand-glass/02-sign-in-dark.png)<br>Sign in, dark |
-| ![The widgets in dark](docs/screenshots/brand-glass/03-widgets-dark.png)<br>The widgets in dark (rendered) | |
+| ![The widgets in dark](docs/screenshots/brand-glass/03-widgets-dark.png)<br>The widgets in dark (rendered) | ![Check your inbox](docs/screenshots/magic-link-sign-in/01-check-your-inbox.png)<br>Check your inbox: the link works 15 minutes, on this Mac only |
+| ![The sign-in link opens todz](docs/screenshots/magic-link-sign-in/02-sign-in-page.png)<br>The sign-in link hands off to todz | ![An incomplete link](docs/screenshots/magic-link-sign-in/03-link-incomplete.png)<br>An incomplete link says so |
 
 The widget shots are rendered from the widgets' own views until a desktop capture replaces them.
 
