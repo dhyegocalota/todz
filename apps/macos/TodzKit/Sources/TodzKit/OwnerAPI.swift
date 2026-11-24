@@ -25,6 +25,7 @@ private func taskPath(projectIdentifier: String, number: Int) -> String {
 public protocol OwnerService: Sendable {
     func signIn(identityToken: String, timeZone: String) async throws -> IssuedSession
     func signOut(session: String) async throws
+    func readOwner(session: String) async throws -> Owner
     func updateOwner(session: String, timeZone: String) async throws -> Owner
     func listWorkspaces(session: String) async throws -> [Workspace]
     func createWorkspace(session: String, name: String) async throws -> Workspace
@@ -65,6 +66,10 @@ public struct OwnerAPI: OwnerService {
 
     public func signOut(session: String) async throws {
         _ = try await send(OwnerRequest(method: .delete, path: currentSessionPath, session: session))
+    }
+
+    public func readOwner(session: String) async throws -> Owner {
+        fatalError("OwnerAPI.readOwner is not implemented")
     }
 
     public func updateOwner(session: String, timeZone: String) async throws -> Owner {

@@ -42,6 +42,7 @@ struct LiveOwnerAPITests {
         let session = issued.sessionToken
         #expect(issued.owner.timeZone == liveTimeZone)
         #expect(try await api.updateOwner(session: session, timeZone: liveTimeZone).identifier == issued.owner.identifier)
+        #expect(try await api.readOwner(session: session) == issued.owner)
         #expect(try await api.listWorkspaces(session: session) == [])
 
         let workspace = try await api.createWorkspace(session: session, name: "Acme")

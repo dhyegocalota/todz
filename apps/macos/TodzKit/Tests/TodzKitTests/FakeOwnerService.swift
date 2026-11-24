@@ -46,6 +46,11 @@ struct StatusFailure: Sendable {
         try await record(.signOut(session: session))
     }
 
+    func readOwner(session: String) async throws -> Owner {
+        try await record(.readOwner(session: session))
+        return issuedSession.owner
+    }
+
     func updateOwner(session: String, timeZone: String) async throws -> Owner {
         try await record(.updateOwner(session: session, timeZone: timeZone))
         return Owner(identifier: issuedSession.owner.identifier, timeZone: timeZone)
