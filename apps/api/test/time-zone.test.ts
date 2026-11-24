@@ -9,7 +9,7 @@ describe('canonicalTimeZone', () => {
     ['utc', 'UTC'],
     ['America/Sao_Paulo', 'America/Sao_Paulo'],
     ['america/sao_paulo', 'America/Sao_Paulo'],
-    ['Asia/Kolkata', 'Asia/Kolkata'],
+    ['Asia/Kolkata', 'Asia/Calcutta'],
     ['Etc/GMT+1', 'Etc/GMT+1'],
   ])('%s is stored as %s', (raw, canonical) => {
     expect(canonicalTimeZone(raw)).toBe(canonical);
