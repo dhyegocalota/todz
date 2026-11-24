@@ -4,8 +4,10 @@ private let appGroupKey = "TodzAppGroup"
 private let privateFolderMode = 0o700
 
 public enum SharedFolder {
+    // NB ADR 0035: the shared folder is the container of the App Group that the Info.plist names.
     public static func of(info: [String: Any], container: (String) -> URL?) -> URL? {
-        fatalError("of(info:container:) is not implemented")
+        guard let appGroup = info[appGroupKey] as? String, !appGroup.isEmpty else { return nil }
+        return container(appGroup)
     }
 
     public static func of(bundle: Bundle) -> URL? {
