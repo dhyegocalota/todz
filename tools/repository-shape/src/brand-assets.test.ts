@@ -25,7 +25,14 @@ const WIDGET_BRAND_GLYPH_FILE = posix.join(WIDGET_VIEWS, `${WIDGET_BRAND_GLYPH}.
 const WIDGET_TITLE_FILES = ['WidgetHeader.swift', 'WidgetPrompt.swift', 'NextUpView.swift', 'TodayRing.swift'];
 const MACOS_PLATFORM = 'macOS';
 const ICON_LAYER_NAMES = ['sparkle', 'check'];
-const ICON_GRADIENT = ['#4C6BFF', '#1B2A9E'];
+const BRAND_ICON_SOURCE = 'docs/brand/todz-icon.svg';
+const CHECK_LAYER_NAME = 'check';
+const CHECK_STROKE_PATH = 'M300 532 L448 680 L724 404';
+const CHECK_STROKE_WIDTH = '96';
+const STOP_COLOR_PATTERN = /stop-color="(#[0-9A-Fa-f]{6})"/g;
+const PATH_DATA_PATTERN = /<path d="([^"]+)"/;
+const GLYPH_BEFORE_TITLE_PATTERN = /WidgetBrandGlyph\(\)\s*\n\s*Text\(/;
+const BACKGROUND_GRADIENT_STOP_COUNT = 2;
 const ICON_LAYER_VIEW_BOX = '80 80 864 864';
 const ICON_LAYER_PIXELS = '1024';
 const COLOR_CHANNEL_MAXIMUM = 255;
@@ -164,8 +171,19 @@ describe('brand assets', () => {
     expect(iconDocument()['supported-platforms'].squares).toContain(MACOS_PLATFORM);
   });
 
-  test('the layered app icon fills with a linear gradient from the brand blue to the deep blue', () => {
-    expect(iconDocument().fill['linear-gradient'].map(hexOfSrgb)).toEqual(ICON_GRADIENT);
+  test('the layered app icon fills with the background gradient of the brand icon', () => {
+    const brandStops = [...readRepositoryFile(BRAND_ICON_SOURCE).matchAll(STOP_COLOR_PATTERN)].map((match) => match[1]!.toUpperCase());
+    expect(iconDocument().fill['linear-gradient'].map(hexOfSrgb)).toEqual(brandStops.slice(0, BACKGROUND_GRADIENT_STOP_COUNT));
+  });
+
+  test('the layers are cut from the brand icon as it is drawn today', () => {
+    const brandIcon = readRepositoryFile(BRAND_ICON_SOURCE);
+    const sparklePath = readFile(brandLayerSource('sparkle')).toString('utf8').match(PATH_DATA_PATTERN)?.[1];
+    expect(sparklePath).toBeDefined();
+    expect(brandIcon).toContain(`d="${sparklePath}"`);
+    expect(brandIcon).toContain(`d="${CHECK_STROKE_PATH}"`);
+    expect(brandIcon).toContain(`stroke-width="${CHECK_STROKE_WIDTH}"`);
+    expect(iconLayers().map((layer) => layer.name)).toContain(CHECK_LAYER_NAME);
   });
 
   test('the layered app icon holds a sparkle group and a check group, each one glass layer', () => {
@@ -193,7 +211,7 @@ describe('brand assets', () => {
 
   test('the widget titles draw the todz glyph before their text', () => {
     const missing = WIDGET_TITLE_FILES.filter(
-      (file) => !readRepositoryFile(posix.join(WIDGET_VIEWS, file)).includes(`${WIDGET_BRAND_GLYPH}(`),
+      (file) => !GLYPH_BEFORE_TITLE_PATTERN.test(readRepositoryFile(posix.join(WIDGET_VIEWS, file))),
     );
     expect(missing).toEqual([]);
   });
