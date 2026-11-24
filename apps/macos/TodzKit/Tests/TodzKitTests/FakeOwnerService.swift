@@ -6,10 +6,16 @@ private let inboxName = "Inbox"
 
 struct UndecodableAnswer: Error {}
 
+struct StatusFailure: Sendable {
+    let status: Int
+    let body: String
+}
+
 @MainActor final class FakeOwnerService: OwnerService {
     var calls: [FakeCall] = []
     var failures: [FakeRoute: OwnerAPIError] = [:]
     var undecodableRoutes: Set<FakeRoute> = []
+    var statusFailures: [FakeRoute: StatusFailure] = [:]
     var isReplayingAdds = false
     var projectFailures: [String: OwnerAPIError] = [:]
     var changeScripts: [String: [Result<ChangePage, OwnerAPIError>]] = [:]
@@ -173,6 +179,7 @@ struct UndecodableAnswer: Error {}
         if suspendedRoutes.contains(call.route) { await hold(call.route) }
         if let failure = failures[call.route] { throw failure }
         if undecodableRoutes.contains(call.route) { throw UndecodableAnswer() }
+        if let failure = statusFailures[call.route] { throw OwnerErrorBody.failure(status: failure.status, body: Data(failure.body.utf8)) }
         guard let projectIdentifier = call.projectIdentifier else { return }
         if let failure = projectFailures[projectIdentifier] { throw failure }
     }

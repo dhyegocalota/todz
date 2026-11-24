@@ -20,17 +20,34 @@ private let refusals: [OwnerAPIError] = [
     .identityRejected,
 ]
 
+private let portalPage = "<html><body>Sign in to the network</body></html>"
+private let codedRefusal = "{\"error\":\"rule_violated\",\"issue\":\"title_too_long\",\"index\":null}"
+
 enum TransientFailure: CaseIterable, Sendable {
     case unexpected
     case signInUnavailable
     case undecodable
+    case bareBadRequest
+    case bareNotFound
+    case bareUnavailable
+    case networkAuthenticationRequired
 
     @MainActor func inject(into service: FakeOwnerService, route: FakeRoute) {
         switch self {
         case .unexpected: service.failures[route] = .unexpected(status: 503)
         case .signInUnavailable: service.failures[route] = .signInUnavailable
         case .undecodable: service.undecodableRoutes.insert(route)
+        case .bareBadRequest: service.statusFailures[route] = StatusFailure(status: 400, body: "")
+        case .bareNotFound: service.statusFailures[route] = StatusFailure(status: 404, body: "")
+        case .bareUnavailable: service.statusFailures[route] = StatusFailure(status: 503, body: "")
+        case .networkAuthenticationRequired: service.statusFailures[route] = StatusFailure(status: 511, body: portalPage)
         }
+    }
+
+    @MainActor func lift(from service: FakeOwnerService, route: FakeRoute) {
+        service.failures[route] = nil
+        service.undecodableRoutes.remove(route)
+        service.statusFailures[route] = nil
     }
 }
 
@@ -222,20 +239,58 @@ extension AppModelTests {
     }
 
     @Test(arguments: TransientFailure.allCases)
-    func aThirdTransientFailureDropsTheChangeAsRefused(failure: TransientFailure) async throws {
+    func aTransientFailureWithNoAnswerBetweenNeverDropsTheChange(failure: TransientFailure) async throws {
         let harness = try await outboxHarness()
         failure.inject(into: harness.service, route: .completeTasks)
+        let waitingAtFourthAttempt = Captured<Int>()
+        harness.service.onCall = { call in
+            let attempts = harness.service.routes().filter { $0 == .completeTasks }.count
+            guard call.route == .completeTasks, attempts == 4 else { return }
+            waitingAtFourthAttempt.value = harness.model.waitingChangeCount
+            failure.lift(from: harness.service, route: .completeTasks)
+        }
+        let releasing = Task {
+            for count in 1...3 {
+                await harness.pause.started(count: count)
+                harness.pause.release()
+            }
+        }
         await harness.model.complete(task: firstTask)
-        await harness.pause.started()
-        #expect(harness.model.waitingChangeCount == 1)
-        harness.pause.release()
-        await harness.pause.started(count: 2)
-        harness.pause.release()
         await harness.flushed()
+        releasing.cancel()
+        #expect(waitingAtFourthAttempt.value == 1)
+        #expect(harness.pause.durations == [.seconds(1), .seconds(2), .seconds(4)])
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.model.banner == nil)
+    }
+
+    @Test(arguments: TransientFailure.allCases)
+    func aThirdTransientFailureEachAfterAnAnswerDropsTheChangeAsRefused(failure: TransientFailure) async throws {
+        let harness = try await outboxHarness()
+        failure.inject(into: harness.service, route: .completeTasks)
+        let pulling = Task {
+            for count in 1...2 {
+                await harness.pause.started(count: count)
+                await harness.model.pullProject(identifier: inboxIdentifier)
+            }
+        }
+        await harness.model.complete(task: firstTask)
+        await harness.flushed()
+        pulling.cancel()
         #expect(harness.service.routes().filter { $0 == .completeTasks }.count == 3)
         #expect(harness.pause.durations == [.seconds(1), .seconds(2)])
         #expect(harness.model.waitingChangeCount == 0)
         #expect(harness.model.banner == .changesRefused(count: 1))
+    }
+
+    @Test func aCodedRefusalDropsTheChangeAtOnce() async throws {
+        let harness = try await outboxHarness()
+        harness.service.statusFailures[.completeTasks] = StatusFailure(status: 422, body: codedRefusal)
+        await harness.model.complete(task: firstTask)
+        await harness.flushed()
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.model.banner == .changesRefused(count: 1))
+        #expect(harness.pause.durations == [])
     }
 
     @Test func anOpenedSocketCutsTheWaitShortAndSendsAtOnce() async throws {
