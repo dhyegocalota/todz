@@ -7,6 +7,7 @@ struct WidgetHeader: View {
 
     var body: some View {
         HStack {
+            WidgetBrandGlyph()
             Text(title)
                 .font(.headline)
                 .lineLimit(1)
