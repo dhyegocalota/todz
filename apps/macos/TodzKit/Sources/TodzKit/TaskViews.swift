@@ -17,14 +17,24 @@ private func isNewerCompletion(_ lhs: FinishedTask, _ rhs: FinishedTask) -> Bool
 public struct TaskViews: Sendable {
     private let projects: [Project]
     private let board: TaskBoard
+    private let pendingTasks: [PendingTask]
     private let day: CalendarDate
     private let timeZone: TimeZone
 
-    public init(projects: [Project], board: TaskBoard, day: CalendarDate, timeZone: TimeZone) {
+    public init(projects: [Project], board: TaskBoard, pendingTasks: [PendingTask] = [], day: CalendarDate, timeZone: TimeZone) {
         self.projects = projects
         self.board = board
+        self.pendingTasks = pendingTasks
         self.day = day
         self.timeZone = timeZone
+    }
+
+    public func pendingTasks(for item: SidebarItem) -> [PendingTask] {
+        fatalError("TaskViews.pendingTasks is not implemented")
+    }
+
+    public var upcomingPendingDays: [PendingTaskDay] {
+        fatalError("TaskViews.upcomingPendingDays is not implemented")
     }
 
     public var inbox: [BoardTask] {
