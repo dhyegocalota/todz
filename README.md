@@ -20,7 +20,43 @@ todz is a to-do list that AI agents and their owner share. MCP-first and agentic
 - **A native macOS app** with a menu bar extra and interactive WidgetKit widgets, simple and polished.
 - **For AI enthusiasts and programmers.**
 
-The product stack and every product decision have not been made yet. They arrive as features under [docs/features](docs/features/), starting with the brainstorming skill, and as [ADRs](docs/adr/).
+The approved design is in [docs/product](docs/product/); how each piece was built is in [docs/features](docs/features/) and the [ADRs](docs/adr/).
+
+## A walk through todz
+
+The native macOS app, screen by screen, as it is built today.
+
+### The main window
+
+![Sign-in screen](docs/screenshots/mac-app-shell/01-sign-in.png)
+
+Signing in with the development identity.
+
+![Naming the first workspace](docs/screenshots/mac-app-shell/02-first-workspace.png)
+
+Naming the first workspace.
+
+![Today across the Inbox and a project](docs/screenshots/mac-app-shell/03-today-two-projects.png)
+
+Today across the Inbox and a project, with a task an agent added marked "via Claude Code".
+
+![The inspector with notes and history](docs/screenshots/mac-app-shell/04-inspector-notes-and-history.png)
+
+The inspector showing a task's notes and history.
+
+### Sync and offline
+
+![A task an agent adds appears live](docs/screenshots/mac-sync/01-agent-add-live.png)
+
+A task an agent adds appears in the window as it happens.
+
+![Offline with changes waiting](docs/screenshots/mac-sync/02-offline-changes-waiting.png)
+
+Offline, with changes waiting to sync and pending adds drawn with a dashed ring.
+
+![A refused change explained in a banner](docs/screenshots/mac-sync/03-refused-change-banner.png)
+
+A change the server refused is explained in a banner.
 
 ## How the work happens
 
