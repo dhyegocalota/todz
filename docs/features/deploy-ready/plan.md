@@ -24,10 +24,10 @@ The lead creates the database; G1 builds; tester and reviewers; merge; the lead 
 
 ### G1
 
-- [ ] **Step 0:** Spike D5, local only, in a scratch copy: `wrangler dev` with the production `routes` and a `--var` local origin; record the request URL the Worker sees.
-- [ ] **Step 1:** Red: `api-source.test.ts` pins the production config (ADR 0044 §1, §3) and the dev scripts' overrides; `test/sign-in-limiter.test.ts`: over the limit both posts answer 429 `too_many_requests` with one body, the key is `CF-Connecting-IP`, no binding skips the check; a shape test that `project.yml` sets `TODZ_API_BASE_URL` to `http://localhost:8787` for Debug and `https://api.todz.app` for Release and that `TodzAPIBaseURL` reads it. Commit failing alone.
-- [ ] **Step 2:** Green: `wrangler.jsonc`, the scripts, the limiter, `project.yml`; `wrangler deploy --dry-run` builds; the full API suite, the shape suite and the macOS build stay green.
-- [ ] **Step 3:** `docs/runbooks/deploy-the-api.md` (each step with an expected result and an `If it fails` line naming the token permission it needs), its README row, the READMEs (purpose only), tester briefing.
+- [x] **Step 0:** Spike D5, local only, in a scratch copy: `wrangler dev` with the production `routes` and a `--var` local origin; record the request URL the Worker sees. — evidence: the Worker saw `http://api.todz.app/probe`; `--local-upstream localhost:<port>` gives `http://localhost:<port>/probe`; ADR 0044 Evidence; the scripts pass `--local-upstream localhost:8787`.
+- [x] **Step 1:** Red: `api-source.test.ts` pins the production config (ADR 0044 §1, §3) and the dev scripts' overrides; `test/sign-in-limiter.test.ts`: over the limit both posts answer 429 `too_many_requests` with one body, the key is `CF-Connecting-IP`, no binding skips the check; a shape test that `project.yml` sets `TODZ_API_BASE_URL` to `http://localhost:8787` for Debug and `https://api.todz.app` for Release and that `TodzAPIBaseURL` reads it. Commit failing alone. — evidence: red `e4858aa`.
+- [x] **Step 2:** Green: `wrangler.jsonc`, the scripts, the limiter, `project.yml`; `wrangler deploy --dry-run` builds; the full API suite, the shape suite and the macOS build stay green. — evidence: green `0f56c82`; API 849 tests, shape 200, TodzKit 631, Debug and Release builds with 0 warnings, the Release `Info.plist` reads `https://api.todz.app`, `wrangler deploy --dry-run` lists the bindings.
+- [x] **Step 3:** `docs/runbooks/deploy-the-api.md` (each step with an expected result and an `If it fails` line naming the token permission it needs), its README row, the READMEs (purpose only), tester briefing. — evidence: the runbook commit after `0f56c82`, `tester-briefing.md`.
 
 ## Failure modes
 
@@ -41,7 +41,7 @@ The lead creates the database; G1 builds; tester and reviewers; merge; the lead 
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`. — evidence: its steps 0 to 3 section.
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** verdict recorded; refutations in `test-plan.md`.
 - [ ] **Security reviewer:** verdict recorded.

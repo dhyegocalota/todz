@@ -7,6 +7,12 @@ const RUNBOOKS_DIRECTORY = 'docs/runbooks';
 const INDEX_FILE_NAME = 'README.md';
 const MARKDOWN_EXTENSION = '.md';
 const ROOT_PACKAGE_FILE = 'package.json';
+const DEPLOY_RUNBOOK = 'deploy-the-api.md';
+const AGENT_EXCEPTION_SENTENCE = 'agents never run them, except `deploy-the-api`';
+const REMOTE_FLAG = '--remote';
+const DEPLOY_WITH_VARIABLE_PATTERN = /wrangler deploy[^\n]*--var/;
+const RUN_LOG_HEADER = '| Date | Commit | Step | Actual result |\n|------|--------|------|---------------|';
+const DATABASE_COMMAND_PATTERN = /(wrangler d1 (?:migrations (?:list|apply)|export) [^\n]*)/g;
 const FIRST_STEP_NUMBER = 1;
 const ANCHOR_SEPARATOR = '#';
 const MAX_INDEX_LINES = 20;
@@ -127,5 +133,23 @@ describe('runbooks', () => {
   test('every pnpm command in a runbook is a root script or a pnpm built-in', () => {
     expect(allRunbooks().flatMap(unknownCommands)).toEqual([]);
     expect(unknownCommands({ file: 'x.md', text: 'Run pnpm no-such-script.' })).toEqual(['x.md: pnpm no-such-script']);
+  });
+
+  test('the index says agents never run a runbook except deploy-the-api', () => {
+    expect(readRunbook(INDEX_FILE_NAME).text).toContain(AGENT_EXCEPTION_SENTENCE);
+  });
+
+  test('every database command of the deploy runbook that Wrangler runs locally by default names --remote', () => {
+    const commands = capturedNames({ text: readRunbook(DEPLOY_RUNBOOK).text, pattern: DATABASE_COMMAND_PATTERN });
+    expect(commands.length).toBeGreaterThan(0);
+    expect(commands.filter((command) => !command.includes(REMOTE_FLAG))).toEqual([]);
+  });
+
+  test('the deploy runbook never deploys with --var, so the deployed variables are the ones in the configuration', () => {
+    expect(readRunbook(DEPLOY_RUNBOOK).text).not.toMatch(DEPLOY_WITH_VARIABLE_PATTERN);
+  });
+
+  test('the deploy runbook ends with a run log table for the lead', () => {
+    expect(readRunbook(DEPLOY_RUNBOOK).text.trimEnd().endsWith(RUN_LOG_HEADER)).toBe(true);
   });
 });
