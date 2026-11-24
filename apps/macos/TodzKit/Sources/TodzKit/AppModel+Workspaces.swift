@@ -18,7 +18,9 @@ extension AppModel {
     }
 
     public func switchWorkspace(number: Int) async {
-        fatalError("switchWorkspace(number:) is not implemented")
+        guard let workspace = WorkspaceShortcuts.workspace(number: number, in: workspaces) else { return }
+        guard workspace.identifier != activeWorkspaceIdentifier else { return }
+        await switchWorkspace(identifier: workspace.identifier)
     }
 
     public func loadFailure(of workspace: Workspace) -> AppBanner? {
