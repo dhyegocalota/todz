@@ -62,14 +62,26 @@ extension AppModel {
     }
 
     func loadWorkspaces() async {
-        let listed: [Workspace]
         do {
-            listed = try await request { try await service.listWorkspaces(session: $0) }
+            try await openListedWorkspaces()
         } catch {
             raiseLoadFailure(error, retry: { await self.loadWorkspaces() })
-            return
         }
+    }
+
+    func reloadWorkspacesQuietly() async {
+        do {
+            try await openListedWorkspaces()
+        } catch {
+            isWorkspaceListOutdated = true
+        }
+    }
+
+    private func openListedWorkspaces() async throws {
+        let listed = try await request { try await service.listWorkspaces(session: $0) }
+        isWorkspaceListOutdated = false
         workspaces = listed
+        keepOwner()
         guard let workspace = preferredWorkspace else {
             phase = .naming
             return
@@ -87,12 +99,16 @@ extension AppModel {
         let isAnotherWorkspace = workspace.identifier != activeWorkspaceIdentifier
         if isAnotherWorkspace { forgetActiveWorkspace() }
         activeWorkspaceIdentifier = workspace.identifier
+        keepOwner()
         keepSelection(in: workspace)
+        loadCachedProjects(of: workspace)
+        followActiveProjects()
         await pull(projectIdentifiers: workspace.projects.map(\.identifier), workspaceIdentifier: workspace.identifier)
     }
 
     private func forgetActiveWorkspace() {
         guard activeWorkspaceIdentifier != nil else { return }
+        stopWatching()
         board = TaskBoard()
         projectLoads = [:]
         histories = [:]
@@ -114,12 +130,13 @@ extension AppModel {
         startPulls(projectIdentifiers: projectIdentifiers)
         defer { endPulls(projectIdentifiers: projectIdentifiers) }
         let feed = ProjectFeed(service: service)
+        let cursors = projectIdentifiers.map { (projectIdentifier: $0, cursor: storedCursor(projectIdentifier: $0)) }
         let pulls: [ProjectPull]
         do {
             pulls = try await withThrowingTaskGroup(of: ProjectPull.self) { group in
-                projectIdentifiers.forEach { projectIdentifier in
+                cursors.forEach { projectIdentifier, cursor in
                     group.addTask {
-                        try await ProjectPull.pulling(feed: feed, session: session, projectIdentifier: projectIdentifier, cursor: ProjectFeed.firstCursor)
+                        try await ProjectPull.pulling(feed: feed, session: session, projectIdentifier: projectIdentifier, cursor: cursor)
                     }
                 }
                 var pulls: [ProjectPull] = []
@@ -136,6 +153,11 @@ extension AppModel {
         }
         guard isCurrent(session: session, workspaceIdentifier: workspaceIdentifier) else { return }
         raiseFailures(of: pulls, workspaceIdentifier: workspaceIdentifier)
+    }
+
+    private func storedCursor(projectIdentifier: String) -> Int {
+        guard let cursor = board.cursor(projectIdentifier: projectIdentifier) else { return ProjectFeed.firstCursor }
+        return cursor
     }
 
     private func isCurrent(session: String, workspaceIdentifier: String) -> Bool {
@@ -158,8 +180,11 @@ extension AppModel {
         guard isCurrent(session: session, workspaceIdentifier: workspaceIdentifier) else { return }
         switch pulled {
         case let .loaded(projectIdentifier, changes):
+            if changes.isFromStart { board.reset(projectIdentifier: projectIdentifier) }
             board.merge(projectIdentifier: projectIdentifier, tasks: changes.tasks)
+            board = board.setting(cursor: changes.cursor, projectIdentifier: projectIdentifier)
             projectLoads[projectIdentifier] = .loaded
+            keepProject(identifier: projectIdentifier)
         case let .unreachable(projectIdentifier), let .failed(projectIdentifier):
             guard projectLoads[projectIdentifier] != .loaded else { return }
             projectLoads[projectIdentifier] = pulled.isUnreachable ? .unreachable : .failed
@@ -179,5 +204,6 @@ extension AppModel {
             guard workspace.identifier == workspaceIdentifier else { return workspace }
             return Workspace(identifier: workspace.identifier, name: workspace.name, createdAt: workspace.createdAt, projects: change(workspace.projects))
         }
+        keepOwner()
     }
 }

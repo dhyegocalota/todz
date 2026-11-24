@@ -21,10 +21,11 @@ import Observation
     public internal(set) var histories: [TaskKey: HistoryLoad] = [:]
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
-
     var outbox = Outbox()
 
     @ObservationIgnored var session: String?
+    @ObservationIgnored var ownerIdentifier: String?
+    @ObservationIgnored var isWorkspaceListOutdated = false
     @ObservationIgnored var watches: [String: Task<Void, Never>] = [:]
     @ObservationIgnored let service: any OwnerService
     @ObservationIgnored let vault: any SessionVault
@@ -56,7 +57,7 @@ import Observation
     }
 
     public var waitingChangeCount: Int {
-        fatalError("AppModel.waitingChangeCount is not implemented")
+        outbox.count
     }
 
     public var activeWorkspace: Workspace? {
@@ -69,7 +70,13 @@ import Observation
 
     public var taskViews: TaskViews? {
         guard let activeWorkspace else { return nil }
-        return TaskViews(projects: activeWorkspace.projects, board: board, day: today, timeZone: timeZone)
+        return TaskViews(
+            projects: activeWorkspace.projects,
+            board: board.applying(outbox),
+            pendingTasks: outbox.pendingTasks,
+            day: today,
+            timeZone: timeZone
+        )
     }
 
     public var canTryAgain: Bool {
@@ -81,17 +88,25 @@ import Observation
         do {
             secret = try vault.read()
         } catch {
+            loadOutbox()
             phase = .signedOut(notice: .sessionUnreadable)
             return
         }
         guard let secret else {
+            loadOutbox()
             phase = .signedOut(notice: nil)
             return
         }
         session = secret
         phase = .loading
+        showCache()
         await sendTimeZone()
-        await loadWorkspaces()
+        guard session == secret else { return }
+        guard phase == .ready else {
+            await loadWorkspaces()
+            return
+        }
+        await reloadWorkspacesQuietly()
     }
 
     public func signIn(identity: String) async {
@@ -110,6 +125,7 @@ import Observation
             return
         }
         session = issued.sessionToken
+        ownerIdentifier = issued.owner.identifier
         phase = .loading
         keep(secret: issued.sessionToken)
         await loadWorkspaces()
@@ -165,6 +181,13 @@ import Observation
 
     private func clearSession() {
         session = nil
+        ownerIdentifier = nil
+        forgetWindow()
+    }
+
+    func forgetWindow() {
+        stopWatching()
+        isWorkspaceListOutdated = false
         workspaces = []
         activeWorkspaceIdentifier = nil
         selectedItem = .inbox
@@ -179,7 +202,13 @@ import Observation
     }
 
     private func sendTimeZone() async {
-        _ = try? await request { try await service.updateOwner(session: $0, timeZone: timeZone.identifier) }
+        guard let owner = try? await request({ try await service.updateOwner(session: $0, timeZone: timeZone.identifier) }) else { return }
+        let cachedOwnerIdentifier = ownerIdentifier
+        ownerIdentifier = owner.identifier
+        guard let cachedOwnerIdentifier, cachedOwnerIdentifier != owner.identifier else { return }
+        forgetWindow()
+        forgetCache()
+        phase = .loading
     }
 
     private func keep(secret: String) {

@@ -48,14 +48,17 @@ extension AppModelTests {
         #expect(harness.model.selectedItem == .today)
     }
 
-    @Test func refreshPullsEveryProjectFromZeroAndKeepsTheRows() async throws {
+    @Test func refreshPullsEveryProjectFromItsCursorAndKeepsTheRows() async throws {
         let harness = try AppModelHarness()
-        let workspace = harness.seedWorkspace(name: "acme", projectNames: ["launch"])
+        harness.seedWorkspace(name: "acme", projectNames: ["launch"])
         harness.seedTasks(projectIdentifier: "acme-inbox", count: 2)
         await harness.signedIn()
         harness.service.failures[.readChanges] = .unreachable
         await harness.model.refresh()
-        let pulls = workspace.projects.map { FakeCall.readChanges(session: harness.session, projectIdentifier: $0.identifier, cursor: 0) }
+        let pulls: [FakeCall] = [
+            .readChanges(session: harness.session, projectIdentifier: "acme-inbox", cursor: 2),
+            .readChanges(session: harness.session, projectIdentifier: "acme-launch", cursor: 0),
+        ]
         #expect(isSameCallSet(harness.service.calls, pulls))
         #expect(harness.model.taskViews?.inbox.count == 2)
         #expect(harness.model.banner == .network)
