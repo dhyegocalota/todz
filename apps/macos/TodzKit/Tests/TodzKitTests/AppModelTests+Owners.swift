@@ -1,0 +1,156 @@
+import Foundation
+import Testing
+@testable import TodzKit
+
+private let inboxIdentifier = "acme-inbox"
+private let firstTask = TaskKey(projectIdentifier: inboxIdentifier, number: 1)
+
+enum CachedOwner: CaseIterable, Sendable {
+    case another
+    case missing
+    case unreadable
+}
+
+extension AppModelTests {
+    @MainActor private func harnessWithAWaitingChange() throws -> AppModelHarness {
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme")
+        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 2)
+        harness.cache([acme], active: acme)
+        harness.cacheTasks(projectIdentifier: inboxIdentifier, count: 2, cursor: 2)
+        try harness.store.keep(Outbox().appending(.field(firstTask, .title("Waiting")), isHeadSent: false))
+        return harness
+    }
+
+    @Test(arguments: CachedOwner.allCases)
+    func aSignInNotAsTheCachesOwnerErasesTheCacheBeforeTheSessionIsStored(cachedOwner: CachedOwner) async throws {
+        let harness = try harnessWithAWaitingChange()
+        switch cachedOwner {
+        case .another: harness.store.owner = OwnerCache(ownerIdentifier: "someone-else", workspaces: [], activeWorkspaceIdentifier: nil)
+        case .missing: harness.store.owner = nil
+        case .unreadable: harness.store.failures[.readOwner] = .unreadable
+        }
+        await harness.model.launch()
+        #expect(harness.model.waitingChangeCount == 1)
+        let isUntouchedAtErase = Captured<Bool>()
+        harness.store.onCall = { call in
+            guard call == .erase else { return }
+            let isMemoryEmpty = harness.model.outbox == Outbox() && harness.model.board == TaskBoard() && harness.model.workspaces.isEmpty
+            isUntouchedAtErase.value = isMemoryEmpty && harness.vault.secret == nil && harness.service.routes() == [.signIn]
+        }
+        await harness.model.signIn(identity: "dhyego")
+        #expect(isUntouchedAtErase.value == true)
+        #expect(harness.vault.secret == harness.service.issuedSession.sessionToken)
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.service.routes().contains(.updateTask) == false)
+        #expect(harness.model.taskViews?.inbox.map(\.task.title) == ["Task 1", "Task 2"])
+        #expect(harness.store.owner?.ownerIdentifier == harness.ownerIdentifier)
+    }
+
+    @Test func aSignInAfterASessionEndedAsAnotherOwnerEmptiesTheWindowAndItsWatches() async throws {
+        let harness = try harnessWithAWaitingChange()
+        harness.service.failures[.updateTask] = .unreachable
+        await harness.launchedFromCache()
+        harness.service.failures[.readChanges] = .unauthorized
+        await harness.model.refresh()
+        #expect(harness.model.phase == .signedOut(notice: .sessionEnded))
+        harness.service.failures = [:]
+        harness.service.issuedSession = IssuedSession(
+            sessionToken: UUID().uuidString,
+            owner: Owner(identifier: "another-owner", timeZone: harnessTimeZoneIdentifier)
+        )
+        await harness.model.signIn(identity: "walker-2")
+        #expect(harness.store.routes().contains(.erase))
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.store.owner?.ownerIdentifier == "another-owner")
+        await harness.signals.cancelled(harness.watchKey(inboxIdentifier))
+    }
+
+    @Test func aSignInWhoseEraseFailsFailsAndLeavesTheVaultUntouched() async throws {
+        let harness = try harnessWithAWaitingChange()
+        harness.store.owner = nil
+        harness.store.failures[.erase] = .unwritable
+        await harness.model.launch()
+        await harness.model.signIn(identity: "dhyego")
+        #expect(harness.model.signInError == .unexpected)
+        #expect(harness.model.session == nil)
+        #expect(harness.model.phase == .signedOut(notice: nil))
+        #expect(harness.vault.secret == nil)
+        #expect(harness.vault.eraseCount == 0)
+        #expect(harness.service.routes() == [.signIn])
+    }
+
+    @Test func aSignInAsTheCachesOwnerReopensTheCachedWindowThenPulls() async throws {
+        let harness = try harnessWithAWaitingChange()
+        await harness.model.launch()
+        harness.service.suspend(.listWorkspaces)
+        let signingIn = Task { await harness.model.signIn(identity: "dhyego") }
+        await harness.service.held(.listWorkspaces)
+        #expect(harness.model.phase == .ready)
+        #expect(harness.model.taskViews?.inbox.map(\.task.title) == ["Waiting", "Cached 2"])
+        #expect(harness.signals.opens == [WatchKey(session: harness.service.issuedSession.sessionToken, projectIdentifier: inboxIdentifier)])
+        harness.service.resume(.listWorkspaces)
+        await signingIn.value
+        let session = harness.service.issuedSession.sessionToken
+        #expect(harness.service.calls.contains(.readChanges(session: session, projectIdentifier: inboxIdentifier, cursor: 2)))
+        #expect(harness.store.routes().contains(.erase) == false)
+    }
+
+    @Test func signOutCancelsTheWatchesThenErasesTheCacheThenTheVaultThenSignsOut() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 1)
+        await harness.signedIn()
+        let isWatchingAtErase = Captured<Bool>()
+        let vaultErasesAtStoreErase = Captured<Int>()
+        let isStoreErasedAtVaultErase = Captured<Bool>()
+        let vaultErasesAtSignOut = Captured<Int>()
+        harness.store.onCall = { call in
+            guard call == .erase else { return }
+            isWatchingAtErase.value = !harness.model.watches.isEmpty
+            vaultErasesAtStoreErase.value = harness.vault.eraseCount
+        }
+        harness.vault.onErase = { isStoreErasedAtVaultErase.value = harness.store.routes().contains(.erase) }
+        harness.service.onCall = { call in
+            guard call.route == .signOut else { return }
+            vaultErasesAtSignOut.value = harness.vault.eraseCount
+        }
+        await harness.model.signOut()
+        #expect(isWatchingAtErase.value == false)
+        #expect(vaultErasesAtStoreErase.value == 0)
+        #expect(isStoreErasedAtVaultErase.value == true)
+        #expect(vaultErasesAtSignOut.value == 1)
+        #expect(harness.service.calls == [.signOut(session: harness.session)])
+        await harness.signals.cancelled(harness.watchKey(inboxIdentifier))
+    }
+
+    @Test func aPullAnsweredAfterASignOutWritesNothing() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 1)
+        await harness.signedIn()
+        harness.service.suspend(.readChanges)
+        let refreshing = Task { await harness.model.refresh() }
+        await harness.service.held(.readChanges)
+        await harness.model.signOut()
+        harness.store.calls = []
+        harness.service.resume(.readChanges)
+        await refreshing.value
+        #expect(harness.store.calls == [])
+        #expect(harness.store.owner == nil)
+        #expect(harness.store.projects == [:])
+    }
+
+    @Test func aSessionEndedKeepsTheCacheAndTheWaitingChanges() async throws {
+        let harness = try harnessWithAWaitingChange()
+        harness.service.failures[.updateTask] = .unreachable
+        await harness.launchedFromCache()
+        harness.service.failures[.readChanges] = .unauthorized
+        await harness.model.refresh()
+        #expect(harness.model.phase == .signedOut(notice: .sessionEnded))
+        #expect(harness.store.routes().contains(.erase) == false)
+        #expect(harness.store.owner != nil)
+        #expect(harness.model.waitingChangeCount == 1)
+        await harness.signals.cancelled(harness.watchKey(inboxIdentifier))
+    }
+}
