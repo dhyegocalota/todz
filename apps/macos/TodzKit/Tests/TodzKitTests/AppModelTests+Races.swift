@@ -173,6 +173,21 @@ extension AppModelTests {
         #expect(harness.model.projectLoads[created.identifier] == .loaded)
     }
 
+    @Test func aProjectListedByAReloadBeforeItsCreateAnswersShowsOnce() async throws {
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        harness.service.suspend(.createProject)
+        let creating = Task { await harness.model.createProject(name: "Garden") }
+        await harness.service.held(.createProject)
+        let garden = Project(identifier: "acme-Garden", name: "Garden", isInbox: false, createdAt: fixedInstant)
+        harness.service.workspaces = [Workspace(identifier: acme.identifier, name: acme.name, createdAt: acme.createdAt, projects: acme.projects + [garden])]
+        await harness.model.complete(task: firstTask)
+        harness.service.resume(.createProject)
+        #expect(await creating.value?.identifier == garden.identifier)
+        #expect(harness.model.activeWorkspace?.projects.map(\.identifier) == [inboxIdentifier, garden.identifier])
+    }
+
     @Test func aProjectRenamedAfterASwitchIsRenamedOnTheWayBack() async throws {
         let harness = try AppModelHarness()
         let acme = harness.seedWorkspace(name: "acme", projectNames: ["launch"])

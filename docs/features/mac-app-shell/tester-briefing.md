@@ -259,7 +259,7 @@ Written by `developer-fix` after code review round 2 (R, all minor) and the cras
 
 ### Hypotheses to attack (fix round 2)
 
-1. Hypothesis: switching to a second workspace with the server stopped shows `ErrorCopy.networkTitle` ("Can't reach todz") with its body and Try Again in the list, and no add field; after a restart Try Again loads the workspace and the message goes. Break it by: a workspace whose Inbox is unreachable and whose other project answers 500 (expect "Some projects didn't load."), a workspace whose Inbox loads and whose other project is unreachable (expect rows and the network banner), stopping the server during the first load of a workspace with several projects.
+1. Hypothesis: switching to a second workspace with the server stopped shows `ErrorCopy.networkTitle` ("Can't reach todz") with its body and Try Again in the list, and no add field; after a restart Try Again loads the workspace and the message goes. Break it by: a workspace whose Inbox is unreachable and whose other project answers 500 (expect "Some projects didn't load."), a workspace whose Inbox loads and whose other project is unreachable (expect rows and `ErrorCopy.someProjectsFailed`, "Some projects didn't load.", with Try Again, as `spec.md` § Failure handling and `aRefreshWhereOneProjectFailsKeepsEveryProjectLoaded` say: the network banner needs every project unreachable), stopping the server during the first load of a workspace with several projects.
 2. Hypothesis: an add that failed for the network keeps its banner and Try Again while another add to the same project is in flight; once that add lands, Try Again sends the first add with its first idempotency key and both rows appear once. Break it by: pressing Try Again repeatedly during the second add, pressing Return twice quickly with two different titles (only the first is sent; the field keeps the first text if it fails).
 3. Hypothesis: creating a project, or renaming one, then switching workspace before the server answers leaves the shown workspace's selection, sidebar and list untouched; switching back shows the new project (its count loads) or the new name. Break it by: a slow server (`wrangler dev` behind a delaying proxy), a create that fails after the switch (expect no banner in the other workspace and no project on the way back).
 4. Hypothesis: a project create in a workspace deleted elsewhere (through the MCP server or the API) reloads the workspaces, opens the first remaining one and shows `ErrorCopy.workspaceGone` ("This workspace is no longer available."); a task write on a deleted project shows `ErrorCopy.projectGone` with the workspace reloaded. Break it by: deleting the workspace and stopping the server before the write (expect the network banner of the reload, with Try Again, instead of the gone banner).
@@ -276,3 +276,30 @@ Written by `developer-fix` after code review round 2 (R, all minor) and the cras
 - The crash fix's numbers supersede the W3 lines of fix round 1 (822 × 480 with every column at default widths, 778 × 480 with the sidebar at its minimum): every column now floors at 848 × 480, above the design's 760, because the sidebar and inspector keep their ideal widths and the floating sidebar is counted twice.
 - The inspector's floor counts its ideal 320; dragged wider (up to 420) with the sidebar hidden, a shrinking window may squeeze the list under 320. Not measured.
 - The window floors are measured on macOS 26 only, by the lead, not by this developer.
+
+## Fix round 3
+
+Written by `developer-fix` after code review round 3 (all minor). Unit suite: 175 tests in 13 suites (`swift test --package-path apps/macos/TodzKit`). Fix round 2's hypothesis 1 now expects "Some projects didn't load." when the Inbox loads and another project is unreachable.
+
+### What changed
+
+| Finding | Change | Red | Green |
+|---|---|---|---|
+| Review 3 finding 1 | pin: a project create answered `notFound` whose workspace reload cannot reach the server keeps the network banner and its Try Again; one whose reload answers 401 signs out with no banner. Mutation check: with `reload` raising the gone banner unconditionally, both went red (`AppModelTests+Failures.swift:45:9: Expectation failed: harness.model.banner == .network`; `:46:9: … harness.model.canTryAgain`; `:58:9: … harness.model.banner == nil`), then the branch was restored | pin | `22fb8e4` |
+| Review 3 finding 2 | a create's answer leaves the workspace's projects unchanged when a reload that landed first already lists the project, and appends it otherwise; the fake names a created project `<workspace>-<name>`, as the harness seeds them, so a reload can list it before the answer | `95372fb` | `12f781c` |
+| Height floor (review 3 finding 3) | lead, `MainWindow.swift` | | |
+
+### Red today, green after (fix round 3)
+
+| Test | Red text the run printed | Green |
+|---|---|---|
+| `aProjectListedByAReloadBeforeItsCreateAnswersShowsOnce` (`95372fb`) | `AppModelTests+Races.swift:188:9: Expectation failed: harness.model.activeWorkspace?.projects.map(\.identifier) == [inboxIdentifier, garden.identifier]`, with `["acme-inbox", "acme-Garden", "acme-Garden"]` | `12f781c` |
+
+### Hypotheses to attack (fix round 3)
+
+1. Hypothesis: a project create in a workspace deleted elsewhere, with the server stopped right after, shows `ErrorCopy.networkTitle` with Try Again rather than the gone banner; with the session revoked instead, the app signs out with `SignInCopy.sessionEnded` and no banner.
+2. Hypothesis: a project create that answers after another write's reload already listed it shows once in the sidebar. Break it by: creating a project on a slow server while completing a task deleted elsewhere.
+
+### Gaps (fix round 3)
+
+- When the reload lists the project first, the sidebar keeps the reload's copy of it; the create's answer only selects it and marks it loaded.

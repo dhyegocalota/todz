@@ -35,6 +35,30 @@ extension AppModelTests {
         #expect(harness.model.activeWorkspace == side)
     }
 
+    @Test func aWorkspaceGoneWhoseReloadCannotReachTheServerRaisesTheNetworkBanner() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        harness.service.failures[.createProject] = .notFound
+        harness.service.failures[.listWorkspaces] = .unreachable
+        await harness.model.createProject(name: "Launch")
+        #expect(harness.model.banner == .network)
+        #expect(harness.model.canTryAgain)
+        #expect(harness.service.routes() == [.createProject, .listWorkspaces])
+    }
+
+    @Test func aWorkspaceGoneWhoseReloadEndsTheSessionSignsOutWithNoBanner() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        harness.service.failures[.createProject] = .notFound
+        harness.service.failures[.listWorkspaces] = .unauthorized
+        await harness.model.createProject(name: "Launch")
+        #expect(harness.model.phase == .signedOut(notice: .sessionEnded))
+        #expect(harness.model.banner == nil)
+        #expect(harness.vault.eraseCount == 1)
+    }
+
     @Test func aTaskGoneOnAWriteReloadsTheWorkspaceAndSaysSo() async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
