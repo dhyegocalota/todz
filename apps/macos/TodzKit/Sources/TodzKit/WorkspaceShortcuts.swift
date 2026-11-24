@@ -1,18 +1,17 @@
 public enum WorkspaceShortcuts {
-    public static let count = 9
+    public static let numbers = 1...9
 
     public static func workspace(number: Int, in workspaces: [Workspace]) -> Workspace? {
-        let position = number - 1
-        let isShortcutNumber = (1...count).contains(number)
-        guard isShortcutNumber, workspaces.indices.contains(position) else { return nil }
+        let position = number - numbers.lowerBound
+        guard numbers.contains(number), workspaces.indices.contains(position) else { return nil }
         return workspaces[position]
     }
 
     public static func numbered(_ workspaces: [Workspace]) -> [(number: Int, workspace: Workspace)] {
-        fatalError("numbered(_:) is not implemented")
+        zip(numbers, workspaces).map { (number: $0, workspace: $1) }
     }
 
     public static func lastNumber(of workspaces: [Workspace]) -> Int {
-        fatalError("lastNumber(of:) is not implemented")
+        min(workspaces.count, numbers.upperBound)
     }
 }

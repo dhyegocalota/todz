@@ -14,7 +14,7 @@ private func workspaces(count: Int) -> [Workspace] {
 
     @Test func theLastNumberPicksTheNinthWorkspace() {
         let listed = workspaces(count: 10)
-        #expect(WorkspaceShortcuts.workspace(number: WorkspaceShortcuts.count, in: listed) == listed[8])
+        #expect(WorkspaceShortcuts.workspace(number: WorkspaceShortcuts.numbers.upperBound, in: listed) == listed[8])
     }
 
     @Test func aNumberPastTheShortcutsPicksNothing() {
