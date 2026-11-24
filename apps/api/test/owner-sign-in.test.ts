@@ -12,6 +12,7 @@ import { seedIssuedKey, seedProject } from './directory-seed';
 import {
   CLOUDFLARE_SETTINGS,
   PUBLIC_HTTPS_ORIGIN,
+  PUBLIC_ORIGIN,
   askedLink,
   emailEnv,
   freshAddress,
@@ -21,7 +22,7 @@ import {
   redeemLink,
 } from './email-sign-in-client';
 import { ClientEra, callTool, connectClient } from './mcp-client';
-import { ownerCall, serveOwnerCall, signInCall, signInOwner } from './owner-client';
+import { ownerCall, serveOwnerCall, signInCall, signInOwner, workerEnvWith } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
 
 const SESSION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
@@ -111,13 +112,13 @@ async function expectUnauthorized(response: Response): Promise<void> {
 }
 
 function envWithProvider(provider: string | undefined): Env {
-  return { DIRECTORY: env.DIRECTORY, PROJECT_STORE: env.PROJECT_STORE, SIGN_IN_PROVIDER: provider };
+  return { DIRECTORY: env.DIRECTORY, PROJECT_STORE: env.PROJECT_STORE, SIGN_IN_PROVIDER: provider, PUBLIC_ORIGIN };
 }
 
 function directoryRunning({
   beforeIdentityRead,
   failBatch,
-  settings = { SIGN_IN_PROVIDER: FAKE_PROVIDER },
+  settings = { SIGN_IN_PROVIDER: FAKE_PROVIDER, PUBLIC_ORIGIN },
 }: {
   beforeIdentityRead?: () => Promise<void>;
   failBatch?: Error;
@@ -263,6 +264,31 @@ describe('POST /owner/sessions', () => {
     expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
     expect(await identityCount(identityToken)).toBe(0);
     expect(await ownerCount()).toBe(owners);
+  });
+
+  test.each([
+    ['a public PUBLIC_ORIGIN', { SIGN_IN_PROVIDER: FAKE_PROVIDER, PUBLIC_ORIGIN: PUBLIC_HTTPS_ORIGIN }],
+    ['no PUBLIC_ORIGIN', { SIGN_IN_PROVIDER: FAKE_PROVIDER }],
+  ])('the fake provider with %s answers 503 sign_in_unavailable and creates nothing', async (_name, settings) => {
+    const identityToken = crypto.randomUUID();
+    const response = await serveOwnerCall({
+      call: signInCall({ identityToken, timeZone: 'UTC' }),
+      now: CLOCK_NOW,
+      workerEnv: workerEnvWith(settings),
+    });
+    expect(response.status).toBe(UNAVAILABLE_STATUS);
+    expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
+    expect(await identityCount(identityToken)).toBe(0);
+  });
+
+  test('the fake provider on a public request host answers 503 sign_in_unavailable', async () => {
+    const response = await serveOwnerCall({
+      call: { ...signInCall({ identityToken: crypto.randomUUID(), timeZone: 'UTC' }), origin: PUBLIC_HTTPS_ORIGIN },
+      now: CLOCK_NOW,
+      workerEnv: envWithProvider(FAKE_PROVIDER),
+    });
+    expect(response.status).toBe(UNAVAILABLE_STATUS);
+    expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
   });
 
   test.each([
@@ -651,7 +677,7 @@ describe('the welcome mail', () => {
     const response = await serveOwnerCall({
       call: signInCall({ identityToken: crypto.randomUUID(), timeZone: 'UTC' }),
       now: CLOCK_NOW,
-      workerEnv: welcomeEnv({ binding, settings: { SIGN_IN_PROVIDER: FAKE_PROVIDER } }),
+      workerEnv: welcomeEnv({ binding, settings: { SIGN_IN_PROVIDER: FAKE_PROVIDER, PUBLIC_ORIGIN } }),
     });
     expect(response.status).toBe(CREATED_STATUS);
     expect(sent).toEqual([]);

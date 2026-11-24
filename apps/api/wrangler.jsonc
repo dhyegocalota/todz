@@ -1,12 +1,22 @@
 {
   "name": "todz-api",
+  "account_id": "e2035d8e0b7173d520ccf643f6f4661c",
   "main": "src/index.ts",
   "compatibility_date": "2026-11-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "api.todz.app", "custom_domain": true }],
+  "vars": {
+    "SIGN_IN_PROVIDER": "email",
+    "EMAIL_SENDER": "cloudflare",
+    "PUBLIC_ORIGIN": "https://api.todz.app",
+  },
   "d1_databases": [
     {
       "binding": "DIRECTORY",
-      "database_name": "directory",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_name": "todz-directory",
+      "database_id": "dc22b1c3-1869-44a0-b805-91bf92017f19",
+      "preview_database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "migrations",
     },
   ],
@@ -15,5 +25,6 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ProjectStore"] }],
   "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["noreply@todz.app"] }],
+  "ratelimits": [{ "name": "SIGN_IN_LIMITER", "namespace_id": "8601", "simple": { "limit": 10, "period": 60 } }],
   "assets": { "directory": "./public", "run_worker_first": ["/owner", "/owner/*", "/mcp", "/sign-in"] },
 }

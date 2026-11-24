@@ -24,6 +24,6 @@
 		<string>com.apple.widgetkit-extension</string>
 	</dict>
 	<key>TodzAppGroup</key>
-	<string>$(TeamIdentifierPrefix)dev.todz</string>
+	<string>$(TeamIdentifierPrefix)$(TODZ_APP_GROUP)</string>
 </dict>
 </plist>

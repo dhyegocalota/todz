@@ -7,4 +7,5 @@ export type Env = {
   EMAIL?: SendEmail;
   EMAIL_SENDER?: string;
   PUBLIC_ORIGIN?: string;
+  SIGN_IN_LIMITER?: RateLimit;
 };

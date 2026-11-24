@@ -9,7 +9,7 @@ import { ownerJson } from './owner-json';
 import { type OwnerContext, parsedPublicBody } from './owner-request';
 import { openOwnerSession } from './owner-sessions';
 import { publicOriginOf } from './sign-in-links';
-import { SIGN_IN_PROVIDER_OF_KIND, SignInProviderKind, signInKindOf } from './sign-in-provider';
+import { SIGN_IN_PROVIDER_OF_KIND, SignInProviderKind, signInKindForRequest } from './sign-in-provider';
 import { canonicalTimeZone } from './time-zone';
 
 const LINK_VERIFIER_PATTERN = /^[A-Za-z0-9_-]{43}$/;
@@ -62,7 +62,7 @@ async function sendWelcome({ request, env, address }: { request: Request; env: E
 }
 
 export async function signIn({ request, env, now, executionContext }: OwnerContext): Promise<Response> {
-  const kind = signInKindOf(env.SIGN_IN_PROVIDER);
+  const kind = signInKindForRequest({ env, request });
   if (kind === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
   const body = await parsedPublicBody({ request, schema: SignInBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);

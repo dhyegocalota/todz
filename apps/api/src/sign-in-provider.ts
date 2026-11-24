@@ -1,6 +1,8 @@
 import { digestCredential } from './credential-digest';
 import { spendSignInLink } from './directory-sign-in-links';
+import { isLocalOrigin } from './local-origin';
 import { enumValueOf } from './enum-value';
+import type { Env } from './env';
 
 const FAKE_SUBJECT_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 
@@ -48,4 +50,14 @@ export const SIGN_IN_PROVIDER_OF_KIND: Record<SignInProviderKind, SignInProvider
 
 export function signInKindOf(configured: string | undefined): SignInProviderKind | null {
   return enumValueOf({ enumeration: SignInProviderKind, candidate: configured });
+}
+
+export function signInKindForRequest({ env, request }: { env: Env; request: Request }): SignInProviderKind | null {
+  const kind = signInKindOf(env.SIGN_IN_PROVIDER);
+  if (kind !== SignInProviderKind.Fake) return kind;
+  const { PUBLIC_ORIGIN: publicOrigin } = env;
+  if (publicOrigin === undefined) return null;
+  const isLocalHost = isLocalOrigin(publicOrigin) && isLocalOrigin(request.url);
+  if (!isLocalHost) return null;
+  return kind;
 }

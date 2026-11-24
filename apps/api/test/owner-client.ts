@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { Env } from '../src/env';
 import { serveOwner } from '../src/owner-endpoint';
 
-const WORKER_ORIGIN = 'https://api.todz.test';
+const WORKER_ORIGIN = 'http://localhost:8787';
 const DEFAULT_TIME_ZONE = 'UTC';
 const CREATED_STATUS = 201;
 const JSON_MEDIA_TYPE = 'application/json';

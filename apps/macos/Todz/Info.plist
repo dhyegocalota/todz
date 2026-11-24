@@ -32,11 +32,11 @@
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
-		<true/>
+		<string>$(TODZ_ALLOWS_LOCAL_NETWORKING)</string>
 	</dict>
 	<key>TodzAPIBaseURL</key>
-	<string>http://localhost:8787</string>
+	<string>$(TODZ_API_BASE_URL)</string>
 	<key>TodzAppGroup</key>
-	<string>$(TeamIdentifierPrefix)dev.todz</string>
+	<string>$(TeamIdentifierPrefix)$(TODZ_APP_GROUP)</string>
 </dict>
 </plist>

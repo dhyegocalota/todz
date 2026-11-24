@@ -1,6 +1,6 @@
 # 0008. Runbooks live in the repository
 
-- Status: Accepted
+- Status: Accepted; amended by [0044](0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md) (the loop runs `deploy-the-api`)
 - Date: 2026-11-23
 - Deciders: Dhyego Calota (owner); Claude (advisor)
 - Inspired by: the need to follow, step by step, procedures that name resources, routes and secrets which change whenever the configuration changes

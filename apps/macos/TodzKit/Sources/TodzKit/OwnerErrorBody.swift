@@ -32,6 +32,7 @@ struct OwnerErrorBody: Decodable {
         case .timeZoneInvalid: .timeZoneInvalid
         case .signInUnavailable: .signInUnavailable
         case .tooManyLinks: .tooManyLinks
+        case .tooManyRequests: .tooManyRequests
         }
     }
 }

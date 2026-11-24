@@ -1,6 +1,6 @@
 # 0041. Outgoing email goes through a port, with a console sender for development
 
-- Status: Proposed
+- Status: Proposed; amended by [0044](0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md) (§2 the configuration names `cloudflare`)
 - Date: 2026-11-24
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) may overturn it
 - Inspired by: [ADR 0040](0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md), the owner's queue of 2026-11-24 (`transactional-email`: React Email templates sent through Cloudflare Email Service, "behind a port, with a local fake")

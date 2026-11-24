@@ -6,6 +6,7 @@ import { KEY_HANDLERS } from './owner-keys';
 import type { PublicHandler, PublicRoute, SessionHandler, SessionRoute } from './owner-request';
 import { OwnerRoute, matchOwnerRoute } from './owner-routes';
 import { signIn } from './owner-sign-in';
+import { signInLimitRefusal } from './sign-in-limiter';
 import { requestSignInLink } from './sign-in-links';
 import { readSignInMethod } from './sign-in-method';
 import { TASK_HANDLERS } from './owner-tasks';
@@ -43,6 +44,8 @@ export async function serveOwner({
   const match = matchOwnerRoute(request);
   if (match === null) return noRouteResponse();
   const context = { request, env, now, executionContext, params: match.params };
+  const limitRefusal = await signInLimitRefusal({ request, env, route: match.route });
+  if (limitRefusal !== null) return limitRefusal;
   if (isPublicRoute(match.route)) return PUBLIC_HANDLERS[match.route](context);
   const secret = bearerSecret(request);
   if (secret === null) return unauthorized();
