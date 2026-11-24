@@ -42,9 +42,20 @@ public struct OwnerAPI: OwnerService {
     private let baseURL: URL
     let transport: URLSession
 
-    public init(baseURL: URL, transport: URLSession = .shared) {
+    public init(baseURL: URL) {
+        self.init(baseURL: baseURL, transport: Self.uncachedTransport())
+    }
+
+    public init(baseURL: URL, transport: URLSession) {
         self.baseURL = baseURL
         self.transport = transport
+    }
+
+    private static func uncachedTransport() -> URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: configuration)
     }
 
     public func signIn(identityToken: String, timeZone: String) async throws -> IssuedSession {

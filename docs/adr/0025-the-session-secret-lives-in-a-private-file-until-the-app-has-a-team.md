@@ -30,6 +30,7 @@ The app keeps the owner's session secret (ADR 0021) between launches. The Keycha
 
 - A local session is as safe as the user's account, which is acceptable while sessions only reach `wrangler dev` and the fake provider.
 - The swap to the Keychain is required before any deploy; it is listed for the owner.
+- The file is excluded from backups. Sign-out erases it before asking the server to revoke the session, so a sign-out the server never hears (offline) leaves that session alive on the server until it expires (ADR 0021).
 
 ## Evidence
 

@@ -44,6 +44,14 @@ public struct FileSessionVault: SessionVault, Sendable {
         try draft.synchronize()
         try draft.close()
         guard rename(draftPath, sessionPath) == 0 else { throw SessionVaultError.unwritable }
+        try excludeFromBackup()
+    }
+
+    private func excludeFromBackup() throws {
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var file = sessionFile
+        try file.setResourceValues(values)
     }
 
     public func erase() throws {
