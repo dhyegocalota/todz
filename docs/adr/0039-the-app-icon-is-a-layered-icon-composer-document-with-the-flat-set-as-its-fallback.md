@@ -31,6 +31,7 @@ ADR 0038 made the app icon a set of flat PNGs rendered from `todz-icon.svg`. On 
 - A logo change also re-cuts the two layer SVGs; the runbook says how, and the shape test fails while the copies differ.
 - The widget extension already compiles the asset catalog, so it reaches the glyph with no new resource.
 - Building the app needs Xcode 27 or later, whose `actool` reads `.icon`; an older Xcode fails the `macos` gate at the asset step. The doctor keeps checking only that `xcodebuild` exists, because this Mac and every build the loop runs use Xcode 27.2.
+- The owner asked for every brand surface in light and dark, so the README shows the brand surfaces in dark beside their light shots and the icon's six looks as one rendered sheet, an exception to ADR 0030's "the window only, in light".
 - The renders need `ictool`, inside Xcode's Icon Composer (`Xcode.app/Contents/Applications/Icon Composer.app/Contents/Executables/ictool`); only the runbook uses it.
 
 ## Evidence

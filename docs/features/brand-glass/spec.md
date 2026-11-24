@@ -1,6 +1,6 @@
 # The Liquid Glass brand
 
-**Status:** Approved
+**Status:** In review
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-24 by inheritance from [the product design](../../product/README.md) and the owner's request of 2026-11-24 ("o app, menu bar, tem que carregar tudo certinho a logo, o icon mas seguindo o glass style quando necessário"); the icon's form and the widget glyph are [ADR 0039](../../adr/0039-the-app-icon-is-a-layered-icon-composer-document-with-the-flat-set-as-its-fallback.md), the loop's call, listed in the loop's questions for the owner
 **ADRs:** [0039](../../adr/0039-the-app-icon-is-a-layered-icon-composer-document-with-the-flat-set-as-its-fallback.md), [0038](../../adr/0038-the-brand-sources-are-svgs-in-docs-brand-and-the-app-s-assets-are-generated-from-them.md)

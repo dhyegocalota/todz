@@ -39,7 +39,7 @@ One group, then the tester, whose screenshots the lead commits.
 ## Z. Prove and ship
 
 - [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
-- [ ] **/check-ui:** screenshots recorded and uploaded (UI was touched).
+- [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence. Evidence: 8dd2642, at 1584b7e.
+- [x] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`. Evidence: WITH RESERVATIONS at 1584b7e, then YES at 57c3bc2; security CLEAR.
+- [x] **/check-ui:** screenshots recorded and uploaded (UI was touched). Evidence: the tester's shots, committed under `docs/screenshots/` and attached to the PR; no video (nothing moves).
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
