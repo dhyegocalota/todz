@@ -31,6 +31,11 @@ struct AddTaskField: View {
             }
         }
         .padding(.horizontal)
+        .onChange(of: model.unconfirmedDrafts[destination.target]) { unconfirmed, current in
+            let isTheShownAddConfirmed = current == nil && unconfirmed?.title == title
+            guard isTheShownAddConfirmed else { return }
+            title = clearedTitle
+        }
     }
 
     private var isAdding: Bool {
@@ -57,7 +62,7 @@ struct AddTaskField: View {
         title = clearedTitle
         Task {
             await model.addTask(title: submitted, projectIdentifier: destination.projectIdentifier, dueDate: destination.dueDate)
-            guard model.ruleIssues[destination.target] != nil else { return }
+            guard model.unconfirmedDrafts[destination.target] != nil else { return }
             title = submitted
         }
     }

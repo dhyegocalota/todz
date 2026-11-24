@@ -84,6 +84,7 @@ extension AppModel {
         board = TaskBoard()
         projectLoads = [:]
         histories = [:]
+        unconfirmedDrafts = [:]
         selectedTask = nil
         dismissBanner()
     }
@@ -100,21 +101,30 @@ extension AppModel {
         startPulls(projectIdentifiers: projectIdentifiers)
         defer { endPulls(projectIdentifiers: projectIdentifiers) }
         let feed = ProjectFeed(service: service)
+        let pulls: [ProjectPull]
         do {
-            try await withThrowingTaskGroup(of: ProjectPull.self) { group in
+            pulls = try await withThrowingTaskGroup(of: ProjectPull.self) { group in
                 projectIdentifiers.forEach { projectIdentifier in
                     group.addTask { try await ProjectPull.pulling(feed: feed, session: session, projectIdentifier: projectIdentifier) }
                 }
+                var pulls: [ProjectPull] = []
                 for try await pulled in group {
                     record(pulled, session: session, workspaceIdentifier: workspaceIdentifier)
+                    pulls.append(pulled)
                 }
+                return pulls
             }
         } catch {
             guard self.session == session else { return }
             endSession()
             return
         }
-        raisePullFailures(projectIdentifiers: projectIdentifiers, workspaceIdentifier: workspaceIdentifier)
+        guard isCurrent(session: session, workspaceIdentifier: workspaceIdentifier) else { return }
+        raiseFailures(of: pulls, workspaceIdentifier: workspaceIdentifier)
+    }
+
+    private func isCurrent(session: String, workspaceIdentifier: String) -> Bool {
+        self.session == session && activeWorkspaceIdentifier == workspaceIdentifier
     }
 
     private func startPulls(projectIdentifiers: [String]) {
@@ -130,21 +140,23 @@ extension AppModel {
     }
 
     private func record(_ pulled: ProjectPull, session: String, workspaceIdentifier: String) {
-        let isCurrentPull = self.session == session && activeWorkspaceIdentifier == workspaceIdentifier
-        guard isCurrentPull else { return }
+        guard isCurrent(session: session, workspaceIdentifier: workspaceIdentifier) else { return }
         switch pulled {
         case let .loaded(projectIdentifier, tasks):
             board.merge(projectIdentifier: projectIdentifier, tasks: tasks)
             projectLoads[projectIdentifier] = .loaded
-        case let .failed(projectIdentifier):
+        case let .unreachable(projectIdentifier), let .failed(projectIdentifier):
+            guard projectLoads[projectIdentifier] != .loaded else { return }
             projectLoads[projectIdentifier] = .failed
         }
     }
 
-    private func raisePullFailures(projectIdentifiers: [String], workspaceIdentifier: String) {
-        let failedIdentifiers = projectIdentifiers.filter { projectLoads[$0] == .failed }
+    private func raiseFailures(of pulls: [ProjectPull], workspaceIdentifier: String) {
+        let failedIdentifiers = pulls.compactMap(\.failedProjectIdentifier)
         guard !failedIdentifiers.isEmpty else { return }
-        raise(.someProjectsFailed, retry: { await self.pull(projectIdentifiers: failedIdentifiers, workspaceIdentifier: workspaceIdentifier) })
+        let isServerUnreachable = pulls.allSatisfy(\.isUnreachable)
+        let banner: AppBanner = isServerUnreachable ? .network : .someProjectsFailed
+        raise(banner, retry: { await self.pull(projectIdentifiers: failedIdentifiers, workspaceIdentifier: workspaceIdentifier) })
     }
 
     private func replaceProjects(workspaceIdentifier: String, change: ([Project]) -> [Project]) {

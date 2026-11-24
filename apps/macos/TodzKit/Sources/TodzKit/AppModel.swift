@@ -150,6 +150,7 @@ import Observation
         board = TaskBoard()
         projectLoads = [:]
         ruleIssues = [:]
+        unconfirmedDrafts = [:]
         histories = [:]
         dismissBanner()
     }

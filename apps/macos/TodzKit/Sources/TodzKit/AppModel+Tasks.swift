@@ -1,7 +1,7 @@
 extension AppModel {
     public func addTask(title: String, projectIdentifier: String, dueDate: CalendarDate?) async {
-        let draft = TaskDraft(title: title, notes: nil, dueDate: dueDate, idempotencyKey: makeIdempotencyKey())
-        await submit(draft: draft, projectIdentifier: projectIdentifier)
+        let target = WriteTarget.newTask(projectIdentifier: projectIdentifier)
+        await submit(draft: draft(target: target, title: title, dueDate: dueDate), projectIdentifier: projectIdentifier)
     }
 
     public func complete(task key: TaskKey) async {
@@ -50,12 +50,23 @@ extension AppModel {
         }
     }
 
+    private func draft(target: WriteTarget, title: String, dueDate: CalendarDate?) -> TaskDraft {
+        let unconfirmed = unconfirmedDrafts[target]
+        let isTheSameAdd = unconfirmed?.title == title && unconfirmed?.dueDate == dueDate
+        guard isTheSameAdd, let unconfirmed else {
+            return TaskDraft(title: title, notes: nil, dueDate: dueDate, idempotencyKey: makeIdempotencyKey())
+        }
+        return unconfirmed
+    }
+
     private func submit(draft: TaskDraft, projectIdentifier: String) async {
         let target = WriteTarget.newTask(projectIdentifier: projectIdentifier)
+        unconfirmedDrafts[target] = draft
         let added = await write(target: target, retry: { await self.submit(draft: draft, projectIdentifier: projectIdentifier) }) {
             try await service.addTasks(session: $0, projectIdentifier: projectIdentifier, drafts: [draft])
         }
         guard let task = added?.first?.task else { return }
+        unconfirmedDrafts[target] = nil
         board.replace(projectIdentifier: projectIdentifier, task: task)
         selectedTask = TaskKey(projectIdentifier: projectIdentifier, number: task.number)
     }

@@ -58,7 +58,7 @@ extension AppModelTests {
         let pulls = workspace.projects.map { FakeCall.readChanges(session: harness.session, projectIdentifier: $0.identifier, cursor: 0) }
         #expect(isSameCallSet(harness.service.calls, pulls))
         #expect(harness.model.taskViews?.inbox.count == 2)
-        #expect(harness.model.banner == .someProjectsFailed)
+        #expect(harness.model.banner == .network)
         #expect(harness.model.pullsInFlight == [:])
     }
 
