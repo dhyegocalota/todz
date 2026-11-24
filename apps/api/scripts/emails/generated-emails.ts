@@ -1,9 +1,10 @@
+import { fileURLToPath } from 'node:url';
 import { format, resolveConfig } from 'prettier';
 import type { GeneratedEmail } from '../../src/emails/generated-email';
 import { generatedSignInEmail } from './sign-in-template';
 import { generatedWelcomeEmail } from './welcome-template';
 
-export const GENERATED_EMAILS_PATH = new URL('../../src/emails/generated/email-templates.ts', import.meta.url).pathname;
+export const GENERATED_EMAILS_PATH = fileURLToPath(new URL('../../src/emails/generated/email-templates.ts', import.meta.url));
 
 export enum EmailTemplateName {
   SignIn = 'sign-in',

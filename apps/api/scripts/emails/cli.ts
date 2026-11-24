@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { EmailSlot, filledHtmlOf } from '../../src/emails/email-slot';
 import { EmailTemplateName, GENERATED_EMAILS_PATH, generatedEmailsOf, generatedEmailsSource } from './generated-emails';
 
@@ -11,7 +12,7 @@ enum EmailsCliMode {
 const FAILURE_EXIT_CODE = 1;
 const SUCCESS_EXIT_CODE = 0;
 const STALE_MESSAGE = `${GENERATED_EMAILS_PATH} is stale; run pnpm emails:generate`;
-const PREVIEW_DIRECTORY = new URL('../../../../.pr-media/emails/', import.meta.url).pathname;
+const PREVIEW_DIRECTORY = fileURLToPath(new URL('../../../../.pr-media/emails/', import.meta.url));
 const PREVIEW_VALUES = {
   [EmailSlot.Link]: 'http://localhost:8787/sign-in#token=preview-only-not-a-token',
   [EmailSlot.Email]: 'maria@example.com',
@@ -24,11 +25,16 @@ async function generate(): Promise<number> {
   return SUCCESS_EXIT_CODE;
 }
 
-async function check(): Promise<number> {
-  const current = existsSync(GENERATED_EMAILS_PATH) ? readFileSync(GENERATED_EMAILS_PATH, 'utf8') : '';
-  if (current === (await generatedEmailsSource())) return SUCCESS_EXIT_CODE;
+function staleExitCode(): number {
   console.error(STALE_MESSAGE);
   return FAILURE_EXIT_CODE;
+}
+
+async function check(): Promise<number> {
+  if (!existsSync(GENERATED_EMAILS_PATH)) return staleExitCode();
+  const current = readFileSync(GENERATED_EMAILS_PATH, 'utf8');
+  if (current === (await generatedEmailsSource())) return SUCCESS_EXIT_CODE;
+  return staleExitCode();
 }
 
 async function preview(): Promise<number> {
