@@ -40,3 +40,7 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0017](0017-a-2025-era-client-is-named-by-a-session-in-the-directory.md) | A 2025-era client is named by a session in the directory | Proposed | 2026-11-23 |
 | [0018](0018-the-mcp-server-reads-today-in-the-owner-s-time-zone.md) | The MCP server reads today in the owner's time zone | Proposed | 2026-11-23 |
 | [0019](0019-mcp-keys-are-prefixed-and-shown-once.md) | MCP keys are prefixed and shown once | Proposed | 2026-11-23 |
+| [0020](0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md) | Sign-in goes through a provider port, and v1 ships only the fake | Proposed | 2026-11-23 |
+| [0021](0021-owner-sessions-are-bearer-secrets-that-last-90-days.md) | Owner sessions are bearer secrets that last 90 days | Proposed | 2026-11-23 |
+| [0022](0022-the-owner-api-is-json-routes-and-the-app-builds-the-cross-project-views.md) | The owner API is JSON routes, and the app builds the cross-project views | Proposed | 2026-11-23 |
+| [0023](0023-each-project-numbers-its-changes-and-its-socket-only-says-changed.md) | Each project numbers its changes, and its socket only says "changed" | Proposed | 2026-11-23 |
