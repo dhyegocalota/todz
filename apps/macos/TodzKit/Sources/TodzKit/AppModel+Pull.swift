@@ -13,9 +13,14 @@ extension AppModel {
     func noteConnection(after failure: any Error) {
         switch SendOutcome.of(failure) {
         case .unreachable, .unexpected: isOffline = true
-        case .refused: isOffline = false
+        case .refused: noteAnswer()
         case .sessionGone: return
         }
+    }
+
+    func noteAnswer() {
+        isOffline = false
+        hasServerAnswered = true
     }
 
     public func refresh() async {
@@ -118,7 +123,7 @@ extension AppModel {
             board.merge(projectIdentifier: projectIdentifier, tasks: changes.tasks)
             board = board.setting(cursor: changes.cursor, projectIdentifier: projectIdentifier)
             projectLoads[projectIdentifier] = .loaded
-            isOffline = false
+            noteAnswer()
             keepProject(identifier: projectIdentifier)
             startSending()
         case let .unreachable(projectIdentifier), let .failed(projectIdentifier):

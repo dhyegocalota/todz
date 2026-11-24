@@ -35,6 +35,7 @@ import Observation
     @ObservationIgnored var sendWait: Task<Void, any Error>?
     @ObservationIgnored var headInFlightSession: String?
     @ObservationIgnored var sendFailures = 0
+    @ObservationIgnored var hasServerAnswered = false
     @ObservationIgnored var refusalsInFlush = 0
     @ObservationIgnored var selectionsAtAdd: [String: TaskKey?] = [:]
     @ObservationIgnored var projectsToPullFromStart: Set<String> = []
@@ -191,7 +192,7 @@ import Observation
         do {
             let value = try await operation(session)
             guard self.session == session else { throw CancellationError() }
-            isOffline = false
+            noteAnswer()
             return value
         } catch OwnerAPIError.unauthorized {
             guard self.session == session else { throw CancellationError() }

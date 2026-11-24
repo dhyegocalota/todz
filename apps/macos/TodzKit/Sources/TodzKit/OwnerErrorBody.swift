@@ -1,9 +1,8 @@
 import Foundation
 
+// NB ADR 0028: a bare status is never a refusal; only a todz error body names one.
 private let errorOfStatus: [ResponseStatus: OwnerAPIError] = [
-    .badRequest: .invalidRequest,
     .unauthorized: .unauthorized,
-    .notFound: .notFound,
     .unavailable: .signInUnavailable,
 ]
 
