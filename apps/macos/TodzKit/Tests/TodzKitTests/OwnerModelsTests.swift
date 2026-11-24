@@ -3,6 +3,11 @@ import Testing
 @testable import TodzKit
 
 private let timeZone = "America/Sao_Paulo"
+private let agentActorsWithoutAClientName = [
+    "{\"kind\":\"agent\",\"client_name\":null}",
+    "{\"kind\":\"agent\",\"client_name\":\"\"}",
+    "{\"kind\":\"agent\"}",
+]
 
 @Suite struct OwnerModelsTests {
     @Test func decodesTheOwner() throws {
@@ -72,6 +77,11 @@ private let timeZone = "America/Sao_Paulo"
             try OwnerFixtures.decoded(ChangeActor.self, from: OwnerFixtures.agentActorJSON)
                 == ChangeActor(kind: .agent, clientName: OwnerFixtures.agentClientName)
         )
+    }
+
+    @Test(arguments: agentActorsWithoutAClientName)
+    func refusesAnAgentActorWithoutAClientName(json: String) {
+        #expect(throws: DecodingError.self) { try OwnerFixtures.decoded(ChangeActor.self, from: json) }
     }
 
     @Test func decodesHistoryEntries() throws {
