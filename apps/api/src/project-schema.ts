@@ -2,7 +2,7 @@ export const PROJECT_SCHEMA_VERSION = 1;
 
 const SCHEMA_VERSION_TABLE = 'CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL) STRICT';
 
-const VERSION_ONE_STATEMENTS = [
+export const VERSION_ONE_STATEMENTS = [
   `CREATE TABLE tasks (
     number INTEGER PRIMARY KEY,
     title TEXT NOT NULL,
@@ -30,7 +30,8 @@ const VERSION_ONE_STATEMENTS = [
   'CREATE TABLE task_counter (last_issued_number INTEGER NOT NULL) STRICT',
 ];
 
-export function applyProjectSchema(sql: SqlStorage): void {
+export function applyProjectSchema(storage: DurableObjectStorage): void {
+  const sql = storage.sql;
   sql.exec(SCHEMA_VERSION_TABLE);
   const isApplied = sql.exec('SELECT version FROM schema_version').toArray().length > 0;
   if (isApplied) return;

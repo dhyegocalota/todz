@@ -47,7 +47,7 @@ export class ProjectStore extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.store = new SqliteTaskStore(ctx.storage.sql);
-    ctx.blockConcurrencyWhile(async () => applyProjectSchema(ctx.storage.sql));
+    ctx.blockConcurrencyWhile(async () => applyProjectSchema(ctx.storage));
   }
 
   addTasks({ actor, drafts }: { actor: Actor; drafts: TaskDraft[] }): ProjectResult<AddedTask[]> {
