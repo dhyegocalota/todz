@@ -1,6 +1,8 @@
+import { TASK_BATCH_MAX_SIZE } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { HttpStatus } from '../src/http-status';
 import { McpToolName } from '../src/mcp-copy';
+import { CHANGE_PAGE_SIZE } from '../src/project-store';
 import { countingEnv } from './counting-namespace';
 import { ClientEra, callTool, connectClient } from './mcp-client';
 import { type OwnedProject, createOwnedProject, issueMcpKey, ownerCall, projectCall, serveOwnerCall } from './owner-client';
@@ -87,6 +89,21 @@ describe('GET /owner/projects/:projectId/changes', () => {
     const changes = await changesFrom({ project, cursor: 2 });
     expect(changes.tasks.map((task) => task.number)).toEqual([3]);
     expect(changes.cursor).toBe(3);
+  });
+
+  test('a project past one page answers a full page with has_more, then the rest', async () => {
+    const project = await createOwnedProject();
+    const titles = Array.from({ length: CHANGE_PAGE_SIZE + 1 }, (_unused, index) => `Task ${index + 1}`);
+    await addTasks({ project, titles: titles.slice(0, TASK_BATCH_MAX_SIZE) });
+    await addTasks({ project, titles: titles.slice(TASK_BATCH_MAX_SIZE, TASK_BATCH_MAX_SIZE * 2) });
+    await addTasks({ project, titles: titles.slice(TASK_BATCH_MAX_SIZE * 2) });
+    const firstPage = await changesFrom({ project, cursor: 0 });
+    expect(firstPage.tasks).toHaveLength(CHANGE_PAGE_SIZE);
+    expect(firstPage.cursor).toBe(CHANGE_PAGE_SIZE);
+    expect(firstPage.has_more).toBe(true);
+    const secondPage = await changesFrom({ project, cursor: firstPage.cursor });
+    expect(secondPage.tasks.map((task) => task.number)).toEqual([CHANGE_PAGE_SIZE + 1]);
+    expect(secondPage.has_more).toBe(false);
   });
 
   test('a task carries its full json shape', async () => {
