@@ -310,7 +310,7 @@ extension AppModelTests {
         harness.service.failures[.updateOwner] = .unexpected(status: 503)
         harness.vault.secret = harness.session
         await harness.model.launch()
-        #expect(harness.service.routes().contains(.listWorkspaces))
+        #expect(harness.service.routes().contains(.listWorkspaces) == false)
         #expect(harness.store.routes().contains(.writeOwner) == false)
         #expect(harness.store.routes().contains(.writeProject) == false)
         #expect(harness.store.owner?.ownerIdentifier == cachedOwnerIdentifier)
@@ -326,6 +326,40 @@ extension AppModelTests {
         let firstWrite = try #require(routes.firstIndex { $0 == .writeOwner || $0 == .writeProject })
         #expect(firstErase < firstWrite)
         #expect(harness.store.owner?.ownerIdentifier == harness.ownerIdentifier)
+    }
+
+    @Test func aLaunchWhoseOwnerUpdateFailsKeepsTheCachedOwnersWindowAndChangesUntilTheOwnerIsConfirmed() async throws {
+        let harness = try AppModelHarness()
+        let bravo = harness.seedWorkspace(name: "bravo")
+        let acme = harness.seedWorkspace(name: "acme")
+        let bravoTask = TaskKey(projectIdentifier: "bravo-inbox", number: 1)
+        harness.seedTasks(projectIdentifier: bravoTask.projectIdentifier, count: 1)
+        harness.cache([bravo], active: bravo)
+        harness.cacheTasks(projectIdentifier: bravoTask.projectIdentifier, count: 1, cursor: 1)
+        try harness.store.keep(Outbox().appending(.field(bravoTask, .title("Waiting")), isHeadSent: false))
+        harness.service.workspaces = [acme]
+        harness.service.failures[.updateOwner] = .unexpected(status: 503)
+        harness.vault.secret = harness.session
+        await harness.model.launch()
+        #expect(harness.model.workspaces.map(\.identifier) == [bravo.identifier])
+        #expect(harness.model.waitingChangeCount == 1)
+        #expect(harness.service.routes().contains(.updateTask) == false)
+        let storeWrites: [StoreRoute] = [.writeOwner, .writeProject, .writeOutbox, .eraseProject, .erase]
+        #expect(harness.store.routes().contains { storeWrites.contains($0) } == false)
+        harness.service.workspaces = [bravo]
+        harness.service.failures = [:]
+        let retry = try #require(harness.model.ownerConfirmationRetry)
+        await harness.pause.started()
+        harness.pause.release()
+        await retry.value
+        await harness.model.workspaceReload?.value
+        await harness.flushed()
+        #expect(
+            harness.service.calls.contains(
+                .updateTask(session: harness.session, projectIdentifier: bravoTask.projectIdentifier, number: bravoTask.number, patch: .title("Waiting"))
+            )
+        )
+        #expect(harness.model.waitingChangeCount == 0)
     }
 
     @Test func aLaunchAsAnotherOwnerWhoseEraseFailsStaysUnconfirmedEmptiesTheWindowAndSaysSoWithTryAgain() async throws {
