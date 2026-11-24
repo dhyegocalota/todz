@@ -17,3 +17,50 @@
 - The preview files open in a browser as the todz look in light, and in dark with the browser's dark preference.
 
 **Gaps.** Dark rendering and Outlook are not walked by the developer. The sign-in text holds the link twice (button and fallback line). The workers project excludes `test/brand-asset.test.ts` ahead of step 3.
+
+## Steps 3 to 5: the sender, the mails, the welcome and the assets
+
+**What changed.** `src/email-sender.ts` has the `cloudflare` kind as a factory on the `EMAIL` binding (constants `SENDER_ADDRESS` and `REPLY_TO_ADDRESS` at the top); `emailSenderOf` takes `binding` and keeps the console's local-origin and local-request rules for console only. `src/emails/filled-email.ts`, `sign-in-mail.ts` and `welcome-mail.ts` fill the generated templates (origin from `PUBLIC_ORIGIN`); `sign-in-mail-copy.ts` is gone. `owner-sign-in.ts` returns `{ ownerId, isNewOwner }` from its owner lookup and hands the welcome to `executionContext.waitUntil` only when the owner is new and the provider kind is `email`; `OwnerContext` carries the `ExecutionContext` from `index.ts` through `serveOwner`. `wrangler.jsonc` gains `send_email` (`EMAIL`, allowed sender `noreply@todz.app`) and `assets` (`./public`, `run_worker_first` for `/owner/*`, `/mcp`, `/sign-in`); `public/brand/todz-lockup.png` is a byte copy of `docs/brand/todz-lockup.png`. `vitest.config.mts` names both timeouts literally in each project (the step 2 spread failed `test-timeouts.test.ts` in `tools/repository-shape`).
+
+**Run it.** `pnpm emails:preview` from the root writes `.pr-media/emails/sign-in.html` and `welcome.html`; open them in a browser (the lockup shows only while a Worker serves it). From `apps/api`: `pnpm dev:email` (console sender, mail text on the terminal) and `pnpm dev:email:cloudflare` (the simulated binding: `wrangler dev` prints `send_email binding called with MessageBuilder` with From, To and Subject, and writes the text to `apps/api/.wrangler/tmp/email/<instance>/email-text/<id>@todz.app.txt` and the HTML to `.../email-html/<id>@todz.app.html`, gitignored). Ask a link with `POST /owner/sign-in-links`, open the HTML file, and redeem with `POST /owner/sessions` to see the welcome written the same way. Unit loop: `cd apps/api && npx vitest run` (both projects), `pnpm typecheck`, `pnpm emails:check`; `cd tools/repository-shape && npx vitest run`.
+
+**Red today, green after.** Red commit `08a4730` (stubs: the `cloudflare` factory throwing, `signInMail` with empty `html`, `welcomeMail` throwing); green commit `1107b17`.
+
+| Test | Red text | Green |
+|------|----------|-------|
+| `email-sender.test.ts` sends through the binding from todz | `Error: the cloudflare sender is not implemented` | yes |
+| `email-sender.test.ts` rejects when the binding throws | `expected [Function] to throw error including 'the binding is down' but got 'the cloudflare sender is not implemented'` | yes |
+| `email-sender.test.ts` is no sender without the binding | `expected { send: [AsyncFunction send] } to be null` | yes |
+| `owner-sign-in.test.ts` a new owner by link gets exactly one welcome | `exactly one message should have been sent` | yes |
+| `owner-sign-in.test.ts` a returning owner by link gets none | `expected [] to have a length of 1 but got +0` | yes |
+| `owner-sign-in.test.ts` a welcome that throws after the session opened | `expected "vi.fn()" to be called 1 times, but got 0 times` | yes |
+| `owner-sign-in.test.ts` the sign-in answers while the welcome is still being sent | `expected "vi.fn()" to be called 1 times, but got 0 times` | yes |
+| `sign-in-links.test.ts` sends one mail from a public https origin | `expected 503 to be 202` (the stub sender throws, so the HTML assertions were not reached) | yes |
+| `sign-in-links.test.ts` stores the digest of the token it mailed | `exactly one message should have been sent` | yes |
+| `brand-asset.test.ts` byte copy | `ENOENT: no such file or directory, open '.../apps/api/public/brand/todz-lockup.png'` | yes |
+| `api-source.test.ts` binds EMAIL to the one allowed sender | `expected '{ "name": "todz-api", "main": ... }' to match /"send_email":...` | yes |
+| `api-source.test.ts` static assets never answer before the Worker | `expected ... to match /... "run_worker_first" ...` | yes |
+| `api-source.test.ts` dev:email:cloudflare script | `Error: the api has no dev:email:cloudflare script` | yes |
+
+Pins (green when they landed): the four `worker.test.ts` cases that `/sign-in`, `/owner`, `/owner/sign-in-links` and `/mcp` still reach the Worker; the fake-provider, rival-path, no-sender, no-origin, unknown-kind and no-binding welcome cases (they hold today because the welcome was not there yet); the console cases of `email-sender.test.ts`; the existing sign-in-links console cases.
+
+**Bundle.** `wrangler deploy --dry-run --outdir` of this branch: `index.js` 1,390,969 bytes, upload 1358.37 KiB (gzip 240.15 KiB). The same dry run on `feat/magic-link-sign-in` (no emails): `index.js` 1,368,040 bytes, upload 1335.98 KiB (gzip 236.66 KiB). The templates cost 22,929 bytes (about 3.5 KiB gzip), the lockup asset is uploaded as an asset, and no React reaches the bundle. The dry run printed `env.EMAIL (unrestricted - senders: noreply@todz.app) Send Email`.
+
+**Hypotheses.**
+
+- With `EMAIL_SENDER=cloudflare` and the binding, a link request on a public https origin and a public request host sends one mail from `{name: 'todz', email: 'noreply@todz.app'}` with reply-to `hello@todz.app`, an HTML part whose button `href` is the link and whose header image is `{origin}/brand/todz-lockup.png`, and the text part with the link and the ignore line.
+- A throwing binding on a link request answers 503 `sign_in_unavailable` and leaves no `sign_in_links` row; `cloudflare` without the binding answers 503 and stores nothing.
+- The first sign-in by link for an address sends exactly one welcome to that address; a second sign-in, the fake provider, the rival path of the insert race, a missing `EMAIL_SENDER`, an unknown kind, a missing `PUBLIC_ORIGIN` or a missing binding send none and still answer 201.
+- A welcome whose send throws or hangs never changes the 201 and never delays it; the Worker runs it through `waitUntil`.
+- The console sender still logs only `{to, text}`, and only when both the public origin and the request host are local.
+- Under `wrangler dev` (walked once on port 8799, then killed) `/brand/todz-lockup.png` answers 200 `image/png`, `/owner` answers 401 and `/sign-in` answers 200 from the Worker, and the simulated binding wrote the mail files named above.
+
+**Gaps.**
+
+- The Workers test pool does not serve static assets (`GET /brand/todz-lockup.png` answered 404 there), so the PNG is proven by the Node byte-equality test plus the `wrangler dev` request; the `run_worker_first` list is proven by a text pattern in `api-source.test.ts` and by the `worker.test.ts` pins, not by a request that an asset would have shadowed.
+- `run_worker_first: ["/owner/*", ...]` does not name `/owner` itself (the spec's list); no file in `public/` can sit there.
+- The `from` is the object `{name, email}`, not the string `todz <noreply@todz.app>`: `index.d.ts` types it `string | EmailAddress` and documents no display-name string form.
+- The red commit's `sign-in-links` HTML assertions were not reached (the stub threw first); they were seen green only.
+- A real send through Cloudflare, SPF/DKIM and mail-client rendering are not exercised (`deploy-ready`).
+- `dev:email:cloudflare` was run once by the developer; the macOS app was not run.
+- An unrelated `wrangler dev` of the `feat/magic-link-sign-in` worktree (port 8787, not started by this lane) was still running at the end.

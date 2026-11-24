@@ -25,9 +25,9 @@ One group, in order.
 
 - [x] **Step 1 (red 38d598b):** Red: `test/emails/email-slot.test.ts` (fills and escapes), `test/emails/generated-emails.test.ts` (the module on disk equals a fresh render; runs in Node, not Miniflare: a second vitest project if needed), `test/emails/runtime-email-imports.test.ts` (no `src` file imports `react`, `react-dom` or `@react-email`), `test/emails/email-templates.test.ts` (each template's subject, heading, the button's `href` holding `{{link}}`, the header image's `src` holding `{{origin}}/brand/todz-lockup.png`, the plain text holding the link and "If you didn't ask for this, ignore this email."). Commit failing alone.
 - [x] **Step 2 (the `node` project's email-slot, generated-emails, email-templates and runtime-email-imports tests green):** Green: the dev dependencies (React Email 1.0.12 / render 2.0.6 / React 19.3.1 / tsx, as zapbip), `scripts/emails/` (layout, style, two templates with `createElement`, `render-email.ts`, `cli.ts` with `generate`, `check` and `preview` from a record), the generated module, `email-slot.ts`, the root scripts.
-- [ ] **Step 3:** Red: `test/email-sender.test.ts`: `cloudflare` calls the binding with `from` `todz <noreply@todz.app>`, `replyTo` `hello@todz.app`, `to`, `subject`, `html`, `text`; rejects when the binding throws; `emailSenderOf` gives none for `cloudflare` without a binding and keeps the console rules. `test/sign-in-links.test.ts`: the link request sends HTML whose button `href` and text both carry the link, and the HTML has the origin's lockup URL. `test/owner-sign-in.test.ts`: a new owner by link gets exactly one welcome; a returning owner none; the fake provider none; a welcome sender that throws still answers 201. `test/brand-asset.test.ts`: `GET /brand/todz-lockup.png` answers the PNG byte-equal to `docs/brand/todz-lockup.png`. Commit failing alone.
-- [ ] **Step 4:** Green: the `cloudflare` kind, `sign-in-mail.ts` and `welcome-mail.ts`, the welcome after owner creation, `wrangler.jsonc` `send_email` and `assets`, `public/brand/todz-lockup.png`, the `api-source.test.ts` guard still allowing only the console sender to name `console`.
-- [ ] **Step 5:** `apps/api/README.md` (purpose only); tester briefing with `pnpm emails:preview` and how to open each mail.
+- [x] **Step 3 (red 08a4730):** Red: `test/email-sender.test.ts`: `cloudflare` calls the binding with `from` `todz <noreply@todz.app>`, `replyTo` `hello@todz.app`, `to`, `subject`, `html`, `text`; rejects when the binding throws; `emailSenderOf` gives none for `cloudflare` without a binding and keeps the console rules. `test/sign-in-links.test.ts`: the link request sends HTML whose button `href` and text both carry the link, and the HTML has the origin's lockup URL. `test/owner-sign-in.test.ts`: a new owner by link gets exactly one welcome; a returning owner none; the fake provider none; a welcome sender that throws still answers 201. `test/brand-asset.test.ts`: `GET /brand/todz-lockup.png` answers the PNG byte-equal to `docs/brand/todz-lockup.png`. Commit failing alone.
+- [x] **Step 4 (green 1107b17):** Green: the `cloudflare` kind, `sign-in-mail.ts` and `welcome-mail.ts`, the welcome after owner creation, `wrangler.jsonc` `send_email` and `assets`, `public/brand/todz-lockup.png`, the `api-source.test.ts` guard still allowing only the console sender to name `console`.
+- [x] **Step 5 (README and tester-briefing.md, steps 3 to 5 section):** `apps/api/README.md` (purpose only); tester briefing with `pnpm emails:preview` and how to open each mail.
 
 ## Failure modes
 
@@ -42,7 +42,7 @@ One group, in order.
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
 - [ ] **Security reviewer:** verdict recorded.
