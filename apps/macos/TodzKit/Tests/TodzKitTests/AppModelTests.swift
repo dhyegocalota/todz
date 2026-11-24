@@ -39,6 +39,32 @@ import Testing
         #expect(harness.model.projectLoads == ["acme-inbox": .loaded, "acme-launch": .loaded])
     }
 
+    @Test func aSecondLaunchWhileTheFirstWaitsOnTheServiceReturnsAtOnceWithoutReadingTheVault() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.vault.secret = harness.session
+        harness.service.suspend(.updateOwner)
+        let firstLaunch = Task { await harness.model.launch() }
+        await harness.service.held(.updateOwner)
+        harness.vault.isUnreadable = true
+        await harness.model.launch()
+        #expect(harness.model.phase == .loading)
+        harness.service.unsuspend(.updateOwner)
+        harness.service.resume(.updateOwner)
+        await firstLaunch.value
+        #expect(harness.service.routes().filter { $0 == .updateOwner }.count == 1)
+        #expect(harness.model.phase == .ready)
+    }
+
+    @Test func aLaunchAfterAFinishedLaunchCallsNothing() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        await harness.model.launch()
+        #expect(harness.service.calls == [])
+        #expect(harness.model.phase == .ready)
+    }
+
     @Test func aRefusedZoneAtLaunchShowsNothingAndGoesOn() async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
