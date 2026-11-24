@@ -28,6 +28,14 @@ extension AppModel {
         await update(task: key, field: .notes, patch: .notes(notes))
     }
 
+    public func commitNotes(task key: TaskKey, draft: String) async {
+        fatalError("AppModel.commitNotes is not implemented")
+    }
+
+    public func discardUnsavedNotes(task key: TaskKey) {
+        fatalError("AppModel.discardUnsavedNotes is not implemented")
+    }
+
     public func updateDueDate(task key: TaskKey, dueDate: CalendarDate?) async {
         await update(task: key, field: .dueDate, patch: .dueDate(dueDate))
     }

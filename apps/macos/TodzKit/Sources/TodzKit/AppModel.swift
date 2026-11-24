@@ -16,6 +16,7 @@ import Observation
     public internal(set) var writesInFlight: Set<WriteTarget> = []
     public internal(set) var ruleIssues: [WriteTarget: RuleIssue] = [:]
     public internal(set) var unconfirmedDrafts: [WriteTarget: TaskDraft] = [:]
+    public internal(set) var unsavedNotes: [TaskKey: String] = [:]
     public internal(set) var banner: AppBanner?
     public internal(set) var histories: [TaskKey: HistoryLoad] = [:]
     var retry: (@MainActor () async -> Void)?
