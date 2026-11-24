@@ -183,7 +183,7 @@ extension AppModelTests {
         await harness.service.held(.renameProject)
         await harness.model.switchWorkspace(identifier: side.identifier)
         harness.service.resume(.renameProject)
-        await renaming.value
+        #expect(await renaming.value?.name == "Ship")
         #expect(harness.model.activeWorkspace == side)
         await harness.model.switchWorkspace(identifier: acme.identifier)
         #expect(harness.model.activeWorkspace?.projects.map(\.name) == ["Inbox", "Ship"])

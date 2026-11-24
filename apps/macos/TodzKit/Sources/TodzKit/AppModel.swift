@@ -20,6 +20,7 @@ import Observation
     public internal(set) var banner: AppBanner?
     public internal(set) var histories: [TaskKey: HistoryLoad] = [:]
     var retry: (@MainActor () async -> Void)?
+    var retryTarget: WriteTarget?
 
     @ObservationIgnored var session: String?
     @ObservationIgnored let service: any OwnerService
@@ -108,6 +109,8 @@ import Observation
 
     public func tryAgain() async {
         guard let retry else { return }
+        let isRetriedWriteInFlight = writesInFlight.contains { $0 == retryTarget }
+        guard !isRetriedWriteInFlight else { return }
         dismissBanner()
         await retry()
     }
@@ -115,11 +118,13 @@ import Observation
     public func dismissBanner() {
         banner = nil
         retry = nil
+        retryTarget = nil
     }
 
-    func raise(_ banner: AppBanner, retry: (@MainActor () async -> Void)? = nil) {
+    func raise(_ banner: AppBanner, retry: (@MainActor () async -> Void)? = nil, retryTarget: WriteTarget? = nil) {
         self.banner = banner
         self.retry = retry
+        self.retryTarget = retryTarget
     }
 
     func request<Value>(_ operation: (String) async throws -> Value) async throws -> Value {

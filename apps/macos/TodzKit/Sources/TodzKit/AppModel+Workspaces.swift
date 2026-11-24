@@ -30,6 +30,7 @@ extension AppModel {
         }
         guard let created else { return nil }
         replaceProjects(workspaceIdentifier: workspace.identifier) { $0 + [created] }
+        guard activeWorkspaceIdentifier == workspace.identifier else { return created }
         projectLoads[created.identifier] = .loaded
         selectedItem = .project(identifier: created.identifier)
         return created

@@ -81,6 +81,7 @@ extension AppModel {
 
     private func submit(draft: TaskDraft, projectIdentifier: String) async {
         let target = WriteTarget.newTask(projectIdentifier: projectIdentifier)
+        guard !writesInFlight.contains(target) else { return }
         unconfirmedDrafts[target] = draft
         let added = await write(target: target, retry: { await self.submit(draft: draft, projectIdentifier: projectIdentifier) }) {
             try await service.addTasks(session: $0, projectIdentifier: projectIdentifier, drafts: [draft])

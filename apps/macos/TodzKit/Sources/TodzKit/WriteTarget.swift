@@ -12,6 +12,13 @@ public enum WriteTarget: Hashable, Sendable {
         }
     }
 
+    var keepsItsAnswerAcrossASwitch: Bool {
+        switch self {
+        case .newWorkspace, .newProject, .projectName: true
+        case .newTask, .taskField: false
+        }
+    }
+
     var goneBanner: AppBanner {
         switch self {
         case .newWorkspace, .newProject: .workspaceGone

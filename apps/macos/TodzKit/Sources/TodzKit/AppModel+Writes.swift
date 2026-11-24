@@ -14,13 +14,18 @@ extension AppModel {
             guard isAnswerable(target: target, sentIn: workspaceIdentifier) else { return nil }
             return value
         } catch {
-            guard isAnswerable(target: target, sentIn: workspaceIdentifier) else { return nil }
+            guard isRecoverable(target: target, sentIn: workspaceIdentifier) else { return nil }
             await recover(from: error, target: target, retry: retry)
             return nil
         }
     }
 
     private func isAnswerable(target: WriteTarget, sentIn workspaceIdentifier: String?) -> Bool {
+        let isSameWorkspace = activeWorkspaceIdentifier == workspaceIdentifier
+        return isSameWorkspace || target.keepsItsAnswerAcrossASwitch
+    }
+
+    private func isRecoverable(target: WriteTarget, sentIn workspaceIdentifier: String?) -> Bool {
         let isSameWorkspace = activeWorkspaceIdentifier == workspaceIdentifier
         return isSameWorkspace || !target.belongsToTheActiveWorkspace
     }
@@ -58,7 +63,7 @@ extension AppModel {
         case .taskNotFound:
             await reload(raising: .taskGone)
         case .unreachable:
-            raise(.network, retry: retry)
+            raise(.network, retry: retry, retryTarget: target)
         case .inboxIsFixed:
             raise(.inboxIsFixed)
         case .identityRejected, .signInUnavailable, .cursorAhead, .timeZoneInvalid, .invalidRequest, .unexpected:
@@ -67,7 +72,10 @@ extension AppModel {
     }
 
     private func reload(raising banner: AppBanner) async {
-        raise(banner)
+        dismissBanner()
         await loadWorkspaces()
+        let isReloadedQuietly = session != nil && self.banner == nil
+        guard isReloadedQuietly else { return }
+        raise(banner)
     }
 }
