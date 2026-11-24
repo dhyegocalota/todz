@@ -8,4 +8,8 @@ extension AppModel {
         case .upcoming, .done: return nil
         }
     }
+
+    public func reveal(task key: TaskKey) {
+        fatalError("reveal(task:) is not implemented")
+    }
 }
