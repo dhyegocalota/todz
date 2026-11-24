@@ -80,9 +80,9 @@ extension AppModel {
         }
     }
 
-    // NB ADR 0032: sign-out and another owner erase the snapshot and the requests with the cache.
-    func eraseWidgets() throws {
-        try widgetStore.erase()
+    // NB ADR 0032: sign-out and another owner erase the snapshot and the requests with the cache, and a failed erase never keeps a session or a cache.
+    func eraseWidgets() {
+        try? widgetStore.erase()
         publishedWidgetSnapshot = nil
     }
 

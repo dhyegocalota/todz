@@ -173,11 +173,11 @@ import Observation
         guard let session else { return }
         do {
             try store.erase()
-            try eraseWidgets()
         } catch {
             raise(.signOutFailed)
             return
         }
+        eraseWidgets()
         outbox = Outbox()
         clearSession()
         phase = .signedOut(notice: nil)
