@@ -241,6 +241,21 @@ extension AppModelTests {
         #expect(harness.widgets.routes() == [.requests, .removeRequests])
     }
 
+    @Test func onlyTheRequestsRemovedAreTaken() async throws {
+        let harness = try await launchedWidgetHarness()
+        harness.service.suspend(.completeTasks)
+        let removable = stored(number: 1, state: .done)
+        let unremovable = stored(number: 2, state: .done)
+        harness.widgets.storedRequests = [removable, unremovable]
+        harness.widgets.unremovableNames = [unremovable.name]
+        await harness.model.takeWidgetRequests()
+        #expect(harness.model.waitingChangeCount == 1)
+        #expect(harness.widgets.storedRequests == [unremovable])
+        harness.service.unsuspend(.completeTasks)
+        harness.service.resume(.completeTasks)
+        await harness.flushed()
+    }
+
     @Test func aRequestForATaskAlreadyInThatStateEnqueuesNothing() async throws {
         let harness = try await launchedWidgetHarness()
         harness.service.suspend(.completeTasks)

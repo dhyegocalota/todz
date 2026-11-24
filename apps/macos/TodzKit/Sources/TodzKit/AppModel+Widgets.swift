@@ -41,7 +41,7 @@ extension AppModel {
         }
         guard !stored.isEmpty else { return }
         do {
-            try widgetStore.removeRequests(stored.map(\.name))
+            _ = try widgetStore.removeRequests(stored.map(\.name))
         } catch {
             return
         }

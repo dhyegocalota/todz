@@ -19,7 +19,9 @@ public struct UnavailableWidgetStore: WidgetStore {
         []
     }
 
-    public func removeRequests(_ names: [String]) throws {}
+    public func removeRequests(_ names: [String]) throws -> [String] {
+        []
+    }
 
     public func erase() throws {}
 }

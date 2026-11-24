@@ -35,7 +35,7 @@ private let snapshot = WidgetSnapshot(
 
     @Test func erasingSucceedsWithNothingToErase() throws {
         try store.eraseSnapshot()
-        try store.removeRequests(["\(UUID().uuidString).json"])
+        #expect(try store.removeRequests(["\(UUID().uuidString).json"]) == [])
         try store.erase()
     }
 }

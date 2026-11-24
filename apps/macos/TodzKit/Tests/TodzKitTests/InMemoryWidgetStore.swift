@@ -41,6 +41,7 @@ enum WidgetStoreCall: Equatable, Sendable {
     var storedRequests: [StoredWidgetRequest] = []
     var calls: [WidgetStoreCall] = []
     var failures: [WidgetStoreRoute: WidgetStoreError] = [:]
+    var unremovableNames: Set<String> = []
     var onCall: ((WidgetStoreCall) -> Void)?
 
     func routes() -> [WidgetStoreRoute] {
@@ -87,10 +88,12 @@ enum WidgetStoreCall: Equatable, Sendable {
         }
     }
 
-    nonisolated func removeRequests(_ names: [String]) throws {
+    nonisolated func removeRequests(_ names: [String]) throws -> [String] {
         try MainActor.assumeIsolated {
             try record(.removeRequests(names))
-            storedRequests.removeAll { names.contains($0.name) }
+            let removed = names.filter { !unremovableNames.contains($0) }
+            storedRequests.removeAll { removed.contains($0.name) }
+            return removed
         }
     }
 

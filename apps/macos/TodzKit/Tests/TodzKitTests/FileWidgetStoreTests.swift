@@ -97,8 +97,19 @@ private let snapshot = WidgetSnapshot(
         try store.addRequest(request(2))
         let read = try store.requests()
         try store.addRequest(request(3))
-        try store.removeRequests(read.map(\.name))
+        _ = try store.removeRequests(read.map(\.name))
         #expect(try store.requests().map(\.request) == [request(3)])
+    }
+
+    @Test func removesTheRequestsItCanAndNamesThem() throws {
+        try (1...3).forEach { try store.addRequest(request($0)) }
+        let read = try store.requests()
+        let stuck = requestsFolder.appending(path: read[1].name)
+        try FileManager.default.setAttributes([.immutable: true], ofItemAtPath: stuck.path(percentEncoded: false))
+        defer { try? FileManager.default.setAttributes([.immutable: false], ofItemAtPath: stuck.path(percentEncoded: false)) }
+        let removed = try store.removeRequests(read.map(\.name))
+        #expect(removed == [read[0].name, read[2].name])
+        #expect(try store.requests().map(\.request) == [request(2)])
     }
 
     @Test func keepsEveryFilePrivate() throws {
@@ -180,7 +191,7 @@ private let snapshot = WidgetSnapshot(
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try FileManager.default.createSymbolicLink(at: requestsFolder, withDestinationURL: elsewhere.appending(path: requestsFolderName))
         #expect(throws: WidgetStoreError.unreadable) { try store.requests() }
-        #expect(throws: WidgetStoreError.unreadable) { try store.removeRequests([name]) }
+        #expect(throws: WidgetStoreError.unreadable) { _ = try store.removeRequests([name]) }
         #expect(try elsewhereStore.requests().map(\.request) == [request(1)])
     }
 
@@ -188,7 +199,7 @@ private let snapshot = WidgetSnapshot(
         try (1...manyRequestCount).forEach { try store.addRequest(request($0)) }
         let firstPass = try store.requests()
         #expect(firstPass.map(\.request) == (1...requestsPerPass).map { request($0) })
-        try store.removeRequests(firstPass.map(\.name))
+        _ = try store.removeRequests(firstPass.map(\.name))
         #expect(try store.requests().map(\.request) == ((requestsPerPass + 1)...manyRequestCount).map { request($0) })
     }
 
@@ -196,7 +207,7 @@ private let snapshot = WidgetSnapshot(
     func removesNothingNamedOutsideTheRequests(name: String) throws {
         try store.writeSnapshot(snapshot)
         try store.addRequest(request(1))
-        try store.removeRequests([name])
+        #expect(try store.removeRequests([name]) == [])
         #expect(try store.readSnapshot() == snapshot)
         #expect(try store.requests().count == 1)
     }

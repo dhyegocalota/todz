@@ -4,6 +4,6 @@ public protocol WidgetStore: Sendable {
     func eraseSnapshot() throws
     func addRequest(_ request: WidgetRequest) throws
     func requests() throws -> [StoredWidgetRequest]
-    func removeRequests(_ names: [String]) throws
+    func removeRequests(_ names: [String]) throws -> [String]
     func erase() throws
 }

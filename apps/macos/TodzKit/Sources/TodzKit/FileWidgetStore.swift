@@ -57,9 +57,11 @@ public struct FileWidgetStore: WidgetStore {
         try oldestRequestFiles().compactMap(storedRequest)
     }
 
-    public func removeRequests(_ names: [String]) throws {
-        guard try hasRequestsFolder() else { return }
-        try names.compactMap(requestFile).forEach(remove)
+    public func removeRequests(_ names: [String]) throws -> [String] {
+        guard try hasRequestsFolder() else { return [] }
+        let files = names.compactMap(requestFile)
+        try files.forEach(remove)
+        return files.map(\.lastPathComponent)
     }
 
     public func erase() throws {
