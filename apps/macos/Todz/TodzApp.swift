@@ -1,13 +1,14 @@
 import SwiftUI
 import TodzKit
 
-private let windowIdentifier = "main"
 private let cacheFolderName = "Cache"
 private let defaultWidth: CGFloat = 1100
 private let defaultHeight: CGFloat = 700
+private let popoverWidth: CGFloat = 360
 
 @main
 struct TodzApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var model = AppModel(
         service: OwnerAPI(baseURL: AppConfiguration.baseURL),
         vault: FileSessionVault(folder: AppConfiguration.sessionFolder),
@@ -19,7 +20,7 @@ struct TodzApp: App {
     @State private var windowState = MainWindowState()
 
     var body: some Scene {
-        Window(MainWindowCopy.windowTitle, id: windowIdentifier) {
+        Window(MainWindowCopy.windowTitle, id: MainWindowScene.identifier) {
             RootView()
                 .environment(model)
                 .environment(windowState)
@@ -27,5 +28,15 @@ struct TodzApp: App {
         .defaultSize(width: defaultWidth, height: defaultHeight)
         .windowResizability(.contentMinSize)
         .commands { AppCommands(model: model, windowState: windowState) }
+        MenuBarExtra {
+            MenuBarPopover()
+                .frame(width: popoverWidth)
+                .environment(model)
+                .environment(windowState)
+        } label: {
+            MenuBarLabel()
+                .environment(model)
+        }
+        .menuBarExtraStyle(.window)
     }
 }
