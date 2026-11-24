@@ -5,6 +5,8 @@ import { issueProjectKey } from '../src/project-keys';
 import { type SessionOwner, resolveSessionOwner } from '../src/project-routing';
 import { CLOCK_NOW } from './task-fixtures';
 
+const SEEDED_KEY_HINT = 'seed';
+
 export async function seedOwner(timeZone = 'UTC'): Promise<string> {
   const ownerId = crypto.randomUUID();
   await env.DIRECTORY.prepare('INSERT INTO owners (id, time_zone, created_at) VALUES (?, ?, ?)').bind(ownerId, timeZone, CLOCK_NOW).run();
@@ -21,10 +23,11 @@ export async function seedProject({ ownerId }: { ownerId: string }): Promise<str
       'Workspace',
       CLOCK_NOW,
     ),
-    env.DIRECTORY.prepare('INSERT INTO projects (id, workspace_id, name, created_at) VALUES (?, ?, ?, ?)').bind(
+    env.DIRECTORY.prepare('INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) VALUES (?, ?, ?, ?, ?)').bind(
       projectId,
       workspaceId,
       'Project',
+      0,
       CLOCK_NOW,
     ),
   ]);
@@ -41,8 +44,8 @@ export async function seedKey({
   revokedAt?: number | null;
 }): Promise<void> {
   const digest = await digestCredential(secret);
-  await env.DIRECTORY.prepare('INSERT INTO project_keys (digest, project_id, created_at, revoked_at) VALUES (?, ?, ?, ?)')
-    .bind(digest, projectId, CLOCK_NOW, revokedAt)
+  await env.DIRECTORY.prepare('INSERT INTO project_keys (digest, id, hint, project_id, created_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(digest, crypto.randomUUID(), SEEDED_KEY_HINT, projectId, CLOCK_NOW, revokedAt)
     .run();
 }
 

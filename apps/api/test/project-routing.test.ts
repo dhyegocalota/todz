@@ -9,6 +9,7 @@ import { AGENT_ACTOR, CLOCK_NOW, TODAY, draftOf, openTasksFilter, unwrap } from 
 const EMPTY_SECRET = '';
 const BLANK_SECRET = '   ';
 const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
+const KEY_HINT = 'seed';
 
 function newSecret(): string {
   return crypto.randomUUID();
@@ -144,8 +145,8 @@ describe('a secret that is not a usable string', () => {
   test('a secret that is not a string opens nothing even when rows hold the digest of nothing', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
     const emptyDigest = await digestCredential(EMPTY_SECRET);
-    await env.DIRECTORY.prepare('INSERT OR IGNORE INTO project_keys (digest, project_id, created_at) VALUES (?, ?, ?)')
-      .bind(emptyDigest, projectId, CLOCK_NOW)
+    await env.DIRECTORY.prepare('INSERT OR IGNORE INTO project_keys (digest, id, hint, project_id, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(emptyDigest, crypto.randomUUID(), KEY_HINT, projectId, CLOCK_NOW)
       .run();
     await env.DIRECTORY.prepare('INSERT OR IGNORE INTO sessions (digest, owner_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
       .bind(emptyDigest, await seedOwner(), CLOCK_NOW, CLOCK_NOW + 1)

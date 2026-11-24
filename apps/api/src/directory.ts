@@ -19,17 +19,21 @@ export async function findKeyProject({ directory, digest }: { directory: D1Datab
 export async function insertProjectKey({
   directory,
   digest,
+  id,
+  hint,
   projectId,
   now,
 }: {
   directory: D1Database;
   digest: string;
+  id: string;
+  hint: string;
   projectId: string;
   now: number;
 }): Promise<void> {
   await directory
-    .prepare('INSERT INTO project_keys (digest, project_id, created_at, revoked_at) VALUES (?, ?, ?, NULL)')
-    .bind(digest, projectId, now)
+    .prepare('INSERT INTO project_keys (digest, id, hint, project_id, created_at, revoked_at) VALUES (?, ?, ?, ?, ?, NULL)')
+    .bind(digest, id, hint, projectId, now)
     .run();
 }
 
