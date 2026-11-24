@@ -30,7 +30,7 @@ The same spike gave the two sandboxed ad-hoc processes one folder outside every 
 ## Consequences
 
 - **Owner's step:** add the Apple ID in Xcode (Personal Team), then replace the exception with the App Group `<TeamID>.dev.todz` in `project.yml`. Listed in the loop's Blockers.
-- **Local risk until then:** another app on this Mac could read today's titles and drop a request to complete or reopen one of today's tasks. It cannot read the session, other days, other workspaces or notes. Same reach as ADR 0032's risk, without the prompts.
+- **Local risk until then:** another app on this Mac could read today's titles, drop a request to complete or reopen one of today's tasks, or overwrite the snapshot so the widgets draw invented rows until Today next changes. It cannot read the session, other days, other workspaces or notes, and the app checks every request against its own Today, never against the snapshot. Same reach as ADR 0032's risk, without the prompts.
 - The folder stays on disk after the app is deleted; the README says where it is.
 
 ## Evidence
