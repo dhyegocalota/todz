@@ -2,6 +2,7 @@ import { normalizeName } from '@todz/core';
 import { INBOX_PROJECT_NAME } from '@todz/types';
 import { z } from 'zod';
 import {
+  findOwnerWorkspace,
   findProject,
   insertProject,
   insertWorkspaceWithInbox,
@@ -54,10 +55,10 @@ async function renameWorkspace(context: SessionContext): Promise<Response> {
   if (workspaceId === null) return errorResponse(OwnerErrorCode.NotFound);
   const nameResult = resultOf(() => normalizeName(body.name));
   if (!nameResult.ok) return failureResponse(nameResult.failure);
-  await updateWorkspaceName({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId, name: nameResult.value });
-  const listings = await listOwnerWorkspaces({ directory: env.DIRECTORY, ownerId: owner.ownerId });
-  const renamed = listings.find((listing) => listing.workspace.id === workspaceId);
-  if (renamed === undefined) throw new Error('an owned workspace is missing from the owner listing');
+  const isRenamed = await updateWorkspaceName({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId, name: nameResult.value });
+  if (!isRenamed) return errorResponse(OwnerErrorCode.NotFound);
+  const renamed = await findOwnerWorkspace({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId });
+  if (renamed === null) throw new Error('a renamed workspace is missing from the directory');
   return Response.json({ workspace: workspaceJson(renamed) });
 }
 
@@ -70,7 +71,15 @@ async function createProject(context: SessionContext): Promise<Response> {
   const nameResult = resultOf(() => normalizeName(body.name));
   if (!nameResult.ok) return failureResponse(nameResult.failure);
   const project = { id: crypto.randomUUID(), name: nameResult.value, isInbox: false, createdAt: now };
-  await insertProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId: project.id, workspaceId, name: project.name, now });
+  const isInserted = await insertProject({
+    directory: env.DIRECTORY,
+    ownerId: owner.ownerId,
+    projectId: project.id,
+    workspaceId,
+    name: project.name,
+    now,
+  });
+  if (!isInserted) return errorResponse(OwnerErrorCode.NotFound);
   return Response.json({ project: projectJson(project) }, { status: HttpStatus.Created });
 }
 
@@ -85,7 +94,8 @@ async function renameProject(context: SessionContext): Promise<Response> {
   if (project.isInbox) return errorResponse(OwnerErrorCode.InboxIsFixed);
   const nameResult = resultOf(() => normalizeName(body.name));
   if (!nameResult.ok) return failureResponse(nameResult.failure);
-  await updateProjectName({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId, name: nameResult.value });
+  const isRenamed = await updateProjectName({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId, name: nameResult.value });
+  if (!isRenamed) return errorResponse(OwnerErrorCode.NotFound);
   return Response.json({ project: projectJson({ ...project, name: nameResult.value }) });
 }
 

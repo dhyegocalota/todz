@@ -1,5 +1,6 @@
 import { digestCredential } from './credential-digest';
-import { findKeyProject, findOwnedProject, findOwnedWorkspace, findSessionOwner } from './directory';
+import { findKeyProject, findOwnedProject, findSessionOwner } from './directory';
+import { findOwnedWorkspace } from './directory-workspaces';
 import type { Env } from './env';
 import type { ProjectStore } from './project-store';
 
