@@ -1,4 +1,4 @@
-import { Button, Heading, Link, Section, Text } from '@react-email/components';
+import { Button, Heading, Link, Section, Text } from 'react-email';
 import { createElement, type ReactElement } from 'react';
 import { EmailSlot } from '../../src/emails/email-slot';
 import type { GeneratedEmail } from '../../src/emails/generated-email';
