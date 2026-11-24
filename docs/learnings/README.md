@@ -29,6 +29,7 @@ Every learning touched by a change gets a `Revisited` line appended.
 | 2026-11-24 | An ad-hoc signed app hangs on a Keychain prompt after a rebuild, or cannot write at all | [2026-11-24-an-ad-hoc-signed-app-cannot-keep-a-keychain-item-across-builds.md](2026-11-24-an-ad-hoc-signed-app-cannot-keep-a-keychain-item-across-builds.md) | 2026-11-24 |
 | 2026-11-24 | A SwiftUI window crashes with EXC_BREAKPOINT when an inspector opens, or clips its sidebar at the minimum size | [2026-11-24-a-window-minimum-fed-from-measured-geometry-crashes-appkit.md](2026-11-24-a-window-minimum-fed-from-measured-geometry-crashes-appkit.md) | 2026-11-24 |
 | 2026-11-24 | A menu bar extra closed from code needs two clicks to reopen, and its walk pops over the owner's screen | [2026-11-24-a-menu-bar-extra-closed-from-code-needs-two-clicks-to-reopen.md](2026-11-24-a-menu-bar-extra-closed-from-code-needs-two-clicks-to-reopen.md) | 2026-11-24 |
+| 2026-11-24 | An ad-hoc signed App Group raises "would like to access data from other apps" after every rebuild and for every second process | [2026-11-24-an-ad-hoc-app-group-raises-a-consent-prompt-per-build-and-process.md](2026-11-24-an-ad-hoc-app-group-raises-a-consent-prompt-per-build-and-process.md) | 2026-11-24 |
 
 ### tooling
 
