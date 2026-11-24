@@ -58,7 +58,7 @@ extension AppModel {
     }
 
     public var showsIncomingSignInLink: Bool {
-        true
+        phase != .naming && phase != .ready
     }
 
     public func useDifferentEmail() {
