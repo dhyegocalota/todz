@@ -29,6 +29,8 @@ extension AppModel {
         isWatchAnswered = [:]
         workspaceReload?.cancel()
         workspaceReload = nil
+        ownerConfirmationRetry?.cancel()
+        ownerConfirmationRetry = nil
     }
 
     func requestWorkspaceReload() {
@@ -39,6 +41,24 @@ extension AppModel {
             await reloadWorkspacesQuietly()
             guard workspaceReloadIdentifier == reloadIdentifier else { return }
             workspaceReload = nil
+        }
+    }
+
+    func retryOwnerConfirmation() {
+        let isOwnerAwaited = !isOwnerConfirmed && outbox.head != nil
+        guard let session, isOwnerAwaited else { return }
+        ownerConfirmationFailures += 1
+        let delay = ReconnectDelay.after(attempt: ownerConfirmationFailures)
+        ownerConfirmationRetry?.cancel()
+        ownerConfirmationRetry = Task {
+            do {
+                try await pause(delay)
+            } catch {
+                return
+            }
+            let isOwnerStillAwaited = self.session == session && !isOwnerConfirmed && !Task.isCancelled
+            guard isOwnerStillAwaited else { return }
+            requestWorkspaceReload()
         }
     }
 

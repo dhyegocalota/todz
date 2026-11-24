@@ -35,6 +35,7 @@ import Observation
     @ObservationIgnored var workspaceReload: Task<Void, Never>?
     @ObservationIgnored var workspaceReloadIdentifier: UUID?
     @ObservationIgnored var ownerConfirmationRetry: Task<Void, Never>?
+    @ObservationIgnored var ownerConfirmationFailures = 0
     @ObservationIgnored var sendLoop: Task<Void, Never>?
     @ObservationIgnored var sendingSession: String?
     @ObservationIgnored var sendWait: Task<Void, any Error>?
@@ -254,6 +255,7 @@ import Observation
         guard !isOwnerConfirmed else { return }
         guard let owner = await confirmedOwner() else { return }
         isOwnerConfirmed = true
+        ownerConfirmationFailures = 0
         let cachedOwnerIdentifier = ownerIdentifier
         ownerIdentifier = owner.identifier
         guard let cachedOwnerIdentifier, cachedOwnerIdentifier != owner.identifier else { return }
