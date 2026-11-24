@@ -374,12 +374,13 @@ The unit suite: 333 tests in 22 suites, green three runs in a row; the app build
 
 ## Isolation fixes
 
-The unit suite: 335 tests in 22 suites, green three runs in a row; the app builds. Red commit 51c2c34 holds both tests.
+The unit suite: 336 tests in 22 suites, green three runs in a row; the app builds. Red commit 51c2c34 holds the tests of fixes 1 and 2, b7f6e3b the test of fix 3.
 
 | Fix | What changed | Red text | Commits |
 |---|---|---|---|
 | 1. A failed `PATCH /owner` with a listing that answers wrote the session's workspaces and projects under the cached owner's label | `keepOwner()` and `keepProject(identifier:)` in `AppModel+Cache.swift` write only once `isOwnerConfirmed`; the outbox is still kept. Test `aLaunchWhoseOwnerUpdateFailsWritesNothingUnderTheCachedOwnerUntilTheOwnerIsConfirmed` | `Expectation failed: harness.store.routes().contains(.writeOwner) == false`, the same for `.writeProject` | 51c2c34 → 8a59e21 |
 | 2. A failed erase of another owner's cache still confirmed the owner | `confirmOwner()` throws: `forgetCache()` empties the window and the outbox, sets loading, then erases, all before `isOwnerConfirmed`/`ownerIdentifier` change; the listing stops and `raiseLoadFailure` shows `.cacheNotSaved` with Try again for a `SyncStoreError`. ADR 0027 point 4 says both rules. Test `aLaunchAsAnotherOwnerWhoseEraseFailsStaysUnconfirmedEmptiesTheWindowAndSaysSoWithTryAgain` | `Expectation failed:` on `.writeOwner`, `.writeProject`, `isOwnerConfirmed == false`, `workspaces.isEmpty`, `board == TaskBoard()`, `phase == .loading`, `canTryAgain` | 51c2c34 → 71d0153 |
+| 3. A failed `PATCH /owner` still applied the session's listing over the cached owner's window | `openListedWorkspaces()` in `AppModel+Workspaces.swift` skips the listing while `isAnotherOwnerPossible` (unconfirmed, a cached owner known) and marks it outdated; the deferred confirmation asks again. Fix 1's test now expects no `GET /owner/workspaces`; `aCachedLaunchWithTheServerDownWaitsForASocketToOpen` expects only `PATCH /owner` at launch. Test `aLaunchWhoseOwnerUpdateFailsKeepsTheCachedOwnersWindowAndChangesUntilTheOwnerIsConfirmed` | `Expectation failed: harness.service.routes().contains(.listWorkspaces) == false`, `Expectation failed: harness.model.workspaces.map(\.identifier) == [bravo.identifier]` | b7f6e3b → 6c731ad |
 
 ### Hypotheses to attack
 
@@ -388,6 +389,7 @@ The unit suite: 335 tests in 22 suites, green three runs in a row; the app build
 
 ### Known gaps
 
-- While the owner is unconfirmed, changes made in the window still go to `outbox.json` under the cached label, so offline edits survive a relaunch; with another owner's session this outbox is erased at confirmation, and if that owner's session ends first, the cached owner signing in sends them and the server refuses them.
+- While the owner is unconfirmed, the window stays the cached owner's, so changes made in it are that owner's and go to `outbox.json`; with another owner's session they are erased at confirmation.
+- Fix 3: a cached owner with no active workspace stays on the loading screen while `PATCH /owner` fails, with no banner and nothing waiting to schedule a retry, until the app is relaunched.
 - Fix 1: with the same owner and `PATCH /owner` failing, the owner and project files stay at their last state until the owner is confirmed; the next pull after it writes each project's whole board.
 - The `.cacheNotSaved` copy says changes are sent while todz is open, which does not describe the blocked confirmation; a dedicated banner would need copy in the app target.
