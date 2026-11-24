@@ -158,7 +158,7 @@ describe('POST /owner/workspaces', () => {
     ['an empty name', '', NAME_EMPTY],
     ['a blank name', '   ', NAME_EMPTY],
     ['a name of 81 characters', 'a'.repeat(NAME_MAX_LENGTH + 1), NAME_TOO_LONG],
-    ['a name with a line break', 'two\nlines', NAME_INVALID],
+    ['a name with a control character', 'bad\u0000name', NAME_INVALID],
   ])('%s answers 422 with the rule issue and creates nothing', async (_name, name, expected) => {
     const { token, ownerId } = await signInOwner();
     const response = await ownerCall({ method: 'POST', path: '/owner/workspaces', token, body: { name } });
