@@ -35,15 +35,15 @@ G1 and G2 run in parallel in their own worktrees; G2's lane merges into `feat/ma
 
 ### G2 App model
 
-- [ ] **Step 9:** Red: TodzKit tests for `SignInMethod` decoding, `IncomingLink(url:)` routing a sign-in link before a widget link (R12), the R5 challenge vector, `SignInLink(url:)` (accepts `todz://sign-in?token=` with a 43-character base64url token; refuses other hosts, missing or malformed tokens, extra paths), `PendingSignInLink` round-trip through `FilePendingLinkVault` at 0600 and through the in-memory vault. Commit failing alone.
-- [ ] **Step 10:** Green: those types, the vault port and its two adapters on `PrivateFile`.
-- [ ] **Step 11:** Red: `AppModelTests+SignInLink`: reading the method; asking sends the SHA-256 hex of a fresh verifier and keeps `{email, verifier, expiresAt}`; each refusal of the spec's table maps to its `SignInError`; redeeming posts the kept verifier with the token and the time zone, opens the session exactly as `signIn(identity:)` does (cache check, vault, sending, workspaces) and clears the pending link; a link with no pending request, an expired pending one, or while signed in sends nothing and reports the matching notice; Send Again within 15 minutes reuses the verifier (R6); a 401 keeps an unexpired pending link (R6); a link that arrives while loading is held and decided after `launch()` (R7). Commit failing alone.
-- [ ] **Step 12:** Green: `OwnerAPI` calls, `AppModel` state and methods, sharing the session-opening path with `signIn(identity:)`.
+- [x] **Step 9:** Red: TodzKit tests for `SignInMethod` decoding, `IncomingLink(url:)` routing a sign-in link before a widget link (R12), the R5 challenge vector, `SignInLink(url:)` (accepts `todz://sign-in?token=` with a 43-character base64url token; refuses other hosts, missing or malformed tokens, extra paths), `PendingSignInLink` round-trip through `FilePendingLinkVault` at 0600 and through the in-memory vault. Commit failing alone. (75de111)
+- [x] **Step 10:** Green: those types, the vault port and its two adapters on `PrivateFile`. (edd0faa)
+- [x] **Step 11:** (7fa8b38) Red: `AppModelTests+SignInLink`: reading the method; asking sends the SHA-256 hex of a fresh verifier and keeps `{email, verifier, expiresAt}`; each refusal of the spec's table maps to its `SignInError`; redeeming posts the kept verifier with the token and the time zone, opens the session exactly as `signIn(identity:)` does (cache check, vault, sending, workspaces) and clears the pending link; a link with no pending request, an expired pending one, or while signed in sends nothing and reports the matching notice; Send Again within 15 minutes reuses the verifier (R6); a 401 keeps an unexpired pending link (R6); a link that arrives while loading is held and decided after `launch()` (R7). Commit failing alone.
+- [x] **Step 12:** (a284d99) Green: `OwnerAPI` calls, `AppModel` state and methods, sharing the session-opening path with `signIn(identity:)`.
 
 ### G3 App views
 
-- [ ] **Step 13:** The sign-in screen by method per `design.md`: the address form, the inbox state, send again, use a different email, redeeming; copy in `SignInCopy` and `SignInError+Copy`; `AppDelegate` routes `SignInLink` before `WidgetLink`. Build with no warning.
-- [ ] **Step 14:** `apps/macos/README.md` (purpose only); tester briefing section for G2 and G3.
+- [x] **Step 13:** The sign-in screen by method per `design.md`: the address form, the inbox state, send again, use a different email, redeeming; copy in `SignInCopy` and `SignInError+Copy`; `AppDelegate` routes `SignInLink` before `WidgetLink`. Build with no warning. (e15c0b0)
+- [x] **Step 14:** `apps/macos/README.md` (purpose only); tester briefing section for G2 and G3. (e15c0b0, briefing section reported to the lead)
 
 ## Failure modes
 

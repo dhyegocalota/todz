@@ -8,4 +8,5 @@ enum OwnerErrorCode: String, Decodable {
     case ruleViolated = "rule_violated"
     case timeZoneInvalid = "time_zone_invalid"
     case signInUnavailable = "sign_in_unavailable"
+    case tooManyLinks = "too_many_links"
 }

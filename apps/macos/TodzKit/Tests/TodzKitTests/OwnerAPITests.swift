@@ -53,7 +53,7 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
         let sessionToken = UUID().uuidString
         let ownerIdentifier = UUID().uuidString
         let body = "{\"session_token\":\"\(sessionToken)\",\"owner\":\(OwnerFixtures.ownerJSON(identifier: ownerIdentifier, timeZone: timeZone))}"
-        let issued = try await api(answering: .response(status: 201, body: body)).signIn(identityToken: identity, timeZone: timeZone)
+        let issued = try await api(answering: .response(status: 201, body: body)).signIn(identityToken: identity, linkVerifier: nil, timeZone: timeZone)
         try expectOnlyRequest(
             ExpectedRequest(method: "POST", path: "/owner/sessions", session: nil, body: ["identity_token": identity, "time_zone": timeZone])
         )
