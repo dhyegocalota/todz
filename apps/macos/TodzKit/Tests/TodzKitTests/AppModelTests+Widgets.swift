@@ -179,6 +179,17 @@ extension AppModelTests {
         #expect(harness.widgets.snapshot == truth)
     }
 
+    @Test func aRequestWhoseRemovalFailsIsNotTaken() async throws {
+        let harness = try await launchedWidgetHarness()
+        let waiting = stored(number: 1, state: .done)
+        harness.widgets.storedRequests = [waiting]
+        harness.widgets.failures[.removeRequests] = .unwritable
+        await harness.model.takeWidgetRequests()
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.widgets.storedRequests == [waiting])
+        #expect(harness.widgets.routes() == [.requests, .removeRequests])
+    }
+
     @Test func aRequestForATaskAlreadyInThatStateEnqueuesNothing() async throws {
         let harness = try await launchedWidgetHarness()
         harness.service.suspend(.completeTasks)
