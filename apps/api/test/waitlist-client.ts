@@ -1,5 +1,15 @@
+import { WAITLIST_FILL_HOLD_MS } from '@todz/types';
 import { env } from 'cloudflare:workers';
-import { recordingLimiter } from './email-sign-in-client';
+import { renderStampOf } from '../src/site/waitlist-stamp';
+import { TURNSTILE_TEST_SECRET, recordingLimiter } from './email-sign-in-client';
+
+export const JSON_ACCEPT = 'application/json';
+
+const STAMP_VALUE_PATTERN = /(name="stamp" value=")[^"]*(")/g;
+
+export function withoutStamps(html: string): string {
+  return html.replace(STAMP_VALUE_PATTERN, '$1$2');
+}
 
 export enum LimiterBinding {
   Client = 'WAITLIST_LIMITER',
@@ -17,6 +27,13 @@ export type WaitlistRow = {
   confirmation_claimed_at: number | null;
   confirmation_failed_at: number | null;
 };
+
+export function joinStampOf({
+  secret = TURNSTILE_TEST_SECRET,
+  renderedAt = Date.now() - WAITLIST_FILL_HOLD_MS,
+}: { secret?: string; renderedAt?: number } = {}): Promise<string> {
+  return renderStampOf({ secret, renderedAt });
+}
 
 export function recordedLimiters({ refusing = [] }: { refusing?: LimiterBinding[] } = {}): RecordedLimiters {
   const recorded = Object.values(LimiterBinding).map((binding) => ({

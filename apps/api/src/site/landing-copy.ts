@@ -47,6 +47,12 @@ export const LANDING_COPY = {
     opensSoon: 'The waitlist opens soon.',
     joined: "You're on the list. Check your inbox.",
     tryAgain: "Couldn't add you right now. Try again in a minute.",
+    waitingForCheck: 'Finish the check below to join.',
+    invalid: "That address doesn't look right.",
+    checkFailed: "The check didn't pass. Try it again.",
+    unreachable: "Couldn't reach todz. Check your connection and try again.",
+    checkError: "The check couldn't load. Reload the page to try again.",
+    honeypotLabel: 'Leave this field empty',
   },
   benefits: {
     heading: 'Why todz',

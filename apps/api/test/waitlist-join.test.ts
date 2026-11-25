@@ -1,5 +1,6 @@
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
+import { MILLISECONDS_PER_SECOND, WAITLIST_MINIMUM_FILL_MS } from '@todz/types';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import { waitlistMail } from '../src/emails/waitlist-mail';
@@ -19,7 +20,16 @@ import {
   recordingBinding,
 } from './email-sign-in-client';
 import { workerEnvWith } from './owner-client';
-import { LimiterBinding, type WaitlistRow, recordedLimiters, throwingLimiter, waitlistRows } from './waitlist-client';
+import {
+  JSON_ACCEPT,
+  LimiterBinding,
+  type WaitlistRow,
+  joinStampOf,
+  recordedLimiters,
+  throwingLimiter,
+  waitlistRows,
+  withoutStamps,
+} from './waitlist-client';
 
 const SITE_ORIGIN = 'https://todz.app';
 const SITE_HOSTNAME = 'todz.app';
@@ -33,6 +43,22 @@ const UNUSABLE_SITE_KEY = 'not a site key';
 const CLIENT_ADDRESS = '203.0.113.9';
 const EMAIL_FIELD = 'email';
 const TOKEN_FIELD = 'cf-turnstile-response';
+const STAMP_FIELD = 'stamp';
+const HONEYPOT_FIELD = 'todz_fax';
+const HONEYPOT_VALUE = 'https://spam.example';
+const FIXED_NOW = 1_790_000_000_000;
+const STAMP_AGE_PATIENT_MS = 2_500;
+const OTHER_SECRET = '2x0000000000000000000000000000000BB';
+const ACCEPT_HEADER = 'Accept';
+const VARY_HEADER = 'Vary';
+const HEADER_CONTENT_TYPE = 'Content-Type';
+const HEADER_CACHE_CONTROL = 'Cache-Control';
+const HEADER_CONTENT_TYPE_OPTIONS = 'X-Content-Type-Options';
+const NO_STORE = 'no-store';
+const NO_SNIFF = 'nosniff';
+const JSON_CONTENT_TYPE = 'application/json';
+const BAD_REQUEST_STATUS = 400;
+const FORBIDDEN_STATUS = 403;
 const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const WAITLIST_TOKEN = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.Waitlist];
@@ -67,6 +93,9 @@ const LOCAL_SETTINGS: Partial<Env> = {
 type JoinCall = {
   email?: string;
   token?: string | null;
+  stamp?: string | null;
+  website?: string | null;
+  accept?: string;
   body?: string;
   contentType?: string;
   contentLength?: string | null;
@@ -86,9 +115,21 @@ type JoinRun = {
   siteverifyBodies: Record<string, string>[];
 };
 
-function formBody({ email, token }: { email: string; token: string | null }): string {
+function formBody({
+  email,
+  token,
+  stamp,
+  website,
+}: {
+  email: string;
+  token: string | null;
+  stamp: string | null;
+  website: string | null;
+}): string {
   const fields = new URLSearchParams({ [EMAIL_FIELD]: email });
   if (token !== null) fields.set(TOKEN_FIELD, token);
+  if (stamp !== null) fields.set(STAMP_FIELD, stamp);
+  if (website !== null) fields.set(HONEYPOT_FIELD, website);
   return fields.toString();
 }
 
@@ -97,13 +138,16 @@ function joinHeaders({
   contentType,
   contentLength,
   clientAddress,
+  accept,
 }: {
   body: string;
   contentType: string;
   contentLength: string | null | undefined;
   clientAddress: string | null;
+  accept: string | undefined;
 }): Headers {
   const headers = new Headers({ 'Content-Type': contentType });
+  if (accept !== undefined) headers.set(ACCEPT_HEADER, accept);
   const length = contentLength === undefined ? String(new TextEncoder().encode(body).length) : contentLength;
   if (length !== null) headers.set('Content-Length', length);
   if (clientAddress !== null) headers.set(CLIENT_ADDRESS_HEADER, clientAddress);
@@ -117,7 +161,10 @@ function siteverifyCalls(): Parameters<typeof fetch>[] {
 async function join({
   email = freshAddress(),
   token = WAITLIST_TOKEN,
-  body = formBody({ email, token }),
+  stamp,
+  website = null,
+  accept,
+  body,
   contentType = FORM_CONTENT_TYPE,
   contentLength,
   clientAddress = CLIENT_ADDRESS,
@@ -128,12 +175,14 @@ async function join({
 }: JoinCall = {}): Promise<JoinRun> {
   const { limiters, keys } = recordedLimiters({ refusing });
   const workerEnv = workerEnvWith({ ...PUBLIC_SETTINGS, EMAIL: recording.binding, ...limiters, ...settings });
-  const headers = joinHeaders({ body, contentType, contentLength, clientAddress });
-  const request = new Request(`${origin}${JOIN_PATH}`, { method: 'POST', headers, body });
+  const stampField = stamp === undefined ? await joinStampOf() : stamp;
+  const bodyText = body === undefined ? formBody({ email, token, stamp: stampField, website }) : body;
+  const headers = joinHeaders({ body: bodyText, contentType, contentLength, clientAddress, accept });
+  const request = new Request(`${origin}${JOIN_PATH}`, { method: 'POST', headers, body: bodyText });
   const siteverifyCallsBefore = siteverifyCalls().length;
   const executionContext = createExecutionContext();
   const response = await serveWaitlistJoin({ request, env: workerEnv, executionContext });
-  const html = await response.text();
+  const html = withoutStamps(await response.text());
   await waitOnExecutionContext(executionContext);
   const siteverifyBodies = siteverifyCalls()
     .slice(siteverifyCallsBefore)
@@ -142,7 +191,8 @@ async function join({
 }
 
 async function landingHtml({ notice, siteKey }: { notice: LandingNotice; siteKey: string | null }): Promise<string> {
-  return (await serveLandingPage({ notice, siteKey })).text();
+  const page = await serveLandingPage({ notice, challenge: siteKey === null ? null : { siteKey, stampSecret: TURNSTILE_TEST_SECRET } });
+  return withoutStamps(await page.text());
 }
 
 function siteverifyAnswering(answer: () => Promise<Response>): void {
@@ -165,18 +215,34 @@ function failingDirectory(): D1Database {
 async function expectJoined(run: JoinRun): Promise<void> {
   expect(run.response.status).toBe(OK_STATUS);
   expect(run.response.headers.get(RETRY_AFTER_HEADER)).toBeNull();
+  expect(run.response.headers.get(VARY_HEADER)).toBe(ACCEPT_HEADER);
   expect(run.html).toBe(await landingHtml({ notice: LandingNotice.Joined, siteKey: SITE_KEY }));
 }
 
 async function expectTryAgain(run: JoinRun): Promise<void> {
   expect(run.response.status).toBe(TOO_MANY_STATUS);
   expect(run.response.headers.get(RETRY_AFTER_HEADER)).toBe(RETRY_AFTER_SECONDS);
+  expect(run.response.headers.get(VARY_HEADER)).toBe(ACCEPT_HEADER);
   expect(run.html).toBe(await landingHtml({ notice: LandingNotice.TryAgain, siteKey: SITE_KEY }));
 }
 
 async function expectOpensSoon({ run, siteKey = SITE_KEY }: { run: JoinRun; siteKey?: string | null }): Promise<void> {
   expect(run.response.status).toBe(UNAVAILABLE_STATUS);
+  expect(run.response.headers.get(VARY_HEADER)).toBe(ACCEPT_HEADER);
   expect(run.html).toBe(await landingHtml({ notice: LandingNotice.OpensSoon, siteKey }));
+}
+
+function joinJson(call: JoinCall = {}): Promise<JoinRun> {
+  return join({ ...call, accept: JSON_ACCEPT });
+}
+
+function expectOutcome({ run, status, outcome }: { run: JoinRun; status: number; outcome: string }): void {
+  expect(run.response.status).toBe(status);
+  expect(run.response.headers.get(HEADER_CONTENT_TYPE)).toBe(JSON_CONTENT_TYPE);
+  expect(run.response.headers.get(HEADER_CACHE_CONTROL)).toBe(NO_STORE);
+  expect(run.response.headers.get(HEADER_CONTENT_TYPE_OPTIONS)).toBe(NO_SNIFF);
+  expect(run.response.headers.get(VARY_HEADER)).toBe(ACCEPT_HEADER);
+  expect(run.html).toBe(JSON.stringify({ outcome }));
 }
 
 async function expectNothingKept({ run, address }: { run: JoinRun; address: string }): Promise<void> {
@@ -351,7 +417,7 @@ describe('a refused join answers try again, 429 with Retry-After 60, and keeps n
 
   test('a body of 5 KB, before it is read', async () => {
     const address = freshAddress();
-    const body = `${formBody({ email: address, token: WAITLIST_TOKEN })}&padding=${'a'.repeat(OVERSIZED_BODY_LENGTH)}`;
+    const body = `${formBody({ email: address, token: WAITLIST_TOKEN, stamp: await joinStampOf(), website: null })}&padding=${'a'.repeat(OVERSIZED_BODY_LENGTH)}`;
     const run = await join({ email: address, body });
     await expectTryAgain(run);
     expect(run.request.bodyUsed).toBe(false);
@@ -360,7 +426,7 @@ describe('a refused join answers try again, 429 with Retry-After 60, and keeps n
 
   test('a body of exactly 4096 bytes is read', async () => {
     const address = freshAddress();
-    const form = formBody({ email: address, token: WAITLIST_TOKEN });
+    const form = formBody({ email: address, token: WAITLIST_TOKEN, stamp: await joinStampOf(), website: null });
     const padding = '&padding=';
     const body = `${form}${padding}${'a'.repeat(BODY_LENGTH_MAX - form.length - padding.length)}`;
     expect(body).toHaveLength(BODY_LENGTH_MAX);
@@ -448,6 +514,222 @@ describe('an unguarded waitlist answers opens soon, 503, reads no body and keeps
     const address = freshAddress();
     const run = await join({ email: address });
     await expectOpensSoon({ run });
+    await expectNothingKept({ run, address });
+  });
+});
+
+describe('which Accept header asks for JSON', () => {
+  test.each([
+    ['application/json', true],
+    ['Application/JSON', true],
+    ['text/html, application/json;q=0.9', true],
+    ['application/json;q=0', false],
+    ['application/json; q=0.0', false],
+    ['application/json;q=0.000', false],
+    ['*/*', false],
+    ['text/html', false],
+    ['application/jsonp', false],
+  ])('%s', async (accept, isJson) => {
+    const run = await join({ accept });
+    expect(run.response.headers.get(HEADER_CONTENT_TYPE) === JSON_CONTENT_TYPE).toBe(isJson);
+  });
+});
+
+describe('a JSON join answers an outcome and never the address', () => {
+  test('a new address answers joined, keeps the row and mails once', async () => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address });
+    expectOutcome({ run, status: OK_STATUS, outcome: 'joined' });
+    expect(await waitlistRows(address)).toHaveLength(1);
+    expect(run.sent).toHaveLength(1);
+  });
+
+  test('the same address again answers the same and sends no second mail', async () => {
+    const address = freshAddress();
+    const first = await joinJson({ email: address });
+    const second = await joinJson({ email: address });
+    expectOutcome({ run: second, status: OK_STATUS, outcome: 'joined' });
+    expect(second.html).toBe(first.html);
+    expect(second.sent).toEqual([]);
+  });
+
+  test.each([
+    ['a text body', { contentType: 'text/plain' }],
+    ['an address that does not normalise', { email: 'not-an-address' }],
+  ])('%s answers invalid, 400', async (_name, call) => {
+    const run = await joinJson(call);
+    expectOutcome({ run, status: BAD_REQUEST_STATUS, outcome: 'invalid' });
+  });
+
+  test.each([
+    ['no token', { token: null }],
+    ['a token with a space and a bang', { token: 'bad token!' }],
+  ])('%s answers check-failed, 403, without calling siteverify', async (_name, call) => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, ...call });
+    expectOutcome({ run, status: FORBIDDEN_STATUS, outcome: 'check-failed' });
+    expect(run.siteverifyBodies).toEqual([]);
+    await expectNothingKept({ run, address });
+  });
+
+  test('a refusing siteverify answers check-failed, 403', async () => {
+    siteverifyAnswering(async () => Response.json({ success: false, 'error-codes': ['invalid-input-response'] }));
+    const address = freshAddress();
+    const run = await joinJson({ email: address });
+    expectOutcome({ run, status: FORBIDDEN_STATUS, outcome: 'check-failed' });
+    await expectNothingKept({ run, address });
+  });
+
+  test('an unreachable siteverify answers opens-soon, 503', async () => {
+    siteverifyAnswering(() => Promise.reject(new DOMException('The operation timed out.', 'TimeoutError')));
+    const run = await joinJson();
+    expectOutcome({ run, status: UNAVAILABLE_STATUS, outcome: 'opens-soon' });
+  });
+
+  test.each(Object.values(LimiterBinding))('a join over %s answers try-again, 429, Retry-After 60', async (binding) => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, refusing: [binding] });
+    expectOutcome({ run, status: TOO_MANY_STATUS, outcome: 'try-again' });
+    expect(run.response.headers.get(RETRY_AFTER_HEADER)).toBe(RETRY_AFTER_SECONDS);
+    await expectNothingKept({ run, address });
+  });
+
+  test.each([
+    ['no limiter', { [LimiterBinding.Client]: undefined }],
+    ['no site key', { TURNSTILE_SITE_KEY: undefined }],
+    ['no secret', { TURNSTILE_SECRET_KEY: undefined }],
+  ])('%s answers opens-soon, 503, and reads no body', async (_name, settings) => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, settings });
+    expectOutcome({ run, status: UNAVAILABLE_STATUS, outcome: 'opens-soon' });
+    await expectUntouched({ run, address });
+  });
+
+  test('no client address answers opens-soon, 503, and reads no body', async () => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, clientAddress: null });
+    expectOutcome({ run, status: UNAVAILABLE_STATUS, outcome: 'opens-soon' });
+    await expectUntouched({ run, address });
+  });
+
+  test('a failing store answers try-again, 429', async () => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, settings: { DIRECTORY: failingDirectory() } });
+    expectOutcome({ run, status: TOO_MANY_STATUS, outcome: 'try-again' });
+    await expectNothingKept({ run, address });
+  });
+
+  test('no answer body contains the address', async () => {
+    const address = freshAddress();
+    const runs = await Promise.all([joinJson({ email: address }), joinJson({ email: address, token: null })]);
+    expect(runs.map((run) => run.html.includes(address))).toEqual([false, false]);
+  });
+});
+
+describe("a bot's join answers joined and keeps nothing", () => {
+  async function expectSilentlyJoined({ run, address }: { run: JoinRun; address: string }): Promise<void> {
+    await expectNothingKept({ run, address });
+    expect(run.siteverifyBodies).toHaveLength(1);
+  }
+
+  test.each([
+    ['JSON', JSON_ACCEPT],
+    ['HTML', undefined],
+  ])('a filled honeypot with a valid stamp and token, asked as %s', async (_name, accept) => {
+    const address = freshAddress();
+    const run = await join({ email: address, website: HONEYPOT_VALUE, accept });
+    if (accept === undefined) await expectJoined(run);
+    if (accept !== undefined) expectOutcome({ run, status: OK_STATUS, outcome: 'joined' });
+    await expectSilentlyJoined({ run, address });
+  });
+
+  test('an empty honeypot is a normal join', async () => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, website: '' });
+    expectOutcome({ run, status: OK_STATUS, outcome: 'joined' });
+    expect(await waitlistRows(address)).toHaveLength(1);
+    expect(run.sent).toHaveLength(1);
+  });
+
+  test('no stamp answers check-failed, 403, and keeps nothing', async () => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, stamp: null });
+    expectOutcome({ run, status: FORBIDDEN_STATUS, outcome: 'check-failed' });
+    await expectNothingKept({ run, address });
+  });
+
+  test('no stamp on the HTML post answers try again, 429', async () => {
+    const address = freshAddress();
+    const run = await join({ email: address, stamp: null });
+    await expectTryAgain(run);
+    await expectNothingKept({ run, address });
+  });
+
+  test('a stamp signed with another secret answers joined and keeps nothing', async () => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, stamp: await joinStampOf({ secret: OTHER_SECRET }) });
+    expectOutcome({ run, status: OK_STATUS, outcome: 'joined' });
+    await expectSilentlyJoined({ run, address });
+  });
+
+  test.each([
+    ['rendered 1 000 ms ago', MILLISECONDS_PER_SECOND],
+    ['rendered one second in the future', -MILLISECONDS_PER_SECOND],
+  ])('a stamp %s answers joined and keeps nothing', async (_name, ageMs) => {
+    vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW);
+    const address = freshAddress();
+    const run = await joinJson({ email: address, stamp: await joinStampOf({ renderedAt: FIXED_NOW - ageMs }) });
+    expectOutcome({ run, status: OK_STATUS, outcome: 'joined' });
+    await expectSilentlyJoined({ run, address });
+  });
+
+  test('a stamp rendered 2 500 ms ago is stored and mailed once', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW);
+    const address = freshAddress();
+    const run = await joinJson({ email: address, stamp: await joinStampOf({ renderedAt: FIXED_NOW - STAMP_AGE_PATIENT_MS }) });
+    expectOutcome({ run, status: OK_STATUS, outcome: 'joined' });
+    expect(await waitlistRows(address)).toHaveLength(1);
+    expect(run.sent).toHaveLength(1);
+  });
+
+  test.each([
+    ['a filled honeypot', HONEYPOT_VALUE, TURNSTILE_TEST_SECRET],
+    ['a stamp signed with another secret', '', OTHER_SECRET],
+  ])('%s with a token siteverify refuses answers check-failed, 403', async (_name, website, secret) => {
+    siteverifyAnswering(async () => Response.json({ success: false, 'error-codes': ['invalid-input-response'] }));
+    const address = freshAddress();
+    const stamp = await joinStampOf({ secret });
+    const run = await joinJson({ email: address, website, stamp });
+    expectOutcome({ run, status: FORBIDDEN_STATUS, outcome: 'check-failed' });
+    expect(run.siteverifyBodies).toHaveLength(1);
+    await expectNothingKept({ run, address });
+  });
+
+  test.each(Object.values(LimiterBinding))('a filled honeypot over %s answers try again, 429, like a real join', async (binding) => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, website: HONEYPOT_VALUE, refusing: [binding] });
+    expectOutcome({ run, status: TOO_MANY_STATUS, outcome: 'try-again' });
+    await expectNothingKept({ run, address });
+  });
+
+  test('a stamp that is too young over the address limit answers try again, 429', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW);
+    const run = await joinJson({
+      stamp: await joinStampOf({ renderedAt: FIXED_NOW - MILLISECONDS_PER_SECOND }),
+      refusing: [LimiterBinding.Address],
+    });
+    expectOutcome({ run, status: TOO_MANY_STATUS, outcome: 'try-again' });
+  });
+
+  test('a filled honeypot still spends a slot of the client limit', async () => {
+    const run = await joinJson({ website: HONEYPOT_VALUE });
+    expect(run.keys[LimiterBinding.Client]).toEqual([`${JOIN_PATH}:${CLIENT_ADDRESS}`]);
+  });
+
+  test('a honeypot with no token answers check-failed, 403: the token check comes first', async () => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, website: HONEYPOT_VALUE, token: null });
+    expectOutcome({ run, status: FORBIDDEN_STATUS, outcome: 'check-failed' });
     await expectNothingKept({ run, address });
   });
 });
