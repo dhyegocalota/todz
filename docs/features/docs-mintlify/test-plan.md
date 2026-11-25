@@ -2,13 +2,13 @@
 
 Every checkbox states the input and the exact expected outcome. A ticked box carries evidence after ` — evidence: ` (commit hash, log path, counts, screenshot path).
 
-Runs against: `pnpm --filter @todz/docs dev --port 3333 --no-open` (`mint dev`, the pinned client) for the docs, and the local landing on `http://localhost:8788` (`pnpm --filter @todz/api dev:site`) for `/self-host`. Nothing here reaches `docs.todz.app`: publishing waits for the owner's runbook steps.
+Runs against: `pnpm --filter @todz/docs dev --port 3333 --no-open` (`mint dev`, the pinned client) for the docs, and the local landing on `http://localhost:8788` (`pnpm --filter @todz/api dev:site`) for `/self-host`. Nothing before the merge reaches `docs.todz.app`, which serves Mintlify's starter kit until this feature merges; the merge publishes it (the owner's Mintlify setup was done on 2026-11-25), so the last section runs after the merge.
 
 ## The failing test first
 
 - [ ] Lane G red (G1): `tools/repository-shape/src/self-host.test.ts` — input: the guide still at `docs/self-host.md`; expected: four failures by assertion: the path test (`apps/docs/self-host.mdx` missing, `docs/self-host.md` present), the front matter test (no `title`, a `# Self-host todz` line), the link test (relative links `adr/0044-…`, `adr/0045-…`, `product/README.md`, `runbooks/deploy-the-api.md`), the label test (`**Connect an agent**` found, `**Connect an Agent**` missing)
 - [ ] Lane G red (G1): `apps/api/test/site/guide-front-matter.test.ts` — input: the stub; expected: three failures printing `guideMarkdown is not implemented`
-- [ ] Lane G red (G4): `tools/repository-shape/src/runbooks.test.ts` — input: no `mintlify-publish.md`, no `docs-cname.json`, the old index sentence; expected: the new tests fail naming the missing runbook, the missing body and the sentence
+- [ ] Lane G red (G4): `tools/repository-shape/src/runbooks.test.ts` — input: no `mintlify-publish.md`, the old index sentence; expected: the new tests fail naming the missing runbook and the sentence
 - [ ] Lane G red (G6): `scripts/verify.test.sh` — input: `verify.sh` without a `docs` gate; expected: `FAIL` lines for the `ALL_GATES` cases, the three `apps/docs` classifications and the gate order
 - [ ] Lane D red (D1): `docs-site.test.ts`, `docs-pages.test.ts`, `docs-mcp-reference.test.ts` — input: the stub package; expected: failures by assertion on the missing `theme`, colours, logo, footer, navigation and pages, not a crash of the suite
 - [ ] Confirmed each red fails for the right reason: the tester checks out each red commit in a throwaway worktree, runs the named suite and records the failure text it printed
@@ -23,7 +23,7 @@ Runs against: `pnpm --filter @todz/docs dev --port 3333 --no-open` (`mint dev`, 
 - [ ] `site-pages.test.ts` — input: the guide from `apps/docs/self-host.mdx?raw`; expected: the page's `h2` list equals the guide's `## ` lines, its code regions equal the guide's fences, the CSP test green
 - [ ] `self-host.test.ts` — input: the moved guide; expected: every existing test green (pnpm scripts, database name, variables, Wrangler keys, routes, namespaces, production settings, build commands, `server:deploy`, Settings phrase, Claude Code shape, repository paths, app settings, sender) plus the four G1 tests
 - [ ] `feature-status.test.ts` — input: `REPOSITORY_URL` from `repository-files.ts`; expected: green, unchanged results
-- [ ] `runbooks.test.ts` — input: `mintlify-publish.md`; expected: purpose sentence, numbered steps 1 to 9 each with `If it fails:`, the index line once, the exception sentence ``agents never run them, except `deploy-the-api` and the loop's steps of `mintlify-publish` ``, the POST through the wrapper, the body exactly `{ "type": "CNAME", "name": "docs", "content": "cname.mintlify-dns.com", "proxied": false, "ttl": 1 }`, the dashboard's domain step before the POST step, the `DELETE` before the domain removal under `## Rollback`, a run log table
+- [ ] `runbooks.test.ts` — input: `mintlify-publish.md`; expected: purpose sentence, numbered steps 1 to 4 each with `If it fails:`, the index line once, the exception sentence ``agents never run them, except `deploy-the-api` and the loop's steps of `mintlify-publish` ``, a `## Setup` section recording `2026-11-25`, `todz`, `Hobby`, `dhyegocalota/todz`, `main`, `apps/docs` and `docs.todz.app`, the `broken-links` and `validate` step numbered before every step that asks `https://docs.todz.app`, the check asking `/`, `/self-host` and `/no-such-page`, no line naming `dns_records`, `CNAME` or `scripts/todz-cloudflare.sh`, a run log table
 - [ ] `docs-site.test.ts` — input: `apps/docs`; expected: `theme` `mint`, `appearance.default` `system`, `colors` `{ primary: "#2F5BFF", light: "#7C95FF", dark: "#2F5BFF" }` read from `site-style.ts`, `background.color` `{ light: "#F2F4FA", dark: "#070812" }`, `favicon.svg` byte-equal to `docs/brand/todz-icon.svg`, each logo holding the stops `#4C6BFF` and `#1B2A9E`, the check path `M300 532 L448 680 L724 404`, the sparkle path, and `todz` filled `#161A33` (light) or `#F2F4FF` (dark); footer `Logic Bit` / `todz is a product of Logic Bit, made in Brazil` / `https://logicbit.com.br` read from `constants.ts`; navbar `todz.app` → `https://todz.app`; 404 title `Page not found`, `redirect` false; navigation `index`, `quickstart`, `connect-an-agent` under `Get started`, `mcp-tools` under `Reference`, `self-host` under `Self-host`; no orphan `.mdx`; each page has a `title` and no `# ` line; one `mint@4.3.91` across the scripts and `--client-version 0.0.4077` in `dev`
 - [ ] `docs-pages.test.ts` — input: `connect-an-agent.mdx`, `quickstart.mdx`, `AgentCommand.swift`, `wrangler.jsonc`, the Swift copy files; expected: the page holds `claude mcp add --transport http todz 'https://api.todz.app/mcp' --header 'Authorization: Bearer <key>'`, the block `[mcp_servers.todz]\nurl = "https://api.todz.app/mcp"\nbearer_token_env_var = "TODZ_API_KEY"`, the line `export TODZ_API_KEY='<key>'`, and the Cursor JSON with `"todz"`, `"url": "https://api.todz.app/mcp"` and `"Authorization": "Bearer <key>"`, each built from the Swift constants; `**Connect an Agent**`, `**Send Link**`, `**Server**`, `**Use todz cloud**` equal the Swift copy; the quickstart's `/self-host#…` anchor is a heading slug of the guide
 - [ ] `docs-mcp-reference.test.ts` — input: `mcp-tools.mdx`, `mcp-copy.ts`, `mcp-tool-arguments.ts`; expected: headings `## next`, `## add`, `## list`, `## update`, `## done` in that order, each followed by its `MCP_COPY.tools` line verbatim; `tasks`, `title`, `notes`, `due_date`, `idempotency_key` under `add`; `state`, `due`, `text`, `limit` under `list`; `id`, `title`, `notes`, `due_date`, `placement`, `kind`, `anchor` under `update`; `ids`, `note` under `done`; none under `next`; `## Prompts` with `next` and `Start working on the next task of this project.`
@@ -63,13 +63,20 @@ Runs against: `pnpm --filter @todz/docs dev --port 3333 --no-open` (`mint dev`, 
 - [ ] Browser Back mid-flow: on MCP tools after the happy path, press Back; expected: Connect an agent, at the scroll position it had
 - [ ] Reload mid-flow: on `/self-host#updating`, reload; expected: the same page, at the Updating heading
 - [ ] Two authors in two browser contexts at once: N/A — the site has no shared state
-- [ ] Latency / disconnect: N/A for `mint dev`; the published site's behaviour is the runbook's walk
+- [ ] Latency / disconnect: N/A for `mint dev`; the published site's behaviour is the runbook's walk after the merge
 - [ ] Dark: switch the theme toggle to dark on every page; expected: the dark logo, `#070812` page, links in the dark accent, the footer credit legible
 - [ ] Console and network clean: zero console errors, zero failed requests, other than the three allow-listed `mint dev` entries
 - [ ] Desktop width 1280: expected: the sidebar, the page and the table of contents side by side, no overlap
 - [ ] Narrow width 375: expected: the menu button opens the navigation, code blocks scroll inside themselves, no horizontal page scroll
 - [ ] The landing's `/self-host` at 1280 and 375: expected: the same guide as before the move, the four repository references now links to `https://github.com/dhyegocalota/todz/blob/main/…`, `Connect an Agent` in steps 7 and 8
 - [ ] Screenshots at `.pr-media/docs-mintlify/` (five pages and the 404, 1280 and 375, light and dark); video at `.pr-media/docs-mintlify/walk.mp4`
+
+## Before and after the merge (`docs.todz.app`)
+
+- [ ] Before the merge: `curl -sS -D - -o /dev/null https://docs.todz.app/self-host` — expected: not `HTTP/2 200` with `Self-host todz` (the starter kit has no such page); the answer is recorded so the check after the merge is known to tell the two apart
+- [ ] Before the merge, on the head that merges: `pnpm --filter @todz/docs run broken-links` prints `success no broken links found` and `run validate` exits 0
+- [ ] After the merge, the runbook's step 3 — expected: `https://docs.todz.app/self-host` `HTTP/2 200` holding `Self-host todz`; `https://docs.todz.app/` holding `todz is a product of Logic Bit, made in Brazil`; `https://docs.todz.app/no-such-page` 404 with `Page not found`
+- [ ] After the merge, the runbook's step 4 — expected: the five pages and the 404 at 1280 and 375, light and dark, as in the walk above, with no console error; the run log row written
 
 ## Edge cases found during execution
 
@@ -80,14 +87,14 @@ Empty on purpose. The tester adds one checkbox per new case (input, exact expect
 The reviewer picks the three claims most likely to be wrong and tries to refute each.
 
 - [ ] Claim 1: the guide has one source — attack: `git grep` for a sentence of the guide outside `apps/docs/self-host.mdx` and the generated page; edit one heading in the `.mdx` without regenerating and run `pnpm --filter @todz/api site:check`; result: <refuted | held>
-- [ ] Claim 2: the runbook never leaves `docs.todz.app` pointing at an unclaimed Mintlify host — attack: read the steps and the rollback in order, and move the POST step above the dashboard step to see `runbooks.test.ts` fail; result: <refuted | held>
+- [ ] Claim 2: nothing that breaks the docs can merge, and every merge publishes — attack: on a throwaway branch, add a link to `/no-such-page` in `index.mdx` and run `pnpm verify`; expected the `docs` gate red at `broken-links` before any walk; then read `verify-gates.tsv` for an `apps/docs` path the `docs` gate does not cover; result: <refuted | held>
 - [ ] Claim 3: the pinned client renders every page with no console error — attack: run the walk with the pin, then once with the `--client-version` flag removed, and compare the console; result: <refuted | held>
 
 ## Coverage honesty
 
 What is not tested and why.
 
-- The published site on `docs.todz.app` — it needs the owner's Mintlify steps; the runbook's steps 8 and 9 check it when they run, and its run log records them.
+- The published site on `docs.todz.app` before the merge — it serves the starter kit until this feature merges; the runbook's steps 2 to 4 check it after the merge, and its run log records them.
 - Mintlify's hosted build may render differently from `mint dev` (search, fonts, analytics, the AI assistant); only the local preview is walked here.
 - Search (Cmd K) is not asserted: `mint dev`'s search depends on Mintlify's hosted index; the tester notes what it shows.
 - The hosted `verify.yml` workflow does not run the `docs` gate; the gate is local (ADR 0005).
