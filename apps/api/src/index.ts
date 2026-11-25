@@ -65,9 +65,13 @@ async function serveHost({ request, env, executionContext }: HostContext): Promi
   return HANDLER_OF_HOST_KIND[hostKind]({ request, env, executionContext });
 }
 
+function crashResponse(): Response {
+  return new Response(null, { status: HttpStatus.InternalServerError });
+}
+
 export default {
   async fetch(request, env, executionContext): Promise<Response> {
-    return withSecurityHeaders(await serveHost({ request, env, executionContext }));
+    return withSecurityHeaders(await serveHost({ request, env, executionContext }).catch(crashResponse));
   },
   async scheduled(controller, env): Promise<void> {
     await runScheduled({ controller, env });
