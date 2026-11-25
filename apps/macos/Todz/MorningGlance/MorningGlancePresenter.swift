@@ -24,11 +24,10 @@ private let occlusionWait: Duration = .seconds(1)
         let hostingView = MorningGlanceHostingView(rootView: MorningGlanceView(content: content, open: open))
         hostingView.onHover = hover
         hostingView.onClick = open
-        let glancePanel = MorningGlancePanel(contentView: hostingView)
+        let glancePanel = MorningGlancePanel(hostingView: hostingView)
         panel = glancePanel
         glancePanel.setFrameOrigin(origin(of: glancePanel, on: screen))
         glancePanel.ignoresMouseEvents = true
-        if NSApp.isHidden { NSApp.unhideWithoutActivation() }
         glancePanel.orderFrontRegardless()
         guard await isVisible(glancePanel), panel === glancePanel else {
             dismissWithoutSignal(glancePanel)
@@ -50,12 +49,12 @@ private let occlusionWait: Duration = .seconds(1)
         guard let panel else { return }
         dismissWithoutSignal(panel)
         coordinator?.dismissed()
-        windowState.waitingLink = .today
+        windowState.open(.today, from: .morningGlance)
     }
 
     private func hover(isOver: Bool) {
         guard let panel else { return }
-        dwell = isOver ? dwell.hovered(at: .now) : dwell.left(at: .now)
+        dwell = isOver ? dwell.hovered() : dwell.left(at: .now)
         scheduleFade(of: panel)
     }
 
@@ -80,7 +79,10 @@ private let occlusionWait: Duration = .seconds(1)
         graceTask = Task {
             try? await Task.sleep(for: .seconds(MorningGlanceDwell.pointerGrace))
             guard !Task.isCancelled else { return }
+            glancePanel.hostingView.isPointerAllowed = true
             glancePanel.ignoresMouseEvents = false
+            guard glancePanel.frame.contains(NSEvent.mouseLocation) else { return }
+            hover(isOver: true)
         }
     }
 
@@ -95,6 +97,7 @@ private let occlusionWait: Duration = .seconds(1)
     }
 
     private func fade(_ glancePanel: MorningGlancePanel) {
+        glancePanel.hostingView.isPointerAllowed = false
         glancePanel.ignoresMouseEvents = true
         let reducesMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         NSAnimationContext.runAnimationGroup { context in

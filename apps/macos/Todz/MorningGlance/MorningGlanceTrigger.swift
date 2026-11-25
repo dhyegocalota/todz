@@ -10,6 +10,8 @@ private let chanceNotifications: [Notification.Name] = [
 ]
 private let closingNotifications: [Notification.Name] = [
     NSWorkspace.willSleepNotification,
+    NSWorkspace.screensDidSleepNotification,
+    NSWorkspace.sessionDidResignActiveNotification,
 ]
 
 @MainActor final class MorningGlanceTrigger {
@@ -30,7 +32,7 @@ private let closingNotifications: [Notification.Name] = [
             chanceNotifications.map { observe($0, in: workspaceCenter, perform: check) }
             + closingNotifications.map { observe($0, in: workspaceCenter, perform: close) }
             + [
-                observe(.screenIsUnlocked, in: distributedCenter, perform: check),
+                observe(.screenIsUnlocked, in: distributedCenter, perform: retry),
                 observe(.screenIsLocked, in: distributedCenter, perform: close),
                 observe(NSWorkspace.didActivateApplicationNotification, in: workspaceCenter, perform: retry),
             ]
