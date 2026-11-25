@@ -4,15 +4,6 @@ import TodzKit
 import WidgetKit
 
 private let cacheFolderName = "Cache"
-private let focusFilterReadTimeout: Duration = .seconds(3)
-
-private func isFocusFilterQuiet() async -> Bool {
-    do {
-        return try await TodzFocusFilter.current.isQuiet
-    } catch {
-        return false
-    }
-}
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel(
@@ -44,6 +35,8 @@ private func isFocusFilterQuiet() async -> Bool {
     private var launchReading: Task<Void, Never>?
     let dayTemperaturePreference = DayTemperaturePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     let menuBarOnlyPreference = MenuBarOnlyPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
+    let respectFocusPreference = RespectFocusPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
+    private(set) lazy var focusSwitch = makeFocusSwitch()
     private(set) lazy var dayClose = DayCloseCoordinator(
         gate: gate,
         preference: DayClosePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
@@ -76,7 +69,7 @@ private func isFocusFilterQuiet() async -> Bool {
     private lazy var morningGlanceTrigger = MorningGlanceTrigger(coordinator: morningGlance)
 
     override init() {
-        let gate = ProactiveGate()
+        let gate = ProactiveGate(respectsFocus: respectFocusPreference.isOn)
         AppDependencyManager.shared.add(dependency: gate)
         self.gate = gate
         super.init()
@@ -90,7 +83,7 @@ private func isFocusFilterQuiet() async -> Bool {
         observeDayChanges()
         observeWindows(LaunchActivation.of(isDefaultLaunch: notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool))
         launchReading = Task {
-            await readFocusFilter()
+            await focusSwitch.start()
             startDayTemperature()
             dayTemperatureScheduler.start()
             guard launchSurfaceStart == .now else { return }
@@ -158,22 +151,5 @@ private func isFocusFilterQuiet() async -> Bool {
     // NB ADR 0031: the app keeps running in the menu bar when the main window closes; ⌘Q quits.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
-    }
-
-    private func readFocusFilter() async {
-        let (settlements, settle) = AsyncStream.makeStream(of: Void.self)
-        let timeout = Task { [gate] in
-            try? await Task.sleep(for: focusFilterReadTimeout)
-            guard !Task.isCancelled else { return }
-            gate.applyLaunchRead(isQuiet: true)
-            settle.yield()
-        }
-        Task { [gate] in
-            let isQuiet = await isFocusFilterQuiet()
-            timeout.cancel()
-            gate.applyLaunchRead(isQuiet: isQuiet)
-            settle.yield()
-        }
-        for await _ in settlements { return }
     }
 }

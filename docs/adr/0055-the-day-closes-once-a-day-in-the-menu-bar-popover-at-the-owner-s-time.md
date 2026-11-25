@@ -1,6 +1,6 @@
 # 0055. The day closes once a day in the menu bar popover, at the owner's time
 
-- Status: Accepted (the build loop's call, the owner may overturn it)
+- Status: Accepted (the build loop's call, the owner may overturn it); amended by [0068](0068-one-respect-focus-switch-decides-for-every-proactive-surface-and-untouched-settings-follow-the-defaults.md) (§1 on by default; §3 the gate holds only with Respect Focus on)
 - Date: 2026-11-25
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) chose idea 4 from the loop's `proactive-day` list: at a time the owner picks, the menu bar popover opens once by itself on what is left of Today, each task gets done, tomorrow or drop; it respects Focus and never fires twice a day; opt-in, off by default, no push notifications
 - Inspired by: [ADR 0031](0031-the-menu-bar-extra-is-a-swiftui-window-over-the-app-s-one-model.md) (the popover is closed from code by clicking its own status button), [ADR 0036](0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md) (Settings and app-local preferences), [ADR 0054](0054-the-app-learns-focus-through-a-todz-focus-filter-not-the-focus-status-api.md) (the proactive gate), the run-16 spike on opening the popover from code
@@ -11,7 +11,7 @@ The owner wants todz to close his day: once, at a time he picks, the popover he 
 
 ## Decision
 
-1. **An app-local preference, off by default.** "Close the day" with a time, kept in the app's defaults like the menu bar count (ADR 0036), not on the server: only the app acts on it. The default time is 18:00 in the Mac's time zone.
+1. **An app-local preference, off by default.** "Close the day" with a time, kept in the app's defaults like the menu bar count (ADR 0036), not on the server: only the app acts on it. The default time is 18:00 in the Mac's time zone. *Amended on 2026-11-25 by [ADR 0068](0068-one-respect-focus-switch-decides-for-every-proactive-surface-and-untouched-settings-follow-the-defaults.md):* on by default; a Mac where the owner never flipped the switch takes it, one where the owner turned it off keeps it off.
 2. **Once a day, on time or on the first chance after.** A `DayCloseSchedule` in `TodzKit` decides, from the preference, the last day it fired and the current instant, whether to fire now and when to look next. It fires at the chosen time, or at the first wake or launch after it on the same calendar day; never twice on one day, never on a day already over. The day it fired is stored with the preference.
 3. **Through the gate.** A due day close asks `ProactiveGate.admit(.dayClose)`. Held during a Focus, it shows when the gate releases it, if that is still the same day; otherwise it is dropped.
 4. **Nothing to close, nothing shown.** With no open task in Today of the active workspace, the day is marked closed and nothing opens.

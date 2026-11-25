@@ -9,7 +9,7 @@ import { McpToolName } from '../src/mcp-copy';
 import { calendarDateInTimeZone } from '../src/owner-today';
 import { TurnstileAction } from '../src/turnstile';
 import { issueProjectKey } from '../src/project-keys';
-import { enableAgentNudge, issuedKeyOf, seedIssuedKey, seedProject } from './directory-seed';
+import { issuedKeyOf, seedIssuedKey, seedProject } from './directory-seed';
 import {
   PUBLIC_HTTPS_ORIGIN,
   PUBLIC_ORIGIN,
@@ -171,14 +171,21 @@ describe('POST /owner/sessions', () => {
     expect(body.owner).toEqual({
       id: await identityOwnerId(identityToken),
       time_zone: SAO_PAULO_TIME_ZONE,
-      agent_nudge: false,
-      day_email: false,
+      agent_nudge: true,
+      day_email: true,
       day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES,
     });
     expect(await ownerTimeZone(body.owner.id)).toBe(SAO_PAULO_TIME_ZONE);
     const stored = await sessionRow(body.session_token);
     expect(stored.owner_id).toBe(body.owner.id);
     expect(Object.values(stored)).not.toContain(body.session_token);
+  });
+
+  test('a new owner starts with the agent nudge and the day email on', async () => {
+    const { token, ownerId } = await signInOwner();
+    expect(await (await readOwner(token)).json()).toEqual({
+      owner: { id: ownerId, time_zone: 'UTC', agent_nudge: true, day_email: true, day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES },
+    });
   });
 
   test('the same identity again answers the same owner, a new token and the new zone', async () => {
@@ -190,8 +197,8 @@ describe('POST /owner/sessions', () => {
     expect(body.owner).toEqual({
       id: first.ownerId,
       time_zone: KIRITIMATI_TIME_ZONE,
-      agent_nudge: false,
-      day_email: false,
+      agent_nudge: true,
+      day_email: true,
       day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES,
     });
     expect(body.session_token).not.toBe(first.token);
@@ -623,19 +630,19 @@ describe('GET /owner', () => {
       owner: {
         id: ownerId,
         time_zone: SAO_PAULO_TIME_ZONE,
-        agent_nudge: false,
-        day_email: false,
+        agent_nudge: true,
+        day_email: true,
         day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES,
       },
     });
   });
 
   test('answers the flag the owner stored, and only the key owner sees it', async () => {
-    const { token, ownerId } = await signInOwner();
+    const { token } = await signInOwner();
     const other = await signInOwner();
-    await enableAgentNudge({ directory: env.DIRECTORY, ownerId });
-    expect(await (await readOwner(token)).json()).toMatchObject({ owner: { agent_nudge: true } });
-    expect(await (await readOwner(other.token)).json()).toMatchObject({ owner: { agent_nudge: false } });
+    await updateOwner({ token, body: { agent_nudge: false } });
+    expect(await (await readOwner(token)).json()).toMatchObject({ owner: { agent_nudge: false } });
+    expect(await (await readOwner(other.token)).json()).toMatchObject({ owner: { agent_nudge: true } });
   });
 });
 
@@ -648,8 +655,8 @@ describe('PATCH /owner', () => {
       owner: {
         id: ownerId,
         time_zone: SAO_PAULO_TIME_ZONE,
-        agent_nudge: false,
-        day_email: false,
+        agent_nudge: true,
+        day_email: true,
         day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES,
       },
     });
@@ -658,14 +665,14 @@ describe('PATCH /owner', () => {
 
   test('stores the flag, answers it, leaves the zone alone and a later read agrees', async () => {
     const { token, ownerId } = await signInOwner({ timeZone: SAO_PAULO_TIME_ZONE });
-    const response = await updateOwner({ token, body: { agent_nudge: true } });
+    const response = await updateOwner({ token, body: { agent_nudge: false } });
     expect(response.status).toBe(OK_STATUS);
     expect(await response.json()).toEqual({
       owner: {
         id: ownerId,
         time_zone: SAO_PAULO_TIME_ZONE,
-        agent_nudge: true,
-        day_email: false,
+        agent_nudge: false,
+        day_email: true,
         day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES,
       },
     });
@@ -674,37 +681,37 @@ describe('PATCH /owner', () => {
       owner: {
         id: ownerId,
         time_zone: SAO_PAULO_TIME_ZONE,
-        agent_nudge: true,
-        day_email: false,
+        agent_nudge: false,
+        day_email: true,
         day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES,
       },
     });
   });
 
-  test('turns the flag off again', async () => {
+  test('turns the flag on again', async () => {
     const { token, ownerId } = await signInOwner();
-    await updateOwner({ token, body: { agent_nudge: true } });
-    const response = await updateOwner({ token, body: { agent_nudge: false } });
+    await updateOwner({ token, body: { agent_nudge: false } });
+    const response = await updateOwner({ token, body: { agent_nudge: true } });
     expect(await response.json()).toEqual({
-      owner: { id: ownerId, time_zone: 'UTC', agent_nudge: false, day_email: false, day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES },
+      owner: { id: ownerId, time_zone: 'UTC', agent_nudge: true, day_email: true, day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES },
     });
   });
 
-  test('a zone alone leaves a true flag alone and answers it', async () => {
+  test('a zone alone leaves a false flag alone and answers it', async () => {
     const { token, ownerId } = await signInOwner();
-    await enableAgentNudge({ directory: env.DIRECTORY, ownerId });
+    await updateOwner({ token, body: { agent_nudge: false } });
     const response = await updateOwner({ token, body: { time_zone: 'Europe/Lisbon' } });
     expect(response.status).toBe(OK_STATUS);
     expect(await response.json()).toEqual({
-      owner: { id: ownerId, time_zone: 'Europe/Lisbon', agent_nudge: true, day_email: false, day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES },
+      owner: { id: ownerId, time_zone: 'Europe/Lisbon', agent_nudge: false, day_email: true, day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES },
     });
   });
 
   test('a zone and a flag together store both', async () => {
     const { token, ownerId } = await signInOwner();
-    const response = await updateOwner({ token, body: { time_zone: 'Europe/Lisbon', agent_nudge: true } });
+    const response = await updateOwner({ token, body: { time_zone: 'Europe/Lisbon', agent_nudge: false } });
     expect(await response.json()).toEqual({
-      owner: { id: ownerId, time_zone: 'Europe/Lisbon', agent_nudge: true, day_email: false, day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES },
+      owner: { id: ownerId, time_zone: 'Europe/Lisbon', agent_nudge: false, day_email: true, day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES },
     });
   });
 
@@ -713,39 +720,39 @@ describe('PATCH /owner', () => {
     const response = await updateOwner({ token, body: { time_zone: 'UTC', foo: 1 } });
     expect(response.status).toBe(OK_STATUS);
     expect(await response.json()).toEqual({
-      owner: { id: ownerId, time_zone: 'UTC', agent_nudge: false, day_email: false, day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES },
+      owner: { id: ownerId, time_zone: 'UTC', agent_nudge: true, day_email: true, day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES },
     });
   });
 
   test('an invalid zone with a valid flag answers 422 and stores neither', async () => {
     const { token, ownerId } = await signInOwner({ timeZone: SAO_PAULO_TIME_ZONE });
-    const response = await updateOwner({ token, body: { time_zone: 'Mars/Base', agent_nudge: true } });
+    const response = await updateOwner({ token, body: { time_zone: 'Mars/Base', agent_nudge: false } });
     expect(response.status).toBe(UNPROCESSABLE_STATUS);
     expect(await response.json()).toEqual(TIME_ZONE_INVALID);
     expect(await ownerTimeZone(ownerId)).toBe(SAO_PAULO_TIME_ZONE);
-    expect(await ownerAgentNudge(ownerId)).toBe(false);
+    expect(await ownerAgentNudge(ownerId)).toBe(true);
   });
 
   test("one owner's flag never changes another owner's", async () => {
     const first = await signInOwner();
     const second = await signInOwner();
-    await updateOwner({ token: first.token, body: { agent_nudge: true } });
-    expect(await ownerAgentNudge(first.ownerId)).toBe(true);
-    expect(await ownerAgentNudge(second.ownerId)).toBe(false);
+    await updateOwner({ token: first.token, body: { agent_nudge: false } });
+    expect(await ownerAgentNudge(first.ownerId)).toBe(false);
+    expect(await ownerAgentNudge(second.ownerId)).toBe(true);
   });
 
-  test('signing in again keeps a true flag and answers it', async () => {
+  test('signing in again keeps a false flag and answers it', async () => {
     const identityToken = crypto.randomUUID();
     const { token, ownerId } = await signInOwner({ identityToken });
-    await updateOwner({ token, body: { agent_nudge: true } });
+    await updateOwner({ token, body: { agent_nudge: false } });
     const response = await ownerCall(signInCall({ identityToken, timeZone: SAO_PAULO_TIME_ZONE }));
     expect(response.status).toBe(CREATED_STATUS);
     const body = await response.json<{ owner: unknown }>();
     expect(body.owner).toEqual({
       id: ownerId,
       time_zone: SAO_PAULO_TIME_ZONE,
-      agent_nudge: true,
-      day_email: false,
+      agent_nudge: false,
+      day_email: true,
       day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES,
     });
   });
@@ -771,7 +778,7 @@ describe('PATCH /owner', () => {
     expect(response.status).toBe(BAD_REQUEST_STATUS);
     expect(await response.json()).toEqual(INVALID_REQUEST);
     expect(await ownerTimeZone(ownerId)).toBe(SAO_PAULO_TIME_ZONE);
-    expect(await ownerAgentNudge(ownerId)).toBe(false);
+    expect(await ownerAgentNudge(ownerId)).toBe(true);
   });
 });
 

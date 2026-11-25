@@ -17,6 +17,7 @@ struct SettingsView: View {
     @AppStorage(MorningGlancePreference.isOnStorageKey) private var isMorningGlanceOn = MorningGlancePreference.isOnByDefault
     @AppStorage(DayTemperaturePreference.isOnStorageKey) private var isDayTemperatureOn = DayTemperaturePreference.isOnByDefault
     @AppStorage(RibbonPreference.isOnStorageKey) private var isRibbonOn = RibbonPreference.isOnByDefault
+    @AppStorage(RespectFocusPreference.isOnStorageKey) private var isRespectFocusOn = RespectFocusPreference.isOnByDefault
     @AppStorage(RibbonPreference.cadenceStorageKey) private var ribbonCadenceName = RibbonPreference.cadenceByDefault.rawValue
 
     var body: some View {
@@ -39,13 +40,6 @@ struct SettingsView: View {
             }
             .toggleStyle(.switch)
             .disabled(!model.canChangeAgentNudge)
-            LabeledContent {
-                Button(SettingsCopy.openFocusSettings, action: openFocusSettings)
-            } label: {
-                Text(SettingsCopy.focusQuiet)
-                Text(SettingsCopy.focusQuietSubtitle(notice: FocusQuietNotice(isQuiet: gate.isQuiet)))
-                    .lineLimit(subtitleLines, reservesSpace: true)
-            }
             LabeledContent {
                 HStack {
                     DatePicker(SettingsCopy.closeTheDayTime, selection: dayCloseTime, displayedComponents: .hourAndMinute)
@@ -107,6 +101,19 @@ struct SettingsView: View {
                 Text(SettingsCopy.menuBarRibbon)
                 Text(ribbonDetail)
                     .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            Toggle(isOn: $isRespectFocusOn) {
+                Text(SettingsCopy.respectFocus)
+                Text(SettingsCopy.focusQuietSubtitle(notice: FocusQuietNotice(isQuiet: gate.isQuiet)))
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            .toggleStyle(.switch)
+            if isRespectFocusOn {
+                LabeledContent {
+                    Button(SettingsCopy.openFocusSettings, action: openFocusSettings)
+                } label: {
+                    Text(SettingsCopy.respectFocusHelper)
+                }
             }
             Section {
                 ServerAddressForm(layout: .row, exit: {})

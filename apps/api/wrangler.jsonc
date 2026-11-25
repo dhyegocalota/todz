@@ -47,6 +47,10 @@
     { "name": "DAY_EMAIL_REPLY_LIMITER", "namespace_id": "8610", "simple": { "limit": 5, "period": 60 } },
     { "name": "OWNER_LIMITER", "namespace_id": "8611", "simple": { "limit": 600, "period": 60 } },
     { "name": "MCP_LIMITER", "namespace_id": "8612", "simple": { "limit": 3600, "period": 60 } },
+    { "name": "DAY_EMAIL_STOP_LIMITER", "namespace_id": "8613", "simple": { "limit": 10, "period": 60 } },
   ],
-  "assets": { "directory": "./public", "run_worker_first": ["/owner", "/owner/*", "/mcp", "/sign-in", "/sign-in/challenge", "/health"] },
+  "assets": {
+    "directory": "./public",
+    "run_worker_first": ["/owner", "/owner/*", "/mcp", "/sign-in", "/sign-in/challenge", "/day-email/stop", "/health"],
+  },
 }

@@ -46,7 +46,7 @@ private let minutesOutsideADay = [-2880, 1440]
 }
 
 @MainActor private struct DayCloseHarness {
-    let gate = ProactiveGate()
+    let gate = ProactiveGate(respectsFocus: true)
     let clock = HarnessClock()
     let popover = FakePopover()
     let screen = FakeScreen()

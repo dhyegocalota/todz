@@ -1,5 +1,15 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-plugin';
 import { configDefaults, defineConfig } from 'vitest/config';
+
+const SETTING_DEFAULTS_DIRECTORY = 'scripts/setting-defaults';
+const STATEMENT_EXTENSION = '.sql';
+
+function settingDefaultStatements(): Record<string, string> {
+  const names = readdirSync(SETTING_DEFAULTS_DIRECTORY).filter((name) => name.endsWith(STATEMENT_EXTENSION));
+  return Object.fromEntries(names.map((name) => [name, readFileSync(join(SETTING_DEFAULTS_DIRECTORY, name), 'utf8')]));
+}
 
 const LOADED_MACHINE_TEST_TIMEOUT_MS = 30_000;
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
@@ -19,8 +29,10 @@ export default defineConfig(async () => {
             cloudflareTest({
               wrangler: { configPath: './wrangler.jsonc' },
               miniflare: {
+                d1Databases: ['MIGRATION_DIRECTORY'],
                 bindings: {
                   MIGRATIONS: migrations,
+                  SETTING_DEFAULT_STATEMENTS: settingDefaultStatements(),
                   SIGN_IN_PROVIDER: 'fake',
                   EMAIL_SENDER: 'console',
                   PUBLIC_ORIGIN: 'http://localhost:8787',

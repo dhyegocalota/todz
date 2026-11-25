@@ -15,11 +15,35 @@ private struct GlanceDomain {
 }
 
 @Suite struct MorningGlancePreferenceTests {
-    @Test func theRegisteredDefaultReadsOffWithNoDayShown() throws {
+    @Test func theRegisteredDefaultReadsOnWithNoDayShown() throws {
         let glance = try GlanceDomain()
         MorningGlancePreference.registerDefaults(in: glance.domain.defaults)
-        #expect(!glance.preference.isOn)
+        #expect(glance.preference.isOn)
         #expect(glance.preference.lastShownDay == nil)
+    }
+
+    @Test func aFreshDomainReadsOn() throws {
+        let glance = try GlanceDomain()
+        #expect(glance.preference.isOn)
+    }
+
+    @Test func registeringTheDefaultsRegistersOn() throws {
+        let glance = try GlanceDomain()
+        MorningGlancePreference.registerDefaults(in: glance.domain.defaults)
+        #expect(glance.domain.defaults.object(forKey: MorningGlancePreference.isOnStorageKey) as? Bool == true)
+    }
+
+    @Test func aStoredFalseStaysOff() throws {
+        let glance = try GlanceDomain()
+        glance.domain.defaults.set(false, forKey: MorningGlancePreference.isOnStorageKey)
+        MorningGlancePreference.registerDefaults(in: glance.domain.defaults)
+        #expect(!glance.preference.isOn)
+    }
+
+    @Test func aNonBoolValueReadsAsTheDefault() throws {
+        let glance = try GlanceDomain()
+        glance.domain.defaults.set("no", forKey: MorningGlancePreference.isOnStorageKey)
+        #expect(glance.preference.isOn)
     }
 
     @Test func registeringNeverOverwritesTheOwnersChoice() throws {
@@ -47,11 +71,11 @@ private struct GlanceDomain {
         let glance = try GlanceDomain()
         let searched = try EmptyDomain()
         defer { searched.defaults.removePersistentDomain(forName: searched.name) }
-        searched.defaults.set(true, forKey: MorningGlancePreference.isOnStorageKey)
+        searched.defaults.set(false, forKey: MorningGlancePreference.isOnStorageKey)
         searched.defaults.set("2026-11-25", forKey: MorningGlancePreference.lastShownDayStorageKey)
         glance.domain.defaults.addSuite(named: searched.name)
-        #expect(glance.domain.defaults.bool(forKey: MorningGlancePreference.isOnStorageKey))
-        #expect(!glance.preference.isOn)
+        #expect(!glance.domain.defaults.bool(forKey: MorningGlancePreference.isOnStorageKey))
+        #expect(glance.preference.isOn)
         #expect(glance.preference.lastShownDay == nil)
     }
 }

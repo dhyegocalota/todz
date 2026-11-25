@@ -11,6 +11,11 @@ const PUBLIC_REQUEST_URL = 'https://api.todz.test/owner/sign-in-links';
 const LOCAL_REQUEST_URL = 'http://localhost:8787/owner/sign-in-links';
 const REPLY_ADDRESS = 'reply+0123456789abcdef0123456789abcdef@todz.app';
 const AUTO_SUBMITTED_HEADERS = { 'Auto-Submitted': 'auto-generated' };
+const UNSUBSCRIBE_HEADERS = {
+  ...AUTO_SUBMITTED_HEADERS,
+  'List-Unsubscribe': '<https://api.todz.app/day-email/stop?token=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef>',
+  'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+};
 const MAIL = { to: 'maria@example.com', subject: 'Hello', html: '<p>Hello</p>', text: 'Hello', replyTo: 'hello@todz.app' };
 
 describe('the cloudflare sender', () => {
@@ -39,6 +44,13 @@ describe('the cloudflare sender', () => {
     const sender = emailSenderOf({ configured: 'cloudflare', publicOrigin: PUBLIC_HTTPS_ORIGIN, requestUrl: PUBLIC_REQUEST_URL, binding });
     await sender?.send({ ...MAIL, headers: AUTO_SUBMITTED_HEADERS });
     expect(sent.map((message) => message.headers)).toEqual([AUTO_SUBMITTED_HEADERS]);
+  });
+
+  test('sends the one-click unsubscribe headers beside the auto-submitted header (pin)', async () => {
+    const { binding, sent } = recordingBinding();
+    const sender = emailSenderOf({ configured: 'cloudflare', publicOrigin: PUBLIC_HTTPS_ORIGIN, requestUrl: PUBLIC_REQUEST_URL, binding });
+    await sender?.send({ ...MAIL, headers: UNSUBSCRIBE_HEADERS });
+    expect(sent.map((message) => message.headers)).toEqual([UNSUBSCRIBE_HEADERS]);
   });
 
   test('passes an address with brackets only as the structured to field', async () => {

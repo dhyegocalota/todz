@@ -1,5 +1,5 @@
-import { Body, Column, Container, Head, Hr, Html, Img, Preview, Row, Section, Text } from 'react-email';
-import { createElement, type PropsWithChildren, type ReactElement } from 'react';
+import { Body, Column, Container, Head, Hr, Html, Img, Link, Preview, Row, Section, Text } from 'react-email';
+import { createElement, type PropsWithChildren, type ReactElement, type ReactNode } from 'react';
 import { EMAIL_BRAND_NAME } from './email-layout-copy';
 import {
   BODY_STYLE,
@@ -13,6 +13,7 @@ import {
   EMAIL_LOCKUP_URL,
   EMAIL_LOCKUP_WIDTH,
   EmailClassName,
+  FOOTER_LINK_STYLE,
   FOOTER_STYLE,
   HEADER_COLOR,
   HEADER_STYLE,
@@ -22,7 +23,22 @@ import {
   RULE_STYLE,
 } from './email-style';
 
-export type EmailLayoutProps = PropsWithChildren<{ title: string; preview: string; footer: string }>;
+type FooterLink = { href: string; label: string };
+
+export type EmailLayoutProps = PropsWithChildren<{ title: string; preview: string; footer: string; footerLink?: FooterLink }>;
+
+const FOOTER_LINK_CLASS_NAME = `${EmailClassName.Link} ${EmailClassName.StopLink}`;
+const FOOTER_LINK_SEPARATOR = ' ';
+
+function footerLinkNodes(footerLink: FooterLink | undefined): ReactNode[] {
+  if (footerLink === undefined) return [];
+  const link = createElement(
+    Link,
+    { href: footerLink.href, className: FOOTER_LINK_CLASS_NAME, style: FOOTER_LINK_STYLE },
+    footerLink.label,
+  );
+  return [FOOTER_LINK_SEPARATOR, link];
+}
 
 export function EmailLayout(props: EmailLayoutProps): ReactElement {
   return createElement(
@@ -68,7 +84,12 @@ export function EmailLayout(props: EmailLayoutProps): ReactElement {
                 { style: CARD_CONTENT_STYLE },
                 props.children,
                 createElement(Hr, { className: EmailClassName.Rule, style: RULE_STYLE }),
-                createElement(Text, { className: EmailClassName.Muted, style: FOOTER_STYLE }, props.footer),
+                createElement(
+                  Text,
+                  { className: EmailClassName.Muted, style: FOOTER_STYLE },
+                  props.footer,
+                  ...footerLinkNodes(props.footerLink),
+                ),
               ),
             ),
           ),
