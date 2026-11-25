@@ -1,4 +1,6 @@
 import type { Client } from '@modelcontextprotocol/client';
+import { LOCAL_DEADLINE_GRACE_MS, LOCAL_REQUEST_TIMEOUT_MS } from './budgets';
+import { boundedFetch } from './bounded-fetch';
 import { type ChangeFeed, type ChangeSignals, openChangeFeed } from './change-feed';
 import { McpEra, addTask, completeTasks, connectMeasuredMcp, listTasks } from './mcp-scenario';
 import { type LoopClock, type LoopSlot, runOpenLoop } from './open-loop';
@@ -204,14 +206,22 @@ async function openedFeed({
 
 export async function runLocalLoad({
   plan,
-  fixture,
-  dependencies,
+  fixture: unboundedFixture,
+  dependencies: unboundedDependencies,
 }: {
   plan: RunPlan;
   fixture: Fixture;
   dependencies: LocalRunDependencies;
 }): Promise<LocalRunResult> {
   const validated = validatedPlan(plan);
+  const bounded = boundedFetch({
+    fetch: unboundedDependencies.fetch,
+    schedule: unboundedDependencies.schedule,
+    requestTimeoutMs: LOCAL_REQUEST_TIMEOUT_MS,
+    deadlineMs: validated.durationMs + LOCAL_DEADLINE_GRACE_MS,
+  });
+  const dependencies = { ...unboundedDependencies, fetch: bounded };
+  const fixture = { ...unboundedFixture, connection: { ...unboundedFixture.connection, fetch: bounded } };
   const samples: Sample[] = [];
   const record = (sample: Sample) => samples.push(sample);
   const session: Session = {

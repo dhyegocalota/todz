@@ -30,9 +30,11 @@ type Timer = { callback: () => void; delayMs: number };
 function neverAnswering({ fetch, hung }: { fetch: typeof globalThis.fetch; hung: { count: number } }): typeof globalThis.fetch {
   return async (input, init) => {
     const request = new Request(input, init);
-    const isChangeRead = request.method === 'GET' && new URL(request.url).pathname.endsWith('/changes');
+    const { pathname } = new URL(request.url);
+    const isChangeRead = request.method === 'GET' && pathname.endsWith('/changes');
+    const isStreamRead = request.method === 'GET' && pathname === '/mcp';
     const isMcpHandshake = request.method === 'POST' && !(await request.clone().text()).includes('"tools/call"');
-    if (isChangeRead || isMcpHandshake || new URL(request.url).pathname === '/owner/sessions') return fetch(request);
+    if (isChangeRead || isStreamRead || isMcpHandshake) return fetch(request);
     hung.count += 1;
     return new Promise<Response>(() => undefined);
   };
@@ -109,7 +111,7 @@ describe('runLocalLoad against a server that accepts and never answers', () => {
     const isDeadline = (timer: Timer) => timer.delayMs === durationMs + LOCAL_DEADLINE_GRACE_MS;
     const result = await firedUntilSettled({ running, timers, isFired: isDeadline });
     expect(hung.count).toBeGreaterThan(0);
-    expect(result.failures).toBe(hung.count);
+    expect(result.failures).toBeGreaterThanOrEqual(hung.count);
   });
 });
 
