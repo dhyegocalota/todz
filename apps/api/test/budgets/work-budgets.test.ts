@@ -9,6 +9,7 @@ import { parsedJson } from '../../src/parsed-json';
 import type { ProjectStore } from '../../src/project-store';
 import { type WorkCounts, countedWorkEnv, rowsReadBy, seedLargeProject, seedProjectsOf } from '../budget-counters';
 import { resetDayEmails, seedDayOwner, seedProjectOf, tick } from '../day-email/day-email-client';
+import { deliverReply, inboxTasks, ownerReplyOf, seedReplyContext } from '../day-email/reply-client';
 import { seedIssuedKey, seedNudgedKey } from '../directory-seed';
 import { recordingBinding } from '../email-sign-in-client';
 import { ClientEra, callTool, connectClient } from '../mcp-client';
@@ -16,6 +17,7 @@ import { createOwnedProject, serveOwnerCall, signInOwner } from '../owner-client
 import { AGENT_ACTOR, TODAY, draftOf, newProjectStub, openTasksFilter, unwrap } from '../task-fixtures';
 import {
   DAY_EMAIL_OWNER_BUDGET,
+  DAY_EMAIL_REPLY_BUDGET,
   DAY_EMAIL_TICK_BUDGET,
   MCP_LIST_BUDGET_OF_ERA,
   MCP_NEXT_NUDGED_BUDGET_OF_ERA,
@@ -217,6 +219,32 @@ describe('the directory and Durable Object work of a day email tick', () => {
     const { countedEnv, counts } = countedWorkEnv();
     await tick({ recording: recordingBinding(), settings: { DIRECTORY: countedEnv.DIRECTORY, PROJECT_STORE: countedEnv.PROJECT_STORE } });
     expectWithin({ counts, budget: budgetOfDueOwners({ owners: 2, projects: 2 }) });
+  });
+});
+
+describe('the directory and Durable Object work of a reply to the day email', () => {
+  beforeEach(async () => {
+    await resetDayEmails();
+  });
+
+  test('an accepted reply costs one digest read, one identity read, one count, one Inbox lookup, one add and one write', async () => {
+    const context = await seedReplyContext();
+    const { countedEnv, counts } = countedWorkEnv();
+    await deliverReply({
+      delivery: ownerReplyOf({ context }),
+      settings: { DIRECTORY: countedEnv.DIRECTORY, PROJECT_STORE: countedEnv.PROJECT_STORE },
+    });
+    expect(await inboxTasks(context.owner.inboxId)).toHaveLength(1);
+    expectWithin({ counts, budget: DAY_EMAIL_REPLY_BUDGET });
+    expect(counts.projectCalls).toBe(1);
+  });
+
+  test('a reply to an address nobody was issued costs one read and no project call', async () => {
+    const context = await seedReplyContext();
+    const { countedEnv, counts } = countedWorkEnv();
+    const stranger = ownerReplyOf({ context: { ...context, replyAddress: `reply+${'c'.repeat(32)}@todz.app` } });
+    await deliverReply({ delivery: stranger, settings: { DIRECTORY: countedEnv.DIRECTORY, PROJECT_STORE: countedEnv.PROJECT_STORE } });
+    expectWithin({ counts, budget: { roundTrips: 1, statements: 1, projectCalls: 0 } });
   });
 });
 
