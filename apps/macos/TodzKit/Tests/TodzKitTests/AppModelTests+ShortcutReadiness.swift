@@ -103,4 +103,28 @@ extension AppModelTests {
         #expect(harness.pause.heldCount == 0)
         harness.service.resume(.listWorkspaces)
     }
+
+    @Test func aColdAddWaitsForReadinessInsteadOfAnsweringSignedOut() async throws {
+        let harness = try cachedHarness(cachedTitle: "Cached call", pulledTitle: "Pulled call")
+        harness.service.suspend(.addTasks)
+        #expect(await harness.model.shortcutReadiness() == .ready)
+        let addition = await harness.model.addFromShortcut(title: "Book the dentist", isDueToday: true)
+        #expect(addition == .added(title: "Book the dentist", destination: .today, workspaceName: "acme", isOffline: false))
+        await harness.service.held(.addTasks)
+        harness.service.resume(.addTasks)
+        await harness.flushed()
+    }
+
+    @Test func aColdAddWithTheListingHeldIsLoadingAndNotNoWorkspace() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.vault.secret = harness.session
+        harness.service.suspend(.listWorkspaces)
+        let asking = Task { await harness.model.shortcutReadiness() }
+        await harness.service.held(.listWorkspaces)
+        await harness.pause.started(count: 1)
+        harness.pause.release()
+        #expect(await asking.value == .loading)
+        harness.service.resume(.listWorkspaces)
+    }
 }
