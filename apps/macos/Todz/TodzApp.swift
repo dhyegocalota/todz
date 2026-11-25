@@ -15,6 +15,7 @@ struct TodzApp: App {
         DayClosePreference.registerDefaults(in: .standard)
         MorningGlancePreference.registerDefaults(in: .standard)
         DayTemperaturePreference.registerDefaults(in: .standard)
+        RibbonPreference.registerDefaults(in: .standard)
     }
 
     var body: some Scene {
@@ -25,6 +26,8 @@ struct TodzApp: App {
         let dayClose = appDelegate.dayClose
         let morningGlance = appDelegate.morningGlance
         let dayTemperatureClock = appDelegate.dayTemperatureClock
+        let ribbon = appDelegate.ribbon
+        let ribbonStrips = appDelegate.ribbonStrips
         Window(MainWindowCopy.windowTitle, id: MainWindowScene.identifier) {
             RootView()
                 .environment(model)
@@ -41,12 +44,15 @@ struct TodzApp: App {
                 .environment(panel)
                 .environment(dayClose)
                 .environment(morningGlance)
+                .environment(ribbon)
         } label: {
             MenuBarLabel()
                 .environment(model)
                 .environment(windowState)
                 .environment(gate)
                 .environment(dayTemperatureClock)
+                .environment(ribbon)
+                .environment(ribbonStrips)
         }
         .menuBarExtraStyle(.window)
         Settings {
