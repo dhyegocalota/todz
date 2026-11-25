@@ -1,4 +1,4 @@
-import { DAY_EMAIL_MINUTES_DEFAULT } from '@todz/types';
+import { AGENT_NUDGE_BY_DEFAULT, DAY_EMAIL_BY_DEFAULT, DAY_EMAIL_MINUTES_DEFAULT } from '@todz/types';
 import { z } from 'zod';
 import { findIdentityOwner, insertOwnerWithIdentity, storeOwnerChanges } from './directory-owners';
 import { emailSenderOf } from './email-sender';
@@ -69,7 +69,13 @@ async function identityOwner({
   try {
     await insertOwnerWithIdentity({ directory, ownerId, provider: kind, subject, timeZone, now });
     return {
-      owner: { id: ownerId, timeZone, agentNudge: false, dayEmail: false, dayEmailMinutes: DAY_EMAIL_MINUTES_DEFAULT },
+      owner: {
+        id: ownerId,
+        timeZone,
+        agentNudge: AGENT_NUDGE_BY_DEFAULT,
+        dayEmail: DAY_EMAIL_BY_DEFAULT,
+        dayEmailMinutes: DAY_EMAIL_MINUTES_DEFAULT,
+      },
       isNewOwner: true,
     };
   } catch (failure) {

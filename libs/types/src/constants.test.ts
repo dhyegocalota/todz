@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import {
   ABSENT_INDEX,
+  AGENT_NUDGE_BY_DEFAULT,
   COMPANY,
+  DAY_EMAIL_BY_DEFAULT,
   DAY_EMAIL_CATCH_UP_MINUTES,
   DAY_EMAIL_LINES_MAX,
   DAY_EMAIL_MINUTES_DEFAULT,
@@ -96,6 +98,11 @@ describe('mcp constants', () => {
 });
 
 describe('day email constants', () => {
+  test('a new owner starts with the agent nudge and the day email on (pin)', () => {
+    expect(AGENT_NUDGE_BY_DEFAULT).toBe(true);
+    expect(DAY_EMAIL_BY_DEFAULT).toBe(true);
+  });
+
   test('the mail defaults to 07:00 and the minute of the day ends at 23:59 (pin)', () => {
     expect(DAY_EMAIL_MINUTES_DEFAULT).toBe(420);
     expect(DAY_EMAIL_MINUTES_MAX).toBe(1439);

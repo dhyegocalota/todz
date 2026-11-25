@@ -1,3 +1,4 @@
+import { AGENT_NUDGE_BY_DEFAULT, DAY_EMAIL_BY_DEFAULT } from '@todz/types';
 import type { OwnerRecord } from './owner-records';
 
 const OWNER_COLUMNS = 'id, time_zone, agent_nudge, day_email, day_email_minutes';
@@ -38,7 +39,9 @@ export async function insertOwnerWithIdentity({
   now: number;
 }): Promise<void> {
   await directory.batch([
-    directory.prepare('INSERT INTO owners (id, time_zone, created_at) VALUES (?, ?, ?)').bind(ownerId, timeZone, now),
+    directory
+      .prepare('INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(ownerId, timeZone, Number(AGENT_NUDGE_BY_DEFAULT), Number(DAY_EMAIL_BY_DEFAULT), now),
     directory
       .prepare('INSERT INTO owner_identities (provider, subject, owner_id, created_at) VALUES (?, ?, ?, ?)')
       .bind(provider, subject, ownerId, now),

@@ -75,8 +75,8 @@ describe('GET /owner and the sign-in answer', () => {
       owner: {
         id: ownerId,
         time_zone: SAO_PAULO_TIME_ZONE,
-        agent_nudge: false,
-        day_email: false,
+        agent_nudge: true,
+        day_email: true,
         day_email_minutes: DAY_EMAIL_MINUTES_DEFAULT,
       },
     });
@@ -89,33 +89,33 @@ describe('GET /owner and the sign-in answer', () => {
     const response = await ownerCall(signInCall({ identityToken, timeZone: 'UTC' }));
     expect(response.status).toBe(CREATED_STATUS);
     const answer = await response.json<OwnerAnswer>();
-    expect(answer.owner).toEqual({ id: ownerId, time_zone: 'UTC', agent_nudge: false, day_email: true, day_email_minutes: CHOSEN_MINUTES });
+    expect(answer.owner).toEqual({ id: ownerId, time_zone: 'UTC', agent_nudge: true, day_email: true, day_email_minutes: CHOSEN_MINUTES });
   });
 });
 
 describe('PATCH /owner with the day email', () => {
   test('stores the switch, answers it and leaves the other three alone', async () => {
     const { token, ownerId } = await signInOwner({ timeZone: SAO_PAULO_TIME_ZONE });
-    const response = await updateOwner({ token, body: { day_email: true } });
+    const response = await updateOwner({ token, body: { day_email: false } });
     expect(response.status).toBe(OK_STATUS);
     expect(await response.json()).toEqual({
       owner: {
         id: ownerId,
         time_zone: SAO_PAULO_TIME_ZONE,
-        agent_nudge: false,
-        day_email: true,
+        agent_nudge: true,
+        day_email: false,
         day_email_minutes: DAY_EMAIL_MINUTES_DEFAULT,
       },
     });
-    expect(await storedDayEmail(ownerId)).toEqual({ day_email: 1, day_email_minutes: DAY_EMAIL_MINUTES_DEFAULT });
+    expect(await storedDayEmail(ownerId)).toEqual({ day_email: 0, day_email_minutes: DAY_EMAIL_MINUTES_DEFAULT });
   });
 
   test.each([[0], [CHOSEN_MINUTES], [1439]])('stores the minute %i and leaves the switch alone', async (minutes) => {
     const { token, ownerId } = await signInOwner();
     const response = await updateOwner({ token, body: { day_email_minutes: minutes } });
     expect(response.status).toBe(OK_STATUS);
-    expect(await response.json()).toMatchObject({ owner: { day_email: false, day_email_minutes: minutes } });
-    expect(await storedDayEmail(ownerId)).toEqual({ day_email: 0, day_email_minutes: minutes });
+    expect(await response.json()).toMatchObject({ owner: { day_email: true, day_email_minutes: minutes } });
+    expect(await storedDayEmail(ownerId)).toEqual({ day_email: 1, day_email_minutes: minutes });
   });
 
   test('stores both fields sent together', async () => {
@@ -136,7 +136,7 @@ describe('PATCH /owner with the day email', () => {
     const first = await signInOwner();
     const second = await signInOwner();
     await updateOwner({ token: first.token, body: { day_email: true, day_email_minutes: CHOSEN_MINUTES } });
-    expect(await storedDayEmail(second.ownerId)).toEqual({ day_email: 0, day_email_minutes: DAY_EMAIL_MINUTES_DEFAULT });
+    expect(await storedDayEmail(second.ownerId)).toEqual({ day_email: 1, day_email_minutes: DAY_EMAIL_MINUTES_DEFAULT });
   });
 
   test.each([
@@ -154,7 +154,7 @@ describe('PATCH /owner with the day email', () => {
     const response = await updateOwner({ token, body });
     expect(response.status).toBe(BAD_REQUEST_STATUS);
     expect(await response.json()).toEqual(INVALID_REQUEST);
-    expect(await storedDayEmail(ownerId)).toEqual({ day_email: 0, day_email_minutes: DAY_EMAIL_MINUTES_DEFAULT });
+    expect(await storedDayEmail(ownerId)).toEqual({ day_email: 1, day_email_minutes: DAY_EMAIL_MINUTES_DEFAULT });
   });
 
   test("turning the switch off deletes that owner's reply addresses and leaves another owner's", async () => {
