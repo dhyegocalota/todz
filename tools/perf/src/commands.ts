@@ -1,14 +1,7 @@
 import { MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { appChecks } from './app-command';
 import { type ParsedArguments, flagValueOf, numberFlagOf } from './arguments';
-import {
-  INITIALIZE_SAMPLE_COUNT,
-  PERCENTILE_SLOWEST,
-  STRESS_BREAKING_POINT_FACTOR,
-  STRESS_STEP_MS,
-  TARGET_DURATION_MS,
-  TARGET_RATE_PER_SECOND,
-} from './budgets';
+import { INITIALIZE_SAMPLE_COUNT, PERCENTILE_SLOWEST, STRESS_STEP_MS, TARGET_DURATION_MS, TARGET_RATE_PER_SECOND } from './budgets';
 import type { CliDependencies } from './cli';
 import { type LocalRunDependencies, runLocalLoad } from './local-run';
 import { measureInitialize } from './mcp-scenario';
@@ -19,7 +12,7 @@ import { ORIGIN_OF_TARGET, PerfTarget, RunKind, type RunPlan, perfTargetOf } fro
 import { ScenarioKind } from './scenario-kind';
 import { seedFixture } from './seed';
 import { runSoak, soakAccess } from './soak';
-import { runStress } from './stress';
+import { isStressPassing, runStress } from './stress';
 import { tailSummaryOf } from './tail-log';
 import type { Sample } from './timed-fetch';
 import { UsageError } from './usage-error';
@@ -136,8 +129,7 @@ function stressHandler(dependencies: CliDependencies): Handler {
       },
     });
     dependencies.out(`held: ${outcome.held} a second; broke: ${outcome.broke}; reached the ceiling: ${outcome.reachedCeiling}\n`);
-    const target = TARGET_RATE_PER_SECOND * STRESS_BREAKING_POINT_FACTOR;
-    return exitCodeOf(outcome.reachedCeiling || (outcome.held !== null && outcome.held >= target));
+    return exitCodeOf(isStressPassing(outcome));
   };
 }
 
