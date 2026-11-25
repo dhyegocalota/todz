@@ -25,34 +25,39 @@ The surface is native macOS: there is no browser surface, so there is no Playwri
 
 ## Prove it for real — the app
 
-- [ ] Settings shows "Keep todz in the menu bar when closed" with its detail line, on for a fresh defaults domain; screenshot in light and dark
-- [ ] Switch on, close the main window with ⌘W: the Dock icon goes, ⌘Tab has no todz, the menu bar item and its count stay
-- [ ] Switch on, close with the red button: the same
-- [ ] Hidden, the popover's "Open todz": the window opens in front, active, the Dock icon is back
-- [ ] Hidden, a task row in the popover: the window opens on that task, in front, with the Dock icon
-- [ ] Hidden, a widget tap: the window opens in front with the Dock icon
-- [ ] Hidden, a `todz://` link (`open todz-debug://…`): the window opens in front with the Dock icon
-- [ ] Hidden, open the app again from Finder: the window opens in front with the Dock icon
+Walk on 8537dd62: scratch Debug build (bundle `dev.todz.Todz.menubaronlywalk`, installed in ~/Applications, removed and unregistered after) against a local `wrangler dev` on 8841 with its own `--persist-to`, fake sign-in, workspace `acme`. Media in `.pr-media/menu-bar-only/`. The system appearance is dark; light was not captured (no appearance change on the owner's Mac).
+
+- [ ] Settings shows "Keep todz in the menu bar when closed" with its detail line, on for a fresh defaults domain; screenshot in light and dark — evidence: second row under the pending count, switch on, detail "With no window open, todz leaves the Dock and ⌘Tab. The menu bar, widgets and Siri keep working." (.pr-media/menu-bar-only/settings-dark.png). NOT TICKED: light not captured
+- [x] Switch on, close the main window with ⌘W: the Dock icon goes, ⌘Tab has no todz, the menu bar item and its count stay — evidence: `lsappinfo` Foreground before, UIElement after, Orca lists no window, System Events status menu item still `todz, 3 left today`
+- [x] Switch on, close with the red button: the same — evidence: red button clicked with Settings open too stayed Foreground (see Settings row); with Settings closed ⌘W/red both ended UIElement, item and count stay
+- [ ] Hidden, the popover's "Open todz": the window opens in front, active, the Dock icon is back — FAIL: with a real mouse click (cliclick) and with an accessibility press, twice, the window was shown (onscreen, over the browser) but `lsappinfo` stayed UIElement, the owner's own Todz stayed frontmost with its menu bar, no Dock icon; a click inside the window then flipped it to Foreground (.pr-media/menu-bar-only/defect-popover-open-todz-window-shown-but-accessory.png)
+- [ ] Hidden, a task row in the popover: the window opens on that task, in front, with the Dock icon — NOT RUN: shares the popover route of the FAIL above, not exercised to spare the owner's screen
+- [ ] Hidden, a widget tap: the window opens in front with the Dock icon — BLOCKED: no widget instance can be placed and tapped without the owner's desktop
+- [x] Hidden, a `todz://` link (`open todz-dev://…`): the window opens in front with the Dock icon — evidence: `open -a <scratch> todz-dev://today` while hidden: frontmost became the scratch app, Foreground, window listed
+- [x] Hidden, open the app again from Finder: the window opens in front with the Dock icon — evidence: `open -a <scratch>` while hidden: Foreground, frontmost true, menu bar File Edit View Task Window Help
 - [ ] Hidden, `open -a` on the running app and Spotlight: the window opens in front with the Dock icon
 - [ ] Switch on, minimize the main window: the Dock icon and ⌘Tab entry stay; clicking the Dock icon brings the window back
 - [ ] Switch on, ⌘H: the Dock icon stays; clicking it shows the window again
 - [ ] A normal launch from Finder: the Dock icon appears once and never disappears and returns
 - [ ] Hidden, the popover's "Quit todz" (ready, and signed out): todz quits
-- [ ] Hidden, check a widget checkbox: the task completes and the menu bar count drops
-- [ ] Hidden, run a todz Siri intent or Shortcut (where the branch has them): it answers, the app stays hidden
-- [ ] Hidden, ⌘Q with the popover open quits; with a window open, ⌘Q quits
-- [ ] Settings open with the main window closed: the Dock icon shows; closing Settings hides it
-- [ ] Switch off, close the main window: the Dock icon and ⌘Tab entry stay (today's behaviour)
-- [ ] A launch with no window shown (`open -g` or with the window closed at quit) has no Dock icon once launched
+- [ ] Fix round 1, hidden, the popover's "Open todz" and a popover row: the app turns regular and active before the window opens, so `lsappinfo` reads Foreground with the window in front
+- [ ] Hidden, check a widget checkbox: the task completes and the menu bar count drops — BLOCKED: no widget to tap; the hidden reload itself passed (next row)
+- [x] Hidden, widget reload and count: an agent-style add through the local API while hidden — evidence: `widget-snapshot.json` mtime 17:34:03 to 17:35:21, holds "Hidden agent task", menu bar item `todz, 4 left today`, app still UIElement
+- [ ] Hidden, run a todz Siri intent or Shortcut (where the branch has them): it answers, the app stays hidden — BLOCKED: no helper shortcut for the scratch bundle exists and building a signed one was out of the time box
+- [ ] Hidden, ⌘Q with the popover open quits; with a window open, ⌘Q quits — PARTIAL: with the popover open ⌘Q (Orca, system-shortcut allowed) ended with the process gone; ⌘Q with a window open not run
+- [x] Settings open with the main window closed: the Dock icon shows; closing Settings hides it — evidence: red button on the main window with Settings open stayed Foreground and listed only Settings; ⌘W on Settings then UIElement, no window
+- [x] Switch off, close the main window: the Dock icon and ⌘Tab entry stay (today's behaviour) — evidence: switch read 0, ⌘W on the main window left no window and `lsappinfo` Foreground (.pr-media/menu-bar-only/settings-switch-off.png)
+- [x] A launch with no window shown (`open -g` or with the window closed at quit) has no Dock icon once launched — evidence: quit hidden, `open -g` relaunch: no window listed, UIElement after launch; eight immediate reads right after launch still said Foreground, so the icon shows briefly before the policy flips
 
 ## Edge cases found during execution
 
-Empty on purpose. The tester adds one checkbox per new case (input, exact expected outcome) and a regression test for each.
+- [ ] The popover's "Open todz" while hidden leaves the app an accessory: the window is shown but the app is not activated (see the FAIL above); the policy waits for the window to become key and an inactive app's window never does until clicked. Regression needed: the open-window path from the popover must activate the app (or the policy must flip when the window is shown, not when it becomes key).
+- [ ] A fresh launch briefly shows as Foreground before flipping to accessory when no window opens — observed for the first reads after `open -g`; settles to UIElement.
 
 ## Adversarial review
 
-- [ ] Claim 1: a reopened window always comes to the front with the app's menu bar — attack: reopen from each entry point while another app is frontmost; result:
-- [ ] Claim 2: nothing stops while hidden — attack: change a task from an agent while hidden and watch the count; result:
+- [ ] Claim 1: a reopened window always comes to the front with the app's menu bar — attack: reopen from each entry point while another app is frontmost; result: REFUTED for the popover's "Open todz" (window shown, app not active, not regular); held for a `todz-dev://` link and a Finder reopen
+- [ ] Claim 2: nothing stops while hidden — attack: change a task from an agent while hidden and watch the count; result: held, count 3 to 4 and widget snapshot rewritten while UIElement
 - [ ] Claim 3: the switch off is exactly today's behaviour — attack: diff the delegate's paths with the switch off; result:
 
 ## Coverage honesty
