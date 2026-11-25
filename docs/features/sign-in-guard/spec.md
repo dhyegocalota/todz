@@ -1,6 +1,6 @@
 # Sign-in guard
 
-**Status:** In review
+**Status:** Shipped 2026-11-24
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-24 by the owner's request to the loop ("o send link: cuidado pra não abusarem do servidor, queremos captcha e rate limit") and PROMPT.md "Security" ("queremos rate limit e captcha nos endpoints públicos como send magic link"), inside [`docs/product/README.md`](../../product/README.md) (approved 2026-11-23); the details are the loop's calls in [ADR 0045](../../adr/0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md) and [ADR 0046](../../adr/0046-the-app-solves-the-challenge-in-a-web-view-and-the-link-page-solves-it-for-the-sign-in.md)
 **ADRs:** [0045](../../adr/0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md), [0046](../../adr/0046-the-app-solves-the-challenge-in-a-web-view-and-the-link-page-solves-it-for-the-sign-in.md), [0044](../../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md), [0040](../../adr/0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md), [0020](../../adr/0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md)

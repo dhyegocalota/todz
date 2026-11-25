@@ -59,5 +59,5 @@ G1 and G2 run in parallel on the spec's contract. G2's walk against a real Worke
 - [x] **Tester briefing:** written by the lead from both developers' reports (spec R16) — evidence: 8db0dd9.
 - [x] **Tester run:** pass 1 at 8db0dd9 (ccd903b), pass 2 at ef333bf (34401f8): 57 of 59 ticked, 2 BLOCKED with their reasons, no open defect.
 - [x] **Reviewer:** WITH RESERVATIONS at 8db0dd9; the re-check at ef333bf found the code ready, and its two reservations are done: R10's text (563ae13) and the README shots (293496b). Three claims held, recorded in `test-plan.md`. Security CLEAR twice.
-- [ ] **/check-ui:** screenshots and video recorded and uploaded (only if UI was touched).
-- [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
+- [x] **/check-ui:** the tester's screenshots of the native app and the browser, a slideshow `walkthrough.mp4` and `.gif`, attached to [PR #21](https://github.com/dhyegocalota/todz/pull/21) with `scripts/pr-media.sh`.
+- [x] **/open-pr:** `pnpm verify` 7 gates green at 7c1c435, learnings swept (one new), [PR #21](https://github.com/dhyegocalota/todz/pull/21) opened.
