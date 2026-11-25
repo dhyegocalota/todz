@@ -68,7 +68,8 @@ const PAGE_SCRIPT = `{
       event.preventDefault();
       waitingForToken.add(form);
     });
-    addEventListener('pageshow', () => {
+    addEventListener('pageshow', (event) => {
+      if (!event.persisted) return;
       waitingForToken.delete(form);
       button.removeAttribute('${ARIA_DISABLED}');
       button.textContent = label;
