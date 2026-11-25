@@ -73,12 +73,20 @@ import Observation
 
     public func popoverShown() {
         guard isClosingDay else { return }
+        let isAnsweringTheClick = isClickInFlight
+        let isOwnedByTheDayClose = !isEngaged && isAnsweringTheClick
         clickedAt = nil
         switch decision {
         case .due: markClosed()
         case .doneToday: return
-        case .off, .notYet: end()
+        case .off, .notYet: endStaleMode(closesPopover: isOwnedByTheDayClose)
         }
+    }
+
+    private func endStaleMode(closesPopover: Bool) {
+        end()
+        guard closesPopover else { return }
+        closePopover()
     }
 
     private var isClickInFlight: Bool {
