@@ -1,6 +1,6 @@
 # Server URL
 
-**Status:** In review
+**Status:** Shipped 2026-11-25
 **Tier:** 🔴 (the server the app talks to, a wipe of local data, a public route)
 **Owner approval:** approved 2026-11-25 by the owner's request to the loop, PROMPT.md "Self-host, docs and credits" item 1 ("self host não precisa que a pessoa faça deploy do app macOS.. simplesmente deixe a pessoa mudar o server URL, e obviamente dê o server URL de forma simples no log.. mas por padrão o server URL é o prod cloud"). The shape is the loop's call in [ADR 0056](../../adr/0056-the-app-keeps-its-server-url-as-a-setting-and-switching-it-starts-clean.md).
 **ADRs:** [0056](../../adr/0056-the-app-keeps-its-server-url-as-a-setting-and-switching-it-starts-clean.md), [0044](../../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md), [0046](../../adr/0046-the-app-solves-the-challenge-in-a-web-view-and-the-link-page-solves-it-for-the-sign-in.md), [0048](../../adr/0048-the-self-host-guide-is-one-markdown-file-that-the-landing-serves.md)
