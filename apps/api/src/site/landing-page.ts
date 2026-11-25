@@ -276,7 +276,14 @@ const LANDING_PAGES: Record<LandingNotice, LandingPage> = {
   [LandingNotice.TryAgain]: landingPageOf(LandingNotice.TryAgain),
 };
 
-export async function serveLandingPage({ notice, siteKey }: { notice: LandingNotice; siteKey: string | null }): Promise<Response> {
+export async function serveLandingPage({
+  notice,
+  siteKey,
+}: {
+  notice: LandingNotice;
+  siteKey: string | null;
+  stampSecret?: string | undefined;
+}): Promise<Response> {
   const page = LANDING_PAGES[notice];
   const usableSiteKey = usableSiteKeyOf(siteKey);
   if (usableSiteKey === null) return sitePageResponse({ html: page.unavailable, contentSecurityPolicy: CONTENT_SECURITY_POLICY });

@@ -1,11 +1,14 @@
 import { exports } from 'cloudflare:workers';
-import { describe, expect, test, vi } from 'vitest';
+import { MILLISECONDS_PER_SECOND, WAITLIST_MINIMUM_FILL_MS } from '@todz/types';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { LandingNotice, serveLandingPage } from '../src/site/landing-page';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { SITE_STYLE } from '../src/site/site-style';
+import { StampVerdict, stampVerdictOf } from '../src/site/waitlist-stamp';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
+import { TURNSTILE_TEST_SECRET } from './email-sign-in-client';
 import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
 import { joinStampOf } from './waitlist-client';
 
@@ -357,6 +360,113 @@ describe('the landing', () => {
     expect(html).not.toContain(TURNSTILE_SCRIPT_TAG);
     expect(html).not.toContain(UNUSABLE_SITE_KEY);
     expect(response.headers.get('Content-Security-Policy')).not.toContain(TURNSTILE_ORIGIN);
+  });
+});
+
+describe('the landing joins in place behind a stamp, a honeypot and a visible check', () => {
+  const STAMP_INPUT_PATTERN = /<input [^>]*type="hidden"[^>]*name="stamp"[^>]*value="([^"]*)"/g;
+  const HONEYPOT_PATTERN =
+    /<div class="join-extra" aria-hidden="true">\s*<label [^>]*for="([^"]+)">[^<]+<\/label>\s*<input [^>]*id="\1"[^>]*>\s*<\/div>/;
+  const HONEYPOT_INPUT_ATTRIBUTES = ['name="website"', 'type="text"', 'tabindex="-1"', 'autocomplete="off"'];
+  const WIDGET_ATTRIBUTES = [
+    'data-appearance="always"',
+    'data-size="flexible"',
+    'data-theme="auto"',
+    'data-action="waitlist"',
+    'data-callback="waitlistTokenReady"',
+    'data-error-callback="waitlistChallengeFailed"',
+    'data-expired-callback="waitlistChallengeFailed"',
+    'data-timeout-callback="waitlistChallengeFailed"',
+  ];
+  const FIRST_RENDER = 1_790_000_000_000;
+  const SECOND_RENDER = FIRST_RENDER + MILLISECONDS_PER_SECOND;
+  const STAMP_TIME_LENGTH = 13;
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function stampedLandingPage(notice: LandingNotice): Promise<SitePage> {
+    return pageOf(serveLandingPage({ notice, siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }));
+  }
+
+  function stampsOf(html: string): string[] {
+    return [...html.matchAll(STAMP_INPUT_PATTERN)].map(([, stamp]) => {
+      if (stamp === undefined) throw new Error('a stamp input has a value');
+      return stamp;
+    });
+  }
+
+  test.each(NOTICES)('with the %s notice, each form holds one stamp input that is patient two seconds after its render', async (notice) => {
+    vi.spyOn(Date, 'now').mockReturnValue(FIRST_RENDER);
+    const { html } = await stampedLandingPage(notice);
+    const stamps = formsOf(html).map((form) => stampsOf(form));
+    expect(stamps.map((formStamps) => formStamps.length)).toEqual(JOIN_FORMS.map(() => 1));
+    const verdicts = await Promise.all(
+      stamps.flat().map((stamp) => stampVerdictOf({ secret: TURNSTILE_TEST_SECRET, stamp, now: FIRST_RENDER + WAITLIST_MINIMUM_FILL_MS })),
+    );
+    expect(verdicts).toEqual(JOIN_FORMS.map(() => StampVerdict.Patient));
+  });
+
+  test('each form holds one aria-hidden honeypot whose labelled input is out of the tab order and the autofill', async () => {
+    const { html } = await stampedLandingPage(LandingNotice.None);
+    formsOf(html).forEach((form) => {
+      const honeypot = HONEYPOT_PATTERN.exec(form);
+      expect(honeypot).not.toBeNull();
+      HONEYPOT_INPUT_ATTRIBUTES.forEach((attribute) => expect(honeypot?.[0]).toContain(attribute));
+      expect(form.match(/class="join-extra"/g)).toHaveLength(1);
+    });
+  });
+
+  test('each widget is always visible, flexible and automatic in theme, with the four callbacks', async () => {
+    const { html } = await stampedLandingPage(LandingNotice.None);
+    const widgets = html.match(WIDGET_PATTERN);
+    expect(widgets).toHaveLength(JOIN_FORMS.length);
+    widgets?.forEach((widget) => WIDGET_ATTRIBUTES.forEach((attribute) => expect(widget).toContain(attribute)));
+  });
+
+  test('each form holds its own status line with its note, ready for the answer', async () => {
+    const { html } = await stampedLandingPage(LandingNotice.None);
+    const forms = formsOf(html);
+    JOIN_FORMS.forEach(({ id }, index) => {
+      expect(forms[index]).toMatch(new RegExp(`<p id="${id}-notice"[^>]* role="status"[^>]*>[^<]*${LANDING_COPY.join.note}</p>`));
+    });
+  });
+
+  test('no element carries an event handler attribute', async () => {
+    const { html } = await stampedLandingPage(LandingNotice.None);
+    expect(html).not.toMatch(EVENT_HANDLER_PATTERN);
+  });
+
+  test('two renders carry different stamps and the same policy', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(FIRST_RENDER);
+    const first = await stampedLandingPage(LandingNotice.None);
+    vi.spyOn(Date, 'now').mockReturnValue(SECOND_RENDER);
+    const second = await stampedLandingPage(LandingNotice.None);
+    expect(stampsOf(first.html)).toHaveLength(JOIN_FORMS.length);
+    expect(stampsOf(first.html)[0]?.slice(0, STAMP_TIME_LENGTH)).toBe(String(FIRST_RENDER));
+    expect(stampsOf(second.html)[0]?.slice(0, STAMP_TIME_LENGTH)).toBe(String(SECOND_RENDER));
+    expect(stampsOf(first.html)).not.toEqual(stampsOf(second.html));
+    expect(first.response.headers.get('Content-Security-Policy')).toBe(second.response.headers.get('Content-Security-Policy'));
+  });
+
+  test('the policy is hash based, names only the widget origin for scripts and frames and keeps connections and forms on the site', async () => {
+    const { response } = await stampedLandingPage(LandingNotice.None);
+    const directives = response.headers.get('Content-Security-Policy')?.split('; ');
+    const scriptDirective = directives?.find((directive) => directive.startsWith('script-src '));
+    expect(scriptDirective?.split(' ').filter((source) => source.startsWith("'sha256-")).length).toBeGreaterThan(0);
+    expect(scriptDirective).toContain(TURNSTILE_ORIGIN);
+    expect(response.headers.get('Content-Security-Policy')).not.toContain(UNSAFE_INLINE);
+    expect(response.headers.get('Content-Security-Policy')).not.toContain("'unsafe-eval'");
+    expect(directives).toContain(`frame-src ${TURNSTILE_ORIGIN}`);
+    expect(directives).toContain(CONNECT_DIRECTIVE);
+    expect(directives).toContain("form-action 'self'");
+  });
+
+  test('without the secret, the page has no stamp and no widget', async () => {
+    const { html } = await pageOf(serveLandingPage({ notice: LandingNotice.None, siteKey: TEST_SITE_KEY, stampSecret: undefined }));
+    expect(stampsOf(html)).toEqual([]);
+    expect(html).not.toMatch(WIDGET_PATTERN);
   });
 });
 
