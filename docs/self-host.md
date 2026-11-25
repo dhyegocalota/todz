@@ -29,7 +29,7 @@ Edit `apps/api/wrangler.jsonc`:
 - `send_email[0].allowed_sender_addresses`: your sender, for example `noreply@example.com`.
 - `ratelimits`: keep the three bindings; change each `namespace_id` if your account already uses `8601` to `8603`.
 
-Keep the rest as it is. In particular, `vars.SIGN_IN_PROVIDER` stays `email`, `vars.EMAIL_SENDER` stays `cloudflare`, and `workers_dev` and `preview_urls` stay `false`. Never pass `--var` to `wrangler deploy`, and never set variables in the dashboard: a fake provider or a console sender opens sign-in to anyone.
+Keep the rest as it is. In particular, `vars.SIGN_IN_PROVIDER` stays `email`, `vars.EMAIL_SENDER` stays `cloudflare`, and `workers_dev` and `preview_urls` stay `false`. Never pass `--var` to `wrangler deploy`, and never set variables in the dashboard: a fake provider, or a sender that only logs the link, opens sign-in to anyone.
 
 In `apps/api/src/email-sender.ts`, set `SENDER_ADDRESS` and `REPLY_TO_ADDRESS` to your own addresses.
 
