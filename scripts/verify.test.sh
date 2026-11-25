@@ -14,7 +14,7 @@ stub_path="$repository/node_modules/.bin:$stub_bin:$linked_bin:/usr/bin:/bin"
 
 DEFAULT_NODE_VERSION=v24.7.0
 OTHER_NODE_VERSION=v25.0.0
-ALL_GATES="doctor format secrets typecheck audit unit macos"
+ALL_GATES="doctor format secrets typecheck audit unit e2e macos"
 MACOS_GATES="doctor format secrets audit shape macos"
 DOCS_GATES="doctor format secrets audit shape"
 TYPES_PACKAGES="@todz/example @todz/types"
@@ -95,6 +95,7 @@ new_repository() {
   mkdir -p "$repository/scripts" "$repository/.agents/hooks" "$repository/.agents/skills/x" "$repository/.github/scripts" "$repository/.github/workflows" "$repository/docs"
   cp "$source_root/scripts/verify.sh" "$source_root/scripts/verify-gates.tsv" "$repository/scripts/"
   write_package apps/example @todz/example '{"@todz/types":"workspace:*"}'
+  write_package apps/api @todz/api '{}'
   write_package libs/types @todz/types '{}'
   write_package tools/repository-shape @todz/repository-shape '{}'
   printf '#!/usr/bin/env bash\n[[ "${1:-}" == --fix ]] && { echo "install $2"; exit 0; }\necho doctor >> "$STUB_LOG"\n' > "$repository/.agents/hooks/doctor.sh"
@@ -142,6 +143,22 @@ expect_line "a scenario" "$output" class tooling
 classify docs/self-host.md
 expect_line "the self-host guide" "$output" class product
 expect_line "the self-host guide" "$output" gates "doctor format secrets audit shape unit"
+
+expect_line "the self-host guide" "$output" packages "@todz/api"
+
+classify .env.example
+expect_line "the environment template" "$output" gates "doctor format secrets audit shape unit"
+expect_line "the environment template" "$output" packages "@todz/api"
+
+for site_path in apps/api/src/site/landing-page.ts apps/api/public/landing/x.png apps/api/e2e/landing.spec.ts apps/api/playwright.config.ts; do
+  classify "$site_path"
+  expect_line "$site_path" "$output" class product
+  expect_line "$site_path" "$output" gates "doctor format secrets typecheck audit shape unit e2e"
+  expect_line "$site_path" "$output" packages "@todz/api"
+done
+
+classify apps/example/src/a.ts
+expect_no_match "an application change outside the site skips the end-to-end suite" "$output" e2e
 
 classify docs/adr/0001-x.md
 expect_line "an ADR" "$output" class docs
