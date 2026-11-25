@@ -98,6 +98,7 @@ extension AppModel {
     }
 
     private func cachedProject(identifier: String) -> ProjectCache? {
+        cacheWriter.flush()
         do {
             return try store.readProject(identifier: identifier)
         } catch {
