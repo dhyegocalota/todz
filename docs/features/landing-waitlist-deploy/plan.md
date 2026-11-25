@@ -31,6 +31,6 @@ One commit after the run.
 
 ## Z. Prove and ship
 
-- [ ] **Tester run**
-- [ ] **Reviewer**
-- [ ] **/open-pr**
+- [x] **Tester run:** 11 of 11, no defect — evidence: 0de5c4b; the review's two read checks added and run by the lead.
+- [x] **Reviewer:** WITH RESERVATIONS, LOW; six MINORs: rows 11 and 15 completed by running the two commands, the spec's read list widened with its two checks, rows 8 and 12 kept in landing-deploy's wording, and these ticks with the status flip. Security: CLEAR.
+- [x] **/open-pr:** gates passed.

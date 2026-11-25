@@ -49,4 +49,4 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 | [`landing`](landing/) | todz.app: one short, polished page with the waitlist form, real screenshots and the self-host guide, served by the same Worker by host | Shipped 2026-11-25 ([PR #25](https://github.com/dhyegocalota/todz/pull/25)) |
 | [`landing-deploy`](landing-deploy/) | The run of the deploy runbook that put todz.app live, recorded | Shipped 2026-11-25 ([PR #26](https://github.com/dhyegocalota/todz/pull/26)) |
 | [`landing-waitlist`](landing-waitlist/) | The todz.app form keeps the address and mails a confirmation once, behind three limits and Turnstile, failing closed | Shipped 2026-11-25 ([PR #27](https://github.com/dhyegocalota/todz/pull/27)) |
-| [`landing-waitlist-deploy`](landing-waitlist-deploy/) | The run of the deploy runbook that applied the waitlist migration and put the join route live, recorded | Building |
+| [`landing-waitlist-deploy`](landing-waitlist-deploy/) | The run of the deploy runbook that applied the waitlist migration and put the join route live, recorded | Shipped 2026-11-25 ([PR #28](https://github.com/dhyegocalota/todz/pull/28)) |

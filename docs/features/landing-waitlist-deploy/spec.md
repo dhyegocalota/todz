@@ -1,6 +1,6 @@
 # Landing waitlist deploy
 
-**Status:** Building
+**Status:** Shipped 2026-11-25
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-25 by PROMPT.md "Publishing on todz.app" (the loop runs `deploy-the-api.md` from `main` and records it) and [ADR 0044](../../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md) §6
 **ADRs:** [0044](../../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md), [0050](../../adr/0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md)
@@ -18,5 +18,5 @@
 ## Test list
 
 - The run-log shape test stays green with the new rows.
-- A tester re-reads production, read-only, and confirms each row a read can confirm: the migration list, the `waitlist` table, the version at 100 percent with its D1 binding and six limiters, the smoke answers, the waitlist probe answering 503 with a count of 0, and `sign_in_unavailable`.
+- A tester re-reads production, read-only, and confirms each row a read can confirm: the migration list, the `waitlist` table, the version at 100 percent with its D1 binding and six limiters, the smoke answers, the `www` redirect, plain HTTP answering 301, the waitlist probe answering 503 with a count of 0, and `sign_in_unavailable`. The limiter's 429 is not re-read, because a re-read spends the quota it checks.
 - The rows carry no token, secret, link or address.
