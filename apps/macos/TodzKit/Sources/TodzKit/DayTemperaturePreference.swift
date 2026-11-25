@@ -15,6 +15,6 @@ public struct DayTemperaturePreference {
     }
 
     public var isOn: Bool {
-        fatalError("DayTemperaturePreference.isOn is not implemented")
+        domain.value(forKey: Self.isOnStorageKey) as? Bool == true
     }
 }
