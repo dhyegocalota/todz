@@ -49,5 +49,5 @@ One short run of a scratch copy on 99879ede, launched with `open -g`: with its w
 - No Quit item in the popover; while hidden, quitting is ⌘Q with the popover key or opening the window first. The ADR records it.
 - The AppKit wiring has no unit test; only the rule and the preference do.
 - A normal launch with a window may briefly apply accessory if SwiftUI shows its window after the launch hop; the window becoming key switches back. Not observed in the scratch check.
-- Siri intents are on `feat/siri-shortcuts`, not on this branch; their intent-launch deferral (ADR 0066) does not touch the activation policy, so the merge should be clean in `AppDelegate.applicationDidFinishLaunching` (both add lines there).
+- Since the merge of `origin/main` with siri-shortcuts: an intent launch starts with the `.prohibited` policy (ADR 0066 reads it as "not engaged yet"), and `applyActivationPolicy` returns early while the policy is prohibited, so the app never flips it and the deferred start of the day close and the morning glance still waits for the owner. Break it by: a Siri or Shortcuts intent with todz not running, then `lsappinfo` (expect not `Foreground`) and no day close or glance until the owner clicks the menu bar item.
 - `applicationShouldHandleReopen` is not implemented; SwiftUI's default reopen is relied on and was not exercised.

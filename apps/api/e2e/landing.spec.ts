@@ -85,11 +85,14 @@ const ANSWERED_LINES: { name: string; answer: (route: Route) => Promise<void>; l
 const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
 const MOVED_PERMANENTLY_STATUS = 301;
 const DOCS_REDIRECT_CACHE_CONTROL = 'max-age=3600';
-const HEADER_GUIDE_LINK = '.site-header .nav-link';
-const FOOTER_GUIDE_LINK = '.site-footer .footer-link';
+const DOCS_INSTALL_URL = 'https://docs.todz.app/install-on-mac';
+const HEADER_GUIDE_LINK = `.site-header .nav-link[href="${DOCS_SELF_HOST_URL}"]`;
+const FOOTER_GUIDE_LINK = `.site-footer .footer-link[href="${DOCS_SELF_HOST_URL}"]`;
+const HEADER_INSTALL_LINK = `.site-header .nav-link[href="${DOCS_INSTALL_URL}"]`;
+const FOOTER_INSTALL_LINK = `.site-footer .footer-link[href="${DOCS_INSTALL_URL}"]`;
 const MAXIMUM_DARK_CHANNEL = 40;
 const SUBPIXEL_TOLERANCE = 0.5;
-const KEYBOARD_ORDER = ['.skip-link', '.site-header .brand', '.site-header .nav-link', '#join-email', '#join .join-button'];
+const KEYBOARD_ORDER = ['.skip-link', '.site-header .brand', HEADER_GUIDE_LINK, HEADER_INSTALL_LINK, '#join-email', '#join .join-button'];
 const CREDIT_LINK = '.site-footer .footer-credit-link';
 const CREDIT_TEXT = 'todz is a product of Logic Bit, made in Brazil';
 const CREDIT_WEBSITE = 'https://logicbit.com.br';
@@ -693,6 +696,20 @@ test.describe('self-host guide', () => {
     await page.goto(SitePath.Landing);
     await expect(page.locator(HEADER_GUIDE_LINK)).toHaveAttribute('href', DOCS_SELF_HOST_URL);
     await expect(page.locator(FOOTER_GUIDE_LINK)).toHaveAttribute('href', DOCS_SELF_HOST_URL);
+  });
+
+  test('the header and footer links open the Mac install page on the docs', async ({ page }) => {
+    await page.goto(SitePath.Landing);
+    await expect(page.locator(HEADER_INSTALL_LINK)).toBeVisible();
+    await expect(page.locator(FOOTER_INSTALL_LINK)).toBeVisible();
+  });
+
+  test('the narrow header shows the short install label', async ({ page }) => {
+    onlyOn(ProjectName.Mobile);
+    await page.goto(SitePath.Landing);
+    await expect(page.locator(`${HEADER_INSTALL_LINK} .label-short`)).toHaveText('Install');
+    await expect(page.locator(`${HEADER_INSTALL_LINK} .label-short`)).toBeVisible();
+    await expect(page.locator(`${HEADER_INSTALL_LINK} .label-long`)).toBeHidden();
   });
 
   test(`${SitePath.SelfHost} answers 301 to the guide on the docs`, async ({ request }) => {

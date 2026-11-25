@@ -31,6 +31,8 @@ extension AppDelegate {
 
     // NB ADR 0074: the policy follows the visible windows that can become main, so the popover and the glance never count.
     private func applyActivationPolicy(closing closingWindow: NSWindow?) {
+        let isLaunchedForAnIntent = NSApp.activationPolicy() == .prohibited
+        guard !isLaunchedForAnIntent else { return }
         let visibleWindowCount = NSApp.windows.filter { $0 !== closingWindow && $0.isVisible && $0.canBecomeMain }.count
         let activation = ActivationPolicyRule.policy(isSettingOn: menuBarOnlyPreference.isOn, visibleWindowCount: visibleWindowCount)
         let policy = activationPolicy(activation)
