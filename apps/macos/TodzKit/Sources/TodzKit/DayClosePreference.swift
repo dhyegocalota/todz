@@ -26,7 +26,7 @@ public struct DayClosePreference {
         return minutes
     }
 
-    var isOn: Bool {
+    public var isOn: Bool {
         domain.value(forKey: Self.isOnStorageKey) as? Bool == true
     }
 

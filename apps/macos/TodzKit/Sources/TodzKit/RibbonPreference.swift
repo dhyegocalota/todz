@@ -17,14 +17,17 @@ public struct RibbonPreference {
     }
 
     public static func pickerCadence(stored: String) -> RibbonCadence {
-        fatalError("RibbonPreference.pickerCadence is not implemented")
+        guard let cadence = RibbonCadence(rawValue: stored) else { return cadenceByDefault }
+        return cadence
     }
 
     var isOn: Bool {
-        fatalError("RibbonPreference.isOn is not implemented")
+        domain.value(forKey: Self.isOnStorageKey) as? Bool == true
     }
 
     var cadence: RibbonCadence? {
-        fatalError("RibbonPreference.cadence is not implemented")
+        guard let stored = domain.value(forKey: Self.cadenceStorageKey) else { return Self.cadenceByDefault }
+        guard let text = stored as? String else { return nil }
+        return RibbonCadence(rawValue: text)
     }
 }
