@@ -14,6 +14,10 @@ export type Env = {
   WAITLIST_LIMITER?: RateLimit;
   WAITLIST_ADDRESS_LIMITER?: RateLimit;
   WAITLIST_GLOBAL_LIMITER?: RateLimit;
+  ADMIN_EMAIL?: string;
+  ADMIN_LIMITER?: RateLimit;
+  ADMIN_ADDRESS_LIMITER?: RateLimit;
+  ADMIN_GLOBAL_LIMITER?: RateLimit;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
 };

@@ -37,6 +37,11 @@ const GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8603';
 const WAITLIST_RATE_LIMIT_NAMESPACE_ID = '8604';
 const WAITLIST_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8605';
 const WAITLIST_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8606';
+const ADMIN_RATE_LIMIT_NAMESPACE_ID = '8607';
+const ADMIN_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8608';
+const ADMIN_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8609';
+const ADMIN_EMAIL = 'hello@todz.app';
+const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
 const RATE_LIMIT_PERIOD_SECONDS = 60;
@@ -130,6 +135,7 @@ describe('the api source', () => {
       EMAIL_SENDER: 'cloudflare',
       PUBLIC_ORIGIN: PRODUCTION_ORIGIN,
       SITE_ORIGIN,
+      ADMIN_EMAIL,
     });
   });
 
@@ -164,7 +170,7 @@ describe('the api source', () => {
     expect(configuration.preview_urls).toBe(false);
   });
 
-  test('the wrangler configuration limits sign-in and the waitlist per client, per address and globally with the shared limits', () => {
+  test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally with the shared limits', () => {
     expect(wranglerConfiguration().ratelimits).toEqual([
       {
         name: 'SIGN_IN_LIMITER',
@@ -195,6 +201,21 @@ describe('the api source', () => {
         name: 'WAITLIST_GLOBAL_LIMITER',
         namespace_id: WAITLIST_GLOBAL_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('WAITLIST_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'ADMIN_LIMITER',
+        namespace_id: ADMIN_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('ADMIN_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'ADMIN_ADDRESS_LIMITER',
+        namespace_id: ADMIN_ADDRESS_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('ADMIN_ADDRESS_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'ADMIN_GLOBAL_LIMITER',
+        namespace_id: ADMIN_GLOBAL_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('ADMIN_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
   });
@@ -239,15 +260,26 @@ describe('the api source', () => {
       const command = apiScript(script);
       expect(command.indexOf(MIGRATIONS_COMMAND)).toBeGreaterThanOrEqual(0);
       expect(command.indexOf(MIGRATIONS_COMMAND)).toBeLessThan(command.indexOf(DEV_COMMAND));
-      [...variables, ...TURNSTILE_TEST_KEY_VARIABLES, LOCAL_ORIGIN_VARIABLE, LOCAL_SITE_ORIGIN_VARIABLE, LOCAL_UPSTREAM_FLAG].forEach(
-        (fragment) => expect(command).toContain(fragment),
-      );
+      [
+        ...variables,
+        ...TURNSTILE_TEST_KEY_VARIABLES,
+        LOCAL_ORIGIN_VARIABLE,
+        LOCAL_SITE_ORIGIN_VARIABLE,
+        LOCAL_ADMIN_EMAIL_VARIABLE,
+        LOCAL_UPSTREAM_FLAG,
+      ].forEach((fragment) => expect(command).toContain(fragment));
     },
   );
 
   test('the dev:site script runs a second instance on port 8788 with the same overrides, upstream included, so request urls carry the site host', () => {
     const command = apiScript(DEV_SITE_SCRIPT);
-    const siteFragments = [LOCAL_SITE_PORT_FLAG, LOCAL_SITE_UPSTREAM_FLAG, LOCAL_SITE_ORIGIN_VARIABLE, LOCAL_ORIGIN_VARIABLE];
+    const siteFragments = [
+      LOCAL_SITE_PORT_FLAG,
+      LOCAL_SITE_UPSTREAM_FLAG,
+      LOCAL_SITE_ORIGIN_VARIABLE,
+      LOCAL_ORIGIN_VARIABLE,
+      LOCAL_ADMIN_EMAIL_VARIABLE,
+    ];
     siteFragments.forEach((fragment) => expect(command).toContain(fragment));
     expect(command).not.toContain(LOCAL_UPSTREAM_FLAG);
     expect(command.indexOf(MIGRATIONS_COMMAND)).toBeLessThan(command.indexOf(DEV_COMMAND));
