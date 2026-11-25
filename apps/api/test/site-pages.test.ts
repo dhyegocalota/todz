@@ -19,8 +19,9 @@ const UNUSABLE_SITE_KEY = 'key"><script>';
 const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const TURNSTILE_SCRIPT_TAG = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
 const FAILURE_CALLBACK = 'waitlistChallengeFailed';
-const FAILURE_CALLBACK_ATTRIBUTES = ['data-error-callback', 'data-expired-callback', 'data-timeout-callback'];
-const WIDGET_HTML = `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="always" data-size="flexible" data-theme="auto" data-callback="waitlistTokenReady" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${FAILURE_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div>`;
+const EXPIRED_CALLBACK = 'waitlistTokenExpired';
+const FAILURE_CALLBACK_ATTRIBUTES = ['data-error-callback', 'data-timeout-callback'];
+const WIDGET_HTML = `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="always" data-size="flexible" data-theme="auto" data-callback="waitlistTokenReady" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${EXPIRED_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div>`;
 const WIDGET_PATTERN = /<div class="cf-turnstile"[^>]*><\/div>/g;
 const CAPSULE_END = '</button>\n</div>';
 const NOTICE_PATTERN = /<p id="([a-z]+)-notice" [^>]*role="status"[^>]*tabindex="-1"[^>]*>[\s\S]*?<\/span>([^<]*)<\/p>/;
@@ -342,13 +343,15 @@ describe('the landing', () => {
     },
   );
 
-  test('the widget names one function for its error, expired and timeout callbacks, and the page script assigns it on window', async () => {
+  test('the widget names one function for its error and timeout callbacks and another for its expiry, and the page script assigns both on window', async () => {
     const { html } = await widgetLandingPage(LandingNotice.None);
     const widget = html.match(WIDGET_PATTERN)?.[0];
     if (widget === undefined) throw new Error('the page has no widget');
     const named = FAILURE_CALLBACK_ATTRIBUTES.map((attribute) => new RegExp(`${attribute}="([^"]*)"`).exec(widget)?.[1]);
     expect(named).toEqual(FAILURE_CALLBACK_ATTRIBUTES.map(() => FAILURE_CALLBACK));
+    expect(widget).toContain(`data-expired-callback="${EXPIRED_CALLBACK}"`);
     expect(pageScriptOf(html)).toContain(`window.${FAILURE_CALLBACK} =`);
+    expect(pageScriptOf(html)).toContain(`window.${EXPIRED_CALLBACK} =`);
   });
 
   test.each([
@@ -369,7 +372,16 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
   const STAMP_INPUT_PATTERN = /<input [^>]*type="hidden"[^>]*name="stamp"[^>]*value="([^"]*)"/g;
   const HONEYPOT_PATTERN =
     /<div class="join-extra" aria-hidden="true">\s*<label [^>]*for="([^"]+)">[^<]+<\/label>\s*<input [^>]*id="\1"[^>]*>\s*<\/div>/;
-  const HONEYPOT_INPUT_ATTRIBUTES = ['name="website"', 'type="text"', 'tabindex="-1"', 'autocomplete="off"'];
+  const HONEYPOT_INPUT_ATTRIBUTES = [
+    'name="todz_fax"',
+    'type="text"',
+    'tabindex="-1"',
+    'autocomplete="off"',
+    'data-1p-ignore',
+    'data-lpignore="true"',
+    'data-bwignore',
+    'data-form-type="other"',
+  ];
   const WIDGET_ATTRIBUTES = [
     'data-appearance="always"',
     'data-size="flexible"',
@@ -377,7 +389,7 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
     'data-action="waitlist"',
     'data-callback="waitlistTokenReady"',
     'data-error-callback="waitlistChallengeFailed"',
-    'data-expired-callback="waitlistChallengeFailed"',
+    'data-expired-callback="waitlistTokenExpired"',
     'data-timeout-callback="waitlistChallengeFailed"',
   ];
   const FIRST_RENDER = 1_790_000_000_000;
@@ -433,6 +445,28 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
     JOIN_FORMS.forEach(({ id }, index) => {
       expect(forms[index]).toMatch(new RegExp(`<p id="${id}-notice"[^>]* role="status"[^>]*>[^<]*${LANDING_COPY.join.note}</p>`));
     });
+  });
+
+  test('the markup carries no aria-disabled, the page script sets it', async () => {
+    const { html } = await stampedLandingPage(LandingNotice.None);
+    expect(html).not.toMatch(/<[^>]*\saria-disabled=/);
+  });
+
+  test('the check frame reserves the height of the widget and the final card narrows its padding on a phone', () => {
+    expect(SITE_STYLE).toContain('.join-check{min-height:65px');
+    expect(SITE_STYLE).toMatch(/@media \(max-width:[^)]*\)\{[^}]*\.final-call\{padding-inline:var\(--space-4\)/);
+  });
+
+  test('the waiting button shows a blocked cursor and only the sending one a busy cursor', () => {
+    expect(SITE_STYLE).toContain('.join-button[aria-disabled=true]{cursor:not-allowed');
+    expect(SITE_STYLE).toContain('.join-form[data-join-state=sending] .join-button{cursor:progress');
+  });
+
+  test('a page without a challenge has no stamp, no widget and no aria-disabled', async () => {
+    const { html } = await landingPage(LandingNotice.None);
+    expect(stampsOf(html)).toEqual([]);
+    expect(html).not.toMatch(WIDGET_PATTERN);
+    expect(html).not.toMatch(/<[^>]*\saria-disabled=/);
   });
 
   test('no element carries an event handler attribute', async () => {

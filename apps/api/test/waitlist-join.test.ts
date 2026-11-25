@@ -44,7 +44,7 @@ const CLIENT_ADDRESS = '203.0.113.9';
 const EMAIL_FIELD = 'email';
 const TOKEN_FIELD = 'cf-turnstile-response';
 const STAMP_FIELD = 'stamp';
-const HONEYPOT_FIELD = 'website';
+const HONEYPOT_FIELD = 'todz_fax';
 const HONEYPOT_VALUE = 'https://spam.example';
 const FIXED_NOW = 1_790_000_000_000;
 const STAMP_AGE_PATIENT_MS = 2_500;
@@ -515,6 +515,21 @@ describe('an unguarded waitlist answers opens soon, 503, reads no body and keeps
     const run = await join({ email: address });
     await expectOpensSoon({ run });
     await expectNothingKept({ run, address });
+  });
+});
+
+describe('which Accept header asks for JSON', () => {
+  test.each([
+    ['application/json', true],
+    ['Application/JSON', true],
+    ['text/html, application/json;q=0.9', true],
+    ['application/json;q=0', false],
+    ['*/*', false],
+    ['text/html', false],
+    ['application/jsonp', false],
+  ])('%s', async (accept, isJson) => {
+    const run = await join({ accept });
+    expect(run.response.headers.get(HEADER_CONTENT_TYPE) === JSON_CONTENT_TYPE).toBe(isJson);
   });
 });
 
