@@ -42,13 +42,13 @@ apps/docs/{docs.json, *.mdx, logo/, favicon.svg}
 apps/docs/self-host.mdx ── pnpm site:generate ──▶ front matter title → "# Self-host todz" ──▶ markdownHtml
    ──▶ apps/api/src/site/generated/self-host-html.ts ──▶ todz.app/self-host   (until docs-cutover)
 
-pnpm --filter @todz/docs dev ──▶ pnpm dlx mint@4.3.91 dev --client-version 0.0.4077 ──▶ localhost:<free port>
+pnpm --filter @todz/docs dev ──▶ mint dev --client-version 0.0.4077 ──▶ localhost:<free port>
 pnpm verify (docs gate) ──▶ broken-links ──▶ validate ──▶ test:walk (Playwright against mint dev)
 ```
 
 ### Interfaces
 
-- `apps/docs/package.json` (`@todz/docs`, private): `dev` (`pnpm dlx mint@4.3.91 dev --client-version 0.0.4077`), `broken-links` (`pnpm dlx mint@4.3.91 broken-links`), `validate` (`pnpm dlx mint@4.3.91 validate`), `test:walk` (Playwright), `typecheck`. Dev dependencies: `@playwright/test` 1.61.0 and `@types/node` 24.19.2, the versions the repository already installs.
+- `apps/docs/package.json` (`@todz/docs`, private): `dev` (`mint dev --client-version 0.0.4077`), `broken-links` (`mint broken-links`), `validate` (`mint validate`), `test:walk` (Playwright), `typecheck`. Dev dependencies: `mint` 4.3.91 (exact, so the lockfile holds its integrity hashes), `@playwright/test` 1.61.0 and `@types/node` 24.19.2.
 - `apps/docs/docs.json`:
   - `name` `todz`; `theme` `mint`; `appearance.default` `system`; `favicon` `/favicon.svg`; `logo` `{ light: /logo/light.svg, dark: /logo/dark.svg, href: / }`.
   - `colors`: `primary` and `dark` are the landing's light `--color-accent` (`#2F5BFF`), `light` its dark `--color-accent` (`#7C95FF`); `background.color` is the landing's `--color-page` (`#F2F4FA` light, `#070812` dark).
@@ -77,7 +77,7 @@ pnpm verify (docs gate) ──▶ broken-links ──▶ validate ──▶ test
 | a page links a page or anchor that does not exist | `mint broken-links` prints `found N broken links` and exits 1; the `docs` gate stops |
 | a page does not parse as MDX, or `docs.json` breaks the schema | `mint validate` exits non-zero; the `docs` gate stops |
 | the pinned client throws in the browser | the walk's console check fails on the error |
-| the npm registry or Mintlify's client download is down | `pnpm dlx` fails; the `docs` gate is red until it answers, and its reason names that need; never skipped |
+| the npm registry or Mintlify's client download is down | the install or `mint dev` fails; the `docs` gate is red until it answers, and its reason names that need; never skipped |
 | the `@todz/docs` package is missing (a branch without it) | `--fail-if-no-match` fails the gate instead of passing on no match |
 | the MCP tools, agent commands, app labels, landing colours or `COMPANY` change | a shape test names the page and the fact that drifted |
 | the guide changes without `pnpm site:generate` | `generated-site.test.ts` and `site:check` fail, as today |
@@ -98,7 +98,7 @@ Revert the pull request: the guide returns to `docs/self-host.md`, the landing's
 | Does the loop create the `docs` DNS record? | a CNAME through `scripts/todz-cloudflare.sh`; none | none: the owner connected `docs.todz.app` in Mintlify's dashboard, and it already answers 200 | 2026-11-25 |
 | When does `/self-host` redirect to the docs? | this PR; a follow-up | the loop's call: `docs-cutover`, once `https://docs.todz.app/self-host` answers 200 with the guide after this feature's merge (ADR 0059 § 8) | 2026-11-25 |
 | The guide's links into a private repository | absolute GitHub URLs; plain text | the plan review's pick (R8): plain text, as the landing already renders them; no page links into the repository while it is private | 2026-11-25 |
-| `pnpm dlx` or a dev dependency for `mint` | `dlx` pinned; dev dependency | the loop's call: `dlx` pinned, as zapbip (ADR 0059 § 5) | 2026-11-25 |
+| `pnpm dlx` or a dev dependency for `mint` | `dlx` pinned; dev dependency | the loop's call: dev dependency, after the security review found `dlx` locks only the top level (ADR 0059 § 5) | 2026-11-25 |
 | Class of `apps/docs/*` in the gate map | `docs`; `product` | the loop's call: `product`, since readers see it (ADR 0059 § 6) | 2026-11-25 |
 
 ## Test strategy summary
