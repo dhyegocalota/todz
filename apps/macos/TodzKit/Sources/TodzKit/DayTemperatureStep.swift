@@ -21,4 +21,14 @@ public enum DayTemperatureStep: Sendable, Equatable {
         guard let started = startHours.last(where: { hour >= $0.hour }) else { return .plain }
         return started.step
     }
+
+    public static func countOpacity(
+        step: DayTemperatureStep,
+        isSettingOn: Bool,
+        isQuiet: Bool,
+        isContrastIncreased: Bool,
+        openCount: Int?
+    ) -> Double {
+        fatalError("DayTemperatureStep.countOpacity is not implemented")
+    }
 }

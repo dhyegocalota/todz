@@ -71,4 +71,8 @@ public struct CalendarDate: Codable, Sendable, Hashable, Comparable {
         guard let moved else { preconditionFailure(arithmeticFailure) }
         return CalendarDate.today(in: .gmt, at: moved)
     }
+
+    public func days(since earlier: CalendarDate) -> Int {
+        fatalError("CalendarDate.days is not implemented")
+    }
 }
