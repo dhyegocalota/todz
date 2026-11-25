@@ -129,6 +129,34 @@ private func checking() throws -> ServerSwitchFlow {
         #expect(flow.state == .switched(server: "localhost:8791"))
     }
 
+    @Test func closingClearsEveryLineACheckAndAQuestionButNotASwitchInFlight() throws {
+        let inUse = try address(inUseText)
+        var refused = ServerSwitchFlow()
+        _ = refused.submit(text: "todz.example.com", serverURL: inUse)
+        var alreadyInUse = ServerSwitchFlow()
+        _ = alreadyInUse.submit(text: inUseText, serverURL: inUse)
+        var notTodz = try checking()
+        notTodz.receive(outcome: .notTodz, isSignedIn: false, waitingChanges: 0)
+        var confirming = try checking()
+        confirming.receive(outcome: .matches, isSignedIn: true, waitingChanges: 0)
+        var switched = try checking()
+        switched.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
+        switched.finish(result: .switched, server: try address(newText))
+        var failed = try checking()
+        failed.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
+        failed.finish(result: .eraseFailed, server: try address(newText))
+        let closedStates = [refused, alreadyInUse, notTodz, try checking(), confirming, switched, failed].map { flow in
+            var closing = flow
+            closing.close()
+            return closing.state
+        }
+        #expect(closedStates.allSatisfy { $0 == .idle })
+        var switching = try checking()
+        switching.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
+        switching.close()
+        #expect(switching.state == .switching)
+    }
+
     @Test func resettingClearsAStatusButNotACheckInFlight() throws {
         var refused = ServerSwitchFlow()
         _ = refused.submit(text: "todz.example.com", serverURL: try address(inUseText))

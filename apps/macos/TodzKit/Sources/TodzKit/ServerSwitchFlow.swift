@@ -73,6 +73,8 @@ public struct ServerSwitchFlow: Equatable, Sendable {
         state = .idle
     }
 
+    public mutating func close() {}
+
     public mutating func reset() {
         guard !isBusy else { return }
         state = .idle
