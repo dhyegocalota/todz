@@ -9,6 +9,7 @@ The owner did this on 2026-11-25 in Mintlify's dashboard and on GitHub; the loop
 - Mintlify project `todz`, on the Hobby plan.
 - Source: the GitHub repository `dhyegocalota/todz`, through Mintlify's GitHub app.
 - Deploy branch `main`, content directory `apps/docs`.
+- The owner's confirmation, not the loop's: Mintlify's GitHub app is installed on this repository only, with read-only access, and pull request previews are off or require authentication, so an unmerged branch is never public.
 - Custom domain `docs.todz.app`, connected in the dashboard with SSL, serving Mintlify's starter kit until the first merge that touches `apps/docs`.
 
 ## Steps
