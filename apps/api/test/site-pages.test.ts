@@ -4,6 +4,7 @@ import guide from '../../docs/self-host.mdx?raw';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { LandingNotice, serveLandingPage } from '../src/site/landing-page';
+import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { serveSelfHostPage } from '../src/site/self-host-page';
 import { SITE_STYLE } from '../src/site/site-style';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
@@ -279,6 +280,18 @@ describe('the landing', () => {
     const sources = captures({ html, pattern: IMAGE_SOURCE_PATTERN });
     expect(sources.length).toBeGreaterThan(0);
     expect(sources.filter((source) => !source.startsWith(LANDING_ASSET_PREFIX))).toEqual([]);
+  });
+
+  test('serves every shot as WebP copies with sizes, and keeps the PNG as the fallback source', async () => {
+    const { html } = await landingPage(LandingNotice.None);
+    const shots = Object.entries(LANDING_SHOTS);
+    shots.forEach(([, { webp }]) => {
+      const srcset = webp.map(({ path, width }) => `${path} ${width}w`).join(', ');
+      const sizes = `${Math.min(...webp.map(({ width }) => width))}px`;
+      expect(html).toContain(`srcset="${srcset}" sizes="${sizes}"`);
+    });
+    const fallbackShots = shots.filter(([shot]) => shot !== LandingShot.WindowDark);
+    fallbackShots.forEach(([, { path }]) => expect(html).toContain(`src="${path}" srcset="`));
   });
 
   test('has the two waitlist forms, each posting to /join with the fragment that returns to it', async () => {
