@@ -19,8 +19,8 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
    pnpm perf load
    ```
 
-   Expected: it seeds a fresh owner, prints one row per scenario under the header `scenario | requests | rate/s | p50 ms | p95 ms | p99 ms | max ms | 5xx | directory ms | project ms | verdict`, then `done tasks at the start: 4900`, and exits 0 with every verdict `PASS`. The `directory ms` and `project ms` columns are the medians of the `Server-Timing` header and stay empty until the Worker sends it.
-   If it fails: a `FAIL` names the scenario; read its `directory ms` and `project ms` to see whether D1 or the project's Durable Object holds the time, and `5xx` for errors. Two runs of the same commit that differ by more than 30% at p95 mean a loaded Mac; close other work, run three times and record the median run in the table.
+   Expected: it seeds a fresh owner and prints `seeded: 5000 tasks in the hot project (4900 done), <n> projects` before its first timed request, then one row per scenario under the header `scenario | requests | rate/s | p50 ms | p95 ms | p99 ms | max ms | 5xx | directory ms | project ms | verdict`, then `done tasks at the start: 4900`, and exits 0 with every verdict `PASS`. The `directory ms` and `project ms` columns are the medians of the `Server-Timing` header and stay empty until the Worker sends it.
+   If it fails: a `FAIL` names the scenario; read its `directory ms` and `project ms` to see whether D1 or the project's Durable Object holds the time, and `5xx` for errors. Each request has 30 seconds and the run 10 seconds past its duration, so a Worker that accepts connections and never answers ends the run with the failures counted, never a hang. Two runs of the same commit that differ by more than 30% at p95 mean a loaded Mac; close other work, run three times and record the median run in the table.
 
 3. **Stress the local Worker until it breaks.** The same mix from 50 requests a second, times 1.5 every 30 seconds, until failures pass 1% or p99 passes 2 seconds:
 
@@ -28,7 +28,7 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
    pnpm perf stress
    ```
 
-   Expected: one line per step, then `held: <rate> a second; broke: <rate>`; the exit is 0 when the step that held is 200 or more. Write the rate that held, the rate that broke and the resource that failed first in the table.
+   Expected: one line per step, then `held: <rate> a second; broke: <rate>`; the exit is 0 when the first step that broke is 200 or more, whatever the step that held before it (the steps are 1.5 times apart). Write the rate that held, the rate that broke and the resource that failed first in the table. One Node process drives the load and the Worker runs on the same Mac, so the number bounds the lab, never production.
    If it fails: a breaking point under 200 a second goes through the decision rule of ADR 0061, point 9: read the failed step's p99 and `5xx` against the `Server-Timing` split of step 2 to name the first resource, and record it with its number whether it is fixed or not.
 
 4. **Measure the app's cold launch.** Seed the owner the app signs in with, sign the Debug app in with the printed identity, quit it, then launch it five times in the background, each quit before the next:
@@ -39,7 +39,7 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
    pnpm perf app
    ```
 
-   Expected: `seed` prints `identity: todz-perf-seed`, the hot project and `done tasks: 4900`. After five launches `app` prints `launch: median <n> ms, max <n> ms over 5 launches PASS`. The app logs only integers under its bundle identifier, category `perf`; read them yourself with `log show --last 10m --predicate 'category == "perf"'`.
+   Expected: `seed` prints `identity: todz-perf-seed`, the hot project and `done tasks: 4900`. After five launches `app` prints `launch: median <n> ms, max <n> ms over 5 launches PASS`. The app logs only integers under its bundle identifier, category `perf`; read them yourself with `/usr/bin/log show --info --last 10m --predicate '(subsystem == "dev.todz.Todz" OR subsystem == "dev.todz.Todz.debug") AND category == "perf"'` (`--info` because the probe logs at info level, `/usr/bin/log` because `log` is a builtin of zsh).
    If it fails: no `perf` line means the argument was not passed (the probe reads the process arguments only, never a default); a miss names the launch, so run the five again and look at which phase is slow before changing anything. Launches stay few and short because a window that takes focus disturbs the owner.
 
 5. **Measure the scripted scroll.** One launch with the scroll walk, after the probe's `launch-ready` line:
@@ -59,8 +59,8 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
    pnpm perf app
    ```
 
-   Expected: `soak: <n> updates, <n> lists, 0 failed`, and `app` prints `footprint: <n> MB at 5 minutes, <n> MB after 60 samples PASS`: the last footprint is at most 10% above the one at minute 5.
-   If it fails: growth means something keeps what the soak changes; compare the two numbers after a second soak before blaming a cache.
+   Expected: `soak: <n> updates, <n> lists, 0 failed`, and `app` prints `footprint: <n> MB at 5 minutes, <n> MB after 60 samples PASS`: the last footprint is at most 10% above the one at minute 5. Each launch is its own series, told apart by its process identifier, and the launch with the most samples is the one judged.
+   If it fails: growth means something keeps what the soak changes; compare the two numbers after a second soak before blaming a cache. `footprint: not enough samples: the longest launch has <n> of 11 SKIP` means no launch lasted 5 minutes; it hides no other verdict and the exit stays 0.
 
 7. **Record the model benchmark.** The app's model work for one change at 5,000 tasks, printed and never asserted:
 
@@ -94,13 +94,13 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
 10. **Run the bounded production load.** Off-peak, at most one run a day, with the Free-plan line below in mind. In one terminal, write the window of the Worker's own log; in another, run the load, which sends only `POST https://api.todz.app/mcp` at 50 a second for at most 120 seconds, adds for the first 100 seconds, and writes each answered `add`'s number and send time to the file:
 
     ```bash
-    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler tail todz-api --format json > <scratch>/tail.json
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler tail todz-api --format json | jq -R -c 'fromjson? | {outcome, cpuTime}' > <scratch>/tail.json
     pnpm perf production > <scratch>/sends.jsonl
     pnpm perf tail <scratch>/tail.json
     ```
 
-    Expected: the report goes to the error output, one row per scenario (`list`, `add`, `done`), then `dropped`, `failed requests` and `open tasks left: 0`; `tail` prints the count per outcome and `cpuTime p50` and `p99`. The harness refuses a rate over 50, a duration over 120 seconds, any scenario but MCP, any path but `POST /mcp`, any redirect, a retry after a 401, more than 50 in flight and anything after 120 seconds. Its tasks are titled `todz-perf <run> #<slot>`. One run sends at most 6,000 requests (50 a second for 120 seconds, cleanup inside), reads about 6,000 directory rows (one key lookup each; the 2026-07-28 era writes none) and writes about 12,000 project-store rows (about 1,000 adds and 1,000 completions, each a task row, a history row and the counters), well under the daily caps of the Free plan, which is why one run a day, off-peak, is the rule.
-    If it fails: a 5xx or an `exceededCpu` outcome in `tail` is a server finding (the Free plan allows 10 ms of CPU a request), never a harness bug; the run ends by itself within 120 seconds and nothing needs rolling back. A 429, a 3xx or a refused request counts as a failure on its row.
+    Expected: the error output prints `run: <id>` before the first request, then the report: one row per scenario (`list`, `add`, `done`), `dropped`, `failed requests` and `open tasks left: 0`; `tail` prints the count per outcome and `cpuTime p50` and `p99`. The tail reaches the disk only as `outcome` and `cpuTime` per event, because `jq` drops the rest (URLs, headers, logs) before the file is written. The harness refuses a rate over 50, a duration over 120 seconds, any scenario but MCP, any path but `POST /mcp`, any redirect, a retry after a 401, more than 50 in flight, more than 6,010 requests and anything after 120 seconds; it refuses to start when the project holds more than 20 open tasks that are not `todz-perf` tasks; it stops sending after the first 401 or 10 failures in a row; and Ctrl-C stops it, runs the cleanup of its own run and exits 1. Its tasks are titled `todz-perf <run> #<slot>`. One run sends at most 6,000 requests (50 a second for 120 seconds, cleanup inside), reads about 6,000 directory rows (one key lookup each; the 2026-07-28 era writes none) and writes about 12,000 project-store rows (about 1,000 adds and 1,000 completions, each a task row, a history row and the counters), well under the daily caps of the Free plan, which is why one run a day, off-peak, is the rule.
+    If it fails: a 5xx or an `exceededCpu` outcome in `tail` is a server finding (the Free plan allows 10 ms of CPU a request), never a harness bug; the run ends by itself within 120 seconds and nothing needs rolling back. A run that stopped on a 401 or on 10 failures in a row leaves `open tasks left: null`; run step 11 with the `run:` identifier it printed. A 429, a 3xx or a refused request counts as a failure on its row.
 
 11. **Check that nothing is left open.** The report's `open tasks left` is the count of a final list filtered by the run's own prefix. When it is not 0:
 
@@ -125,9 +125,10 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
 
     ```bash
     security delete-generic-password -s todz-perf-key
+    rm <scratch>/tail.json
     ```
 
-    Expected: the command prints the deleted item's attributes; `security find-generic-password -s todz-perf-key` exits 44.
+    Expected: the command prints the deleted item's attributes; `security find-generic-password -s todz-perf-key` exits 44; the saved tail window is gone.
     If it fails: a missing item is already deleted; revoke the key in the app first and check it no longer opens `/mcp`.
 
 14. **Record the numbers.** One row per scenario of every run in the table below: the date, the short commit, where it ran (`local`, `app` or `production`), the scenario, the load, the hot project's done count at the start of the run, p50, p95, p99, the 5xx count and the verdict. A candidate the decision rule did not select goes in the second table with its number.
