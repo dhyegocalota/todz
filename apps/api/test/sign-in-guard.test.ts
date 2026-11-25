@@ -203,6 +203,36 @@ describe('the Turnstile token on POST /owner/sign-in-links', () => {
     expect(sent).toEqual([]);
   });
 
+  test('a malformed address answers 400 invalid_request before siteverify is asked', async () => {
+    const siteverify = acceptingSiteverify();
+    const { workerEnv, sent } = guarded();
+    await expectInvalid(await publicLink({ workerEnv, email: 'not-an-address', turnstileToken: REQUEST_LINK_TOKEN }));
+    expect(siteverify).not.toHaveBeenCalled();
+    expect(sent).toEqual([]);
+  });
+
+  test.each([
+    ['no public origin', undefined],
+    ['an invalid public origin', 'https://todz.app/'],
+  ])('%s answers 503 sign_in_unavailable before the body', async (_name, publicOrigin) => {
+    const siteverify = acceptingSiteverify();
+    const { workerEnv, sent } = guarded({ PUBLIC_ORIGIN: publicOrigin });
+    const response = await serveOwnerCall({
+      call: {
+        method: 'POST',
+        path: LINKS_PATH,
+        rawBody: 'not json',
+        headers: { [CLIENT_ADDRESS_HEADER]: CLIENT_ADDRESS },
+        origin: PUBLIC_REQUEST_ORIGIN,
+      },
+      now: CLOCK_NOW,
+      workerEnv,
+    });
+    await expectUnavailable(response);
+    expect(siteverify).not.toHaveBeenCalled();
+    expect(sent).toEqual([]);
+  });
+
   test('no secret on a local host answers 503 too', async () => {
     const output = consoleOutput();
     await expectUnavailable(await requestLink({ workerEnv: emailEnv({ TURNSTILE_SECRET_KEY: undefined }) }));
