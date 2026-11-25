@@ -38,7 +38,6 @@ private func glanceContent(openCount: Int, workspaceIdentifier: String = "acme")
 @MainActor private final class FakeScreen {
     var isLocked = false
     var isMirrored = false
-    var isCaptured = false
 }
 
 @MainActor private final class FakeFront {
@@ -100,7 +99,6 @@ private func glanceContent(openCount: Int, workspaceIdentifier: String = "acme")
             content: { fakeContent.content },
             isScreenLocked: { screen.isLocked },
             isScreenMirrored: { screen.isMirrored },
-            isScreenCaptured: { screen.isCaptured },
             isTodayInFront: { front.isInFront },
             showPanel: { await panel.show($0) },
             closePanel: { panel.close() }
@@ -432,17 +430,6 @@ private func glanceContent(openCount: Int, workspaceIdentifier: String = "acme")
         await harness.coordinator.shownContentReviewing?.value
         #expect(harness.panel.closings == 1)
         #expect(!harness.coordinator.isShowing)
-    }
-
-    @Test func aCapturedScreenShowsNothingUnmarkedAndTheNextChanceAfterTheCaptureShows() async throws {
-        let harness = try GlanceHarness()
-        harness.screen.isCaptured = true
-        await harness.coordinator.check()
-        #expect(harness.panel.attempts == 0)
-        #expect(harness.lastShownDay == nil)
-        harness.screen.isCaptured = false
-        await harness.coordinator.check()
-        #expect(harness.panel.attempts == 1)
     }
 
     @Test func aRetryWithNoLockedChanceShowsNothing() async throws {

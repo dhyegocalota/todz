@@ -8,11 +8,6 @@ private let displayNumberKey = NSDeviceDescriptionKey("NSScreenNumber")
     return CGDisplayIsInMirrorSet(displayNumber.uint32Value) != 0
 }
 
-@MainActor private func isMenuBarScreenCaptured() -> Bool {
-    guard let displayNumber = NSScreen.screens.first?.deviceDescription[displayNumberKey] as? NSNumber else { return true }
-    return CGDisplayIsCaptured(displayNumber.uint32Value) != 0
-}
-
 extension MorningGlanceCoordinator {
     @MainActor static func app(
         model: AppModel,
@@ -28,7 +23,6 @@ extension MorningGlanceCoordinator {
             content: { model.morningGlanceContent },
             isScreenLocked: { ScreenLock.isLocked },
             isScreenMirrored: isMenuBarScreenMirrored,
-            isScreenCaptured: isMenuBarScreenCaptured,
             isTodayInFront: {
                 MorningGlanceFront.isInFront(
                     isDayCloseDue: dayClose.isDueAndIdle,

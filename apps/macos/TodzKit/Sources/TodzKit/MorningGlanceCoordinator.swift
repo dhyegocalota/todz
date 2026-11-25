@@ -31,7 +31,6 @@ private enum PanelState {
     @ObservationIgnored private let content: () -> MorningGlanceContent?
     @ObservationIgnored private let isScreenLocked: () -> Bool
     @ObservationIgnored private let isScreenMirrored: () -> Bool
-    @ObservationIgnored private let isScreenCaptured: () -> Bool
     @ObservationIgnored private let isTodayInFront: () -> Bool
     @ObservationIgnored private let showPanel: (MorningGlanceContent) async -> Bool
     @ObservationIgnored private let closePanel: () -> Void
@@ -44,7 +43,6 @@ private enum PanelState {
         content: @escaping () -> MorningGlanceContent?,
         isScreenLocked: @escaping () -> Bool,
         isScreenMirrored: @escaping () -> Bool,
-        isScreenCaptured: @escaping () -> Bool,
         isTodayInFront: @escaping () -> Bool,
         showPanel: @escaping (MorningGlanceContent) async -> Bool,
         closePanel: @escaping () -> Void
@@ -56,7 +54,6 @@ private enum PanelState {
         self.content = content
         self.isScreenLocked = isScreenLocked
         self.isScreenMirrored = isScreenMirrored
-        self.isScreenCaptured = isScreenCaptured
         self.isTodayInFront = isTodayInFront
         self.showPanel = showPanel
         self.closePanel = closePanel
@@ -117,7 +114,6 @@ private enum PanelState {
             return
         }
         guard !isScreenMirrored() else { return }
-        guard !isScreenCaptured() else { return }
         guard !isScreenLocked() else {
             lockedChance = chance
             return
