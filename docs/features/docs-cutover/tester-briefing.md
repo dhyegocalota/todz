@@ -65,3 +65,19 @@ Developer's own runs on f5e102e plus the uncommitted test-plan ticks: `@todz/api
 - `docs-mintlify`'s after-merge step 4 row (the Playwright walk of `docs.todz.app` at 1280 and 375) stays open: nobody has walked the published site yet.
 - The live `todz.app/self-host` answers 200 until the next deploy of the Worker runs step 13.
 - The deploy runbook's `If it fails` line says to deploy again from `main` when `/self-host` answers 200; that assumes the run deploys after this merge.
+
+## Review round 1
+
+Red commit d785b32, then 03b5292 (Cache-Control) and the docs commit after it.
+
+| Test | Red before the change because | Green after because |
+|------|--------------------------------|---------------------|
+| `apps/api/test/site-dispatch.test.ts` › the site host › `GET /self-host`, `HEAD /self-host`, `GET /self-host?ref=x` … cached for an hour; the www host › `GET`, `HEAD`, `POST /self-host` … cached for an hour | `AssertionError: expected null to be 'max-age=3600' // Object.is equality` (6 failed) | 03b5292 |
+| `apps/api/e2e/landing.spec.ts` › self-host guide › /self-host answers 301 to the guide on the docs (desktop, mobile) | `Expected: "max-age=3600"` / `Received: undefined` | 03b5292 |
+| `tools/repository-shape/src/runbooks.test.ts` › the Mintlify setup says branch protection cannot be enforced on this plan and names the owner options, and neither it nor ADR 0059 claims a required pull request | `AssertionError: expected '\n\nThe owner did this on 2026-11-25 …' to contain 'cannot be enforced'` | the docs commit |
+| `tools/repository-shape/src/runbooks.test.ts` › after each docs deploy, a step lists the commits under apps/docs since the previous deploy and expects the owner alone | `TypeError: actual value must be number or bigint, received "undefined"` (no such step) | the docs commit |
+
+Hypotheses to attack:
+
+1. Hypothesis: the new step 5 of `mintlify-publish.md`, run against the deploy of 87e643f from `03beab9~1`, prints only lines naming `Dhyego Calota` twice. Break it by: running it, then a scratch commit under `apps/docs` with another author in a throwaway clone.
+2. Hypothesis: `Cache-Control: max-age=3600` reaches the browser unchanged through `withSecurityHeaders` after the merge of `main`. Break it by: `curl -sS -D - -o /dev/null` on the local site.

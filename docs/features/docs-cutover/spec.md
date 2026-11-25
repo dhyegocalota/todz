@@ -12,14 +12,14 @@
 
 ## Goals
 
-- `GET` and `HEAD` `https://todz.app/self-host` answer `301` with `Location: https://docs.todz.app/self-host` and no body. The query string is dropped: the `Location` is one constant, so no part of the request reaches the header, and the docs page takes no parameter.
+- `GET` and `HEAD` `https://todz.app/self-host` answer `301` with `Location: https://docs.todz.app/self-host`, `Cache-Control: max-age=3600` and no body, so a browser asks again after an hour instead of keeping the redirect for good. The query string is dropped: the `Location` is one constant, so no part of the request reaches the header, and the docs page takes no parameter.
 - `https://www.todz.app/self-host`, any method and any query, answers the same `301` straight to the docs, not to `todz.app/self-host` first. Every other `www` path keeps its `301` to the site host with the path and the query.
 - `/self-host/`, `POST /self-host` and `DELETE /self-host` on the site host stay `404`, and the API host keeps `404` for `/self-host`.
 - The landing's header link and footer link, both labelled "Self-host guide", point at `https://docs.todz.app/self-host`, the guide itself rather than the docs home, because the label names the guide. Labels and copy stay as they are.
 - The README's self-host link points at `https://docs.todz.app/self-host`.
 - The landing's generated guide goes, with everything that only it reads: `self-host-page.ts`, `generated/self-host-html.ts`, `scripts/site/` (the generator, the Markdown renderer and the front matter helper), the `site:generate` and `site:check` scripts, the guide's styles, `LANDING_COPY.selfHost`, and their tests. The gate map stops sending `apps/docs/self-host.mdx` to the `@todz/api` unit suite, which no longer reads it.
 - `docs/runbooks/deploy-the-api.md` step 13 expects the `301` for both `/self-host` probes.
-- `docs/runbooks/mintlify-publish.md` records what the owner's setup really is: pull request previews not observed on the Hobby plan (`preview: false`); Mintlify's GitHub app not read-only by design, since its web editor asks for contents write, so its repository scope is the owner's check on GitHub; and its run log gets the post-merge check of 87e643f. Step 3's expected credit becomes what the docs footer holds (`todz is a product of` and `Logic Bit`), since the full sentence was never on `docs.todz.app`.
+- `docs/runbooks/mintlify-publish.md` records what the owner's setup really is: pull request previews not observed on the Hobby plan (`preview: false`); Mintlify's GitHub app not read-only by design, since its web editor asks for contents write, so its repository scope is the owner's check on GitHub; branch protection on `main` cannot be enforced on this private repository's plan (GitHub answers 403), so the Setup names the owner's options and a new step 5 lists, after each docs deploy, the commits under `apps/docs` since the previous one, expecting the owner alone (security review, IMPORTANT); and its run log gets the post-merge check of 87e643f. Step 3's expected credit becomes what the docs footer holds (`todz is a product of` and `Logic Bit`), since the full sentence was never on `docs.todz.app`.
 - `docs/features/docs-mintlify/test-plan.md`'s after-merge rows carry this evidence.
 
 ## Non-goals

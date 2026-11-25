@@ -10,7 +10,8 @@ The owner did this on 2026-11-25 in Mintlify's dashboard and on GitHub; the loop
 - Source: the GitHub repository `dhyegocalota/todz`, through Mintlify's GitHub app.
 - Deploy branch `main`, content directory `apps/docs`.
 - Pull request previews: not observed on the Hobby plan (the deployment setting `preview: false`), so an unmerged branch is not published.
-- Mintlify's GitHub app can write as well as read, by design: Mintlify asks for write access to the repository's contents for its web editor. Its repository scope is the owner's check, not the loop's: GitHub → Settings → Applications → Mintlify → "Only select repositories" with `dhyegocalota/todz` alone. Branch protection on `main` already requires a pull request.
+- Mintlify's GitHub app can write as well as read, by design: Mintlify asks for write access to the repository's contents for its web editor. Its repository scope is the owner's check, not the loop's: GitHub → Settings → Applications → Mintlify → "Only select repositories" with `dhyegocalota/todz` alone.
+- Branch protection on `main` cannot be enforced on this private repository's plan: GitHub answers 403 for both its branch protection and its rulesets. So Mintlify's web editor could commit to `main`, and Mintlify publishes every commit there. The owner's options: turn off Mintlify's web editor; or move to GitHub Pro and add a ruleset on `main` requiring pull requests, with Mintlify's app not on its bypass list; or make it a public repository and add the same ruleset. Until one of them is in place, step 5 checks every deploy after the fact.
 - Custom domain `docs.todz.app`, connected in the dashboard with SSL, serving Mintlify's starter kit until the first merge that touches `apps/docs`.
 
 ## Steps
@@ -30,6 +31,10 @@ The owner did this on 2026-11-25 in Mintlify's dashboard and on GitHub; the loop
 4. **Walk it.** With Playwright, open the five pages and the 404 page of `https://docs.todz.app` at 1280 and 375 pixels wide, in light and dark.
    Expected: every page shows its title and the todz logo, and the console has no error.
    If it fails: a defect goes back to Build with a regression in the `docs` gate of `pnpm verify`.
+
+5. **Check who changed the docs.** After each docs deploy, run `git fetch origin`, then `git log --format='%h %an %cn' <previous>..origin/main -- apps/docs`, where `<previous>` is the commit of the last deploy in the run log.
+   Expected: every line names `Dhyego Calota` as both author and committer; no commit under `apps/docs` came from anyone else, Mintlify's web editor included.
+   If it fails: stop and tell the owner the hashes and names the command printed; a commit that skipped review is already live on `docs.todz.app`, so the owner decides whether to revert it.
 
 ## Rollback
 
