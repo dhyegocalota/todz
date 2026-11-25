@@ -1,0 +1,87 @@
+# Plan: Version compatibility
+
+**Spec:** spec.md
+**Tier:** 🔴
+**Seam:** server: `fetch` in `apps/api/src/index.ts` (the header on every answer), `serveHealth` (the body), `serveOwner` between the route match and the dispatch (the gate), `server:deploy` (the stamp). App: `OwnerRequest.transportRequest` (the header out), `OwnerAPI.health()` and `OwnerErrorBody` (the versions and the refusal in), `AppModel` (the state), and three views that show one `VersionLine`.
+**Assumptions (decided, owner can override):**
+- The stamp is a build `define`, `TODZ_SERVER_VERSION`, `null` in `wrangler.jsonc`, set by `server:deploy` (ADR 0069 §2).
+- `MINIMUM_APP_VERSION` is `0.2.0` and the app moves to `0.2.0`; `minimumServerVersion` is `2026.11.25` (ADR 0069 §1, §3, §9).
+- Only `/owner/*` is gated, after the route matches; a missing header is too old (§7).
+- The app reads versions from `/health` at launch, after each probe and after a server switch, and from a `426 app_too_old`; it never parses `Todz-Api-Version` (§10, §11).
+- The Download link opens `https://todz.app`.
+
+## File map
+
+| Group | Paths owned | Developer sub-agent |
+|-------|-------------|---------------------|
+| G1 server | `libs/types/src/constants.ts`, `libs/types/src/constants.test.ts`, `apps/api/src/app-version.ts` (new), `apps/api/src/server-version.ts` (new), `apps/api/src/server-version-global.d.ts` (new), `apps/api/src/owner-endpoint.ts`, `apps/api/src/owner-errors.ts`, `apps/api/src/http-header.ts`, `apps/api/src/health.ts`, `apps/api/src/index.ts`, `apps/api/wrangler.jsonc`, `apps/api/vitest.config.mts`, `apps/api/package.json`, `apps/api/scripts/server/*`, `apps/api/test/**` (new tests and the header in every owner call), `tools/perf/src/**` (the header in the owner scenario), `docs/runbooks/deploy-the-api.md`, `apps/docs/self-host.mdx`, `apps/api/README.md`, `AGENTS.md` (the shared-helper line) | `developer` (server) |
+| G2 app | `apps/macos/project.yml`, `apps/macos/TodzKit/Sources/TodzKit/**` (new: `AppVersion.swift`, `ServerVersions.swift`, `VersionCompatibility.swift`, `AppModel+Version.swift`; changed: `OwnerRequest.swift`, `OwnerAPI.swift`, `ServerHealthAnswer.swift`, `OwnerErrorCode.swift`, `OwnerErrorBody.swift`, `OwnerAPIError.swift`, `AppBanner.swift`, `AppModel+Outbox.swift`, `AppModel+Server.swift`, `SocketChangeSignals.swift`, the sign-in error type), `apps/macos/TodzKit/Tests/TodzKitTests/**`, `apps/macos/Todz/Server/VersionLine.swift` (new), `apps/macos/Todz/Server/ServerDisclosure.swift`, `apps/macos/Todz/Settings/SettingsView.swift`, `apps/macos/Todz/MainWindow/KeyScreen/KeyScreen.swift`, `apps/macos/Copy/VersionCopy.swift` (new), `apps/macos/Copy/AppBanner+Copy.swift`, `apps/macos/Copy/ErrorCopy.swift`, `apps/macos/Copy/SignInCopy.swift`, `apps/macos/Copy/SignInError+Copy.swift`, `apps/macos/README.md` | `developer` (app) |
+| G3 deploy | the production deploy, `docs/features/version-compat/` evidence | the lead |
+
+G1 and G2 share no file. The app never imports `libs/types`; its constants are Swift. The wire contract both sides code against is the spec's Interfaces table: the header names, the `/health` fields and the `426` body.
+
+**Siblings in flight.** `feat/day-email` edits `SettingsView.swift`, `SettingsCopy.swift`, `libs/types/src/constants.ts`, `apps/api/wrangler.jsonc` and `apps/api/src/index.ts`; `feat/siri-shortcuts` edits `apps/macos/project.yml`; `feat/focus-switch-defaults` will edit `SettingsView.swift` and `SettingsCopy.swift`. This lane adds lines and changes none of theirs: one `define` block in `wrangler.jsonc`, one wrapper call in `index.ts`, three constants appended in `constants.ts`, one `MARKETING_VERSION` value per target in `project.yml`, one footer in `SettingsView`. Whichever merges second merges `origin/main` and keeps both sides; never a rebase.
+
+## Sequencing
+
+G1 and G2 run in parallel from the start; each tests against fakes of the other. G3 runs after the PR merges: the deploy turns the gate on for real, and the owner's Release app stays refused until todz-6f rebuilds it from the merged `main` the same evening.
+
+## Steps
+
+Author this list with every box empty. A sub-agent ticks its own line. A wrong step is struck through with the reason, not deleted.
+
+### G1 server
+
+- [ ] **Step 1 (red):** `apps/api/test/app-version.test.ts`: `isAppVersionAccepted({ candidate, minimum: '0.2.0' })` over the table in test-plan "Unit → version rule". Stub `apps/api/src/app-version.ts` exporting the function that throws `isAppVersionAccepted is not implemented`; add `MINIMUM_APP_VERSION`, `API_VERSION_HEADER` and `APP_VERSION_HEADER` to `libs/types/src/constants.ts` with their pins in `constants.test.ts`. Commit alone. Expected red: every row fails with `Error: isAppVersionAccepted is not implemented`.
+- [ ] **Step 2 (green):** implement `isAppVersionAccepted`: `^\d+(\.\d+){0,2}$`, parts compared as integers, missing parts zero, `null` false.
+- [ ] **Step 3 (red):** `apps/api/test/app-version-gate.test.ts` through `exports.default.fetch`: `GET /owner/sign-in-method` with no header, with `0.1.9`, with `v0.2.0` → `426`, `Upgrade: todz-app/0.2.0`, body `{"error":"app_too_old","minimum_app_version":"0.2.0"}`; `POST /owner/sign-in-links` with the pre-0058 body and no header → the same `426`, not `400`; a signed-in `GET /owner` with `0.1.0` → `426`; the socket route with no header → `426` with the todz body, not the store's WebSocket `426`; with `0.2.0`, `0.2` and `1.0.0` → the route's normal answer; `GET /owner/nope` with no header → `404`; `POST /mcp` with no header → not `426`; `GET /health` with no header → `200`. The owner test client still sends no header in this commit. Commit alone. Expected red: `expected 200 to be 426` on `GET /owner/sign-in-method`, `expected 400 to be 426` on the old sign-in body.
+- [ ] **Step 4 (green):** `OwnerErrorCode.AppTooOld` mapped to `HttpStatus.UpgradeRequired`; `appTooOldResponse()` in `owner-errors.ts` writes the body and the `Upgrade` header; `serveOwner` returns it after `matchOwnerRoute` and before `isPublicRoute`. `apps/api/test/owner-client.ts` (`requestOf`) sends `Todz-App-Version: MINIMUM_APP_VERSION`; every test that builds an `/owner/*` request by hand sends it too, and `tools/perf/src/owner-scenario.ts` and the socket helper in `tools/perf/src/socket-signals.ts` send it. `pnpm --filter @todz/api test` and `pnpm --filter @todz/perf test` green.
+- [ ] **Step 5 (red):** `apps/api/test/server-version.test.ts`: with the test stamp `2026.11.25+0000000` defined in `vitest.config.mts`, `Todz-Api-Version` equals it on a signed-in owner `200`, a `426`, a `POST /mcp` answer, `GET` and `HEAD /health`, an api-host `404` and a site-host page; `withServerVersion({ response, version: null })` adds nothing; a `101` passes untouched. `health.test.ts` expects `{ service: 'todz', origin, version: '2026.11.25+0000000', minimum_app_version: '0.2.0' }`. Stub `withServerVersion` returns the response unchanged. Commit alone. Expected red: `expected null to be '2026.11.25+0000000'` and the health body diff naming `version` and `minimum_app_version`.
+- [ ] **Step 6 (green):** `server-version-global.d.ts` declares `TODZ_SERVER_VERSION: string | null`; `server-version.ts` holds the only read of it (`SERVER_VERSION`) and `withServerVersion({ response, version })`; `wrangler.jsonc` gains `"define": { "TODZ_SERVER_VERSION": "null" }`; `index.ts` wraps `withServerVersion` inside `withSecurityHeaders`; `health.ts` adds both fields; `HttpHeader` gains `ApiVersion`, `AppVersion` and `Upgrade` from the `libs/types` names.
+- [ ] **Step 7 (red):** `apps/api/test/server/version-stamp.test.ts`: `versionStamp({ commitDate: '2026-11-25', commitHash: '3f9c2ab8d1e0' })` → `2026.11.25+3f9c2ab`; a malformed date or hash throws `Cannot stamp the server version: …`. `apps/api/test/server/ready.test.ts`: `readyLine({ publicOrigin: 'https://api.todz.app', serverVersion: '2026.11.25+3f9c2ab', minimumAppVersion: '0.2.0' })` → `todz server ready: https://api.todz.app · server 2026.11.25+3f9c2ab · accepts app 0.2.0 or later  →  paste it in todz › Settings › Server`; `deployArguments('2026.11.25+3f9c2ab')` → `['deploy', '--define', 'TODZ_SERVER_VERSION:"2026.11.25+3f9c2ab"']`. Commit alone. Expected red: `Error: versionStamp is not implemented` and the ready-line string diff.
+- [ ] **Step 8 (green):** `version-stamp.ts`; `cli.ts` reads `git log -1 --format=%cd%n%H --date=format-local:%Y-%m-%d` with `TZ=UTC`, runs `wrangler deploy --define TODZ_SERVER_VERSION:"<stamp>"` through `execFileSync` with inherited output, then prints the ready line; `server:deploy` becomes `tsx scripts/server/cli.ts`. A git failure throws before wrangler runs.
+- [ ] **Step 9 (docs):** `docs/runbooks/deploy-the-api.md` deploys with `scripts/todz-cloudflare.sh pnpm --filter @todz/api server:deploy`, expects the new ready line, and adds a check: `curl -sS https://api.todz.app/health` shows `version` equal to the stamp, `curl -sSI` shows `todz-api-version`, `curl -sS https://api.todz.app/owner/sign-in-method` answers the `426` body; each with its `If it fails` line. `apps/docs/self-host.mdx` shows the new ready line. `AGENTS.md` adds `isAppVersionAccepted` (`apps/api/src/app-version.ts`) and `withServerVersion` (`apps/api/src/server-version.ts`) to the shared helpers. `apps/api/README.md` if its purpose line names what `/health` says. `runbooks.test.ts` and `delivery-docs.test.ts` green.
+
+### G2 app
+
+- [ ] **Step 10 (red):** `VersionCompatibilityTests.swift`: the five outcomes of the spec's rule and the comparison rows of test-plan "Unit → compatibility rule". Stub `VersionCompatibility.of(app:server:refusal:)` returns `.serverUnknown(app:)` for every input. Commit alone. Expected red: `Expectation failed: (VersionCompatibility.of(…) → .serverUnknown(app: "0.2.0")) == .compatible(…)` on every non-unknown row.
+- [ ] **Step 11 (green):** `AppVersion` (the main bundle's `CFBundleShortVersionString`, injectable for tests; a bundle without one is a launch-time `preconditionFailure` naming the key, never a default), `ServerVersions { server: String?, minimumApp: String? }`, `minimumServerVersion = "2026.11.25"`, `VersionCompatibility` with `compatible(app:server:)`, `updateNeeded(app:server:minimum:)`, `serverBehind(app:server:)` (`server` nil means "older"), `serverUnknown(app:)`.
+- [ ] **Step 12 (red):** `OwnerRequestTests.swift` (new): `transportRequest` sets `Todz-App-Version: 0.2.0` on an owner call, the health request and `SocketChangeSignals.socketRequest`. `OwnerAPIHealthTests.swift` and `OwnerAPITests.swift` against `FakeServers`: `/health` with `version` and `minimum_app_version` → `.todz(origin:versions:)` with both; without them → both nil; a `426` with `{"error":"app_too_old","minimum_app_version":"0.3.0"}` → `OwnerAPIError.appTooOld(minimum: "0.3.0")`; a `426` with an empty body → `.unexpected(status: 426)`; `app_too_old` without `minimum_app_version` → `.unexpected(status: 426)`. Commit alone. Expected red: the compile-stage stubs make the header assertions fail with `Expectation failed: (request.value(forHTTPHeaderField: "Todz-App-Version") → nil) == "0.2.0"` and the decode rows with `.unexpected(status: 426)`.
+- [ ] **Step 13 (green):** `OwnerRequest` takes the app version and sets the header; `HealthBody` decodes both optional fields; `ServerHealthAnswer.todz(origin:versions:)` and every caller of it; `OwnerErrorCode.appTooOld`, `OwnerErrorBody.minimumAppVersion`, `OwnerAPIError.appTooOld(minimum:)`.
+- [ ] **Step 14 (red):** `AppModelTests+Version.swift` over `FakeOwnerService`: launch with a health answer computes `compatible`; a probe that answers with a later minimum computes `updateNeeded`; a server switch recomputes from the new server; any owner call failing with `appTooOld` sets `updateNeeded` and `banner == .updateNeeded`; a queued add answered `appTooOld` stays in the outbox (count unchanged, no refusal notice) and the outbox does not flush again while `updateNeeded`; a sign-in refused with `appTooOld` surfaces the sign-in error `.appTooOld`. Commit alone. Expected red: `Expectation failed: (model.compatibility → nil) == .compatible(…)` and the outbox count diff.
+- [ ] **Step 15 (green):** `AppModel+Version.swift` (the state, the recompute, the `appTooOld` hook), the outbox treats `appTooOld` as a pause that keeps the change, `AppBanner.updateNeeded`, the sign-in error case.
+- [ ] **Step 16 (UI):** `VersionLine` and `VersionCopy` with the design's words, symbols, tooltips and accessibility labels; the footer of the Server section in `SettingsView`; inside `ServerDisclosure`, and under it while `updateNeeded`; under the Connect an Agent header in `KeyScreen`; the banner's copy and `Download` action; the sign-in error copy. `MARKETING_VERSION: "0.2.0"` for both targets in `project.yml`, then `xcodegen`. `xcodebuild test` for TodzKit and a Debug build green.
+- [ ] **Step 17 (screens):** the recorder's Orca captures of compatible, update needed and server behind in Settings, the sign-in disclosure and Connect an Agent, and the banner, light and dark, into `.pr-media/version-compat/`; the README's Settings shot is replaced if it shows the Server section.
+- [ ] **Step 18:** tester briefing (`tester-briefing.md`), naming every red commit and its recorded failure text.
+
+### G3 deploy (after the merge)
+
+- [ ] **Step 19:** `scripts/todz-cloudflare.sh pnpm --filter @todz/api server:deploy` from the merged `main`; record the ready line, `curl -sS https://api.todz.app/health` (the stamp matches `git log -1` of `main`), `curl -sSI https://api.todz.app/health` (`todz-api-version`), and `curl -sS https://api.todz.app/owner/sign-in-method` (the `426` body) in the deploy runbook's run log. Tell todz-6f to rebuild the owner's Release app.
+
+## Failure modes
+
+| Step | What breaks | How I notice (the concrete signal) | How I back out |
+|------|-------------|------------------------------------|----------------|
+| 4 | A test or the perf harness builds an owner request without the header and now gets `426` | `pnpm --filter @todz/api test` or `pnpm --filter @todz/perf test` reports `expected 426 to be 200` | add the header at that call site; never loosen the gate |
+| 4 | The gate runs before the route match and turns unknown paths into `426` | the `GET /owner/nope → 404` row fails | move the call after `matchOwnerRoute` |
+| 4 | The gate runs after the sign-in limiter and a too-old app burns its sign-in budget | the gate test's limiter counter (the `counting-namespace` helper) is non-zero after a `426` | move the gate before `servePublic` |
+| 6 | The Workers pool ignores the `define` and `TODZ_SERVER_VERSION` is a `ReferenceError` | every Worker test fails at import with `TODZ_SERVER_VERSION is not defined` | set `define` in the Vitest project config, not only in `wrangler.jsonc` |
+| 6 | The header lands on a `101` and breaks the change socket | `project-changes.test.ts` socket rows fail; `new Response` throws on a `webSocket` answer | the `webSocket !== null` early return, as in `withSecurityHeaders` |
+| 8 | `server:deploy` runs `wrangler deploy` without the stamp | the ready line shows `server null`, or `/health` answers `"version":null` after the deploy | fix the argument and deploy again; nothing is lost |
+| 8 | The stamp's date is the local date, not UTC | `version-stamp.test.ts` with a commit at 23:30 −03:00 | `TZ=UTC` on the git call |
+| 13 | A changed `ServerHealthAnswer` breaks the server-switch flow | `ServerSwitchFlow` and probe tests fail to compile or assert | update every pattern match to the new case shape |
+| 15 | `appTooOld` counts as a refusal and drops queued changes | the outbox row: count drops, a refusal notice appears | treat `appTooOld` as a pause in the outbox's classification |
+| 16 | `MARKETING_VERSION` moves in one target only | the widget's `CFBundleShortVersionString` differs from the app's in the built `Info.plist` | set it in both targets |
+| 19 | The owner's current Release app is refused after the deploy | its sign-in shows the generic server error (it cannot read `app_too_old`) | expected; todz-6f rebuilds it from `main`. If the rebuild cannot happen tonight, roll the Worker back with `wrangler rollback` to the previous deployment |
+| 19 | The deployed Worker refuses the new app (a wrong minimum) | the new app shows "Update todz to keep syncing" against production | `wrangler rollback`, fix `MINIMUM_APP_VERSION`, deploy again |
+
+**Steps with no backout:** none. Step 19 rolls back with `wrangler rollback`; no data changes shape.
+
+## Z. Prove and ship
+
+- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
+- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
+- [ ] **Security reviewer:** a fresh `security-reviewer` sub-agent returned a verdict on the gate and the header.
+- [ ] **/check-ui:** the Orca screenshots of every state, light and dark, attached to the PR.
+- [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
