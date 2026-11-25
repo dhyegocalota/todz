@@ -55,6 +55,10 @@ extension AppModel {
         }
         guard case .signedOut = phase, !isSigningIn else { return }
         heldSignInLink = nil
+        guard signInLink.origin == serverURL.origin else {
+            signInError = .linkNotRequested
+            return
+        }
         guard let pendingLink, !isExpired(pendingLink) else {
             discardPendingLink()
             signInError = .linkNotRequested
