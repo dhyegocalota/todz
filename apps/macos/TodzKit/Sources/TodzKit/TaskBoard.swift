@@ -50,12 +50,11 @@ public struct TaskBoard: Sendable, Equatable {
     }
 
     private mutating func insert(number: Int, projectIdentifier: String) {
-        let numbers = numbersOfProject[projectIdentifier, default: []]
-        guard let lowerIndex = numbers.lastIndex(where: { $0 < number }) else {
-            numbersOfProject[projectIdentifier, default: []].insert(number, at: 0)
+        if let lowerIndex = numbersOfProject[projectIdentifier]?.lastIndex(where: { $0 < number }) {
+            numbersOfProject[projectIdentifier, default: []].insert(number, at: lowerIndex + 1)
             return
         }
-        numbersOfProject[projectIdentifier, default: []].insert(number, at: lowerIndex + 1)
+        numbersOfProject[projectIdentifier, default: []].insert(number, at: 0)
     }
 
     private func isOlderThanTheHeldCopy(_ task: TaskRecord, projectIdentifier: String) -> Bool {
