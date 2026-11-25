@@ -5,10 +5,12 @@ public struct ShortcutToday: Equatable, Sendable {
     public let isOffline: Bool
 
     public var sentence: ShortcutTodaySentence {
-        fatalError("ShortcutToday.sentence is not implemented")
+        guard !tasks.isEmpty else { return .nothingLeft }
+        guard tasks.count > ShortcutLimits.spokenTitleLimit else { return .withTitles }
+        return .withFirstTitles
     }
 
     public var spokenTitles: [String] {
-        fatalError("ShortcutToday.spokenTitles is not implemented")
+        tasks.prefix(ShortcutLimits.spokenTitleLimit).map(\.title)
     }
 }
