@@ -5,6 +5,10 @@ import { capturedNames, readRepositoryFile } from './repository-files';
 const REFERENCE_PAGE = 'apps/docs/mcp-tools.mdx';
 const COPY_SOURCE = 'apps/api/src/mcp-copy.ts';
 const ARGUMENTS_SOURCE = 'apps/api/src/mcp-tool-arguments.ts';
+const TASK_SOURCE = 'libs/types/src/task.ts';
+const TASK_STATE_PATTERN = /export enum TaskState \{([\s\S]*?)\}/;
+const DUE_WINDOW_PATTERN = /export enum DueWindow \{([\s\S]*?)\}/;
+const STATE_DEFAULT_PATTERN = /state: z\.enum\(TaskState\)\.default\(TaskState\.(\w+)\)/;
 const PROMPTS_HEADING = 'Prompts';
 const TOOL_ENUM_PATTERN = /export enum McpToolName \{([\s\S]*?)\}/;
 const PROMPT_ENUM_PATTERN = /export enum McpPromptName \{([\s\S]*?)\}/;
@@ -51,6 +55,21 @@ function sections(): Section[] {
     .map((text) => ({ heading: text.split(LINE_SEPARATOR)[0]!, body: text.slice(text.indexOf(LINE_SEPARATOR)) }));
 }
 
+function singleCapture({ text, pattern }: { text: string; pattern: RegExp }): string {
+  const match = pattern.exec(text);
+  expect(match).not.toBeNull();
+  return match![FIRST_CAPTURE]!;
+}
+
+function argumentRow({ tool, argument }: { tool: string; argument: string }): string {
+  const row = sections()
+    .find(({ heading }) => heading === tool)
+    ?.body.split(LINE_SEPARATOR)
+    .find((line) => line.startsWith(`| \`${argument}\``));
+  expect(row).toBeDefined();
+  return row!;
+}
+
 function schemaKeys(schema: string): string[] {
   const source = readRepositoryFile(ARGUMENTS_SOURCE);
   const start = source.indexOf(`const ${schema}Schema`);
@@ -82,6 +101,22 @@ describe('the MCP tools reference', () => {
     const section = sections().find(({ heading }) => heading === tool);
     expect(section).toBeDefined();
     expect(capturedNames({ text: section!.body, pattern: TABLE_NAME_PATTERN }).sort()).toEqual(expectedKeys(tool).sort());
+  });
+
+  test('the list state row names every task state and the default of its schema', () => {
+    const row = argumentRow({ tool: 'list', argument: 'state' });
+    const states = enumMembers({ source: readRepositoryFile(TASK_SOURCE), pattern: TASK_STATE_PATTERN });
+    const defaultMember = singleCapture({ text: readRepositoryFile(ARGUMENTS_SOURCE), pattern: STATE_DEFAULT_PATTERN });
+    const defaultValue = states.find(({ member }) => member === defaultMember)?.value;
+    expect(defaultValue).toBeDefined();
+    expect(states.filter(({ value }) => !row.includes(`\`${value}\``))).toEqual([]);
+    expect(row).toContain(`Defaults to \`${defaultValue}\``);
+  });
+
+  test('the list due row names every due window', () => {
+    const row = argumentRow({ tool: 'list', argument: 'due' });
+    const windows = enumMembers({ source: readRepositoryFile(TASK_SOURCE), pattern: DUE_WINDOW_PATTERN });
+    expect(windows.filter(({ value }) => !row.includes(`\`${value}\``))).toEqual([]);
   });
 
   test('the next section tabulates no argument', () => {
