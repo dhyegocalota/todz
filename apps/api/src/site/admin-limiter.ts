@@ -2,10 +2,11 @@ import { clientRateKey } from '../client-rate-key';
 import { digestCredential } from '../credential-digest';
 import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
+import { LimitRefusal, limitRefusal } from '../limit-refusal';
 import { isLocalSiteHost } from '../local-origin';
 import { AdminPath } from './admin-paths';
 import { AdminNotice } from './admin-waitlist';
-import { SiteLimitRefusal, isSiteUnguarded, limitRefusal } from './site-limiter';
+import { isSiteUnguarded } from './site-limiter';
 
 export enum AdminLimit {
   Client = 'client',
@@ -21,9 +22,9 @@ const LIMITER_OF_LIMIT: Record<AdminLimit, (env: Env) => RateLimit | undefined> 
   [AdminLimit.Global]: (env) => env.ADMIN_GLOBAL_LIMITER,
 };
 
-const NOTICE_OF_REFUSAL: Record<SiteLimitRefusal, AdminRefusal> = {
-  [SiteLimitRefusal.TryAgain]: AdminNotice.TryAgain,
-  [SiteLimitRefusal.Unavailable]: AdminNotice.Closed,
+const NOTICE_OF_REFUSAL: Record<LimitRefusal, AdminRefusal> = {
+  [LimitRefusal.TryAgain]: AdminNotice.TryAgain,
+  [LimitRefusal.Unavailable]: AdminNotice.Closed,
 };
 
 async function refusalOfLimit({ env, limit, key }: { env: Env; limit: AdminLimit; key: string }): Promise<AdminRefusal | null> {
@@ -48,7 +49,7 @@ export async function adminClientRefusal({
 }): Promise<AdminRefusal | null> {
   if (isLocalSiteHost({ env, request })) return null;
   const clientAddress = request.headers.get(HttpHeader.ClientAddress);
-  if (clientAddress === null) return NOTICE_OF_REFUSAL[SiteLimitRefusal.Unavailable];
+  if (clientAddress === null) return NOTICE_OF_REFUSAL[LimitRefusal.Unavailable];
   return refusalOfLimit({ env, limit: AdminLimit.Client, key: `${path}:${clientRateKey({ address: clientAddress })}` });
 }
 
