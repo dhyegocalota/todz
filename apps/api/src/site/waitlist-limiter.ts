@@ -4,6 +4,7 @@ import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
 import { isLocalSiteHost } from '../local-origin';
 import { LandingNotice } from './landing-page';
+import { SiteLimitRefusal, isSiteUnguarded, limitRefusal } from './site-limiter';
 import { JOIN_PATH } from './site-shell';
 
 enum WaitlistLimit {
@@ -20,26 +21,27 @@ const LIMITER_OF_LIMIT: Record<WaitlistLimit, (env: Env) => RateLimit | undefine
   [WaitlistLimit.Global]: (env) => env.WAITLIST_GLOBAL_LIMITER,
 };
 
-async function limitRefusal({ env, limit, key }: { env: Env; limit: WaitlistLimit; key: string }): Promise<WaitlistRefusal | null> {
-  const limiter = LIMITER_OF_LIMIT[limit](env);
-  if (limiter === undefined) return LandingNotice.OpensSoon;
-  const outcome = await limiter.limit({ key }).catch(() => null);
-  if (outcome === null) return LandingNotice.OpensSoon;
-  if (outcome.success) return null;
-  return LandingNotice.TryAgain;
+const NOTICE_OF_REFUSAL: Record<SiteLimitRefusal, WaitlistRefusal> = {
+  [SiteLimitRefusal.TryAgain]: LandingNotice.TryAgain,
+  [SiteLimitRefusal.Unavailable]: LandingNotice.OpensSoon,
+};
+
+async function refusalOfLimit({ env, limit, key }: { env: Env; limit: WaitlistLimit; key: string }): Promise<WaitlistRefusal | null> {
+  const refusal = await limitRefusal({ limiter: LIMITER_OF_LIMIT[limit](env), key });
+  if (refusal === null) return null;
+  return NOTICE_OF_REFUSAL[refusal];
 }
 
 export function isWaitlistUnguarded({ request, env }: { request: Request; env: Env }): boolean {
-  if (isLocalSiteHost({ env, request })) return false;
-  const hasEveryLimiter = Object.values(WaitlistLimit).every((limit) => LIMITER_OF_LIMIT[limit](env) !== undefined);
-  return request.headers.get(HttpHeader.ClientAddress) === null || !hasEveryLimiter;
+  const limiters = Object.values(WaitlistLimit).map((limit) => LIMITER_OF_LIMIT[limit](env));
+  return isSiteUnguarded({ request, env, limiters });
 }
 
 export async function waitlistClientRefusal({ request, env }: { request: Request; env: Env }): Promise<WaitlistRefusal | null> {
   if (isLocalSiteHost({ env, request })) return null;
   const clientAddress = request.headers.get(HttpHeader.ClientAddress);
-  if (clientAddress === null) return LandingNotice.OpensSoon;
-  return limitRefusal({ env, limit: WaitlistLimit.Client, key: `${JOIN_PATH}:${clientRateKey({ address: clientAddress })}` });
+  if (clientAddress === null) return NOTICE_OF_REFUSAL[SiteLimitRefusal.Unavailable];
+  return refusalOfLimit({ env, limit: WaitlistLimit.Client, key: `${JOIN_PATH}:${clientRateKey({ address: clientAddress })}` });
 }
 
 export async function waitlistAddressRefusal({
@@ -52,10 +54,10 @@ export async function waitlistAddressRefusal({
   address: string;
 }): Promise<WaitlistRefusal | null> {
   if (isLocalSiteHost({ env, request })) return null;
-  return limitRefusal({ env, limit: WaitlistLimit.Address, key: `${JOIN_PATH}:${await digestCredential(address)}` });
+  return refusalOfLimit({ env, limit: WaitlistLimit.Address, key: `${JOIN_PATH}:${await digestCredential(address)}` });
 }
 
 export async function waitlistGlobalRefusal({ request, env }: { request: Request; env: Env }): Promise<WaitlistRefusal | null> {
   if (isLocalSiteHost({ env, request })) return null;
-  return limitRefusal({ env, limit: WaitlistLimit.Global, key: JOIN_PATH });
+  return refusalOfLimit({ env, limit: WaitlistLimit.Global, key: JOIN_PATH });
 }
