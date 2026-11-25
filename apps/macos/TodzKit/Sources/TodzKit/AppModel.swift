@@ -112,7 +112,7 @@ import Observation
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let pendingLinks: any PendingLinkVault
     @ObservationIgnored let store: any SyncStore
-    @ObservationIgnored let cacheScheduler: CacheScheduler
+    @ObservationIgnored let cacheWriter: ProjectCacheWriter
     @ObservationIgnored var taskViewsBuildCount = 0
     @ObservationIgnored private var storedTaskViews: (day: CalendarDate, views: TaskViews)?
     @ObservationIgnored let widgetStore: any WidgetStore
@@ -154,7 +154,7 @@ import Observation
         self.vault = vault
         self.pendingLinks = pendingLinks
         self.store = store
-        self.cacheScheduler = cacheScheduler
+        self.cacheWriter = ProjectCacheWriter(store: store, scheduler: cacheScheduler)
         self.widgetStore = widgetStore
         self.reloadWidgets = reloadWidgets
         self.timeZone = timeZone
@@ -162,6 +162,7 @@ import Observation
         self.pause = pause
         self.makeIdempotencyKey = makeIdempotencyKey
         self.makeLinkVerifier = makeLinkVerifier
+        cacheWriter.onFailure = { [weak self] in self?.noteCacheNotSavedFromAnyThread() }
         eraseDataOfAnotherServer()
     }
 
@@ -193,7 +194,9 @@ import Observation
         return views
     }
 
-    public func flushCache() {}
+    public func flushCache() {
+        cacheWriter.flush()
+    }
 
     public var canTryAgain: Bool {
         retry != nil
@@ -286,7 +289,7 @@ import Observation
     public func signOut() async {
         guard let session else { return }
         do {
-            try store.erase()
+            try eraseCache()
         } catch {
             raise(.signOutFailed)
             return

@@ -1,9 +1,11 @@
+import Foundation
+
 extension AppModel {
     func cachedOwner() -> OwnerCache? {
         do {
             return try store.readOwner()
         } catch {
-            keepInCache { try store.erase() }
+            keepInCache { try eraseCache() }
             return nil
         }
     }
@@ -13,7 +15,7 @@ extension AppModel {
         guard let cached, cached.ownerIdentifier == owner.identifier else {
             forgetWindow()
             outbox = Outbox()
-            try store.erase()
+            try eraseCache()
             eraseWidgets()
             return nil
         }
@@ -58,22 +60,22 @@ extension AppModel {
 
     func keepProject(identifier: String) {
         guard isOwnerConfirmed, let cursor = board.cursor(projectIdentifier: identifier) else { return }
-        let cache = ProjectCache(projectIdentifier: identifier, cursor: cursor, tasks: board.tasks(projectIdentifier: identifier))
-        keepInCache { try store.writeProject(cache) }
+        cacheWriter.keep(ProjectCache(projectIdentifier: identifier, cursor: cursor, tasks: board.tasks(projectIdentifier: identifier)))
     }
 
     func keepInProjectFile(_ task: TaskRecord, projectIdentifier: String) {
-        guard let cached = cachedProject(identifier: projectIdentifier) else { return }
-        var merged = TaskBoard()
-        merged.merge(projectIdentifier: projectIdentifier, tasks: cached.tasks)
-        merged.replace(projectIdentifier: projectIdentifier, task: task)
-        let cache = ProjectCache(projectIdentifier: projectIdentifier, cursor: cached.cursor, tasks: merged.tasks(projectIdentifier: projectIdentifier))
-        keepInCache { try store.writeProject(cache) }
+        cacheWriter.keep(task, projectIdentifier: projectIdentifier)
     }
 
     func forgetProject(identifier: String) {
         board.reset(projectIdentifier: identifier)
+        cacheWriter.discard(projectIdentifier: identifier)
         keepInCache { try store.eraseProject(identifier: identifier) }
+    }
+
+    func eraseCache() throws {
+        cacheWriter.discard()
+        try store.erase()
     }
 
     func keepOutbox() {
@@ -84,7 +86,7 @@ extension AppModel {
         forgetWindow()
         outbox = Outbox()
         phase = .loading
-        try store.erase()
+        try eraseCache()
         eraseWidgets()
     }
 
@@ -109,9 +111,21 @@ extension AppModel {
         do {
             try write()
         } catch {
-            guard !isCacheNotSavedRaised else { return }
-            isCacheNotSavedRaised = true
-            raise(.cacheNotSaved)
+            noteCacheNotSaved()
         }
+    }
+
+    nonisolated func noteCacheNotSavedFromAnyThread() {
+        guard Thread.isMainThread else {
+            Task { @MainActor [weak self] in self?.noteCacheNotSaved() }
+            return
+        }
+        MainActor.assumeIsolated { noteCacheNotSaved() }
+    }
+
+    private func noteCacheNotSaved() {
+        guard !isCacheNotSavedRaised else { return }
+        isCacheNotSavedRaised = true
+        raise(.cacheNotSaved)
     }
 }
