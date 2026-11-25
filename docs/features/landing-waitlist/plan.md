@@ -56,7 +56,7 @@ G1 and G2 run in parallel; the lead merges G2 into G1's result, then runs the E2
 
 ### Lead
 
-- [ ] **Step 8:** The guide, the runbook (six limiters at step 8, a waitlist smoke check after step 13), the API README, the briefing.
+- [x] **Step 8:** (5ea23d6, 33823d5, 641c595) The guide, the runbook (six limiters at step 8, a waitlist smoke check after step 13), the API README, the briefing.
 
 ## Failure modes
 
@@ -71,9 +71,9 @@ G1 and G2 run in parallel; the lead merges G2 into G1's result, then runs the E2
 
 ## Z. Prove and ship
 
-- [ ] **Plan review:** a `reviewer` sub-agent on this plan and the test plan.
-- [ ] **Tester briefing:** written from the developers' reports.
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md`.
-- [ ] **Reviewer and security reviewer:** fresh sub-agents returned verdicts.
+- [x] **Plan review:** NO, answered as R1–R18 (2a3d468) a `reviewer` sub-agent on this plan and the test plan.
+- [x] **Tester briefing:** G1 and G2 sections written from the developers' reports.
+- [x] **Tester run:** 41/41 at adb0f53 (9ab5ed5), then the early-submit pass (64a5f16); one defect found and fixed (bd6ea11, 7238f7c) a fresh `tester` sub-agent executed `test-plan.md`.
+- [x] **Reviewer and security reviewer:** reviewer ship-ready after the IMPORTANT probe-body fix and five MINORs; security CLEAR, re-checked twice fresh sub-agents returned verdicts.
 - [ ] **/check-ui:** screenshots and video attached.
 - [ ] **/open-pr:** gates passed, PR opened.
