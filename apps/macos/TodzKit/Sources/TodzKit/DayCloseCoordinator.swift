@@ -14,6 +14,7 @@ import Observation
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let openCount: () -> Int?
     @ObservationIgnored private let isScreenLocked: () -> Bool
+    @ObservationIgnored private let isPopoverVisible: () -> Bool
     @ObservationIgnored private let openPopover: () async -> Bool
 
     public init(
@@ -23,6 +24,7 @@ import Observation
         now: @escaping () -> Date = Date.init,
         openCount: @escaping () -> Int?,
         isScreenLocked: @escaping () -> Bool,
+        isPopoverVisible: @escaping () -> Bool,
         openPopover: @escaping () async -> Bool
     ) {
         self.gate = gate
@@ -31,6 +33,7 @@ import Observation
         self.now = now
         self.openCount = openCount
         self.isScreenLocked = isScreenLocked
+        self.isPopoverVisible = isPopoverVisible
         self.openPopover = openPopover
         observeReleases()
     }
@@ -54,6 +57,8 @@ import Observation
     public func engage() {
         isEngaged = true
     }
+
+    public func popoverShown() {}
 
     private var decision: DayCloseDecision {
         guard let minutesAfterMidnight = DayClosePreference.minutesAfterMidnight(in: defaults) else { return .off }

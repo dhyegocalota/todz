@@ -24,15 +24,18 @@ private let minutesOutsideADay = [-2880, 1440]
 @MainActor private final class FakePopover {
     private(set) var openings = 0
     var isOpenable = true
-    var yieldsBeforeAnswering = false
+    var showsWhenClicked = true
+    var isVisible = false
 
     var whileOpening: (() async -> Void)?
 
     func open() async -> Bool {
         openings += 1
         await whileOpening?()
-        if yieldsBeforeAnswering { await Task.yield() }
-        return isOpenable
+        guard !isVisible else { return true }
+        guard isOpenable else { return false }
+        isVisible = showsWhenClicked
+        return true
     }
 }
 
@@ -60,6 +63,7 @@ private let minutesOutsideADay = [-2880, 1440]
             now: { clock.now },
             openCount: openCount,
             isScreenLocked: { screen.isLocked },
+            isPopoverVisible: { popover.isVisible },
             openPopover: { await popover.open() }
         )
     }
@@ -199,7 +203,45 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(harness.gate.released == [])
     }
 
-    @Test func anOpenerThatFailsMarksNothingAndALaterCheckThatDayOpens() async throws {
+    @Test func aClickSentAndNeverShownKeepsTheModeOnUnmarkedAndUnengagedThenShownMarks() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.popover.showsWhenClicked = false
+        harness.at(today, hour: 18)
+        #expect(await harness.coordinator.check() == .due)
+        #expect(harness.coordinator.isClosingDay)
+        #expect(harness.lastClosedDay == nil)
+        #expect(!harness.coordinator.acceptsKeyActions)
+        harness.coordinator.popoverShown()
+        #expect(harness.lastClosedDay == today)
+        #expect(harness.coordinator.isClosingDay)
+    }
+
+    @Test func aLaterCheckWhileUnmarkedClicksAgainAndAShownPopoverStopsFurtherClicks() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.popover.showsWhenClicked = false
+        harness.at(today, hour: 18)
+        await harness.coordinator.check()
+        harness.at(today, hour: 18, minute: 30)
+        await harness.coordinator.check()
+        #expect(harness.popover.openings == 2)
+        harness.popover.isVisible = true
+        harness.coordinator.popoverShown()
+        harness.at(today, hour: 19)
+        await harness.coordinator.check()
+        #expect(harness.popover.openings == 2)
+        #expect(harness.lastClosedDay == today)
+    }
+
+    @Test func aPopoverAlreadyVisibleWhenTheModeStartsMarksTheDayAtOnce() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.popover.isVisible = true
+        harness.at(today, hour: 18)
+        await harness.coordinator.check()
+        #expect(harness.coordinator.isClosingDay)
+        #expect(harness.lastClosedDay == today)
+    }
+
+    @Test func noStatusButtonEndsTheModeMarksNothingAndALaterCheckThatDayOpens() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.popover.isOpenable = false
         harness.at(today, hour: 18)
@@ -215,20 +257,11 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(harness.lastClosedDay == today)
     }
 
-    @Test func anOpenerThatClicksButShowsNothingMarksNothingEndsTheModeAndALaterCheckOpens() async throws {
+    @Test func aShownPopoverWithTheModeOffMarksNothing() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
-        harness.popover.isOpenable = false
-        harness.popover.yieldsBeforeAnswering = true
         harness.at(today, hour: 18)
-        #expect(await harness.coordinator.check() == .due)
-        #expect(!harness.coordinator.isClosingDay)
+        harness.coordinator.popoverShown()
         #expect(harness.lastClosedDay == nil)
-        harness.popover.isOpenable = true
-        harness.at(today, hour: 18, minute: 30)
-        await harness.coordinator.check()
-        #expect(harness.popover.openings == 2)
-        #expect(harness.coordinator.isClosingDay)
-        #expect(harness.lastClosedDay == today)
     }
 
     @Test func aLockedScreenOpensNothingMarksNothingAndTheNextCheckAfterTheUnlockOpens() async throws {
