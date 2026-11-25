@@ -7,6 +7,7 @@ pnpm-lock.yaml
 test-results
 **/_*.spec.ts
 *.md
+*.mdx
 *.yml
 *.yaml
 *.sql

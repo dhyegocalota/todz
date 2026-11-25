@@ -36,7 +36,7 @@ enum Css {
 const JOINED_NOTICE = "You're on the list. Check your inbox.";
 const SLOW_SCRIPT_DELAY_MS = 1_500;
 const SELF_HOST_TITLE = 'Self-host todz';
-const SELF_HOST_GUIDE_FILE = path.join(import.meta.dirname, '..', '..', '..', 'docs', 'self-host.md');
+const SELF_HOST_GUIDE_FILE = path.join(import.meta.dirname, '..', '..', '..', 'apps', 'docs', 'self-host.mdx');
 const SECOND_LEVEL_HEADING_PREFIX = '## ';
 const CODE_FENCE = '```';
 const MAXIMUM_DARK_CHANNEL = 40;

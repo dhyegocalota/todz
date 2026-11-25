@@ -5,8 +5,8 @@ import { frontMatterOf } from './front-matter';
 import { capturedNames, readRepositoryFile, REPOSITORY_URL, repositoryPath } from './repository-files';
 import { swiftCopyValue } from './swift-copy';
 
-const GUIDE = 'docs/self-host.md';
-const DOCS_GUIDE = 'apps/docs/self-host.mdx';
+const GUIDE = 'apps/docs/self-host.mdx';
+const LEGACY_GUIDE = 'docs/self-host.md';
 const GUIDE_TITLE = 'Self-host todz';
 const KEY_SCREEN_COPY = 'apps/macos/Copy/KeyScreenCopy.swift';
 const KEY_SCREEN_TITLE_NAME = 'title';
@@ -114,8 +114,8 @@ describe('the self-host guide', () => {
   });
 
   test('is the docs site page, not a file of docs/', () => {
-    expect(existsSync(repositoryPath(DOCS_GUIDE))).toBe(true);
-    expect(existsSync(repositoryPath(GUIDE))).toBe(false);
+    expect(existsSync(repositoryPath(GUIDE))).toBe(true);
+    expect(existsSync(repositoryPath(LEGACY_GUIDE))).toBe(false);
   });
 
   test('opens with front matter that titles it, and has no heading of its own', () => {
