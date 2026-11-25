@@ -27,7 +27,7 @@ import type { ProjectResult } from './project-result';
 import type { ProjectStore } from './project-store';
 
 const MCP_SERVER_NAME = 'todz';
-const MCP_SERVER_VERSION = '0.1.0';
+export const MCP_SERVER_VERSION = '0.1.0';
 const TEXT_CONTENT = 'text';
 const USER_ROLE = 'user';
 const READ_ONLY_ANNOTATIONS = { readOnlyHint: true };
