@@ -38,7 +38,8 @@ private func isFocusFilterQuiet() async -> Bool {
     var quietGateReaction: Task<Void, Never>?
     private var launchSurfaceStart = LaunchSurfaceStart.now
     private var engagementObservation: (any NSObjectProtocol)?
-    private var hasStartedProactiveSurfaces = false
+    private var isAwaitingEngagement = false
+    private var launchReading: Task<Void, Never>?
     let dayTemperaturePreference = DayTemperaturePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     private(set) lazy var dayClose = DayCloseCoordinator(
         gate: gate,
@@ -81,7 +82,7 @@ private func isFocusFilterQuiet() async -> Bool {
         decideLaunchSurfaceStart(notification)
         observeWidgetRequests()
         observeDayChanges()
-        Task {
+        launchReading = Task {
             await readFocusFilter()
             startDayTemperature()
             dayTemperatureScheduler.start()
@@ -96,21 +97,30 @@ private func isFocusFilterQuiet() async -> Bool {
             isActivationProhibited: NSApp.activationPolicy() == .prohibited
         )
         guard launchSurfaceStart == .afterTheOwnerEngages else { return }
-        panel.onShown = { [weak self] in self?.startProactiveSurfaces() }
+        isAwaitingEngagement = true
+        panel.onShown = { [weak self] in self?.ownerEngaged() }
         engagementObservation = NotificationCenter.default.addObserver(forName: NSApplication.didUpdateNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard NSApp.activationPolicy() != .prohibited else { return }
-                self?.startProactiveSurfaces()
+                self?.ownerEngaged()
             }
         }
     }
 
     // NB ADR 0066: a launch for an intent starts no pushed surface until the owner engages the app.
-    private func startProactiveSurfaces() {
-        guard !hasStartedProactiveSurfaces else { return }
-        hasStartedProactiveSurfaces = true
+    private func ownerEngaged() {
+        guard isAwaitingEngagement else { return }
+        isAwaitingEngagement = false
+        panel.onShown = nil
         engagementObservation.map(NotificationCenter.default.removeObserver)
         engagementObservation = nil
+        Task {
+            await launchReading?.value
+            startProactiveSurfaces()
+        }
+    }
+
+    private func startProactiveSurfaces() {
         dayCloseScheduler.start()
         morningGlanceTrigger.start()
     }
@@ -120,7 +130,7 @@ private func isFocusFilterQuiet() async -> Bool {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
-        if launchSurfaceStart == .afterTheOwnerEngages { startProactiveSurfaces() }
+        ownerEngaged()
         Task { await model.takeWidgetRequests() }
     }
 

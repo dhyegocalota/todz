@@ -65,7 +65,13 @@ enum ShortcutsCopy {
     }
 
     private static var spokenTitleLimitInWords: String {
-        NumberFormatter.localizedString(from: NSNumber(value: ShortcutLimits.spokenTitleLimit), number: .spellOut)
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.numberStyle = .spellOut
+        guard let words = formatter.string(from: NSNumber(value: ShortcutLimits.spokenTitleLimit)) else {
+            preconditionFailure("a whole number always spells out")
+        }
+        return words
     }
 
     private static func spokenSentence(for today: ShortcutToday) -> String {
