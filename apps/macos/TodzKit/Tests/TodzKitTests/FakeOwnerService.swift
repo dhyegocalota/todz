@@ -66,7 +66,12 @@ struct StatusFailure: Sendable {
 
     func updateOwner(session: String, timeZone: String) async throws -> Owner {
         try await record(.updateOwner(session: session, timeZone: timeZone))
-        return Owner(identifier: issuedSession.owner.identifier, timeZone: timeZone)
+        return Owner(identifier: issuedSession.owner.identifier, timeZone: timeZone, agentNudge: issuedSession.owner.agentNudge)
+    }
+
+    func updateAgentNudge(session: String, isEnabled: Bool) async throws -> Owner {
+        try await record(.updateAgentNudge(session: session, isEnabled: isEnabled))
+        return Owner(identifier: issuedSession.owner.identifier, timeZone: issuedSession.owner.timeZone, agentNudge: isEnabled)
     }
 
     func listWorkspaces(session: String) async throws -> [Workspace] {

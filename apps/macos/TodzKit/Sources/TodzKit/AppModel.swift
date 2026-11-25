@@ -47,6 +47,9 @@ import Observation
     var refreshesInFlight = 0
     public internal(set) var isOffline = false
     var isOwnerConfirmed = false
+    public internal(set) var agentNudge: Bool?
+    var isSavingAgentNudge = false
+    var isAgentNudgeNotSaved = false
 
     @ObservationIgnored var hasLaunched = false
     @ObservationIgnored var isLaunchSettled = false

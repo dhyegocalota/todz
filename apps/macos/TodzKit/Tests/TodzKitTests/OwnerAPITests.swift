@@ -81,6 +81,28 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
         #expect(owner == Owner(identifier: ownerIdentifier, timeZone: timeZone))
     }
 
+    @Test func readOwnerDecodesTheAgentNudge() async throws {
+        let ownerIdentifier = UUID().uuidString
+        let body = "{\"owner\":\(OwnerFixtures.ownerJSON(identifier: ownerIdentifier, timeZone: timeZone, agentNudge: true))}"
+        let owner = try await api(answering: .response(status: 200, body: body)).readOwner(session: session)
+        #expect(owner.agentNudge == true)
+    }
+
+    @Test func readOwnerOfAServerWithoutTheAgentNudgeLeavesItUnknown() async throws {
+        let body = "{\"owner\":{\"id\":\"o\",\"time_zone\":\"UTC\"}}"
+        let owner = try await api(answering: .response(status: 200, body: body)).readOwner(session: session)
+        #expect(owner == Owner(identifier: "o", timeZone: "UTC"))
+        #expect(owner.agentNudge == nil)
+    }
+
+    @Test func updateAgentNudgePatchesOnlyTheAgentNudge() async throws {
+        let ownerIdentifier = UUID().uuidString
+        let body = "{\"owner\":\(OwnerFixtures.ownerJSON(identifier: ownerIdentifier, timeZone: timeZone, agentNudge: true))}"
+        let owner = try await api(answering: .response(status: 200, body: body)).updateAgentNudge(session: session, isEnabled: true)
+        try expectOnlyRequest(ExpectedRequest(method: "PATCH", path: "/owner", session: session, body: ["agent_nudge": true]))
+        #expect(owner == Owner(identifier: ownerIdentifier, timeZone: timeZone, agentNudge: true))
+    }
+
     @Test func listWorkspacesUnwrapsTheWorkspaces() async throws {
         let identifier = UUID().uuidString
         let body = "{\"workspaces\":[\(workspaceJSON(identifier: identifier, inboxIdentifier: projectIdentifier))]}"
