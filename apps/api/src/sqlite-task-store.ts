@@ -160,6 +160,22 @@ export class SqliteTaskStore implements TaskStore {
     return row.last_issued_number;
   }
 
+  firstOrderKey(_parameters: { excludingNumber: number }): string | null {
+    throw new Error('firstOrderKey is not implemented');
+  }
+
+  lastOrderKey(_parameters: { excludingNumber: number }): string | null {
+    throw new Error('lastOrderKey is not implemented');
+  }
+
+  orderKeyBefore(_parameters: { orderKey: string; excludingNumber: number }): string | null {
+    throw new Error('orderKeyBefore is not implemented');
+  }
+
+  orderKeyAfter(_parameters: { orderKey: string; excludingNumber: number }): string | null {
+    throw new Error('orderKeyAfter is not implemented');
+  }
+
   lastChangeNumber(): number | null {
     const [row] = this.sql.exec<{ last_change_number: number }>('SELECT last_change_number FROM change_counter').toArray();
     if (row === undefined) return null;

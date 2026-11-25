@@ -28,6 +28,22 @@ export class InMemoryTaskStore implements TaskStore {
     return this.highestIssuedNumber === NO_TASK_ISSUED ? null : this.highestIssuedNumber;
   }
 
+  firstOrderKey(_parameters: { excludingNumber: number }): string | null {
+    throw new Error('firstOrderKey is not implemented');
+  }
+
+  lastOrderKey(_parameters: { excludingNumber: number }): string | null {
+    throw new Error('lastOrderKey is not implemented');
+  }
+
+  orderKeyBefore(_parameters: { orderKey: string; excludingNumber: number }): string | null {
+    throw new Error('orderKeyBefore is not implemented');
+  }
+
+  orderKeyAfter(_parameters: { orderKey: string; excludingNumber: number }): string | null {
+    throw new Error('orderKeyAfter is not implemented');
+  }
+
   insertTask(task: Task): void {
     this.writeCount += 1;
     this.tasks.set(task.number, structuredClone(task));
