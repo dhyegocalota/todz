@@ -12,6 +12,7 @@ type DayMailInput = {
   to: string;
   replyTo: string;
   origin: string;
+  stopToken: string;
   tasks: DayMailTask[];
   count: number;
   workspaceName: string;

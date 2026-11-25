@@ -45,6 +45,8 @@ export const DAY_EMAIL_PROJECTS_PER_OWNER_MAX = 100;
 export const DAY_EMAIL_LINES_MAX = 20;
 export const DAY_EMAIL_RETENTION_MS = 30 * MILLISECONDS_PER_DAY;
 export const DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS = 7 * MILLISECONDS_PER_DAY;
+export const DAY_EMAIL_STOP_LINK_LIFETIME_MS = 30 * MILLISECONDS_PER_DAY;
+export const DAY_EMAIL_STOP_TOKEN_LENGTH = 64;
 export const COMPANY = {
   tradeName: 'Logic Bit',
   legalName: 'Logic Bit AI Software Boutique Ltda',

@@ -12,6 +12,8 @@ import {
   DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS,
   DAY_EMAIL_RETENTION_MS,
   DAY_EMAIL_SENDS_PER_TICK_MAX,
+  DAY_EMAIL_STOP_LINK_LIFETIME_MS,
+  DAY_EMAIL_STOP_TOKEN_LENGTH,
   FORMATTER_LOCALE,
   HEALTH_SERVICE_NAME,
   HOURS_PER_DAY,
@@ -121,6 +123,11 @@ describe('day email constants', () => {
   test('records are kept thirty days and a reply address lives seven (pin)', () => {
     expect(DAY_EMAIL_RETENTION_MS).toBe(30 * MILLISECONDS_IN_A_DAY);
     expect(DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS).toBe(7 * MILLISECONDS_IN_A_DAY);
+  });
+
+  test('a stop link lives thirty days and its token is sixty-four hexadecimal characters (pin)', () => {
+    expect(DAY_EMAIL_STOP_LINK_LIFETIME_MS).toBe(30 * MILLISECONDS_IN_A_DAY);
+    expect(DAY_EMAIL_STOP_TOKEN_LENGTH).toBe(64);
   });
 
   test('a reply comes to the reply local part, is at most a mebibyte, and an owner adds at most five a minute and twenty a day (pin)', () => {

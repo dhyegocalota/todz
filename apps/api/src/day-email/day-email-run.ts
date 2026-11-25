@@ -65,6 +65,7 @@ async function deliverDay({ scheduledTime, env, dueOwner, sender, publicOrigin }
           to: candidate.address,
           replyTo,
           origin: publicOrigin,
+          stopToken: '',
           tasks: dueToday.tasks,
           count: dueToday.count,
           workspaceName: inboxWorkspace.name,
