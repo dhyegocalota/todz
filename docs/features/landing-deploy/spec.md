@@ -12,7 +12,7 @@
 
 ## Change
 
-- The run log gains one row per step, 1 to 15. Step 10 is not run (the owner's widget), and step 15 is not run because the limiters and the sign-in code did not change since 2bde053.
+- The run log gains one row per step, 1 to 15. Step 10 is not run (the owner's widget). Step 15 ran once after the reviews, because the security review asked for proof of the limit through the new host dispatch.
 - Nothing else changes: the runbook's steps held as written.
 
 ## Test list
