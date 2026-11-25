@@ -524,6 +524,8 @@ describe('which Accept header asks for JSON', () => {
     ['Application/JSON', true],
     ['text/html, application/json;q=0.9', true],
     ['application/json;q=0', false],
+    ['application/json; q=0.0', false],
+    ['application/json;q=0.000', false],
     ['*/*', false],
     ['text/html', false],
     ['application/jsonp', false],
@@ -701,6 +703,22 @@ describe("a bot's join answers joined and keeps nothing", () => {
     expectOutcome({ run, status: FORBIDDEN_STATUS, outcome: 'check-failed' });
     expect(run.siteverifyBodies).toHaveLength(1);
     await expectNothingKept({ run, address });
+  });
+
+  test.each(Object.values(LimiterBinding))('a filled honeypot over %s answers try again, 429, like a real join', async (binding) => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, website: HONEYPOT_VALUE, refusing: [binding] });
+    expectOutcome({ run, status: TOO_MANY_STATUS, outcome: 'try-again' });
+    await expectNothingKept({ run, address });
+  });
+
+  test('a stamp that is too young over the address limit answers try again, 429', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW);
+    const run = await joinJson({
+      stamp: await joinStampOf({ renderedAt: FIXED_NOW - MILLISECONDS_PER_SECOND }),
+      refusing: [LimiterBinding.Address],
+    });
+    expectOutcome({ run, status: TOO_MANY_STATUS, outcome: 'try-again' });
   });
 
   test('a filled honeypot still spends a slot of the client limit', async () => {

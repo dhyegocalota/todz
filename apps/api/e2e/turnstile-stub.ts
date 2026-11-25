@@ -53,6 +53,7 @@ setTimeout(solve, ${SLOW_TOKEN_DELAY_MS});
 export const NEVER_SOLVING_TURNSTILE_STUB = `{
 ${TURNSTILE_SOLVE}
 ${TURNSTILE_RESET}
+window.solveNow = solve;
 }`;
 
 export const FAILED_BEFORE_PRESS_TURNSTILE_STUB = `{

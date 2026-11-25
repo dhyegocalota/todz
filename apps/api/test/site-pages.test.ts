@@ -1,14 +1,17 @@
+import { createExecutionContext } from 'cloudflare:test';
 import { exports } from 'cloudflare:workers';
 import { MILLISECONDS_PER_SECOND, WAITLIST_MINIMUM_FILL_MS } from '@todz/types';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { LandingNotice, serveLandingPage } from '../src/site/landing-page';
+import { serveSite } from '../src/site/site-endpoint';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { SITE_STYLE } from '../src/site/site-style';
 import { StampVerdict, stampVerdictOf } from '../src/site/waitlist-stamp';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
 import { TURNSTILE_TEST_SECRET } from './email-sign-in-client';
+import { workerEnvWith } from './owner-client';
 import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
 import { joinStampOf, withoutStamps } from './waitlist-client';
 
@@ -496,6 +499,16 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
     expect(directives).toContain(`frame-src ${TURNSTILE_ORIGIN}`);
     expect(directives).toContain(CONNECT_DIRECTIVE);
     expect(directives).toContain("form-action 'self'");
+  });
+
+  test('through the Worker with a site key and no secret, the page has no stamp and no widget', async () => {
+    const request = new Request(`${LOCAL_SITE_ORIGIN}/`);
+    const workerEnv = workerEnvWith({ SITE_ORIGIN: LOCAL_SITE_ORIGIN, TURNSTILE_SITE_KEY: TEST_SITE_KEY, TURNSTILE_SECRET_KEY: undefined });
+    const answer = await serveSite({ request, env: workerEnv, executionContext: createExecutionContext() });
+    const html = await answer.text();
+    expect(stampsOf(html)).toEqual([]);
+    expect(html).not.toMatch(WIDGET_PATTERN);
+    expect(answer.headers.get('Content-Security-Policy')).not.toContain(TURNSTILE_ORIGIN);
   });
 
   test('without the secret, the page has no stamp and no widget', async () => {

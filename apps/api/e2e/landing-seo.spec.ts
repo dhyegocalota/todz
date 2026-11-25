@@ -188,6 +188,33 @@ test.describe('WebMCP tools', () => {
     await expect.poll(() => answers).toEqual([WEBMCP_COPY.answers.tryAgain, WEBMCP_COPY.answers.tryAgain]);
   });
 
+  test('two overlapping join_waitlist calls on an unsolved check submit the address of the first only', async ({ page }) => {
+    await page.route(TURNSTILE_SCRIPT_URL, (route) =>
+      route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: NEVER_SOLVING_TURNSTILE_STUB }),
+    );
+    const posts: (string | null)[] = [];
+    page.on('request', (request) => request.method() === 'POST' && request.url().endsWith(JOIN_PATH) && posts.push(request.postData()));
+    await page.clock.install();
+    await page.goto(LANDING_PATH);
+    await page.clock.fastForward(WAITLIST_FILL_HOLD_MS);
+    const firstAddress = `first.${uniqueAddress()}`;
+    const secondAddress = `second.${uniqueAddress()}`;
+    const answers: string[] = [];
+    await page.exposeFunction('reportToolAnswer', (text: string) => answers.push(text));
+    await page.evaluate(
+      ([name, first, second]) => {
+        const report = (text: string) => window.reportToolAnswer(text);
+        void window.callTool(String(name), { email: String(first) }).then(report);
+        void window.callTool(String(name), { email: String(second) }).then(report);
+      },
+      [WebMcpToolName.Join, firstAddress, secondAddress],
+    );
+    await page.evaluate(() => Reflect.get(window, 'solveNow')());
+    await expect.poll(() => answers).toEqual([WEBMCP_COPY.answers.alreadySubmitting, WEBMCP_COPY.answers.joined]);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toContain(`email=${encodeURIComponent(firstAddress)}`);
+  });
+
   test('join_waitlist refuses an invalid address and posts nothing', async ({ page }) => {
     const posts: string[] = [];
     page.on('request', (request) => request.method() === 'POST' && posts.push(request.url()));

@@ -54,6 +54,7 @@ const HONEYPOT_FIELD = HONEYPOT_FIELD_NAME;
 const HONEYPOT_VALUE = 'https://spam.example';
 const STAMP_PATTERN = /^\d{13}\.[A-Za-z0-9_-]{43}$/;
 const POLICY_HEADER = 'content-security-policy';
+const SLOW_FIRST_BYTE_MS = 2_000;
 const WIDGET_FRAME_PATTERN = /<div class="join-check">.*?<\/div><\/div>/gs;
 const UNSAFE_INLINE = "'unsafe-inline'";
 const CONNECT_DIRECTIVE = "connect-src 'self'";
@@ -480,6 +481,18 @@ test.describe('join', () => {
     await expect(button).not.toHaveAttribute(ARIA_DISABLED, 'true');
     await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
     await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.checkFailed);
+  });
+
+  test('a slow first byte does not make a fast submit too young for the server', async ({ page }) => {
+    const address = uniqueAddress();
+    await page.route(`**${SitePath.Landing}`, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, SLOW_FIRST_BYTE_MS));
+      await route.continue();
+    });
+    await page.goto(SitePath.Landing);
+    await submitForm({ page, form: Fragment.Hero, address });
+    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
+    await expect.poll(() => mailCountTo(address)).toBe(1);
   });
 
   test('a try again with Retry-After keeps the button waiting until the delay has passed', async ({ page }) => {
