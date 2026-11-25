@@ -13,8 +13,14 @@ import Observation
     public internal(set) var pendingLink: PendingSignInLink?
     public internal(set) var signInChallengeToken: String?
     public internal(set) var challengeRound = 0
-    public internal(set) var workspaces: [Workspace] = []
-    public internal(set) var activeWorkspaceIdentifier: String?
+    public internal(set) var workspaces: [Workspace] = [] {
+        didSet { storedTaskViews = nil }
+    }
+
+    public internal(set) var activeWorkspaceIdentifier: String? {
+        didSet { storedTaskViews = nil }
+    }
+
     public var selectedItem: SidebarItem = .inbox {
         didSet {
             waitingLink = nil
@@ -26,7 +32,10 @@ import Observation
         didSet { waitingLink = nil }
     }
 
-    public internal(set) var board = TaskBoard()
+    public internal(set) var board = TaskBoard() {
+        didSet { storedTaskViews = nil }
+    }
+
     public internal(set) var projectLoads: [String: ProjectLoad] = [:]
     public internal(set) var writesInFlight: Set<WriteTarget> = []
     public internal(set) var ruleIssues: [WriteTarget: RuleIssue] = [:]
@@ -44,7 +53,10 @@ import Observation
     public internal(set) var failedRevokeIdentifiers: Set<String> = []
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
-    var outbox = Outbox()
+    var outbox = Outbox() {
+        didSet { storedTaskViews = nil }
+    }
+
     var refreshesInFlight = 0
     public internal(set) var isOffline = false
     var isOwnerConfirmed = false
@@ -89,6 +101,7 @@ import Observation
     @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored var serverSignOut: Task<Void, Never>?
     @ObservationIgnored var isLocalDataUnerased = false
+    @ObservationIgnored public var onTaskArrived: ((Int) -> Void)?
     @ObservationIgnored var service: any OwnerService
     @ObservationIgnored var signals: any ChangeSignals
     @ObservationIgnored public let defaultURL: ServerAddress
@@ -99,6 +112,9 @@ import Observation
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let pendingLinks: any PendingLinkVault
     @ObservationIgnored let store: any SyncStore
+    @ObservationIgnored let cacheWriter: ProjectCacheWriter
+    @ObservationIgnored var taskViewsBuildCount = 0
+    @ObservationIgnored private var storedTaskViews: (day: CalendarDate, views: TaskViews)?
     @ObservationIgnored let widgetStore: any WidgetStore
     @ObservationIgnored let reloadWidgets: @Sendable () -> Void
     @ObservationIgnored public let timeZone: TimeZone
@@ -116,6 +132,7 @@ import Observation
         vault: any SessionVault,
         pendingLinks: any PendingLinkVault,
         store: any SyncStore,
+        cacheScheduler: CacheScheduler = .immediate,
         widgetStore: any WidgetStore,
         reloadWidgets: @escaping @Sendable () -> Void,
         timeZone: TimeZone,
@@ -137,6 +154,7 @@ import Observation
         self.vault = vault
         self.pendingLinks = pendingLinks
         self.store = store
+        self.cacheWriter = ProjectCacheWriter(store: store, scheduler: cacheScheduler)
         self.widgetStore = widgetStore
         self.reloadWidgets = reloadWidgets
         self.timeZone = timeZone
@@ -144,6 +162,7 @@ import Observation
         self.pause = pause
         self.makeIdempotencyKey = makeIdempotencyKey
         self.makeLinkVerifier = makeLinkVerifier
+        cacheWriter.onFailure = { [weak self] in self?.noteCacheNotSavedFromAnyThread() }
         eraseDataOfAnotherServer()
     }
 
@@ -161,13 +180,22 @@ import Observation
 
     public var taskViews: TaskViews? {
         guard let activeWorkspace else { return nil }
-        return TaskViews(
+        let (currentBoard, currentOutbox, day) = (board, outbox, today)
+        if let storedTaskViews, storedTaskViews.day == day { return storedTaskViews.views }
+        taskViewsBuildCount += 1
+        let views = TaskViews(
             projects: activeWorkspace.projects,
-            board: board.applying(outbox),
-            pendingTasks: outbox.pendingTasks,
-            day: today,
+            board: currentBoard.applying(currentOutbox),
+            pendingTasks: currentOutbox.pendingTasks,
+            day: day,
             timeZone: timeZone
         )
+        storedTaskViews = (day: day, views: views)
+        return views
+    }
+
+    public func flushCache() {
+        cacheWriter.flush()
     }
 
     public var canTryAgain: Bool {
@@ -261,7 +289,7 @@ import Observation
     public func signOut() async {
         guard let session else { return }
         do {
-            try store.erase()
+            try eraseCache()
         } catch {
             raise(.signOutFailed)
             return

@@ -202,7 +202,7 @@ describe('ProjectStore when the store fails', () => {
     });
     const writeMessage = await rejectionMessageOf({
       stub,
-      call: (instance) => instance.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Two')] }),
+      call: (instance) => instance.completeTasks({ actor: AGENT_ACTOR, numbers: [1], note: null }),
     });
     expect(readMessage).toBe(UNMAPPED_ROW_MESSAGE);
     expect(writeMessage).toBe(UNMAPPED_ROW_MESSAGE);

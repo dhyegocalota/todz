@@ -44,6 +44,8 @@ struct TaskRows: View {
                 guard !keys.isEmpty else { return }
                 windowState.openInspectorTitle()
             }
+            .onAppear { PerfProbe.shared?.rowsAppeared() }
+            .task { await ScrollWalk.run(sections: sections, proxy: proxy) }
             .onChange(of: model.selectedTask) { _, selectedTask in
                 guard let selectedTask else { return }
                 Task { proxy.scrollTo(selectedTask) }

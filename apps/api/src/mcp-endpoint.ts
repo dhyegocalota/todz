@@ -14,7 +14,7 @@ import type { Env } from './env';
 import { HttpStatus } from './http-status';
 import { MCP_COPY } from './mcp-copy';
 import { type McpServerScope, buildMcpServer, envelopeClientName } from './mcp-server';
-import { findSessionClientName, openMcpSession } from './mcp-sessions';
+import { openMcpSession } from './mcp-sessions';
 import { calendarDateInTimeZone } from './owner-today';
 import { parsedJson } from './parsed-json';
 import { resultOf } from './project-result';
@@ -106,7 +106,7 @@ async function initializeSession({
 }
 
 async function serveLegacy(legacyRequest: LegacyRequest): Promise<Response> {
-  const { request, env, keyProject, now } = legacyRequest;
+  const { request, keyProject } = legacyRequest;
   const body = parsedJson(await request.clone().text());
   const initializeMessage = InitializeMessageSchema.safeParse(body);
   if (initializeMessage.success) {
@@ -117,7 +117,7 @@ async function serveLegacy(legacyRequest: LegacyRequest): Promise<Response> {
   if (isMissingSession) {
     return jsonRpcError({ status: HttpStatus.BadRequest, id: null, code: SESSION_REQUIRED_CODE, message: MCP_COPY.sessionRequired });
   }
-  const clientName = await findSessionClientName({ directory: env.DIRECTORY, sessionId, keyDigest: keyProject.keyDigest, now });
+  const { sessionClientName: clientName } = keyProject;
   if (clientName === null) {
     return jsonRpcError({ status: HttpStatus.NotFound, id: null, code: SESSION_NOT_FOUND_CODE, message: MCP_COPY.sessionNotFound });
   }
@@ -127,7 +127,9 @@ async function serveLegacy(legacyRequest: LegacyRequest): Promise<Response> {
 export async function serveMcp({ request, env, now }: { request: Request; env: Env; now: number }): Promise<Response> {
   const secret = bearerSecret(request);
   if (secret === null) return unauthorized();
-  const keyProject = await openKeyProject({ env, secret });
+  const sessionId = request.headers.get(SESSION_HEADER);
+  const hasSession = sessionId !== null && sessionId.trim() !== '';
+  const keyProject = await openKeyProject({ env, secret, mcpSession: hasSession ? { sessionId, now } : undefined });
   if (keyProject === null) return unauthorized();
   if (request.method !== MCP_METHOD) return methodNotAllowed();
   const today = calendarDateInTimeZone({ timeZone: keyProject.timeZone, now });

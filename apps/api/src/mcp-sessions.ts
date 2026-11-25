@@ -1,7 +1,7 @@
 import { MILLISECONDS_PER_DAY } from '@todz/types';
 import { digestCredential } from './credential-digest';
 import { generateCredentialSecret } from './credential-secret';
-import { findMcpSessionClient, insertMcpSession } from './directory';
+import { insertMcpSession } from './directory';
 
 const MCP_SESSION_LIFETIME_DAYS = 30;
 const MCP_SESSION_LIFETIME_MS = MCP_SESSION_LIFETIME_DAYS * MILLISECONDS_PER_DAY;
@@ -30,18 +30,4 @@ export async function openMcpSession({
     sessionsPerKeyMax: MCP_SESSIONS_PER_KEY_MAX,
   });
   return sessionId;
-}
-
-export async function findSessionClientName({
-  directory,
-  sessionId,
-  keyDigest,
-  now,
-}: {
-  directory: D1Database;
-  sessionId: string;
-  keyDigest: string;
-  now: number;
-}): Promise<string | null> {
-  return findMcpSessionClient({ directory, digest: await digestCredential(sessionId), keyDigest, now });
 }

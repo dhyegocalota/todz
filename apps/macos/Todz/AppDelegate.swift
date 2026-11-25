@@ -24,6 +24,7 @@ private func isFocusFilterQuiet() async -> Bool {
         vault: FileSessionVault(folder: AppConfiguration.sessionFolder),
         pendingLinks: FilePendingLinkVault(folder: AppConfiguration.sessionFolder),
         store: FileSyncStore(folder: AppConfiguration.sessionFolder.appending(path: cacheFolderName)),
+        cacheScheduler: .background,
         widgetStore: AppConfiguration.widgetStore,
         reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
         timeZone: .autoupdatingCurrent,
@@ -62,6 +63,7 @@ private func isFocusFilterQuiet() async -> Bool {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        PerfProbe.shared?.start(model: model)
         observeWidgetRequests()
         observeDayChanges()
         Task {
@@ -69,6 +71,10 @@ private func isFocusFilterQuiet() async -> Bool {
             dayCloseScheduler.start()
             morningGlanceTrigger.start()
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        model.flushCache()
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {

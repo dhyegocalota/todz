@@ -1,6 +1,6 @@
 import Foundation
 
-private let millisecondsPerSecond: Double = 1_000
+let millisecondsPerSecond: Double = 1_000
 
 private func dateOfMilliseconds(decoder: any Decoder) throws -> Date {
     let milliseconds = try decoder.singleValueContainer().decode(Int64.self)

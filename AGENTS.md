@@ -19,6 +19,7 @@ apps/docs               the documentation site Mintlify builds for docs.todz.app
 apps/macos              the native macOS app: an XcodeGen project whose Todz target holds the views and whose TodzWidgets extension holds the desktop widgets, sharing the copy, over the TodzKit Swift package
 libs/core               the task and project rules behind ports, no I/O
 libs/types              shared enums and constants, no logic
+tools/perf              the load, stress and bounded production harness behind `pnpm perf`, the reader of the app's probe and the budgets of ADR 0061
 tools/repository-shape  tests about the repository itself: README links, root entries, workflows, feature statuses, indexes, runbooks, scenarios, agent surfaces
 docs/adr                architecture decision records
 docs/learnings          dated traps, with what inspired them and when they were revisited

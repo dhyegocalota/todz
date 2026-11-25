@@ -36,13 +36,15 @@ enum StoreCall: Equatable, Sendable {
     }
 }
 
-@MainActor final class InMemorySyncStore: SyncStore {
+final class InMemorySyncStore: SyncStore, @unchecked Sendable {
+    private let lock = NSLock()
     var owner: OwnerCache?
     var projects: [String: ProjectCache] = [:]
     var outbox: Data?
     var calls: [StoreCall] = []
     var failures: [StoreRoute: SyncStoreError] = [:]
     var onCall: ((StoreCall) -> Void)?
+    private(set) var mainThreadProjectWrites = 0
 
     func routes() -> [StoreRoute] {
         calls.map(\.route)
@@ -57,62 +59,63 @@ enum StoreCall: Equatable, Sendable {
         return try OwnerCoding.decoder().decode(Outbox.self, from: outbox)
     }
 
-    nonisolated func readOwner() throws -> OwnerCache? {
-        try MainActor.assumeIsolated {
-            try record(.readOwner)
-            return owner
-        }
+    func readOwner() throws -> OwnerCache? {
+        lock.lock()
+        defer { lock.unlock() }
+        try record(.readOwner)
+        return owner
     }
 
-    nonisolated func writeOwner(_ cache: OwnerCache) throws {
-        try MainActor.assumeIsolated {
-            try record(.writeOwner(cache))
-            owner = cache
-        }
+    func writeOwner(_ cache: OwnerCache) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        try record(.writeOwner(cache))
+        owner = cache
     }
 
-    nonisolated func readProject(identifier: String) throws -> ProjectCache? {
-        try MainActor.assumeIsolated {
-            try record(.readProject(identifier: identifier))
-            return projects[identifier]
-        }
+    func readProject(identifier: String) throws -> ProjectCache? {
+        lock.lock()
+        defer { lock.unlock() }
+        try record(.readProject(identifier: identifier))
+        return projects[identifier]
     }
 
-    nonisolated func writeProject(_ cache: ProjectCache) throws {
-        try MainActor.assumeIsolated {
-            try record(.writeProject(cache))
-            projects[cache.projectIdentifier] = cache
-        }
+    func writeProject(_ cache: ProjectCache) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        if Thread.isMainThread { mainThreadProjectWrites += 1 }
+        try record(.writeProject(cache))
+        projects[cache.projectIdentifier] = cache
     }
 
-    nonisolated func eraseProject(identifier: String) throws {
-        try MainActor.assumeIsolated {
-            try record(.eraseProject(identifier: identifier))
-            projects[identifier] = nil
-        }
+    func eraseProject(identifier: String) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        try record(.eraseProject(identifier: identifier))
+        projects[identifier] = nil
     }
 
-    nonisolated func readOutbox() throws -> Data? {
-        try MainActor.assumeIsolated {
-            try record(.readOutbox)
-            return outbox
-        }
+    func readOutbox() throws -> Data? {
+        lock.lock()
+        defer { lock.unlock() }
+        try record(.readOutbox)
+        return outbox
     }
 
-    nonisolated func writeOutbox(_ data: Data) throws {
-        try MainActor.assumeIsolated {
-            try record(.writeOutbox(data))
-            outbox = data
-        }
+    func writeOutbox(_ data: Data) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        try record(.writeOutbox(data))
+        outbox = data
     }
 
-    nonisolated func erase() throws {
-        try MainActor.assumeIsolated {
-            try record(.erase)
-            owner = nil
-            projects = [:]
-            outbox = nil
-        }
+    func erase() throws {
+        lock.lock()
+        defer { lock.unlock() }
+        try record(.erase)
+        owner = nil
+        projects = [:]
+        outbox = nil
     }
 
     private func record(_ call: StoreCall) throws {

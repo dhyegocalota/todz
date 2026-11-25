@@ -15,6 +15,7 @@ export enum HttpHeader {
   StrictTransportSecurity = 'Strict-Transport-Security',
   ContentTypeOptions = 'X-Content-Type-Options',
   ReferrerPolicy = 'Referrer-Policy',
+  ServerTiming = 'Server-Timing',
 }
 
 export const NO_STORE = 'no-store';
