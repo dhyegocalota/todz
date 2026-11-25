@@ -6,6 +6,7 @@ import { issueReplyAddress } from '../../src/day-email/day-email-reply-address';
 import { issueStopLink } from '../../src/day-email/day-email-stop-link';
 import { insertStopLink } from '../../src/day-email/day-email-store';
 import { digestCredential } from '../../src/credential-digest';
+import { generateStopSecret } from '../../src/credential-secret';
 import type { Env } from '../../src/env';
 import worker from '../../src/index';
 import { CLIENT_ADDRESS, CLIENT_ADDRESS_HEADER, recordingLimiter } from '../email-sign-in-client';
@@ -165,7 +166,7 @@ describe('a token that does not name a live link', () => {
 
   async function expiredToken(): Promise<SeededStop> {
     const { ownerId, token: sessionToken } = await signInOwner();
-    const token = 'c'.repeat(VALID_LENGTH);
+    const token = generateStopSecret();
     await insertStopLink({
       directory: env.DIRECTORY,
       digest: await digestCredential(token),

@@ -92,7 +92,8 @@ export async function storeOwnerChanges({
     .prepare(UPDATE_OWNER_STATEMENT)
     .bind(timeZone, flagOf(agentNudge), flagOf(dayEmail), dayEmailMinutes, now, ownerId);
   const deleteReplyAddresses = directory.prepare('DELETE FROM day_email_reply_addresses WHERE owner_id = ?').bind(ownerId);
-  const statements = dayEmail === false ? [update, deleteReplyAddresses] : [update];
+  const deleteStopLinks = directory.prepare('DELETE FROM day_email_stop_links WHERE owner_id = ?').bind(ownerId);
+  const statements = dayEmail === false ? [update, deleteReplyAddresses, deleteStopLinks] : [update];
   const [updated] = await directory.batch<OwnerRow>(statements);
   if (updated === undefined) throw new Error('a batch answers one result per statement');
   const [row] = updated.results;

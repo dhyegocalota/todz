@@ -135,6 +135,23 @@ export async function insertReplyAddress({
     .run();
 }
 
+const LIVE_STOP_LINK_OWNER = 'SELECT owner_id FROM day_email_stop_links WHERE digest = ?1 AND expires_at > ?2';
+
+export async function isStopLinkLive({ directory, digest, now }: { directory: D1Database; digest: string; now: number }): Promise<boolean> {
+  const row = await directory.prepare(LIVE_STOP_LINK_OWNER).bind(digest, now).first<{ owner_id: string }>();
+  return row !== null;
+}
+
+export async function stopDayEmail({ directory, digest, now }: { directory: D1Database; digest: string; now: number }): Promise<boolean> {
+  const [turnedOff] = await directory.batch([
+    directory.prepare(`UPDATE owners SET day_email = 0, day_email_chosen_at = ?2 WHERE id = (${LIVE_STOP_LINK_OWNER})`).bind(digest, now),
+    directory.prepare(`DELETE FROM day_email_reply_addresses WHERE owner_id = (${LIVE_STOP_LINK_OWNER})`).bind(digest, now),
+    directory.prepare(`DELETE FROM day_email_stop_links WHERE owner_id = (${LIVE_STOP_LINK_OWNER})`).bind(digest, now),
+  ]);
+  if (turnedOff === undefined) throw new Error('a batch answers one result per statement');
+  return turnedOff.meta.changes > 0;
+}
+
 export async function findReplyAddressOwner({
   directory,
   digest,
