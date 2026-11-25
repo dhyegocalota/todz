@@ -9,7 +9,8 @@ const INDEX_FILE_NAME = 'README.md';
 const MARKDOWN_EXTENSION = '.md';
 const ROOT_PACKAGE_FILE = 'package.json';
 const DEPLOY_RUNBOOK = 'deploy-the-api.md';
-const AGENT_EXCEPTION_SENTENCE = "agents never run them, except `deploy-the-api` and the loop's steps of `mintlify-publish`";
+const AGENT_EXCEPTION_SENTENCE =
+  "agents never run them, except `deploy-the-api`, the loop's steps of `mintlify-publish` and the loop's steps of `performance`";
 const MINTLIFY_RUNBOOK = 'mintlify-publish.md';
 const SETUP_HEADING = '## Setup';
 const NEXT_SECTION_PATTERN = /\n## /;
