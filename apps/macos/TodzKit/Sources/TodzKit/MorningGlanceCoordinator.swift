@@ -20,7 +20,6 @@ private enum PanelState {
     @ObservationIgnored var contentWaiting: Task<Void, Never>?
     @ObservationIgnored var shownContentReviewing: Task<Void, Never>?
     @ObservationIgnored private var isInterruptedWhileOpening = false
-    @ObservationIgnored private var isWaitingForContent = false
     @ObservationIgnored private var waitingChance: Chance?
     @ObservationIgnored private var lockedChance: Chance?
     @ObservationIgnored private var heldDay: CalendarDate?
@@ -118,6 +117,7 @@ private enum PanelState {
             return
         }
         guard !isScreenMirrored() else { return }
+        guard !isScreenCaptured() else { return }
         guard !isScreenLocked() else {
             lockedChance = chance
             return
@@ -147,7 +147,7 @@ private enum PanelState {
             return
         }
         panelState = .onScreen
-        observeShown(workspaceIdentifier: content.workspaceIdentifier, generation: showGeneration)
+        reviewShown(workspaceIdentifier: content.workspaceIdentifier, generation: showGeneration)
     }
 
     // NB ADR 0062: the day is marked only once the panel is seen, and only the chance's own day.
@@ -162,9 +162,8 @@ private enum PanelState {
     }
 
     private func waitForContent(_ chance: Chance) {
+        guard waitingChance == nil else { return }
         waitingChance = chance
-        guard !isWaitingForContent else { return }
-        isWaitingForContent = true
         withObservationTracking {
             _ = content()
         } onChange: { [weak self] in
@@ -177,7 +176,6 @@ private enum PanelState {
     }
 
     private func continueWaitingChance() async {
-        isWaitingForContent = false
         guard let chance = waitingChance else { return }
         waitingChance = nil
         let isInTime = now().timeIntervalSince(chance.startedAt) <= Self.countWait
@@ -188,6 +186,7 @@ private enum PanelState {
     private func observeShown(workspaceIdentifier: String, generation: Int) {
         withObservationTracking {
             _ = content()
+            _ = gate.isQuiet
         } onChange: { [weak self] in
             MainActor.assumeIsolated {
                 self?.shownContentReviewing = Task { [weak self] in
@@ -199,7 +198,8 @@ private enum PanelState {
 
     private func reviewShown(workspaceIdentifier: String, generation: Int) {
         guard generation == showGeneration, panelState == .onScreen else { return }
-        guard content()?.workspaceIdentifier == workspaceIdentifier else {
+        let isSameWorkspace = content()?.workspaceIdentifier == workspaceIdentifier
+        guard isSameWorkspace, !gate.isQuiet else {
             endShow()
             return
         }
