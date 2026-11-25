@@ -1,4 +1,5 @@
 import { LANDING_SHOTS, type LandingShot, type ShotFile } from './landing-shots';
+import { DARK_THEME_COLOR } from './site-constants';
 
 const NARROW_BREAKPOINT = '40rem';
 const WIDE_BREAKPOINT = '64rem';
@@ -118,7 +119,7 @@ export const SITE_STYLE = `:root{color-scheme:light dark;
 --distance-rise:16px;--distance-stage:32px;
 --ease-out:cubic-bezier(0.2, 0.8, 0.2, 1);--ease-spring:cubic-bezier(0.34, 1.56, 0.64, 1)}
 @media (prefers-color-scheme: dark){:root{
---color-page:#070812;--color-surface:#171A2E;--color-text:#F2F4FF;--color-text-muted:#A9B0D6;--color-hairline:rgb(242 244 255 / 0.08);
+--color-page:${DARK_THEME_COLOR};--color-surface:#171A2E;--color-text:#F2F4FF;--color-text-muted:#A9B0D6;--color-hairline:rgb(242 244 255 / 0.08);
 --color-accent:#7C95FF;--color-link:#8CF7D0;--color-focus:#8CF7D0;--color-chip:rgb(47 91 255 / 0.16);
 --gradient-wallpaper:radial-gradient(70rem 40rem at 10% 115%, rgb(47 91 255 / 0.55), transparent 60%), radial-gradient(50rem 34rem at 95% -10%, rgb(140 247 208 / 0.16), transparent 55%), linear-gradient(160deg, #141A46, #0E1020);
 --gradient-aurora:radial-gradient(60rem 30rem at 50% -8rem, rgb(47 91 255 / 0.28), transparent 70%);

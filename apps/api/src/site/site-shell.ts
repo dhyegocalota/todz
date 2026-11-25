@@ -3,6 +3,7 @@ import { escapedHtml } from '../escaped-html';
 import { LANDING_COPY } from './landing-copy';
 import { DOCS_SELF_HOST_URL } from './self-host-redirect';
 import { SITE_GLYPH_SPRITE, SiteGlyph, glyphHtml } from './site-glyphs';
+import { DARK_THEME_COLOR } from './site-constants';
 import { OPEN_GRAPH_IMAGE, SITE_ICONS, SiteIcon } from './site-icons';
 import { SITE_STYLE } from './site-style';
 import { DiscoveryPath, SITE_URL } from './site-urls';
@@ -11,7 +12,6 @@ export const LANDING_PATH = '/';
 export const JOIN_PATH = '/join';
 export const CONTENT_ID = 'content';
 const LIGHT_THEME_COLOR = '#F2F4FA';
-const DARK_THEME_COLOR = '#070812';
 const OPEN_GRAPH_TYPE = 'website';
 const TWITTER_CARD = 'summary_large_image';
 

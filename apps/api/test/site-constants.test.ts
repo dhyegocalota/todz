@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { DARK_THEME_COLOR, KEY_PLACEHOLDER, scriptJson } from '../src/site/site-constants';
 import { IconPurpose, OPEN_GRAPH_IMAGE, SITE_ICONS, SiteIcon } from '../src/site/site-icons';
 import { DOCS_URL, DiscoveryPath, MCP_URL, SERVER_CARD_PATH, SITE_URL } from '../src/site/site-urls';
 
@@ -45,5 +46,17 @@ describe('the site icons', () => {
   test('the Open Graph image is the 1200 by 630 share card', () => {
     expect(OPEN_GRAPH_IMAGE).toMatchObject({ path: '/og/todz.png', width: 1200, height: 630, mediaType: 'image/png' });
     expect(OPEN_GRAPH_IMAGE.alt.length).toBeGreaterThan(0);
+  });
+});
+
+describe('the shared site values', () => {
+  test('the dark colour and the key placeholder are the ones every file shows', () => {
+    expect({ DARK_THEME_COLOR, KEY_PLACEHOLDER }).toEqual({ DARK_THEME_COLOR: '#070812', KEY_PLACEHOLDER: '<key>' });
+  });
+
+  test('scriptJson writes JSON that cannot close a script element', () => {
+    const json = scriptJson({ text: '</script><b>' });
+    expect(json).not.toContain('<');
+    expect(JSON.parse(json)).toEqual({ text: '</script><b>' });
   });
 });

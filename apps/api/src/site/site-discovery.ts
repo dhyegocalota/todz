@@ -4,12 +4,11 @@ import { AgentClient, agentSetupOf } from './agent-setup';
 import { DISCOVERY_COPY, DOCS_PAGES, TOOL_PARAMETERS } from './discovery-copy';
 import { type DiscoveryFile, NO_HEADERS, OPEN_READ_HEADERS } from './discovery-response';
 import { LANDING_COPY } from './landing-copy';
+import { DARK_THEME_COLOR, KEY_PLACEHOLDER } from './site-constants';
 import { SITE_ICONS, SiteIcon } from './site-icons';
 import { DOCS_URL, DiscoveryPath, MCP_URL, SERVER_CARD_PATH, SITE_URL } from './site-urls';
 
-const KEY_PLACEHOLDER = '<key>';
 const FENCE = '```';
-const BACKGROUND_COLOR = '#070812';
 const TEXT_TYPE = 'text/plain; charset=utf-8';
 const XML_TYPE = 'application/xml; charset=utf-8';
 const MANIFEST_TYPE = 'application/manifest+json';
@@ -67,8 +66,8 @@ const MANIFEST_JSON = JSON.stringify({
   start_url: '/',
   scope: '/',
   display: 'browser',
-  background_color: BACKGROUND_COLOR,
-  theme_color: BACKGROUND_COLOR,
+  background_color: DARK_THEME_COLOR,
+  theme_color: DARK_THEME_COLOR,
   icons: MANIFEST_ICONS.map((icon) => {
     const { path, size, mediaType, purpose } = SITE_ICONS[icon];
     return { src: path, sizes: `${size}x${size}`, type: mediaType, purpose };

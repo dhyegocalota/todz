@@ -2,9 +2,9 @@ import { formatShortId } from '@todz/core';
 import { COMPANY } from '@todz/types';
 import { MCP_COPY, McpToolName } from '../mcp-copy';
 import { AgentClient, agentSetupOf } from './agent-setup';
+import { KEY_PLACEHOLDER } from './site-constants';
 import { MCP_URL } from './site-urls';
 
-const KEY_PLACEHOLDER = '<key>';
 const EXAMPLE_TASK_NUMBER = 12;
 const EXAMPLE_TASK_TITLE = 'Review PR';
 

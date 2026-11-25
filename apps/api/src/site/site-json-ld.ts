@@ -1,5 +1,6 @@
 import { COMPANY } from '@todz/types';
 import { LANDING_COPY } from './landing-copy';
+import { scriptJson } from './site-constants';
 import { OPEN_GRAPH_IMAGE } from './site-icons';
 import { SITE_URL } from './site-urls';
 
@@ -12,8 +13,6 @@ const WAITLIST_PRICE = 0;
 const PRICE_CURRENCY = 'USD';
 const PRE_ORDER_AVAILABILITY = `${SCHEMA_URL}/PreOrder`;
 const JOIN_ANCHOR = '#join';
-const SCRIPT_OPENER = '<';
-const ESCAPED_SCRIPT_OPENER = '\\u003c';
 
 enum SchemaType {
   Organization = 'Organization',
@@ -66,7 +65,7 @@ const APPLICATION = {
 };
 
 function structuredDataOf(graph: object[]): string {
-  return JSON.stringify({ '@context': SCHEMA_URL, '@graph': graph }).replaceAll(SCRIPT_OPENER, ESCAPED_SCRIPT_OPENER);
+  return scriptJson({ '@context': SCHEMA_URL, '@graph': graph });
 }
 
 export const LANDING_STRUCTURED_DATA = structuredDataOf([ORGANIZATION, WEBSITE, APPLICATION]);

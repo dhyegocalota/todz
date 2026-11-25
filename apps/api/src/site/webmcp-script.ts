@@ -1,12 +1,10 @@
 import { AgentClient, agentSetupOf } from './agent-setup';
 import { DISCOVERY_COPY, DOCS_PAGES } from './discovery-copy';
 import { ARIA_DISABLED, EMAIL_FIELD_NAME, JOIN_BUTTON_CLASS, JOIN_FORM_CLASS } from './join-form-markup';
+import { KEY_PLACEHOLDER, scriptJson } from './site-constants';
 import { DOCS_URL, MCP_URL } from './site-urls';
 import { WEBMCP_COPY, WebMcpToolName } from './webmcp-copy';
 
-const KEY_PLACEHOLDER = '<key>';
-const SCRIPT_OPENER = '<';
-const ESCAPED_SCRIPT_OPENER = '\\u003c';
 const PARAGRAPH_SEPARATOR = '\n\n';
 
 export type WebMcpProperty = { type: 'string'; description: string; enum?: string[]; format?: string };
@@ -57,10 +55,6 @@ export const WEBMCP_TOOLS: WebMcpTool[] = [
     annotations: { consequentialHint: true },
   },
 ];
-
-function scriptJson(value: unknown): string {
-  return JSON.stringify(value).replaceAll(SCRIPT_OPENER, ESCAPED_SCRIPT_OPENER);
-}
 
 const OVERVIEW_TEXT = [
   DISCOVERY_COPY.summary,
