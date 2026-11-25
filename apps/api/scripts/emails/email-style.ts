@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { EmailSlot } from '../../src/emails/email-slot';
 
 export const HEADER_COLOR = '#0E1020';
-const BRAND_COLOR = '#4C6BFF';
+const BRAND_COLOR = '#4764F5';
 const BRAND_DEEP_COLOR = '#1B2A9E';
 const ACCENT_COLOR = '#8CF7D0';
 const TEXT_COLOR = '#161A33';
