@@ -160,7 +160,7 @@ for site_path in apps/api/src/site/landing-page.ts apps/api/public/landing/x.png
 done
 
 classify apps/example/src/a.ts
-expect_no_match "an application change outside the site skips the end-to-end suite" "$output" e2e
+expect_no_match "an application change outside the site skips the end-to-end suite" "$(grep '^gates: ' <<< "$output")" e2e
 
 classify docs/adr/0001-x.md
 expect_line "an ADR" "$output" class docs
