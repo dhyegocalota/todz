@@ -265,7 +265,7 @@ FAKE
 
 cat > "$fakes/deploy-worker" <<'FAKE'
 #!/usr/bin/env bash
-echo "deploy-worker lock=${TODZ_RELEASE_LOCK_HELD:-} $*" >> "$CALLS"
+echo "deploy-worker lock=$([[ -n "${TODZ_RELEASE_LOCK_HELD:-}" && "$TODZ_RELEASE_LOCK_HELD" == "$(cat "$HOME/.todz-release/lock/token")" ]] && echo yes || echo no) $*" >> "$CALLS"
 [[ "${FAKE_HANG:-}" == deploy-worker ]] && exec tail -f /dev/null
 [[ -n "${FAKE_DEPLOY_FAIL:-}" ]] && { echo "deploy-worker: refused" >&2; exit 1; }
 site="$HOME/.todz-release/site/download"

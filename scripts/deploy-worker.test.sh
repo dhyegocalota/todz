@@ -304,10 +304,16 @@ run_deploy
 expect_refused "a held lock is refused" "holds the lock"
 expect_equal "a refused deploy leaves the other's lock" "$(test -d "$lock" && echo held || echo free)" "held"
 TODZ_RELEASE_LOCK_HELD=yes run_deploy
-expect_equal "a deploy inside a release runs under the release's lock" "$status" "0"
+expect_refused "an inherited value that is not the holder's token does not skip the lock" "holds the lock"
+printf '%s' holder-token > "$lock/token"
+TODZ_RELEASE_LOCK_HELD=yes run_deploy
+expect_refused "a wrong token does not skip the lock" "holds the lock"
+TODZ_RELEASE_LOCK_HELD=holder-token run_deploy
+expect_equal "a deploy inside a release runs under the holder's token" "$status" "0"
 expect_equal "a deploy inside a release leaves the release's lock" "$(test -d "$lock" && echo held || echo free)" "held"
-rmdir "$lock"
-run_deploy
+rm -rf "$lock"
+TODZ_RELEASE_LOCK_HELD=yes run_deploy
+expect_equal "a stale inherited value with a free lock deploys normally" "$status" "0"
 expect_equal "a deploy takes the lock and frees it" "$(test -d "$lock" && echo held || echo free)" "free"
 
 new_world
