@@ -26,7 +26,6 @@ enum Css {
 }
 
 const JOINED_NOTICE = "You're on the list. Check your inbox.";
-const WAITS_FOR_THE_JOIN_ROUTE = 'waits for G1: the join route answers "opens soon" until the waitlist store lands';
 const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
 const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
 const TURNSTILE_RESPONSE_FIELD = 'cf-turnstile-response';
@@ -225,7 +224,6 @@ test.describe('reduced motion', () => {
 
 test.describe('join', () => {
   test('each form carries the token the Turnstile widget writes', async ({ page }) => {
-    test.fail(true, WAITS_FOR_THE_JOIN_ROUTE);
     await page.goto(SitePath.Landing);
     const tokens = JOIN_FORMS.map((form) => page.locator(`form#${form} input[name="${TURNSTILE_RESPONSE_FIELD}"]`));
     await Promise.all(tokens.map((token) => expect(token).toHaveValue(TURNSTILE_DUMMY_TOKEN)));
@@ -235,7 +233,6 @@ test.describe('join', () => {
     test(`the ${form} form answers "${JOINED_NOTICE}" focused on ${SitePath.Join}#${form} without echoing the address`, async ({
       page,
     }) => {
-      test.fail(true, WAITS_FOR_THE_JOIN_ROUTE);
       const address = uniqueAddress();
       await page.goto(SitePath.Landing);
       await submitForm({ page, form, address });
@@ -244,7 +241,6 @@ test.describe('join', () => {
   });
 
   test('a second join of the same address from the final form answers the same', async ({ page }) => {
-    test.fail(true, WAITS_FOR_THE_JOIN_ROUTE);
     const address = uniqueAddress();
     await page.goto(SitePath.Landing);
     await submitForm({ page, form: Fragment.Hero, address });
