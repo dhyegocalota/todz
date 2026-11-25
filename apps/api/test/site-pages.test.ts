@@ -1,11 +1,9 @@
 import { exports } from 'cloudflare:workers';
 import { describe, expect, test, vi } from 'vitest';
-import guide from '../../docs/self-host.mdx?raw';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { LandingNotice, serveLandingPage } from '../src/site/landing-page';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
-import { serveSelfHostPage } from '../src/site/self-host-page';
 import { SITE_STYLE } from '../src/site/site-style';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
 import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
@@ -40,7 +38,6 @@ const SVG_PATTERN = /<svg[\s\S]*?<\/svg>/g;
 const TAG_PATTERN = /<[^>]*>/g;
 const TERMINAL_WORD_PATTERN = /<span class="terminal-word">([^<]*)<\/span>/g;
 const FORM_PATTERN = /<form[\s\S]*?<\/form>/g;
-const MAIN_PATTERN = /<main id="content"[^>]*>([\s\S]*?)<\/main>/;
 const STYLE_ATTRIBUTE_PATTERN = /<[^>]*\sstyle=/;
 const EVENT_HANDLER_PATTERN = /<[^>]*\son[a-z]+=/;
 const READABLE_ATTRIBUTE_PATTERN = /\s(?:alt|aria-label|placeholder|data-submitting)="([^"]*)"/g;
@@ -54,6 +51,8 @@ const LOCAL_ORIGIN_MODULE = 'local-origin';
 const LOCAL_ORIGIN_IMPORT_PATTERN = /import ([^;]+?) from '[^']*local-origin'/g;
 const SITE_HOST_PREDICATE_IMPORT = '{ isLocalSiteHost }';
 const LANDING_ASSET_PREFIX = '/landing/';
+const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
+const GUIDE_LINK_PATTERN = /<a class="(?:nav-link|footer-link)" href="([^"]*)"/g;
 const FOOTER_CREDIT =
   '<p class="footer-credit">todz is a product of <a class="footer-credit-link" href="https://logicbit.com.br" rel="noopener noreferrer">Logic Bit</a>, made in Brazil</p>';
 const FOOTER_CREDIT_LINK_STYLE = '.footer-credit-link{color:var(--color-text);text-decoration:underline;text-underline-offset:0.2em}';
@@ -68,11 +67,6 @@ const JOIN_FORMS = [
   { id: 'join', action: '/join#join' },
   { id: 'final', action: '/join#final' },
 ];
-const GUIDE_HEADING_PATTERN = /^## (.+)$/gm;
-const GUIDE_FENCE_PATTERN = /^```[a-z]*\n([\s\S]*?)^```$/gm;
-const CODE_REGION_PATTERN = /<pre class="code" tabindex="0" role="region" aria-label="Code"><code>([\s\S]*?)<\/code><\/pre>/g;
-const HEADING_TWO_PATTERN = /<h2 id="[^"]+">([\s\S]*?)<\/h2>/g;
-const MARKDOWN_INLINE_PATTERN = /`|\*\*/g;
 const SITE_SOURCES = import.meta.glob('../src/site/**/*.ts', { query: '?raw', import: 'default', eager: true });
 
 type SitePage = { response: Response; html: string };
@@ -97,7 +91,6 @@ const WIDGET_LANDING_PAGES: NamedPage[] = NOTICES.map((notice) => [
   `the landing with the ${notice} notice and the widget`,
   () => widgetLandingPage(notice),
 ]);
-const SELF_HOST_PAGE: NamedPage = ['the self-host guide', selfHostPage];
 
 function pageScriptOf(html: string): string {
   const [pageScript] = inlineSources({ html, pattern: SCRIPT_PATTERN });
@@ -127,10 +120,6 @@ async function landingPolicy({ html, widgetOrigins }: { html: string; widgetOrig
   ].join('; ');
 }
 
-function selfHostPage(): Promise<SitePage> {
-  return pageOf(serveSelfHostPage());
-}
-
 function decoded(text: string): string {
   return text.replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&amp;', '&');
 }
@@ -155,12 +144,8 @@ function captures({ html, pattern }: { html: string; pattern: RegExp }): string[
   return [...html.matchAll(pattern)].flatMap((match) => match.slice(1, 2));
 }
 
-function guideHeadingText(markdown: string): string {
-  return markdown.replace(MARKDOWN_INLINE_PATTERN, '');
-}
-
 describe('the site pages', () => {
-  test.each([...LANDING_PAGES, ...WIDGET_LANDING_PAGES, SELF_HOST_PAGE])(
+  test.each([...LANDING_PAGES, ...WIDGET_LANDING_PAGES])(
     '%s answers HTML with HSTS for this host only, nosniff and a referrer policy',
     async (_name, page) => {
       const { response } = await page();
@@ -172,7 +157,7 @@ describe('the site pages', () => {
     },
   );
 
-  test.each([...LANDING_PAGES, SELF_HOST_PAGE])(
+  test.each(LANDING_PAGES)(
     '%s has no style attribute, no style inside an SVG, no event handler and no remote asset',
     async (_name, page) => {
       const { html } = await page();
@@ -197,7 +182,7 @@ describe('the site pages', () => {
     },
   );
 
-  test.each([...LANDING_PAGES, SELF_HOST_PAGE])('%s credits Logic Bit in the footer with a link to its website', async (_name, page) => {
+  test.each(LANDING_PAGES)('%s credits Logic Bit in the footer with a link to its website', async (_name, page) => {
     const { html } = await page();
     const footer = html.slice(html.indexOf('<footer class="site-footer'));
     expect(footer).toContain(FOOTER_CREDIT);
@@ -273,6 +258,16 @@ describe('the landing', () => {
   test('the tool result in the terminal is the one the MCP server answers', () => {
     expect(LANDING_COPY.terminal.toolResult.startsWith(`${MCP_COPY.added} `)).toBe(true);
     expect(SITE_SOURCES['../src/site/landing-copy.ts']).toContain('MCP_COPY.added');
+  });
+
+  test.each(NOTICES)('with the %s notice, the header and footer guide links open the guide on the docs', async (notice) => {
+    const { html } = await landingPage(notice);
+    expect(captures({ html, pattern: GUIDE_LINK_PATTERN })).toEqual([DOCS_SELF_HOST_URL, DOCS_SELF_HOST_URL]);
+  });
+
+  test('links only to this site, a fragment or an https address', async () => {
+    const { html } = await landingPage(LandingNotice.None);
+    expect(captures({ html, pattern: HREF_PATTERN }).filter((href) => !SITE_HREF_PATTERN.test(href))).toEqual([]);
   });
 
   test('every image is served from /landing/ on this host', async () => {
@@ -381,7 +376,6 @@ describe('the site host through the Worker', () => {
   test.each([
     { method: 'GET', path: '/', page: () => keyedLandingPage(LandingNotice.None) },
     { method: 'HEAD', path: '/', page: async () => ({ ...(await keyedLandingPage(LandingNotice.None)), html: '' }) },
-    { method: 'GET', path: '/self-host', page: selfHostPage },
   ])('$method $path answers the page this module renders, with the configured site key and its headers', async ({ method, path, page }) => {
     const response = await exports.default.fetch(`${LOCAL_SITE_ORIGIN}${path}`, { method });
     await expectPage({ response, expected: await page(), status: OK_STATUS });
@@ -402,50 +396,6 @@ describe('the site host through the Worker', () => {
   });
 });
 
-describe('the self-host guide page', () => {
-  test('the content security policy allows its one style and its JSON-LD block by hash and no other script', async () => {
-    const { response, html } = await selfHostPage();
-    const style = onlyInlineSource({ html, pattern: STYLE_PATTERN });
-    const structuredData = onlyInlineSource({ html, pattern: STRUCTURED_DATA_PATTERN });
-    expect(inlineSources({ html, pattern: SCRIPT_PATTERN })).toEqual([]);
-    expect(html.match(/<script/g)).toHaveLength(1);
-    expect(response.headers.get('Content-Security-Policy')).toBe(
-      [
-        "default-src 'none'",
-        `script-src ${await sourceHash(structuredData)}`,
-        `style-src ${await sourceHash(style)}`,
-        "img-src 'self'",
-        "manifest-src 'self'",
-        "connect-src 'self'",
-        "form-action 'self'",
-        "frame-ancestors 'none'",
-        "base-uri 'none'",
-      ].join('; '),
-    );
-  });
-
-  test('holds every section heading of apps/docs/self-host.mdx inside the page, in order', async () => {
-    const { html } = await selfHostPage();
-    const main = MAIN_PATTERN.exec(html)?.[1];
-    if (main === undefined) throw new Error('the page has a main element');
-    const headings = captures({ html: main, pattern: HEADING_TWO_PATTERN }).map((heading) => decoded(heading.replace(TAG_PATTERN, '')));
-    expect(headings).toEqual(captures({ html: guide, pattern: GUIDE_HEADING_PATTERN }).map(guideHeadingText));
-  });
-
-  test('holds every code block of apps/docs/self-host.mdx as a keyboard-scrollable code region', async () => {
-    const { html } = await selfHostPage();
-    const blocks = captures({ html: guide, pattern: GUIDE_FENCE_PATTERN }).map((block) => block.trimEnd());
-    const regions = captures({ html, pattern: CODE_REGION_PATTERN }).map(decoded);
-    expect(blocks.length).toBeGreaterThan(0);
-    expect(regions).toEqual(blocks);
-  });
-
-  test('links only to this site, a fragment or an https address', async () => {
-    const { html } = await selfHostPage();
-    expect(captures({ html, pattern: HREF_PATTERN }).filter((href) => !SITE_HREF_PATTERN.test(href))).toEqual([]);
-  });
-});
-
 const STRUCTURED_DATA_PATTERN = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
 const ATTRIBUTE_HANDLER_PATTERN = /<[^>]*\son[a-z]+=/;
 const MANIFEST_DIRECTIVE = "manifest-src 'self'";
@@ -462,7 +412,7 @@ function scriptSources(policy: string | null): string[] {
 }
 
 describe('the structured data and the policy of the public pages', () => {
-  const PUBLIC_PAGES: NamedPage[] = [['the landing', () => landingPage(LandingNotice.None)], SELF_HOST_PAGE];
+  const PUBLIC_PAGES: NamedPage[] = [['the landing', () => landingPage(LandingNotice.None)]];
 
   test.each(PUBLIC_PAGES)('%s allows its JSON-LD block by hash', async (_name, page) => {
     const { response, html } = await page();
@@ -494,7 +444,7 @@ describe('the structured data and the policy of the public pages', () => {
       path,
       () => pageOf(exports.default.fetch(`${LOCAL_SITE_ORIGIN}${path}`)),
     ]);
-    const pages = [...LANDING_PAGES, ...WIDGET_LANDING_PAGES, SELF_HOST_PAGE, ...adminPages];
+    const pages = [...LANDING_PAGES, ...WIDGET_LANDING_PAGES, ...adminPages];
     const answers = await Promise.all(pages.map(([, page]) => page()));
     expect(answers).toHaveLength(pages.length);
     answers.forEach(({ response, html }) => {

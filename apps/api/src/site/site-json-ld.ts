@@ -69,5 +69,4 @@ function structuredDataOf(graph: object[]): string {
   return JSON.stringify({ '@context': SCHEMA_URL, '@graph': graph }).replaceAll(SCRIPT_OPENER, ESCAPED_SCRIPT_OPENER);
 }
 
-export const SITE_STRUCTURED_DATA = structuredDataOf([ORGANIZATION, WEBSITE]);
 export const LANDING_STRUCTURED_DATA = structuredDataOf([ORGANIZATION, WEBSITE, APPLICATION]);
