@@ -151,10 +151,12 @@ The lead's round: security S1 to S5, review R1 to R11, tester defects D1 to D4. 
 | D2 | the Cancel button shown while checking has `.keyboardShortcut(.cancelAction)`, so Escape cancels while the field is disabled | walk row; the flow's `cancel()` is already pinned by `cancellingTheCheckGoesBackToIdle` | 1248d4f |
 | D3, D4 | `ServerSwitchFlow.close()` returns every state but `switching` to idle; the form calls it, with the check cancelled, on `onDisappear` | 1ee2e6f (`close()` landed empty): `Expectation failed: closedStates.allSatisfy { $0 == .idle }` | d1c6c30 |
 | D4 | `.switched` carries no name; the form names `model.serverURL` when the line shows | pin (the state changed shape) | 1b4fde3 |
+| Migration (lead, after S2) | `SessionVault.bind(to:)`: `FileSessionVault` reads the bare secret an earlier build wrote and writes it back as a `StoredSession`. At init, an unbound session with no server value in the persistent domain (`ServerPreference.hasValue` false) is bound to the default's origin, keeping the session, cache, outbox and pending link; with a stored value (readable or not) it is erased as before; a bind that throws falls back to the erase | ebb73d4 (`bind` landed empty, the model did not call it): `Caught error: .unbound` (`FileSessionVaultTests` bind test), `Expectation failed: harness.vault.secret == harness.session`, `harness.vault.origin == harnessDefaultServer`, `harness.vault.eraseCount == 0`, `harness.store.owner != nil`, `harness.store.outbox != nil`, `harness.pendingLinks.link != nil`, `harness.model.isSignedIn` (8 issues); the stored-server case is a pin, green in the red commit | db93b2a |
+| ADRs | ADR 0046 § 2 and ADR 0056 §§ 3 and 5 amended in their text (link origin, persistent-domain read, percent-encoded host, probe origin check, session bound to its origin with the migration, total probe deadline and 4 KB); statuses unchanged | docs | 141f935 |
 
 ### Counts
 
-- `swift test --package-path apps/macos/TodzKit`: 812 tests in 57 suites before the round, 825 in 57 after, all passing.
+- `swift test --package-path apps/macos/TodzKit`: 812 tests in 57 suites before the round, 825 after the first pass, 828 after the migration, all passing.
 - `pnpm --filter @todz/api test:unit`: 1686 tests in 66 files, all passing; `pnpm --filter @todz/api typecheck` clean. `@todz/types`: 18 tests.
 - `xcodebuild clean build` Debug and Release: `BUILD SUCCEEDED`, no warning.
 - `pnpm verify`: 8 gates green at 08f5ba4 (product).
@@ -166,7 +168,8 @@ The lead's round: security S1 to S5, review R1 to R11, tester defects D1 to D4. 
 - D3: `localhost:8791`, Return (refusal), close Settings, ⌘,: the field holds the address in use and no line shows.
 - D4: switch from Settings, close and reopen: no `Switched to …` line; with Settings open, switch from the sign-in disclosure: the Settings line, if any, names the server in use.
 - A sign-in link from another origin: with the app on `http://localhost:8791`, ask for a link there, then open `todz://sign-in?token=<43>&turnstile=<token>&origin=http%3A%2F%2Flocalhost%3A8787`: `Open the link on the Mac that asked for it, or send a new one.`, no `POST /owner/sessions` on either Worker, and a link with the right origin still signs in. A link without `origin` does nothing.
-- S2 at launch: `defaults write -g serverURL https://example.com` and launching with `-serverURL https://example.com` leave the app on its stored server; a session file from another origin (or the bare secret an earlier build wrote) launches signed out with the cache, outbox and pending link gone. Delete the global key after.
+- S2 at launch: `defaults write -g serverURL https://example.com` and launching with `-serverURL https://example.com` leave the app on its stored server; a session file from another origin launches signed out with the cache, outbox and pending link gone. Delete the global key after.
+- Upgrade: with no `serverURL` stored, replace the session file with the bare secret (an earlier build's format) and launch: the owner stays signed in with the cache and any waiting changes, and the file now holds `{"secret":…,"origin":<the default>}`. With a `serverURL` stored, the same file launches signed out with the cache, outbox and pending link gone.
 
 ### Hypotheses to attack
 
@@ -176,7 +179,6 @@ The lead's round: security S1 to S5, review R1 to R11, tester defects D1 to D4. 
 
 ### Known gaps
 
-- Upgrading from a build before this round signs the owner out and erases the cache and the unsent outbox once, because the session file holds the secret alone (`unbound`), as the lead decided ("treated like the unreadable-value case"). A session file that is not JSON for any other reason is treated the same way.
-- ADR 0046 still describes the hand-off as `token` and `turnstile` only, and ADR 0056 does not state the link origin, the defaults domain or the session binding; `docs/adr` is the lead's.
+- A session file that is not JSON for any reason counts as an earlier build's bare secret: with no stored server it is bound to the default and sent there as a session (a garbled one gets 401 and ends the session); with a stored server it is erased.
 - The app gives no message for a sign-in link without `origin`; it ignores it like any malformed link.
 - D1, D2 and the `onDisappear` half of D3 and D4 have no automated test: the app target has no test target. Whether `onDisappear` fires when the Settings window closes is for the walk.
