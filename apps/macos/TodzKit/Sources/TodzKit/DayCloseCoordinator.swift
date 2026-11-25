@@ -77,6 +77,7 @@ import Observation
             markClosed()
             return
         }
+        guard !isScreenLocked() else { return }
         guard gate.admit(.dayClose) == .show else { return }
         await open()
     }

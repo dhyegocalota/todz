@@ -9,6 +9,10 @@ private let recheckedNotifications: [Notification.Name] = [
 ]
 private let shortestCheckDelay: Duration = .seconds(1)
 
+private extension Notification.Name {
+    static let screenIsUnlocked = Notification.Name("com.apple.screenIsUnlocked")
+}
+
 @MainActor final class DayCloseScheduler {
     private let coordinator: DayCloseCoordinator
     private var nextCheck: Task<Void, Never>?
@@ -20,7 +24,8 @@ private let shortestCheckDelay: Duration = .seconds(1)
 
     func start() {
         let wakeObservation = observe(NSWorkspace.didWakeNotification, in: NSWorkspace.shared.notificationCenter)
-        observations = [wakeObservation] + recheckedNotifications.map { observe($0, in: .default) }
+        let unlockObservation = observe(.screenIsUnlocked, in: DistributedNotificationCenter.default())
+        observations = [wakeObservation, unlockObservation] + recheckedNotifications.map { observe($0, in: .default) }
         check()
     }
 
