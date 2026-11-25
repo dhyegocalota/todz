@@ -27,7 +27,9 @@ ssh_keygen_binary=${TODZ_DEPLOY_SSH_KEYGEN_BINARY:-/usr/bin/ssh-keygen}
 curl_seconds=${TODZ_DEPLOY_CURL_SECONDS:-30}
 wrangler_seconds=${TODZ_DEPLOY_WRANGLER_SECONDS:-600}
 
+usage="usage: deploy-worker.sh [--stage-only <folder>] [--with <version>]"
 stage_only_directory=""
+pending_version=""
 automatic_stage=""
 work_directory=""
 staged=""
@@ -46,9 +48,16 @@ cleanup() {
 }
 
 parse_arguments() {
-  [[ $# -eq 0 ]] && return 0
-  [[ "$1" == --stage-only && $# -eq 2 ]] || fail "usage: deploy-worker.sh [--stage-only <folder>]"
-  stage_only_directory=$2
+  while [[ $# -gt 0 ]]; do
+    [[ $# -ge 2 ]] || fail "$usage"
+    case "$1" in
+      --stage-only) stage_only_directory=$2 ;;
+      --with) pending_version=$2 ;;
+      *) fail "$usage" ;;
+    esac
+    shift 2
+  done
+  [[ -z "$pending_version" || "$pending_version" =~ $version_pattern ]] || fail "$pending_version is not a version"
 }
 
 prepare_stage() {
@@ -71,6 +80,7 @@ read_staged_versions() {
       released_versions="$released_versions$line"$'\n'
     done < "$site/released"
   fi
+  [[ -z "$pending_version" ]] || released_versions="$released_versions$pending_version"$'\n'
   staged=$(printf '%s' "$released_versions" | sort -t. -k1,1n -k2,2n -k3,3n -u | tail -n "$served_versions")
 }
 
@@ -122,7 +132,7 @@ refuse_oversized_files() {
 
 verify_release_files() {
   local version=$1 directory="$site/download/$1"
-  (cd "$directory" && shasum -a 256 -c "Todz-$version.dmg.sha256" > /dev/null 2>&1) || fail "$version: the sum does not match the disk image"
+  (cd "$directory" && "$SHASUM_BINARY" -a 256 -c "Todz-$version.dmg.sha256" > /dev/null 2>&1) || fail "$version: the sum does not match the disk image"
   "$ssh_keygen_binary" -Y verify -f "$work_directory/allowed-signers" -I "$release_principal" -n "$release_namespace" -s "$directory/Todz-$version.dmg.sig" < "$directory/Todz-$version.dmg" > /dev/null 2>&1 || fail "$version: the signature does not verify"
 }
 
@@ -199,8 +209,10 @@ deploy_stage() {
   echo "$version_id" > "$deploy_home/deployments/$head_sha"
 }
 
+refuse_overrides_outside_test_mode
 parse_arguments "$@"
 cd "$root"
+[[ -n "$stage_only_directory" ]] || require_clean_tree
 install_traps
 acquire_lock
 work_directory=$(mktemp -d "$release_home/work.XXXXXX")

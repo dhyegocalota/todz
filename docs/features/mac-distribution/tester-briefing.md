@@ -1,5 +1,12 @@
 # Tester briefing: Mac distribution
 
+## G3 security fix round
+
+- Red `1749c6a3`, green `9d85f943`: the guard refuses a Keychain value read (`-w`, `-g`) on any `find-*-password` except the documented `-s todz-turnstile`, `dump-keychain`, `security -i`, `sign_update`, `generate_keys` and any release or deploy override name outside `pnpm release:mac`; a plain read (`grep`, `rg`, `cat`) may name the tools.
+- Red `318bac1b`, green in the commit after it: a release passes `--with <version>` to `deploy-worker.sh` (the fake now publishes only released versions and that one, so the old call failed the first production check); the binary, time-limit and Sparkle overrides need test mode; stale `work.*` folders go under the lock; a deploy refuses a dirty tree; `--create-release-key` stores the item with an empty trusted-application list (`-T ""`).
+- The ACL claim was proved on a throwaway keychain (`acl-probe.sh` in the scratchpad): the default ACL read printed the value at once, the `-T ""` item waited for approval until a 10 s alarm (exit 142). It was not proved against the real login keychain; the first release read is the check (a prompt must appear).
+- Not built: killing grandchildren on a time limit; absolute paths for `git`, `jq` and `pnpm`.
+
 ## G2: the app
 
 ### What changed and where

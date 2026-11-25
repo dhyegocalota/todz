@@ -655,7 +655,7 @@ expect_contains "an override outside test mode is refused: message" "$output" "i
 expect_equal "an override outside test mode runs no tool" "$(wc -c < "$CALLS" | tr -d ' ')" "0"
 TODZ_RELEASE_TEST_MODE= run_release --create-release-key
 expect_contains "creating the release key refuses overrides too" "$output" "overrides are for the tests only"
-TODZ_RELEASE_TEST_MODE= TODZ_RELEASE_SPARKLE_REVISION=abc run_release --dry-run
+output=$(cd "$repository" && env -i HOME="$home" PATH="$PATH" TODZ_RELEASE_SPARKLE_REVISION=abc bash scripts/release-mac.sh --dry-run 2>&1)
 expect_contains "the Sparkle revision override is refused outside test mode" "$output" "TODZ_RELEASE_SPARKLE_REVISION is set"
 
 new_world

@@ -113,14 +113,14 @@ create_release_key() {
   local encoded_key
   keychain_item_exists && fail "the Keychain item $release_key_item already exists"
   bounded "$sign_seconds" "ssh-keygen" "$ssh_keygen_binary" -q -t ed25519 -N "" -C "$release_principal" -f "$work_directory/key"
-  encoded_key=$(base64 < "$work_directory/key" | tr -d '\n')
-  printf 'add-generic-password -s %s -a %s -w %s\n' "$release_key_item" "$release_key_account" "$encoded_key" | bounded "$security_seconds" "security" "$security_binary" -i > /dev/null 2>&1 || fail "could not store the key in the Keychain item $release_key_item"
+  encoded_key=$("$BASE64_BINARY" < "$work_directory/key" | tr -d '\n')
+  printf 'add-generic-password -s %s -a %s -T "" -w %s\n' "$release_key_item" "$release_key_account" "$encoded_key" | bounded "$security_seconds" "security" "$security_binary" -i > /dev/null 2>&1 || fail "could not store the key in the Keychain item $release_key_item"
   printf '%s namespaces="%s" %s\n' "$release_principal" "$release_namespace" "$(cut -d' ' -f1,2 "$work_directory/key.pub")"
   "$ssh_keygen_binary" -lf "$work_directory/key.pub" | cut -d' ' -f2
 }
 
 require_release_source() {
-  [[ -z "$(git status --porcelain)" ]] || fail "the working tree is not clean"
+  require_clean_tree
   [[ "$(git rev-parse --abbrev-ref HEAD)" == main ]] || fail "not on main"
   bounded "$git_seconds" "git fetch" git fetch -q origin
   [[ "$(git rev-list --count origin/main..HEAD)" == 0 ]] || fail "main is ahead of origin/main"
@@ -343,7 +343,7 @@ notarize_and_staple() {
 }
 
 write_sum() {
-  (cd "$build_directory" && shasum -a 256 "$disk_image_name" > "$disk_image_name.sha256")
+  (cd "$build_directory" && "$SHASUM_BINARY" -a 256 "$disk_image_name" > "$disk_image_name.sha256")
 }
 
 verify_signature_of() {
@@ -368,7 +368,7 @@ require_empty_agent() {
 sign_with_release_key() {
   start_agent
   require_empty_agent
-  bounded "$security_seconds" "security" "$security_binary" find-generic-password -s "$release_key_item" -w | base64 --decode | SSH_AUTH_SOCK=$agent_socket bounded "$sign_seconds" "ssh-add" "$ssh_add_binary" -t "$agent_lifetime_seconds" - > /dev/null 2>&1 || fail "could not load the release key into the signing agent"
+  bounded "$security_seconds" "security" "$security_binary" find-generic-password -s "$release_key_item" -w | "$BASE64_BINARY" --decode | SSH_AUTH_SOCK=$agent_socket bounded "$sign_seconds" "ssh-add" "$ssh_add_binary" -t "$agent_lifetime_seconds" - > /dev/null 2>&1 || fail "could not load the release key into the signing agent"
   SSH_AUTH_SOCK=$agent_socket "$ssh_add_binary" -L | head -n 1 > "$work_directory/release.pub"
   SSH_AUTH_SOCK=$agent_socket bounded "$sign_seconds" "ssh-keygen" "$ssh_keygen_binary" -Y sign -f "$work_directory/release.pub" -n "$release_namespace" "$disk_image_path" > /dev/null 2>&1 || fail "could not sign the disk image with the release key"
   stop_agent
@@ -420,7 +420,7 @@ is_complete_build() {
 }
 
 recheck_build() {
-  (cd "$build_directory" && shasum -a 256 -c "$disk_image_name.sha256" > /dev/null 2>&1) || fail "the build in $build_directory does not match its sum; remove it to rebuild"
+  (cd "$build_directory" && "$SHASUM_BINARY" -a 256 -c "$disk_image_name.sha256" > /dev/null 2>&1) || fail "the build in $build_directory does not match its sum; remove it to rebuild"
   verify_signature_of "$build_directory/$disk_image_name.sig" "$disk_image_path" || fail "the build in $build_directory does not verify against allowed-signers; remove it to rebuild"
 }
 
@@ -448,7 +448,7 @@ check_production_disk_image() {
 
 check_production_sum() {
   production_code "/$version/$disk_image_name.sha256" "$check_directory/$disk_image_name.sha256" > /dev/null
-  (cd "$check_directory" && shasum -a 256 -c "$disk_image_name.sha256" > /dev/null 2>&1) || fail "production check failed: the served sum does not match the disk image"
+  (cd "$check_directory" && "$SHASUM_BINARY" -a 256 -c "$disk_image_name.sha256" > /dev/null 2>&1) || fail "production check failed: the served sum does not match the disk image"
   cmp -s "$check_directory/$disk_image_name.sha256" "$build_directory/$disk_image_name.sha256" || fail "production check failed: the served sum is not the build's"
 }
 
@@ -475,26 +475,28 @@ check_production() {
 release_to_production() {
   copy_build_into_site
   rollback_pending=true
-  bounded "$deploy_seconds" "deploy-worker" "$deploy_worker_binary" || fail "deploy-worker failed"
+  bounded "$deploy_seconds" "deploy-worker" "$deploy_worker_binary" --with "$version" || fail "deploy-worker failed"
   check_production
   rollback_pending=false
   echo "$version" >> "$site/released"
   push_missing_tag
 }
 
+refuse_overrides_outside_test_mode
 parse_arguments "$@"
 cd "$root"
 mkdir -p "$release_home"
 chmod 700 "$release_home"
 install_traps
-work_directory=$(mktemp -d "$release_home/work.XXXXXX")
 
 if [[ "$create_release_key_requested" == true ]]; then
+  work_directory=$(mktemp -d "$release_home/work.XXXXXX")
   create_release_key
   exit 0
 fi
 
 acquire_lock
+work_directory=$(mktemp -d "$release_home/work.XXXXXX")
 require_release_source
 keychain_item_exists || fail "the Keychain item $release_key_item is missing"
 require_pinned_sparkle
