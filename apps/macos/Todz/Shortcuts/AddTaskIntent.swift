@@ -8,10 +8,13 @@ struct AddTaskIntent: AppIntent {
     @Parameter(title: "Title", requestValueDialog: IntentDialog(LocalizedStringResource(stringLiteral: ShortcutsCopy.askTitle))) var taskTitle: String
     @Parameter(title: "Due Today", default: true) var isDueToday: Bool
 
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
+
     @Dependency private var model: AppModel
 
     @MainActor
     func perform() async throws -> some ReturnsValue<String> & ProvidesDialog {
+        try await model.requireShortcutReadiness()
         let addition = await model.addFromShortcut(title: taskTitle, isDueToday: isDueToday)
         switch addition {
         case let .added(title, destination, workspaceName, isOffline):

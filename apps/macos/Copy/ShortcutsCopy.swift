@@ -26,7 +26,7 @@ enum ShortcutsCopy {
 
     static func leftWithFirstTitles(count: Int, workspaceName: String, titles: [String]) -> String {
         let spokenTitles = titles.formatted(.list(type: .and))
-        return InflectedCopy.text("\(count) left today in \(workspaceName). The first three: \(spokenTitles).")
+        return InflectedCopy.text("\(count) left today in \(workspaceName). The first \(spokenTitleLimitInWords): \(spokenTitles).")
     }
 
     static func spoken(for today: ShortcutToday) -> String {
@@ -62,6 +62,10 @@ enum ShortcutsCopy {
 
     private static func withOfflineNotice(_ sentence: String, isOffline: Bool) -> String {
         isOffline ? "\(sentence) \(offline)" : sentence
+    }
+
+    private static var spokenTitleLimitInWords: String {
+        NumberFormatter.localizedString(from: NSNumber(value: ShortcutLimits.spokenTitleLimit), number: .spellOut)
     }
 
     private static func spokenSentence(for today: ShortcutToday) -> String {

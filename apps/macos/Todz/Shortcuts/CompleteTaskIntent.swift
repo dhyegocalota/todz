@@ -7,10 +7,13 @@ struct CompleteTaskIntent: AppIntent {
 
     @Parameter(title: "Task", requestValueDialog: IntentDialog(LocalizedStringResource(stringLiteral: ShortcutsCopy.askTask))) var task: TodzTaskEntity
 
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
+
     @Dependency private var model: AppModel
 
     @MainActor
     func perform() async throws -> some ProvidesDialog {
+        try await model.requireShortcutReadiness()
         guard let key = TaskKey(shortcutIdentifier: task.id) else { throw ShortcutRefusal.taskGone }
         let completion = await model.completeFromShortcut(key: key)
         switch completion {
