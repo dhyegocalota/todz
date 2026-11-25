@@ -17,4 +17,19 @@ extension AppModelTests {
             (0..<openCount).map { MutableTask(number: $0 + 1, title: "Task \($0 + 1)", dueDate: today.adding(days: dueDaysFromToday)) }
         }
     }
+
+    @MainActor func cachedHarness(cachedTitle: String, pulledTitle: String) throws -> AppModelHarness {
+        let harness = try AppModelHarness()
+        let workspace = harness.seedWorkspace(name: "acme")
+        let today = harness.model.today
+        harness.cache([workspace], active: workspace)
+        harness.store.projects[shortcutInboxIdentifier] = ProjectCache(
+            projectIdentifier: shortcutInboxIdentifier,
+            cursor: 0,
+            tasks: [MutableTask(number: 1, title: cachedTitle, dueDate: today).record]
+        )
+        harness.service.tasksOfProject[shortcutInboxIdentifier] = [MutableTask(number: 1, title: pulledTitle, dueDate: today).record]
+        harness.vault.secret = harness.session
+        return harness
+    }
 }

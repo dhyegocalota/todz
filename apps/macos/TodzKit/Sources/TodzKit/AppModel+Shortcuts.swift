@@ -36,6 +36,18 @@ extension AppModel {
         }
     }
 
+    public func shortcutReadiness() async -> ShortcutReadiness {
+        fatalError("AppModel.shortcutReadiness() is not implemented")
+    }
+
+    public func addFromShortcut(title: String, isDueToday: Bool) async -> ShortcutAddition {
+        fatalError("AppModel.addFromShortcut(title:isDueToday:) is not implemented")
+    }
+
+    public func completeFromShortcut(key: TaskKey) async -> ShortcutCompletion {
+        fatalError("AppModel.completeFromShortcut(key:) is not implemented")
+    }
+
     private func openTasksInShortcutOrder(views: TaskViews, workspace: Workspace) -> [BoardTask] {
         let todayTasks = views.today.open
         let todayKeys = Set(todayTasks.map { ShortcutTask.of($0).key })
