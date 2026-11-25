@@ -38,6 +38,9 @@
 - The link page needs a script, served under the hashed CSP like `/sign-in`.
 - Three new rate limit bindings and migration `0006`; a rollback keeps both tables, which an older version never reads.
 - Until the owner's Turnstile widget exists, the admin sign-in answers 503, as sign-in and the waitlist do.
+- `ADMIN_EMAIL` is public, so whoever solves five challenges in fifteen minutes fills the admin's link cap and his own request then mails nothing for a while; the runbook's recovery step clears the unspent links on his word.
+- A session is bound to the address that opened it: changing or removing `ADMIN_EMAIL` ends every session.
+- The link request answers before it touches D1 or the mail, so neither the time nor a failure tells the admin's address apart.
 
 ## Evidence
 
@@ -45,4 +48,4 @@ Run-15 spike, in a scratch folder: Chromium 1228 through `@playwright/test` 1.61
 
 ## Revisit when
 
-The admin needs more than one person, or a browser stops sending Strict cookies on a same-origin post from a page opened cross-site.
+The admin needs more than one person, a browser stops sending Strict cookies on a same-origin post from a page opened cross-site, or the waitlist passes fifty thousand rows, which the CSV reads at once.

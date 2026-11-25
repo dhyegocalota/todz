@@ -99,6 +99,32 @@ GET todz.app/admin, /admin/export.csv, POST /admin/sign-out
 
 `wrangler rollback` to the previous version; `/admin` becomes the site's 404. Migration 0006's two tables stay and an older version never reads them. Sessions die with the rollback because no route reads them. To close the admin on the current version, remove `ADMIN_EMAIL` from `vars` and deploy, or delete the Turnstile secret (which closes sign-in and the waitlist too).
 
+## Plan review answers
+
+The plan review (2026-11-25, NO: six CRITICAL, eight IMPORTANT, seven MINOR) is answered here; these lines win over the sections above, the plan and the test plan.
+
+- **R1** Every Workers test lives at `apps/api/test/admin-*.test.ts`; `test/site/` runs in plain Node. Only the pages' rendering tests may sit in `test/site/`.
+- **R2** `siteContentSecurityPolicy` takes a named `connectsToSelf: boolean`, which adds `connect-src 'self'`; only the link page passes `true`. A test checks that the link page's policy has it and the other admin pages' do not.
+- **R3** `POST /admin/sign-in-links` answers before it touches D1 or the sender for any address: the 200 card and the challenge cookie are built first, and the expired-row clean-up, the capped insert and the send (deleting the row when the send throws) run in `executionContext.waitUntil`, as `waitlist-join.ts` does. A D1 failure there is never seen by the visitor: the "D1 throws → 503" row applies to `POST /admin/sessions` and the panel only. A test with a `DIRECTORY` that throws and a sender that never resolves gets the same status, headers and body for the admin and another address.
+- **R4** The E2E server is `playwright.config.ts`'s command: `SITE_VARIABLES` gains `ADMIN_EMAIL: admin@todz.test`, and the server's output goes to `<persist folder>/site-server.log`. `admin.spec.ts` is `serial`, runs in the desktop project only, makes at most two admin link requests per run, and reads the link with `expect.poll` on the log for a new JSON line whose `to` is `ADMIN_EMAIL`.
+- **R5** Step 0's stubs return real minimal values: a 200 `Response` with the admin headers whose body names the notice or the summary's total, and an `EmailMessage` whose text is the link. G1's tests compare against what those functions return, never literal markup. On merge the lead keeps G2's bodies.
+- **R6** `design.md` is written (the loop's picks S-A, P-A, F-A, T-B, B-A, C-A, J-A, M-A, X-A) and is the source of every string and state, including the three strings it adds.
+- **R7** Step 0 (the lead) also adds: `site/admin-paths.ts` with an `AdminPath` enum of the six paths, the form field `email`, the JSON field `token`, `ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES = 15` and `ADMIN_RESPONSE_HEADERS` (`Cache-Control: no-store`, `X-Robots-Tag: noindex`) that every admin answer of both lanes carries; `TurnstileAction.AdminSignIn`; `HttpStatus.Forbidden`; `HttpHeader` members `Cookie`, `SetCookie`, `SecFetchSite`, `Origin`, `XRobotsTag`, `ContentDisposition` and `CacheControl`.
+- **R8** A session belongs to an address: `admin_sessions` gains `email TEXT NOT NULL`, and a session counts only while it equals a valid `ADMIN_EMAIL`. Without one, `GET /admin` answers the 503 Closed card and the CSV redirects to `/admin`; sign-out still deletes the row and clears the cookie.
+- **R9** `hello@todz.app` is public, so five solved challenges in fifteen minutes can fill the admin's link cap. ADR 0051's Consequences say so, and the runbook gains a recovery step, run only on the owner's word: `DELETE FROM admin_sign_in_links WHERE consumed_at IS NULL`.
+- **R10** The test plan gains one row each for: a limiter that throws (503), `HEAD` of both pages, sign-out without a session, a session after `ADMIN_EMAIL` is unset, `POST /admin/sessions` with a non-JSON, 5 KB or token-less body (401), `Sec-Fetch-Site: same-site` (403), two `__Host-todz_admin` cookies (fail closed: no session), the CSV with an expired session (303), and the link page clearing the fragment with `history.replaceState` before it posts.
+- **R11** The same-origin rule, once: when `Sec-Fetch-Site` is present it must be `same-origin`; when it is absent, `Origin` must equal `SITE_ORIGIN`; when both are absent, refuse.
+- **R12** Route tests call `worker.fetch(request, workerEnvWith({...}), executionContext)` as `site-dispatch.test.ts` does, or the handlers directly as `waitlist-join.test.ts` does, with `Sec-Fetch-Site`, `Origin` and `Cookie` set on a `new Request`. Cookies are added with `headers.append` and read with `getSetCookie()`. Expiry tests seed rows whose `expires_at` has passed.
+- **R13** The lead's runbook change: step 7 names `0006`; step 8 has five variables and limiters 8601–8609; step 13 adds `GET https://todz.app/admin` (200, `no-store`, `noindex`) and `https://api.todz.app/admin` (404), and its count of checks; step 14 posts `scripts/deploy-bodies/junk-turnstile-admin.txt` with `Origin: https://todz.app`, expecting 503 until both keys exist and 429 after, and an `admin_sign_in_links` count of 0 before and after; the Rollback section gets the two tables and how to close the admin. `docs/self-host.md` says nine bindings and to set your own `ADMIN_EMAIL`, followed by `pnpm site:generate`.
+- **R14** The E2E clicks the link from a fake mail page served with `page.route('http://mail.test/')`, in the same context (the panel) and in a fresh one (the refusal).
+- **R15** The Turnstile stub moves from `landing.spec.ts` to `e2e/turnstile-stub.ts`; G2 owns both specs.
+- **R16** `libs/types` gains `ADMIN_RATE_LIMIT_MAX` 10, `ADMIN_RATE_LIMIT_PERIOD_SECONDS`, `ADMIN_ADDRESS_RATE_LIMIT_MAX` 3 and `ADMIN_GLOBAL_RATE_LIMIT_MAX` 30, pinned by `api-source.test.ts` against `wrangler.jsonc`.
+- **R17** The challenge cookie rides only the 200 card, for every address; the 403, 429 and 503 answers carry none, and a test says so.
+- **R18** The equality test compares the status, the sorted header names, the body and the `Set-Cookie` attribute shape of the admin's answer and another address's.
+- **R19** Migration 0006 adds `CREATE INDEX waitlist_joined_at ON waitlist (joined_at)`. The CSV reads every row; ADR 0051 names fifty thousand rows as its revisit.
+- **R20** The E2E downloads the CSV by clicking (`waitForEvent('download')`).
+- **R21** "Sent" means the confirmation was claimed and no failure was recorded; "Failed" means a failure was recorded.
+
 ## Open questions → answers
 
 | Question | Options | Owner's answer | Date |

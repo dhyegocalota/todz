@@ -33,13 +33,26 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] `GET /admin/sign-in` — expected: the link page, its script hashed in the CSP, the no-script text, no token in any server-side answer
 - [ ] `/admin`, `/admin/sessions` and `/admin/export.csv` on `api.todz.app` — expected: 404; on `www.todz.app` — expected: 301 to `todz.app`
 - [ ] `PUT /admin`, `GET /admin/sessions`, `GET /admin/unknown` — expected: the site's 404
+- [ ] A `DIRECTORY` that throws and a sender that never resolves, as the admin and as another address (R3, R18) — expected: both answer at once with the same status, sorted header names, body and `Set-Cookie` attribute shape
+- [ ] The 403, 429 and 503 answers of `POST /admin/sign-in-links` (R17) — expected: no `Set-Cookie`
+- [ ] A limiter whose `limit` throws (R10) — expected: 503 card, no siteverify call
+- [ ] `HEAD /admin` and `HEAD /admin/sign-in` (R10) — expected: the `GET` status and headers, no body
+- [ ] `POST /admin/sign-out` without a session (R10) — expected: 303 to `/admin`, the cookie cleared
+- [ ] A live session, then `ADMIN_EMAIL` unset (R8) — expected: `GET /admin` 503 Closed card; the CSV 303 to `/admin`
+- [ ] A live session, then `ADMIN_EMAIL` changed to another address (R8) — expected: `GET /admin` shows the sign-in card
+- [ ] `POST /admin/sessions` with a form body, a 5 KB body, or `{}` (R10) — expected: 401 `{}`, no session
+- [ ] `Sec-Fetch-Site: same-site` with `Origin: https://api.todz.app` on each of the three posts (R10, R11) — expected: 403; no `Sec-Fetch-Site` and no `Origin` — expected: 403
+- [ ] Two `__Host-todz_admin` cookies in one header (R10) — expected: no session (the sign-in card)
+- [ ] The CSV with an expired session (R10) — expected: 303 to `/admin`
+- [ ] The link page's script (R10) — expected: it calls `history.replaceState` before it posts, so the token leaves the address bar
+- [ ] The link page's CSP (R2) — expected: `connect-src 'self'`; the sign-in card's and the panel's — expected: no `connect-src`
 - [ ] The admin mail renders from the generated module with the lockup, the button and the footnote, and `emails:check` passes
 - [ ] `api-source.test.ts` — expected: `ADMIN_EMAIL` `hello@todz.app`, `ADMIN_LIMITER` 8607 (10/60), `ADMIN_ADDRESS_LIMITER` 8608 (3/60), `ADMIN_GLOBAL_LIMITER` 8609 (30/60), and every dev script passes `ADMIN_EMAIL`
 
 ## E2E (Playwright specs)
 
-- [ ] The admin asks for a link, opens the logged link in the same context — expected: the panel at `/admin`
-- [ ] The same link in a fresh context — expected: "This link can't be used. Ask for a new one from this browser."
+- [ ] The admin asks for a link, clicks the logged link from a fake mail page (`page.route('http://mail.test/')`) in the same context — expected: the panel at `/admin`
+- [ ] The same link clicked from the mail page in a fresh context — expected: the design's refusal "This link can't be used. Ask for a new one from this browser."
 - [ ] Another address — expected: the same "Check your inbox" card and no mail line in the log
 - [ ] Download CSV — expected: a file `todz-waitlist.csv` whose first line is `"address","joined_at","confirmation"`
 - [ ] Sign out — expected: the sign-in card; `/admin` again shows the card
