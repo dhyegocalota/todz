@@ -406,3 +406,53 @@ describe('the self-host guide page', () => {
     expect(captures({ html, pattern: HREF_PATTERN }).filter((href) => !SITE_HREF_PATTERN.test(href))).toEqual([]);
   });
 });
+
+const STRUCTURED_DATA_PATTERN = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
+const ATTRIBUTE_HANDLER_PATTERN = /<[^>]*\son[a-z]+=/;
+const MANIFEST_DIRECTIVE = "manifest-src 'self'";
+const UNSAFE_INLINE = "'unsafe-inline'";
+const SITE_CACHE_CONTROL = 'no-cache, no-transform';
+const ADMIN_SIGN_IN_PATH = '/admin';
+const ADMIN_LINK_PATH = '/admin/sign-in';
+
+function scriptSources(policy: string | null): string[] {
+  const directive = policy?.split('; ').find((entry) => entry.startsWith('script-src '));
+  if (directive === undefined) return [];
+  return directive.split(' ').slice(1);
+}
+
+describe('the structured data and the policy of the public pages', () => {
+  const PUBLIC_PAGES: NamedPage[] = [['the landing', () => landingPage(LandingNotice.None)], SELF_HOST_PAGE];
+
+  test.each(PUBLIC_PAGES)('%s allows its JSON-LD block by hash', async (_name, page) => {
+    const { response, html } = await page();
+    const block = onlyInlineSource({ html, pattern: STRUCTURED_DATA_PATTERN });
+    expect(scriptSources(response.headers.get('Content-Security-Policy'))).toContain(await sourceHash(block));
+  });
+
+  test('the landing allows its page script by hash beside the JSON-LD block', async () => {
+    const { response, html } = await landingPage(LandingNotice.None);
+    const pageScript = onlyInlineSource({ html, pattern: SCRIPT_PATTERN });
+    expect(scriptSources(response.headers.get('Content-Security-Policy'))).toContain(await sourceHash(pageScript));
+  });
+
+  test.each(PUBLIC_PAGES)('%s allows the manifest from this origin only and is cached without transforms', async (_name, page) => {
+    const { response } = await page();
+    expect(response.headers.get('Content-Security-Policy')?.split('; ')).toContain(MANIFEST_DIRECTIVE);
+    expect(response.headers.get('Cache-Control')).toBe(SITE_CACHE_CONTROL);
+  });
+
+  test('no site page widens its policy with unsafe-inline or carries an inline handler attribute', async () => {
+    const adminPages = [ADMIN_SIGN_IN_PATH, ADMIN_LINK_PATH].map((path): NamedPage => [
+      path,
+      () => pageOf(exports.default.fetch(`${LOCAL_SITE_ORIGIN}${path}`)),
+    ]);
+    const pages = [...LANDING_PAGES, ...WIDGET_LANDING_PAGES, SELF_HOST_PAGE, ...adminPages];
+    const answers = await Promise.all(pages.map(([, page]) => page()));
+    expect(answers).toHaveLength(pages.length);
+    answers.forEach(({ response, html }) => {
+      expect(response.headers.get('Content-Security-Policy')).not.toContain(UNSAFE_INLINE);
+      expect(html).not.toMatch(ATTRIBUTE_HANDLER_PATTERN);
+    });
+  });
+});
