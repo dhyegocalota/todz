@@ -57,6 +57,27 @@ G3 docs first. G1 and G2 run in parallel, each finding red then green on its own
 - [ ] **Step 26:** Red, finding 9: a vault double whose second read returns another origin signs out without a request.
 - [ ] **Step 27:** Green: `openLaunchSession` checks the stored origin.
 
+### G1, the security review's fixes (added at the lead's request)
+
+- [x] **Step 28:** Red, review IMPORTANT 1: issuing and revoking a key `PROJECT_LIVE_KEYS_MAX + 1` times keeps at most `PROJECT_LIVE_KEYS_MAX` rows. Evidence: 4bae6d0f.
+- [x] **Step 29:** Green: revoking deletes the key's row in the batch that deletes its MCP sessions. Evidence: b37d7ea6.
+- [x] **Step 30:** Red, review IMPORTANT 2: over the daily cap a known and an unknown address get the same opens-soon answer and no mail. Evidence: 8bc3e5d5.
+- [x] **Step 31:** Green: a join that inserts nothing on a full day answers `Full` whatever the address. Evidence: fc6a099d.
+- [x] **Step 32:** Red, review MINOR a: a crash logs the error's name and message once, and nothing of the request. Evidence: 34cf57a8 (rated IMPORTANT by the correctness review).
+- [x] **Step 33:** Green: `logCrash` before the empty 500. Evidence: 2f8bb64a (`apps/api/src/crash-log.ts`, joined to the console list of `api-source.test.ts`).
+
+## v1.1
+
+The security review's other MINOR findings, left for v1.1 by the owner's lighter gates:
+
+- `apps/docs/self-host.mdx` says that a fork without the `OWNER_LIMITER` and `MCP_LIMITER` bindings runs its signed-in routes with no rate limit (ADR 0073 §3).
+- Sign-out fans out one call per owned project, up to 1,000 at the caps; bound it or record the projects a session opened sockets on.
+- A project create in a workspace deleted between the ownership check and the insert answers 409 `limit_reached` instead of 404 `not_found`.
+- The macOS app gains its own copy for 409 `limit_reached` and 429 `rate_limited`.
+- ADR 0073 records that a full waitlist day locks out every new address until the window moves, and that this is accepted.
+- `MCP_LIMITER` (3,600 a minute) leaves 20% headroom over the perf harness's production run (50 a second); a test ties the two.
+- An address domain label that starts or ends with `-` is refused.
+
 ## Failure modes
 
 | Step | What breaks | How I notice (the concrete signal) | How I back out |
