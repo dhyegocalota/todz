@@ -1,6 +1,7 @@
 import { KEYCHAIN_TIMEOUT_MS } from './budgets';
+import type { ExecFile } from './exec-file';
 
-export type ExecFile = (file: string, args: string[], options: { timeout: number }) => Promise<{ stdout: string }>;
+export type { ExecFile };
 
 const KEYCHAIN_SERVICE = 'todz-perf-key';
 const MISSING_MESSAGE = `the ${KEYCHAIN_SERVICE} Keychain item is missing`;
