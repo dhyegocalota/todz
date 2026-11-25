@@ -78,8 +78,8 @@ const CLOUDFLARE_API_HOST = 'api.cloudflare.com';
 const SMOKE_CHECK_STEP = 13;
 const HEALTH_CURL = 'curl -sS https://api.todz.app/health';
 const HEALTH_HEAD_CURL = 'curl -sSI https://api.todz.app/health';
-const HEALTH_ANSWER = '{"service":"todz","origin":"https://api.todz.app"}';
-const ALL_PASS_SENTENCE = 'When all seventeen pass';
+const HEALTH_ANSWER = '{"service":"todz","origin":"https://api.todz.app","version":"<stamp>","minimum_app_version":"0.2.0"}';
+const ALL_PASS_SENTENCE = 'When all eighteen pass';
 const SELF_HOST_PROBES = [
   'curl -sS -D - -o /dev/null https://todz.app/self-host',
   'curl -sS -D - -o /dev/null "https://www.todz.app/self-host?from=runbook"',
@@ -89,7 +89,7 @@ const SITE_REDIRECT_OF_GUIDE = 'location: https://todz.app/self-host';
 const OWNER_ROUTE_ANSWER = '`HTTP/2 401` for `api.todz.app/owner`';
 const STALE_OWNER_ROUTE_ANSWER = '`HTTP/2 404` for `api.todz.app/owner`';
 const HEADER_CURLS = [
-  'curl -sS -D - -o /dev/null https://api.todz.app/owner',
+  'curl -sS -D - -o /dev/null -H "Todz-App-Version: 0.2.0" https://api.todz.app/owner',
   'curl -sS -D - -o /dev/null https://todz.app/brand/todz-lockup.png',
 ];
 const HEADER_ANSWERS = [
@@ -365,7 +365,7 @@ describe('runbooks', () => {
     expect(readRepositoryFile(WRAPPER_PATH)).toContain(`"${accountId}"`);
   });
 
-  test('the smoke check curls the health route of the API host and counts it among the seventeen answers', () => {
+  test('the smoke check curls the health route of the API host and counts it among the eighteen answers', () => {
     const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
     expect(smokeCheck?.body).toContain(HEALTH_CURL);
     expect(smokeCheck?.body).toContain(HEALTH_HEAD_CURL);

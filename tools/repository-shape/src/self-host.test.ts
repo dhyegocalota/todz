@@ -46,7 +46,7 @@ const XCODE_LINE_PATTERN = /^(xcode(?:gen|build) .+?)(?: \\)?$/gm;
 const SECRET_COMMAND_PATTERN = /wrangler secret (?:put|delete) ([A-Z_]+)/g;
 const REPOSITORY_PATH_PATTERN = /`((?:apps|libs|tools|scripts|docs)\/[\w./@-]+)`/g;
 const SERVER_DEPLOY_SCRIPT = 'server:deploy';
-const SERVER_DEPLOY_COMMAND = 'wrangler deploy && tsx scripts/server/cli.ts';
+const SERVER_DEPLOY_COMMAND = 'tsx scripts/server/cli.ts';
 const GUIDE_SERVER_DEPLOY = `pnpm --filter @todz/api ${SERVER_DEPLOY_SCRIPT}`;
 const DEPLOY_HEADING = '## 4. Deploy';
 const UPDATING_HEADING = '## Updating';
@@ -216,7 +216,7 @@ describe('the self-host guide', () => {
     expect(guideLines.filter((line) => !verifyScript.includes(line))).toEqual([]);
   });
 
-  test('the deploy step and the Updating section deploy with the script that prints the URL to paste, which wraps wrangler deploy', () => {
+  test('the deploy step and the Updating section deploy with the script that prints the URL to paste, which stamps the version and wraps wrangler deploy', () => {
     expect(sectionOf(DEPLOY_HEADING)).toContain(GUIDE_SERVER_DEPLOY);
     expect(sectionOf(UPDATING_HEADING)).toContain(GUIDE_SERVER_DEPLOY);
     expect(JSON.parse(readRepositoryFile(API_PACKAGE_FILE)).scripts[SERVER_DEPLOY_SCRIPT]).toBe(SERVER_DEPLOY_COMMAND);
