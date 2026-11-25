@@ -87,7 +87,7 @@ struct SettingsView: View {
         openURL(focusSettings)
     }
 
-    private func announce(_ notice: AgentNudgeNotice) {
+    private func announce(_ notice: OwnerSettingNotice) {
         guard notice == .notSaved else { return }
         AccessibilityNotification.Announcement(ErrorCopy.changeNotSaved).post()
     }

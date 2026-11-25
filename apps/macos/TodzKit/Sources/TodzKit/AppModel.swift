@@ -63,6 +63,10 @@ import Observation
     public internal(set) var agentNudge: Bool?
     var isSavingAgentNudge = false
     var isAgentNudgeNotSaved = false
+    public internal(set) var dayEmail: Bool?
+    public internal(set) var dayEmailMinutes: Int?
+    var isSavingDayEmail = false
+    var isDayEmailNotSaved = false
 
     @ObservationIgnored var hasLaunched = false
     @ObservationIgnored var isLaunchSettled = false

@@ -63,7 +63,7 @@ enum SettingsCopy {
         return signedIn ? switchLosingSignedInMessage(server: server) : switchLosingSignedOutMessage(server: server)
     }
 
-    static func agentNudgeSubtitle(notice: AgentNudgeNotice) -> String {
+    static func agentNudgeSubtitle(notice: OwnerSettingNotice) -> String {
         switch notice {
         case .detail: agentNudgeDetail
         case .signedOut: agentNudgeSignedOut
