@@ -36,7 +36,8 @@ private func isFocusFilterQuiet() async -> Bool {
     var dayChangeObservation: (any NSObjectProtocol)?
     var dayTemperatureObservation: (any NSObjectProtocol)?
     var quietGateReaction: Task<Void, Never>?
-    private var isIntentLaunch = false
+    private var launchSurfaceStart = LaunchSurfaceStart.now
+    private var engagementObservation: (any NSObjectProtocol)?
     private var hasStartedProactiveSurfaces = false
     let dayTemperaturePreference = DayTemperaturePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     private(set) lazy var dayClose = DayCloseCoordinator(
@@ -77,22 +78,39 @@ private func isFocusFilterQuiet() async -> Bool {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         PerfProbe.shared?.start(model: model)
-        isIntentLaunch = (notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool) == false
+        decideLaunchSurfaceStart(notification)
         observeWidgetRequests()
         observeDayChanges()
         Task {
             await readFocusFilter()
             startDayTemperature()
             dayTemperatureScheduler.start()
-            guard !isIntentLaunch else { return }
+            guard launchSurfaceStart == .now else { return }
             startProactiveSurfaces()
         }
     }
 
-    // NB ADR 0066: a launch for an intent starts no pushed surface until the owner first activates the app.
+    private func decideLaunchSurfaceStart(_ notification: Notification) {
+        launchSurfaceStart = LaunchSurfaceStart.of(
+            isDefaultLaunch: notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool,
+            isActivationProhibited: NSApp.activationPolicy() == .prohibited
+        )
+        guard launchSurfaceStart == .afterTheOwnerEngages else { return }
+        panel.onShown = { [weak self] in self?.startProactiveSurfaces() }
+        engagementObservation = NotificationCenter.default.addObserver(forName: NSApplication.didUpdateNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard NSApp.activationPolicy() != .prohibited else { return }
+                self?.startProactiveSurfaces()
+            }
+        }
+    }
+
+    // NB ADR 0066: a launch for an intent starts no pushed surface until the owner engages the app.
     private func startProactiveSurfaces() {
         guard !hasStartedProactiveSurfaces else { return }
         hasStartedProactiveSurfaces = true
+        engagementObservation.map(NotificationCenter.default.removeObserver)
+        engagementObservation = nil
         dayCloseScheduler.start()
         morningGlanceTrigger.start()
     }
@@ -102,7 +120,7 @@ private func isFocusFilterQuiet() async -> Bool {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
-        if isIntentLaunch { startProactiveSurfaces() }
+        if launchSurfaceStart == .afterTheOwnerEngages { startProactiveSurfaces() }
         Task { await model.takeWidgetRequests() }
     }
 
