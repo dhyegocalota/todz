@@ -197,6 +197,8 @@ Nothing in the Server group takes focus when Settings opens. After a refusal the
 
 ## 6. Options
 
+Picked by the build loop on 2026-11-25: every recommendation (O1 A, O2 A, O3 A, O4 A, O5 B, O6 B, O7 A, O8 A).
+
 Captures for the `recorder`, from the built Debug app with Orca, into `.pr-media/server-url/design/`, in light and dark: `settings-idle-default.png`, `settings-idle-own-server.png`, `settings-refused-address.png`, `settings-checking.png`, `settings-not-todz.png`, `settings-confirm-signed-in.png`, `settings-confirm-waiting.png`, `settings-failed-erase.png` (when it can be forced), `settings-switched.png`, `sign-in-collapsed.png`, `sign-in-expanded.png`, `sign-in-refused.png`, `connect-an-agent-own-server.png`, and one annotated copy per option (`o1-…png` to `o8-…png`).
 
 **O1. How Settings edits the server**
