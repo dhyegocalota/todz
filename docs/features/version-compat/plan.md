@@ -78,6 +78,12 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 **Steps with no backout:** none. Step 19 rolls back with `wrangler rollback`; no data changes shape.
 
+## v1.1 (G2, from the plan review, below IMPORTANT)
+
+- Model rows: the head change's `attempts` after `appTooOld` read from the persisted outbox; a relaunch with a stored session and a 426 on the first `GET /owner` stays signed in without clearing the cache; kill and relaunch while update-needed leaves the outbox file byte-identical.
+- `updateNeeded` clears only on a probe (launch, server switch, a `VersionLine` appearing); re-probe when the app becomes active.
+- No tight reconnect loop on a socket refused with 426.
+
 ## Z. Prove and ship
 
 - [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.

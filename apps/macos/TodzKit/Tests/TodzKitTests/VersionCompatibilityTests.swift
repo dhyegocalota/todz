@@ -53,6 +53,18 @@ private let currentServer = ServerVersions(server: currentStamp, minimumApp: "0.
         #expect(VersionCompatibility.of(app: "0.10.0", server: server, refusal: nil) == .compatible(app: "0.10.0", server: currentStamp))
     }
 
+    @Test(arguments: ["x", "99999999999999999999.0", "0.2.0-beta", "", "1..2"])
+    func aMinimumThatDoesNotParseIsIgnoredWithoutACrash(minimum: String) {
+        let server = ServerVersions(server: currentStamp, minimumApp: minimum)
+        #expect(VersionCompatibility.of(app: app, server: server, refusal: nil) == .compatible(app: app, server: currentStamp))
+    }
+
+    @Test(arguments: ["99999999999999999999.1.1+abc", "2026.11.xx", "+abc", ""])
+    func aServerStampThatOverflowsOrIsMalformedIsBehindWithoutACrash(stamp: String) {
+        let server = ServerVersions(server: stamp, minimumApp: "0.2.0")
+        #expect(VersionCompatibility.of(app: app, server: server, refusal: nil) == .serverBehind(app: app, server: nil))
+    }
+
     @Test func aServerStampThatDoesNotParseIsBehindWithoutACrash() {
         let server = ServerVersions(server: "banana", minimumApp: "0.2.0")
         #expect(VersionCompatibility.of(app: app, server: server, refusal: nil) == .serverBehind(app: app, server: nil))

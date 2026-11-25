@@ -80,7 +80,7 @@ The compatibility rule, in order:
 - **An unstamped build** (local `wrangler dev`, a deploy that skipped `server:deploy`) → no header, `version: null`, the app shows "Server needs an update". The deploy runbook uses `server:deploy` so production is always stamped.
 - **`server:deploy` outside a git checkout, or `git` fails** → the script throws `Cannot stamp the server version: <git's error>` before `wrangler deploy` runs; nothing deploys.
 - **`wrangler deploy` fails** → the script exits with wrangler's code and prints no ready line.
-- **A `426` with no todz body** (a proxy) → `unexpected(status: 426)`, the generic server error, as ADR 0028 rules.
+- **Any `426`**, with a todz body, none or an undecodable one → update required (`appTooOld`, the minimum nil when the body names none): the app pauses sync, keeps its whole queue, counts no attempt and refuses nothing.
 - **A queued change answered `app_too_old`** → kept; the outbox stops flushing while the state is `updateNeeded`; the changes go out from the updated app. It never counts as a refusal and never drops a change.
 - **The change socket refused** → the socket fails as any refused upgrade does; the next owner call or probe records `updateNeeded`.
 - **A server that is behind** → the app keeps working with it; the line names it, nothing is blocked.

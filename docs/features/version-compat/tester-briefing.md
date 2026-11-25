@@ -56,6 +56,8 @@ Pins (green when they landed):
 
 - `AppModelTests/threeConsecutiveRefusalsKeepEveryQueuedChangeUncountedAndUnannounced` (three `426` answers leave the outbox value identical, so no attempt is counted, no refusal banner) and `afterTheAnswerIsNoLongerARefusalTheQueueFlushesInOrder` pin the pause-and-keep rule, which `0a420d31` already implemented; `aRefusalThatNamesNoMinimumNeedsAnUpdate` too.
 - Red in `ca17ac0`, run alone: `OwnerAPITests/mapsEachRowOfTheErrorTable` rows `426` with an empty body, with `{"error":"app_too_old"}` and with an html body: `expected error ".appTooOld(minimum: nil)" of type OwnerAPIError, but ".unexpected(status: 426)" of type OwnerAPIError was thrown instead`. The model-level undecodable-426 case is not tested: before the fix it would wait on a held pause forever.
+- Pins from the plan review: `VersionCompatibilityTests` rows for a server minimum of `x`, `99999999999999999999.0`, `0.2.0-beta`, empty and `1..2` (ignored), and stamps that overflow or are malformed (`serverBehind`, no crash). The v1.1 rows are listed in `plan.md`.
+- The Debug app against a local unstamped `wrangler dev` always reads "Server older · Server needs an update"; use a stamped `--define` for walks and shots.
 - The earlier spec line "a `426` with no todz body stays `unexpected`" is superseded by the lead's requirement; the spec still says it.
 - `AppModelTests/aServerThatDoesNotAnswerLeavesTheAppAlone` (`serverUnknown` is the starting state).
 - `AppVersionTests` and `ServerStampTests` landed with their code, not red-first.
