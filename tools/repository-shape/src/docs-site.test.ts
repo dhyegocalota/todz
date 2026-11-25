@@ -30,7 +30,6 @@ const FIRST_CAPTURE = 1;
 const GRADIENT_STOP_PATTERN = /<stop [^>]*stop-color="(#[0-9A-Fa-f]{6})"/g;
 const ICON_PATH_PATTERN = / d="([^"]+)"/g;
 const CREDIT_LEAD_PATTERN = /creditLead: '([^']+)'/;
-const CREDIT_TAIL_PATTERN = /creditTail: '([^']+)'/;
 const TRADE_NAME_PATTERN = /tradeName: '([^']+)'/;
 const WEBSITE_PATTERN = /website: '([^']+)'/;
 const SITE_ORIGIN_PATTERN = /"SITE_ORIGIN": "([^"]+)"/;
@@ -143,16 +142,13 @@ describe('docs.json', () => {
     },
   );
 
-  test('credits Logic Bit in one footer column, with the words and the link of the company', () => {
+  test('credits Logic Bit in one footer column: the lead of the landing credit as its header, the company name as its one link', () => {
     const copy = readRepositoryFile(LANDING_COPY);
     const constants = readRepositoryFile(COMPANY_CONSTANTS);
     const tradeName = singleCapture({ text: constants, pattern: TRADE_NAME_PATTERN });
     const creditLead = singleCapture({ text: copy, pattern: CREDIT_LEAD_PATTERN });
-    const creditTail = singleCapture({ text: copy, pattern: CREDIT_TAIL_PATTERN });
     const website = singleCapture({ text: constants, pattern: WEBSITE_PATTERN });
-    expect(configuration.footer?.links).toEqual([
-      { header: tradeName, items: [{ label: `${creditLead} ${tradeName}${creditTail}`, href: website }] },
-    ]);
+    expect(configuration.footer?.links).toEqual([{ header: creditLead, items: [{ label: tradeName, href: website }] }]);
   });
 
   test('links the landing from the navbar', () => {

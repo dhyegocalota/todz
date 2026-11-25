@@ -35,6 +35,8 @@ for (const scheme of Object.values(ColorScheme)) {
       await page.goto('/');
       const credit = page.locator(FOOTER).getByRole('link', { name: footerLink.label });
       await expect(credit).toHaveAttribute('href', footerLink.href);
+      const extent = await credit.evaluate((link) => ({ scrollWidth: link.scrollWidth, clientWidth: link.clientWidth }));
+      expect(extent.scrollWidth).toBe(extent.clientWidth);
       test.skip(testInfo.project.name !== DocsViewport.Desktop);
       await expect(page.locator('header').getByRole('link', { name: 'todz.app' })).toHaveAttribute('href', NAVBAR_LINK);
     });
