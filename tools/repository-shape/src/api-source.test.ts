@@ -64,10 +64,15 @@ const RELEASE_API_BASE_URL_PATTERN = /\n\s+Release:\s*\n\s+TODZ_API_BASE_URL: (\
 const INFO_PLIST_API_BASE_URL_PATTERN = /TodzAPIBaseURL: \$\(TODZ_API_BASE_URL\)/;
 const FIRST_CAPTURE = 1;
 const CONSOLE_IDENTIFIER = /\bconsole\b/;
+const CONSOLE_DAY_EMAIL_LOG = 'apps/api/src/day-email/day-email-log.ts';
 const CONSOLE_EMAIL_SENDER = 'apps/api/src/email-sender.ts';
-const DIGEST_MODULE = 'apps/api/src/site/waitlist-digest.ts';
+const SCHEDULED_MODULE = 'apps/api/src/scheduled.ts';
 const DIGEST_CRON = '0 11 * * *';
-const DIGEST_CRON_PATTERN = /enum DigestCron \{\s*Daily = '([^']+)'/;
+const DAY_EMAIL_CRON = '*/15 * * * *';
+const SCHEDULED_CRON_ENUM_PATTERN = /enum ScheduledCron \{([^}]*)\}/;
+const QUOTED_VALUE_PATTERN = /'([^']+)'/g;
+const PRODUCTION_OBSERVABILITY = { enabled: true, logs: { invocation_logs: false } };
+const DIGEST_CRON_PATTERN = /enum ScheduledCron \{\s*WaitlistDigest = '([^']+)'/;
 const PROJECT_STORE_IDENTIFIER = /\bPROJECT_STORE\b/;
 
 const sourceFiles = repositoryFiles(API_SOURCE_FOLDER);
@@ -82,6 +87,7 @@ type WranglerConfiguration = {
   workers_dev: boolean;
   preview_urls: boolean;
   triggers: { crons: string[] };
+  observability: unknown;
 };
 
 type PackageManifest = { scripts?: Record<string, string> };
@@ -130,8 +136,8 @@ describe('the api source', () => {
     expect(sourceFiles.length).toBeGreaterThan(0);
   });
 
-  test('only the development email sender names console, so no other log carries a task, a secret or a digest', () => {
-    expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([CONSOLE_EMAIL_SENDER]);
+  test('only the development email sender and the day email log name console, so no other log carries a task, a secret or a digest', () => {
+    expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([CONSOLE_DAY_EMAIL_LOG, CONSOLE_EMAIL_SENDER]);
   });
 
   test('the wrangler configuration is production: the email provider, the cloudflare sender and the https origin on todz.app, the public Turnstile site key as a var, and no admin address or Turnstile secret, which are secrets', () => {
@@ -175,13 +181,24 @@ describe('the api source', () => {
     expect(configuration.preview_urls).toBe(false);
   });
 
-  test('the wrangler configuration triggers the waitlist digest once a day at 11:00 UTC and nothing else', () => {
-    expect(wranglerConfiguration().triggers).toEqual({ crons: [DIGEST_CRON] });
+  test('the wrangler configuration triggers the waitlist digest once a day at 11:00 UTC, the day email every quarter hour and nothing else', () => {
+    expect(wranglerConfiguration().triggers).toEqual({ crons: [DIGEST_CRON, DAY_EMAIL_CRON] });
+  });
+
+  test('every cron the worker dispatches is one the wrangler configuration triggers, and every trigger is dispatched', () => {
+    const enumBody = SCHEDULED_CRON_ENUM_PATTERN.exec(readRepositoryFile(SCHEDULED_MODULE))?.[FIRST_CAPTURE];
+    if (enumBody === undefined) throw new Error('scheduled.ts declares no ScheduledCron');
+    const dispatchedCrons = [...enumBody.matchAll(QUOTED_VALUE_PATTERN)].map((match) => match[FIRST_CAPTURE]);
+    expect([...dispatchedCrons].sort()).toEqual([...wranglerConfiguration().triggers.crons].sort());
+  });
+
+  test('the wrangler configuration turns Workers Logs on with invocation logs off, so the envelope addresses of a mail are never kept', () => {
+    expect(wranglerConfiguration().observability).toEqual(PRODUCTION_OBSERVABILITY);
   });
 
   test('the digest cron the worker runs is the one the wrangler configuration triggers', () => {
     const [digestCron] = wranglerConfiguration().triggers.crons;
-    expect(DIGEST_CRON_PATTERN.exec(readRepositoryFile(DIGEST_MODULE))?.[FIRST_CAPTURE]).toBe(digestCron);
+    expect(DIGEST_CRON_PATTERN.exec(readRepositoryFile(SCHEDULED_MODULE))?.[FIRST_CAPTURE]).toBe(digestCron);
   });
 
   test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally with the shared limits', () => {

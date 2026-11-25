@@ -6,6 +6,7 @@ import { serveMcp } from './mcp-endpoint';
 import { serveServerCard } from './mcp-server-card';
 import { serveOwner } from './owner-endpoint';
 import { noRouteResponse } from './owner-errors';
+import { runScheduled } from './scheduled';
 import { withSecurityHeaders } from './security-headers';
 import { serveTimed } from './server-timing';
 import { SIGN_IN_CHALLENGE_PAGE_PATH, serveSignInChallengePage } from './sign-in-challenge-page';
@@ -13,7 +14,6 @@ import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
 import { SELF_HOST_PATH, redirectToDocs } from './site/self-host-redirect';
 import { serveSite } from './site/site-endpoint';
 import { SERVER_CARD_PATH } from './site/site-urls';
-import { runScheduled } from './site/waitlist-digest';
 
 export { ProjectStore } from './project-store';
 

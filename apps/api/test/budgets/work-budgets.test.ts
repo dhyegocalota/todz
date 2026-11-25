@@ -1,6 +1,6 @@
 import { TaskPlacement } from '@todz/types';
 import { env } from 'cloudflare:workers';
-import { describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { z } from 'zod';
 import { HttpStatus } from '../../src/http-status';
 import { McpToolName } from '../../src/mcp-copy';
@@ -8,11 +8,15 @@ import { serveMcp } from '../../src/mcp-endpoint';
 import { parsedJson } from '../../src/parsed-json';
 import type { ProjectStore } from '../../src/project-store';
 import { type WorkCounts, countedWorkEnv, rowsReadBy, seedLargeProject, seedProjectsOf } from '../budget-counters';
+import { resetDayEmails, seedDayOwner, seedProjectOf, tick } from '../day-email/day-email-client';
 import { seedIssuedKey, seedNudgedKey } from '../directory-seed';
+import { recordingBinding } from '../email-sign-in-client';
 import { ClientEra, callTool, connectClient } from '../mcp-client';
 import { createOwnedProject, serveOwnerCall, signInOwner } from '../owner-client';
 import { AGENT_ACTOR, TODAY, draftOf, newProjectStub, openTasksFilter, unwrap } from '../task-fixtures';
 import {
+  DAY_EMAIL_OWNER_BUDGET,
+  DAY_EMAIL_TICK_BUDGET,
   MCP_LIST_BUDGET_OF_ERA,
   MCP_NEXT_NUDGED_BUDGET_OF_ERA,
   OWNER_PROJECT_ROUTE_BUDGET,
@@ -172,6 +176,47 @@ describe('the directory and Durable Object work of a request', () => {
       expect(counts.projectCalls).toBeGreaterThan(1);
       expectWithin({ counts, budget: MCP_NEXT_NUDGED_BUDGET_OF_ERA[era] });
     });
+  });
+});
+
+function budgetOfDueOwners({ owners, projects }: { owners: number; projects: number }): WorkBudget {
+  return {
+    roundTrips: DAY_EMAIL_TICK_BUDGET.roundTrips + owners * DAY_EMAIL_OWNER_BUDGET.roundTrips,
+    statements: DAY_EMAIL_TICK_BUDGET.statements + owners * DAY_EMAIL_OWNER_BUDGET.statements,
+    projectCalls: projects,
+  };
+}
+
+describe('the directory and Durable Object work of a day email tick', () => {
+  beforeEach(async () => {
+    await resetDayEmails();
+  });
+
+  test('a tick with nobody due', async () => {
+    const { countedEnv, counts } = countedWorkEnv();
+    await tick({ recording: recordingBinding(), settings: { DIRECTORY: countedEnv.DIRECTORY, PROJECT_STORE: countedEnv.PROJECT_STORE } });
+    expectWithin({ counts, budget: DAY_EMAIL_TICK_BUDGET });
+  });
+
+  test.each([1, 3])('a due owner with %i projects costs one listing and one list per project', async (projectCount) => {
+    const owner = await seedDayOwner();
+    await Promise.all(
+      Array.from({ length: projectCount - 1 }, (_unused, index) =>
+        seedProjectOf({ workspaceId: owner.workspaceId, name: `Project ${index}` }),
+      ),
+    );
+    const { countedEnv, counts } = countedWorkEnv();
+    await tick({ recording: recordingBinding(), settings: { DIRECTORY: countedEnv.DIRECTORY, PROJECT_STORE: countedEnv.PROJECT_STORE } });
+    expectWithin({ counts, budget: budgetOfDueOwners({ owners: 1, projects: projectCount }) });
+    expect(counts.projectCalls).toBe(projectCount);
+  });
+
+  test('two due owners cost the tick once and each owner once', async () => {
+    await seedDayOwner();
+    await seedDayOwner();
+    const { countedEnv, counts } = countedWorkEnv();
+    await tick({ recording: recordingBinding(), settings: { DIRECTORY: countedEnv.DIRECTORY, PROJECT_STORE: countedEnv.PROJECT_STORE } });
+    expectWithin({ counts, budget: budgetOfDueOwners({ owners: 2, projects: 2 }) });
   });
 });
 

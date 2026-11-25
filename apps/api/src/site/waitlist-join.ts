@@ -1,6 +1,6 @@
 import { WAITLIST_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
 import { z } from 'zod';
-import { normalizedAddress } from '../email-address';
+import { isOwnDomainAddress, normalizedAddress } from '../email-address';
 import { type EmailSender, emailSenderOf } from '../email-sender';
 import { waitlistMail } from '../emails/waitlist-mail';
 import type { Env } from '../env';
@@ -106,6 +106,7 @@ async function joinNoticeOf({ request, env, executionContext }: SiteContext): Pr
   if (globalRefusal !== null) return globalRefusal;
   const addressRefusal = await waitlistAddressRefusal({ request, env, address });
   if (addressRefusal !== null) return addressRefusal;
+  if (isOwnDomainAddress(address)) return LandingNotice.Joined;
   const isClaimed = await joinWaitlist({ database: env.DIRECTORY, address, now: Date.now() }).catch(() => null);
   if (isClaimed === null) return LandingNotice.TryAgain;
   if (!isClaimed) return LandingNotice.Joined;

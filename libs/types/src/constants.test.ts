@@ -2,6 +2,14 @@ import { describe, expect, test } from 'vitest';
 import {
   ABSENT_INDEX,
   COMPANY,
+  DAY_EMAIL_CATCH_UP_MINUTES,
+  DAY_EMAIL_LINES_MAX,
+  DAY_EMAIL_MINUTES_DEFAULT,
+  DAY_EMAIL_MINUTES_MAX,
+  DAY_EMAIL_PROJECTS_PER_OWNER_MAX,
+  DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS,
+  DAY_EMAIL_RETENTION_MS,
+  DAY_EMAIL_SENDS_PER_TICK_MAX,
   FORMATTER_LOCALE,
   HEALTH_SERVICE_NAME,
   HOURS_PER_DAY,
@@ -79,5 +87,27 @@ describe('mcp constants', () => {
   test('a list shows twenty tasks by default, within the list limit (pin)', () => {
     expect(LIST_LIMIT_DEFAULT).toBe(DEFAULT_LIST_SIZE);
     expect(LIST_LIMIT_DEFAULT).toBeLessThanOrEqual(LIST_LIMIT_MAX);
+  });
+});
+
+describe('day email constants', () => {
+  test('the mail defaults to 07:00 and the minute of the day ends at 23:59 (pin)', () => {
+    expect(DAY_EMAIL_MINUTES_DEFAULT).toBe(420);
+    expect(DAY_EMAIL_MINUTES_MAX).toBe(1439);
+  });
+
+  test('a missed tick is caught up for three hours (pin)', () => {
+    expect(DAY_EMAIL_CATCH_UP_MINUTES).toBe(180);
+  });
+
+  test('a tick sends at most fifty mails, reads at most a hundred projects per owner and lists at most twenty lines (pin)', () => {
+    expect(DAY_EMAIL_SENDS_PER_TICK_MAX).toBe(50);
+    expect(DAY_EMAIL_PROJECTS_PER_OWNER_MAX).toBe(100);
+    expect(DAY_EMAIL_LINES_MAX).toBe(20);
+  });
+
+  test('records are kept thirty days and a reply address lives seven (pin)', () => {
+    expect(DAY_EMAIL_RETENTION_MS).toBe(30 * MILLISECONDS_IN_A_DAY);
+    expect(DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS).toBe(7 * MILLISECONDS_IN_A_DAY);
   });
 });
