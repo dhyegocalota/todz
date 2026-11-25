@@ -26,8 +26,8 @@ readonly KEYCHAIN_DUMP_PATTERN='dump-keychain'
 readonly KEYCHAIN_INTERACTIVE_PATTERN='security[[:space:]]+-i([[:space:]]|$)'
 readonly KEYCHAIN_PASSWORD_READ_PATTERN='find-(generic|internet)-password'
 readonly KEYCHAIN_PASSWORD_CHANGE_PATTERN='(add|delete)-generic-password'
-readonly DOCUMENTED_PASSWORD_READ_PATTERN='[[:space:]]-s[[:space:]]+todz-turnstile([[:space:]]|$)'
-readonly SERVICE_FLAG_PATTERN='[[:space:]]-[[:alpha:]]*s[[:space:]]'
+readonly DOCUMENTED_PASSWORD_READ_PATTERN='^security find-generic-password -s todz-turnstile -w( \| scripts/todz-cloudflare\.sh pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY)?$'
+readonly RELEASE_ACCOUNT_PATTERN='[[:space:]]-a[[:space:]]+release([[:space:]]|$)'
 readonly SPARKLE_TOOL_PATTERN='(^|[^[:alnum:]_-])(sign_update|generate_keys)([^[:alnum:]_-]|$)'
 readonly RELEASE_OVERRIDE_PATTERN='TODZ_(RELEASE|DEPLOY)_'
 readonly RELEASE_COMMAND_PATTERN='^(pnpm release:mac|scripts/release-mac\.sh)( --[a-z-]+( [0-9]+\.[0-9]+\.[0-9]+)?)*$'
@@ -52,16 +52,15 @@ names_release_tool_or_override() {
 }
 
 is_documented_password_read() {
-  [[ "$scanned_text" =~ $DOCUMENTED_PASSWORD_READ_PATTERN ]] || return 1
-  local remainder=${scanned_text/"${BASH_REMATCH[0]}"/ }
-  [[ ! "$remainder" =~ $SERVICE_FLAG_PATTERN ]]
+  [[ "$trimmed_command" =~ $DOCUMENTED_PASSWORD_READ_PATTERN ]]
 }
 
 reads_keychain_value() {
   [[ "$scanned_text" == *"$KEYCHAIN_TOOL"* ]] || return 1
   [[ "$scanned_text" =~ $KEYCHAIN_DUMP_PATTERN || "$scanned_text" =~ $KEYCHAIN_INTERACTIVE_PATTERN ]] && return 0
   [[ "$scanned_text" == *"$RELEASE_KEY_ITEM"* && "$scanned_text" =~ $KEYCHAIN_PASSWORD_CHANGE_PATTERN ]] && return 0
-  [[ "$scanned_text" =~ $KEYCHAIN_PASSWORD_READ_PATTERN && "$scanned_text" =~ $KEYCHAIN_VALUE_FLAG_PATTERN ]] && ! is_documented_password_read && return 0
+  [[ "$scanned_text" =~ $KEYCHAIN_PASSWORD_READ_PATTERN && "$scanned_text" =~ $KEYCHAIN_VALUE_FLAG_PATTERN ]] && return 0
+  [[ "$scanned_text" =~ $KEYCHAIN_PASSWORD_READ_PATTERN && "$scanned_text" =~ $RELEASE_ACCOUNT_PATTERN ]] && return 0
   [[ "$scanned_text" == *"$RELEASE_KEY_ITEM"* && "$scanned_text" =~ $KEYCHAIN_VALUE_FLAG_PATTERN ]]
 }
 
@@ -175,7 +174,7 @@ done <<<"$touched"
 command=$(jq -r '.tool_input.command // ""' <<<"$hook_input")
 scanned_text=$(tr -d "\"'\\\\" <<<"$command")
 trimmed_command=${command#"${command%%[![:space:]]*}"}
-reads_release_secret && ! is_release_command && block "$RELEASE_SECRETS_MESSAGE"
+reads_release_secret && ! is_release_command && ! is_documented_password_read && block "$RELEASE_SECRETS_MESSAGE"
 if names_protected_env_file "$scanned_text"; then
   is_plain_read && exit 0
   is_prose && exit 0

@@ -8,6 +8,8 @@ readonly HANGUP_EXIT_STATUS=129
 readonly PERL_BINARY=/usr/bin/perl
 readonly BASE64_BINARY=/usr/bin/base64
 readonly SHASUM_BINARY=/usr/bin/shasum
+readonly UUIDGEN_BINARY=/usr/bin/uuidgen
+readonly LOCK_TOKEN_FILE=token
 readonly TEST_MODE_VALUE=1
 readonly OVERRIDE_NAME_PATTERN='^TODZ_(RELEASE|DEPLOY)_.*(_BINARY|_SECONDS|SPARKLE_REVISION|SPARKLE_TOOLS)$'
 
@@ -45,17 +47,25 @@ require_clean_tree() {
   [[ -z "$(git status --porcelain)" ]] || fail "the working tree is not clean"
 }
 
+is_lock_holder_token_inherited() {
+  local inherited=${TODZ_RELEASE_LOCK_HELD:-}
+  [[ -n "$inherited" && -f "$lock_directory/$LOCK_TOKEN_FILE" && "$inherited" == "$(cat "$lock_directory/$LOCK_TOKEN_FILE")" ]]
+}
+
 acquire_lock() {
-  [[ -z "${TODZ_RELEASE_LOCK_HELD:-}" ]] || return 0
+  local token
+  is_lock_holder_token_inherited && return 0
   mkdir -p "$release_home"
   mkdir "$lock_directory" 2> /dev/null || fail "another release or deploy holds the lock $lock_directory"
   lock_held_here=true
-  export TODZ_RELEASE_LOCK_HELD=yes
+  token=$("$UUIDGEN_BINARY")
+  printf '%s' "$token" > "$lock_directory/$LOCK_TOKEN_FILE"
+  export TODZ_RELEASE_LOCK_HELD=$token
   rm -rf "$release_home"/work.*
 }
 
 release_lock() {
-  [[ "$lock_held_here" == false ]] || rmdir "$lock_directory"
+  [[ "$lock_held_here" == false ]] || rm -rf "$lock_directory"
   lock_held_here=false
 }
 
