@@ -47,7 +47,7 @@ popover closes → the mode ends
 
 | Case | Effect |
 |---|---|
-| the Mac sleeps through the time | fires at the first wake that day; not after midnight |
+| the Mac sleeps through the time | fires at the first wake that day, or after the unlock when the screen is locked; not after midnight |
 | the app launches after the time | fires at launch that day |
 | the owner changes the time to a later one after it fired today | does not fire again today |
 | the owner turns it on after today's time | fires now if not closed today (a first chance after the time) |
@@ -55,7 +55,10 @@ popover closes → the mode ends
 | the status button cannot be found, or the open fails | nothing opens and the mode is cleared; `lastClosedDay` is not set, so a later check tries again that day (no fallback) |
 | Today is still loading, failed to load, or the owner is signed out | wait; decide again when the count is known; nothing is marked |
 | the popover is already open when the day close is due | the mode starts in place without a click; the add field hides and keeps its draft until the mode ends |
-| a Focus read at launch is still pending | the first check waits for it |
+| a Focus read at launch is still pending | the first check waits for it at most 3 s, then the gate holds as quiet until the answer arrives (a late answer still applies unless a Focus change came first) |
+| the screen is locked when the day close is due | nothing opens or is marked; the check runs again at the unlock; an unreadable session counts as locked |
+| the Mac's time zone changes | the live zone is read at the next check, so the due time and the day are computed in the new zone |
+| the click is sent but the popover never shows | the mode stays on unengaged and the day stays unmarked; a later check that day clicks again; the day is marked when the popover is seen |
 | a row action fails (offline) | the outbox queues it as any write; the row reflects the change at once |
 
 ### Rollback

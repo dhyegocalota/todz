@@ -203,3 +203,36 @@ Opening 1, including a click before D; the hidden launch (`open -g -j`); Keys in
 
 - Finding 3 has no red test; the visibility confirmation is app-target code covered only by the walk.
 - Findings 1 and 7 have no unit seam; the first is one argument, the second a race inside the app delegate.
+
+## Fix round 6: the day is marked when the popover is seen
+
+At `e72000d`, `swift test --package-path apps/macos/TodzKit` gives `Test run with 748 tests in 51 suites passed` (743 before, plus the round 6 coordinator tests, minus the folded pin, plus two gate pins); `xcodegen generate` and the Debug `xcodebuild` give `BUILD SUCCEEDED`, no warnings.
+
+| Item | What changed | Red commit and printed text | Green commit |
+|------|--------------|-----------------------------|--------------|
+| A. mark on seen | the opener answers "a click was sent" (false only when the status button is not found); `MenuBarPanel.open()` lost the `Task.yield()` guess; the coordinator takes `isPopoverVisible`, keeps the mode on and the day unmarked after a click, and marks in `popoverShown()`, which `MenuBarPanelReader` calls when the window becomes visible (also at `viewDidMoveToWindow`) and which the coordinator also takes at once when the popover was already visible; `onHide` still ends the mode; a later check clicks again while unmarked, never while opening or visible. The pin at the old line 218 is folded into the new tests | `f6f81ef` `aClickSentAndNeverShownKeepsTheModeOnUnmarkedAndUnengagedThenShownMarks`: `Expectation failed: await harness.coordinator.check() == .due`, `Expectation failed: harness.lastClosedDay == nil`; `aLaterCheckWhileUnmarkedClicksAgainAndAShownPopoverStopsFurtherClicks`: `Expectation failed: harness.popover.openings == 2` (twice). `Test run with 746 tests in 51 suites failed after 0.217 seconds with 4 issues`. Pins when they landed: `aPopoverAlreadyVisibleWhenTheModeStartsMarksTheDayAtOnce`, `noStatusButtonEndsTheModeMarksNothingAndALaterCheckThatDayOpens`, `aShownPopoverWithTheModeOffMarksNothing` | `e72000d` |
+| B. focus read | on the 3 s timeout the gate applies the launch read as quiet (fail closed) and the read stays alive, so a late answer still goes through `applyLaunchRead`; the timer task is cancelled when the answer arrives first; the timeout is `focusFilterReadTimeout: Duration = .seconds(3)`; the stream is `settlements`. `ProactiveGate` needed no change | pins `a986f88` (`aLateLaunchReadAfterTheTimeoutQuietedTheGateReleasesWhatItHeld`, `aPerformThatArrivesAfterTheTimeoutWinsOverTheLateLaunchRead`), green when they landed; the race itself is app-target code with no seam | `e72000d` |
+| C. ADR | one Consequences line on `com.apple.screenIsUnlocked`; decision 5 states the mark-when-seen rule the `// NB ADR 0055` comments point to | none (docs) | `e72000d` |
+| D. lock fails closed | `ScreenLock.isLocked` is true when `CGSessionCopyCurrentDictionary()` returns nil | none (app target, no seam) | `e72000d` |
+| E. engagement | Done, Tomorrow and No date call `MenuBarPanel.engage(_:)` before acting; the popover container uses `.contentShape(Rectangle()).onTapGesture` instead of the simultaneous gesture; `engage(_:)` engages the coordinator, then `NSApp.activate()` and makes the popover window key | none (view and AppKit, no seam) | `e72000d` |
+| F. docs | spec failure table: unlock wake, 3 s Focus wait then quiet, locked screen, time-zone change, click-sent-never-shown rows; the `// NB ADR 0055` on `MenuBarPanel.open()` is cut to the rule | none (docs) | the docs commit after `e72000d` |
+
+### The ONE-opening walk to re-check
+
+Launch hidden (`open -g -j`) with the day close due, and look at one opening:
+
+- the popover shows in the mode; `lastClosedDay` is written only after it shows (read the defaults key right after launch, then after the popover appears);
+- a click on the heading (not on a button or a row), then D on a focused row acts; Tab to a row first and D before any click does nothing;
+- a click on Done, Tomorrow or No date acts on the first click;
+- Escape closes.
+
+### Hypotheses to attack
+
+21. Hypothesis: the popover window reports visible through `didChangeOcclusionState` (or is already visible at `viewDidMoveToWindow`) on the first opening after a hidden launch; if not, the day stays unmarked and the mode stays on until the next check clicks again.
+22. Hypothesis: after a click in the popover, `NSApp.activate()` plus `makeKey()` gives the popover keyboard focus so D, T and N reach the focused row; if the tester's FAIL on E6 persists, the cause is the window not becoming key, not the tap gesture.
+23. Hypothesis: with the Focus read stalled, the gate holds as quiet for 3 s after launch, then a late `isQuiet = false` releases the held day close the same day.
+
+### Known gaps
+
+- A, the visibility signal, B's race, D and E are app-target code; only the coordinator, the gate and their pins are unit-tested.
+- The scheduler does not re-arm after a late `popoverShown()` mark; the next trigger (midnight, wake, a Settings change) re-checks.
