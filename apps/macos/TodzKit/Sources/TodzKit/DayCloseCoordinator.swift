@@ -51,8 +51,7 @@ import Observation
         !isClosingDay || isEngaged
     }
 
-    public func engage(by input: DayCloseEngagementInput) {
-        guard input == .click else { return }
+    public func engage() {
         isEngaged = true
     }
 

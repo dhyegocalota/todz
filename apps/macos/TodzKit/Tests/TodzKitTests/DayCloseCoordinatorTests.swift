@@ -299,7 +299,7 @@ private let minutesOutsideADay = [-2880, 1440]
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
         await harness.coordinator.check()
-        harness.coordinator.engage(by: .click)
+        harness.coordinator.engage()
         #expect(harness.coordinator.isEngaged)
         #expect(harness.coordinator.acceptsKeyActions)
     }
@@ -308,7 +308,7 @@ private let minutesOutsideADay = [-2880, 1440]
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
         await harness.coordinator.check()
-        harness.coordinator.engage(by: .click)
+        harness.coordinator.engage()
         harness.coordinator.end()
         harness.at(tomorrow, hour: 18)
         await harness.coordinator.check()
@@ -317,21 +317,11 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(!harness.coordinator.acceptsKeyActions)
     }
 
-    @Test(arguments: [DayCloseEngagementInput.tab, .hover])
-    func onlyAClickEngagesTheMode(input: DayCloseEngagementInput) async throws {
-        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
-        harness.at(today, hour: 18)
-        await harness.coordinator.check()
-        harness.coordinator.engage(by: input)
-        #expect(!harness.coordinator.isEngaged)
-        #expect(!harness.coordinator.acceptsKeyActions)
-    }
-
     @Test func aModeLeftOnByAnOpenerThatNeverShowedDoesNotBlockTheNextDay() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
         await harness.coordinator.check()
-        harness.coordinator.engage(by: .click)
+        harness.coordinator.engage()
         harness.at(tomorrow, hour: 18)
         await harness.coordinator.check()
         #expect(harness.popover.openings == 2)
@@ -341,7 +331,7 @@ private let minutesOutsideADay = [-2880, 1440]
 
     @Test func aModeStartingInPlaceAfterTheOwnerEngagedIsNotEngaged() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
-        harness.coordinator.engage(by: .click)
+        harness.coordinator.engage()
         harness.at(today, hour: 18)
         await harness.coordinator.check()
         #expect(harness.coordinator.isClosingDay)
