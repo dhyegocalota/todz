@@ -33,7 +33,7 @@ The glyph never changes. Only the count's opacity steps down.
 
 The text's weight and digits stay as today (`monospacedDigit()`), so the width of the item does not change between steps.
 
-The spike (plan step 1) decides how the alpha reaches the bar: `.opacity` on the `Text`, then `.foregroundStyle(.primary.opacity(...))`, then, if the status item drops both, the glyph and the count rendered with `ImageRenderer` into one template `NSImage` with the count drawn at the step's opacity (ADR 0065 §3). The accessibility label is the same in all three. Evidence is recorded here after the spike: (pending the spike).
+The spike (plan step 1) decides how the alpha reaches the bar: `.opacity` on the `Text`, then `.foregroundStyle(.primary.opacity(...))`, then, if the status item drops both, the glyph and the count rendered with `ImageRenderer` into one template `NSImage` with the count drawn at the step's opacity (ADR 0065 §3). The accessibility label is the same in all three. Evidence (spike of 2026-11-25, numbers in the ADR): the status item drops `.opacity` and `.foregroundStyle(.primary.opacity)`; the `ImageRenderer` template `NSImage` carries the step's alpha (peak 0.910, 0.788, 0.694, 0.616), keeps the system tint and the item's width, and Increase Contrast is read from `NSWorkspace`. The wash caps become 0.09 and 0.12 (0.18 measures 2.78:1 for the red due words in light).
 
 ### 1.2 The widget rows
 

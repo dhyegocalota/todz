@@ -71,7 +71,35 @@ Setting and Focus:
 
 ## Evidence
 
-Not measured yet. The first build step is a spike in a scratch worktree, not committed: a `MenuBarExtra` label with a `Text` count at opacities 1.0, 0.85, 0.75 and 0.65 on a light, a dark and a wallpaper-tinted bar, tried as `.opacity`, then `.foregroundStyle(.primary.opacity(...))`, then the `ImageRenderer` template image. Pass when the mean luminance of the count's pixels differs from the plain capture at every step on all three bars and the evening count measures at least 3:1 against the bar; the spike also confirms `colorSchemeContrast` updates in the label. The wash is captured in `.fullColor`, `.vibrant` and `.accented`, and the due words on the 9-day row are measured in light and dark (pass at least 3:1; otherwise the caps become 0.09 and 0.12). The lead commits the evidence here as `docs(day-temperature): record the spike`: (pending the spike).
+Not measured yet. The first build step is a spike in a scratch worktree, not committed: a `MenuBarExtra` label with a `Text` count at opacities 1.0, 0.85, 0.75 and 0.65 on a light, a dark and a wallpaper-tinted bar, tried as `.opacity`, then `.foregroundStyle(.primary.opacity(...))`, then the `ImageRenderer` template image. Pass when the mean luminance of the count's pixels differs from the plain capture at every step on all three bars and the evening count measures at least 3:1 against the bar; the spike also confirms `colorSchemeContrast` updates in the label. The wash is captured in `.fullColor`, `.vibrant` and `.accented`, and the due words on the 9-day row are measured in light and dark (pass at least 3:1; otherwise the caps become 0.09 and 0.12). The lead commits the evidence here as `docs(day-temperature): record the spike`: recorded below.
+
+Spike run on 2026-11-25 on the owner's Mac (macOS 26, a notched display, the menu bar in Dark appearance over the wallpaper), a scratch SwiftUI `MenuBarExtra` with a `checklist` glyph and a `6`, each variant launched alone, its status item window captured by window number with `screencapture -l` and the alpha channel of the count's pixels (the right 45% of the item) measured. Appearance was not switched, because that repaints the owner's whole screen; the light bar is the same capture composited over a light bar in linear light, and the tinted bar is the live wallpaper-tinted bar.
+
+| Variant | 1.0 | 0.85 | 0.75 | 0.65 |
+|---|---|---|---|---|
+| `.opacity(x)` on the `Text`: peak alpha of the count | 0.910 | 0.910 | 0.910 | 0.910 |
+| `.foregroundStyle(.primary.opacity(x))`: peak alpha | 0.910 | 0.910 | 0.910 | 0.910 |
+| `ImageRenderer` template `NSImage`: peak alpha | 0.910 | 0.788 | 0.694 | 0.616 |
+| `ImageRenderer` template: mean alpha of the count's pixels | 0.569 | 0.496 | 0.442 | 0.401 |
+| `ImageRenderer` template: contrast on the dark bar | 13.86 | 10.68 | 8.57 | 7.03 |
+| `ImageRenderer` template: contrast on a light bar | 15.24 | 10.77 | 7.67 | 5.75 |
+
+- **The status item drops both SwiftUI alphas**: `.opacity` and `.foregroundStyle(.primary.opacity)` captured identical to the plain label at every step. The `ImageRenderer` template image is the first that differs at every step, so **the path G1 builds is the template `NSImage`** (ADR §3 amended by this evidence, not superseded).
+- The template image kept the system's tint (the glyph and the count rendered light on the dark bar) and the item's window width did not change between steps (98 by 66 pixels at every step).
+- Pass: the mean luminance and alpha of the count differ from the plain capture at every step, and the evening count measures 7.03:1 on the dark bar and 5.75:1 on a light bar, above 3:1.
+- **Increase Contrast**: not toggled, because it repaints the owner's screen. Because the template image is drawn by the app, the label must be redrawn when contrast changes, so it reads `NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast` and observes `NSWorkspace.accessibilityDisplayOptionsDidChangeNotification` (the plan's decided fallback), never `colorSchemeContrast`.
+- **The wash**, computed in linear light (the widget could not be placed on the owner's desktop for the spike; Accessibility Inspector is left to the walk), system red (255, 59, 48) light and (255, 69, 58) dark over a white and a 0x1E1E1E widget background:
+
+| Wash | Due words, light | Due words, dark | Title, light | Title, dark |
+|---|---|---|---|---|
+| none | 3.55:1 | 4.89:1 | 21.00:1 | 16.67:1 |
+| 0.06 | 3.28:1 | 4.62:1 | 19.39:1 | 15.72:1 |
+| 0.09 | 3.15:1 | 4.46:1 | 18.62:1 | 15.20:1 |
+| 0.12 | 3.02:1 | 4.30:1 | 17.88:1 | 14.65:1 |
+| 0.18 | 2.78:1 | 3.97:1 | 16.47:1 | 13.52:1 |
+
+- **0.18 fails 3:1 for the due words in light (2.78:1)**, so the decided fallback applies: `lateOpacity` 0.09 and `longOverdueOpacity` 0.12 (3.15:1 and 3.02:1 in light). The bands are 0.06 for one day, 0.09 for two to six, 0.12 from seven.
+- `.vibrant` and `.accented` draw `Color.primary` at the same bands; there the due words are not red (the system recolours them), the title stays at 9.36:1 or more in dark and 13.77:1 or more in light at the top band, so the red-words measure does not apply.
 
 ## Revisit when
 
