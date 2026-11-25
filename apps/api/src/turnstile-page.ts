@@ -1,4 +1,5 @@
 import type { Env } from './env';
+import { HttpHeader, NO_STORE } from './http-header';
 import { HttpStatus } from './http-status';
 import { noRouteResponse } from './owner-errors';
 
@@ -55,7 +56,7 @@ function pageResponse({
     status,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-store',
+      [HttpHeader.CacheControl]: NO_STORE,
       'Referrer-Policy': 'no-referrer',
       'X-Content-Type-Options': 'nosniff',
       'Content-Security-Policy': contentSecurityPolicy,

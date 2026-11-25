@@ -159,6 +159,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
 
     ```bash
     curl -sS https://api.todz.app/owner/sign-in-method
+    curl -sS https://api.todz.app/health
     curl -sS -D - -o /dev/null https://api.todz.app/sign-in
     curl -sS -D - -o /dev/null https://api.todz.app/sign-in/challenge
     curl -sS -D - -o /dev/null https://api.todz.app/mcp
@@ -173,7 +174,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     curl -sS -D - -o /dev/null https://todz-api.<subdomain>.workers.dev/owner/sign-in-method
     ```
 
-    Expected: `{"method":"link"}`, then for each page `HTTP/2 503` with `content-type: text/html; charset=utf-8` until the site key is in `wrangler.jsonc` and `HTTP/2 200` after, then `HTTP/2 401`, then `HTTP/2 200` for the landing and for the self-host guide, each with `strict-transport-security: max-age=31536000` and a `content-security-policy` that starts with `default-src 'none'`, then `HTTP/2 301` with `location: https://todz.app/self-host?from=runbook`, then `HTTP/2 404` for the owner route on the site host and for the landing on the API host, then for `todz.app/admin` `HTTP/2 200` with `cache-control: no-store` and `x-robots-tag: noindex` (the admin's sign-in card), then `HTTP/2 404` for `api.todz.app/admin`, then the account's `workers.dev` subdomain, then for the last no answer from the Worker: a connection error, 404 or a Cloudflare error page, never `{"method":"link"}`. The first proves the production variables are the ones in `wrangler.jsonc`; any other body means a `--var` or a dashboard variable overrides them, so stop and read the Worker's settings. When all thirteen pass, delete the export of step 6:
+    Expected: `{"method":"link"}`, then `{"service":"todz","origin":"https://api.todz.app"}`, then for each page `HTTP/2 503` with `content-type: text/html; charset=utf-8` until the site key is in `wrangler.jsonc` and `HTTP/2 200` after, then `HTTP/2 401`, then `HTTP/2 200` for the landing and for the self-host guide, each with `strict-transport-security: max-age=31536000` and a `content-security-policy` that starts with `default-src 'none'`, then `HTTP/2 301` with `location: https://todz.app/self-host?from=runbook`, then `HTTP/2 404` for the owner route on the site host and for the landing on the API host, then for `todz.app/admin` `HTTP/2 200` with `cache-control: no-store` and `x-robots-tag: noindex` (the admin's sign-in card), then `HTTP/2 404` for `api.todz.app/admin`, then the account's `workers.dev` subdomain, then for the last no answer from the Worker: a connection error, 404 or a Cloudflare error page, never `{"method":"link"}`. The first proves the production variables are the ones in `wrangler.jsonc`; any other body means a `--var` or a dashboard variable overrides them, so stop and read the Worker's settings. When all fourteen pass, delete the export of step 6:
 
     ```bash
     rm ~/.todz-deploy/backups/before-<commit>.sql

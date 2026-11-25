@@ -14,7 +14,7 @@ settings:
       TODZ_APP_BUNDLE_IDENTIFIER: dev.todz.Todz
       TODZ_WIDGETS_BUNDLE_IDENTIFIER: dev.todz.Todz.widgets
       TODZ_APP_GROUP: dev.todz
-      TODZ_ALLOWS_LOCAL_NETWORKING: "NO"
+      TODZ_ALLOWS_LOCAL_NETWORKING: "YES"
 packages:
   TodzKit:
     path: TodzKit

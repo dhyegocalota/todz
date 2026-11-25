@@ -16,13 +16,15 @@ private func isFocusFilterQuiet() async -> Bool {
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel(
-        service: OwnerAPI(baseURL: AppConfiguration.baseURL),
+        defaultURL: AppConfiguration.defaultURL,
+        preference: ServerPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
+        connect: { ServerConnection(service: OwnerAPI(baseURL: $0.url), signals: SocketChangeSignals(baseURL: $0.url)) },
+        probe: { await OwnerAPI(baseURL: $0.url, transport: OwnerAPI.probeTransport).probe(typedAddress: $0) },
         vault: FileSessionVault(folder: AppConfiguration.sessionFolder),
         pendingLinks: FilePendingLinkVault(folder: AppConfiguration.sessionFolder),
         store: FileSyncStore(folder: AppConfiguration.sessionFolder.appending(path: cacheFolderName)),
         widgetStore: AppConfiguration.widgetStore,
         reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
-        signals: SocketChangeSignals(baseURL: AppConfiguration.baseURL),
         timeZone: .autoupdatingCurrent,
         pause: { try await Task.sleep(for: $0) }
     )

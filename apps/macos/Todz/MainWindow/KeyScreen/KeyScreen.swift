@@ -1,13 +1,12 @@
 import SwiftUI
 import TodzKit
 
-private let serverURL = AgentCommand.serverURL(apiBase: AppConfiguration.baseURL)
-
 struct KeyScreen: View {
     let workspace: Workspace
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        let serverURL = AgentCommand.serverURL(apiBase: model.serverURL.url)
         ScrollView {
             if let project = model.keyProject {
                 VStack(alignment: .leading) {
@@ -20,7 +19,7 @@ struct KeyScreen: View {
                     InspectorSectionTitle(title: KeyScreenCopy.serverURL)
                     CommandBlock(
                         name: KeyScreenCopy.serverURL,
-                        caption: nil,
+                        caption: KeyScreenCopy.serverURLCaption,
                         text: serverURL.absoluteString,
                         holdsSecret: false,
                         disabledReason: nil

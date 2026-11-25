@@ -58,9 +58,9 @@ describe('the macOS identities per configuration', () => {
     });
   });
 
-  test('local networking is allowed in Debug only', () => {
+  test('local networking is allowed in Debug and Release', () => {
     expect(configurationSetting({ configuration: 'Debug', name: 'TODZ_ALLOWS_LOCAL_NETWORKING' })).toBe('YES');
-    expect(configurationSetting({ configuration: 'Release', name: 'TODZ_ALLOWS_LOCAL_NETWORKING' })).toBe('NO');
+    expect(configurationSetting({ configuration: 'Release', name: 'TODZ_ALLOWS_LOCAL_NETWORKING' })).toBe('YES');
     expect(readRepositoryFile(MACOS_PROJECT)).toContain('NSAllowsLocalNetworking: $(TODZ_ALLOWS_LOCAL_NETWORKING)');
     expect(readRepositoryFile(APP_INFO_PLIST)).toContain('<string>$(TODZ_ALLOWS_LOCAL_NETWORKING)</string>');
   });

@@ -76,3 +76,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0053](0053-agents-mention-today-s-tasks-in-next-when-the-owner-turns-it-on.md) | Agents mention today's tasks in `next` when the owner turns it on | Accepted | 2026-11-25 |
 | [0054](0054-the-app-learns-focus-through-a-todz-focus-filter-not-the-focus-status-api.md) | The app learns Focus through a todz Focus filter, not the Focus status API | Accepted | 2026-11-25 |
 | [0055](0055-the-day-closes-once-a-day-in-the-menu-bar-popover-at-the-owner-s-time.md) | The day closes once a day in the menu bar popover, at the owner's time | Accepted | 2026-11-25 |
+| [0056](0056-the-app-keeps-its-server-url-as-a-setting-and-switching-it-starts-clean.md) | The app keeps its server URL as a setting, and switching it starts clean | Accepted | 2026-11-25 |

@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "types": ["node"] },
-  "include": ["scripts", "e2e", "playwright.config.ts", "test/emails", "test/site", "test/brand-asset.test.ts"]
+  "include": ["scripts", "e2e", "playwright.config.ts", "test/emails", "test/site", "test/server", "test/brand-asset.test.ts"]
 }

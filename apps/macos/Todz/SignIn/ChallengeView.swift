@@ -30,7 +30,7 @@ private struct ChallengeWebView: NSViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.setAccessibilityLabel(SignInCopy.challengeLabel)
-        webView.load(URLRequest(url: ChallengeNavigation.pageURL(apiBaseURL: AppConfiguration.baseURL)))
+        webView.load(URLRequest(url: ChallengeNavigation.pageURL(apiBaseURL: model.serverURL.url)))
         return webView
     }
 
@@ -55,7 +55,7 @@ private struct ChallengeWebView: NSViewRepresentable {
             scheme: origin.protocol,
             host: origin.host,
             port: origin.port,
-            apiBaseURL: AppConfiguration.baseURL
+            apiBaseURL: model.serverURL.url
         )
         guard isTrusted else { return }
         guard let token = message.body as? String else {
@@ -74,7 +74,7 @@ private struct ChallengeWebView: NSViewRepresentable {
             decisionHandler(.cancel)
             return
         }
-        let isAllowed = ChallengeNavigation.isAllowed(url: url, apiBaseURL: AppConfiguration.baseURL, isMainFrame: targetFrame.isMainFrame)
+        let isAllowed = ChallengeNavigation.isAllowed(url: url, apiBaseURL: model.serverURL.url, isMainFrame: targetFrame.isMainFrame)
         decisionHandler(isAllowed ? .allow : .cancel)
     }
 }

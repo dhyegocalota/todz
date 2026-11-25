@@ -10,6 +10,7 @@
     "emails:generate": "tsx scripts/emails/cli.ts generate",
     "emails:check": "tsx scripts/emails/cli.ts check",
     "emails:preview": "tsx scripts/emails/cli.ts preview",
+    "server:deploy": "wrangler deploy && tsx scripts/server/cli.ts",
     "site:generate": "tsx scripts/site/cli.ts generate",
     "site:check": "tsx scripts/site/cli.ts check",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",

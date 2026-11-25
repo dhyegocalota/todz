@@ -41,6 +41,10 @@ const REPOSITORY_SCRIPT_PATTERN = /(scripts\/[\w./-]+)/g;
 const LINE_SEPARATOR = '\n';
 const ACCOUNT_ID_CAPTURE = 1;
 const CLOUDFLARE_API_HOST = 'api.cloudflare.com';
+const SMOKE_CHECK_STEP = 13;
+const HEALTH_CURL = 'curl -sS https://api.todz.app/health';
+const HEALTH_ANSWER = '{"service":"todz","origin":"https://api.todz.app"}';
+const ALL_PASS_SENTENCE = 'When all fourteen pass';
 const WRONG_SESSION_BODY = 'scripts/deploy-bodies/wrong-session.json';
 const JUNK_LINK_BODY = 'scripts/deploy-bodies/junk-turnstile-link.json';
 const JUNK_WAITLIST_BODY = 'scripts/deploy-bodies/junk-turnstile-waitlist.txt';
@@ -226,6 +230,13 @@ describe('runbooks', () => {
     const accountId = ACCOUNT_ID_PATTERN.exec(readRepositoryFile(WRANGLER_CONFIGURATION))?.[ACCOUNT_ID_CAPTURE];
     expect(accountId).toBeDefined();
     expect(readRepositoryFile(WRAPPER_PATH)).toContain(`"${accountId}"`);
+  });
+
+  test('the smoke check curls the health route of the API host and counts it among the fourteen answers', () => {
+    const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
+    expect(smokeCheck?.body).toContain(HEALTH_CURL);
+    expect(smokeCheck?.body).toContain(HEALTH_ANSWER);
+    expect(smokeCheck?.body).toContain(ALL_PASS_SENTENCE);
   });
 
   test('the wrong session body is refused before siteverify, by a malformed verifier, and carries an unsolved token', () => {
