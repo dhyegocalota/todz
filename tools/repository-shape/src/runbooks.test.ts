@@ -57,7 +57,7 @@ const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
 const TURNSTILE_TOKEN_PATTERN = /^[A-Za-z0-9._-]{1,2048}$/;
 const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
 
-type DeployBody = { email?: string; link_challenge?: string; link_verifier?: string; turnstile_token?: string };
+type DeployBody = { email?: string; link_challenge?: string; link_verifier?: string; turnstile_token?: string; app_link_scheme?: string };
 
 function deployBody(path: string): DeployBody {
   return JSON.parse(readRepositoryFile(path)) as DeployBody;
@@ -250,6 +250,7 @@ describe('runbooks', () => {
   test('the junk link body is well formed but for its unsolved token, so only Turnstile refuses it', () => {
     const body = deployBody(JUNK_LINK_BODY);
     expect(body.link_challenge).toMatch(LINK_CHALLENGE_PATTERN);
+    expect(body.app_link_scheme).toBe('todz');
     expect(body.email).toMatch(/^[^@\s]+@example\.com$/);
     expect(body.turnstile_token).toMatch(TURNSTILE_TOKEN_PATTERN);
     expect(body.turnstile_token).not.toBe(TURNSTILE_DUMMY_TOKEN);

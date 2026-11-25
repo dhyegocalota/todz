@@ -6,7 +6,9 @@ import { publicOriginOf } from '../src/sign-in-links';
 import { TURNSTILE_DUMMY_TOKEN, TurnstileAction } from '../src/turnstile';
 import { seedEmailIdentity, seedOwner } from './directory-seed';
 import {
+  DEBUG_LINK_SCHEME,
   LINK_CHALLENGE,
+  RELEASE_LINK_SCHEME,
   freshAddress,
   guardedSettings,
   EMAIL_SETTINGS,
@@ -92,6 +94,48 @@ describe('POST /owner/sign-in-links', () => {
     expect(mail.text).toContain(`http://127.0.0.1:9000/sign-in#token=${tokenOfMail(mail)}`);
     expect(mail.text).toContain("If you didn't ask for this, ignore this email.");
     expect(output).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([[RELEASE_LINK_SCHEME], [DEBUG_LINK_SCHEME]])(
+    'mails a link that hands the token back to the %s scheme',
+    async (appLinkScheme) => {
+      const output = consoleOutput();
+      await requestLink({ appLinkScheme });
+      const mail = mailSent(output);
+      expect(mail.text).toContain(`sign-in#token=${tokenOfMail(mail)}&app=${appLinkScheme}`);
+    },
+  );
+
+  test.each([[''], ['https'], ['javascript'], ['TODZ'], [5], [null]])(
+    'the app link scheme %j answers 400 invalid_request, stores nothing and sends nothing',
+    async (appLinkScheme) => {
+      const output = consoleOutput();
+      const before = await totalLinks();
+      const response = await requestLink({ appLinkScheme });
+      expect(response.status).toBe(BAD_REQUEST_STATUS);
+      expect(await response.json()).toEqual(INVALID_REQUEST);
+      expect(output).not.toHaveBeenCalled();
+      expect(await totalLinks()).toBe(before);
+    },
+  );
+
+  test('a missing app link scheme answers 400 invalid_request, stores nothing and sends nothing', async () => {
+    const output = consoleOutput();
+    const before = await totalLinks();
+    const response = await serveOwnerCall({
+      call: {
+        method: 'POST',
+        path: '/owner/sign-in-links',
+        origin: PUBLIC_ORIGIN,
+        body: { email: freshAddress(), link_challenge: LINK_CHALLENGE, turnstile_token: TURNSTILE_DUMMY_TOKEN },
+      },
+      now: CLOCK_NOW,
+      workerEnv: emailEnv(),
+    });
+    expect(response.status).toBe(BAD_REQUEST_STATUS);
+    expect(await response.json()).toEqual(INVALID_REQUEST);
+    expect(output).not.toHaveBeenCalled();
+    expect(await totalLinks()).toBe(before);
   });
 
   test('every request makes a fresh token', async () => {
@@ -191,7 +235,12 @@ describe('POST /owner/sign-in-links', () => {
           method: 'POST',
           path: '/owner/sign-in-links',
           origin: PUBLIC_ORIGIN,
-          rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE, turnstile_token: TURNSTILE_DUMMY_TOKEN }),
+          rawBody: JSON.stringify({
+            email: freshAddress(),
+            link_challenge: LINK_CHALLENGE,
+            turnstile_token: TURNSTILE_DUMMY_TOKEN,
+            app_link_scheme: RELEASE_LINK_SCHEME,
+          }),
           headers: { 'Content-Type': contentType },
         },
         now: CLOCK_NOW,
@@ -211,7 +260,12 @@ describe('POST /owner/sign-in-links', () => {
         method: 'POST',
         path: '/owner/sign-in-links',
         origin: PUBLIC_ORIGIN,
-        rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE, turnstile_token: TURNSTILE_DUMMY_TOKEN }),
+        rawBody: JSON.stringify({
+          email: freshAddress(),
+          link_challenge: LINK_CHALLENGE,
+          turnstile_token: TURNSTILE_DUMMY_TOKEN,
+          app_link_scheme: RELEASE_LINK_SCHEME,
+        }),
         headers: { 'Content-Type': 'Application/JSON; charset=utf-8' },
       },
       now: CLOCK_NOW,
@@ -227,7 +281,12 @@ describe('POST /owner/sign-in-links', () => {
         method: 'POST',
         path: '/owner/sign-in-links',
         origin: PUBLIC_ORIGIN,
-        body: { email: freshAddress(), link_challenge: LINK_CHALLENGE, turnstile_token: TURNSTILE_DUMMY_TOKEN },
+        body: {
+          email: freshAddress(),
+          link_challenge: LINK_CHALLENGE,
+          turnstile_token: TURNSTILE_DUMMY_TOKEN,
+          app_link_scheme: RELEASE_LINK_SCHEME,
+        },
         token: 'unknown',
       },
       now: CLOCK_NOW,
