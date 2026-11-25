@@ -2,6 +2,7 @@ import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 
 type WorkspaceRow = { id: string; name: string; created_at: number };
 type WorkspaceIdRow = { id: string };
+type ProjectIdRow = { id: string };
 type ProjectRow = { id: string; workspace_id: string; name: string; is_inbox: number; created_at: number };
 
 export type WorkspaceListing = { workspace: WorkspaceRecord; projects: ProjectRecord[] };
@@ -31,6 +32,14 @@ export async function listOwnerWorkspaces({ directory, ownerId }: { directory: D
     workspace: workspaceRecordOf(row),
     projects: projectRows.results.filter((project) => project.workspace_id === row.id).map(projectRecordOf),
   }));
+}
+
+export async function listOwnerProjectIds({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<string[]> {
+  const { results } = await directory
+    .prepare('SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ?')
+    .bind(ownerId)
+    .all<ProjectIdRow>();
+  return results.map((row) => row.id);
 }
 
 export async function findOwnerWorkspace({
@@ -83,6 +92,7 @@ export async function insertWorkspaceWithInbox({
   name,
   inboxName,
   now,
+  workspacesPerOwnerMax,
 }: {
   directory: D1Database;
   ownerId: string;
@@ -91,13 +101,20 @@ export async function insertWorkspaceWithInbox({
   name: string;
   inboxName: string;
   now: number;
-}): Promise<void> {
-  await directory.batch([
-    directory.prepare('INSERT INTO workspaces (id, owner_id, name, created_at) VALUES (?, ?, ?, ?)').bind(workspaceId, ownerId, name, now),
+  workspacesPerOwnerMax: number;
+}): Promise<boolean> {
+  const [workspaceInsertion] = await directory.batch([
     directory
-      .prepare('INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) VALUES (?, ?, ?, 1, ?)')
-      .bind(inboxId, workspaceId, inboxName, now),
+      .prepare(
+        'INSERT INTO workspaces (id, owner_id, name, created_at) SELECT ?, ?, ?, ? WHERE (SELECT count(*) FROM workspaces WHERE owner_id = ?) < ?',
+      )
+      .bind(workspaceId, ownerId, name, now, ownerId, workspacesPerOwnerMax),
+    directory
+      .prepare('INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) SELECT ?, id, ?, 1, ? FROM workspaces WHERE id = ?')
+      .bind(inboxId, inboxName, now, workspaceId),
   ]);
+  if (workspaceInsertion === undefined) throw new Error('the batch answered fewer results than statements');
+  return workspaceInsertion.meta.changes > 0;
 }
 
 export async function updateWorkspaceName({
@@ -125,6 +142,7 @@ export async function insertProject({
   workspaceId,
   name,
   now,
+  projectsPerWorkspaceMax,
 }: {
   directory: D1Database;
   ownerId: string;
@@ -132,12 +150,13 @@ export async function insertProject({
   workspaceId: string;
   name: string;
   now: number;
+  projectsPerWorkspaceMax: number;
 }): Promise<boolean> {
   const result = await directory
     .prepare(
-      'INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) SELECT ?, id, ?, 0, ? FROM workspaces WHERE id = ? AND owner_id = ?',
+      'INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) SELECT ?, id, ?, 0, ? FROM workspaces WHERE id = ? AND owner_id = ? AND (SELECT count(*) FROM projects WHERE workspace_id = ?) < ?',
     )
-    .bind(projectId, name, now, workspaceId, ownerId)
+    .bind(projectId, name, now, workspaceId, ownerId, workspaceId, projectsPerWorkspaceMax)
     .run();
   return result.meta.changes > 0;
 }

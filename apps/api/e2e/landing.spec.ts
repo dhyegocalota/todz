@@ -41,7 +41,7 @@ enum Css {
 
 const BRAND_ASSET_PATH = '/brand/todz-lockup.png';
 const OK_STATUS = 200;
-const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
+const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
 const JOINED_NOTICE = "You're on the list. Check your inbox.";
 const TOO_MANY_STATUS = 429;
 const FORBIDDEN_STATUS = 403;

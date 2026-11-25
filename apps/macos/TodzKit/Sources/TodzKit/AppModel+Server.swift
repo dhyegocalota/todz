@@ -72,7 +72,7 @@ extension AppModel {
 
     // NB ADR 0056: a session with no server and no stored server is an earlier build's, issued by the default, so it is bound to the default.
     private func didBindSessionOfEarlierBuild() -> Bool {
-        guard !preference.hasValue else { return false }
+        guard !preference.hasValue, defaultURL.isSecureRemote else { return false }
         do {
             try vault.bind(to: defaultURL.origin)
             return true

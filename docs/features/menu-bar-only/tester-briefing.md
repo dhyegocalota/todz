@@ -1,0 +1,63 @@
+# Tester briefing: Menu bar only
+
+Written by the developer sub-agent when its steps are done. The developer does not run `test-plan.md` and does not declare the feature works.
+
+## What changed
+
+- `apps/macos/TodzKit/Sources/TodzKit/ActivationPolicyRule.swift`, `AppActivation.swift` — the pure rule: `.accessory` only with the switch on and no ordinary window visible.
+- `apps/macos/TodzKit/Sources/TodzKit/MenuBarOnlyPreference.swift` — the switch, key `keepsInMenuBarWhenClosed`, on when nothing is stored, read from the app's own defaults domain.
+- `apps/macos/Todz/AppDelegate+ActivationPolicy.swift` — observes `NSWindow.didBecomeKeyNotification` and `NSWindow.willCloseNotification` for every window, counts the visible windows that can become main (the closing one excluded), applies the rule with `NSApp.setActivationPolicy`, and activates the app on a switch to regular. Applied once right after launch.
+- `apps/macos/Todz/AppDelegate.swift`, `TodzApp.swift` — the preference, the observations, the registered default.
+- `apps/macos/Todz/Settings/SettingsView.swift`, `apps/macos/Copy/SettingsCopy.swift` — the row "Keep todz in the menu bar when closed", second in Settings, under the pending count.
+- `apps/macos/README.md`, ADR 0074, the feature folder and its index rows.
+
+## How to run
+
+```bash
+swift test --package-path apps/macos/TodzKit
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Debug -derivedDataPath apps/macos/build
+```
+
+Walk a scratch copy of `apps/macos/build/Build/Products/Debug/Todz.app` (bundle `dev.todz.Todz.debug`, link scheme `todz-dev`), never `/Applications/Todz.app`. `lsappinfo info -only ApplicationType -app dev.todz.Todz.debug` reads `Foreground` for regular and `UIElement` for accessory. System Events lists no windows of the app on this Mac; Orca's `list-windows` does.
+
+## Red today, green after
+
+| Test | Red before the change because | Green after because |
+|------|--------------------------------|---------------------|
+| `ActivationPolicyRuleTests` (3 tests, 6 cases) | on 7f5bf454 the run stops on `TodzKit/ActivationPolicyRule.swift:3: Fatal error: ActivationPolicyRule.policy is not implemented` | c24252d7: the rule |
+| `MenuBarOnlyPreferenceTests` (6 tests) | on 01cf3fbc the run stops on `TodzKit/MenuBarOnlyPreference.swift:18: Fatal error: MenuBarOnlyPreference.isOn is not implemented` (`theStorageKeyIsKeepsInMenuBarWhenClosed` passed before the stop: it reads only the key constant) | 7048cec6: the reading |
+
+| `OpenAppWindowTests` (5 tests) | on d5c28d6e the run stops on `TodzKit/OpenAppWindow.swift:3: Fatal error: OpenAppWindow.counts is not implemented` | 51c56258 |
+| `LaunchActivationTests` (3 tests) | on d5c28d6e the run stops on `TodzKit/LaunchActivation.swift:6: Fatal error: LaunchActivation.of is not implemented` | 51c56258 |
+
+Full suite on 99879ede: 1063 tests in 83 suites passed.
+
+## Developer's scratch check (not a test-plan run)
+
+One short run of a scratch copy on 99879ede, launched with `open -g`: with its window shown it read `Foreground`; after ⌘W through Orca it read `UIElement`; `open -a <scratch> todz-dev://today` brought the window back, frontmost, and it read `Foreground`; quit through AppleScript. Orca's `list-windows` also listed a "Todz Settings" window id while Settings was never opened; its visibility was not checked.
+
+## Hypotheses to attack
+
+1. Hypothesis: closing the main window (⌘W or the red button) with the switch on removes the Dock icon and the ⌘Tab entry, and the menu bar item, its count, sync and widget reloads go on. Break it by: an agent change while hidden; a widget checkbox while hidden.
+2. Hypothesis: every entry point (popover "Open todz", a popover row, ⌘0, a widget tap, a `todz-dev://` link, opening the app again from Finder) brings the window to the front with the Dock icon and the app's menu bar. Break it by: each one while another app is frontmost; look for a missing menu bar or a window behind other apps.
+3. Hypothesis: Settings open with the main window closed keeps the Dock icon; closing Settings removes it. Break it by: flipping the switch with Settings open, then closing Settings, for both values.
+4. Hypothesis: the switch off is exactly today's behaviour. Break it by: switch off, close every window; the Dock icon and ⌘Tab entry stay.
+5. Hypothesis: a launch that shows no window ends as an accessory. Break it by: quit with the window closed and relaunch, or launch for an intent.
+6. Hypothesis: the popover and the morning glance never make the app regular. Break it by: opening the popover while hidden; `lsappinfo` stays `UIElement`.
+7. Hypothesis: ⌘Q quits with a window open, and with only the popover key.
+8. Hypothesis (fix round 1): a minimized main window keeps the Dock icon and the ⌘Tab entry, and clicking the Dock icon brings it back. Break it by: minimize with the switch on, then `lsappinfo` (expect `Foreground`).
+9. Hypothesis (fix round 1): ⌘H keeps the Dock icon, and clicking it unhides the window. Break it by: ⌘H with the switch on, then `lsappinfo` (expect `Foreground`).
+10. Hypothesis (fix round 1): a normal launch never flickers the Dock icon. Break it by: watching the Dock through a launch from Finder.
+11. Hypothesis (fix round 1): with no window open, opening the running app from Finder, `open -a` or Spotlight brings the main window to the front with the Dock icon. Break it by: each one while another app is frontmost.
+12. Hypothesis (fix round 1): the popover's "Quit todz" quits, in the ready foot and under the sign-in prompt. Break it by: quit with no window open, then `pgrep` finds no todz.
+
+## Known gaps
+
+- The AppKit wiring has no unit test; the rule, the preference, `OpenAppWindow` and `LaunchActivation` do.
+- A default launch whose window is not shown (closed at the last quit) keeps the Dock icon until the first window event, the popover opening included.
+- `applicationShouldHandleReopen` also returns true, so AppKit's own reopen runs after the app's request; for the single `Window` scene both land on the same window. Not exercised by the developer.
+- Fix round 1 was not run in the app by the developer: the tester holds the Debug bundle.
+- Fix round 1, the popover's "Open todz" FAIL: every open goes through `OpenWindowAction.mainWindow()`, which now calls `NSApp.activateForAnOpeningWindow()` before it opens the window: it sets the policy of `ActivationPolicyRule.policyForAnOpeningWindow(isSettingOn:)` (red b88d8ea7, `TodzKit/ActivationPolicyRule.swift:10: Fatal error: ActivationPolicyRule.policyForAnOpeningWindow is not implemented`; green c85d0a16, which also carries the file rename of the app helper with no content change), then activates; `MenuBarPanel.openMainWindow` calls it too before the popover closes (d76afab2). The developer's scratch check could not reach the popover's button: System Events and Orca list no window of the app while the popover shows, so this path is still unproven by hand. The rule also runs on `NSWindow.didChangeOcclusionStateNotification` of windows that can become main. Hypothesis: hidden, "Open todz" and a popover row end `Foreground`, frontmost, window in front. Break it by: the same real click the walk used, with another app frontmost.
+- The windowless launch's brief `Foreground` (eight reads) should be gone for a non-default launch, which applies the rule at once; a default launch from Finder with no window shown stays regular until the first window event.
+- Since the merge of `origin/main` with siri-shortcuts: an intent launch starts with the `.prohibited` policy (ADR 0066 reads it as "not engaged yet"), and `applyActivationPolicy` returns early while the policy is prohibited, so the app never flips it and the deferred start of the day close and the morning glance still waits for the owner. Break it by: a Siri or Shortcuts intent with todz not running, then `lsappinfo` (expect not `Foreground`) and no day close or glance until the owner clicks the menu bar item.

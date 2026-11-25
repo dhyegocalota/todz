@@ -37,11 +37,13 @@ private func isFocusFilterQuiet() async -> Bool {
     var dayChangeObservation: (any NSObjectProtocol)?
     var dayTemperatureObservation: (any NSObjectProtocol)?
     var quietGateReaction: Task<Void, Never>?
+    var windowObservations: [any NSObjectProtocol] = []
     private var launchSurfaceStart = LaunchSurfaceStart.now
     private var engagementObservation: (any NSObjectProtocol)?
     private var isAwaitingEngagement = false
     private var launchReading: Task<Void, Never>?
     let dayTemperaturePreference = DayTemperaturePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
+    let menuBarOnlyPreference = MenuBarOnlyPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     private(set) lazy var dayClose = DayCloseCoordinator(
         gate: gate,
         preference: DayClosePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
@@ -60,6 +62,9 @@ private func isFocusFilterQuiet() async -> Bool {
         pause: { try await Task.sleep(for: $0) }
     )
     private lazy var dayTemperatureScheduler = DayTemperatureScheduler(clock: dayTemperatureClock)
+    let ribbonStrips = MenuBarRibbonStripCache()
+    private(set) lazy var ribbon = makeRibbon()
+    lazy var ribbonScheduler = RibbonScheduler(coordinator: ribbon, model: model)
     private lazy var morningGlancePresenter = MorningGlancePresenter(windowState: windowState)
     private(set) lazy var morningGlance = MorningGlanceCoordinator.app(
         model: model,
@@ -83,6 +88,7 @@ private func isFocusFilterQuiet() async -> Bool {
         decideLaunchSurfaceStart(notification)
         observeWidgetRequests()
         observeDayChanges()
+        observeWindows(LaunchActivation.of(isDefaultLaunch: notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool))
         launchReading = Task {
             await readFocusFilter()
             startDayTemperature()
@@ -122,6 +128,7 @@ private func isFocusFilterQuiet() async -> Bool {
     }
 
     private func startProactiveSurfaces() {
+        startRibbon()
         dayCloseScheduler.start()
         morningGlanceTrigger.start()
     }
@@ -141,6 +148,11 @@ private func isFocusFilterQuiet() async -> Bool {
         case let .signIn(signInLink): windowState.waitingSignInLink = signInLink
         case let .widget(widgetLink): windowState.open(widgetLink, from: .widget)
         }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        windowState.isMainWindowRequested = true
+        return true
     }
 
     // NB ADR 0031: the app keeps running in the menu bar when the main window closes; ⌘Q quits.

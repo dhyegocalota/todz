@@ -11,16 +11,25 @@ struct SettingsView: View {
     @Environment(ProactiveGate.self) private var gate
     @Environment(\.openURL) private var openURL
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
+    @AppStorage(MenuBarOnlyPreference.isOnStorageKey) private var isMenuBarOnlyOn = MenuBarOnlyPreference.isOnByDefault
     @AppStorage(DayClosePreference.isOnStorageKey) private var isDayCloseOn = DayClosePreference.isOnByDefault
     @AppStorage(DayClosePreference.timeStorageKey) private var dayCloseMinutes = DayClosePreference.minutesAfterMidnightByDefault
     @AppStorage(MorningGlancePreference.isOnStorageKey) private var isMorningGlanceOn = MorningGlancePreference.isOnByDefault
     @AppStorage(DayTemperaturePreference.isOnStorageKey) private var isDayTemperatureOn = DayTemperaturePreference.isOnByDefault
+    @AppStorage(RibbonPreference.isOnStorageKey) private var isRibbonOn = RibbonPreference.isOnByDefault
+    @AppStorage(RibbonPreference.cadenceStorageKey) private var ribbonCadenceName = RibbonPreference.cadenceByDefault.rawValue
 
     var body: some View {
         Form {
             Toggle(isOn: $isCountEnabled) {
                 Text(SettingsCopy.showPendingCount)
                 Text(SettingsCopy.showPendingCountDetail)
+            }
+            .toggleStyle(.switch)
+            Toggle(isOn: $isMenuBarOnlyOn) {
+                Text(SettingsCopy.keepInMenuBar)
+                Text(SettingsCopy.keepInMenuBarDetail)
+                    .lineLimit(subtitleLines, reservesSpace: true)
             }
             .toggleStyle(.switch)
             Toggle(isOn: agentNudge) {
@@ -80,6 +89,25 @@ struct SettingsView: View {
                 Text(SettingsCopy.ownerSettingSubtitle(notice: model.dayEmailNotice, detail: SettingsCopy.dayEmailDetail))
                     .lineLimit(subtitleLines, reservesSpace: true)
             }
+            LabeledContent {
+                HStack {
+                    Picker(SettingsCopy.menuBarRibbonCadence, selection: ribbonCadence) {
+                        ForEach(RibbonCadence.allCases, id: \.self) { cadence in
+                            Text(SettingsCopy.cadenceName(cadence)).tag(cadence)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .disabled(!isRibbonOn)
+                    Toggle(SettingsCopy.menuBarRibbon, isOn: $isRibbonOn)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+            } label: {
+                Text(SettingsCopy.menuBarRibbon)
+                Text(ribbonDetail)
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
             Section {
                 ServerAddressForm(layout: .row, exit: {})
             } footer: {
@@ -137,6 +165,20 @@ struct SettingsView: View {
         } set: { time in
             dayCloseMinutes = DayCloseSchedule.minutesAfterMidnight(of: time, timeZone: model.timeZone)
         }
+    }
+
+    private var ribbonCadence: Binding<RibbonCadence> {
+        Binding {
+            RibbonPreference.pickerCadence(stored: ribbonCadenceName)
+        } set: { cadence in
+            ribbonCadenceName = cadence.rawValue
+        }
+    }
+
+    private var ribbonDetail: String {
+        let isOverlappingDayClose = isDayCloseOn && ribbonCadence.wrappedValue == .dayClose
+        guard isOverlappingDayClose else { return SettingsCopy.menuBarRibbonDetail }
+        return SettingsCopy.menuBarRibbonDayCloseOverlap
     }
 
     private func openFocusSettings() {

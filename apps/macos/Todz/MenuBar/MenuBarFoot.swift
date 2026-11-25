@@ -23,6 +23,7 @@ struct MenuBarFoot: View {
             if canSwitchWorkspace {
                 Text(MenuBarCopy.switchHint(last: WorkspaceShortcuts.lastNumber(of: model.workspaces)))
             }
+            MenuBarQuitButton()
         }
         .font(.subheadline)
         .foregroundStyle(.secondary)

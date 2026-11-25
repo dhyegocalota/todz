@@ -5,10 +5,11 @@ import { McpToolName } from '../src/mcp-copy';
 import { CHANGE_PAGE_SIZE } from '../src/project-store';
 import { countingEnv } from './counting-namespace';
 import { ClientEra, callTool, connectClient } from './mcp-client';
-import { type OwnedProject, createOwnedProject, issueMcpKey, ownerCall, projectCall, serveOwnerCall } from './owner-client';
+import { type OwnedProject, createOwnedProject, issueMcpKey, ownerCall, projectCall, serveOwnerCall, signInOwner } from './owner-client';
 
 const WEBSOCKET_UPGRADE = 'websocket';
 const CHANGED = 'changed';
+const CLOSED = 'closed';
 const FAR_AHEAD_CURSOR = 9;
 const UNSAFE_CURSOR = '9007199254740992';
 const INVALID_REQUEST = { error: 'invalid_request' };
@@ -58,6 +59,35 @@ async function openSocket(project: OwnedProject): Promise<SocketProbe> {
     });
   }
   return { messages, waitForCount };
+}
+
+async function watchedSocket(project: OwnedProject): Promise<() => Promise<string>> {
+  const response = await projectCall({ project, method: 'GET', path: '/socket', headers: { Upgrade: WEBSOCKET_UPGRADE } });
+  const socket = response.webSocket;
+  if (socket === null) throw new Error(`the socket answered ${response.status}`);
+  socket.accept();
+  const events: string[] = [];
+  const eventListeners: (() => void)[] = [];
+  function record(event: string): void {
+    events.push(event);
+    eventListeners.forEach((listener) => listener());
+  }
+  socket.addEventListener('message', (event) => record(String(event.data)));
+  socket.addEventListener('close', () => record(CLOSED));
+  return function firstEvent(): Promise<string> {
+    return new Promise((resolve) => {
+      function resolveWhenAny(): void {
+        const [first] = events;
+        if (first !== undefined) resolve(first);
+      }
+      eventListeners.push(resolveWhenAny);
+      resolveWhenAny();
+    });
+  };
+}
+
+function signOut(token: string): Promise<Response> {
+  return serveOwnerCall({ call: { method: 'DELETE', path: '/owner/sessions/current', token }, now: Date.now() });
 }
 
 async function settled({ project, probe, count }: { project: OwnedProject; probe: SocketProbe; count: number }): Promise<string[]> {
@@ -236,5 +266,27 @@ describe('GET /owner/projects/:projectId/socket', () => {
     expect(refused.status).toBe(HttpStatus.Unprocessable);
     await addTasks({ project, titles: ['Sentinel'] });
     expect(await settled({ project, probe, count: 1 })).toEqual([CHANGED]);
+  });
+});
+
+describe('a change socket ends with its session', () => {
+  test('signing out closes the sockets that session opened', async () => {
+    const project = await createOwnedProject();
+    const key = await issueMcpKey({ token: project.token, projectId: project.projectId });
+    const firstEvent = await watchedSocket(project);
+    expect((await signOut(project.token)).status).toBe(HttpStatus.NoContent);
+    const client = await connectClient({ era: ClientEra.Legacy, key });
+    await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'After sign-out' }] } });
+    expect(await firstEvent()).toBe(CLOSED);
+  });
+
+  test("another session's socket stays open and hears the next change (pin)", async () => {
+    const project = await createOwnedProject();
+    const other = await signInOwner({ identityToken: project.identityToken });
+    const otherProject = { ...project, token: other.token };
+    const firstEvent = await watchedSocket(otherProject);
+    expect((await signOut(project.token)).status).toBe(HttpStatus.NoContent);
+    await addTasks({ project: otherProject, titles: ['Still watched'] });
+    expect(await firstEvent()).toBe(CHANGED);
   });
 });

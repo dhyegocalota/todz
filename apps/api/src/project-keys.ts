@@ -1,9 +1,11 @@
-import { PROJECT_KEY_PREFIX } from '@todz/types';
+import { PROJECT_KEY_PREFIX, PROJECT_LIVE_KEYS_MAX } from '@todz/types';
 import { digestCredential } from './credential-digest';
 import { generateCredentialSecret } from './credential-secret';
 import { insertProjectKey } from './directory';
 
 const KEY_HINT_LENGTH = 4;
+
+export type IssuedKey = { id: string; secret: string };
 
 export function keyHintOf(secret: string): string {
   return secret.slice(-KEY_HINT_LENGTH);
@@ -18,9 +20,18 @@ export async function issueProjectKey({
   directory: D1Database;
   projectId: string;
   now: number;
-}): Promise<{ id: string; secret: string }> {
+}): Promise<IssuedKey | null> {
   const secret = `${PROJECT_KEY_PREFIX}${generateCredentialSecret()}`;
   const id = crypto.randomUUID();
-  await insertProjectKey({ directory, digest: await digestCredential(secret), id, hint: keyHintOf(secret), projectId, now });
+  const isInserted = await insertProjectKey({
+    directory,
+    digest: await digestCredential(secret),
+    id,
+    hint: keyHintOf(secret),
+    projectId,
+    now,
+    liveKeysPerProjectMax: PROJECT_LIVE_KEYS_MAX,
+  });
+  if (!isInserted) return null;
   return { id, secret };
 }

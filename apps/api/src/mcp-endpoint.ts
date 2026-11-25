@@ -19,6 +19,7 @@ import { calendarDateInTimeZone } from './owner-today';
 import { parsedJson } from './parsed-json';
 import { resultOf } from './project-result';
 import { type KeyProject, openKeyProject } from './project-routing';
+import { isSignedInRateLimited, withRetryAfter } from './signed-in-limiter';
 
 const SESSION_REQUIRED_CODE = -32000;
 const SESSION_NOT_FOUND_CODE = -32001;
@@ -131,6 +132,8 @@ export async function serveMcp({ request, env, now }: { request: Request; env: E
   const hasSession = sessionId !== null && sessionId.trim() !== '';
   const keyProject = await openKeyProject({ env, secret, mcpSession: hasSession ? { sessionId, now } : undefined });
   if (keyProject === null) return unauthorized();
+  const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.MCP_LIMITER, key: keyProject.keyDigest });
+  if (isRateLimited) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
   if (request.method !== MCP_METHOD) return methodNotAllowed();
   const today = calendarDateInTimeZone({ timeZone: keyProject.timeZone, now });
   const isLegacy = await isLegacyRequest(request);

@@ -15,6 +15,7 @@ private let tomorrowOffset = 1
     var openingFocus = OpeningFocus.addField
     var addFieldArming = AddFieldArming(opening: .addField)
     var waitingSignInLink: SignInLink?
+    var isMainWindowRequested = false
     var agentClient: AgentClient = .claudeCode
     @ObservationIgnored private var lingerTimers: [TaskKey: Task<Void, Never>] = [:]
 

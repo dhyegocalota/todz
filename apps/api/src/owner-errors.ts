@@ -15,6 +15,8 @@ export enum OwnerErrorCode {
   SignInUnavailable = 'sign_in_unavailable',
   SignInRefused = 'sign_in_refused',
   AppTooOld = 'app_too_old',
+  LimitReached = 'limit_reached',
+  RateLimited = 'rate_limited',
 }
 
 const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
@@ -29,6 +31,8 @@ const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
   [OwnerErrorCode.SignInUnavailable]: HttpStatus.Unavailable,
   [OwnerErrorCode.SignInRefused]: HttpStatus.TooManyRequests,
   [OwnerErrorCode.AppTooOld]: HttpStatus.UpgradeRequired,
+  [OwnerErrorCode.LimitReached]: HttpStatus.Conflict,
+  [OwnerErrorCode.RateLimited]: HttpStatus.TooManyRequests,
 };
 
 export function errorResponse(code: OwnerErrorCode): Response {
