@@ -50,6 +50,12 @@ describe('Todz-Api-Version on the answers of the worker', () => {
     expect(response.headers.get(API_VERSION_HEADER)).toBe(TEST_SERVER_VERSION);
   });
 
+  test('the www redirect, whose headers are immutable, carries it', async () => {
+    const response = await exports.default.fetch('http://www.localhost:8788/', { redirect: 'manual' });
+    expect(response.status).toBe(HttpStatus.MovedPermanently);
+    expect(response.headers.get(API_VERSION_HEADER)).toBe(TEST_SERVER_VERSION);
+  });
+
   test('OPTIONS /owner answers 404 with it and no access-control header', async () => {
     const response = await fetchOf({ origin: API_ORIGIN, path: '/owner', method: OPTIONS_METHOD });
     expect(response.status).toBe(HttpStatus.NotFound);

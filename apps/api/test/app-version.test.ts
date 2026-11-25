@@ -18,7 +18,7 @@ describe('isAppVersionAccepted', () => {
     expect(isAppVersionAccepted({ candidate: '0.9.9', minimum: '0.10.0' })).toBe(false);
   });
 
-  test.each(['', 'v0.2.0', '0.2.0-beta', '0.2.0.1', '0..2', ' 0.2.0', '0.2.0 ', '١.٠', LONG_MALFORMED])(
+  test.each(['', 'v0.2.0', '0.2.0-beta', '0.2.0.1', '0..2', ' 0.2.0', '0.2.0 ', '١.٠', '1234567890', LONG_MALFORMED])(
     'refuses the malformed %j',
     (candidate) => {
       expect(isAppVersionAccepted({ candidate, minimum: MINIMUM })).toBe(false);

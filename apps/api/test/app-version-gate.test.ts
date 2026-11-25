@@ -14,7 +14,8 @@ const WORKER_ORIGIN = 'http://localhost:8787';
 const UPGRADE_HEADER = 'Upgrade';
 const WEBSOCKET_UPGRADE = 'websocket';
 const APP_TOO_OLD_BODY = '{"error":"app_too_old","minimum_app_version":"0.2.0"}';
-const UPGRADE_TOKEN = `todz-app/${MINIMUM_APP_VERSION}`;
+const CACHE_CONTROL_HEADER = 'Cache-Control';
+const NO_STORE = 'no-store';
 const TOO_OLD_VERSIONS = ['0.1.9', 'v0.2.0'];
 const ACCEPTED_VERSIONS = ['0.2.0', '0.2', '1.0.0'];
 const REFUSED_SIGN_IN_COUNT = 10;
@@ -46,7 +47,8 @@ async function serveWithEmailSignIn({ workerEnv = emailEnv(), ...call }: AppCall
 
 async function expectAppTooOld(response: Response): Promise<void> {
   expect(response.status).toBe(HttpStatus.UpgradeRequired);
-  expect(response.headers.get(UPGRADE_HEADER)).toBe(UPGRADE_TOKEN);
+  expect(response.headers.has(UPGRADE_HEADER)).toBe(false);
+  expect(response.headers.get(CACHE_CONTROL_HEADER)).toBe(NO_STORE);
   expect(await response.text()).toBe(APP_TOO_OLD_BODY);
 }
 
