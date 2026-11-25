@@ -36,7 +36,7 @@ One lane: every file is in the app, and the gate's type is what the intent and S
 
 ### Lead
 
-- [x] **Step 6 (evidence: c3090a1, 48e9187; the Settings shot replaces agent-nudge's, which the new row made stale):** The app README names the Focus filter (purpose only); the product design names Focus quiet beside the nudge exception; the README walk gains the Settings row and the filter in System Settings, from the tester's real screenshots.
+- [x] **Step 6 (evidence: c3090a1, 48e9187; agent-nudge's Settings shot stays, because its shipped test plan cites it, and focus-aware gets its own row):** The app README names the Focus filter (purpose only); the product design names Focus quiet beside the nudge exception; the README walk gains the Settings row and the filter in System Settings, from the tester's real screenshots.
 
 ## Failure modes
 
@@ -54,7 +54,7 @@ One lane: every file is in the app, and the gate's type is what the intent and S
 
 - [x] **Tester briefing:** the developer wrote `tester-briefing.md` (250660a).
 - [x] **Tester run:** ed6985b: 19 pass; E1 resolved by amending the design to the platform's sheet, E4 moved to the Human checklist.
-- [x] **Reviewer:** NO on one IMPORTANT (a release claimable during a new Focus), fixed red-first at 1dfd970 / 708bd6c with the doc MINORs; refutation recorded in `test-plan.md`.
+- [x] **Reviewer:** NO on one IMPORTANT (a release claimable during a new Focus), fixed red-first at 1dfd970 / 708bd6c with the doc MINORs; re-check WITH RESERVATIONS on one MINOR (restore agent-nudge's cited shot), done, so YES; refutation recorded in `test-plan.md`.
 - [x] **Security reviewer:** CLEAR.
 - [x] **/check-ui:** the Settings row (light, dark) and the todz filter sheet, from the real Debug build (Orca).
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
