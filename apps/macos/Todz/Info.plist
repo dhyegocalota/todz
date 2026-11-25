@@ -40,8 +40,14 @@
 	<true/>
 	<key>SUFeedURL</key>
 	<string>$(TODZ_UPDATE_FEED_URL)</string>
+	<key>SUPublicEDKey</key>
+	<string>BYXfy/qfQvJmxxD6JPs8gelvFwACXZ8xhhcG2p/fpYY=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
 	<key>SUScheduledCheckInterval</key>
 	<integer>86400</integer>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 	<key>TodzAPIBaseURL</key>
 	<string>$(TODZ_API_BASE_URL)</string>
 	<key>TodzAppGroup</key>

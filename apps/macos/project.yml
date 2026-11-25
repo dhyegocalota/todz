@@ -24,7 +24,7 @@ packages:
     path: TodzKit
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
-    exactVersion: 2.10.1
+    revision: ab7d71291238df6e0492143b120c9b696a35f603
 targets:
   Todz:
     type: application
@@ -45,7 +45,7 @@ targets:
         DEVELOPMENT_TEAM: XFWR794VS8
         CODE_SIGN_IDENTITY: Apple Development
         CODE_SIGN_STYLE: Manual
-        ENABLE_HARDENED_RUNTIME: YES
+        ENABLE_HARDENED_RUNTIME: NO
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -54,6 +54,7 @@ targets:
           TODZ_API_BASE_URL: http://localhost:8787
         Release:
           TODZ_API_BASE_URL: https://api.todz.app
+          ENABLE_HARDENED_RUNTIME: YES
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
     entitlements:
       path: Todz/Todz.entitlements
@@ -77,6 +78,9 @@ targets:
         SUEnableInstallerLauncherService: YES
         SUEnableAutomaticChecks: YES
         SUScheduledCheckInterval: 86400
+        SURequireSignedFeed: YES
+        SUVerifyUpdateBeforeExtraction: YES
+        SUPublicEDKey: BYXfy/qfQvJmxxD6JPs8gelvFwACXZ8xhhcG2p/fpYY=
         CFBundleURLTypes:
           - CFBundleURLName: dev.todz.Todz
             CFBundleURLSchemes: [$(TODZ_URL_SCHEME)]
@@ -99,11 +103,12 @@ targets:
         DEVELOPMENT_TEAM: XFWR794VS8
         CODE_SIGN_IDENTITY: Apple Development
         CODE_SIGN_STYLE: Manual
-        ENABLE_HARDENED_RUNTIME: YES
+        ENABLE_HARDENED_RUNTIME: NO
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
       configs:
         Release:
+          ENABLE_HARDENED_RUNTIME: YES
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
     entitlements:
       path: TodzWidgets/TodzWidgets.entitlements
