@@ -772,6 +772,24 @@ describe('opening a session', () => {
     await expectNoSession(run);
   });
 
+  test.each([
+    ['no SITE_ORIGIN', { SITE_ORIGIN: undefined }],
+    ['a plain http SITE_ORIGIN on a public host', { SITE_ORIGIN: 'http://todz.app' }],
+  ])('%s answers 503, not 403, before the body or the limit', async (_name, settings) => {
+    const { token, challenge } = await askedLink();
+    const run = await askForSession({
+      fetchSite: 'cross-site',
+      body: sessionBody(token),
+      cookie: cookieHeaderOf({ [AdminCookie.Challenge]: challenge }),
+      settings,
+    });
+    expect(run.response.status).toBe(UNAVAILABLE_STATUS);
+    expect(await run.response.json()).toEqual({});
+    expect(run.request.bodyUsed).toBe(false);
+    expect(Object.values(run.keys).flat()).toEqual([]);
+    await expectNoSession(run);
+  });
+
   test('a post over the client limit answers 429 with Retry-After 60 and opens nothing', async () => {
     const { token, challenge } = await askedLink();
     const run = await askForSession({
