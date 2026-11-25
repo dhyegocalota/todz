@@ -1,6 +1,6 @@
 # Credits
 
-**Status:** In review
+**Status:** Shipped 2026-11-25
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-25 by the owner's request to the loop, PROMPT.md "Self-host, docs and credits" item 3 ("também coloca os créditos de quem construiu a landing page, que foi a Logic Bit"): the landing's footer, the docs footer and the README credit Logic Bit as the studio that built todz, linking `https://logicbit.com.br`, as zapbip does; the company facts live once in `libs/types`.
 **ADRs:** none (no alternative worth recording: zapbip's shape is the owner's reference)
