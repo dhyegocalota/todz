@@ -59,6 +59,7 @@ import Observation
 
     var refreshesInFlight = 0
     public internal(set) var isOffline = false
+    public internal(set) var agentChangeCount = 0
     var isOwnerConfirmed = false
     public internal(set) var agentNudge: Bool?
     var isSavingAgentNudge = false

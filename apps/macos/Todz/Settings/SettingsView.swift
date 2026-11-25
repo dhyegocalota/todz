@@ -16,6 +16,8 @@ struct SettingsView: View {
     @AppStorage(DayClosePreference.timeStorageKey) private var dayCloseMinutes = DayClosePreference.minutesAfterMidnightByDefault
     @AppStorage(MorningGlancePreference.isOnStorageKey) private var isMorningGlanceOn = MorningGlancePreference.isOnByDefault
     @AppStorage(DayTemperaturePreference.isOnStorageKey) private var isDayTemperatureOn = DayTemperaturePreference.isOnByDefault
+    @AppStorage(RibbonPreference.isOnStorageKey) private var isRibbonOn = RibbonPreference.isOnByDefault
+    @AppStorage(RibbonPreference.cadenceStorageKey) private var ribbonCadenceName = RibbonPreference.cadenceByDefault.rawValue
 
     var body: some View {
         Form {
@@ -87,6 +89,25 @@ struct SettingsView: View {
                 Text(SettingsCopy.ownerSettingSubtitle(notice: model.dayEmailNotice, detail: SettingsCopy.dayEmailDetail))
                     .lineLimit(subtitleLines, reservesSpace: true)
             }
+            LabeledContent {
+                HStack {
+                    Picker(SettingsCopy.menuBarRibbonCadence, selection: ribbonCadence) {
+                        ForEach(RibbonCadence.allCases, id: \.self) { cadence in
+                            Text(SettingsCopy.cadenceName(cadence)).tag(cadence)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .disabled(!isRibbonOn)
+                    Toggle(SettingsCopy.menuBarRibbon, isOn: $isRibbonOn)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+            } label: {
+                Text(SettingsCopy.menuBarRibbon)
+                Text(ribbonDetail)
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
             Section {
                 ServerAddressForm(layout: .row, exit: {})
             }
@@ -142,6 +163,20 @@ struct SettingsView: View {
         } set: { time in
             dayCloseMinutes = DayCloseSchedule.minutesAfterMidnight(of: time, timeZone: model.timeZone)
         }
+    }
+
+    private var ribbonCadence: Binding<RibbonCadence> {
+        Binding {
+            RibbonPreference.pickerCadence(stored: ribbonCadenceName)
+        } set: { cadence in
+            ribbonCadenceName = cadence.rawValue
+        }
+    }
+
+    private var ribbonDetail: String {
+        let isOverlappingDayClose = isDayCloseOn && ribbonCadence.wrappedValue == .dayClose
+        guard isOverlappingDayClose else { return SettingsCopy.menuBarRibbonDetail }
+        return SettingsCopy.menuBarRibbonDayCloseOverlap
     }
 
     private func openFocusSettings() {
