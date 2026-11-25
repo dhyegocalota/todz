@@ -56,6 +56,7 @@ struct ServerAddressForm: View {
             isFieldFocused = true
         }
         .onChange(of: flow.state) { _, state in present(state) }
+        .onDisappear(perform: close)
         .confirmationDialog(confirmationTitle, isPresented: isConfirming, titleVisibility: .visible) {
             Button(SettingsCopy.confirmSwitch, role: .destructive, action: confirm)
             Button(SheetCopy.cancel, role: .cancel) {}
@@ -220,6 +221,11 @@ struct ServerAddressForm: View {
         check?.cancel()
         flow.cancel()
         isFieldFocused = true
+    }
+
+    private func close() {
+        check?.cancel()
+        flow.close()
     }
 
     private func escape() {
