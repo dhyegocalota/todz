@@ -8,12 +8,14 @@ import { ScenarioKind } from './scenario-kind';
 import { plannedStarts, resolvedSlot } from './schedule';
 import type { Fixture } from './seed';
 import { type Sample, timedFetch } from './timed-fetch';
+import type { Scheduler } from './wire-guard';
 
 export type LocalRunDependencies = {
   origin: string;
   fetch: typeof fetch;
   now: () => number;
   clock: LoopClock;
+  schedule: Scheduler;
   openSignals: (access: { origin: string; token: string; projectId: string }) => Promise<ChangeSignals>;
 };
 

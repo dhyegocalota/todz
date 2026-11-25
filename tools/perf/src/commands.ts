@@ -68,8 +68,8 @@ function localOriginOf({ parsed, command }: { parsed: ParsedArguments; command: 
 }
 
 function localDependencies({ dependencies, origin }: { dependencies: CliDependencies; origin: string }): LocalRunDependencies {
-  const { fetch, now, clock, openSignals } = dependencies;
-  return { origin, fetch, now, clock, openSignals };
+  const { fetch, now, clock, schedule, openSignals } = dependencies;
+  return { origin, fetch, now, clock, schedule, openSignals };
 }
 
 function localPlan({ ratePerSecond, durationMs, kind }: { ratePerSecond: number; durationMs: number; kind: RunKind }): RunPlan {

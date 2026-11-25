@@ -21,6 +21,7 @@ describe('runSoak', () => {
       fetch,
       now: () => 0,
       clock: yieldingClock,
+      schedule: () => undefined,
       openSignals: async () => ({ onChanged: () => undefined, close: () => undefined }),
     };
     const result = await runSoak({
