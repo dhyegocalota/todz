@@ -27,7 +27,7 @@ Empty until G1's Step 5. It states what changed, how to run the suite, each red 
 
 ### Tests
 
-`swift test --package-path apps/macos/TodzKit` is red at this commit only on G1's Step 3 stubs (`Fatal error: AppModel.completeFromShortcut(key:) is not implemented` aborts the run); G1's Step 4 merge turns it green. G2 adds no unit test: the app target has none.
+`swift test --package-path apps/macos/TodzKit`: 1099 tests in 82 suites passed after merging G1's e72f1be and b56dc4b. Before that merge it aborted on G1's Step 3 stub. G2 adds no unit test: the app target has none. The Debug and Release builds were re-run after the merge with the same output as above.
 
 ### Hypotheses for the tester
 
