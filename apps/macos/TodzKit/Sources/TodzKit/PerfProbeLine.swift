@@ -1,8 +1,14 @@
+import Foundation
+
 public enum PerfProbeLine: Sendable, Equatable {
     case launchReady(milliseconds: Int)
     case scroll(frames: Int, overBudget: Int, worstMilliseconds: Int, refreshMilliseconds: Int)
     case footprint(megabytes: Int)
     case taskArrived(number: Int, atMilliseconds: Int)
+
+    public static func taskArrived(number: Int, at instant: Date) -> PerfProbeLine {
+        .taskArrived(number: number, atMilliseconds: Int((instant.timeIntervalSince1970 * millisecondsPerSecond).rounded()))
+    }
 
     public var text: String {
         switch self {

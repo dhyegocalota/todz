@@ -53,6 +53,7 @@ private func isFocusFilterQuiet() async -> Bool {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        PerfProbe.shared?.start(model: model)
         observeWidgetRequests()
         observeDayChanges()
         Task {

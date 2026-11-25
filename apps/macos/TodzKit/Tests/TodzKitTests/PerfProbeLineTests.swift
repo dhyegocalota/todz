@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import TodzKit
 
@@ -18,5 +19,10 @@ import Testing
     @Test func taskArrivedCarriesTheNumberAndTheEpochMilliseconds() {
         let line = PerfProbeLine.taskArrived(number: 7, atMilliseconds: 1_764_000_000_640)
         #expect(line.text == "task-arrived number=7 at-ms=1764000000640")
+    }
+
+    @Test func anArrivalAtAnInstantIsInEpochMilliseconds() {
+        let line = PerfProbeLine.taskArrived(number: 7, at: Date(timeIntervalSince1970: 1_764_000_000.640))
+        #expect(line == .taskArrived(number: 7, atMilliseconds: 1_764_000_000_640))
     }
 }
