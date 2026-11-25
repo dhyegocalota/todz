@@ -12,7 +12,7 @@ export const WEBMCP_COPY = {
       'How to connect an agent to todz over MCP: the command or config for Claude Code, Codex or Cursor, with a placeholder for the key.',
     [WebMcpToolName.Docs]: 'Open a page of the todz docs in this tab.',
     [WebMcpToolName.Join]:
-      'Join the todz waitlist with an email address. The page may ask the person for a quick human check before it sends.',
+      'Join the todz waitlist with an email address. The page asks the person for a quick human check; this tool waits for it and answers with the result.',
   } satisfies Record<WebMcpToolName, string>,
   fields: {
     client: 'The agent to set up.',
@@ -23,7 +23,6 @@ export const WEBMCP_COPY = {
   answers: {
     alreadySubmitting: 'The waitlist form is already submitting.',
     invalid: 'That is not a valid email address.',
-    sent: 'The form was submitted. The page may ask the person for a quick human check before it finishes, and then shows the result.',
     joined: 'The address is on the waitlist; a confirmation mail is on its way if it is new.',
     checkFailed: "The page's human check did not pass. Ask the person to complete it, then call again.",
     tryAgain: 'The waitlist refused for now. Try again in a minute.',
