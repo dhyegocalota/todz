@@ -1,6 +1,6 @@
 # Sign-in captcha scroll
 
-**Status:** Building
+**Status:** Shipped 2026-11-25
 **Tier:** 🟡 (the Worker's challenge page changes, so the fix needs a deploy of the API)
 **Owner approval:** approved 2026-11-25, relayed by todz-6f: "tira o scroll do captcha na tela de login, wtf"
 **ADRs:** [0045](../../adr/0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md), [0046](../../adr/0046-the-app-solves-the-challenge-in-a-web-view-and-the-link-page-solves-it-for-the-sign-in.md)
