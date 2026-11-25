@@ -163,3 +163,75 @@ Pins (green when they landed): `constants.test.ts` day email block, the Cloudfla
 - Merge points with `in-pure`: `libs/types/src/constants.ts` (my block follows `ADMIN_GLOBAL_RATE_LIMIT_MAX`), `libs/types/src/constants.test.ts` (imports and a final `describe`).
 - `AGENTS.md`'s shared helpers line may name `isOwnDomainAddress` (`apps/api/src/email-address.ts`) and `emailSenderForOrigin` (`apps/api/src/email-sender.ts`); the docs lane decides. The self-host guide is untouched.
 - The failing-owner tests use a binding that throws for one address; they do not exercise a D1 outage in the middle of a run (the claim, the mark and the prune are not covered by a failure test).
+
+## Server — reply in
+
+Lane `reply`, Steps 11–15 and the reply row of Step 16, branch `lane/day-email-reply`. Commits in order:
+
+| Hash | Subject |
+|------|---------|
+| `70fcfc3` | test(day-email): red tests for the reply handler that adds one task from the owner's own authenticated address |
+| `917e046` | feat(day-email): a reply from the owner's own authenticated address adds one task to the Inbox |
+| `f2d4492` | test(day-email): red shape test for the one per-owner reply limiter |
+| `7064f61` | feat(day-email): bind the per-owner reply limiter |
+| `c4d0c38` | test(day-email): pin the work budget of a reply (pin) |
+
+### What changed
+
+- `apps/api/src/day-email/day-email-reply.ts`: `handleReply` and the `ReplyOutcome` enum. One function per check of ADR 0064 §3 in its order (recipient, one digest read, per-owner limiter, size, parse, automatic, authentication, identity and sender, addressing, daily maximum, title, Inbox). Every refusal returns an outcome; none calls `setReject`, `forward` or `reply`. Any thrown failure logs `failed` and rejects with `the day email reply failed`, never carrying text from the message or the cause.
+- `apps/api/src/day-email/reply-addressing.ts` (new, pure): exactly one `To` header, the recipient named in `To` or `Cc` (groups unwrapped), exactly one non-blank `Message-ID`; verdict enum `AddressingVerdict`.
+- `apps/api/src/day-email/reply-recipient.ts`: `replyAddressOf(secret)` beside `replySecretOf`; `day-email-reply-address.ts` now issues the address through it, so the local part (`REPLY_ADDRESS_LOCAL_PART` in `libs/types`) and the domain have one definition.
+- `apps/api/src/day-email/day-email-store.ts`: `findReplyAddressOwner` (unexpired digest), `findOwnerEmailIdentities` (zone and `email` identities in one read), `countRepliesSince`, `findFirstInboxId`, `insertReply`.
+- `apps/api/src/project-routing.ts`: `ReplyOwner` (WeakSet-branded, made only by `replyOwnerOf`, called by the handler after the addressing check) and `openReplyInbox`, which looks up the first workspace's Inbox itself.
+- `apps/api/src/index.ts`: the `email` export; `env.ts`: `DAY_EMAIL_REPLY_LIMITER?: RateLimit`; `day-email-log.ts`: `DayEmailEvent.Reply`; `wrangler.jsonc`: the limiter, namespace 8610, 5 per 60 seconds.
+- `libs/types/src/constants.ts`: `REPLY_ADDRESS_LOCAL_PART`, `REPLY_SIZE_MAX_BYTES` (1 MiB), `REPLY_RATE_LIMIT_MAX` (5), `REPLY_RATE_LIMIT_PERIOD_SECONDS` (60), `REPLY_DAILY_MAX` (20), pinned in `constants.test.ts`.
+- Budget row: `DAY_EMAIL_REPLY_BUDGET` (5 round trips, 5 statements, 1 project call) in `test/budgets/budget-limits.ts`, used in `work-budgets.test.ts`, plus a row for a stranger's address (one read, no project call).
+- Order of work on an accepted reply: the add runs first (idempotent through `mail:` and the digest of the `Message-ID`), then the `day_email_replies` row is inserted `ON CONFLICT DO NOTHING`. A project store that throws leaves no row, and a redelivery adds once.
+
+### How to run
+
+```bash
+pnpm --filter @todz/api exec vitest run --project workers test/day-email test/budgets
+pnpm exec vitest run --root tools/repository-shape src/api-source.test.ts
+pnpm verify
+pnpm security:audit
+```
+
+Posting a fixture by hand: start `pnpm --filter @todz/api dev:email` (add `--test-scheduled` is not needed for mail), seed an owner with one `email` identity, a workspace with its Inbox and a `day_email_reply_addresses` row whose digest is the SHA-256 of a 32-hex secret, then `curl -X POST "http://localhost:8787/cdn-cgi/handler/email?from=<envelope>&to=reply%2B<secret>%40todz.app" --data-binary @reply.eml`. The fixture must carry its own `Authentication-Results: mx.cloudflare.net; … dkim=pass header.d=<domain> … dmarc=pass header.from=<domain>` line, a `From` of the owner's identity, a `To` naming the reply address and one `Message-ID`; local Email Routing adds no header. `Worker successfully processed email` with a `day_email_reply` log line `{"event":"day_email_reply","outcome":"added"}` is the happy answer.
+
+`pnpm verify` at `c4d0c38` is red at the `shape` gate on one test only, `self-host.test.ts` "the rate-limit namespaces it names are the configured ones" (the guide still says `8601` to `8609`; the lead's Docs lane owns the guide and the runbook line). The gates before it (doctor, format, secrets, typecheck, audit) were green, and the gates after it did not run, so I ran them by hand: `pnpm --filter @todz/api test:unit` printed 89 files and 2182 tests passed, and `tools/repository-shape` printed 332 passed and that one failure. `pnpm security:audit` printed `No known vulnerabilities found`.
+
+### Red today, green after
+
+| Test | Red commit | Printed |
+|------|-----------|---------|
+| `day-email-reply.test.ts` (34 tests: the happy reply, every refusal of ADR 0064 §3, the replay, strangers, owner B, redelivery, the throwing store, the daily maximum) | `70fcfc3` | `Error: handleReply is not implemented` (all 34, at `src/day-email/day-email-reply.ts:22`, reached through `Object.email src/index.ts:77`) |
+| `api-source.test.ts` (the ten limiters) | `f2d4492` | `AssertionError: expected [ …(9) ] to deeply equal [ …(10) ]`, the missing entry being `DAY_EMAIL_REPLY_LIMITER` with namespace `8610`, limit 5, period 60 |
+| `api-source.test.ts` (one reply limiter, no global one) | `f2d4492` | `AssertionError: expected [] to deeply equal [ 'DAY_EMAIL_REPLY_LIMITER' ]` |
+
+Green: `917e046` (247 passing in `test/day-email`), `7064f61` (28 passing in `api-source.test.ts`).
+
+Pins (green when they landed): the constants pin in `70fcfc3`; `reply-addressing.test.ts` and the `replyAddressOf` round trip in `917e046`; the budget rows of `c4d0c38`.
+
+### Local Workers Logs check (Step 15)
+
+Run on `wrangler dev` with the repository's `wrangler.jsonc` (production `observability` block), port 8791, its own persisted state in the scratchpad, `EMAIL_SENDER:cloudflare`, `--test-scheduled`: one reply posted to `/cdn-cgi/handler/email`, one tick at `/cdn-cgi/handler/scheduled?cron=*/15+*+*+*+*` for 2026-11-25T00:00Z. Results: the reply answered `Worker successfully processed email`; the tick answered `ok`; the reply's task made the day mail's subject `Your day: 1 due`. The Worker's captured console logs were exactly `{"event":"day_email_reply","outcome":"added"}` and `{"event":"day_email_run","due":1,"sent":1,"failed":0}`. A case-insensitive search of the local observability store (`logs` and `spans`, read through `/cdn-cgi/local/explorer/api/local/observability/query`) for `rcptTo`, `mailFrom`, the owner's address, the reply address and its secret, the `Message-ID`, the envelope sender, the title's sentinel and `noreply` found nothing in either table. Two lines of wrangler's own terminal output do name addresses (its warning that the envelope sender differs from the `From` header, and its dump of the simulated `send_email` call); they are the dev tool's output, not the Worker's, and Cloudflare's production Workers Logs are only checked by Step 23.
+
+### Hypotheses for the tester
+
+- Only a message whose envelope recipient is `reply+<32 hex>@todz.app` with an unexpired stored digest reaches anything past one indexed read; a stranger's message spends no limiter (the 100-message test records no key) and does not stop the owner's reply of the same minute.
+- An accepted reply adds exactly one task, titled with the first line above the quote, to the Inbox of the owner's first workspace by creation, due the owner's local today, created by the owner, and records one `day_email_replies` row holding the SHA-256 of the `Message-ID`, never the `Message-ID`.
+- Each refusal adds no task and no row, calls none of `setReject`, `forward` and `reply`, sends no mail, and logs one JSON line with `event` and `outcome` only (`unauthenticated` adds `verdict`).
+- The same `Message-ID` twice leaves one task and one row; a project store that throws on the first add leaves no row, rejects the handler with `the day email reply failed` and no header text, and the redelivery adds once.
+- A reply address of owner A with owner B's `From` and authentication adds to neither owner's projects; an owner with two `email` identities or none is refused as `not_owner`.
+- The 21st reply in 24 hours is `daily_cap`; replies older than the retention do not count (they are pruned, and the count is over the last 24 hours).
+- Fails closed: an unbound `DAY_EMAIL_REPLY_LIMITER` or a limiter that throws is `limited`, so a missing binding refuses every reply.
+
+### Gaps
+
+- Cloudflare's real header shape and what Email Routing does with a thrown handler stay unproven until Steps 22 and 23 (ADR 0064's amendment); the fixtures follow the documented `mx.cloudflare.net` form. A real header without `header.from` or `header.d` makes the owner's real reply `unauthenticated`, never a forged task.
+- The cap is read before the add and the row written after it, so two concurrent distinct replies could both pass the count at 19; the per-owner limiter bounds that to a few. The row insert is not atomic with the add: a crash between them leaves a task without a counted row (the redelivery repairs it through the idempotency key).
+- The `unparseable` test uses a raw stream that errors; a malformed-but-readable body parses leniently in `postal-mime` and is handled by the later checks (no title, no `Message-ID`).
+- The handler's `rawSize` check trusts the platform's size; a body over 1 MiB with a small `rawSize` is not re-measured.
+- The pure modules of lane `in-pure` were not touched except `reply-recipient.ts` (the added `replyAddressOf`).
+- `apps/docs/self-host.mdx` and `docs/runbooks/deploy-the-api.md` still name nine rate-limit bindings (`8601` to `8609`); they are the lead's Docs lane, and `self-host.test.ts` stays red until both say ten and `8610`.
