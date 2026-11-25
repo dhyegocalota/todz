@@ -35,6 +35,10 @@ const TASK_COLUMNS =
   'number, title, notes, due_date, state, order_key, idempotency_key, created_by_kind, created_by_client, created_at, updated_at, completed_at';
 const FIRST_CHANGE_NUMBER = 1;
 const HISTORY_COLUMNS = 'at, actor_kind, actor_client, action, fields, note';
+const FIRST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? ORDER BY order_key LIMIT 1';
+const LAST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? ORDER BY order_key DESC LIMIT 1';
+const ORDER_KEY_BEFORE_QUERY = 'SELECT order_key FROM tasks WHERE order_key < ? AND number <> ? ORDER BY order_key DESC LIMIT 1';
+const ORDER_KEY_AFTER_QUERY = 'SELECT order_key FROM tasks WHERE order_key > ? AND number <> ? ORDER BY order_key LIMIT 1';
 
 function invalidColumn({ column, taskNumber }: { column: string; taskNumber: number }): Error {
   return new Error(`${column} of task ${taskNumber} is not valid`);
@@ -160,20 +164,20 @@ export class SqliteTaskStore implements TaskStore {
     return row.last_issued_number;
   }
 
-  firstOrderKey(_parameters: { excludingNumber: number }): string | null {
-    throw new Error('firstOrderKey is not implemented');
+  firstOrderKey({ excludingNumber }: { excludingNumber: number }): string | null {
+    return this.orderKeyOf({ query: FIRST_ORDER_KEY_QUERY, bindings: [excludingNumber] });
   }
 
-  lastOrderKey(_parameters: { excludingNumber: number }): string | null {
-    throw new Error('lastOrderKey is not implemented');
+  lastOrderKey({ excludingNumber }: { excludingNumber: number }): string | null {
+    return this.orderKeyOf({ query: LAST_ORDER_KEY_QUERY, bindings: [excludingNumber] });
   }
 
-  orderKeyBefore(_parameters: { orderKey: string; excludingNumber: number }): string | null {
-    throw new Error('orderKeyBefore is not implemented');
+  orderKeyBefore({ orderKey, excludingNumber }: { orderKey: string; excludingNumber: number }): string | null {
+    return this.orderKeyOf({ query: ORDER_KEY_BEFORE_QUERY, bindings: [orderKey, excludingNumber] });
   }
 
-  orderKeyAfter(_parameters: { orderKey: string; excludingNumber: number }): string | null {
-    throw new Error('orderKeyAfter is not implemented');
+  orderKeyAfter({ orderKey, excludingNumber }: { orderKey: string; excludingNumber: number }): string | null {
+    return this.orderKeyOf({ query: ORDER_KEY_AFTER_QUERY, bindings: [orderKey, excludingNumber] });
   }
 
   lastChangeNumber(): number | null {
@@ -246,6 +250,12 @@ export class SqliteTaskStore implements TaskStore {
       .exec<HistoryRow>(`SELECT ${HISTORY_COLUMNS} FROM task_history WHERE task_number = ? ORDER BY id`, number)
       .toArray()
       .map((row) => historyEntryOf({ row, taskNumber: number }));
+  }
+
+  private orderKeyOf({ query, bindings }: { query: string; bindings: SqlStorageValue[] }): string | null {
+    const [row] = this.sql.exec<{ order_key: string }>(query, ...bindings).toArray();
+    if (row === undefined) return null;
+    return row.order_key;
   }
 
   private takeChangeNumber(): number {
