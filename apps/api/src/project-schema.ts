@@ -38,23 +38,31 @@ const VERSION_TWO_STATEMENTS = [
   'CREATE UNIQUE INDEX tasks_change_number ON tasks (change_number)',
 ];
 
-const MIGRATIONS = [
+type Migration = { version: number; statements: string[] };
+
+export const MIGRATIONS: Migration[] = [
   { version: 1, statements: VERSION_ONE_STATEMENTS },
   { version: 2, statements: VERSION_TWO_STATEMENTS },
 ];
 
 export const PROJECT_SCHEMA_VERSION = MIGRATIONS.length;
 
-export function applyProjectSchema(storage: DurableObjectStorage): void {
+export function applyMigrations({ storage, migrations }: { storage: DurableObjectStorage; migrations: Migration[] }): void {
   const sql = storage.sql;
   storage.transactionSync(() => {
     sql.exec(SCHEMA_VERSION_TABLE);
     const [storedRow] = sql.exec<{ version: number }>('SELECT version FROM schema_version').toArray();
     if (storedRow === undefined) sql.exec('INSERT INTO schema_version (version) VALUES (?)', EMPTY_STORE_VERSION);
     const storedVersion = storedRow === undefined ? EMPTY_STORE_VERSION : storedRow.version;
-    MIGRATIONS.filter(({ version }) => version > storedVersion).forEach(({ version, statements }) => {
-      statements.forEach((statement) => sql.exec(statement));
-      sql.exec('UPDATE schema_version SET version = ?', version);
-    });
+    migrations
+      .filter(({ version }) => version > storedVersion)
+      .forEach(({ version, statements }) => {
+        statements.forEach((statement) => sql.exec(statement));
+        sql.exec('UPDATE schema_version SET version = ?', version);
+      });
   });
+}
+
+export function applyProjectSchema(storage: DurableObjectStorage): void {
+  applyMigrations({ storage, migrations: MIGRATIONS });
 }
