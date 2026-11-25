@@ -10,4 +10,5 @@ export enum HttpHeader {
   CacheControl = 'Cache-Control',
   ContentType = 'Content-Type',
   ContentLength = 'Content-Length',
+  Location = 'Location',
 }

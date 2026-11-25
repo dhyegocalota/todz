@@ -1,4 +1,5 @@
 import type { Env } from '../env';
+import { HttpHeader } from '../http-header';
 import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { noRouteResponse } from '../owner-errors';
@@ -8,8 +9,6 @@ import { LandingNotice, serveLandingPage } from './landing-page';
 import { serveSelfHostPage } from './self-host-page';
 import { JOIN_PATH, LANDING_PATH, SELF_HOST_PATH } from './site-shell';
 import { serveWaitlistJoin } from './waitlist-join';
-
-const LOCATION_HEADER = 'Location';
 
 export type SiteContext = { request: Request; env: Env; executionContext: ExecutionContext };
 
@@ -24,7 +23,7 @@ function serveLanding({ env }: SiteContext): Promise<Response> {
 }
 
 function redirectToLanding(): Response {
-  return new Response(null, { status: HttpStatus.SeeOther, headers: { [LOCATION_HEADER]: LANDING_PATH } });
+  return new Response(null, { status: HttpStatus.SeeOther, headers: { [HttpHeader.Location]: LANDING_PATH } });
 }
 
 const ADMIN_ROUTE_OF_REQUEST: Record<string, SiteRoute> = Object.fromEntries(

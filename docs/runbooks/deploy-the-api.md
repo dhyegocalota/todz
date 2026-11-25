@@ -205,7 +205,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "SELECT COUNT(*) AS admin_links FROM admin_sign_in_links WHERE consumed_at IS NULL"
     ```
 
-    Expected: the status code is the check; the two counts only show that nothing was written, which holds for any probe address that is not `ADMIN_EMAIL`. They are equal, and the post prints `503` (the admin is closed) until both the site key is in `wrangler.jsonc` and step 10's secret exists, and `429` (try again) after both. The probe address is not `ADMIN_EMAIL`, so no row is ever written for it and no mail leaves.
+    Expected: the status code is the check; the two counts only show that nothing was written, which holds for any probe address that is not `ADMIN_EMAIL`. They are equal, and the post prints `503` (the admin is closed) until the site key is in `wrangler.jsonc` and both of step 10's secrets exist, and `429` (try again) after all three. No mail leaves.
     If it fails: a `403` means the `Origin` header was lost; run the command as written. A `200` means siteverify accepted an unsolved token or the guard was skipped; close the admin as the Rollback section says, and tell the owner.
 
 15. **Check the per-client limit.** Post wrong session tokens from this machine, fourteen in one command, and keep only the statuses and `retry-after` values; each answer's body ends without a newline, so the next status starts mid-line and a `^HTTP` match would miss it. The body carries a malformed link verifier, which the Worker refuses before it asks siteverify, and an unsolved Turnstile token:

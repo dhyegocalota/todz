@@ -7,8 +7,6 @@ import { serveAdminSignInPage } from './admin-page';
 import { ADMIN_RESPONSE_HEADERS, AdminPath } from './admin-paths';
 import { AdminNotice } from './admin-waitlist';
 
-const LOCATION_HEADER = 'Location';
-
 type AdminAnswerParts = { status: HttpStatus; cookies?: string[] };
 
 export const STATUS_OF_NOTICE: Record<AdminNotice, HttpStatus> = {
@@ -52,6 +50,6 @@ export function adminJsonAnswerOf({ status, cookies }: AdminAnswerParts): Respon
 }
 
 export function adminRedirectAnswerOf({ cookies }: { cookies?: string[] } = {}): Response {
-  const answer = new Response(null, { status: HttpStatus.SeeOther, headers: { [LOCATION_HEADER]: AdminPath.Panel } });
+  const answer = new Response(null, { status: HttpStatus.SeeOther, headers: { [HttpHeader.Location]: AdminPath.Panel } });
   return adminAnswerWith({ answer, cookies });
 }

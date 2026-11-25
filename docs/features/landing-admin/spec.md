@@ -1,6 +1,6 @@
 # Landing admin
 
-**Status:** Building
+**Status:** Shipped 2026-11-25
 **Tier:** 🔴 (a new sign-in path and session, a schema migration, personal data in a panel and an export)
 **Owner approval:** approved 2026-11-25 by inheritance from the owner's request in PROMPT.md "Landing" ("cria uma landing page hiper mega simples com fila de espera, painel admin, digest etc … pra ser um prod ready mesmo"; "the admin authenticates as the owner") and "Security" (a rate limit and Turnstile on every public endpoint, failing closed). The behaviour is the loop's call in [ADR 0051](../../adr/0051-the-admin-signs-in-by-a-mail-link-bound-to-the-browser-that-asked-into-a-cookie-session.md).
 **ADRs:** [0051](../../adr/0051-the-admin-signs-in-by-a-mail-link-bound-to-the-browser-that-asked-into-a-cookie-session.md), [0049](../../adr/0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md), [0050](../../adr/0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md), [0045](../../adr/0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md), [0042](../../adr/0042-emails-are-react-email-templates-rendered-at-build-time-into-a-generated-module.md), [0043](../../adr/0043-mail-leaves-through-cloudflare-email-service-from-noreply-at-todz-app.md)
@@ -143,8 +143,8 @@ The code review (WITH RESERVATIONS, HIGH), the security review (FINDINGS: one IM
 
 | Question | Options | Owner's answer | Date |
 |----------|---------|----------------|------|
-| Who is the admin? | the owner's personal address in a secret; `hello@todz.app` in `vars` | the loop's call: `hello@todz.app` (ADR 0051 §1) | 2026-11-25 |
-| How is the link bound to a browser? | a Strict challenge cookie spent by a same-origin post; a Lax cookie read on the navigation; unbound | the loop's call: Strict cookie, by the run-15 spike (ADR 0051 §2–3) | 2026-11-25 |
+| Who is the admin? | the owner's personal address in a secret; `hello@todz.app` in `vars` | the loop's call: `hello@todz.app` (ADR 0051 §1), changed by V1 to a secret holding it | 2026-11-25 |
+| How is the link bound to a browser? | a Strict challenge cookie spent by a same-origin post; a Lax cookie read on the navigation; unbound | the loop's call: Strict cookie, by the run-15 spike (ADR 0051 §2–3), changed by V2 to Lax | 2026-11-25 |
 | Admin on its own host or a path? | `admin.todz.app`; `todz.app/admin` | the loop's call: the path, no new DNS record (ADR 0049 §3.3) | 2026-11-25 |
 | Digest in this feature? | yes; its own feature | the loop's call: `landing-digest` (ADR 0051 §8) | 2026-11-25 |
 

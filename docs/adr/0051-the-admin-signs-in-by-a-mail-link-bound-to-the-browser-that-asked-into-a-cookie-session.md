@@ -20,7 +20,7 @@
 7. **The panel reads the waitlist.** `GET /admin` shows the totals, the last day's joins, failed confirmations and the newest two hundred rows; `GET /admin/export.csv` downloads every row, with each cell that starts with `=`, `+`, `-`, `@`, a tab or a carriage return prefixed by `'`. Every admin answer carries `Cache-Control: no-store` and `X-Robots-Tag: noindex`.
 8. **The digest is its own feature.** `landing-digest` follows: the daily mail from a cron, reading the same table.
 
-**Changed by the review, before the merge (these win over §1, §2 and §4):**
+**Changed by the review, before the merge (these win over §1 to §5):**
 
 - `ADMIN_EMAIL` is a Worker secret, not a `vars` entry. The loop puts `hello@todz.app` with `wrangler secret put ADMIN_EMAIL`. A fork or a self-hosted copy that never sets it keeps its admin closed, instead of mailing its admin links to the todz owner's alias and letting that mailbox read its waitlist.
 - Both cookies are `SameSite=Lax`, not `Strict`. The binding comes from the challenge cookie living only in the browser that asked, and every state change already needs the same-origin rule of §5, so Lax loses nothing. Strict made signing in depend on how each browser treats a Strict cookie on a same-origin request from a page reached by a cross-site click; Chromium sends it, but WebKit (Safari, where Mail opens links on the owner's Mac) could not be run here, and installing it is outside what the loop may do. A Lax cookie rides that request in every browser.
@@ -39,12 +39,12 @@
 ## Consequences
 
 - The admin can sign in only from the browser where he asked for the link, within fifteen minutes.
-- `ADMIN_EMAIL` is not in the repository; its value is an alias, and knowing it gives nothing without the mailbox.
+- `ADMIN_EMAIL` is no longer a configuration default: its value lives only in the deployment's secret. The value is an alias, and knowing it gives nothing without the mailbox.
 - The link page needs a script, served under the hashed CSP like `/sign-in`.
 - Three new rate limit bindings and migration `0006`; a rollback keeps both tables, which an older version never reads.
 - Until the owner's Turnstile widget exists, the admin sign-in answers 503, as sign-in and the waitlist do.
-- `ADMIN_EMAIL` is public, so whoever solves five challenges in fifteen minutes fills the admin's link cap and his own request then mails nothing for a while; the runbook's recovery step clears the unspent links on his word.
-- A session is bound to the address that opened it: changing or removing `ADMIN_EMAIL` ends every session.
+- The admin address is easy to guess, so whoever solves five challenges in fifteen minutes fills the admin's link cap and his own request then mails nothing for a while; the runbook's recovery step clears the unspent links on his word.
+- A session is bound to the address that opened it: changing `ADMIN_EMAIL` ends every session, removing it suspends them until it is put back, and `DELETE FROM admin_sessions` ends them for good.
 - The link request answers before it touches D1 or the mail, so neither the time nor a failure tells the admin's address apart.
 
 ## Evidence

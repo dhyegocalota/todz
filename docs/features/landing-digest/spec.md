@@ -1,6 +1,6 @@
 # Landing digest
 
-**Status:** Approved
+**Status:** Shipped 2026-11-25
 **Tier:** 🟡 (a cron, a mail carrying personal data, configuration)
 **Owner approval:** approved 2026-11-25 by inheritance from the owner's request in PROMPT.md "Landing" ("fila de espera, painel admin, digest etc igual zapbip … pra ser um prod ready mesmo"; "a waitlist signup … appears in the admin panel and in the next digest"). The behaviour is the loop's call in [ADR 0052](../../adr/0052-the-waitlist-digest-goes-to-the-admin-address-once-a-day-from-a-cron.md).
 **ADRs:** [0052](../../adr/0052-the-waitlist-digest-goes-to-the-admin-address-once-a-day-from-a-cron.md), [0051](../../adr/0051-the-admin-signs-in-by-a-mail-link-bound-to-the-browser-that-asked-into-a-cookie-session.md), [0049](../../adr/0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md), [0042](../../adr/0042-emails-are-react-email-templates-rendered-at-build-time-into-a-generated-module.md), [0043](../../adr/0043-mail-leaves-through-cloudflare-email-service-from-noreply-at-todz-app.md)
