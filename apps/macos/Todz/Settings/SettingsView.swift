@@ -2,6 +2,8 @@ import SwiftUI
 import TodzKit
 
 let subtitleLines = 2
+private let unknownDayEmailHour = 7
+private let unknownDayEmailMinutes = unknownDayEmailHour * DayCloseSchedule.minutesPerHour
 private let focusSettingsAddress = "x-apple.systempreferences:com.apple.Focus-Settings.extension"
 
 struct SettingsView: View {
@@ -22,7 +24,7 @@ struct SettingsView: View {
             .toggleStyle(.switch)
             Toggle(isOn: agentNudge) {
                 Text(SettingsCopy.agentNudge)
-                Text(SettingsCopy.agentNudgeSubtitle(notice: model.agentNudgeNotice))
+                Text(SettingsCopy.ownerSettingSubtitle(notice: model.agentNudgeNotice, detail: SettingsCopy.agentNudgeDetail))
                     .lineLimit(subtitleLines, reservesSpace: true)
             }
             .toggleStyle(.switch)
@@ -55,6 +57,22 @@ struct SettingsView: View {
                     .lineLimit(subtitleLines, reservesSpace: true)
             }
             .toggleStyle(.switch)
+            LabeledContent {
+                HStack {
+                    DatePicker(SettingsCopy.dayEmailTime, selection: dayEmailTime, displayedComponents: .hourAndMinute)
+                        .datePickerStyle(.stepperField)
+                        .labelsHidden()
+                        .disabled(!canChangeDayEmailTime)
+                    Toggle(SettingsCopy.dayEmail, isOn: dayEmail)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                        .disabled(!model.canChangeDayEmail)
+                }
+            } label: {
+                Text(SettingsCopy.dayEmail)
+                Text(SettingsCopy.ownerSettingSubtitle(notice: model.dayEmailNotice, detail: SettingsCopy.dayEmailDetail))
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
             Section {
                 ServerAddressForm(layout: .row, exit: {})
             }
@@ -62,7 +80,11 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
         .onChange(of: model.agentNudgeNotice) { _, notice in announce(notice) }
-        .onDisappear { model.forgetAgentNudgeFailure() }
+        .onChange(of: model.dayEmailNotice) { _, notice in announce(notice) }
+        .onDisappear {
+            model.forgetAgentNudgeFailure()
+            model.forgetDayEmailFailure()
+        }
     }
 
     private var agentNudge: Binding<Bool> {
@@ -71,6 +93,32 @@ struct SettingsView: View {
         } set: { isEnabled in
             Task { await model.changeAgentNudge(isEnabled: isEnabled) }
         }
+    }
+
+    private var dayEmail: Binding<Bool> {
+        Binding {
+            model.dayEmail == true
+        } set: { isEnabled in
+            Task { await model.changeDayEmail(isEnabled: isEnabled) }
+        }
+    }
+
+    private var canChangeDayEmailTime: Bool {
+        model.canChangeDayEmail && model.dayEmail == true
+    }
+
+    private var dayEmailTime: Binding<Date> {
+        Binding {
+            guard let minutes = model.dayEmailMinutes else { return dayEmailInstant(minutes: unknownDayEmailMinutes) }
+            return dayEmailInstant(minutes: minutes)
+        } set: { time in
+            let minutes = DayCloseSchedule.minutesAfterMidnight(of: time, timeZone: model.timeZone)
+            Task { await model.changeDayEmail(minutes: minutes) }
+        }
+    }
+
+    private func dayEmailInstant(minutes: Int) -> Date {
+        DayCloseSchedule.instant(day: model.today, minutesAfterMidnight: minutes, timeZone: model.timeZone)
     }
 
     private var dayCloseTime: Binding<Date> {
@@ -87,7 +135,7 @@ struct SettingsView: View {
         openURL(focusSettings)
     }
 
-    private func announce(_ notice: AgentNudgeNotice) {
+    private func announce(_ notice: OwnerSettingNotice) {
         guard notice == .notSaved else { return }
         AccessibilityNotification.Announcement(ErrorCopy.changeNotSaved).post()
     }
