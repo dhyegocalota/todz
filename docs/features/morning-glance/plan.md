@@ -61,21 +61,21 @@ G1 first through Step 3: its red commits carry stubs for every public symbol, so
 
 ### G2
 
-- [ ] **Step 6:** Copy: `MorningGlanceCopy` (new), the `SettingsCopy` and `AccessibilityCopy` strings of `design.md` § 8.
-- [ ] **Step 7:** The panel:
+- [x] **Step 6:** (c7a0a5d) Copy: `MorningGlanceCopy` (new), the `SettingsCopy` and `AccessibilityCopy` strings of `design.md` § 8.
+- [x] **Step 7:** (d614cdd) The panel:
   - `MorningGlancePanel` per the assumptions.
   - `MorningGlanceView` per `design.md` § 1.1 and § 3 (`if #available(macOS 26.0, *)` glass, else `.regularMaterial`; one accessibility element with the label, value, hint, button trait and default action of § 5).
   - `MorningGlancePresenter.show(_:) async -> Bool`: `NSScreen.screens.first` or answer false; `ScreenLock.isLocked` or answer false; `NSApp.unhideWithoutActivation()` only when `NSApp.isHidden`; the frame at the visible frame's top right inset 12; `ignoresMouseEvents = true`; `orderFrontRegardless()`; answer true at once if the occlusion state is already visible, else wait for `NSWindow.didChangeOcclusionStateNotification` with it visible, at most 1 s; on false, `orderOut` and cancel the dwell.
   - On true: post the announcement; after `MorningGlanceDwell.pointerGrace`, `ignoresMouseEvents = false`; the dwell Task sleeps to `fadeStart` and is cancelled by a hover (an `NSTrackingArea` with `.activeAlways`, so it works while todz is inactive), restarted on leave, capped by `longestShow`; then the fade (`NSAnimationContext` over `fadeDuration(reducesMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)`, `ignoresMouseEvents` during it), `orderOut` and `coordinator.dismissed()`.
   - The click: `orderOut`, `dismissed()`, `windowState.waitingLink = .today`.
   - `close()` (the coordinator's `closePanel`): cancels the dwell, `orderOut` without the fade.
-- [ ] **Step 8:** The wiring:
+- [x] **Step 8:** (5f533fa) The wiring:
   - `Notification.Name.screenIsUnlocked` moves to `Todz/Shared/Notification.Name+ScreenIsUnlocked.swift` (with `screenIsLocked` for `com.apple.screenIsLocked`) and `ScreenLock` moves to `Todz/Shared/ScreenLock.swift`; `DayCloseScheduler` uses the shared name.
   - `MorningGlanceTrigger.start()` checks once (the launch chance) and observes `NSWorkspace.didWakeNotification`, `screensDidWakeNotification`, `sessionDidBecomeActiveNotification` (on `NSWorkspace.shared.notificationCenter`) and `.screenIsUnlocked` (on `DistributedNotificationCenter.default()`) for `check()`; `didActivateApplicationNotification` for `retryLockedChance()`; `.screenIsLocked` and `NSWorkspace.willSleepNotification` for `closeNow()`. Never `UserDefaults.didChangeNotification`.
   - `AppDelegate`: a lazy `morningGlance` coordinator with `timeZone: model.timeZone`, `content: { model.morningGlanceContent }`, `isScreenLocked: { ScreenLock.isLocked }`, `isScreenMirrored` from `CGDisplayIsInMirrorSet` of the first screen's display identifier (a screen that cannot be read counts as mirrored, so nothing shows), `isTodayInFront` from `MorningGlanceFront.isInFront` with `dayClose.isDueAndIdle`, `dayClose.isClosingDay`, `panel.isShown`, `NSApp.isActive` and a visible window that can become main, `showPanel` and `closePanel` through the presenter. In the launch `Task`, after `readFocusFilter()`: `dayCloseScheduler.start()` first, then `morningGlanceTrigger.start()`, in that order (R5).
   - `TodzApp`: `MorningGlancePreference.registerDefaults(in: .standard)` and the coordinator into the popover's environment. `MenuBarPopover`: `onShow` also calls `morningGlance.popoverShown()`.
-- [ ] **Step 9:** Settings: the switch of `design.md` § 1.2 after the Close the day row, `@AppStorage(MorningGlancePreference.isOnStorageKey)`.
-- [ ] **Step 10:** `xcodegen generate` and a Debug `xcodebuild` print `BUILD SUCCEEDED` with no `warning:` or `error:` line; `swift test --package-path apps/macos/TodzKit` green with its count. The `## G2` section of `tester-briefing.md`: how to force a glance (delete `lastMorningGlanceDay` from the app container's defaults, quit, `open -g -j`), the two-showing budget, the folder backups the day-close testers took, and every "it works" as a hypothesis.
+- [x] **Step 9:** (720c586) Settings: the switch of `design.md` § 1.2 after the Close the day row, `@AppStorage(MorningGlancePreference.isOnStorageKey)`.
+- [x] **Step 10:** (908 tests in 62 suites; Debug and Release BUILD SUCCEEDED, no warnings; the briefing's G2 section) `xcodegen generate` and a Debug `xcodebuild` print `BUILD SUCCEEDED` with no `warning:` or `error:` line; `swift test --package-path apps/macos/TodzKit` green with its count. The `## G2` section of `tester-briefing.md`: how to force a glance (delete `lastMorningGlanceDay` from the app container's defaults, quit, `open -g -j`), the two-showing budget, the folder backups the day-close testers took, and every "it works" as a hypothesis.
 
 ### Lead
 

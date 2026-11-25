@@ -65,26 +65,69 @@ Every "it works" is a hypothesis the tester tries to break.
 
 ### What changed
 
-- <file or module> — <one line>
+Commits `c7a0a5d` (copy), `d614cdd` (panel, view, presenter, the `ScreenLock` move), `5f533fa` (trigger, wiring, shared names), `720c586` (Settings). All under `apps/macos`.
+
+- `Copy/MorningGlanceCopy.swift` (new), `Copy/SettingsCopy.swift`, `Copy/AccessibilityCopy.swift` — the strings of `design.md` § 8.
+- `Todz/MorningGlance/MorningGlancePanel.swift` — the `NSPanel`: never key or main, borderless, non-activating, status bar level, every Space, over full screen, no hide on deactivate, clear background, shadow.
+- `Todz/MorningGlance/MorningGlanceView.swift` — heading, up to five rows, `+N more`, glass on macOS 26 and later, `.regularMaterial` before; one accessibility element (label, value, hint, button trait, default action).
+- `Todz/MorningGlance/MorningGlanceHostingView.swift` (not in the plan's file list, same folder) — the hosting view with an `.activeAlways` tracking area for the hover and `mouseDown` for the click.
+- `Todz/MorningGlance/MorningGlancePresenter.swift` — `show` (screen, lock re-read, unhide only when hidden, top right inset 12, order front, wait at most 1 s for the occlusion to turn visible, announcement, 0.4 s pointer grace, the dwell Task, the fade), `close`, the click (`windowState.waitingLink = .today`).
+- `Todz/MorningGlance/MorningGlanceTrigger.swift` — the launch chance; wake, display wake, session return and unlock call `check()`; an app activation calls `retryLockedChance()`; lock and sleep call `closeNow()`. No `UserDefaults.didChangeNotification`.
+- `Todz/MorningGlance/MorningGlanceCoordinator+App.swift` (not in the plan's file list, same folder) — the coordinator's app wiring (the plan placed it in `AppDelegate`; moved here so the `AppDelegate` hunks stay three small ones and merge easily with `feat/performance`): mirroring from `CGDisplayIsInMirrorSet` of the first screen (an unreadable screen counts as mirrored), `isTodayInFront` from `MorningGlanceFront.isInFront`.
+- `Todz/AppDelegate.swift` — three lazy properties after `dayCloseScheduler`; `morningGlanceTrigger.start()` right after `dayCloseScheduler.start()` in the launch `Task`.
+- `Todz/TodzApp.swift` — `MorningGlancePreference.registerDefaults(in:)` and the coordinator in the popover's environment.
+- `Todz/MenuBar/MenuBarPopover.swift` — `onShow` calls `dayClose.popoverShown()` and `morningGlance.popoverShown()`.
+- `Todz/Settings/SettingsView.swift` — the switch after Close the day, two reserved detail lines.
+- `Todz/Shared/ScreenLock.swift` (moved from `Todz/DayClose/`), `Todz/Shared/Notification.Name+ScreenIsUnlocked.swift` (new, with `screenIsLocked`); `Todz/DayClose/DayCloseScheduler.swift` uses the shared name.
 
 ### How to run
 
 ```bash
-<commands to build, force a glance and launch hidden>
+swift test --package-path apps/macos/TodzKit
+cd apps/macos && xcodegen generate
+xcodebuild build -project Todz.xcodeproj -scheme Todz -configuration Debug -derivedDataPath build
+open -g -j build/Build/Products/Debug/Todz.app
 ```
+
+Forcing a glance. The Debug app is sandboxed, so its defaults live in its container; write them with the app quit:
+
+```bash
+PREFS=~/Library/Containers/dev.todz.Todz.debug/Data/Library/Preferences/dev.todz.Todz.debug
+defaults delete "$PREFS" lastMorningGlanceDay
+defaults write "$PREFS" showsMorningGlance -bool true
+```
+
+Then launch with `open -g -j`. The panel lands on the owner's screen: two showings at most in the whole walk (`test-plan.md`); every other launch must show nothing. Keep the day close off (`closesTheDay` false) or not due, or it wins the chance by design. Before seeding the session and cache, copy the app container's `Library/Application Support` folder aside and put it back afterwards, as the day-close testers did with their seeded workspace.
+
+Final run on `720c586` plus the Release-only checks: `swift test --package-path apps/macos/TodzKit` 908 tests in 62 suites passed; `xcodegen generate`; Debug and Release `xcodebuild` print `BUILD SUCCEEDED` with no `warning:` or `error:` line.
 
 ### Red today, green after
 
+None: the app lane has no red step (R9). Every decision it relies on is a `TodzKit` rule with its red tests in G1. The panel's traits are proven by the walk; the build is the only mechanical check here.
+
 | Test | Red before the change because | Green after because |
 |------|--------------------------------|---------------------|
-| `<path>::<name>` |  |  |
+| none (no seam in the app target) | n/a | `swift test --package-path apps/macos/TodzKit` and the two builds are green on `720c586` |
 
 ### Hypotheses to attack
 
 Every "it works" is a hypothesis the tester tries to break.
 
-1. Hypothesis: <claim>. Break it by: <suggested attack>.
+1. Hypothesis: the panel never takes focus. Break it by: another app frontmost with a focused text field, a hidden launch, a sampler of the frontmost bundle identifier, then `x` typed with the pointer held on the panel; the window's `canBecomeKey` and `canBecomeMain` must read false and todz is never frontmost.
+2. Hypothesis: the panel shows after a hidden launch and the day is marked only once seen. Break it by: `open -g -j` with the day close off; `lastMorningGlanceDay` absent until the panel is on screen, then today.
+3. Hypothesis: the occlusion becomes visible within 1 s. Break it by: reading the window list (layer 25, `kCGWindowIsOnscreen`) from the launch; record the milliseconds for ADR 0062's Evidence.
+4. Hypothesis: the pointer is ignored for 0.4 s and the hover works while todz is inactive. Break it by: a click within 0.4 s of the panel showing (it reaches the app beneath); a resting pointer on the panel for 8 s (it stays) and at most 30 s.
+5. Hypothesis: a click opens the main window on Today and activates todz. Break it by: a click while todz is inactive and hidden; the window follows `waitingLink` through `MenuBarLabel`; if todz stays inactive, the failure-modes row says the presenter must activate it before setting the link.
+6. Hypothesis: the fade lasts 0.5 s and is instant with Reduce Motion. Break it by: sampling the window's alpha; Reduce Motion is a Human checklist row.
+7. Hypothesis: the lock, sleep, popover opening, sign-out and workspace switch close the panel at once. Break it by: opening the menu bar popover while the panel shows; the lock, sleep and sign-out ones go to the Human checklist.
+8. Hypothesis: the glance and the day close never share a chance. Break it by: a due day close and the glance on at launch: only the popover opens; the day is marked for the glance.
+9. Hypothesis: the Settings switch is off by default, grows the window by exactly one row and never previews the panel. Break it by: a fresh container, switching it on and off, reading the window height, and checking no panel appears.
+10. Hypothesis: `AppDelegate` and `TodzApp` merge cleanly with `feat/performance`. Break it by: the merge itself; the launch order (`readFocusFilter`, then `dayCloseScheduler.start()`, then `morningGlanceTrigger.start()`) must survive it.
 
 ### Known gaps
 
-- <what the developer knows is missing or untested>
+- No real panel, signal, lock, wake, Focus, mirroring or VoiceOver was exercised: the app was never launched (the panel draws on the owner's screen).
+- The hover's `.activeAlways` tracking area, the occlusion wait and the click's activation are untested assumptions until the walk.
+- A pointer already on the panel when it first appears gets no `mouseEntered` until it moves, so the dwell is the plain five seconds in that case.
+- `glassEffect` is built against the Xcode 27 SDK; macOS 14 and 15 take the `.regularMaterial` branch, which was not run.
+- The panel's height comes from the hosting view's `fittingSize` at show time; very long localized strings were not tried.
