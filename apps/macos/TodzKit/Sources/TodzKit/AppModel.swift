@@ -63,6 +63,7 @@ import Observation
     public internal(set) var agentNudge: Bool?
     var isSavingAgentNudge = false
     var isAgentNudgeNotSaved = false
+    public internal(set) var showsDayTemperature = false
 
     @ObservationIgnored var hasLaunched = false
     @ObservationIgnored var isLaunchSettled = false
