@@ -1,7 +1,19 @@
+import TodzKit
+
 enum MenuBarCopy {
     static let openWindow = "Open todz"
     static let signedOut = "Sign in to see what's due today."
     static let naming = "Name your first workspace to see what's due today."
+    static let closeTheDay = "Close the day"
+    static let done = "Done"
+    static let noDate = "No date"
+    static let dueTomorrow = "Due tomorrow"
+    static let noDueDate = "No due date"
+    static let dayClosedTitle = "Day closed"
+    static let dayClosedBody = "Nothing left for today."
+    static let doneHelp = "Mark as done (D)"
+    static let tomorrowHelp = "Move to tomorrow (T)"
+    static let noDateHelp = "Removes the due date. The task stays open. (N)"
 
     static func left(count: Int) -> String {
         InflectedCopy.text("\(count) left")
@@ -13,5 +25,13 @@ enum MenuBarCopy {
 
     static func switchHint(last: Int) -> String {
         "Switch workspace ⌘1–\(last)"
+    }
+
+    static func result(of outcome: LingerOutcome) -> String {
+        switch outcome {
+        case .done: done
+        case .dueTomorrow: dueTomorrow
+        case .noDueDate: noDueDate
+        }
     }
 }

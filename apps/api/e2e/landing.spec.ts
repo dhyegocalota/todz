@@ -42,6 +42,9 @@ const CODE_FENCE = '```';
 const MAXIMUM_DARK_CHANNEL = 40;
 const SUBPIXEL_TOLERANCE = 0.5;
 const KEYBOARD_ORDER = ['.skip-link', '.site-header .brand', '.site-header .nav-link', '#join-email', '#join .join-button'];
+const CREDIT_LINK = '.site-footer .footer-credit-link';
+const CREDIT_TEXT = 'todz is a product of Logic Bit, made in Brazil';
+const CREDIT_WEBSITE = 'https://logicbit.com.br';
 const SCRIPT_OWNED_TRANSITION_PROPERTIES = ['color', 'background-color', 'opacity'];
 const JOIN_FORMS = [Fragment.Hero, Fragment.Final];
 const SITE_PAGES = [SitePath.Landing, SitePath.Join, SitePath.SelfHost];
@@ -313,6 +316,17 @@ test.describe('self-host guide', () => {
   });
 });
 
+test.describe('credit', () => {
+  [SitePath.Landing, SitePath.SelfHost].forEach((sitePath) => {
+    test(`${sitePath} credits Logic Bit in the footer with a link to its website`, async ({ page }) => {
+      await page.goto(sitePath);
+      await expect(page.locator('.site-footer .footer-credit')).toHaveText(CREDIT_TEXT);
+      await expect(page.locator(CREDIT_LINK)).toHaveAttribute('href', CREDIT_WEBSITE);
+      await expect(page.locator(CREDIT_LINK)).toBeVisible();
+    });
+  });
+});
+
 test.describe('keyboard', () => {
   test('tabs through the skip link, logo, guide link, email and join button with a visible focus ring', async ({ page }) => {
     await page.goto(SitePath.Landing);
@@ -324,6 +338,16 @@ test.describe('keyboard', () => {
       return [...rings, await hasFocusRing(element)];
     }, Promise.resolve([]));
     expect(focusRings).toEqual(KEYBOARD_ORDER.map(() => true));
+  });
+});
+
+test.describe('keyboard in the footer', () => {
+  test('shift-tab from the guide link reaches the credit link with a visible focus ring', async ({ page }) => {
+    await page.goto(SitePath.Landing);
+    await page.locator('.site-footer .footer-link').focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.locator(CREDIT_LINK)).toBeFocused();
+    expect(await hasFocusRing(page.locator(CREDIT_LINK))).toBe(true);
   });
 });
 

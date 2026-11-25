@@ -25,6 +25,7 @@ const ASSET_HEADERS_FILE = 'apps/api/public/_headers';
 const NOSNIFF_HEADERS_PATTERN = /^\/\*\n {2}X-Content-Type-Options: nosniff\n$/;
 const SITE_HOST = 'todz.app';
 const SITE_ORIGIN = `https://${SITE_HOST}`;
+const TURNSTILE_SITE_KEY = '0x4AAAAAAGSI2K7Qe9Vad2nL';
 const WWW_HOST = `www.${SITE_HOST}`;
 const REMOTE_FLAG = '--remote';
 const PRODUCTION_DATABASE_NAME = 'todz-directory';
@@ -132,12 +133,13 @@ describe('the api source', () => {
     expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([CONSOLE_EMAIL_SENDER]);
   });
 
-  test('the wrangler configuration is production: the email provider, the cloudflare sender and the https origin on todz.app, and no admin address, which is a secret', () => {
+  test('the wrangler configuration is production: the email provider, the cloudflare sender and the https origin on todz.app, the public Turnstile site key as a var, and no admin address or Turnstile secret, which are secrets', () => {
     expect(wranglerConfiguration().vars).toEqual({
       SIGN_IN_PROVIDER: 'email',
       EMAIL_SENDER: 'cloudflare',
       PUBLIC_ORIGIN: PRODUCTION_ORIGIN,
       SITE_ORIGIN,
+      TURNSTILE_SITE_KEY,
     });
   });
 
