@@ -2,6 +2,8 @@ import Foundation
 import Observation
 
 @MainActor @Observable public final class DayCloseCoordinator {
+    static let popoverShowWait: TimeInterval = 5
+
     public private(set) var isClosingDay = false
     public private(set) var isEngaged = false
     @ObservationIgnored var releaseTaking: Task<Void, Never>?
