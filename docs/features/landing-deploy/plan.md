@@ -33,4 +33,4 @@ One commit after the run.
 
 - [x] **Tester run:** 10 of 10, no defect — evidence: 142500a.
 - [x] **Reviewer:** YES, LOW; three MINORs: the step 15 row's reason (reworded), the tier note (added), and these ticks.
-- [ ] **/open-pr:** gates passed, PR opened.
+- [x] **/open-pr:** gates passed, PR #26 opened.
