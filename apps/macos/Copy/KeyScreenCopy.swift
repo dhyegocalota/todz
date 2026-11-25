@@ -29,6 +29,7 @@ enum KeyScreenCopy {
     static let copied = "Copied"
     static let createKeyFirst = "Create a key first."
     static let serverURL = "Server URL"
+    static let serverURLCaption = AttributedString(localized: "The server in use. Change it in Settings › Server.")
     static let tools = "Tools"
     static let nextTool = "Returns the one task to do now, with its notes."
     static let addTool = "Adds one or many tasks."

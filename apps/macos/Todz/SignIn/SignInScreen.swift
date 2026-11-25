@@ -9,6 +9,7 @@ struct SignInScreen: View {
     @Environment(AppModel.self) private var model
     @State private var email = ""
     @State private var linkSentAt: Date?
+    @State private var isServerFormOpen = false
     @AccessibilityFocusState private var isTitleFocused: Bool
 
     var body: some View {
@@ -40,9 +41,10 @@ struct SignInScreen: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+            ServerDisclosure(isExpanded: $isServerFormOpen)
         }
         .multilineTextAlignment(.center)
-        .task {
+        .task(id: model.serverURL) {
             if let pendingLink = model.pendingLink { email = pendingLink.email }
             guard model.signInMethod == nil else { return }
             await model.loadSignInMethod()
@@ -85,9 +87,9 @@ struct SignInScreen: View {
                 SignInErrorLine(signInError: signInMethodError) { Task { await model.loadSignInMethod() } }
             }
         case .identity:
-            CredentialSlot()
+            CredentialSlot(isServerFormOpen: isServerFormOpen)
         case .address, .sending:
-            AddressSlot(email: $email, send: sendLink)
+            AddressSlot(email: $email, isServerFormOpen: isServerFormOpen, send: sendLink)
         case .awaitingLink:
             if let pendingLink = model.pendingLink {
                 InboxSlot(pendingLink: pendingLink, linkSentAt: linkSentAt, send: sendLink)

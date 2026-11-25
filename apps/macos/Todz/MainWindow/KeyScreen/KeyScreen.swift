@@ -19,7 +19,7 @@ struct KeyScreen: View {
                     InspectorSectionTitle(title: KeyScreenCopy.serverURL)
                     CommandBlock(
                         name: KeyScreenCopy.serverURL,
-                        caption: nil,
+                        caption: KeyScreenCopy.serverURLCaption,
                         text: serverURL.absoluteString,
                         holdsSecret: false,
                         disabledReason: nil
