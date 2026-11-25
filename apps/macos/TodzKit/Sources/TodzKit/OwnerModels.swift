@@ -10,6 +10,7 @@ public struct Owner: Codable, Sendable, Equatable {
     enum CodingKeys: String, CodingKey {
         case identifier = "id"
         case timeZone
+        case agentNudge
     }
 }
 

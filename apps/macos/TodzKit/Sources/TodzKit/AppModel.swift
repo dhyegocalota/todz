@@ -216,6 +216,7 @@ import Observation
         session = issued.sessionToken
         ownerIdentifier = issued.owner.identifier
         isOwnerConfirmed = true
+        agentNudge = issued.owner.agentNudge
         phase = .loading
         keep(secret: issued.sessionToken)
         discardPendingLink()
@@ -290,6 +291,7 @@ import Observation
         session = nil
         ownerIdentifier = nil
         isOwnerConfirmed = false
+        forgetAgentNudge()
         forgetWindow()
     }
 
@@ -329,6 +331,7 @@ import Observation
         isOwnerConfirmed = true
         ownerConfirmationFailures = 0
         ownerIdentifier = owner.identifier
+        agentNudge = owner.agentNudge
     }
 
     private func openWorkspaces() async {

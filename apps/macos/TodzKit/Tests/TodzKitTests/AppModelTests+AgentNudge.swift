@@ -71,6 +71,7 @@ extension AppModelTests {
     @Test func aLaunchThatCannotReachTodzLeavesTheAgentNudgeUnknownAndSaysSo() async throws {
         let harness = try harnessOfOwner(agentNudge: true)
         harness.service.failures[.updateOwner] = .unreachable
+        harness.service.failures[.listWorkspaces] = .unreachable
         await harness.signedIn()
         #expect(harness.model.agentNudge == nil)
         #expect(harness.model.canChangeAgentNudge == false)

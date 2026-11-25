@@ -99,7 +99,8 @@ public struct OwnerAPI: OwnerService {
     }
 
     public func updateAgentNudge(session: String, isEnabled: Bool) async throws -> Owner {
-        fatalError("updateAgentNudge is not implemented")
+        let request = try OwnerRequest(method: .patch, path: ownerPath, session: session, body: AgentNudgeBody(agentNudge: isEnabled))
+        return try await answer(OwnerAnswer.self, to: request).owner
     }
 
     public func listWorkspaces(session: String) async throws -> [Workspace] {
