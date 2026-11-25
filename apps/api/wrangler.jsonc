@@ -10,6 +10,7 @@
     { "pattern": "todz.app", "custom_domain": true },
     { "pattern": "www.todz.app", "custom_domain": true },
   ],
+  "triggers": { "crons": ["0 11 * * *"] },
   "vars": {
     "SIGN_IN_PROVIDER": "email",
     "EMAIL_SENDER": "cloudflare",
