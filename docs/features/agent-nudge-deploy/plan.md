@@ -33,4 +33,4 @@ One commit after the run.
 
 - [x] **Tester run:** 16 of 16, no defect — evidence: f201b7a.
 - [x] **Reviewer:** WITH RESERVATIONS, LOW; two MINORs: row 15 now says the follow-up request was not sent; the `/admin` box kept as is (its command is the runbook's step 13).
-- [ ] **/open-pr:** gates passed.
+- [x] **/open-pr:** gates passed (PR #33).

@@ -54,4 +54,4 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 | [`landing-digest`](landing-digest/) | A daily mail to the admin address with the waitlist's last day: new joins, the total, failed confirmations and the new addresses | Shipped 2026-11-25 ([PR #30](https://github.com/dhyegocalota/todz/pull/30)) |
 | [`landing-admin-deploy`](landing-admin-deploy/) | The run of the deploy runbook that put the admin and the daily digest live, recorded | Shipped 2026-11-25 ([PR #31](https://github.com/dhyegocalota/todz/pull/31)) |
 | [`agent-nudge`](agent-nudge/) | With a Settings toggle on, an agent's `next` says how many of the project's tasks are due today and which to start with | Shipped 2026-11-25 ([PR #32](https://github.com/dhyegocalota/todz/pull/32)) |
-| [`agent-nudge-deploy`](agent-nudge-deploy/) | The run of the deploy runbook that applied the agent nudge migration and put the nudge live, recorded | In review |
+| [`agent-nudge-deploy`](agent-nudge-deploy/) | The run of the deploy runbook that applied the agent nudge migration and put the nudge live, recorded | Shipped 2026-11-25 ([PR #33](https://github.com/dhyegocalota/todz/pull/33)) |
