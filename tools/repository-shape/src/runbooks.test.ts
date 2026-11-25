@@ -10,7 +10,7 @@ const MARKDOWN_EXTENSION = '.md';
 const ROOT_PACKAGE_FILE = 'package.json';
 const DEPLOY_RUNBOOK = 'deploy-the-api.md';
 const AGENT_EXCEPTION_SENTENCE =
-  "agents never run them, except `deploy-the-api`, the loop's steps of `mintlify-publish` and the loop's steps of `performance`";
+  "agents never run them, except `deploy-the-api`, the loop's steps of `mintlify-publish`, the loop's steps of `performance` and the loop's steps of `release-the-mac-app`";
 const MINTLIFY_RUNBOOK = 'mintlify-publish.md';
 const PERFORMANCE_RUNBOOK = 'performance.md';
 const LOG_SHOW_WORDS = 'log show';
