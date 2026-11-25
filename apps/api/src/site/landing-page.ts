@@ -44,6 +44,7 @@ enum JoinForm {
 
 const JOIN_NOTICE_CLASS = 'join-notice';
 const JOIN_NEUTRAL_CLASS = 'join-notice-neutral';
+const JOIN_NOTE_CLASS = 'join-note';
 const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const SRCSET_LIST_SEPARATOR = ', ';
 const CLASS_SEPARATOR = ' ';
@@ -62,9 +63,9 @@ type LandingPage = { available: ({ siteKey, stamp }: { siteKey: string; stamp: s
 
 export type LandingChallengeKeys = { siteKey: string; stampSecret: string };
 
-type LandingChallenge = { widget: string; scriptTag: string; fieldsOf: (form: JoinForm) => string };
+type LandingChallenge = { widget: (form: JoinForm) => string; scriptTag: string; fieldsOf: (form: JoinForm) => string };
 
-const NO_CHALLENGE: LandingChallenge = { widget: '', scriptTag: '', fieldsOf: () => '' };
+const NO_CHALLENGE: LandingChallenge = { widget: () => '', scriptTag: '', fieldsOf: () => '' };
 
 const NOTICE_TEXT: Record<Exclude<LandingNotice, LandingNotice.None>, string> = {
   [LandingNotice.OpensSoon]: LANDING_COPY.join.opensSoon,
@@ -83,6 +84,7 @@ const PAGE_SCRIPT_COPY = {
   waitingForCheck: LANDING_COPY.join.waitingForCheck,
   unreachable: LANDING_COPY.join.unreachable,
   checkError: LANDING_COPY.join.checkError,
+  note: LANDING_COPY.join.note,
 };
 
 // NB ADR 0067: a join never navigates; it holds until the fill time, posts JSON, shows the outcome in the status line and resets the widget.
@@ -103,6 +105,8 @@ export const PAGE_SCRIPT = `{
     isBlocked: false,
     isSending: false,
     retries: 0,
+    isErrorShown: false,
+    clearsLineOnToken: false,
     hasSolved: widgetOf(form) !== null && tokenOf(form) !== '',
   }]));
   const stateOf = ({ hasToken, isBlocked, isSending }) => {
@@ -118,13 +122,20 @@ export const PAGE_SCRIPT = `{
     if (current === state.Ready) return buttonOf(form).removeAttribute('${ARIA_DISABLED}');
     buttonOf(form).setAttribute('${ARIA_DISABLED}', 'true');
   };
-  const showLine = ({ form, text, isNeutral }) => {
+  const showLine = ({ form, text, isNeutral, isError }) => {
+    progressOf.get(form).isErrorShown = Boolean(isError);
     const status = form.querySelector('[role="status"]');
     const dot = document.createElement('span');
     dot.className = 'notice-dot';
     dot.setAttribute('aria-hidden', 'true');
     status.className = isNeutral ? '${JOIN_NOTICE_CLASS} ${JOIN_NEUTRAL_CLASS}' : '${JOIN_NOTICE_CLASS}';
     status.replaceChildren(dot, text);
+  };
+  const showNote = (form) => {
+    const status = form.querySelector('[role="status"]');
+    progressOf.get(form).isErrorShown = false;
+    status.className = '${JOIN_NOTE_CLASS}';
+    status.replaceChildren(copy.note);
   };
   const answerOf = async (body) => {
     const controller = new AbortController();
@@ -145,7 +156,7 @@ export const PAGE_SCRIPT = `{
     progress.isSending = false;
     progress.hasToken = !progress.hasWidget;
     form.dataset.${JOIN_OUTCOME_ATTRIBUTE} = outcome;
-    showLine({ form, text: outcome === '${PageAnswer.Unreachable}' ? copy.unreachable : copy.lines[outcome], isNeutral: outcome !== '${JoinOutcome.Joined}' });
+    showLine({ form, text: outcome === '${PageAnswer.Unreachable}' ? copy.unreachable : copy.lines[outcome], isNeutral: outcome !== '${JoinOutcome.Joined}', isError: outcome === '${PageAnswer.Unreachable}' });
     if (outcome === '${JoinOutcome.Joined}') form.querySelector('[name="${EMAIL_FIELD_NAME}"]').value = '';
     if (retryAfterSeconds > 0) {
       progress.isBlocked = true;
@@ -172,26 +183,32 @@ export const PAGE_SCRIPT = `{
     progress.hasToken = !progress.hasWidget || tokenOf(form) !== '';
     progress.hasSolved = progress.hasSolved || (progress.hasWidget && progress.hasToken);
     if (progress.hasToken) progress.retries = 0;
+    if (progress.hasToken && progress.clearsLineOnToken && progress.isErrorShown) showNote(form);
+    if (progress.hasToken) progress.clearsLineOnToken = false;
     render(form);
   });
   window.${TOKEN_CALLBACK} = syncTokens;
   window.${EXPIRED_CALLBACK} = syncTokens;
-  window.${FAILURE_CALLBACK} = () => {
+  const failWidget = (form) => {
     syncTokens();
-    forms.forEach((form) => {
-      const progress = progressOf.get(form);
-      if (!progress.hasWidget || progress.hasToken || !navigator.onLine) return;
-      const canRetry = window.turnstile && progress.hasSolved && progress.retries < ${WAITLIST_CHECK_RETRY_MAX};
-      if (canRetry) {
-        progress.retries += 1;
-        return window.turnstile.reset(widgetOf(form));
-      }
-      showLine({ form, text: copy.checkError, isNeutral: true });
-    });
+    const progress = progressOf.get(form);
+    if (!progress.hasWidget || progress.hasToken || !navigator.onLine) return;
+    const canRetry = window.turnstile && progress.hasSolved && progress.retries < ${WAITLIST_CHECK_RETRY_MAX};
+    if (canRetry) {
+      progress.retries += 1;
+      progress.clearsLineOnToken = true;
+      return window.turnstile.reset(widgetOf(form));
+    }
+    showLine({ form, text: copy.checkError, isNeutral: true, isError: true });
   };
+  forms.forEach((form) => {
+    window['${FAILURE_CALLBACK}_' + form.id] = () => failWidget(form);
+  });
   addEventListener('online', () => forms.forEach((form) => {
     const progress = progressOf.get(form);
-    if (progress.hasWidget && !progress.hasToken && !progress.isSending && window.turnstile) window.turnstile.reset(widgetOf(form));
+    if (!progress.hasWidget || progress.hasToken || progress.isSending || !window.turnstile) return;
+    progress.clearsLineOnToken = true;
+    window.turnstile.reset(widgetOf(form));
   }));
   forms.forEach((form) => {
     render(form);
@@ -212,7 +229,7 @@ export const PAGE_SCRIPT = `{
     });
   });
   addEventListener('load', () => {
-    if (window.turnstile === undefined) forms.filter((form) => progressOf.get(form).hasWidget).forEach((form) => showLine({ form, text: copy.checkError, isNeutral: true }));
+    if (window.turnstile === undefined) forms.filter((form) => progressOf.get(form).hasWidget).forEach((form) => showLine({ form, text: copy.checkError, isNeutral: true, isError: true }));
     requestAnimationFrame(() => {
       const answered = document.getElementById(location.hash.slice(1));
       const notice = answered === null ? null : answered.querySelector('.${JOIN_NOTICE_CLASS}');
@@ -256,7 +273,7 @@ function windowPicture(): string {
 
 function joinStatusHtml({ form, notice }: { form: JoinForm; notice: LandingNotice }): string {
   if (notice === LandingNotice.None)
-    return `<p id="${form}-notice" class="join-note" role="status">${escapedHtml(LANDING_COPY.join.note)}</p>`;
+    return `<p id="${form}-notice" class="${JOIN_NOTE_CLASS}" role="status">${escapedHtml(LANDING_COPY.join.note)}</p>`;
   const noticeClass = notice === LandingNotice.Joined ? JOIN_NOTICE_CLASS : `${JOIN_NOTICE_CLASS} ${JOIN_NEUTRAL_CLASS}`;
   return `<p id="${form}-notice" class="${noticeClass}" role="status" tabindex="-1"><span class="notice-dot" aria-hidden="true"></span>${escapedHtml(NOTICE_TEXT[notice])}</p>`;
 }
@@ -274,7 +291,8 @@ function honeypotAndStampHtml({ form, stamp }: { form: JoinForm; stamp: string }
 // NB ADR 0046: the site key sits in a data attribute, so the page script stays one fixed source with one hash.
 function challengeOf({ siteKey, stamp }: { siteKey: string; stamp: string }): LandingChallenge {
   return {
-    widget: `<div class="${JOIN_CHECK_CLASS}"><div class="${WIDGET_CLASS}" data-sitekey="${siteKey}" data-action="${TurnstileAction.Waitlist}" data-appearance="${WIDGET_APPEARANCE}" data-size="${WIDGET_SIZE}" data-theme="${WIDGET_THEME}" data-callback="${TOKEN_CALLBACK}" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${EXPIRED_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div></div>\n`,
+    widget: (form) =>
+      `<div class="${JOIN_CHECK_CLASS}"><div class="${WIDGET_CLASS}" data-sitekey="${siteKey}" data-action="${TurnstileAction.Waitlist}" data-appearance="${WIDGET_APPEARANCE}" data-size="${WIDGET_SIZE}" data-theme="${WIDGET_THEME}" data-callback="${TOKEN_CALLBACK}" data-error-callback="${FAILURE_CALLBACK}_${form}" data-expired-callback="${EXPIRED_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}_${form}"></div></div>\n`,
     scriptTag: `${TURNSTILE_SCRIPT_TAG}\n`,
     fieldsOf: (form) => honeypotAndStampHtml({ form, stamp }),
   };
@@ -298,7 +316,7 @@ function joinFormHtml({
 <input id="${inputId}" class="join-input" name="${EMAIL_FIELD_NAME}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(LANDING_COPY.join.emailPlaceholder)}" required>
 <button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(LANDING_COPY.join.submitting)}">${escapedHtml(LANDING_COPY.join.submit)}</button>
 </div>
-${challenge.widget}${challenge.fieldsOf(form)}${joinStatusHtml({ form, notice })}
+${challenge.widget(form)}${challenge.fieldsOf(form)}${joinStatusHtml({ form, notice })}
 </form>`;
 }
 

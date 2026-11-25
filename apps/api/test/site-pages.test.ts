@@ -354,7 +354,7 @@ describe('the landing', () => {
     const named = FAILURE_CALLBACK_ATTRIBUTES.map((attribute) => new RegExp(`${attribute}="([^"]*)"`).exec(widget)?.[1]);
     expect(named).toEqual(FAILURE_CALLBACK_ATTRIBUTES.map(() => `${FAILURE_CALLBACK}_join`));
     expect(widget).toContain(`data-expired-callback="${EXPIRED_CALLBACK}"`);
-    expect(pageScriptOf(html)).toContain(`window[\`${FAILURE_CALLBACK}_\${form.id}\`] =`);
+    expect(pageScriptOf(html)).toContain(`window['${FAILURE_CALLBACK}_' + form.id] =`);
     expect(pageScriptOf(html)).toContain(`window.${EXPIRED_CALLBACK} =`);
   });
 
@@ -438,7 +438,11 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
     const { html } = await stampedLandingPage(LandingNotice.None);
     const widgets = html.match(WIDGET_PATTERN);
     expect(widgets).toHaveLength(JOIN_FORMS.length);
-    widgets?.forEach((widget) => WIDGET_ATTRIBUTES.forEach((attribute) => expect(widget).toContain(attribute)));
+    JOIN_FORMS.forEach(({ id }, index) => {
+      WIDGET_ATTRIBUTES.map((attribute) => attribute.replace('_join', `_${id}`)).forEach((attribute) =>
+        expect(widgets?.[index]).toContain(attribute),
+      );
+    });
   });
 
   test('each form holds its own status line with its note, ready for the answer', async () => {
