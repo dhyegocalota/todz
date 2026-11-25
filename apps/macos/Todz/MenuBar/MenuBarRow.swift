@@ -44,8 +44,8 @@ struct MenuBarRow: View {
             return .handled
         }
         .onKeyPress(characters: CharacterSet(charactersIn: dayCloseOutcomes.keys.joined())) { press in
-            let isUnmodified = press.modifiers.isEmpty
-            guard isActing, isUnmodified, dayClose.acceptsKeyActions, let outcome = dayCloseOutcomes[press.characters] else { return .ignored }
+            let isActionable = isActing && press.modifiers.isEmpty && dayClose.acceptsKeyActions
+            guard isActionable, let outcome = dayCloseOutcomes[press.characters] else { return .ignored }
             act(outcome)
             return .handled
         }

@@ -1,6 +1,7 @@
 import Foundation
 
-private let minutesOfADay = 0..<(24 * 60)
+private let minutesOfADay = 0..<(DayCloseSchedule.hoursPerDay * DayCloseSchedule.minutesPerHour)
+private let defaultHour = 18
 
 public enum DayClosePreference {
     public static let isOnStorageKey = "closesTheDay"
@@ -8,7 +9,7 @@ public enum DayClosePreference {
     public static let lastClosedDayStorageKey = "lastClosedDay"
     public static let isOnByDefault = false
     // NB ADR 0055: the day closes at 18:00 in the Mac's time zone until the owner picks another time.
-    public static let minutesAfterMidnightByDefault = 18 * 60
+    public static let minutesAfterMidnightByDefault = defaultHour * DayCloseSchedule.minutesPerHour
 
     public static func registerDefaults(in defaults: UserDefaults) {
         defaults.register(defaults: [isOnStorageKey: isOnByDefault, timeStorageKey: minutesAfterMidnightByDefault])

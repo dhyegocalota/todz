@@ -1,10 +1,12 @@
 import Foundation
 
-private let minutesPerHour = 60
 private let tomorrowOffset = 1
 private let instantFailure = "a Gregorian calendar date always has a time of day"
 
 public enum DayCloseSchedule {
+    static let minutesPerHour = 60
+    static let hoursPerDay = 24
+
     // NB ADR 0055: the day closes at the owner's time or at the first chance after it the same day, never twice a day.
     public static func decision(
         at now: Date,

@@ -12,19 +12,23 @@ struct MenuBarDayCloseActions: View {
     var body: some View {
         let outcome = windowState.lingers.outcome(of: task.key)
         if outcome != .done {
-            HStack {
-                Image(systemName: checkboxSymbol)
-                    .hidden()
-                if let outcome {
-                    Text(MenuBarCopy.result(of: outcome))
-                }
-                if outcome == nil {
-                    actionButtons
-                }
-            }
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+            row(outcome: outcome)
         }
+    }
+
+    private func row(outcome: LingerOutcome?) -> some View {
+        HStack {
+            Image(systemName: checkboxSymbol)
+                .hidden()
+            if let outcome {
+                Text(MenuBarCopy.result(of: outcome))
+            }
+            if outcome == nil {
+                actionButtons
+            }
+        }
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
     }
 
     private var actionButtons: some View {
