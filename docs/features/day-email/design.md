@@ -24,7 +24,7 @@ Two surfaces: a new Settings row and a new mail. Nothing else in the app changes
 └─────────────────────────────────────────────────────┘
 ```
 
-- A fifth row in the same section, after Close the day, built like it: `LabeledContent` whose content is an `HStack` of a `.stepperField` `DatePicker` (hour and minute, labels hidden) and a `.switch` `Toggle` (labels hidden); the label is the title and a subtitle `Text` with `lineLimit(subtitleLines, reservesSpace: true)` (option O1).
+- A row in the same section after Close the day, built like it. `morning-glance` inserts its own row after Close the day too; the order is Close the day, Morning glance, Email me my day, and whichever lane merges second keeps that order and updates the Settings height test. The row is `LabeledContent` whose content is an `HStack` of a `.stepperField` `DatePicker` (hour and minute, labels hidden) and a `.switch` `Toggle` (labels hidden); the label is the title and a subtitle `Text` with `lineLimit(subtitleLines, reservesSpace: true)` (option O1).
 - Both values are the server's (`Owner.dayEmail`, `Owner.dayEmailMinutes`), held by `AppModel`, never in `@AppStorage`. The picker shows the minutes as a time in the model's time zone, the one the app sends the server, so 07:00 on the picker is 07:00 where the mail is computed.
 - The time picker is enabled only when the switch is on and the row can change (option O2).
 
@@ -45,7 +45,7 @@ No write is queued offline. A 401 during the save signs out the usual way.
 
 ### 1.2 The mail
 
-From `todz <noreply@todz.app>`, reply-to `reply+<secret>@todz.app`, on the shared layout (the lockup on `#0E1020`, the white card, the mint accent), no button.
+From `todz <noreply@todz.app>`, reply-to `reply+<secret>@todz.app`, with `Auto-Submitted: auto-generated`, on the shared layout (the lockup on `#0E1020`, the white card, the mint accent), no button.
 
 ```
 ┌──────────────────────── todz ────────────────────────┐
@@ -56,8 +56,8 @@ From `todz <noreply@todz.app>`, reply-to `reply+<secret>@todz.app`, on the share
 │  T-31 Ship the beta · Work / todz                     │
 │  and 2 more.                                          │   muted, only when more
 │                                                       │
-│  Reply with one line to add it to Today, in the       │   reply hint
-│  Inbox of Personal.                                   │
+│  Reply from the address you sign in with, in one      │   reply hint
+│  line, to add it to Today in the Inbox of Personal.   │
 │ ───────────────────────────────────────────────────── │
 │  Sent at 07:00 because Email me my day is on in todz  │   footer
 │  Settings. Turn it off there.                         │
@@ -142,7 +142,7 @@ Empty when written; the lead records each answer here before the plan. The loop 
 | subject | `Your day: {{count}} due` | `Your day: nothing due` |
 | preview | `{{count}} due today in todz. Reply to add a task.` | `Nothing due today in todz. Reply to add a task.` |
 | heading | `{{count}} due today` | `Nothing due today` |
-| replyHint | `Reply with one line to add it to Today, in the Inbox of {{workspace}}.` | same |
+| replyHint | `Reply from the address you sign in with, in one line, to add it to Today in the Inbox of {{workspace}}.` | same |
 | footer | `Sent at {{time}} because Email me my day is on in todz Settings. Turn it off there.` | same |
 
 **DAY_MAIL_COPY** (`apps/api/src/emails/day-mail-copy.ts`): moreTasks(count) `and N more.` · overdue ` · overdue` · line separator ` · ` · workspace separator ` / `.
