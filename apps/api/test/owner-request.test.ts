@@ -1,3 +1,4 @@
+import { APP_VERSION_HEADER, MINIMUM_APP_VERSION } from '@todz/types';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -37,7 +38,7 @@ async function workspaceCount(ownerId: string): Promise<number> {
 function streamedRequest({ path, headers, body }: { path: string; headers: Record<string, string>; body: string }): Request {
   return new Request(`${LOCAL_ORIGIN}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': JSON_MEDIA_TYPE, ...headers },
+    headers: { [APP_VERSION_HEADER]: MINIMUM_APP_VERSION, 'Content-Type': JSON_MEDIA_TYPE, ...headers },
     body: new Blob([body]).stream(),
   });
 }
