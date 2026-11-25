@@ -125,7 +125,7 @@ pnpm --filter @todz/api server:deploy
 
 Then build the app again as in step 7; it keeps the server you pasted.
 
-On a server that already has owners, an owner who never touched Email me my day gets it only after the day email default step of the deploy runbook, which waits until no such owner would be mailed; new owners get it at once.
+On a server that already has owners, an owner who never touched Email me my day gets it only after you turn that default on for them by hand, which is safe once no such owner would be mailed; new owners get it at once.
 
 Migrations only move forward. Never roll back to a version from before the sign-in guard, whether with `wrangler rollback` or the dashboard's Deployments page. To close sign-in, delete the secret:
 
