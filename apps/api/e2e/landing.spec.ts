@@ -503,6 +503,19 @@ test.describe('join', () => {
     await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'waiting');
     await context.setOffline(false);
     await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'ready');
+    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.note);
+  });
+
+  test('an error of one widget resets that form only and leaves its sibling alone', async ({ page }) => {
+    await page.goto(SitePath.Landing);
+    await expect(page.locator(`form#${Fragment.Final} button[type="submit"]`)).not.toHaveAttribute(ARIA_DISABLED, 'true');
+    await page.evaluate(() => {
+      document.querySelectorAll('input[name="cf-turnstile-response"]').forEach((token) => token.remove());
+      Reflect.get(window, 'waitlistChallengeFailed_final')();
+    });
+    await expect(page.locator('html')).toHaveAttribute(RESET_COUNT_ATTRIBUTE, '1');
+    await expect(page.locator(`form#${Fragment.Final}`)).toHaveAttribute('data-join-state', 'ready');
+    await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'waiting');
   });
 
   test('a refusal gets a neutral dot and a join keeps the green one', async ({ page }) => {

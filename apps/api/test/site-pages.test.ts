@@ -24,7 +24,8 @@ const TURNSTILE_SCRIPT_TAG = '<script src="https://challenges.cloudflare.com/tur
 const FAILURE_CALLBACK = 'waitlistChallengeFailed';
 const EXPIRED_CALLBACK = 'waitlistTokenExpired';
 const FAILURE_CALLBACK_ATTRIBUTES = ['data-error-callback', 'data-timeout-callback'];
-const WIDGET_HTML = `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="always" data-size="flexible" data-theme="auto" data-callback="waitlistTokenReady" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${EXPIRED_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div>`;
+const widgetHtmlOf = (form: string) =>
+  `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="always" data-size="flexible" data-theme="auto" data-callback="waitlistTokenReady" data-error-callback="${FAILURE_CALLBACK}_${form}" data-expired-callback="${EXPIRED_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}_${form}"></div>`;
 const WIDGET_PATTERN = /<div class="cf-turnstile"[^>]*><\/div>/g;
 const CAPSULE_END = '</button>\n</div>';
 const NOTICE_PATTERN = /<p id="([a-z]+)-notice" [^>]*role="status"[^>]*tabindex="-1"[^>]*>[\s\S]*?<\/span>([^<]*)<\/p>/;
@@ -340,8 +341,8 @@ describe('the landing', () => {
       const forms = formsOf(html);
       expect(forms).toHaveLength(JOIN_FORMS.length);
       expect(html.match(WIDGET_PATTERN)).toHaveLength(JOIN_FORMS.length);
-      forms.forEach((form) => {
-        expect(form).toContain(`${CAPSULE_END}\n<div class="join-check">${WIDGET_HTML}</div>\n`);
+      JOIN_FORMS.forEach(({ id }, index) => {
+        expect(forms[index]).toContain(`${CAPSULE_END}\n<div class="join-check">${widgetHtmlOf(id)}</div>\n`);
       });
     },
   );
@@ -351,9 +352,9 @@ describe('the landing', () => {
     const widget = html.match(WIDGET_PATTERN)?.[0];
     if (widget === undefined) throw new Error('the page has no widget');
     const named = FAILURE_CALLBACK_ATTRIBUTES.map((attribute) => new RegExp(`${attribute}="([^"]*)"`).exec(widget)?.[1]);
-    expect(named).toEqual(FAILURE_CALLBACK_ATTRIBUTES.map(() => FAILURE_CALLBACK));
+    expect(named).toEqual(FAILURE_CALLBACK_ATTRIBUTES.map(() => `${FAILURE_CALLBACK}_join`));
     expect(widget).toContain(`data-expired-callback="${EXPIRED_CALLBACK}"`);
-    expect(pageScriptOf(html)).toContain(`window.${FAILURE_CALLBACK} =`);
+    expect(pageScriptOf(html)).toContain(`window['${FAILURE_CALLBACK}_' + form.id] =`);
     expect(pageScriptOf(html)).toContain(`window.${EXPIRED_CALLBACK} =`);
   });
 
@@ -389,9 +390,9 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
     'data-theme="auto"',
     'data-action="waitlist"',
     'data-callback="waitlistTokenReady"',
-    'data-error-callback="waitlistChallengeFailed"',
+    'data-error-callback="waitlistChallengeFailed_join"',
     'data-expired-callback="waitlistTokenExpired"',
-    'data-timeout-callback="waitlistChallengeFailed"',
+    'data-timeout-callback="waitlistChallengeFailed_join"',
   ];
   const FIRST_RENDER = 1_790_000_000_000;
   const SECOND_RENDER = FIRST_RENDER + MILLISECONDS_PER_SECOND;
@@ -437,7 +438,11 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
     const { html } = await stampedLandingPage(LandingNotice.None);
     const widgets = html.match(WIDGET_PATTERN);
     expect(widgets).toHaveLength(JOIN_FORMS.length);
-    widgets?.forEach((widget) => WIDGET_ATTRIBUTES.forEach((attribute) => expect(widget).toContain(attribute)));
+    JOIN_FORMS.forEach(({ id }, index) => {
+      WIDGET_ATTRIBUTES.map((attribute) => attribute.replace('_join', `_${id}`)).forEach((attribute) =>
+        expect(widgets?.[index]).toContain(attribute),
+      );
+    });
   });
 
   test('each form holds its own status line with its note, ready for the answer', async () => {
