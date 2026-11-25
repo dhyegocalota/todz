@@ -57,4 +57,4 @@ One lane: every file is in the app, and the gate's type is what the intent and S
 - [x] **Reviewer:** NO on one IMPORTANT (a release claimable during a new Focus), fixed red-first at 1dfd970 / 708bd6c with the doc MINORs; re-check WITH RESERVATIONS on one MINOR (restore agent-nudge's cited shot), done, so YES; refutation recorded in `test-plan.md`.
 - [x] **Security reviewer:** CLEAR.
 - [x] **/check-ui:** the Settings row (light, dark) and the todz filter sheet, from the real Debug build (Orca).
-- [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
+- [x] **/open-pr (evidence: PR #34; verify 8 gates green at 35c1253):** gates passed, learnings sweep stated, PR opened.

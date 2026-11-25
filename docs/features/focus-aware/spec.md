@@ -1,6 +1,6 @@
 # Focus aware
 
-**Status:** In review
+**Status:** Shipped 2026-11-25
 **Tier:** 🟡 (a new App Intent the system runs, a shared gate every later proactive surface goes through, a Settings row)
 **Owner approval:** approved 2026-11-25 by the owner's request to the loop (2026-11-24, ~20:30: "1,4,5,6,7,9,10 e também 11 … seja criativo, add no cron e só para quando tiver pronto"; every item "features opcionais", off by default, no push notifications), recorded in `todz-loop/STATE.md` "Owner requirements queued" → `proactive-day` item 5. Taken before `day-close` because it is the shared gate the others respect (the loop's call). The mechanism is the loop's call in [ADR 0054](../../adr/0054-the-app-learns-focus-through-a-todz-focus-filter-not-the-focus-status-api.md).
 **ADRs:** [0054](../../adr/0054-the-app-learns-focus-through-a-todz-focus-filter-not-the-focus-status-api.md), [0053](../../adr/0053-agents-mention-today-s-tasks-in-next-when-the-owner-turns-it-on.md), [0036](../../adr/0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md)
