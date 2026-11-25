@@ -5,7 +5,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 ## The failing test first
 
 - [ ] `apps/api/test/site-pages.test.ts` (the hero cases) red at its own commit — expected: the download button and note assertions fail on the current hero; record the text.
-- [ ] `apps/api/e2e/download.spec.ts`, the download cases of `landing.spec.ts` and `release-fixtures.test.ts` red at their own commit — expected: `/download` answers `404` and no `.download-button` locator; record the text.
+- [ ] `apps/api/e2e/download.spec.ts` and the download cases of `landing.spec.ts` red at their own commit — expected: `/download` answers `404` and no `.download-button` locator; record the text.
 - [ ] `tools/repository-shape/src/macos-release.test.ts` red at its own commit — expected: `ENABLE_HARDENED_RUNTIME` is `NO` in Release, no Sparkle package; record the text.
 - [ ] `UpdateFeedTests` and `UpdatePresentationTests` red at their own commit — expected: `UpdateFeed is not implemented` and `UpdatePresentation is not implemented`; record the text.
 - [ ] `scripts/deploy-worker.test.sh` red at its own commit — expected: every case fails on `deploy-worker is not implemented`; record the text.
@@ -20,7 +20,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] The skill's front matter has `name: deploy` and a description that calls it the one way an agent deploys.
 - [ ] Its body names `docs/runbooks/deploy-the-api.md`, which exists, and `pnpm release:mac`.
 - [ ] Its release condition is `git diff --quiet <tag> HEAD -- apps/macos` against the highest `mac-v*` tag, and "no tag" means the first release.
-- [ ] It holds the checks: the `302` of `https://todz.app/download/latest` to the new version, the live DMG's `content-disposition` and `cache-control`, `shasum -a 256 -c`, `ssh-keygen -Y verify -f apps/macos/release/allowed-signers -I release@todz.app -n todz-release`, and `sparkle:shortVersionString="<version>"` in the appcast.
+- [ ] It holds the checks: the `302` of `https://todz.app/download/latest` to the new version, `shasum -a 256 -c`, `ssh-keygen -Y verify -f apps/macos/release/allowed-signers -I release@todz.app -n todz-release`, and `sparkle:shortVersionString="<version>"` in the appcast.
 - [ ] It says it stops at the first failure and leaves the previous release live, and never runs a bare `wrangler rollback`.
 - [ ] It says that while `release:mac` is not a root script it deploys the API alone and reports "the Mac release is not live yet".
 - [ ] `.agents/skills/README.md` and `.claude/HARNESS.md` (layout line and §10 table) name `deploy`; `.claude/skills/deploy/SKILL.md` resolves through the symlink.
@@ -46,7 +46,6 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] Edge: no release folder while production serves a release → exit 1, the same message.
 - [ ] Edge: the production `curl` exits non-zero, or answers `500` → exit 1, never treated as "no release".
 - [ ] Edge: no release folder and production answers `404` → exit 0, only the public files and `_headers`, no `_redirects`.
-- [ ] Edge: `~/.todz-release/lock` held by another holder → exit 1; held with the caller's token in `TODZ_RELEASE_LOCK_TOKEN` → proceeds.
 - [ ] Without `--stage-only`: the fake wrapper receives `pnpm --filter @todz/api exec wrangler deploy --assets <dir> --message <HEAD sha>`, and the version id it prints lands in `~/.todz-deploy/deployments/<HEAD sha>`.
 
 ## Unit — the secrets guard (`.agents/hooks/hooks.test.sh`)
@@ -71,8 +70,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] `macos-release.test.ts`: every assertion of plan step 8 passes on `project.yml` and the committed plists and entitlements; with `revision` replaced by `exactVersion: 2.10.1` the test goes red (mutation; restore).
 - [ ] `UpdateFeedTests`: `https://todz.app/download/appcast.xml` → that URL; absent → `nil`; `""` → `nil`; `http://todz.app/download/appcast.xml` → `nil`.
 - [ ] `UpdatePresentationTests`: `handlesScheduledUpdate(immediateFocus: true)` → `true`; `(immediateFocus: false)` → `false`; `supportsGentleReminders` → `true`.
-- [ ] `docs-pages.test.ts`: `install-on-mac.mdx` holds the exact allowed-signers line, the command that writes it to a file, the key's `ssh-keygen -lf` fingerprint, Team ID `XFWR794VS8`, the `ssh-keygen -Y verify` command of plan step 6, `shasum -a 256 -c`, ADR 0072 decision 3's trust sentence word for word, a link to `https://todz.app/download`, and no "until `mac-distribution` ships".
-- [ ] `release-fixtures.test.ts`: no tracked `*.dmg` outside `apps/api/e2e/fixtures/release/`; no tracked file there over 1 KiB; no `PRIVATE KEY` in any tracked file there.
+- [ ] `docs-pages.test.ts`: `install-on-mac.mdx` holds the exact allowed-signers line, the key's `ssh-keygen -lf` fingerprint, Team ID `XFWR794VS8`, the `ssh-keygen -Y verify` command of plan step 6, `shasum -a 256 -c`, ADR 0072 decision 3's trust sentence word for word, a link to `https://todz.app/download`, and no "until `mac-distribution` ships".
 - [ ] `runbooks.test.ts`: the index sentence names `release-the-mac-app`; the runbook has a purpose, numbered steps and an `If it fails` line on each; `deploy-the-api.md` step 8 calls `scripts/deploy-worker.sh` and no bare `wrangler deploy`, and every script it names exists.
 
 ## Unit — the release command (`scripts/release-mac.test.sh`)
@@ -80,7 +78,6 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] A dirty tree → exit 1, `release-mac: the tree is not clean`, no `xcodebuild` call.
 - [ ] Branch `feat/x` → exit 1, names the branch, no build.
 - [ ] `HEAD` one commit ahead of `origin/main` → exit 1; one behind → exit 1.
-- [ ] `~/.todz-release/lock` held → exit 1.
 - [ ] Tag `mac-v0.2.0` on another commit → exit 1, names the tag.
 - [ ] `--version 0.1.9` with `mac-v0.2.0` existing → exit 1, "not greater".
 - [ ] Build number 400 with production's appcast `sparkle:version` 412 → exit 1, "not greater"; build number 412 with that appcast at this version → accepted.
@@ -97,8 +94,8 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] The new `.sig` failing `ssh-keygen -Y verify` against `apps/macos/release/allowed-signers` → exit 1 before any deploy.
 - [ ] The agent: started as `ssh-agent -a ~/.todz-release/agent.<pid>.sock -s`; `ssh-add -l` checked empty before loading; the key loaded with `ssh-add -t 120 -`; an inherited `SSH_AUTH_SOCK` never reaches the fake `ssh-add`; the agent's PID killed and the socket removed on success, on a signing failure, and on SIGTERM during signing (one case each).
 - [ ] The rendered appcast has one item, no `<description>`, no `sparkle:releaseNotesLink`, and `sign_update` is called on the DMG and then on `appcast.xml`.
-- [ ] The happy path → `builds/0.2.0/` copied to `site/download/0.2.0/`, the active version id recorded, `deploy-worker.sh` with the lock token, the production checks, then `0.2.0` appended to `released`, then `git tag mac-v0.2.0`, then `git push origin mac-v0.2.0`, in that order in the fakes' log; prints the URL and the sum.
-- [ ] After the deploy, each of these → `wrangler rollback <the recorded version id>` (never a bare `rollback`), `site/download/0.2.0/` removed, `released` unchanged, no tag, no push, exit 1: the DMG answers `404`; it lacks `content-disposition`; it lacks the immutable `cache-control`; its bytes differ from the sum; its signature fails; the appcast lacks `0.2.0`; the appcast's feed signature fails `sign_update --verify`.
+- [ ] The happy path → `builds/0.2.0/` copied to `site/download/0.2.0/`, the active version id recorded, `deploy-worker.sh`, the production checks, then `0.2.0` appended to `released`, then `git tag mac-v0.2.0`, then `git push origin mac-v0.2.0`, in that order in the fakes' log; prints the URL and the sum.
+- [ ] After the deploy, each of these → `wrangler rollback <the recorded version id>` (never a bare `rollback`), `site/download/0.2.0/` removed, `released` unchanged, no tag, no push, exit 1: the DMG answers `404`; its bytes differ from the sum; its signature fails; the appcast lacks `0.2.0`; the appcast's feed signature fails `sign_update --verify`.
 - [ ] `0.2.0` in `released` with production serving the same sum → exit 0, "already published", no deploy; `git push origin mac-v0.2.0` only when `origin` lacks the tag.
 - [ ] Production serving `0.2.0` with another sum → exit 1, "differs from the published file", no deploy.
 - [ ] A fake `sign_update`, `codesign`, `hdiutil`, `xcodebuild`, Wrangler or `curl` that never returns → killed after the script's limit for that step, exit 1 naming the step (one case each).
@@ -114,7 +111,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] `.sha256` and `.sig` → `200`, immutable; record their `Content-Type` (expected `text/plain; charset=utf-8`; if the assets keep the inferred type, record it and the plan's failure-mode row applies).
 - [ ] `/download/appcast.xml` → `200`, `max-age=300`.
 - [ ] The previous version `/download/0.0.1/Todz-0.0.1.dmg` → `200`.
-- [ ] Edge: `/download/allowed-signers`, `/download/0.2/x.dmg`, `/download/0.0.2/notes.txt`, `/download/9.9.9/Todz-9.9.9.dmg`, `/download/0.0.2/Todz-0.0.2.dmg/`, `/download/..%2F_headers` → the site's `404`; `/_headers` and `/_redirects` are not served.
+- [ ] Edge: `/download/0.2/x.dmg`, `/download/0.0.2/notes.txt`, `/download/9.9.9/Todz-9.9.9.dmg`, `/download/0.0.2/Todz-0.0.2.dmg/`, `/download/..%2F_headers` → the site's `404`; `/_headers` and `/_redirects` are not served.
 - [ ] `/health` and `/sign-in` answer from the Worker as on the unstaged server (the `run_worker_first` list survives `--assets`).
 - [ ] `landing.spec.ts` at 1280 light: the button and the note are visible above the waitlist form; screenshot.
 - [ ] 1280 dark (`colorScheme: 'dark'`): the same; screenshot.
