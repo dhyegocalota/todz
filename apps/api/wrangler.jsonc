@@ -16,6 +16,7 @@
     "EMAIL_SENDER": "cloudflare",
     "PUBLIC_ORIGIN": "https://api.todz.app",
     "SITE_ORIGIN": "https://todz.app",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAGSI2K7Qe9Vad2nL",
   },
   "d1_databases": [
     {
