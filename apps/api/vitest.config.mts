@@ -5,6 +5,7 @@ const LOADED_MACHINE_TEST_TIMEOUT_MS = 30_000;
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
 const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
 const TURNSTILE_TEST_SECRET_KEY = '1x0000000000000000000000000000000AA';
+const TEST_SERVER_VERSION = '2026.11.25+0000000';
 const NODE_TESTS = ['test/emails/**/*.test.ts', 'test/site/**/*.test.ts', 'test/server/**/*.test.ts', 'test/brand-asset.test.ts'];
 
 export default defineConfig(async () => {
@@ -13,6 +14,7 @@ export default defineConfig(async () => {
     test: {
       projects: [
         {
+          define: { TODZ_SERVER_VERSION: JSON.stringify(TEST_SERVER_VERSION) },
           plugins: [
             cloudflareTest({
               wrangler: { configPath: './wrangler.jsonc' },
