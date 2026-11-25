@@ -13,6 +13,12 @@ const TURNSTILE_SOLVE = `const solveWidget = (widget) => {
   token.name = '${TURNSTILE_RESPONSE_FIELD}';
   token.value = '${TURNSTILE_DUMMY_TOKEN}';
   widget.append(token);
+  const frame = document.createElement('div');
+  frame.className = 'stub-turnstile-frame';
+  frame.style.width = '100%';
+  frame.style.minWidth = '300px';
+  frame.style.height = '65px';
+  widget.append(frame);
   const solved = window[widget.dataset.callback];
   if (typeof solved === 'function') solved(token.value);
 };
@@ -22,7 +28,7 @@ const TURNSTILE_RESET = `document.documentElement.dataset.${RESET_COUNT_PROPERTY
 window.turnstile = {
   reset: (widget) => {
     document.documentElement.dataset.${RESET_COUNT_PROPERTY} = String(Number(document.documentElement.dataset.${RESET_COUNT_PROPERTY}) + 1);
-    widget.querySelectorAll('input[name="${TURNSTILE_RESPONSE_FIELD}"]').forEach((token) => token.remove());
+    widget.querySelectorAll('input[name="${TURNSTILE_RESPONSE_FIELD}"], .stub-turnstile-frame').forEach((token) => token.remove());
     setTimeout(() => solveWidget(widget), 0);
   },
 };`;

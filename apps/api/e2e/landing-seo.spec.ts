@@ -4,6 +4,7 @@ import { DISCOVERY_COPY } from '../src/site/discovery-copy';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { OPEN_GRAPH_IMAGE, SITE_ICONS } from '../src/site/site-icons';
 import { DOCS_URL, DiscoveryPath, MCP_URL } from '../src/site/site-urls';
+import { WAITLIST_FILL_HOLD_MS } from '@todz/types';
 import { WEBMCP_COPY, WebMcpToolName } from '../src/site/webmcp-copy';
 import { WEBMCP_CHECK_WAIT_MS } from '../src/site/webmcp-script';
 import {
@@ -149,15 +150,42 @@ test.describe('WebMCP tools', () => {
     page.on('request', (request) => request.method() === 'POST' && posts.push(request.url()));
     await page.clock.install();
     await page.goto(LANDING_PATH);
+    const typedAddress = uniqueAddress();
+    await page.locator('#join-email').fill(typedAddress);
     const answers: string[] = [];
     await page.exposeFunction('reportToolAnswer', (text: string) => answers.push(text));
     await page.evaluate(
       ([name, input]) => void window.callTool(String(name), input as Record<string, string>).then((text) => window.reportToolAnswer(text)),
-      [WebMcpToolName.Join, { email: uniqueAddress() }],
+      [WebMcpToolName.Join, { email: `other.${uniqueAddress()}` }],
     );
     await page.clock.fastForward(WEBMCP_CHECK_WAIT_MS);
     await expect.poll(() => answers).toEqual([WEBMCP_COPY.answers.checkTimedOut]);
+    await expect(page.locator('#join-email')).toHaveValue(typedAddress);
     expect(posts).toEqual([]);
+  });
+
+  test('join_waitlist answers try again, not the timeout, when the form is waiting out a Retry-After', async ({ page }) => {
+    await page.route(`**${JOIN_PATH}`, (route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill({ status: 429, contentType: 'application/json', headers: { 'Retry-After': '60' }, body: '{"outcome":"try-again"}' })
+        : route.continue(),
+    );
+    await page.clock.install();
+    await page.goto(LANDING_PATH);
+    await page.clock.fastForward(WAITLIST_FILL_HOLD_MS);
+    const answers: string[] = [];
+    await page.exposeFunction('reportToolAnswer', (text: string) => answers.push(text));
+    const callJoin = () =>
+      page.evaluate(
+        ([name, input]) =>
+          void window.callTool(String(name), input as Record<string, string>).then((text) => window.reportToolAnswer(text)),
+        [WebMcpToolName.Join, { email: uniqueAddress() }],
+      );
+    await callJoin();
+    await expect.poll(() => answers).toEqual([WEBMCP_COPY.answers.tryAgain]);
+    await callJoin();
+    await page.clock.fastForward(WEBMCP_CHECK_WAIT_MS);
+    await expect.poll(() => answers).toEqual([WEBMCP_COPY.answers.tryAgain, WEBMCP_COPY.answers.tryAgain]);
   });
 
   test('join_waitlist refuses an invalid address and posts nothing', async ({ page }) => {

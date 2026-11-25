@@ -1,4 +1,4 @@
-import { MILLISECONDS_PER_SECOND, WAITLIST_FILL_HOLD_MS } from '@todz/types';
+import { MILLISECONDS_PER_SECOND, WAITLIST_FILL_HOLD_MS, WAITLIST_JOIN_TIMEOUT_MS } from '@todz/types';
 import { type ConsoleMessage, type Locator, type Page, type Request, type Route, expect, test } from '@playwright/test';
 import { ARIA_DISABLED, HONEYPOT_FIELD_NAME, STAMP_FIELD_NAME } from '../src/site/join-form-markup';
 import { LANDING_COPY } from '../src/site/landing-copy';
@@ -54,6 +54,7 @@ const HONEYPOT_FIELD = HONEYPOT_FIELD_NAME;
 const HONEYPOT_VALUE = 'https://spam.example';
 const STAMP_PATTERN = /^\d{13}\.[A-Za-z0-9_-]{43}$/;
 const POLICY_HEADER = 'content-security-policy';
+const WIDGET_FRAME_PATTERN = /<div class="join-check">.*?<\/div><\/div>/gs;
 const UNSAFE_INLINE = "'unsafe-inline'";
 const CONNECT_DIRECTIVE = "connect-src 'self'";
 const ANSWERED_LINES: { name: string; answer: (route: Route) => Promise<void>; line: string }[] = [
@@ -402,8 +403,8 @@ test.describe('join', () => {
     }, HONEYPOT_VALUE);
     await submitForm({ page, form: Fragment.Hero, address });
     await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    expect(mailCountTo(address)).toBe(0);
     await page.reload();
+    expect(mailCountTo(address)).toBe(0);
     await submitForm({ page, form: Fragment.Hero, address });
     await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
     await expect.poll(() => mailCountTo(address)).toBe(1);
@@ -423,6 +424,7 @@ test.describe('join', () => {
     const patientPage = await patientContext.newPage();
     await patientPage.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: TURNSTILE_STUB }));
     await patientPage.goto(SitePath.Landing);
+    expect(mailCountTo(address)).toBe(0);
     await submitForm({ page: patientPage, form: Fragment.Hero, address });
     await expect(patientPage.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
     await expect.poll(() => mailCountTo(address)).toBe(1);
@@ -440,6 +442,44 @@ test.describe('join', () => {
         await expect(page.locator('html')).toHaveAttribute(RESET_COUNT_ATTRIBUTE, '1');
       });
     });
+  });
+
+  test('a join the server never answers shows the unreachable line after the timeout and gives the button back', async ({ page }) => {
+    await page.route(`**${SitePath.Join}`, (route) =>
+      route.request().method() === 'POST' ? new Promise(() => undefined) : route.continue(),
+    );
+    await landingWithoutTheHold(page);
+    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
+    await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'sending');
+    await page.clock.fastForward(WAITLIST_JOIN_TIMEOUT_MS);
+    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.unreachable);
+    await expect(page.locator(`form#${Fragment.Hero} button[type="submit"]`)).toHaveText(LANDING_COPY.join.submit);
+    await expect(page.locator('html')).toHaveAttribute(RESET_COUNT_ATTRIBUTE, '1');
+  });
+
+  test('a token that expires in one form leaves the other form ready', async ({ page }) => {
+    await page.goto(SitePath.Landing);
+    await expect(page.locator(`form#${Fragment.Final} button[type="submit"]`)).not.toHaveAttribute(ARIA_DISABLED, 'true');
+    await page.evaluate(() => {
+      document.querySelector('form#final input[name="cf-turnstile-response"]')?.remove();
+      Reflect.get(window, 'waitlistTokenExpired')();
+    });
+    await expect(page.locator(`form#${Fragment.Final} button[type="submit"]`)).toHaveAttribute(ARIA_DISABLED, 'true');
+    await expect(page.locator(`form#${Fragment.Hero} button[type="submit"]`)).not.toHaveAttribute(ARIA_DISABLED, 'true');
+    await expect(page.locator(`#${Fragment.Final}-notice`)).not.toHaveText(LANDING_COPY.join.checkError);
+  });
+
+  test('a page without a widget is ready at once and its press shows the answer of the server', async ({ page }) => {
+    await page.route(`**${SitePath.Landing}`, async (route) => {
+      const response = await route.fetch();
+      const widgetlessHtml = (await response.text()).replaceAll(WIDGET_FRAME_PATTERN, '');
+      await route.fulfill({ response, body: widgetlessHtml });
+    });
+    await page.goto(SitePath.Landing);
+    const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
+    await expect(button).not.toHaveAttribute(ARIA_DISABLED, 'true');
+    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
+    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.checkFailed);
   });
 
   test('a try again with Retry-After keeps the button waiting until the delay has passed', async ({ page }) => {
@@ -518,9 +558,10 @@ test.describe('join', () => {
           JOIN_FORMS.map((form) =>
             page.locator(`form#${form}`).evaluate((formElement) => {
               const widget = formElement.querySelector('.cf-turnstile');
-              if (widget === null) throw new Error('the form holds no widget');
+              const frame = formElement.querySelector('.stub-turnstile-frame');
+              if (widget === null || frame === null) throw new Error('the form holds no widget frame');
               const formBox = formElement.getBoundingClientRect();
-              const widgetBox = widget.getBoundingClientRect();
+              const widgetBox = frame.getBoundingClientRect();
               return {
                 theme: widget.getAttribute('data-theme'),
                 isInsideForm: widgetBox.left >= formBox.left && widgetBox.right <= formBox.right,
