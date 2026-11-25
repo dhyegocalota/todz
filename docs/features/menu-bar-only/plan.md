@@ -26,7 +26,7 @@ One lane: the rule, then the preference, then the wiring.
 - [x] **Step 3:** red: `MenuBarOnlyPreferenceTests` (on by default, the storage key, registering keeps the owner's choice, another searched domain is ignored), against a stub that stops on `MenuBarOnlyPreference.isOn is not implemented`. — 01cf3fbc
 - [x] **Step 4:** green: the preference, registered at launch. — 7048cec6, registered in `TodzApp` in 99879ede
 - [x] **Step 5:** the app: observe windows becoming key and closing, apply the rule after launch, the Settings row and its copy. — 99879ede
-- [ ] **Step 6:** xcodegen, Debug build, `swift test`, `pnpm verify`.
+- [x] **Step 6:** xcodegen, Debug build, `swift test`, `pnpm verify`. — `swift test` 1063 tests in 83 suites passed on 99879ede; `verify: 6 gates green at 10db70db (product)`
 
 ## Failure modes
 
