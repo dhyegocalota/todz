@@ -3,11 +3,16 @@ import Foundation
 extension AppModel {
     public func loadSignInMethod() async {
         signInMethodError = nil
+        let askedServer = serverURL
         do {
-            signInMethod = try await service.signInMethod()
+            let method = try await service.signInMethod()
+            guard serverURL == askedServer else { return }
+            signInMethod = method
         } catch let failure as OwnerAPIError {
+            guard serverURL == askedServer else { return }
             signInMethodError = SignInError(failure)
         } catch {
+            guard serverURL == askedServer else { return }
             signInMethodError = .unexpected
         }
     }
@@ -27,15 +32,19 @@ extension AppModel {
             challengeRound += 1
         }
         let verifier = verifierToSend(to: email)
+        let askedServer = serverURL
         do {
             try await service.requestSignInLink(email: email, challenge: SignInLinkChallenge.challenge(for: verifier), turnstileToken: turnstileToken)
         } catch let failure as OwnerAPIError {
+            guard serverURL == askedServer else { return }
             signInError = SignInError(asking: failure)
             return
         } catch {
+            guard serverURL == askedServer else { return }
             signInError = .unexpected
             return
         }
+        guard serverURL == askedServer else { return }
         keep(PendingSignInLink(email: email, verifier: verifier, expiresAt: now().addingTimeInterval(SignInLinkTiming.keepDuration)))
     }
 

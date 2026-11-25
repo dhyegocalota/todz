@@ -89,6 +89,7 @@ import Observation
     @ObservationIgnored var revokedKeyIdentifiers: Set<String> = []
     @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored var serverSignOut: Task<Void, Never>?
+    @ObservationIgnored var isLocalDataUnerased = false
     @ObservationIgnored var service: any OwnerService
     @ObservationIgnored var signals: any ChangeSignals
     @ObservationIgnored let defaultURL: ServerAddress
@@ -141,6 +142,7 @@ import Observation
         self.pause = pause
         self.makeIdempotencyKey = makeIdempotencyKey
         self.makeLinkVerifier = makeLinkVerifier
+        eraseDataOfUnreadableServer()
     }
 
     public var waitingChangeCount: Int {
@@ -181,6 +183,10 @@ import Observation
 
     private func openLaunchSession() async {
         observeWidgets()
+        guard !isLocalDataUnerased else {
+            phase = .signedOut(notice: .sessionUnreadable)
+            return
+        }
         restorePendingLink()
         let secret: String?
         do {
@@ -211,14 +217,22 @@ import Observation
         signInError = nil
         isSigningIn = true
         defer { isSigningIn = false }
+        let issuingServer = serverURL
+        let issuingService = service
         let issued: IssuedSession
         do {
             issued = try await issuing()
         } catch let failure as OwnerAPIError {
+            guard serverURL == issuingServer else { return false }
             signInError = SignInError(failure)
             return false
         } catch {
+            guard serverURL == issuingServer else { return false }
             signInError = .unexpected
+            return false
+        }
+        guard serverURL == issuingServer else {
+            try? await issuingService.signOut(session: issued.sessionToken)
             return false
         }
         let cached: OwnerCache?
@@ -250,12 +264,16 @@ import Observation
             raise(.signOutFailed)
             return
         }
+        eraseLocalData()
+        try? vault.erase()
+        try? await service.signOut(session: session)
+    }
+
+    func eraseLocalData() {
         eraseWidgets()
         outbox = Outbox()
         clearSession()
         phase = .signedOut(notice: nil)
-        try? vault.erase()
-        try? await service.signOut(session: session)
     }
 
     public func tryAgain() async {
