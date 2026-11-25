@@ -125,6 +125,20 @@ The plan review (2026-11-25, NO: six CRITICAL, eight IMPORTANT, seven MINOR) is 
 - **R20** The E2E downloads the CSV by clicking (`waitForEvent('download')`).
 - **R21** "Sent" means the confirmation was claimed and no failure was recorded; "Failed" means a failure was recorded.
 
+## Review answers
+
+The code review (WITH RESERVATIONS, HIGH), the security review (FINDINGS: one IMPORTANT) and the tester (one defect) of c9b2168 are answered here; these lines win over everything above.
+
+- **V1** `ADMIN_EMAIL` leaves `vars` and becomes a Worker secret (ADR 0051, "Changed by the review"); `api-source.test.ts` pins that `vars` has no `ADMIN_EMAIL`; the dev scripts and the E2E keep passing it with `--var`. The runbook puts it at step 10 and lists it; the self-host guide says to put your own, and that the admin stays closed without it.
+- **V2** Both cookies are `SameSite=Lax` (same ADR section), so signing in no longer rests on a browser behaviour only Chromium was seen to have.
+- **V3** One body helper: `waitlist-join.ts` and `owner-request.ts` use `request-body.ts`, the session body is read with `parsedJson`, and `isBoundedRequest` and `hasMediaType` join the AGENTS.md helper line.
+- **V4** One limiter mechanic: the waitlist and the admin share a site limiter module that returns a neutral refusal, which each maps to its own notice through a record.
+- **V5** Sign-out clears the cookie even when D1 throws; the export answers the Closed card when D1 throws; `POST /admin/sessions` answers 503 when `SITE_ORIGIN` is unusable, before the same-origin check.
+- **V6** Constants: `ADMIN_SESSION_LIFETIME_HOURS`, `HttpHeader.ContentType` and `ContentLength`, one Turnstile response field name, `MediaType.Json` on the link page; `waitlistSiteKeyOf` moves to `turnstile-page.ts`.
+- **V7** The link page spends a link again when only the fragment changes (`hashchange`), so a pasted link after a refusal works and its token leaves the address bar.
+- **V8** The runbook says that step 14's admin check is its status code, the counts only show nothing was written; the Rollback line says what removing `ADMIN_EMAIL` really does and adds an owner-approved `DELETE FROM admin_sessions` to end every session.
+- Kept: the per-address cap as a possible lockout (ADR 0051 accepts it; evicting old links would let anyone flood the owner's inbox at the limiter's three a minute); the site header with its "Self-host guide" link and Sign out in the action row (design.md, Owner decisions); a refused link's 401 in the console.
+
 ## Open questions → answers
 
 | Question | Options | Owner's answer | Date |

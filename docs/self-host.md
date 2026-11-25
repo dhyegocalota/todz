@@ -28,7 +28,6 @@ Edit `apps/api/wrangler.jsonc`:
 - `vars.PUBLIC_ORIGIN`: `https://api.example.com`.
 - `vars.SITE_ORIGIN`: `https://example.com`, where the landing page and this guide are served.
 - `send_email[0].allowed_sender_addresses`: your sender, for example `noreply@example.com`.
-- `vars.ADMIN_EMAIL`: the one address that may sign in to `https://example.com/admin` to read the waitlist; use your own, or the instance mails its admin links to `hello@todz.app`.
 - `ratelimits`: keep the nine bindings, three each for sign-in, the waitlist and the admin; change each `namespace_id` if your account already uses `8601` to `8609`.
 
 Keep the rest as it is. In particular, `vars.SIGN_IN_PROVIDER` stays `email`, `vars.EMAIL_SENDER` stays `cloudflare`, and `workers_dev` and `preview_urls` stay `false`. Never pass `--var` to `wrangler deploy`, and never set variables in the dashboard: a fake provider, or a sender that only logs the link, opens sign-in to anyone.
@@ -76,6 +75,12 @@ pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
 ```
 
 Wrangler asks for the value, which keeps it out of your shell history. Never pipe it in, never export it, and never write it into `wrangler.jsonc`.
+
+The admin at `https://example.com/admin`, where you read and export the waitlist, signs in only the address you store the same way; until you do, it stays closed:
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
+```
 
 ## 7. Point the macOS app at your server
 
