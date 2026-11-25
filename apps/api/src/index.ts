@@ -1,5 +1,7 @@
 import { logCrash } from './crash-log';
 import { handleReply } from './day-email/day-email-reply';
+import { dayEmailStopResponse } from './day-email/day-email-stop';
+import { DAY_EMAIL_STOP_PATH } from './day-email/day-email-stop-url';
 import type { Env } from './env';
 import { HEALTH_PATH, serveHealth } from './health';
 import { HostKind, WWW_PREFIX, hostKindOf } from './host-kind';
@@ -29,6 +31,7 @@ type HostHandler = (context: HostContext) => Promise<Response>;
 const ROUTE_OF_PATH: Record<string, Route> = {
   [MCP_PATH]: ({ request, env }) => serveTimed({ env, serve: (observedEnv) => serveMcp({ request, env: observedEnv, now: Date.now() }) }),
   [SERVER_CARD_PATH]: async ({ request }) => serveServerCard({ request }),
+  [DAY_EMAIL_STOP_PATH]: ({ request, env }) => dayEmailStopResponse({ request, env }),
   [SIGN_IN_PAGE_PATH]: ({ request, env }) => serveSignInPage({ request, env }),
   [SIGN_IN_CHALLENGE_PAGE_PATH]: ({ request, env }) => serveSignInChallengePage({ request, env }),
 };
