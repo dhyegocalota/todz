@@ -13,7 +13,10 @@ The sign-in screen's "Security check" web view shows a scroll area with a vertic
 ## Change
 
 - The Worker serves `GET /sign-in/challenge` with `html,body{margin:0;overflow:hidden;background:transparent}` and the widget centered; the style keeps its own hash in the policy. The Worker is deployed for it.
-- The app injects a document-end script that reports the widget's height to a second message handler; `ChallengeHeight` in TodzKit clamps it between 65 and a maximum, and the view follows it, so an interactive challenge grows the view and nothing scrolls.
+- The unavailable page's text is centered too, by the same body rule.
+- The app injects a document-end script (inside a function, no global) that reports the widget's height to a second message handler; `ChallengeHeight` in TodzKit clamps a finite height between 65 and a maximum and ignores a non-finite one, and the view follows it, so an interactive challenge grows the view and nothing scrolls. The height resets to 65 whenever the challenge reloads.
+- The widget measures 280×65, not 300×65: the form column is 280 points wide and the widget shrinks to it.
+- The `scroll area` nodes WebKit keeps in the accessibility tree (the web view's and the Turnstile iframe's) remain as containers with hidden scrollers; the complaint was the visible scroll bar.
 - The web view subclass hides the scrollers of its enclosing scroll view and passes scroll wheel events up the responder chain.
 
 ## Test list
