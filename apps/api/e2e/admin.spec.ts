@@ -24,7 +24,7 @@ const DOWNLOAD_LABEL = 'Download CSV';
 const SIGN_OUT_LABEL = 'Sign out';
 const GET_NEW_LINK_LABEL = 'Get a new link';
 const CSV_FILE_NAME = 'todz-waitlist.csv';
-const CSV_HEADER = 'address,joined_at,confirmation';
+const CSV_HEADER = '"address","joined_at","confirmation"';
 const LINK_POLL_TIMEOUT_MS = 15_000;
 
 type MailedMessage = { to: string; text: string };
@@ -93,19 +93,19 @@ test.describe('the admin walk', () => {
     await adminContext.close();
   });
 
-  test.fail('another address gets the same card and no mail is logged for it', async () => {
+  test('another address gets the same card and no mail is logged for it', async () => {
     await askForLink({ page: adminPage, address: OTHER_ADDRESS });
     await expect(adminPage.getByText('If that address can sign in, a link is on its way.')).toBeVisible();
   });
 
-  test.fail('the admin asks for a link, gets the same card and one mail with the link', async () => {
+  test('the admin asks for a link, gets the same card and one mail with the link', async () => {
     await askForLink({ page: adminPage, address: ADMIN_ADDRESS });
     await expect.poll(() => messagesTo(ADMIN_ADDRESS).length, { timeout: LINK_POLL_TIMEOUT_MS }).toBe(1);
     mailedLink = mailedLinkTo(ADMIN_ADDRESS);
     expect(messagesTo(OTHER_ADDRESS)).toEqual([]);
   });
 
-  test.fail('the mailed link opened in a fresh browser is refused and offers a new one', async ({ browser, baseURL }) => {
+  test('the mailed link opened in a fresh browser is refused and offers a new one', async ({ browser, baseURL }) => {
     const freshContext = await newContextWithTurnstile({ browser, baseURL });
     const mailPage = await openFromMailPage({ context: freshContext, link: mailedLink });
     await expect(mailPage.getByRole('heading', { level: 1, name: REFUSED_TITLE })).toBeVisible();
@@ -114,7 +114,7 @@ test.describe('the admin walk', () => {
     await freshContext.close();
   });
 
-  test.fail('the same link opened in the browser that asked lands on the panel', async () => {
+  test('the same link opened in the browser that asked lands on the panel', async () => {
     const mailPage = await openFromMailPage({ context: adminContext, link: mailedLink });
     await expect(mailPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
     await expect(mailPage.getByRole('heading', { level: 1, name: PANEL_TITLE })).toBeVisible();
@@ -122,13 +122,13 @@ test.describe('the admin walk', () => {
     adminPage = mailPage;
   });
 
-  test.fail('the panel shows the three counts and the two actions', async () => {
+  test('the panel shows the three counts and the two actions', async () => {
     await Promise.all(STAT_LABELS.map((label) => expect(adminPage.getByText(label, { exact: true })).toBeVisible()));
     await expect(adminPage.getByRole('link', { name: DOWNLOAD_LABEL })).toBeVisible();
     await expect(adminPage.getByRole('button', { name: SIGN_OUT_LABEL })).toBeVisible();
   });
 
-  test.fail('Download CSV saves every row under its file name, starting with the header', async () => {
+  test('Download CSV saves every row under its file name, starting with the header', async () => {
     const downloading = adminPage.waitForEvent('download');
     await adminPage.getByRole('link', { name: DOWNLOAD_LABEL }).click();
     const download = await downloading;
@@ -137,7 +137,7 @@ test.describe('the admin walk', () => {
     expect(csv.startsWith(`${CSV_HEADER}\r\n`)).toBe(true);
   });
 
-  test.fail('Sign out returns to the sign-in card and closes the export', async () => {
+  test('Sign out returns to the sign-in card and closes the export', async () => {
     await adminPage.getByRole('button', { name: SIGN_OUT_LABEL }).click();
     await expect(adminPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
     await expect(adminPage.getByRole('heading', { level: 1, name: SIGN_IN_TITLE })).toBeVisible();
