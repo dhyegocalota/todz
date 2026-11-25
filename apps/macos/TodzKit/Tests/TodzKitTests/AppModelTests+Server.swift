@@ -204,7 +204,7 @@ extension AppModelTests {
         await requesting.value
     }
 
-    @Test func aRedeemFinishingAfterASwitchIsDroppedAndSignedOutAtItsService() async throws {
+    @Test func aRedeemWhoseSigningInFlagWasLostFinishingAfterASwitchIsDroppedAndSignedOutAtItsService() async throws {
         let harness = try await harnessWithAPendingLink()
         harness.service.suspend(.signIn)
         let link = try incomingLink()
@@ -222,7 +222,7 @@ extension AppModelTests {
         #expect(harness.vault.secret == nil)
     }
 
-    @Test func aLinkRequestFinishingAfterASwitchKeepsNoPendingLink() async throws {
+    @Test func aLinkRequestWhoseRequestingFlagWasLostFinishingAfterASwitchKeepsNoPendingLink() async throws {
         let harness = try AppModelHarness()
         await harness.model.launch()
         harness.service.suspend(.requestSignInLink)
