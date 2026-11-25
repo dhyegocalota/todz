@@ -44,7 +44,7 @@ extension AppModel {
 
     func eraseDataOfAnotherServer() {
         let isUnreadableServer = preference.hasUnreadableValue
-        guard isUnreadableServer || isStoredSessionOfAnotherServer else { return }
+        guard isUnreadableServer || isStoredSessionOfAnotherServer() else { return }
         do {
             try vault.erase()
             try store.erase()
@@ -57,11 +57,22 @@ extension AppModel {
         if isUnreadableServer { preference.clear() }
     }
 
-    private var isStoredSessionOfAnotherServer: Bool {
+    private func isStoredSessionOfAnotherServer() -> Bool {
         do {
             guard let stored = try vault.read() else { return false }
             return stored.origin != serverURL.origin
         } catch SessionVaultError.unbound {
+            return !didBindSessionOfEarlierBuild()
+        } catch {
+            return false
+        }
+    }
+
+    // NB ADR 0056: a session with no server and no stored server is an earlier build's, issued by the default, so it is bound to the default.
+    private func didBindSessionOfEarlierBuild() -> Bool {
+        guard !preference.hasValue else { return false }
+        do {
+            try vault.bind(to: defaultURL.origin)
             return true
         } catch {
             return false

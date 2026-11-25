@@ -15,8 +15,12 @@ public struct ServerPreference {
         defaults.persistentDomain(forName: domainName)?[storedKey]
     }
 
+    public var hasValue: Bool {
+        storedValue != nil
+    }
+
     public var hasUnreadableValue: Bool {
-        storedValue != nil && storedAddress() == nil
+        hasValue && storedAddress() == nil
     }
 
     public func storedAddress() -> ServerAddress? {

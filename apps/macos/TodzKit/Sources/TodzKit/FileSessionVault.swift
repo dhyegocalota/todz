@@ -39,7 +39,16 @@ public struct FileSessionVault: SessionVault, Sendable {
         }
     }
 
-    public func bind(to origin: String) throws {}
+    public func bind(to origin: String) throws {
+        let secret: String
+        do {
+            secret = try String(contentsOf: sessionFile, encoding: .utf8)
+        } catch {
+            throw SessionVaultError.unreadable
+        }
+        guard !secret.isEmpty else { throw SessionVaultError.unreadable }
+        try write(StoredSession(secret: secret, origin: origin))
+    }
 
     public func erase() throws {
         guard FileManager.default.fileExists(atPath: sessionPath) else { return }
