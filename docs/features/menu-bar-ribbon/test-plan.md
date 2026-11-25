@@ -117,45 +117,46 @@ The surface is native macOS: there is no browser surface, so there is no Playwri
 ## Build
 
 - [ ] `pnpm verify` — input: the branch; expected: green; the TodzKit test count recorded
-- [ ] `xcodebuild` of the `Todz` scheme — input: the branch after step 18; expected: BUILD SUCCEEDED, no new warning in the touched files
+- [x] `xcodebuild` of the `Todz` scheme — input: the branch after step 18; expected: BUILD SUCCEEDED, no new warning in the touched files — evidence: 8e85d684, BUILD SUCCEEDED, 0 warnings in the log
 
 ## Renders (scratch render of the shipped `MenuBarRibbonImage`, not committed code)
 
 - [ ] Rest — input: three open, no ribbon; expected: identical pixels to `MenuBarCountImage` at plain for "3"
-- [ ] Mid-unfold, light bar — input: frame 4 of 8; expected: the glyph's columns identical to rest; the visible text half the window at half alpha
-- [ ] Hold, light and dark bars — input: "3 left · next: T-12 Review PR"; expected: the full line, glyph unchanged, the image is a template (`isTemplate`), alpha 1 on the text
-- [ ] Mid-scroll — input: the 420-point strip at `offset` 120; expected: the window shows the strip from 120 points; the glyph does not scroll
-- [ ] End hold — input: `offset` 240; expected: the strip's end with its ellipsis in the window
-- [ ] Last one — input: one open; expected: "Last one: T-7 Ship it"
-- [ ] Pending — input: the first task unsaved; expected: "3 left · next: Draft notes"
-- [ ] Reduce Motion — input: the 420-point strip, one frame; expected: tail-truncated to 180 points with an ellipsis
+- [x] Mid-unfold, light bar — input: frame 4 of 8; expected: the glyph's columns identical to rest; the visible text half the window at half alpha — evidence: 8e85d684, .pr-media/menu-bar-ribbon/ribbon-frames-short-light-dark.png (half text at half alpha, glyph unchanged by eye; pixel diff not run)
+- [x] Hold, light and dark bars — input: "3 left · next: T-12 Review PR"; expected: the full line, glyph unchanged, the image is a template (`isTemplate`), alpha 1 on the text — evidence: 8e85d684, .pr-media/menu-bar-ribbon/ribbon-short-remaining.png and ribbon-frames-short-light-dark.png (frame 8: full line, glyph fixed, template true)
+- [x] Mid-scroll (evidence: 8e85d684, .pr-media/menu-bar-ribbon/ribbon-frames-long-light-dark.png, offsets 81 and 161, glyph fixed) — input: the 420-point strip at `offset` 120; expected: the window shows the strip from 120 points; the glyph does not scroll
+- [x] End hold (evidence: 8e85d684, ribbon-frames-long-light-dark.png, offset 240, strip end with ellipsis) — input: `offset` 240; expected: the strip's end with its ellipsis in the window
+- [x] Last one (evidence: 8e85d684, ribbon-frames-short-light-dark.png, "Last one: T-7 Ship it") — input: one open; expected: "Last one: T-7 Ship it"
+- [x] Pending (evidence: 8e85d684, .pr-media/menu-bar-ribbon/ribbon-pending.png) — input: the first task unsaved; expected: "3 left · next: Draft notes"
+- [x] Reduce Motion (evidence: 8e85d684, .pr-media/menu-bar-ribbon/ribbon-reduce-motion.png, "Review th…" and "WW…", one frame of 5 s) — input: the 420-point strip, one frame; expected: tail-truncated to 180 points with an ellipsis
 - [ ] Day temperature on, evening — input: the count at 0.65; expected: at rest the count is at 0.65; at hold the ribbon text is at 1.0
 - [ ] Width — input: the image size at rest, at hold and back at rest; expected: back at rest equals rest exactly; hold is at most the glyph plus 8 plus 180 points
-- [ ] Emoji — input: a title "🚀 Launch"; expected: drawn as a silhouette in the template, no crash, the line still reads
-- [ ] Right-to-left — input: a Hebrew title of 300 points; expected: the strip renders, the window shows its start, no crash; the look recorded
-- [ ] A 200-character title — input: `TaskLimits.titleMaxLength` characters; expected: the strip stops at 420 points with an ellipsis; the scroll ends at 240
+- [x] Emoji (evidence: 8e85d684, .pr-media/menu-bar-ribbon/ribbon-emoji.png, rocket silhouette, no crash) — input: a title "🚀 Launch"; expected: drawn as a silhouette in the template, no crash, the line still reads
+- [x] Right-to-left (evidence: 8e85d684, .pr-media/menu-bar-ribbon/ribbon-hebrew.png, no crash, window shows the start; the mixed-direction line shows "Last one: T-5 ..." then Hebrew, and the Hebrew run scrolls) — input: a Hebrew title of 300 points; expected: the strip renders, the window shows its start, no crash; the look recorded
+- [x] A 200-character title (evidence: 8e85d684, .pr-media/menu-bar-ribbon/ribbon-huge-200-chars.png, strip 420, last offset 240, 198 frames, 9.5 s) — input: `TaskLimits.titleMaxLength` characters; expected: the strip stops at 420 points with an ellipsis; the scroll ends at 240
 - [ ] Screenshots at `docs/screenshots/menu-bar-ribbon/` for the README and the PR
 
 ## Walk (Orca and `screencapture`, native)
 
 Popover openings: two (lines marked **popover**). Settings window: one opening for the first three lines. Live ribbons: three at most.
 
-- [ ] Settings, off by default — input: a fresh defaults domain, Settings opened; expected: "Menu bar ribbon" off, the picker disabled on "Every hour", the detail line of `design.md` §4
+- [x] Settings, off by default (offscreen row, not the live window; evidence: 8e85d684, .pr-media/menu-bar-ribbon/settings-off-light.png: off, picker greyed on Every hour, detail on two lines) — input: a fresh defaults domain, Settings opened; expected: "Menu bar ribbon" off, the picker disabled on "Every hour", the detail line of `design.md` §4
 - [ ] Settings, on — input: the switch on; expected: the picker enabled; `defaults read` shows `showsMenuBarRibbon = 1`
-- [ ] Settings, overlap — input: cadence "At the close of the day" with Close the day on; expected: the detail reads "Close the day already opens todz at that time."; then the cadence back to "Every hour"; Settings closed
-- [ ] Live hourly ribbon — input: the switch on, three open, the clock at the next hour (the walk waits for a real hour boundary, never changes the clock); expected: within 1 s of the hour the item unfolds, the line reads as rendered, it folds back within 9.5 s; captures of the item window by number every 0.5 s
-- [ ] Live agent ribbon — input: cadence "When an agent adds or completes a task", a task due today added through the MCP server with a test key on the local stack; expected: one ribbon about 3 s after the pull lands, the line counts the new task; a second task added 1 minute later shows no ribbon
-- [ ] Live **popover** cut — input: a click on the item during a live ribbon; expected: the ribbon ends at once, the popover's arrow points at the glyph of the item at rest; the popover closed with Escape
-- [ ] **popover** skip — input: the popover open at an hour boundary; expected: no ribbon; after closing, no ribbon arrives late
-- [ ] VoiceOver label — input: Accessibility Inspector on the item during a live ribbon, then at rest; expected: "todz, 3 left today. Next: T-12 Review PR", then ADR 0036's label
-- [ ] Neighbour — input: the frame of the status item to the left of todz before, during and after a live ribbon; expected: it moves left by the ribbon's width and returns to the same origin
-- [ ] Notch — input: the todz item hidden under the notch on the owner's bar; expected: the item's window still receives the frames (captured by number); recorded as the known limitation, not a failure
+- [x] Settings, overlap (offscreen row; evidence: 8e85d684, .pr-media/menu-bar-ribbon/settings-overlap-light.png: detail text correct, but at 420 pt the picker and switch drop below the label, see edge cases) — input: cadence "At the close of the day" with Close the day on; expected: the detail reads "Close the day already opens todz at that time."; then the cadence back to "Every hour"; Settings closed
+- [ ] BLOCKED (needs a bar with room; the owner's item sits under the notch, live ribbons not run) Live hourly ribbon — input: the switch on, three open, the clock at the next hour (the walk waits for a real hour boundary, never changes the clock); expected: within 1 s of the hour the item unfolds, the line reads as rendered, it folds back within 9.5 s; captures of the item window by number every 0.5 s
+- [ ] BLOCKED (needs a bar with room) Live agent ribbon — input: cadence "When an agent adds or completes a task", a task due today added through the MCP server with a test key on the local stack; expected: one ribbon about 3 s after the pull lands, the line counts the new task; a second task added 1 minute later shows no ribbon
+- [ ] BLOCKED (popover not opened while the owner works) Live **popover** cut — input: a click on the item during a live ribbon; expected: the ribbon ends at once, the popover's arrow points at the glyph of the item at rest; the popover closed with Escape
+- [ ] BLOCKED (popover not opened while the owner works) **popover** skip — input: the popover open at an hour boundary; expected: no ribbon; after closing, no ribbon arrives late
+- [ ] BLOCKED (needs a live ribbon) VoiceOver label — input: Accessibility Inspector on the item during a live ribbon, then at rest; expected: "todz, 3 left today. Next: T-12 Review PR", then ADR 0036's label
+- [ ] BLOCKED (needs a bar with room) Neighbour — input: the frame of the status item to the left of todz before, during and after a live ribbon; expected: it moves left by the ribbon's width and returns to the same origin
+- [ ] BLOCKED (needs a live ribbon) Notch — input: the todz item hidden under the notch on the owner's bar; expected: the item's window still receives the frames (captured by number); recorded as the known limitation, not a failure
 - [ ] Screen locked — input: the screen locked across an hour boundary (only if the owner locks it himself during the walk window; never locked by the walk); expected: no ribbon on unlock for that hour
 - [ ] Focus — not run live (no Focus is started on the owner's Mac); the gate's hold, release and quiet-mid-ribbon are proven by the coordinator tests
 
 ## Edge cases found during execution
 
-Empty on purpose. The tester adds one checkbox per new case (input, exact expected outcome) and a regression test for each.
+- [ ] Settings row wraps at 420 pt — input: the Settings row rendered offscreen at 420 pt with the cadence "At the close of the day" or "When an agent adds or completes a task"; expected: the picker and switch stay beside the label like "Every hour" (row height 105 pt); observed: they drop below the label and the row grows to 131 to 132 pt (.pr-media/menu-bar-ribbon/settings-overlap-light.png, settings-on-dark.png); replica of the shipped row in a plain 420 pt form, so the live window's width decides. FAIL candidate, owner to confirm at the real window width.
+- [x] The longest ribbon stays within 9.5 s — input: the 420-point and 200-character lines; observed: 198 frames, 9.4999999999 s, every frame 206 pt wide including reveal 0 (the item resizes once) — evidence: 8e85d684, render log
 
 ## Adversarial review
 
