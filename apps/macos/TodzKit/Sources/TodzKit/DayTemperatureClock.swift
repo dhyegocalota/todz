@@ -21,7 +21,28 @@ import Observation
         self.isOn = isOn
     }
 
+    // NB ADR 0065: one wait to the next boundary, at most four a day, restarted on wake, unlock, zone, clock and defaults changes.
     public func refresh() {
-        fatalError("DayTemperatureClock.refresh is not implemented")
+        waiting?.cancel()
+        guard isOn() else {
+            step = .plain
+            waiting = nil
+            return
+        }
+        let instant = now()
+        step = DayTemperatureStep.step(at: instant, in: timeZone)
+        waiting = Task { [weak self] in
+            await self?.wait(after: instant)
+        }
+    }
+
+    private func wait(after instant: Date) async {
+        let next = DayTemperatureStep.nextBoundary(after: instant, in: timeZone)
+        do {
+            try await pause(.seconds(next.timeIntervalSince(instant)))
+        } catch {
+            return
+        }
+        refresh()
     }
 }

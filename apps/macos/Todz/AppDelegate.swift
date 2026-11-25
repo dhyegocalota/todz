@@ -47,6 +47,12 @@ private func isFocusFilterQuiet() async -> Bool {
         closePopover: { [panel] in panel.close() }
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
+    private(set) lazy var dayTemperatureClock = DayTemperatureClock(
+        timeZone: model.timeZone,
+        pause: { try await Task.sleep(for: $0) },
+        isOn: { [dayTemperaturePreference] in dayTemperaturePreference.isOn }
+    )
+    private lazy var dayTemperatureScheduler = DayTemperatureScheduler(clock: dayTemperatureClock)
     private lazy var morningGlancePresenter = MorningGlancePresenter(windowState: windowState)
     private(set) lazy var morningGlance = MorningGlanceCoordinator.app(
         model: model,
@@ -71,6 +77,7 @@ private func isFocusFilterQuiet() async -> Bool {
         Task {
             await readFocusFilter()
             startDayTemperature()
+            dayTemperatureScheduler.start()
             dayCloseScheduler.start()
             morningGlanceTrigger.start()
         }
