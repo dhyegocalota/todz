@@ -182,6 +182,33 @@ extension AppModelTests {
         #expect(harness.model.waitingChangeCount == 0)
     }
 
+    @Test func anArrivalObserverHearsEachNewTaskOfTheProjectTheWindowShowsOnce() async throws {
+        let harness = try await pullHarness()
+        var arrivals: [Int] = []
+        harness.model.onTaskArrived = { arrivals.append($0) }
+        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 4)
+        await harness.model.pullProject(identifier: inboxIdentifier)
+        #expect(arrivals == [3, 4])
+        await harness.model.pullProject(identifier: inboxIdentifier)
+        #expect(arrivals == [3, 4])
+    }
+
+    @Test func anArrivalObserverHearsNothingOfAnotherProject() async throws {
+        let harness = try await pullHarness()
+        var arrivals: [Int] = []
+        harness.model.onTaskArrived = { arrivals.append($0) }
+        harness.seedTasks(projectIdentifier: launchIdentifier, count: 2)
+        await harness.model.pullProject(identifier: launchIdentifier)
+        #expect(arrivals == [])
+    }
+
+    @Test func aPullWorksTheSameWithNoArrivalObserver() async throws {
+        let harness = try await pullHarness()
+        harness.seedTasks(projectIdentifier: inboxIdentifier, count: 4)
+        await harness.model.pullProject(identifier: inboxIdentifier)
+        #expect(harness.model.board.tasks(projectIdentifier: inboxIdentifier).map(\.number) == [1, 2, 3, 4])
+    }
+
     @Test func aCachedLaunchWithTheServerDownIsOffline() async throws {
         let harness = try AppModelHarness()
         let acme = harness.seedWorkspace(name: "acme")

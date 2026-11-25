@@ -89,6 +89,7 @@ import Observation
     @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored var serverSignOut: Task<Void, Never>?
     @ObservationIgnored var isLocalDataUnerased = false
+    @ObservationIgnored public var onTaskArrived: ((Int) -> Void)?
     @ObservationIgnored var service: any OwnerService
     @ObservationIgnored var signals: any ChangeSignals
     @ObservationIgnored public let defaultURL: ServerAddress
