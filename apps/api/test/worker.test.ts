@@ -7,6 +7,8 @@ const NOT_FOUND_STATUS = 404;
 const UNAVAILABLE_STATUS = 503;
 const UNAUTHORIZED_STATUS = 401;
 const DIRECTORY_TABLES = [
+  'admin_sessions',
+  'admin_sign_in_links',
   'mcp_sessions',
   'owner_identities',
   'owners',
@@ -67,7 +69,7 @@ describe('the handler routes the paths the static assets never answer (the asset
 });
 
 describe('the directory', () => {
-  test('lists exactly the nine directory tables', async () => {
+  test('lists exactly the eleven directory tables', async () => {
     expect(await directoryTables()).toEqual(DIRECTORY_TABLES);
   });
 
