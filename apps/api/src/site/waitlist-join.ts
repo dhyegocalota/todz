@@ -89,7 +89,7 @@ async function joinNoticeOf({ request, env, executionContext }: SiteContext): Pr
   const form = await joinFormOf(request);
   if (form === null) return LandingNotice.TryAgain;
   const address = normalizedAddress(form.email);
-  if (address === null || isOwnDomainAddress(address)) return LandingNotice.TryAgain;
+  if (address === null) return LandingNotice.TryAgain;
   const token = form[TURNSTILE_RESPONSE_FIELD];
   if (!TURNSTILE_TOKEN_PATTERN.test(token)) return LandingNotice.TryAgain;
   const verdict = await verifyTurnstileToken({
@@ -106,6 +106,7 @@ async function joinNoticeOf({ request, env, executionContext }: SiteContext): Pr
   if (globalRefusal !== null) return globalRefusal;
   const addressRefusal = await waitlistAddressRefusal({ request, env, address });
   if (addressRefusal !== null) return addressRefusal;
+  if (isOwnDomainAddress(address)) return LandingNotice.Joined;
   const isClaimed = await joinWaitlist({ database: env.DIRECTORY, address, now: Date.now() }).catch(() => null);
   if (isClaimed === null) return LandingNotice.TryAgain;
   if (!isClaimed) return LandingNotice.Joined;

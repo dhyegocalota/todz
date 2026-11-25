@@ -58,8 +58,7 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const address = normalizedAddress(body.email);
   const appLinkScheme = enumValueOf({ enumeration: AppLinkScheme, candidate: body.app_link_scheme });
-  const isMalformedAsk =
-    address === null || isOwnDomainAddress(address) || appLinkScheme === null || !LINK_CHALLENGE_PATTERN.test(body.link_challenge);
+  const isMalformedAsk = address === null || appLinkScheme === null || !LINK_CHALLENGE_PATTERN.test(body.link_challenge);
   if (isMalformedAsk) return errorResponse(OwnerErrorCode.InvalidRequest);
   const challengeRefusal = await challenge.refusalOf(body.turnstile_token);
   if (challengeRefusal !== null) return challengeRefusal;
@@ -67,6 +66,7 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   if (globalRefusal !== null) return globalRefusal;
   const addressRefusal = await addressLimitRefusal({ request, env, address });
   if (addressRefusal !== null) return addressRefusal;
+  if (isOwnDomainAddress(address)) return Response.json({}, { status: HttpStatus.Accepted });
   const token = generateCredentialSecret();
   const digest = await digestCredential(token);
   const isWithinLimit = await insertSignInLinkWithinLimit({
