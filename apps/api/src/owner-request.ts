@@ -3,7 +3,7 @@ import type { Env } from './env';
 import type { OwnerRoute, RouteParam } from './owner-routes';
 import { parsedJson } from './parsed-json';
 import type { SessionOwner } from './project-routing';
-import { MediaType, hasMediaType } from './request-body';
+import { MediaType, hasMediaType, isBoundedRequest } from './request-body';
 
 export type PublicRoute = OwnerRoute.SignIn | OwnerRoute.ReadSignInMethod | OwnerRoute.RequestSignInLink;
 
@@ -36,6 +36,7 @@ export async function parsedBody<Schema extends z.ZodType>({
   request: Request;
   schema: Schema;
 }): Promise<z.output<Schema> | null> {
+  if (!isBoundedRequest(request)) return null;
   const parsed = schema.safeParse(parsedJson(await request.text()));
   if (!parsed.success) return null;
   return parsed.data;

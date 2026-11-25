@@ -7,6 +7,8 @@ private let privateMode = 0o600
 private let unreadableMode = 0o000
 private let folderNameWithASpace = "Application Support"
 private let origin = "https://todz.example.com"
+private let bindableSecret = String(repeating: "aB3_-", count: 8) + "xyz"
+private let truncatedSessionText = "{\"secret\":\"abc\""
 
 private func temporaryFolder() -> URL {
     FileManager.default.temporaryDirectory.appending(path: "todz-vault-\(UUID().uuidString)")
@@ -90,12 +92,31 @@ private func freshSession() -> StoredSession {
 
     @Test func bindingAnEarlierBuildsSecretWritesItBackBoundToTheServer() throws {
         let vault = FileSessionVault(folder: folder)
-        let secret = UUID().uuidString
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try Data(secret.utf8).write(to: folder.appending(path: sessionFileName))
+        try Data(bindableSecret.utf8).write(to: folder.appending(path: sessionFileName))
         try vault.bind(to: origin)
-        #expect(try vault.read() == StoredSession(secret: secret, origin: origin))
+        #expect(try vault.read() == StoredSession(secret: bindableSecret, origin: origin))
         #expect(try modeOfFile(at: folder.appending(path: sessionFileName)) == privateMode)
+    }
+
+    @Test func bindingDropsOneTrailingNewlineOfTheSecret() throws {
+        let vault = FileSessionVault(folder: folder)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data((bindableSecret + "\n").utf8).write(to: folder.appending(path: sessionFileName))
+        try vault.bind(to: origin)
+        #expect(try vault.read() == StoredSession(secret: bindableSecret, origin: origin))
+    }
+
+    @Test func bindingRefusesAFileThatIsNotASecretAndLeavesItUnchanged() throws {
+        let vault = FileSessionVault(folder: folder)
+        let file = folder.appending(path: sessionFileName)
+        let refused = [truncatedSessionText, String(bindableSecret.dropLast()), bindableSecret + "x", bindableSecret + "\n\n", String(bindableSecret.dropLast()) + "="]
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try refused.forEach { contents in
+            try Data(contents.utf8).write(to: file)
+            #expect(throws: SessionVaultError.unreadable) { try vault.bind(to: origin) }
+            #expect(try Data(contentsOf: file) == Data(contents.utf8))
+        }
     }
 
     @Test func eraseRemovesTheSecretAndCanRunTwice() throws {

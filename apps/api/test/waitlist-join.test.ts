@@ -1,7 +1,7 @@
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
-import { MILLISECONDS_PER_SECOND, WAITLIST_MINIMUM_FILL_MS } from '@todz/types';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { MILLISECONDS_PER_HOUR, MILLISECONDS_PER_SECOND, WAITLIST_DAILY_JOINS_MAX, WAITLIST_MINIMUM_FILL_MS } from '@todz/types';
+import { afterEach, beforeEach, describe, expect, onTestFinished, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import { waitlistMail } from '../src/emails/waitlist-mail';
 import type { Env } from '../src/env';
@@ -24,8 +24,10 @@ import {
   JSON_ACCEPT,
   LimiterBinding,
   type WaitlistRow,
+  deleteSeededJoins,
   joinStampOf,
   recordedLimiters,
+  seedJoins,
   throwingLimiter,
   waitlistRows,
   withoutStamps,
@@ -331,6 +333,30 @@ describe('a join on a public site host', () => {
     const address = freshAddress();
     const run = await join({ email: address });
     expect(run.html).not.toContain(address);
+  });
+});
+
+describe('a join over the daily cap', () => {
+  test('answers opens soon, keeps no row and sends no mail', async () => {
+    const prefix = await seedJoins({ count: WAITLIST_DAILY_JOINS_MAX, joinedAt: Date.now() - MILLISECONDS_PER_HOUR });
+    onTestFinished(() => deleteSeededJoins(prefix));
+    const address = freshAddress();
+    const run = await join({ email: address });
+    await expectOpensSoon({ run });
+    await expectNothingKept({ run, address });
+  });
+
+  test('answers a known address exactly as an unknown one and mails neither', async () => {
+    const known = freshAddress();
+    await expectJoined(await join({ email: known }));
+    const prefix = await seedJoins({ count: WAITLIST_DAILY_JOINS_MAX, joinedAt: Date.now() - MILLISECONDS_PER_HOUR });
+    onTestFinished(() => deleteSeededJoins(prefix));
+    const knownRun = await join({ email: known });
+    const unknownRun = await join({ email: freshAddress() });
+    await expectOpensSoon({ run: knownRun });
+    await expectOpensSoon({ run: unknownRun });
+    expect(knownRun.html).toBe(unknownRun.html);
+    expect([...knownRun.sent, ...unknownRun.sent]).toEqual([]);
   });
 });
 

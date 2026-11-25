@@ -8,7 +8,7 @@ import {
   findSessionProject,
 } from './directory';
 import { findCandidateRows, findFirstInboxId } from './day-email/day-email-store';
-import { findOwnedWorkspace, listOwnerWorkspaces } from './directory-workspaces';
+import { findOwnedWorkspace, listOwnerProjectIds, listOwnerWorkspaces } from './directory-workspaces';
 import type { Env } from './env';
 import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 import type { ProjectStore } from './project-store';
@@ -170,6 +170,15 @@ export async function openOwnedProject({
   const ownedProjectId = await findOwnedProjectId({ env, owner, projectId });
   if (ownedProjectId === null) return null;
   return openProject({ env, projectId: ownedProjectId });
+}
+
+export async function closeSessionSockets({ env, owner, secret }: { env: Env; owner: SessionOwner; secret: string }): Promise<void> {
+  if (!resolvedOwners.has(owner)) return;
+  const [projectIds, sessionDigest] = await Promise.all([
+    listOwnerProjectIds({ directory: env.DIRECTORY, ownerId: owner.ownerId }),
+    digestCredential(secret),
+  ]);
+  await Promise.all(projectIds.map((projectId) => openProject({ env, projectId }).closeSessionSockets({ sessionDigest })));
 }
 
 export type ScheduledOwner = { readonly ownerId: string } & { readonly scheduledOwner: unique symbol };

@@ -7,6 +7,7 @@ import { ownerJson } from './owner-json';
 import { type SessionContext, type SessionHandler, parsedBody } from './owner-request';
 import { OwnerRoute } from './owner-routes';
 import { closeOwnerSession } from './owner-sessions';
+import { closeSessionSockets } from './project-routing';
 import { canonicalTimeZone } from './time-zone';
 
 const UpdateOwnerBodySchema = z
@@ -25,8 +26,9 @@ function absentAsNull<Value>(value: Value | undefined): Value | null {
 
 type AccountRoute = OwnerRoute.SignOut | OwnerRoute.ReadOwner | OwnerRoute.UpdateOwner;
 
-async function signOut({ env, secret }: SessionContext): Promise<Response> {
+async function signOut({ env, secret, owner, executionContext }: SessionContext): Promise<Response> {
   await closeOwnerSession({ directory: env.DIRECTORY, secret });
+  executionContext.waitUntil(closeSessionSockets({ env, owner, secret }));
   return new Response(null, { status: HttpStatus.NoContent });
 }
 

@@ -1,6 +1,9 @@
 import Foundation
 
 private let sessionFileName = "session"
+private let newline = "\n"
+private let secretLength = 43
+private let secretAlphabet = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-")
 
 // NB ADR 0025: the session secret lives alone in a 0600 file, written atomically, until the app has a signing team.
 public struct FileSessionVault: SessionVault, Sendable {
@@ -46,8 +49,10 @@ public struct FileSessionVault: SessionVault, Sendable {
         } catch {
             throw SessionVaultError.unreadable
         }
-        guard !secret.isEmpty else { throw SessionVaultError.unreadable }
-        try write(StoredSession(secret: secret, origin: origin))
+        let bareSecret = secret.hasSuffix(newline) ? String(secret.dropLast()) : secret
+        let isWellFormed = bareSecret.utf8.count == secretLength && bareSecret.unicodeScalars.allSatisfy(secretAlphabet.contains)
+        guard isWellFormed else { throw SessionVaultError.unreadable }
+        try write(StoredSession(secret: bareSecret, origin: origin))
     }
 
     public func erase() throws {

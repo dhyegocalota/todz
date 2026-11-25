@@ -15,5 +15,6 @@ export enum HttpStatus {
   Unprocessable = 422,
   UpgradeRequired = 426,
   TooManyRequests = 429,
+  InternalServerError = 500,
   Unavailable = 503,
 }

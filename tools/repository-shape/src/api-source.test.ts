@@ -23,7 +23,7 @@ const LOCAL_SITE_PORT_FLAG = '--port 8788';
 const LOCAL_SITE_UPSTREAM_FLAG = '--local-upstream localhost:8788';
 const ASSET_HEADERS_FILE = 'apps/api/public/_headers';
 const ASSET_HEADERS_PATTERN =
-  /^\/\*\n {2}X-Content-Type-Options: nosniff\n {2}Strict-Transport-Security: max-age=31536000\n {2}Referrer-Policy: no-referrer\n\n\/icon\.svg\n {2}Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'\n$/;
+  /^\/\*\n {2}X-Content-Type-Options: nosniff\n {2}Strict-Transport-Security: max-age=31536000; includeSubDomains\n {2}Referrer-Policy: no-referrer\n {2}Content-Security-Policy: default-src 'none'; frame-ancestors 'none'\n\n\/icon\.svg\n {2}! Content-Security-Policy\n {2}Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'\n$/;
 const SITE_HOST = 'todz.app';
 const SITE_ORIGIN = `https://${SITE_HOST}`;
 const TURNSTILE_SITE_KEY = '0x4AAAAAAGSI2K7Qe9Vad2nL';
@@ -44,6 +44,8 @@ const ADMIN_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8608';
 const ADMIN_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8609';
 const REPLY_RATE_LIMIT_NAMESPACE_ID = '8610';
 const REPLY_LIMITER_NAME_PATTERN = /REPLY/;
+const OWNER_RATE_LIMIT_NAMESPACE_ID = '8611';
+const MCP_RATE_LIMIT_NAMESPACE_ID = '8612';
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -66,6 +68,7 @@ const RELEASE_API_BASE_URL_PATTERN = /\n\s+Release:\s*\n\s+TODZ_API_BASE_URL: (\
 const INFO_PLIST_API_BASE_URL_PATTERN = /TodzAPIBaseURL: \$\(TODZ_API_BASE_URL\)/;
 const FIRST_CAPTURE = 1;
 const CONSOLE_IDENTIFIER = /\bconsole\b/;
+const CONSOLE_CRASH_LOG = 'apps/api/src/crash-log.ts';
 const CONSOLE_DAY_EMAIL_LOG = 'apps/api/src/day-email/day-email-log.ts';
 const CONSOLE_EMAIL_SENDER = 'apps/api/src/email-sender.ts';
 const SCHEDULED_MODULE = 'apps/api/src/scheduled.ts';
@@ -138,8 +141,8 @@ describe('the api source', () => {
     expect(sourceFiles.length).toBeGreaterThan(0);
   });
 
-  test('only the development email sender and the day email log name console, so no other log carries a task, a secret or a digest', () => {
-    expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([CONSOLE_DAY_EMAIL_LOG, CONSOLE_EMAIL_SENDER]);
+  test('only the development email sender, the day email log and the crash log name console, so no other log carries a task, a secret or a digest', () => {
+    expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([CONSOLE_CRASH_LOG, CONSOLE_DAY_EMAIL_LOG, CONSOLE_EMAIL_SENDER]);
   });
 
   test('only the reply module names the producer of a reply owner, so the brand of the routing module opens nothing else (pin)', () => {
@@ -207,7 +210,7 @@ describe('the api source', () => {
     expect(DIGEST_CRON_PATTERN.exec(readRepositoryFile(SCHEDULED_MODULE))?.[FIRST_CAPTURE]).toBe(digestCron);
   });
 
-  test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally, and a reply per owner, with the shared limits', () => {
+  test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally, a reply per owner, and signed-in owners and keys, with the shared limits', () => {
     expect(wranglerConfiguration().ratelimits).toEqual([
       {
         name: 'SIGN_IN_LIMITER',
@@ -258,6 +261,16 @@ describe('the api source', () => {
         name: 'DAY_EMAIL_REPLY_LIMITER',
         namespace_id: REPLY_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('REPLY_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'OWNER_LIMITER',
+        namespace_id: OWNER_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('OWNER_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'MCP_LIMITER',
+        namespace_id: MCP_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('MCP_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
   });
@@ -332,7 +345,7 @@ describe('the api source', () => {
     expect(command.indexOf(MIGRATIONS_COMMAND)).toBeLessThan(command.indexOf(DEV_COMMAND));
   });
 
-  test('every static file answers with nosniff, strict transport security and no referrer, and the icon with a policy that allows no script', () => {
+  test('every static file answers with nosniff, strict transport security, no referrer and a policy that allows nothing and no framing, and the icon detaches it for its own policy that allows no script', () => {
     expect(readRepositoryFile(ASSET_HEADERS_FILE)).toMatch(ASSET_HEADERS_PATTERN);
   });
 
