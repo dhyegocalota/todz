@@ -5,6 +5,7 @@ import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { LandingNotice, serveLandingPage } from '../src/site/landing-page';
 import { serveSelfHostPage } from '../src/site/self-host-page';
+import { SITE_STYLE } from '../src/site/site-style';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
 import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
 
@@ -51,7 +52,8 @@ const LOCAL_ORIGIN_IMPORT_PATTERN = /import ([^;]+?) from '[^']*local-origin'/g;
 const SITE_HOST_PREDICATE_IMPORT = '{ isLocalSiteHost }';
 const LANDING_ASSET_PREFIX = '/landing/';
 const FOOTER_CREDIT =
-  '<p class="footer-credit">todz is a product of <a class="footer-credit-link" href="https://logicbit.com.br" rel="noopener">Logic Bit</a>, made in Brazil</p>';
+  '<p class="footer-credit">todz is a product of <a class="footer-credit-link" href="https://logicbit.com.br" rel="noopener noreferrer">Logic Bit</a>, made in Brazil</p>';
+const FOOTER_CREDIT_LINK_STYLE = '.footer-credit-link{color:var(--color-text);text-decoration:underline;text-underline-offset:0.2em}';
 const SECTION_MARKERS = [
   '<section class="hero',
   '<section class="benefits',
@@ -186,6 +188,10 @@ describe('the site pages', () => {
     const { html } = await page();
     const footer = html.slice(html.indexOf('<footer class="site-footer'));
     expect(footer).toContain(FOOTER_CREDIT);
+  });
+
+  test('the credit link is underlined, so it reads as a link without relying on colour', () => {
+    expect(SITE_STYLE).toContain(FOOTER_CREDIT_LINK_STYLE);
   });
 
   test('the site imports only the site host predicate from local-origin', () => {
