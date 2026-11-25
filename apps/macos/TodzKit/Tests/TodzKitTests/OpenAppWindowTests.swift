@@ -1,24 +1,32 @@
 import Testing
 @testable import TodzKit
 
+private func counts(isVisible: Bool = false, isMiniaturized: Bool = false, canBecomeMain: Bool = false, isTitledAppWindow: Bool = false) -> Bool {
+    OpenAppWindow.counts(isVisible: isVisible, isMiniaturized: isMiniaturized, canBecomeMain: canBecomeMain, isTitledAppWindow: isTitledAppWindow)
+}
+
 @Suite struct OpenAppWindowTests {
     @Test func aVisibleMainCapableWindowCounts() {
-        #expect(OpenAppWindow.counts(isVisible: true, isMiniaturized: false, canBecomeMain: true))
+        #expect(counts(isVisible: true, canBecomeMain: true, isTitledAppWindow: true))
     }
 
-    @Test func aMinimizedMainCapableWindowCounts() {
-        #expect(OpenAppWindow.counts(isVisible: false, isMiniaturized: true, canBecomeMain: true))
+    @Test func aMinimizedTitledWindowCounts() {
+        #expect(counts(isMiniaturized: true, canBecomeMain: true, isTitledAppWindow: true))
+    }
+
+    @Test func aMinimizedTitledWindowThatSaysItCannotBecomeMainStillCounts() {
+        #expect(counts(isMiniaturized: true, isTitledAppWindow: true))
     }
 
     @Test func aClosedWindowDoesNotCount() {
-        #expect(!OpenAppWindow.counts(isVisible: false, isMiniaturized: false, canBecomeMain: true))
+        #expect(!counts(canBecomeMain: true, isTitledAppWindow: true))
     }
 
     @Test func aVisiblePanelThatCannotBecomeMainDoesNotCount() {
-        #expect(!OpenAppWindow.counts(isVisible: true, isMiniaturized: false, canBecomeMain: false))
+        #expect(!counts(isVisible: true))
     }
 
-    @Test func aMinimizedPanelThatCannotBecomeMainDoesNotCount() {
-        #expect(!OpenAppWindow.counts(isVisible: false, isMiniaturized: true, canBecomeMain: false))
+    @Test func aMinimizedWindowThatIsNotATitledAppWindowDoesNotCount() {
+        #expect(!counts(isMiniaturized: true, canBecomeMain: true))
     }
 }
