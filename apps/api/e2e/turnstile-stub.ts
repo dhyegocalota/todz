@@ -1,0 +1,24 @@
+export const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+export const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
+export const TURNSTILE_RESPONSE_FIELD = 'cf-turnstile-response';
+export const JAVASCRIPT_CONTENT_TYPE = 'text/javascript';
+const SLOW_TOKEN_DELAY_MS = 1_000;
+const TURNSTILE_SOLVE = `const solve = () => document.querySelectorAll('.cf-turnstile').forEach((widget) => {
+  const token = document.createElement('input');
+  token.type = 'hidden';
+  token.name = '${TURNSTILE_RESPONSE_FIELD}';
+  token.value = '${TURNSTILE_DUMMY_TOKEN}';
+  widget.append(token);
+  const solved = window[widget.dataset.callback];
+  if (typeof solved === 'function') solved(token.value);
+});`;
+
+export const TURNSTILE_STUB = `{
+${TURNSTILE_SOLVE}
+solve();
+}`;
+
+export const SLOW_TURNSTILE_STUB = `{
+${TURNSTILE_SOLVE}
+setTimeout(solve, ${SLOW_TOKEN_DELAY_MS});
+}`;
