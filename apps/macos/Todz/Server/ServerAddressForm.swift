@@ -207,8 +207,8 @@ struct ServerAddressForm: View {
 
     private func switchWhenReady() async {
         guard flow.state == .switching, let target else { return }
-        let isSwitched = await model.switchServer(to: target)
-        flow.finish(isSwitched: isSwitched, server: target)
+        let result = await model.switchServer(to: target)
+        flow.finish(result: result, server: target)
     }
 
     private func cancelCheck() {

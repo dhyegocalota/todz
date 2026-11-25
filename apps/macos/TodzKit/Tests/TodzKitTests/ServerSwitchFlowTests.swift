@@ -110,17 +110,22 @@ private func checking() throws -> ServerSwitchFlow {
         #expect(signedIn.state == .confirming(losing: 4, signedIn: true))
     }
 
-    @Test func anEraseFailureWhileSwitchingFails() throws {
+    @Test(arguments: [
+        (ServerSwitchResult.eraseFailed, ServerSwitchState.failed(.eraseFailed)),
+        (.busy, .failed(.busy)),
+        (.alreadyInUse, .alreadyInUse),
+    ])
+    func aSwitchThatDidNotHappenSaysWhy(result: ServerSwitchResult, expected: ServerSwitchState) throws {
         var flow = try checking()
         flow.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
-        flow.finish(isSwitched: false, server: try address(newText))
-        #expect(flow.state == .failed(.eraseFailed))
+        flow.finish(result: result, server: try address(newText))
+        #expect(flow.state == expected)
     }
 
     @Test func aFinishedSwitchNamesTheNewServer() throws {
         var flow = try checking()
         flow.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
-        flow.finish(isSwitched: true, server: try address(newText))
+        flow.finish(result: .switched, server: try address(newText))
         #expect(flow.state == .switched(server: "localhost:8791"))
     }
 

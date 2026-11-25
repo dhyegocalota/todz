@@ -1,5 +1,6 @@
 public enum ServerSwitchFailure: Equatable, Sendable {
     case eraseFailed
+    case busy
 }
 
 public enum ServerSwitchState: Equatable, Sendable {
@@ -77,9 +78,9 @@ public struct ServerSwitchFlow: Equatable, Sendable {
         state = .idle
     }
 
-    public mutating func finish(isSwitched: Bool, server: ServerAddress) {
+    public mutating func finish(result: ServerSwitchResult, server: ServerAddress) {
         guard state == .switching else { return }
-        state = isSwitched ? .switched(server: ServerName.of(address: server)) : .failed(.eraseFailed)
+        state = result == .switched ? .switched(server: ServerName.of(address: server)) : .failed(.eraseFailed)
     }
 
     private mutating func proceed(isSignedIn: Bool, waitingChanges: Int) {

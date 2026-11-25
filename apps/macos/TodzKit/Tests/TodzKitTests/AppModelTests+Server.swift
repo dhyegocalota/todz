@@ -45,9 +45,9 @@ extension AppModelTests {
         harness.service.calls = []
         harness.store.calls = []
         let other = try address(otherText)
-        let isSwitched = await harness.model.switchServer(to: other)
+        let result = await harness.model.switchServer(to: other)
         await harness.signedOutAtTheOldServer()
-        #expect(isSwitched)
+        #expect(result == .switched)
         #expect(harness.model.serverURL == other)
         #expect(harness.servers.addresses == [harness.defaultURL, other])
         #expect(harness.model.phase == .signedOut(notice: nil))
@@ -65,9 +65,9 @@ extension AppModelTests {
     @Test func switchingSignedOutDoesNotSignOutAnywhere() async throws {
         let harness = try AppModelHarness()
         await harness.model.launch()
-        let isSwitched = await harness.model.switchServer(to: try address(otherText))
+        let result = await harness.model.switchServer(to: try address(otherText))
         await harness.signedOutAtTheOldServer()
-        #expect(isSwitched)
+        #expect(result == .switched)
         #expect(harness.service.calls == [])
         #expect(harness.model.phase == .signedOut(notice: nil))
     }
@@ -75,9 +75,9 @@ extension AppModelTests {
     @Test func aSignOutThatThrowsStillSwitches() async throws {
         let harness = try await signedInHarness()
         harness.service.failures[.signOut] = .unreachable
-        let isSwitched = await harness.model.switchServer(to: try address(otherText))
+        let result = await harness.model.switchServer(to: try address(otherText))
         await harness.signedOutAtTheOldServer()
-        #expect(isSwitched)
+        #expect(result == .switched)
         #expect(harness.vault.secret == nil)
         #expect(harness.model.serverURL == (try address(otherText)))
     }
@@ -85,8 +85,8 @@ extension AppModelTests {
     @Test func aThrowingStoreEraseKeepsTheOldAddressAndNeverCallsTheFactory() async throws {
         let harness = try await signedInHarness()
         harness.store.failures[.erase] = .unwritable
-        let isSwitched = await harness.model.switchServer(to: try address(otherText))
-        #expect(!isSwitched)
+        let result = await harness.model.switchServer(to: try address(otherText))
+        #expect(result == .eraseFailed)
         #expect(harness.model.serverURL == harness.defaultURL)
         #expect(harness.servers.addresses == [harness.defaultURL])
         #expect(harness.preference.storedAddress() == nil)
@@ -96,8 +96,8 @@ extension AppModelTests {
     @Test func aThrowingVaultEraseStopsTheSwitchBeforeTheFactory() async throws {
         let harness = try await signedInHarness()
         harness.vault.isUnerasable = true
-        let isSwitched = await harness.model.switchServer(to: try address(otherText))
-        #expect(!isSwitched)
+        let result = await harness.model.switchServer(to: try address(otherText))
+        #expect(result == .eraseFailed)
         #expect(harness.servers.addresses == [harness.defaultURL])
         #expect(harness.preference.storedAddress() == nil)
         #expect(harness.model.serverURL == harness.defaultURL)
@@ -106,8 +106,8 @@ extension AppModelTests {
     @Test func aThrowingPendingLinkEraseStopsTheSwitchBeforeTheFactory() async throws {
         let harness = try await signedInHarness()
         harness.pendingLinks.isUnerasable = true
-        let isSwitched = await harness.model.switchServer(to: try address(otherText))
-        #expect(!isSwitched)
+        let result = await harness.model.switchServer(to: try address(otherText))
+        #expect(result == .eraseFailed)
         #expect(harness.servers.addresses == [harness.defaultURL])
         #expect(harness.preference.storedAddress() == nil)
         #expect(harness.model.serverURL == harness.defaultURL)
@@ -115,8 +115,8 @@ extension AppModelTests {
 
     @Test func theSameAddressChangesNothingAndCallsNothing() async throws {
         let harness = try await signedInHarness()
-        let isSwitched = await harness.model.switchServer(to: harness.defaultURL)
-        #expect(!isSwitched)
+        let result = await harness.model.switchServer(to: harness.defaultURL)
+        #expect(result == .alreadyInUse)
         #expect(harness.service.calls == [])
         #expect(harness.store.routes().contains(.erase) == false)
         #expect(harness.vault.eraseCount == 0)
@@ -127,8 +127,8 @@ extension AppModelTests {
     @Test func switchingBackToTheDefaultForgetsTheStoredAddress() async throws {
         let harness = try AppModelHarness(storedServer: storedText)
         await harness.model.launch()
-        let isSwitched = await harness.model.switchServer(to: harness.defaultURL)
-        #expect(isSwitched)
+        let result = await harness.model.switchServer(to: harness.defaultURL)
+        #expect(result == .switched)
         #expect(harness.model.serverURL == harness.defaultURL)
         #expect(harness.preference.storedAddress() == nil)
     }
@@ -141,8 +141,8 @@ extension AppModelTests {
         await harness.model.signIn(identity: "maria")
         harness.model.issuedKey = harness.service.nextIssuedKey()
         let roundBefore = harness.model.challengeRound
-        let isSwitched = await harness.model.switchServer(to: try address(otherText))
-        #expect(isSwitched)
+        let result = await harness.model.switchServer(to: try address(otherText))
+        #expect(result == .switched)
         #expect(harness.model.signInChallengeToken == nil)
         #expect(harness.model.signInMethod == nil)
         #expect(harness.model.signInMethodError == nil)
@@ -178,8 +178,8 @@ extension AppModelTests {
         harness.service.suspend(.signIn)
         let signingIn = Task { await harness.model.signIn(identity: "maria") }
         await harness.service.held(.signIn)
-        let isSwitched = await harness.model.switchServer(to: try address(otherText))
-        #expect(!isSwitched)
+        let result = await harness.model.switchServer(to: try address(otherText))
+        #expect(result == .busy)
         #expect(harness.servers.addresses == [harness.defaultURL])
         #expect(harness.vault.eraseCount == 0)
         #expect(harness.store.routes().contains(.erase) == false)
@@ -195,8 +195,8 @@ extension AppModelTests {
         harness.model.acceptChallenge(token: harnessChallengeToken)
         let requesting = Task { await harness.model.requestSignInLink(email: emailAddress) }
         await harness.service.held(.requestSignInLink)
-        let isSwitched = await harness.model.switchServer(to: try address(otherText))
-        #expect(!isSwitched)
+        let result = await harness.model.switchServer(to: try address(otherText))
+        #expect(result == .busy)
         #expect(harness.servers.addresses == [harness.defaultURL])
         #expect(harness.pendingLinks.eraseCount == 0)
         harness.service.unsuspend(.requestSignInLink)
@@ -211,11 +211,11 @@ extension AppModelTests {
         let redeeming = Task { await harness.model.redeem(signInLink: link) }
         await harness.service.held(.signIn)
         harness.model.isSigningIn = false
-        let isSwitched = await harness.model.switchServer(to: try address(otherText))
+        let result = await harness.model.switchServer(to: try address(otherText))
         harness.service.unsuspend(.signIn)
         harness.service.resume(.signIn)
         await redeeming.value
-        #expect(isSwitched)
+        #expect(result == .switched)
         #expect(harness.servers.created.map(\.service.calls) == [[]])
         #expect(harness.service.calls.last == .signOut(session: harness.service.issuedSession.sessionToken))
         #expect(harness.model.phase == .signedOut(notice: nil))
@@ -283,8 +283,8 @@ extension AppModelTests {
     @Test func aSignOutHeldAtTheOldServerDoesNotDelayTheSwitch() async throws {
         let harness = try await signedInHarness()
         harness.service.suspend(.signOut)
-        let isSwitched = await harness.model.switchServer(to: try address(otherText))
-        #expect(isSwitched)
+        let result = await harness.model.switchServer(to: try address(otherText))
+        #expect(result == .switched)
         await harness.service.held(.signOut)
         #expect(harness.service.calls == [.signOut(session: harness.session)])
         harness.service.unsuspend(.signOut)
