@@ -62,7 +62,7 @@ The owner names `navigator.modelContext` and `/.well-known/mcp/server-card.json`
 - The `SoftwareApplication` offer says what is true today: joining the waitlist costs nothing (`price` `0`, `USD`, `PreOrder`, linking `/#join`). When pricing exists, the offer, `llms.txt` and the overview tool change together, because they read one copy entry. Without ratings Google shows no software rich result; the markup still names the app, its platform and its publisher.
 - Every discovery file and the card are public, fixed and read-only; they hold no secret and no per-user data, and the card's header entry names the header, never a value.
 - `robots.txt` invites training crawlers too, as the owner asked ("robots.txt allowing the AI crawlers"); a zone-level Cloudflare bot rule can still answer them 403, which the deploy run checks.
-- `/self-host` stays in the sitemap until `docs-cutover` makes it a redirect; that feature removes it from the sitemap and `llms.txt` in the same change.
+- `docs-cutover` has merged: `/self-host` is a 301 to `https://docs.todz.app/self-host`, so the sitemap and `llms.txt` hold `/` only and the docs links point at `docs.todz.app`.
 
 ## Evidence
 
@@ -82,4 +82,11 @@ The owner names `navigator.modelContext` and `/.well-known/mcp/server-card.json`
 - SEP-2127's extension moves its schema URL or the recommended card location, or ARD leaves v0.91.
 - todz gets a price, reviews or a public repository (the offer, `aggregateRating` and the card's `repository`). `PreOrder` with price `0` stands for the free waitlist only; it must change the day the app can be downloaded or bought.
 - Logic Bit's site moves its icon (the `Organization.logo` URL).
-- `docs-cutover` turns `/self-host` into a redirect.
+- `docs-cutover` turns `/self-host` into a redirect (done 2026-11-25).
+
+## Addendum 2026-11-25 (fix round 1)
+
+- Section 7 widens by two directives on the public page only: `manifest-src 'self'` and `connect-src 'self'`. Lighthouse reads `robots.txt`, `llms.txt` and the ARD catalog with fetches from inside the page, and under `default-src 'none'` the three audits fail with "CSP violation" (Agentic browsing 60 and SEO 92 without it, 100 and 100 with it, on `wrangler dev`). The admin and private policies stay exactly as they were: no `manifest-src`, `connect-src` only on the link page.
+- Section 5 said `connect-src` stays absent because `join_waitlist` never calls `fetch`. That holds for the script, not for the policy: no shipped landing script calls `fetch`, `XMLHttpRequest` or `sendBeacon`, a unit test reads both scripts for them, and the directive permits only what Lighthouse itself asks for. A future script that adds a network call must say so here.
+- The JSON-LD hash of section 2 stays: it buys no execution, and it keeps the invariant that every inline `<script>` the page writes is listed in the policy.
+- `join_waitlist` answers that the form was submitted and that the page may ask for a human check, never that it worked, and puts the person's typed value back when it refuses an address.
