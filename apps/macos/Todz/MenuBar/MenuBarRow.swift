@@ -35,7 +35,7 @@ struct MenuBarRow: View {
                     .fill(.fill.quaternary)
             }
         }
-        .onHover(perform: hover)
+        .onHover { isHovered = $0 }
         .onTapGesture(perform: reveal)
         .focusable()
         .onKeyPress(keys: [.return, .space]) { _ in
@@ -54,12 +54,6 @@ struct MenuBarRow: View {
     private var isActing: Bool {
         let isLingering = windowState.lingers.outcome(of: task.key) != nil
         return dayClose.isClosingDay && !task.isDone && !isLingering
-    }
-
-    private func hover(isInside: Bool) {
-        isHovered = isInside
-        guard isInside else { return }
-        dayClose.engage(by: .hover)
     }
 
     private func act(_ outcome: LingerOutcome) {

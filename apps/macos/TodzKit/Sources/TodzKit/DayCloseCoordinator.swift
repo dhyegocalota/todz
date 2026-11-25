@@ -7,6 +7,7 @@ import Observation
     @ObservationIgnored var releaseTaking: Task<Void, Never>?
     @ObservationIgnored var countWaiting: Task<Void, Never>?
     @ObservationIgnored private var isWaitingForCount = false
+    @ObservationIgnored private var isOpening = false
     @ObservationIgnored private let gate: ProactiveGate
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let timeZone: TimeZone
@@ -33,7 +34,7 @@ import Observation
 
     @discardableResult
     public func check() -> DayCloseDecision {
-        let isDueAndIdle = decision == .due && !isClosingDay
+        let isDueAndIdle = decision == .due && !isOpening
         guard isDueAndIdle else { return decision }
         closeTheDay()
         return decision
@@ -48,6 +49,7 @@ import Observation
     }
 
     public func engage(by input: DayCloseEngagementInput) {
+        guard input == .click else { return }
         isEngaged = true
     }
 
@@ -79,7 +81,10 @@ import Observation
     private func open() {
         isEngaged = false
         isClosingDay = true
-        guard openPopover() else {
+        isOpening = true
+        let didOpen = openPopover()
+        isOpening = false
+        guard didOpen else {
             isClosingDay = false
             return
         }
