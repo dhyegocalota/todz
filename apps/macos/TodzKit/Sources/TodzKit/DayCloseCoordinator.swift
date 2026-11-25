@@ -51,6 +51,10 @@ import Observation
         return decision
     }
 
+    public var isDueAndIdle: Bool {
+        fatalError("DayCloseCoordinator.isDueAndIdle is not implemented")
+    }
+
     public func end() {
         isClosingDay = false
         clickedAt = nil
