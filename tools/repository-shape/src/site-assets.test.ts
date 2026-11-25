@@ -6,7 +6,7 @@ import { readRepositoryFile, repositoryFiles, repositoryPath } from './repositor
 const SERVED_FOLDER = 'apps/api/public/landing';
 const SCREENSHOTS_FOLDER = 'docs/screenshots';
 const SHOTS_SOURCE = 'apps/api/src/site/landing-shots.ts';
-const SHOT_PATTERN = /path: '\/landing\/([^']+)', width: (\d+), height: (\d+)/g;
+const SHOT_PATTERN = /path: '\/landing\/([^']+)',\s+width: (\d+),\s+height: (\d+)/g;
 const WIDTH_OFFSET = 16;
 const HEIGHT_OFFSET = 20;
 
