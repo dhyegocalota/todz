@@ -67,10 +67,10 @@ struct ServerAddressForm: View {
     }
 
     private var field: some View {
-        TextField(SettingsCopy.serverPlaceholder, text: $text)
+        TextField(SettingsCopy.serverAddressLabel, text: $text, prompt: Text(SettingsCopy.serverPlaceholder))
             .textFieldStyle(.roundedBorder)
+            .labelsHidden()
             .autocorrectionDisabled()
-            .accessibilityLabel(SettingsCopy.serverAddressLabel)
             .focused($isFieldFocused)
             .disabled(isInFlight)
             .onSubmit(submit)
