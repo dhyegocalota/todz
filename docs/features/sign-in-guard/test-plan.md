@@ -96,9 +96,9 @@ Tester pass 2 at ef333bf on 2026-11-24: `pnpm typecheck` exit 0; `pnpm --filter 
 
 The reviewer picks the three claims most likely to be wrong and tries to refute each.
 
-- [ ] Claim 1: every missing piece fails closed on a public host — attack: remove each binding, the header and the secret in turn; result:
-- [ ] Claim 2: a refused request never sends mail nor spends a link — attack: read the order of checks against the handlers; result:
-- [ ] Claim 3: the local-host exemptions cannot be reached in production — attack: a request to `api.todz.app` with a `Host` or `X-Forwarded-Host` of `localhost`; result:
+- [x] Claim 1: every missing piece fails closed on a public host — attack: remove each binding, the header and the secret in turn; result: held — evidence: reviewer at 8db0dd9. A missing limiter or `CF-Connecting-IP` answers 503 in `sign-in-limiter.ts` before the handler, one test per R4 cell. A throwing limiter answers 503. A missing secret or an absent or invalid `PUBLIC_ORIGIN` answers 503 before the body. So do siteverify throwing, non-2xx, bad JSON, an own-fault code and a timeout. The one soft spot stays closed: `success:false` with an unlisted code answers 429.
+- [x] Claim 2: a refused request never sends mail nor spends a link — attack: read the order of checks against the handlers; result: held — evidence: reviewer at 8db0dd9; re-checked at ef333bf. Every refusal in `sign-in-links.ts` returns before `insertSignInLinkWithinLimit` and `sender.send`. `owner-sign-in.ts` checks Turnstile and the global cap before the provider's `verify` spends the link. The tests assert `consumed_at` stays null and the limiter keys stay empty after a refused token.
+- [x] Claim 3: the local-host exemptions cannot be reached in production — attack: a request to `api.todz.app` with a `Host` or `X-Forwarded-Host` of `localhost`; result: held — evidence: reviewer at 8db0dd9; security reviewer at ef333bf. Nothing reads `X-Forwarded-Host`, and `isLocalHost` needs both `PUBLIC_ORIGIN` and `request.url` to be local. Production pins `https://api.todz.app`, with `workers_dev` and `preview_urls` off. Look-alike hosts are not in `LOCAL_HOSTNAMES`. Tested: "a public PUBLIC_ORIGIN with a localhost request is not a local host".
 
 ## Coverage honesty
 
