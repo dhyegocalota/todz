@@ -23,6 +23,26 @@ enum MenuBarCopy {
         InflectedCopy.text("\(count) done today")
     }
 
+    static func ribbonRemaining(left: Int, next: String) -> String {
+        "\(Self.left(count: left)) · next: \(next)"
+    }
+
+    static func ribbonLast(next: String) -> String {
+        "Last one: \(next)"
+    }
+
+    static func ribbonTask(_ task: RibbonTask) -> String {
+        guard let number = task.number else { return task.title }
+        return "\(TaskRowCopy.shortId(number: number)) \(task.title)"
+    }
+
+    static func ribbon(_ content: RibbonContent) -> String {
+        switch content {
+        case let .remaining(left, next): ribbonRemaining(left: left, next: ribbonTask(next))
+        case let .last(next): ribbonLast(next: ribbonTask(next))
+        }
+    }
+
     static func switchHint(last: Int) -> String {
         "Switch workspace ⌘1–\(last)"
     }
