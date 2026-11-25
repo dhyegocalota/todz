@@ -11,12 +11,16 @@ public struct ServerPreference {
         self.domainName = domainName
     }
 
+    private var storedValue: Any? {
+        defaults.persistentDomain(forName: domainName)?[storedKey]
+    }
+
     public var hasUnreadableValue: Bool {
-        defaults.object(forKey: storedKey) != nil && storedAddress() == nil
+        storedValue != nil && storedAddress() == nil
     }
 
     public func storedAddress() -> ServerAddress? {
-        guard let text = defaults.string(forKey: storedKey) else { return nil }
+        guard let text = storedValue as? String else { return nil }
         return try? ServerAddress.checked(text: text).get()
     }
 
