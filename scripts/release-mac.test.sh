@@ -297,7 +297,7 @@ for mode in no-runtime task-allow other-team verify-fail; do
   FAKE_CODESIGN=$mode run_release
   expect_equal "codesign $mode is refused" "$status" "1"
   expect_equal "codesign $mode never reaches hdiutil" "$(call_count '^hdiutil')" "0"
-  expect_equal "codesign $mode never reaches the bucket" "$(call_count '^cloudflare')" "0"
+  expect_equal "codesign $mode puts nothing in the bucket" "$(call_count 'object put')" "0"
 done
 new_repository
 FAKE_CODESIGN=no-runtime run_release
@@ -396,7 +396,7 @@ new_repository
 FAKE_SIGN_FAIL=yes run_release
 expect_equal "a failed signature fails the release" "$status" "1"
 expect_equal "the agent is killed when signing fails" "$(call_count '^ssh-agent -k')" "1"
-expect_equal "a failed signature reaches no bucket" "$(call_count '^cloudflare')" "0"
+expect_equal "a failed signature puts nothing in the bucket" "$(call_count 'object put')" "0"
 
 new_repository
 FAKE_SECURITY_MISSING=yes run_release --create-release-key
