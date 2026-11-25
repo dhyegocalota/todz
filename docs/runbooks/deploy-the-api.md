@@ -189,11 +189,11 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
 14. **Check that a link request needs a solved challenge.** Post a link request whose Turnstile token was never solved, and keep only the status, the `retry-after` line and the body:
 
     ```bash
-    curl -sS -D - -X POST -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/junk-turnstile-link.json https://api.todz.app/owner/sign-in-links
+    curl -sS -D - -X POST -H "Todz-App-Version: 0.2.0" -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/junk-turnstile-link.json https://api.todz.app/owner/sign-in-links
     ```
 
     Expected: before step 10's secret exists, `HTTP/2 503` and `{"error":"sign_in_unavailable"}`; after it, `HTTP/2 429`, `retry-after: 60` and `{"error":"sign_in_refused"}`. No mail leaves either way. A real link, with a real mail to the owner, is asked for in the production smoke walk with the app, never here.
-    If it fails: a 202 means the Worker sent a link without a solved challenge; close sign-in as the Rollback section says and tell the owner. A 503 after the secret exists means siteverify, the secret or a binding is missing; read step 8's bindings and step 10's list again. A 400 means the body file changed; restore it from `main`.
+    If it fails: a 202 means the Worker sent a link without a solved challenge; close sign-in as the Rollback section says and tell the owner. A 503 after the secret exists means siteverify, the secret or a binding is missing; read step 8's bindings and step 10's list again. A 400 means the body file changed; restore it from `main`. A 426 means the `Todz-App-Version` header was lost; run the command as written.
 
     Then check that the waitlist keeps nothing without a solved challenge. Count the rows, post an address with an unsolved token, and count again:
 
@@ -220,13 +220,13 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
 15. **Check the per-client limit.** Post wrong session tokens from this machine, fourteen in one command, and keep only the statuses and `retry-after` values; each answer's body ends without a newline, so the next status starts mid-line and a `^HTTP` match would miss it. The body carries a malformed link verifier, which the Worker refuses before it asks siteverify, and an unsolved Turnstile token:
 
     ```bash
-    curl -sS -D - -X POST -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/wrong-session.json https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions | grep -oE "HTTP/2 [0-9]+|retry-after: [0-9]+"
+    curl -sS -D - -X POST -H "Todz-App-Version: 0.2.0" -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/wrong-session.json https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions | grep -oE "HTTP/2 [0-9]+|retry-after: [0-9]+"
     ```
 
     Expected: the first ten answers are `HTTP/2 401` (the malformed verifier), or `HTTP/2 503` before step 10's secret exists, and from the eleventh on they are `HTTP/2 429` followed by `retry-after: 60`; the binding counts per Cloudflare location and may let a request or two more than ten through, so at least one of the last four is a 429. Refused requests count against the window too, so wait at least seventy seconds after the last one, then one single request answers as the first did:
 
     ```bash
-    curl -sS -D - -o /dev/null -X POST -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/wrong-session.json https://api.todz.app/owner/sessions
+    curl -sS -D - -o /dev/null -X POST -H "Todz-App-Version: 0.2.0" -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/wrong-session.json https://api.todz.app/owner/sessions
     ```
     If it fails: no 429 means run the command once more; none in the second run either means the binding is not enforcing, or Cloudflare did not send `CF-Connecting-IP` or the request counted as local; tell the owner before the app ships. A 429 on the first request means another client on this address used the quota; wait a minute and run it again.
 
