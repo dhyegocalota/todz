@@ -1,5 +1,6 @@
 public enum ServerSwitchFailure: Equatable, Sendable {
     case eraseFailed
+    case busy
 }
 
 public enum ServerSwitchState: Equatable, Sendable {
@@ -11,7 +12,7 @@ public enum ServerSwitchState: Equatable, Sendable {
     case alreadyInUse
     case confirming(losing: Int, signedIn: Bool)
     case switching
-    case switched(server: String)
+    case switched
     case failed(ServerSwitchFailure)
 }
 
@@ -72,14 +73,24 @@ public struct ServerSwitchFlow: Equatable, Sendable {
         state = .idle
     }
 
+    public mutating func close() {
+        guard state != .switching else { return }
+        state = .idle
+    }
+
     public mutating func reset() {
         guard !isBusy else { return }
         state = .idle
     }
 
-    public mutating func finish(isSwitched: Bool, server: ServerAddress) {
+    public mutating func finish(result: ServerSwitchResult) {
         guard state == .switching else { return }
-        state = isSwitched ? .switched(server: ServerName.of(address: server)) : .failed(.eraseFailed)
+        switch result {
+        case .switched: state = .switched
+        case .busy: state = .failed(.busy)
+        case .alreadyInUse: state = .alreadyInUse
+        case .eraseFailed: state = .failed(.eraseFailed)
+        }
     }
 
     private mutating func proceed(isSignedIn: Bool, waitingChanges: Int) {

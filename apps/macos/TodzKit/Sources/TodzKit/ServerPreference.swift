@@ -4,17 +4,27 @@ private let storedKey = "serverURL"
 
 public struct ServerPreference {
     private let defaults: UserDefaults
+    private let domainName: String
 
-    public init(defaults: UserDefaults) {
+    public init(defaults: UserDefaults, domainName: String) {
         self.defaults = defaults
+        self.domainName = domainName
+    }
+
+    private var storedValue: Any? {
+        defaults.persistentDomain(forName: domainName)?[storedKey]
+    }
+
+    public var hasValue: Bool {
+        storedValue != nil
     }
 
     public var hasUnreadableValue: Bool {
-        defaults.object(forKey: storedKey) != nil && storedAddress() == nil
+        hasValue && storedAddress() == nil
     }
 
     public func storedAddress() -> ServerAddress? {
-        guard let text = defaults.string(forKey: storedKey) else { return nil }
+        guard let text = storedValue as? String else { return nil }
         return try? ServerAddress.checked(text: text).get()
     }
 

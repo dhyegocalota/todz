@@ -3,6 +3,7 @@ import {
   ABSENT_INDEX,
   COMPANY,
   FORMATTER_LOCALE,
+  HEALTH_SERVICE_NAME,
   HOURS_PER_DAY,
   LAST_INDEX,
   LIST_LIMIT_DEFAULT,
@@ -60,6 +61,12 @@ describe('company constants', () => {
       legalName: 'Logic Bit AI Software Boutique Ltda',
       website: 'https://logicbit.com.br',
     });
+  });
+});
+
+describe('health constants', () => {
+  test('a todz server names itself todz, the name the app checks (pin)', () => {
+    expect(HEALTH_SERVICE_NAME).toBe('todz');
   });
 });
 

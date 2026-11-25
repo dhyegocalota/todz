@@ -26,6 +26,10 @@ private let refused: [(String, ServerAddressIssue)] = [
     ("https://example.com/todz", .hasPath),
     ("   ", .invalid),
     ("not a url", .invalid),
+    ("https://evil%2Eexample.com", .invalid),
+    ("https://ex%41mple.com", .invalid),
+    ("http://local%68ost:8787", .invalid),
+    ("https://exämple.com", .invalid),
 ]
 
 @Suite struct ServerAddressTests {

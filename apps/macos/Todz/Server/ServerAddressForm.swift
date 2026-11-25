@@ -56,6 +56,7 @@ struct ServerAddressForm: View {
             isFieldFocused = true
         }
         .onChange(of: flow.state) { _, state in present(state) }
+        .onDisappear(perform: close)
         .confirmationDialog(confirmationTitle, isPresented: isConfirming, titleVisibility: .visible) {
             Button(SettingsCopy.confirmSwitch, role: .destructive, action: confirm)
             Button(SheetCopy.cancel, role: .cancel) {}
@@ -66,10 +67,10 @@ struct ServerAddressForm: View {
     }
 
     private var field: some View {
-        TextField(SettingsCopy.serverPlaceholder, text: $text)
+        TextField(SettingsCopy.serverAddressLabel, text: $text, prompt: Text(SettingsCopy.serverPlaceholder))
             .textFieldStyle(.roundedBorder)
+            .labelsHidden()
             .autocorrectionDisabled()
-            .accessibilityLabel(SettingsCopy.serverAddressLabel)
             .focused($isFieldFocused)
             .disabled(isInFlight)
             .onSubmit(submit)
@@ -87,6 +88,7 @@ struct ServerAddressForm: View {
                 ProgressView(SettingsCopy.checkingServer)
                     .controlSize(.small)
                 Button(SheetCopy.cancel, action: cancelCheck)
+                    .keyboardShortcut(.cancelAction)
             }
         case .switching:
             ProgressView(SettingsCopy.switchingServer)
@@ -128,11 +130,16 @@ struct ServerAddressForm: View {
         case let .refused(issue): (issue.copy, true)
         case .notTodz: (ErrorCopy.notTodzServer, true)
         case let .answersAs(origin): (ErrorCopy.serverNamedOther(origin: origin), true)
-        case .failed: (ErrorCopy.serverSwitchFailed(server: ServerName.of(address: model.serverURL)), true)
+        case .failed(.eraseFailed): (ErrorCopy.serverSwitchFailed(server: serverInUseName), true)
+        case .failed(.busy): (ErrorCopy.serverSwitchBusy(server: serverInUseName), true)
         case .alreadyInUse: (SettingsCopy.serverInUse, false)
-        case let .switched(server): layout == .row ? (SettingsCopy.switched(server: server), false) : nil
+        case .switched: layout == .row ? (SettingsCopy.switched(server: serverInUseName), false) : nil
         case .idle, .checking, .confirming, .switching: nil
         }
+    }
+
+    private var serverInUseName: String {
+        ServerName.of(address: model.serverURL)
     }
 
     private var isInFlight: Bool {
@@ -143,7 +150,7 @@ struct ServerAddressForm: View {
     }
 
     private var isBusyElsewhere: Bool {
-        model.isSigningIn || model.isRequestingLink || model.isSwitchingServer
+        model.isSigningIn || model.isRequestingLink
     }
 
     private var busyReason: String? {
@@ -207,14 +214,19 @@ struct ServerAddressForm: View {
 
     private func switchWhenReady() async {
         guard flow.state == .switching, let target else { return }
-        let isSwitched = await model.switchServer(to: target)
-        flow.finish(isSwitched: isSwitched, server: target)
+        let result = await model.switchServer(to: target)
+        flow.finish(result: result)
     }
 
     private func cancelCheck() {
         check?.cancel()
         flow.cancel()
         isFieldFocused = true
+    }
+
+    private func close() {
+        check?.cancel()
+        flow.close()
     }
 
     private func escape() {

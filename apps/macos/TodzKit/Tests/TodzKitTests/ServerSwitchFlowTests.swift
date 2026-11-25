@@ -110,18 +110,51 @@ private func checking() throws -> ServerSwitchFlow {
         #expect(signedIn.state == .confirming(losing: 4, signedIn: true))
     }
 
-    @Test func anEraseFailureWhileSwitchingFails() throws {
+    @Test(arguments: [
+        (ServerSwitchResult.eraseFailed, ServerSwitchState.failed(.eraseFailed)),
+        (.busy, .failed(.busy)),
+        (.alreadyInUse, .alreadyInUse),
+    ])
+    func aSwitchThatDidNotHappenSaysWhy(result: ServerSwitchResult, expected: ServerSwitchState) throws {
         var flow = try checking()
         flow.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
-        flow.finish(isSwitched: false, server: try address(newText))
-        #expect(flow.state == .failed(.eraseFailed))
+        flow.finish(result: result)
+        #expect(flow.state == expected)
     }
 
-    @Test func aFinishedSwitchNamesTheNewServer() throws {
+    @Test func aFinishedSwitchIsSwitched() throws {
         var flow = try checking()
         flow.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
-        flow.finish(isSwitched: true, server: try address(newText))
-        #expect(flow.state == .switched(server: "localhost:8791"))
+        flow.finish(result: .switched)
+        #expect(flow.state == .switched)
+    }
+
+    @Test func closingClearsEveryLineACheckAndAQuestionButNotASwitchInFlight() throws {
+        let inUse = try address(inUseText)
+        var refused = ServerSwitchFlow()
+        _ = refused.submit(text: "todz.example.com", serverURL: inUse)
+        var alreadyInUse = ServerSwitchFlow()
+        _ = alreadyInUse.submit(text: inUseText, serverURL: inUse)
+        var notTodz = try checking()
+        notTodz.receive(outcome: .notTodz, isSignedIn: false, waitingChanges: 0)
+        var confirming = try checking()
+        confirming.receive(outcome: .matches, isSignedIn: true, waitingChanges: 0)
+        var switched = try checking()
+        switched.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
+        switched.finish(result: .switched)
+        var failed = try checking()
+        failed.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
+        failed.finish(result: .eraseFailed)
+        let closedStates = [refused, alreadyInUse, notTodz, try checking(), confirming, switched, failed].map { flow in
+            var closing = flow
+            closing.close()
+            return closing.state
+        }
+        #expect(closedStates.allSatisfy { $0 == .idle })
+        var switching = try checking()
+        switching.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
+        switching.close()
+        #expect(switching.state == .switching)
     }
 
     @Test func resettingClearsAStatusButNotACheckInFlight() throws {

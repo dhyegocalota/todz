@@ -2,6 +2,7 @@ import Foundation
 
 private let healthPath = "/health"
 private let todzServiceName = "todz"
+private let healthBodyLimit = 4_096
 private let ownerPath = "/owner"
 private let sessionsPath = "/owner/sessions"
 private let signInMethodPath = "/owner/sign-in-method"
@@ -83,24 +84,38 @@ public struct OwnerAPI: OwnerService {
         self.transport = transport
     }
 
-    private static func uncachedTransport() -> URLSession {
+    public static let probeTransport = URLSession(configuration: probeConfiguration(deadline: ServerTiming.probeSeconds))
+
+    static func probeConfiguration(deadline: TimeInterval) -> URLSessionConfiguration {
+        let configuration = uncachedConfiguration()
+        configuration.timeoutIntervalForResource = deadline
+        return configuration
+    }
+
+    private static func uncachedConfiguration() -> URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        return URLSession(configuration: configuration)
+        return configuration
+    }
+
+    private static func uncachedTransport() -> URLSession {
+        URLSession(configuration: uncachedConfiguration())
     }
 
     public func health() async throws -> ServerHealthAnswer {
         var request = try OwnerRequest(method: .get, path: healthPath, session: nil).transportRequest(baseURL: baseURL)
         request.timeoutInterval = ServerTiming.probeSeconds
         let body: Data
-        let response: URLResponse
         do {
-            (body, response) = try await transport.data(for: request, delegate: RedirectRefusal())
+            let (bytes, response) = try await transport.bytes(for: request, delegate: RedirectRefusal())
+            defer { bytes.task.cancel() }
+            guard let response = response as? HTTPURLResponse, ResponseStatus.successes.contains(response.statusCode) else { return .notTodz }
+            body = try await bytes.prefix(healthBodyLimit + 1).reduce(into: Data()) { $0.append($1) }
         } catch is URLError {
             throw OwnerAPIError.unreachable
         }
-        guard let response = response as? HTTPURLResponse, ResponseStatus.successes.contains(response.statusCode) else { return .notTodz }
+        guard body.count <= healthBodyLimit else { return .notTodz }
         guard let answer = try? OwnerCoding.decoder().decode(HealthBody.self, from: body), answer.service == todzServiceName else { return .notTodz }
         guard let origin = answer.origin else { return .notTodz }
         return .todz(origin: origin)

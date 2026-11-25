@@ -3,7 +3,6 @@ import Observation
 
 @MainActor @Observable public final class AppModel {
     public internal(set) var serverURL: ServerAddress
-    public internal(set) var isSwitchingServer = false
     public internal(set) var phase: AppPhase = .loading
     public internal(set) var signInError: SignInError?
     public internal(set) var isSigningIn = false
@@ -142,7 +141,7 @@ import Observation
         self.pause = pause
         self.makeIdempotencyKey = makeIdempotencyKey
         self.makeLinkVerifier = makeLinkVerifier
-        eraseDataOfUnreadableServer()
+        eraseDataOfAnotherServer()
     }
 
     public var waitingChangeCount: Int {
@@ -188,20 +187,20 @@ import Observation
             return
         }
         restorePendingLink()
-        let secret: String?
+        let stored: StoredSession?
         do {
-            secret = try vault.read()
+            stored = try vault.read()
         } catch {
             loadOutbox()
             phase = .signedOut(notice: .sessionUnreadable)
             return
         }
-        guard let secret else {
+        guard let stored else {
             loadOutbox()
             phase = .signedOut(notice: nil)
             return
         }
-        session = secret
+        session = stored.secret
         phase = .loading
         openCache(cachedOwner())
         await openWorkspaces()
@@ -392,7 +391,7 @@ import Observation
 
     private func keep(secret: String) {
         do {
-            try vault.write(secret)
+            try vault.write(StoredSession(secret: secret, origin: serverURL.origin))
         } catch {
             raise(.sessionNotSaved)
         }

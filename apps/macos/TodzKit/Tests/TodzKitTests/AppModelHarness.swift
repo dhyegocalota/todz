@@ -59,14 +59,14 @@ final class HarnessClock {
     let preference: ServerPreference
     let model: AppModel
 
-    init(storedServer: String? = nil, isLocalDataKept: Bool = false, isVaultUnerasable: Bool = false) throws {
+    init(storedServer: String? = nil, isLocalDataKept: Bool = false, sessionOrigin: String? = harnessDefaultServer, isVaultUnerasable: Bool = false) throws {
         let timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
         let defaultURL = try ServerAddress.checked(text: harnessDefaultServer).get()
         let defaultsName = UUID().uuidString
         let defaults = try #require(UserDefaults(suiteName: defaultsName))
         defaults.removePersistentDomain(forName: defaultsName)
         if let storedServer { defaults.set(storedServer, forKey: harnessServerKey) }
-        let preference = ServerPreference(defaults: defaults)
+        let preference = ServerPreference(defaults: defaults, domainName: defaultsName)
         let servers = FakeServers(service: service, signals: signals)
         let probes = probes
         let keys = keys
@@ -77,6 +77,7 @@ final class HarnessClock {
         vault.isUnerasable = isVaultUnerasable
         if isLocalDataKept {
             vault.secret = session
+            vault.origin = sessionOrigin
             store.owner = OwnerCache(ownerIdentifier: service.issuedSession.owner.identifier, workspaces: [], activeWorkspaceIdentifier: nil)
             store.outbox = Data("outbox".utf8)
             pendingLinks.link = PendingSignInLink(email: "maria@example.com", verifier: "verifier-0", expiresAt: fixedInstant.addingTimeInterval(harnessPendingLifetime))

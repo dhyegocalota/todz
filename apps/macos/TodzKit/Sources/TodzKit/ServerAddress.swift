@@ -15,7 +15,7 @@ private func authorityText(host: String, port: Int?, defaultPort: Int) -> String
     return "\(hostLabel)\(portSeparator)\(port)"
 }
 
-public struct ServerAddress:Equatable, Sendable {
+public struct ServerAddress: Equatable, Sendable {
     public let origin: String
     public let authority: String
     public let url: URL
@@ -26,6 +26,7 @@ public struct ServerAddress:Equatable, Sendable {
         guard isSingleWord, let components = URLComponents(string: trimmed) else { return .failure(.invalid) }
         guard let scheme = components.scheme?.lowercased() else { return .failure(.missingScheme) }
         guard let defaultPort = defaultPortOfScheme[scheme] else { return .failure(.unsupportedScheme) }
+        guard components.percentEncodedHost == components.host else { return .failure(.invalid) }
         guard let host = components.host?.lowercased().trimmingCharacters(in: addressBrackets), !host.isEmpty else { return .failure(.missingHost) }
         guard components.user == nil, components.password == nil else { return .failure(.hasCredentials) }
         guard scheme == secureScheme || loopbackHosts.contains(host) else { return .failure(.insecureRemoteHost) }

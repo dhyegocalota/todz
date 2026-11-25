@@ -1,13 +1,15 @@
+import { HEALTH_SERVICE_NAME } from '@todz/types';
 import type { Env } from './env';
 import { HttpHeader, NO_STORE } from './http-header';
 import { noRouteResponse } from './owner-errors';
+import { publicOriginOf } from './sign-in-links';
 
 export const HEALTH_PATH = '/health';
 const HEALTH_METHOD = 'GET';
-const SERVICE_NAME = 'todz';
 
 export async function serveHealth({ request, env }: { request: Request; env: Env }): Promise<Response> {
   if (request.method !== HEALTH_METHOD) return noRouteResponse();
-  if (env.PUBLIC_ORIGIN === undefined) return noRouteResponse();
-  return Response.json({ service: SERVICE_NAME, origin: env.PUBLIC_ORIGIN }, { headers: { [HttpHeader.CacheControl]: NO_STORE } });
+  const publicOrigin = publicOriginOf(env.PUBLIC_ORIGIN);
+  if (publicOrigin === null) return noRouteResponse();
+  return Response.json({ service: HEALTH_SERVICE_NAME, origin: publicOrigin }, { headers: { [HttpHeader.CacheControl]: NO_STORE } });
 }
