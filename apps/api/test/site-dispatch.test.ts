@@ -349,7 +349,7 @@ describe('the admin routes on the site host', () => {
 
   describe('POST /admin/sign-out', () => {
     const SAME_ORIGIN = { 'Sec-Fetch-Site': 'same-origin' };
-    const CLEARED_SESSION_COOKIE = '__Host-todz_admin=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0';
+    const CLEARED_SESSION_COOKIE = '__Host-todz_admin=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0';
 
     function signOutRequest(headers: Record<string, string>): Request {
       return adminRequest({ path: AdminPath.SignOut, method: 'POST', headers });

@@ -22,7 +22,7 @@ const SITE_ORIGIN = 'https://todz.app';
 const API_ORIGIN = 'https://api.todz.app';
 const ADMIN_ADDRESS = 'hello@todz.app';
 const SECRET = 'a-session-secret';
-const ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=Strict';
+const ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=Lax';
 const CHALLENGE_MAX_AGE = 900;
 const SESSION_MAX_AGE = 43_200;
 
