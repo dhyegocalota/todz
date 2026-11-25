@@ -34,11 +34,13 @@ Two surfaces change: a new panel, and Settings gains a fifth row. The menu bar, 
 | Few | 1 to 5 open | heading, the rows |
 | Many | more than 5 open | heading counting all, five rows, `+N more` |
 | Long title | a title wider than the row | one line, tail truncated; the tooltip of the panel is unchanged |
-| Hovered | the pointer is over it | stays; the five seconds restart when the pointer leaves (O3) |
+| Appearing | its first 0.4 s | ignores the pointer, so a click aimed at the app beneath lands there |
+| Hovered | the pointer is over it | stays, at most 30 s from its appearance; the five seconds restart when the pointer leaves (O3) |
 | Fading | five seconds passed | alpha to 0 over 0.5 s, then gone; with Reduce Motion, gone at once (O5) |
-| Clicked | a click anywhere | gone at once; todz active; the main window on Today (O4) |
+| Clicked | a click anywhere after the first 0.4 s | gone at once; todz active; the main window on Today (O4) |
+| Closed early | the popover shows, the screen locks, the Mac sleeps, the owner signs out or switches workspace | gone at once, without the fade |
 | Offline | `syncStatus != .online` | the cached Today, the same look; no sync item |
-| Not shown | off, nothing open, locked, held, Today in front, Today unknown | nothing on screen |
+| Not shown | off, nothing open, locked, mirrored, held, the day close due, Today in front, Today unknown | nothing on screen |
 
 Light and dark come from the glass or the material; nothing is tinted by hand. Reduce Transparency and Increase Contrast are the system's: the glass and the material turn opaque and gain the system border. One width, 280; the height fits the content.
 
@@ -58,6 +60,7 @@ Light and dark come from the glass or the material; nothing is tinted by hand. R
 
 - A `Toggle` after the Close the day row, `.switch`, title and detail with `lineLimit(subtitleLines, reservesSpace: true)` (O7). Off by default; `@AppStorage(MorningGlancePreference.isOnStorageKey)`.
 - Turning it on shows nothing until the next chance: the panel never appears over the Settings window as a preview.
+- The window grows by exactly this one row: its title and two reserved detail lines (`reservesSpace: true`), so switching it never changes the height, and nothing above or below is clipped.
 
 ## 2. Components
 
@@ -65,15 +68,15 @@ Light and dark come from the glass or the material; nothing is tinted by hand. R
 |---|---|---|
 | `MorningGlancePanel` (new) | `Todz/MorningGlance` | the `NSPanel` subclass: never key or main, borderless, non-activating, status bar level, every Space, over full screen, clear background, shadow |
 | `MorningGlanceView` (new) | `Todz/MorningGlance` | the glass or material shape, the heading, the rows, the rest line, the tap and the hover |
-| `MorningGlancePresenter` (new) | `Todz/MorningGlance` | placement, unhide without activation, order front, the visibility answer, the dwell and fade, the click, the close when the popover shows |
-| `MorningGlanceTrigger` (new) | `Todz/MorningGlance` | the chance observers |
+| `MorningGlancePresenter` (new) | `Todz/MorningGlance` | placement on the screen with the menu bar, unhide without activation when hidden, the lock re-read, order front, the occlusion wait, the pointer grace, the dwell and fade, the click, the close |
+| `MorningGlanceTrigger` (new) | `Todz/MorningGlance` | the chance observers; the lock and sleep observers that close the panel |
 | `SettingsView` | `Todz/Settings` | the switch |
 | `MenuBarPopover` | `Todz/MenuBar` | closes the panel when the popover shows |
 | `MorningGlanceCopy` (new), `SettingsCopy`, `AccessibilityCopy` | `Copy` | § 8 |
 
 ## 3. Tokens
 
-All file-local constants in `MorningGlanceView` or `MorningGlancePresenter`, as `popoverWidth` is in `TodzApp`.
+Sizes are file-local constants in `MorningGlanceView` or `MorningGlancePresenter`, as `popoverWidth` is in `TodzApp`; durations and the row count live in `TodzKit` (`MorningGlanceDwell`, `MorningGlanceContent`, `MorningGlanceCoordinator`), where they are tested.
 
 | Use | Token |
 |---|---|
@@ -82,7 +85,10 @@ All file-local constants in `MorningGlanceView` or `MorningGlancePresenter`, as 
 | Inset from the visible frame's top right | 12 |
 | Rows shown | 5 |
 | Shown for | 5 s |
-| Fade | 0.5 s |
+| Longest show while hovered | 30 s |
+| Pointer grace | 0.4 s |
+| Fade | 0.5 s; 0 with Reduce Motion |
+| Wait for the occlusion to turn visible | 1 s |
 | Padding, row spacing | the system's default `padding()` and `VStack` spacing |
 | Heading / count | `Font.headline` `.primary` / `.secondary` |
 | Rows | `Font.body` `.primary`; the circle `.secondary` |
@@ -96,9 +102,9 @@ New strings in § 8. Reused: `MainWindowCopy.today`, `MenuBarCopy.left(count:)`,
 ## 5. Interaction and accessibility
 
 - **Keyboard:** none. The panel never becomes key, so every keystroke typed while it shows reaches the frontmost app; it has no Escape and no shortcut. The owner reaches Today from the keyboard through the popover or the main window as always.
-- **Pointer:** a click anywhere opens Today in the main window and activates todz; the hover pauses the countdown. No drag, no right click.
+- **Pointer:** a click anywhere opens Today in the main window and activates todz; the hover pauses the countdown, up to 30 s. For its first 0.4 s the panel ignores the pointer, so a click already on its way to the app beneath is not stolen. No drag, no right click.
 - **VoiceOver:** when the panel shows, the announcement `AccessibilityCopy.menuBarCount(count:)` ("todz, 7 left today") (O6). The panel is one element: label `AccessibilityCopy.morningGlance(count:)` with the shown titles as its value, the button trait, the hint `AccessibilityCopy.glanceOpensToday`; its default action is the click.
-- **Motion:** it appears at once, without a slide (O5); it fades over 0.5 s, and with Reduce Motion (`NSWorkspace.shared.accessibilityDisplayShouldReduceMotion`, read at the fade) it disappears at once.
+- **Motion:** it appears at once, without a slide (O5); it fades over `MorningGlanceDwell.fadeDuration(reducesMotion:)`: 0.5 s, or 0 with Reduce Motion (the presenter passes `NSWorkspace.shared.accessibilityDisplayShouldReduceMotion`, read at the fade).
 - **Contrast:** `.primary` and `.secondary` on the system glass or material; overdue is said in words. Reduce Transparency and Increase Contrast are honoured by the system surfaces.
 
 ## 6. Options
@@ -106,7 +112,7 @@ New strings in § 8. Reused: `MainWindowCopy.today`, `MenuBarCopy.left(count:)`,
 Captures into `.pr-media/morning-glance/design/` from the tester's showings, light and dark: `glance-many.png`, `settings-off.png`, `settings-on.png`.
 
 **O1. Where it shows**
-- A. The top right of the screen with the menu bar, 12 pt under it. Where the eye looks for a passing message; proven by the spike.
+- A. The top right of the screen with the menu bar (`NSScreen.screens.first`), 12 pt under it. Where the eye looks for a passing message; proven by the spike.
 - B. Under the todz status item. Ties the glance to its icon; the item's place moves, can sit in the overflow, and the popover opens there.
 - C. Top centre. Seen at once; covers the title bar of the frontmost window.
 - **Recommendation: A.** A notification banner can sit in the same corner for the same five seconds; the panel stays above it at the status bar level.
@@ -118,7 +124,7 @@ Captures into `.pr-media/morning-glance/design/` from the tester's showings, lig
 - **Recommendation: A.**
 
 **O3. Hover**
-- A. Stays while hovered; the five seconds restart on leave. The owner can read a long list.
+- A. Stays while hovered, at most 30 s; the five seconds restart on leave. The owner can read a long list; a pointer left resting on it never keeps titles up for long.
 - B. Fixed five seconds. Predictable; a list is lost mid-read.
 - **Recommendation: A.**
 

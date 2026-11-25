@@ -1,29 +1,59 @@
 # Tester briefing: Morning glance
 
-Written by the developer sub-agent when its steps are done. The developer does not run `test-plan.md` and does not declare the feature works.
+Written by the developer sub-agents when their steps are done, each in its own section: G1 (TodzKit) and G2 (the app). The developers do not run `test-plan.md` and do not declare the feature works.
 
-## What changed
+## G1
+
+### What changed
 
 - <file or module> — <one line>
 
-## How to run
+### How to run
 
 ```bash
-<commands to start the stack and open the feature>
+<commands>
 ```
 
-## Red today, green after
+### Red today, green after
 
 | Test | Red before the change because | Green after because |
 |------|--------------------------------|---------------------|
 | `<path>::<name>` |  |  |
 
-## Hypotheses to attack
+### Hypotheses to attack
 
 Every "it works" is a hypothesis the tester tries to break.
 
 1. Hypothesis: <claim>. Break it by: <suggested attack>.
 
-## Known gaps
+### Known gaps
+
+- <what the developer knows is missing or untested>
+
+## G2
+
+### What changed
+
+- <file or module> — <one line>
+
+### How to run
+
+```bash
+<commands to build, force a glance and launch hidden>
+```
+
+### Red today, green after
+
+| Test | Red before the change because | Green after because |
+|------|--------------------------------|---------------------|
+| `<path>::<name>` |  |  |
+
+### Hypotheses to attack
+
+Every "it works" is a hypothesis the tester tries to break.
+
+1. Hypothesis: <claim>. Break it by: <suggested attack>.
+
+### Known gaps
 
 - <what the developer knows is missing or untested>
