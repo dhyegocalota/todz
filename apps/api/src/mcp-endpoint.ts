@@ -71,7 +71,8 @@ function serveScope({ request, scope, era }: { request: Request; scope: McpServe
 }
 
 function legacyScope({ legacyRequest, clientName }: { legacyRequest: LegacyRequest; clientName: string }): McpServerScope {
-  return { project: legacyRequest.keyProject.project, today: legacyRequest.today, clientNameOf: () => clientName };
+  const { keyProject, today } = legacyRequest;
+  return { project: keyProject.project, today, agentNudge: keyProject.agentNudge, clientNameOf: () => clientName };
 }
 
 async function initializeSession({
@@ -132,6 +133,6 @@ export async function serveMcp({ request, env, now }: { request: Request; env: E
   const today = calendarDateInTimeZone({ timeZone: keyProject.timeZone, now });
   const isLegacy = await isLegacyRequest(request);
   if (isLegacy) return serveLegacy({ request, env, keyProject, today, now });
-  const scope = { project: keyProject.project, today, clientNameOf: envelopeClientName };
+  const scope = { project: keyProject.project, today, agentNudge: keyProject.agentNudge, clientNameOf: envelopeClientName };
   return serveScope({ request, scope, era: ProtocolEra.Modern });
 }

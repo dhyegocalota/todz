@@ -67,6 +67,14 @@ export function nextPromptText(task: Task | null): string {
   return paragraphs([MCP_COPY.workOnTask, fencedTask, MCP_COPY.finishWith(formatShortId(task.number))]);
 }
 
+export function nudgeLine(_: { count: number; overdue: number; taskNumber: number }): string {
+  throw new Error('nudgeLine is not implemented');
+}
+
+export function nudgedText(_: { nudge: string | null; text: string }): string {
+  throw new Error('nudgedText is not implemented');
+}
+
 export function failureText(failure: ProjectFailure): string {
   if (failure.kind === ProjectFailureKind.TaskNotFound) return MCP_COPY.taskNotFound(formatShortId(failure.number));
   if (failure.kind === ProjectFailureKind.CursorAhead) throw new Error('the MCP tools never read changes');

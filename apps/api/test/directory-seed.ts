@@ -61,6 +61,14 @@ export async function seedIssuedKey(timeZone = 'UTC'): Promise<{ projectId: stri
   return { projectId, key: secret };
 }
 
+export async function seedNudgedKey(): Promise<{ projectId: string; key: string }> {
+  const ownerId = await seedOwner();
+  await enableAgentNudge({ directory: env.DIRECTORY, ownerId });
+  const projectId = await seedProject({ ownerId });
+  const { secret } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+  return { projectId, key: secret };
+}
+
 export async function revokeKey(key: string): Promise<void> {
   await env.DIRECTORY.prepare('UPDATE project_keys SET revoked_at = ? WHERE digest = ?')
     .bind(CLOCK_NOW, await digestCredential(key))

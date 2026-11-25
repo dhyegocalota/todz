@@ -27,7 +27,7 @@ const EnvelopeClientSchema = z.object({ [CLIENT_INFO_META_KEY]: z.object({ name:
 
 export type ClientNameOf = (ctx: ServerContext) => string | null;
 
-export type McpServerScope = { project: DurableObjectStub<ProjectStore>; today: string; clientNameOf: ClientNameOf };
+export type McpServerScope = { project: DurableObjectStub<ProjectStore>; today: string; agentNudge: boolean; clientNameOf: ClientNameOf };
 
 export function envelopeClientName(ctx: ServerContext): string | null {
   const envelope = EnvelopeClientSchema.safeParse(ctx.mcpReq.envelope);
