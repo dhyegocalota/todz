@@ -4,7 +4,7 @@ import TodzKit
 import WidgetKit
 
 private let cacheFolderName = "Cache"
-private let focusFilterReadTimeoutMilliseconds = 3000
+private let focusFilterReadTimeout: Duration = .seconds(3)
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel(
@@ -28,6 +28,7 @@ private let focusFilterReadTimeoutMilliseconds = 3000
         timeZone: model.timeZone,
         openCount: { [model] in model.todayHeadingCount },
         isScreenLocked: { ScreenLock.isLocked },
+        isPopoverVisible: { [panel] in panel.isShown },
         openPopover: { [panel] in await panel.open() }
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
@@ -66,18 +67,19 @@ private let focusFilterReadTimeoutMilliseconds = 3000
     }
 
     private func readFocusFilter() async {
-        let (answers, answer) = AsyncStream.makeStream(of: Bool?.self)
-        Task {
-            answer.yield(try? await TodzFocusFilter.current.isQuiet)
-            answer.finish()
+        let (settlements, settle) = AsyncStream.makeStream(of: Void.self)
+        let timeout = Task { [gate] in
+            try? await Task.sleep(for: focusFilterReadTimeout)
+            guard !Task.isCancelled else { return }
+            gate.applyLaunchRead(isQuiet: true)
+            settle.yield()
         }
-        Task {
-            try? await Task.sleep(for: .milliseconds(focusFilterReadTimeoutMilliseconds))
-            answer.yield(nil)
-            answer.finish()
+        Task { [gate] in
+            let answer = try? await TodzFocusFilter.current.isQuiet
+            timeout.cancel()
+            if let answer { gate.applyLaunchRead(isQuiet: answer) }
+            settle.yield()
         }
-        var iterator = answers.makeAsyncIterator()
-        guard let firstAnswer = await iterator.next(), let isQuiet = firstAnswer else { return }
-        gate.applyLaunchRead(isQuiet: isQuiet)
+        for await _ in settlements { return }
     }
 }

@@ -58,7 +58,10 @@ import Observation
         isEngaged = true
     }
 
-    public func popoverShown() {}
+    public func popoverShown() {
+        guard isClosingDay else { return }
+        markClosed()
+    }
 
     private var decision: DayCloseDecision {
         guard let minutesAfterMidnight = DayClosePreference.minutesAfterMidnight(in: defaults) else { return .off }
@@ -71,7 +74,7 @@ import Observation
         )
     }
 
-    // NB ADR 0055: nothing left marks the day closed without opening; a held or failed opening leaves the day unmarked.
+    // NB ADR 0055: the day is marked only when the popover is seen; a held, failed or unseen opening leaves it unmarked.
     private func closeTheDay() async {
         guard let openCount = openCount() else {
             waitForCount()
@@ -90,12 +93,13 @@ import Observation
         isEngaged = false
         isClosingDay = true
         isOpening = true
-        let didOpen = await openPopover()
+        let didClick = await openPopover()
         isOpening = false
-        guard didOpen else {
+        guard didClick else {
             end()
             return
         }
+        guard isPopoverVisible() else { return }
         markClosed()
     }
 

@@ -4,7 +4,7 @@ private let screenIsLockedKey = "CGSSessionScreenIsLocked"
 
 enum ScreenLock {
     static var isLocked: Bool {
-        guard let session = CGSessionCopyCurrentDictionary() as? [String: Any] else { return false }
+        guard let session = CGSessionCopyCurrentDictionary() as? [String: Any] else { return true }
         return session[screenIsLockedKey] as? Bool == true
     }
 }

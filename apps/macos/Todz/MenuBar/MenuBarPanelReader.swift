@@ -5,6 +5,7 @@ import TodzKit
 struct MenuBarPanelReader: NSViewRepresentable {
     let panel: MenuBarPanel
     let onBecomeKey: () -> Void
+    let onShow: () -> Void
     let onHide: () -> Void
     let onWorkspaceNumber: (Int) -> Void
 
@@ -15,6 +16,7 @@ struct MenuBarPanelReader: NSViewRepresentable {
     func updateNSView(_ view: MenuBarPanelView, context: Context) {
         view.panel = panel
         view.onBecomeKey = onBecomeKey
+        view.onShow = onShow
         view.onHide = onHide
         view.onWorkspaceNumber = onWorkspaceNumber
         panel.window = view.window
@@ -24,6 +26,7 @@ struct MenuBarPanelReader: NSViewRepresentable {
 final class MenuBarPanelView: NSView {
     var panel: MenuBarPanel?
     var onBecomeKey: (() -> Void)?
+    var onShow: (() -> Void)?
     var onHide: (() -> Void)?
     var onWorkspaceNumber: ((Int) -> Void)?
     private var observations: [any NSObjectProtocol] = []
@@ -43,6 +46,7 @@ final class MenuBarPanelView: NSView {
         stopObserving()
         guard let window else { return }
         if window.isKeyWindow { onBecomeKey?() }
+        if window.isVisible { onShow?() }
         let keyObservation = NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification,
             object: window,
@@ -56,8 +60,12 @@ final class MenuBarPanelView: NSView {
             queue: .main
         ) { [weak self, weak window] _ in
             MainActor.assumeIsolated {
-                guard let window, !window.isVisible else { return }
-                self?.onHide?()
+                guard let window else { return }
+                guard window.isVisible else {
+                    self?.onHide?()
+                    return
+                }
+                self?.onShow?()
             }
         }
         observations = [keyObservation, visibilityObservation]

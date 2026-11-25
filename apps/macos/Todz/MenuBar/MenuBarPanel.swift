@@ -1,6 +1,7 @@
 import AppKit
 import Observation
 import SwiftUI
+import TodzKit
 
 @MainActor @Observable final class MenuBarPanel {
     @ObservationIgnored weak var window: NSWindow?
@@ -11,15 +12,23 @@ import SwiftUI
         statusItemButton?.performClick(nil)
     }
 
-    // NB ADR 0055: an open from code unhides the app without activating it and clicks the same button, never while the popover shows, and answers true only when the window shows on the next turn.
+    var isShown: Bool {
+        window?.isVisible == true
+    }
+
+    // NB ADR 0055: an open from code clicks the status item's button, never while the popover shows.
     func open() async -> Bool {
-        let isShown = window?.isVisible == true
         guard !isShown else { return true }
         guard let statusItemButton else { return false }
         NSApp.unhideWithoutActivation()
         statusItemButton.performClick(nil)
-        await Task.yield()
-        return window?.isVisible == true
+        return true
+    }
+
+    func engage(_ dayClose: DayCloseCoordinator) {
+        dayClose.engage()
+        NSApp.activate()
+        window?.makeKey()
     }
 
     func openMainWindow(_ openWindow: OpenWindowAction) {

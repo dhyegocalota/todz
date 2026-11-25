@@ -13,6 +13,7 @@ struct MenuBarPopover: View {
                 MenuBarPanelReader(
                     panel: panel,
                     onBecomeKey: focusAddField,
+                    onShow: { dayClose.popoverShown() },
                     onHide: { dayClose.end() },
                     onWorkspaceNumber: { number in Task { await model.switchWorkspace(number: number) } }
                 )

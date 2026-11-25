@@ -15,7 +15,7 @@ The owner wants todz to close his day: once, at a time he picks, the popover he 
 2. **Once a day, on time or on the first chance after.** A `DayCloseSchedule` in `TodzKit` decides, from the preference, the last day it fired and the current instant, whether to fire now and when to look next. It fires at the chosen time, or at the first wake or launch after it on the same calendar day; never twice on one day, never on a day already over. The day it fired is stored with the preference.
 3. **Through the gate.** A due day close asks `ProactiveGate.admit(.dayClose)`. Held during a Focus, it shows when the gate releases it, if that is still the same day; otherwise it is dropped.
 4. **Nothing to close, nothing shown.** With no open task in Today of the active workspace, the day is marked closed and nothing opens.
-5. **The popover opens itself the way it closes itself.** The app clicks its own status item button (ADR 0031's mechanism, from code), and the popover shows Today in a day-close mode: a heading with what is left and, on each row, Done, Tomorrow and Drop. **Drop clears the task's due date**: the task leaves Today and stays open, because the product has no deletion. Leaving the popover ends the mode; the next normal opening is the usual Today.
+5. **The popover opens itself the way it closes itself.** The app clicks its own status item button (ADR 0031's mechanism, from code), and the popover shows Today in a day-close mode: a heading with what is left and, on each row, Done, Tomorrow and Drop. **Drop clears the task's due date**: the task leaves Today and stays open, because the product has no deletion. Leaving the popover ends the mode; the next normal opening is the usual Today. The day is marked closed when the popover is seen, never when the click is sent: a click that shows nothing leaves the day unmarked and a later check that day clicks again.
 
 ## Alternatives considered
 
@@ -31,6 +31,7 @@ The owner wants todz to close his day: once, at a time he picks, the popover he 
 ## Consequences
 
 - With two Macs, each closes the day on its own; the second finds less left, or nothing, and stays silent.
+- Any local process can post `com.apple.screenIsUnlocked`; it only makes todz re-run the check, which re-reads the clock, the real lock state, the gate and the once-a-day mark, so it can time a due day close but never open one early, during Focus, while locked or twice.
 - The popover appears over the owner's work once a day, which is the feature; the walk proves it with as few openings as the test plan needs.
 
 ## Evidence
