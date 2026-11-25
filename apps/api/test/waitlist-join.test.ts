@@ -191,7 +191,11 @@ async function join({
 }
 
 async function landingHtml({ notice, siteKey }: { notice: LandingNotice; siteKey: string | null }): Promise<string> {
-  const page = await serveLandingPage({ notice, challenge: siteKey === null ? null : { siteKey, stampSecret: TURNSTILE_TEST_SECRET } });
+  const page = await serveLandingPage({
+    notice,
+    challenge: siteKey === null ? null : { siteKey, stampSecret: TURNSTILE_TEST_SECRET },
+    isReleased: false,
+  });
   return withoutStamps(await page.text());
 }
 

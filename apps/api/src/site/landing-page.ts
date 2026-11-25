@@ -435,9 +435,11 @@ export function landingChallengeKeysOf(env: Env): LandingChallengeKeys | null {
 export async function serveLandingPage({
   notice,
   challenge,
+  isReleased,
 }: {
   notice: LandingNotice;
   challenge: LandingChallengeKeys | null;
+  isReleased: boolean;
 }): Promise<Response> {
   const page = LANDING_PAGES[notice];
   const usableSiteKey = challenge === null ? null : usableSiteKeyOf(challenge.siteKey);

@@ -33,7 +33,13 @@ const LINK_LINE_PATTERN = /^- \[[^\]]+\]\(https:\/\/[^)]+\)(: .+)?$/;
 const TOOL_LINE_PATTERN = /^- `(next|add|list|update|done)`: .+$/;
 const LINK_URL_PATTERN = /\]\((https:\/\/[^)]+)\)/;
 const SECTIONS = ['## Connect an agent', '## MCP tools', '## Docs', '## Optional'];
-const FACTS = ['in development', 'coming soon', 'Pricing has not been announced', 'Joining the waitlist is free', 'Logic Bit'];
+const FACTS = [
+  'in development',
+  'a download, not yet notarized by Apple',
+  'Pricing has not been announced',
+  'Joining the waitlist is free',
+  'Logic Bit',
+];
 const CRAWLERS = [
   'Googlebot',
   'Bingbot',

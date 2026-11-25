@@ -20,7 +20,7 @@ function routeKey({ method, pathname }: { method: string; pathname: string }): s
 }
 
 function serveLanding({ env }: SiteContext): Promise<Response> {
-  return serveLandingPage({ notice: LandingNotice.None, challenge: landingChallengeKeysOf(env) });
+  return serveLandingPage({ notice: LandingNotice.None, challenge: landingChallengeKeysOf(env), isReleased: false });
 }
 
 function redirectToLanding(): Response {

@@ -177,7 +177,7 @@ function jsonAnswer(outcome: JoinOutcome): Response {
 
 async function pageAnswer({ outcome, env }: { outcome: JoinOutcome; env: Env }): Promise<Response> {
   const notice = NOTICE_OF_OUTCOME[outcome];
-  const page = await serveLandingPage({ notice, challenge: landingChallengeKeysOf(env) });
+  const page = await serveLandingPage({ notice, challenge: landingChallengeKeysOf(env), isReleased: false });
   return new Response(page.body, { status: STATUS_OF_NOTICE[notice], headers: page.headers });
 }
 
