@@ -57,3 +57,4 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 | [`agent-nudge-deploy`](agent-nudge-deploy/) | The run of the deploy runbook that applied the agent nudge migration and put the nudge live, recorded | Shipped 2026-11-25 ([PR #33](https://github.com/dhyegocalota/todz/pull/33)) |
 | [`focus-aware`](focus-aware/) | A todz Focus filter and one shared gate keep every proactive surface quiet during a Focus that holds it, and show each once after | Shipped 2026-11-25 ([PR #34](https://github.com/dhyegocalota/todz/pull/34)) |
 | [`turnstile-live`](turnstile-live/) | The public Turnstile site key goes into the production vars and the deploy runbook runs again, opening the guarded sign-in, waitlist and admin routes | Shipped 2026-11-25 ([PR #35](https://github.com/dhyegocalota/todz/pull/35)) |
+| [`credits`](credits/) | todz.app's footer and the README credit Logic Bit, the studio that built todz, from one constant | Building |
