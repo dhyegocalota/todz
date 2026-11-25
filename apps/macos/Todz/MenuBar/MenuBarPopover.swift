@@ -31,6 +31,7 @@ struct MenuBarPopover: View {
     }
 
     private func showPopover() {
+        panel.onShown?()
         dayClose.popoverShown()
         morningGlance.popoverShown()
         ribbon.end()

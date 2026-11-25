@@ -6,7 +6,7 @@ import { SITE_GLYPH_SPRITE, SiteGlyph, glyphHtml } from './site-glyphs';
 import { DARK_THEME_COLOR } from './site-constants';
 import { OPEN_GRAPH_IMAGE, SITE_ICONS, SiteIcon } from './site-icons';
 import { SITE_STYLE } from './site-style';
-import { DiscoveryPath, SITE_URL } from './site-urls';
+import { DOCS_INSTALL_URL, DiscoveryPath, SITE_URL } from './site-urls';
 
 export const LANDING_PATH = '/';
 export const JOIN_PATH = '/join';
@@ -36,6 +36,7 @@ function headerHtml(): string {
 ${brandHtml()}
 <nav class="site-nav" aria-label="${escapedHtml(LANDING_COPY.shell.navLabel)}">
 <a class="nav-link" href="${DOCS_SELF_HOST_URL}"><span class="label-long">${escapedHtml(LANDING_COPY.shell.selfHostLink)}</span><span class="label-short">${escapedHtml(LANDING_COPY.shell.selfHostLinkShort)}</span></a>
+<a class="nav-link" href="${DOCS_INSTALL_URL}"><span class="label-long">${escapedHtml(LANDING_COPY.shell.installLink)}</span><span class="label-short">${escapedHtml(LANDING_COPY.shell.installLinkShort)}</span></a>
 </nav>
 </div>
 </header>`;
@@ -53,6 +54,7 @@ ${brandHtml()}
 <p class="footer-copyright">${escapedHtml(LANDING_COPY.shell.copyright)}</p>
 ${creditHtml()}
 <a class="footer-link" href="${DOCS_SELF_HOST_URL}">${escapedHtml(LANDING_COPY.shell.footerSelfHost)}</a>
+<a class="footer-link" href="${DOCS_INSTALL_URL}">${escapedHtml(LANDING_COPY.shell.footerInstall)}</a>
 </div>
 </footer>`;
 }

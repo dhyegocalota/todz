@@ -71,7 +71,7 @@ import Observation
     var isDayEmailNotSaved = false
 
     @ObservationIgnored var hasLaunched = false
-    @ObservationIgnored var isLaunchSettled = false
+    var isLaunchSettled = false
     var heldSignInLink: SignInLink?
     @ObservationIgnored var session: String?
     @ObservationIgnored var ownerIdentifier: String?

@@ -61,6 +61,7 @@ const LOCAL_ORIGIN_IMPORT_PATTERN = /import ([^;]+?) from '[^']*local-origin'/g;
 const SITE_HOST_PREDICATE_IMPORT = '{ isLocalSiteHost }';
 const LANDING_ASSET_PREFIX = '/landing/';
 const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
+const DOCS_INSTALL_URL = 'https://docs.todz.app/install-on-mac';
 const GUIDE_LINK_PATTERN = /<a class="(?:nav-link|footer-link)" href="([^"]*)"/g;
 const FOOTER_CREDIT =
   '<p class="footer-credit">todz is a product of <a class="footer-credit-link" href="https://logicbit.com.br" rel="noopener noreferrer">Logic Bit</a>, made in Brazil</p>';
@@ -269,9 +270,14 @@ describe('the landing', () => {
     expect(SITE_SOURCES['../src/site/landing-copy.ts']).toContain('MCP_COPY.added');
   });
 
-  test.each(NOTICES)('with the %s notice, the header and footer guide links open the guide on the docs', async (notice) => {
+  test.each(NOTICES)('with the %s notice, the header and footer open the guide and the Mac install page on the docs', async (notice) => {
     const { html } = await landingPage(notice);
-    expect(captures({ html, pattern: GUIDE_LINK_PATTERN })).toEqual([DOCS_SELF_HOST_URL, DOCS_SELF_HOST_URL]);
+    expect(captures({ html, pattern: GUIDE_LINK_PATTERN })).toEqual([
+      DOCS_SELF_HOST_URL,
+      DOCS_INSTALL_URL,
+      DOCS_SELF_HOST_URL,
+      DOCS_INSTALL_URL,
+    ]);
   });
 
   test('links only to this site, a fragment or an https address', async () => {
