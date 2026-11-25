@@ -1,29 +1,87 @@
 # Tester briefing: Day close
 
-Written by the developer sub-agent when its steps are done. The developer does not run `test-plan.md` and does not declare the feature works.
+Written by the developer sub-agent (lane G1) when its steps were done. The developer does not run `test-plan.md` and does not declare the feature works. The app was built, never launched: every behaviour below is a hypothesis.
 
 ## What changed
 
-- <file or module> — <one line>
+- `apps/macos/TodzKit/Sources/TodzKit/DayCloseSchedule.swift`, `DayCloseDecision.swift` — the pure decision (`.off`, `.notYet(next:)`, `.due`, `.doneToday(next:)`) from the instant, the minutes after midnight, the last closed day, the switch and the time zone; the time of day to and from an instant.
+- `DayClosePreference.swift` — the defaults keys `closesTheDay` (Bool, off), `dayCloseMinutes` (Int, 1080 = 18:00) and `lastClosedDay` (a `YYYY-MM-DD` string), registered like `MenuBarBadge`.
+- `DayCloseCoordinator.swift` — decides, reads the count (nil waits and re-decides when it changes, 0 marks the day, more asks the gate), opens through an injected opener, writes `lastClosedDay` only when the opener returns true, holds the mode (`isClosingDay`), claims `.dayClose` releases from the gate and decides again.
+- `LingerOutcome.swift`, `CompletionLingers.swift` — a linger records `done`, `dueTomorrow` or `noDueDate` and finds its task among the project's open tasks and the done tasks, so Tomorrow and No date rows stay in place for 1 s.
+- `AppModel+DayClose.swift` — the mode's list (Today's open tasks plus lingering rows, no Done today) and "Day closed" (Today known, nothing open, nothing lingering, nothing pending).
+- `apps/macos/Todz/DayClose/DayCloseScheduler.swift` — a timer to the next decision; re-checks on wake, `NSSystemTimeZoneDidChange`, `NSSystemClockDidChange`, `.NSCalendarDayChanged` and `UserDefaults.didChangeNotification`.
+- `apps/macos/Todz/AppDelegate.swift`, `TodzApp.swift` — `MenuBarPanel` and the coordinator live on the delegate and reach the popover's environment; the scheduler starts after the launch read of the Focus filter; the preference defaults are registered at launch.
+- `apps/macos/Todz/MenuBar/MenuBarPanel.swift` — `open()`: returns true without clicking when the popover window is visible; otherwise finds the status button (false when absent), `NSApp.unhideWithoutActivation()`, `performClick`.
+- `MenuBarPanelReader.swift` — `onHide` on the popover window's occlusion change when the window is no longer visible; it ends the mode.
+- `MenuBarPopover.swift`, `MenuBarToday.swift`, `MenuBarTodayHeading.swift`, `MenuBarTodayBody.swift`, `MenuBarRow.swift`, `MenuBarDayCloseActions.swift` (new) — the mode: heading `Close the day` with `N left`, the add field collapsed (its draft kept) and ⌘N off, an action line under each open row, D / T / N on a focused row, Escape closes, the "Day closed" state that closes the popover after 2 s, the mode ends on a workspace change.
+- `apps/macos/Todz/MainWindowState.swift` — `closeDay(task:outcome:model:)` dispatches Done to the existing toggle, Tomorrow to `updateDueDate(today + 1)`, No date to `updateDueDate(nil)`, each with its linger.
+- `apps/macos/Todz/Settings/SettingsView.swift` — a fourth row: title, detail, a stepper-field time picker (disabled when off) and the switch.
+- `apps/macos/Copy/MenuBarCopy.swift`, `AccessibilityCopy.swift`, `SettingsCopy.swift` — the strings of `design.md` § 8, plus `MenuBarCopy.result(of:)` and `AccessibilityCopy.announcement(of:)`.
 
 ## How to run
 
 ```bash
-<commands to start the stack and open the feature>
+swift test --package-path apps/macos/TodzKit
+cd apps/macos && xcodegen generate
+xcodebuild build -project Todz.xcodeproj -scheme Todz -configuration Debug -derivedDataPath build
+open -g -j build/Build/Products/Debug/Todz.app
 ```
+
+Forcing a day close one minute ahead without waiting. The Debug app is sandboxed, so its defaults live in its container; write them with the app quit:
+
+```bash
+PREFS=~/Library/Containers/dev.todz.Todz.debug/Data/Library/Preferences/dev.todz.Todz.debug
+defaults delete "$PREFS" lastClosedDay
+defaults write "$PREFS" closesTheDay -bool true
+defaults write "$PREFS" dayCloseMinutes -int 877
+```
+
+`877` is 14:37 (hours × 60 + minutes); write the minute after the current one, then launch with `open -g -j`. The launch check finds `.notYet` and arms a timer to that minute.
+
+From Settings instead: set the time one minute ahead **before** turning the switch on. Turning it on after today's time with open tasks opens the popover at once (the spec's "first chance after the time"), which spends one of the walk's two openings.
+
+To run a second forced day close the same day, quit, delete `lastClosedDay` as above and relaunch.
+
+The popover lands on the owner's screen: two openings at most in the whole walk (`test-plan.md`), counting any opening a forced day close triggers.
 
 ## Red today, green after
 
-| Test | Red before the change because | Green after because |
-|------|--------------------------------|---------------------|
-| `<path>::<name>` |  |  |
+Each red test was run alone with `swift test --filter <name>`; a stub's `fatalError` stops the process, so the first stub hit is the printed text.
+
+| Test | Red commit | Printed when red | Green at |
+|------|-----------|------------------|----------|
+| `DayCloseScheduleTests` | `4b1f8a8` | `TodzKit/DayCloseSchedule.swift:11: Fatal error: DayCloseSchedule.decision is not implemented` | `55f1ce5` |
+| `DayClosePreferenceTests` | `4b1f8a8` | `TodzKit/DayClosePreference.swift:12: Fatal error: DayClosePreference.registerDefaults is not implemented` (and `:28 … markClosed is not implemented` for `aClosedDayReadsBack`) | `55f1ce5` |
+| `AppModelTests+DayClose`: `doneInTheDayClose…`, `tomorrowInTheDayClose…`, `dropInTheDayClose…` | `6fa03d0` | **pin**: green when they landed (the existing `complete` and `updateDueDate`, R14) | `6fa03d0` |
+| `DayCloseCoordinatorTests` | `c39ec33` | `TodzKit/DayCloseCoordinator.swift:33: Fatal error: DayCloseCoordinator.check is not implemented` | `1166857` |
+| `CompletionLingersTests/aCheckedTaskLingersAsDone` | `c39ec33` | `TodzKit/CompletionLingers.swift:46: Fatal error: CompletionLingers.outcome is not implemented` | `1166857` |
+| `CompletionLingersTests/aTaskMovedOutOfTodayStaysAtItsPlaceWithItsOutcome`, `anEndedMoveLetsTheTaskLeaveToday`, `aMovedTaskCompletedElsewhereLeavesToday` | `c39ec33` | `TodzKit/CompletionLingers.swift:42: Fatal error: CompletionLingers.starting is not implemented` | `1166857` |
+| `AppModelTests+DayClose`: `theDayCloseListShowsTodaysOpenTasksWithoutDoneToday`, `theDayIsNotClosedBeforeTodayIsKnown` | `c39ec33` | `TodzKit/AppModel+DayClose.swift:3: Fatal error: AppModel.dayCloseTasks is not implemented` | `1166857` |
+| `AppModelTests+DayClose/aTaskMovedToTomorrowStaysInTheDayCloseListWhileItLingers` | `c39ec33` | `TodzKit/CompletionLingers.swift:42: Fatal error: CompletionLingers.starting is not implemented` | `1166857` |
+| `AppModelTests+DayClose/theDayIsClosedWhenNothingIsLeftAndNothingLingers` | `c39ec33` | `TodzKit/AppModel+DayClose.swift:7: Fatal error: AppModel.isDayClosed is not implemented` | `1166857` |
+
+At `3ef8dbe`: `swift test --package-path apps/macos/TodzKit` → `Test run with 726 tests in 51 suites passed`; `xcodegen generate` and the Debug `xcodebuild` → `BUILD SUCCEEDED`, no warnings.
 
 ## Hypotheses to attack
 
-Every "it works" is a hypothesis the tester tries to break.
-
-1. Hypothesis: <claim>. Break it by: <suggested attack>.
+1. Hypothesis: at the forced minute the popover opens by itself under the status item, in the mode, with nothing focused and no add field. Break it by: the hidden launch (`open -g -j`), another app frontmost, the main window open on another Space.
+2. Hypothesis: `performClick` opens the popover on its first ever opening (the popover window does not exist yet). Break it by: forcing the day close as the first thing after a launch, before any click on the status item.
+3. Hypothesis: the mode ends when the popover closes by an outside click, Escape, the 2 s "Day closed" close or a click on the status item, because the window's occlusion changes and `isVisible` is false. Break it by: closing each way, then clicking the status item: the usual Today with the add field and no action line is expected. A screen lock while the popover shows should not end the mode.
+4. Hypothesis: if the popover is already open at the time, the mode starts in place without a click, the add field collapses and its typed draft returns when the popover closes and reopens. Break it by: typing a draft, waiting for the minute, then closing and reopening.
+5. Hypothesis: Done, Tomorrow and No date each show their result (`Done` row checked, `Due tomorrow`, `No due date`) for 1 s, then the row leaves and the heading count drops at once. Break it by: acting on two rows inside one second; acting offline.
+6. Hypothesis: D, T and N act only on a focused row with no modifier; ⌘N does nothing in the mode; ⌘1–9 switches workspace and ends the mode. Break it by: Shift-D, Caps Lock on, ⌘N, ⌘2.
+7. Hypothesis: the last row leaving shows `Day closed` / `Nothing left for today.` and the popover closes about 2 s later. Break it by: a pending (unsent) add due today, which keeps the list open.
+8. Hypothesis: nothing opens a second time the same day: relaunch, wake, change of time to later, toggling the switch. Break it by: each of those after the first opening.
+9. Hypothesis: with Today empty at the time, nothing opens and `lastClosedDay` is written (`defaults read "$PREFS" lastClosedDay`).
+10. Hypothesis: the Settings row keeps the window height when the switch flips, the picker is dimmed while off and shows the Mac's 12 or 24 hour format.
 
 ## Known gaps
 
-- <what the developer knows is missing or untested>
+- `open()` reports success when it clicked; it does not confirm the popover appeared. A click that opens nothing marks the day closed (the spec's "the open fails" row is covered only for a missing status button).
+- The mode's end relies on `NSWindow.didChangeOcclusionStateNotification` firing when the `MenuBarExtra` window orders out; unverified without a launch.
+- The rotor carries Tomorrow and No date as named actions; Done stays as the row's existing `Mark as Done` action rather than a third, duplicate one.
+- The Done button's accessibility label is `Mark <title> as done` (`design.md` § 5); the test plan's tree box reads `Done` for it.
+- `UserDefaults.didChangeNotification` is not posted for `defaults write` from Terminal while the app runs; write the defaults with the app quit.
+- A held day close released by a real Focus is proven by `DayCloseCoordinatorTests` only (coverage honesty in `test-plan.md`).
+- `EmptyDefaults.swift` (tests) repeats `MenuBarBadgeDefaultsTests`' private helper under another name; that file is outside G1's paths. `DayCloseSchedule.swift` repeats `CalendarDate.swift`'s private Gregorian-calendar helper for the same reason.
+- READMEs and screenshots are the lead's (Step 6).
