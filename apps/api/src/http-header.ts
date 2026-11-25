@@ -22,4 +22,4 @@ export enum HttpHeader {
 export const NO_STORE = 'no-store';
 export const NO_SNIFF = 'nosniff';
 export const NO_REFERRER = 'no-referrer';
-export const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
+export const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';

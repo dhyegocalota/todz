@@ -1,6 +1,6 @@
 /*
   X-Content-Type-Options: nosniff
-  Strict-Transport-Security: max-age=31536000
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
   Referrer-Policy: no-referrer
   Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
 
