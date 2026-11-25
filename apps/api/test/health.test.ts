@@ -1,6 +1,7 @@
 import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { serveHealth } from '../src/health';
+import { HttpMethod } from '../src/http-method';
 import { workerEnvWith } from './owner-client';
 
 const API_ORIGIN = 'http://localhost:8787';
@@ -109,6 +110,12 @@ describe('other methods on /health', () => {
 
   test.each([API_ORIGIN, SITE_ORIGIN])('DELETE answers 404 on %s', async (origin) => {
     const response = await exports.default.fetch(`${origin}/health`, { method: 'DELETE' });
+    expect(response.status).toBe(NOT_FOUND_STATUS);
+    expect(await response.text()).toBe('');
+  });
+
+  test.each([API_ORIGIN, SITE_ORIGIN])('PATCH answers 404 on %s', async (origin) => {
+    const response = await exports.default.fetch(`${origin}/health`, { method: HttpMethod.Patch });
     expect(response.status).toBe(NOT_FOUND_STATUS);
     expect(await response.text()).toBe('');
   });
