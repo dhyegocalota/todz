@@ -21,10 +21,10 @@ One group, in order: red test, landing copy, the page, the discovery lists.
 
 ### G1
 
-- [ ] **Step 1:** the red test that the landing links the install page, committed alone.
-- [ ] **Step 2:** the landing copy and shell links, green.
-- [ ] **Step 3:** the docs page, its navigation entry, the Quickstart link and the sidebar e2e titles.
-- [ ] **Step 4:** the page in the llms index and the WebMCP docs tool, with their tests.
+- [x] **Step 1:** the red test that the landing links the install page, committed alone. — evidence: 690b584
+- [x] **Step 2:** the landing copy and shell links, green. — evidence: cf63388
+- [x] **Step 3:** the docs page, its navigation entry, the Quickstart link and the sidebar e2e titles. — evidence: eae6ac3
+- [x] **Step 4:** the page in the llms index and the WebMCP docs tool, with their tests. — evidence: cf63388
 
 ## Failure modes
 
@@ -37,7 +37,7 @@ One group, in order: red test, landing copy, the page, the discovery lists.
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`. — evidence: docs/features/mac-install-docs/tester-briefing.md
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
 - [ ] **/check-ui:** screenshots and video recorded and uploaded.

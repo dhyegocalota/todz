@@ -1,6 +1,6 @@
 # Mac install
 
-**Status:** Approved
+**Status:** Building
 **Tier:** 🟢 (one docs page, two links on the landing; no schema, no new surface)
 **Owner approval:** approved 2026-11-25 by the owner's words in `todz-loop/PROMPT.md`, "Installing the Mac app without the App Store": "deixa claro na docs como fazer isso, pq não temos app na App Store.. ou então tem como gerarmos e deixarmos disponível pra download? de forma segura e verificada é claro"
 **ADRs:** none
