@@ -17,6 +17,10 @@ private let minutesOutsideADay = [-2880, 1440]
     }
 }
 
+@MainActor private final class FakeScreen {
+    var isLocked = false
+}
+
 @MainActor private final class FakePopover {
     private(set) var openings = 0
     var isOpenable = true
@@ -36,6 +40,7 @@ private let minutesOutsideADay = [-2880, 1440]
     let gate = ProactiveGate()
     let clock = HarnessClock()
     let popover = FakePopover()
+    let screen = FakeScreen()
     let defaults: UserDefaults
     let timeZone: TimeZone
     let coordinator: DayCloseCoordinator
@@ -47,12 +52,14 @@ private let minutesOutsideADay = [-2880, 1440]
         timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
         let clock = clock
         let popover = popover
+        let screen = screen
         coordinator = DayCloseCoordinator(
             gate: gate,
             defaults: defaults,
             timeZone: timeZone,
             now: { clock.now },
             openCount: openCount,
+            isScreenLocked: { screen.isLocked },
             openPopover: { await popover.open() }
         )
     }
@@ -220,6 +227,22 @@ private let minutesOutsideADay = [-2880, 1440]
         harness.at(today, hour: 18, minute: 30)
         await harness.coordinator.check()
         #expect(harness.popover.openings == 2)
+        #expect(harness.coordinator.isClosingDay)
+        #expect(harness.lastClosedDay == today)
+    }
+
+    @Test func aLockedScreenOpensNothingMarksNothingAndTheNextCheckAfterTheUnlockOpens() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.screen.isLocked = true
+        harness.at(today, hour: 18)
+        #expect(await harness.coordinator.check() == .due)
+        #expect(harness.popover.openings == 0)
+        #expect(!harness.coordinator.isClosingDay)
+        #expect(harness.lastClosedDay == nil)
+        harness.screen.isLocked = false
+        harness.at(today, hour: 18, minute: 40)
+        await harness.coordinator.check()
+        #expect(harness.popover.openings == 1)
         #expect(harness.coordinator.isClosingDay)
         #expect(harness.lastClosedDay == today)
     }

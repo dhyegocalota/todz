@@ -13,6 +13,7 @@ import Observation
     @ObservationIgnored private let timeZone: TimeZone
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let openCount: () -> Int?
+    @ObservationIgnored private let isScreenLocked: () -> Bool
     @ObservationIgnored private let openPopover: () async -> Bool
 
     public init(
@@ -21,6 +22,7 @@ import Observation
         timeZone: TimeZone,
         now: @escaping () -> Date = Date.init,
         openCount: @escaping () -> Int?,
+        isScreenLocked: @escaping () -> Bool,
         openPopover: @escaping () async -> Bool
     ) {
         self.gate = gate
@@ -28,6 +30,7 @@ import Observation
         self.timeZone = timeZone
         self.now = now
         self.openCount = openCount
+        self.isScreenLocked = isScreenLocked
         self.openPopover = openPopover
         observeReleases()
     }
