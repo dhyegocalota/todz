@@ -129,3 +129,14 @@ At `51aa146`: `swift test --package-path apps/macos/TodzKit` → `Test run with 
 - Tester E2 (the first row focused on opening): fix round 1 clears the focus and gates D/T/N on engagement (676e309); re-walk it.
 - Hypotheses for the re-walk: a hidden launch (`open -g -j`) with the time a minute ahead opens the popover once and does not crash; the first row has no focus; D before any click, hover or Tab does nothing; Escape closes the popover.
 - Still without a test or a walk: Many (12 rows) and Offline at the time; add a model test for each before the re-walk.
+
+## Fix round 3: Many and Offline
+
+Both are pins: green when they landed, no product code changed. At `4451a51`, `swift test --package-path apps/macos/TodzKit` gives `Test run with 740 tests in 51 suites passed`.
+
+| Test | Proves |
+|------|--------|
+| `AppModelTests/twelveOpenTasksFillTheDayCloseListInOrderAndTheHeadingReadsTwelve` | 12 open Today tasks: `dayCloseTasks` holds all 12 in order, `todayHeadingCount` (the `N left` the heading shows) is 12, the day is not closed |
+| `DayCloseCoordinatorTests/dueWhileOfflineOpensOnTheCachedRowsAndAnActionIsQueuedAndShown` | Launched from the cache with the server unreachable: the count reads the 2 cached rows and the coordinator opens; Done is queued in the outbox (`waitingChangeCount == 1`), the heading drops to 1, and the row lingers until its linger ends |
+
+The list scrolling inside the 360-wide popover is a view concern: the existing popover list ScrollView covers it, so it stays a walk item, not a unit.
