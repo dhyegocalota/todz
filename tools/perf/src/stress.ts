@@ -12,6 +12,10 @@ import type { Sample } from './timed-fetch';
 
 export type StressOutcome = { held: number | null; broke: number | null; reachedCeiling: boolean };
 
+export function isStressPassing(outcome: StressOutcome): boolean {
+  throw new Error('isStressPassing is not implemented');
+}
+
 export function stepBroke(samples: Sample[]): boolean {
   if (samples.length === 0) return true;
   const failureRatio = samples.filter(isFailure).length / samples.length;

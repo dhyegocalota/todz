@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { ScenarioKind } from './scenario-kind';
-import { runStress, stepBroke } from './stress';
+import { isStressPassing, runStress, stepBroke } from './stress';
 import type { Sample } from './timed-fetch';
 
 function samplesOf({ count, status = 200, durationMs = 10 }: { count: number; status?: number; durationMs?: number }): Sample[] {
@@ -30,6 +30,28 @@ describe('stepBroke', () => {
 
   test('a step with no sample broke', () => {
     expect(stepBroke([])).toBe(true);
+  });
+});
+
+describe('isStressPassing', () => {
+  test('the first step that broke at 253 passes although the step that held was 169', () => {
+    expect(isStressPassing({ held: 168.75, broke: 253.125, reachedCeiling: false })).toBe(true);
+  });
+
+  test('a break at exactly four times the target passes', () => {
+    expect(isStressPassing({ held: 100, broke: 200, reachedCeiling: false })).toBe(true);
+  });
+
+  test('a first step that broke under four times the target fails', () => {
+    expect(isStressPassing({ held: 112.5, broke: 168.75, reachedCeiling: false })).toBe(false);
+  });
+
+  test('a first step that broke with nothing held fails', () => {
+    expect(isStressPassing({ held: null, broke: 50, reachedCeiling: false })).toBe(false);
+  });
+
+  test('a ramp that reached the ceiling passes', () => {
+    expect(isStressPassing({ held: 9_000, broke: null, reachedCeiling: true })).toBe(true);
   });
 });
 
