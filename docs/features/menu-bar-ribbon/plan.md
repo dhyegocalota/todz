@@ -79,6 +79,18 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 **Steps with no backout:** none. Every step is code or docs on the branch; the spike leaves nothing in the repository; the two defaults keys are inert when the code is gone.
 
+## Plan review answers (G1)
+
+| Finding | Answer |
+|---|---|
+| Hold Steps 7, 13 and 14 until the spike is recorded; no 180, 100, 240 or 285 literals | Steps 1-14 were built before the amendment arrived; the spike then decided option (c), which needs no timeline change. `RibbonMotionTests` now read the window, strip cap, holds and frame rate from `RibbonMotion` (2ade9729) |
+| Step 12 reads the previous records and `isPulledBefore` before the reset; two pages bump once | Already so in a3b894cc (`isAgentChange` runs before `board.reset`, `merge` and `setting(cursor:)`); pinned by `aProjectPulledInTwoPagesCountsOnce` (2ade9729) |
+| Step 11: a task already on the board with a new title counts nothing | Pinned by `aTaskAlreadyOnTheBoardWithANewTitleCountsNothing` (2ade9729) |
+| `end()` on sleep, screens sleeping and screen lock | `end()` is the hook and cancels `running`; the calls are G2's scheduler. Effect pinned by `endingMidRibbonClearsThePresentationAtOnceAndNoLaterFrameLands` (2ade9729) |
+| A held agent change shows once on release and the cooldown starts there | Pinned by `anAgentChangeHeldByAQuietGateShowsOnceOnReleaseAndStartsTheCooldownThere` (2ade9729) |
+| `RibbonTrigger` reads today from the caller | Already so: `today:` is a parameter |
+| Reduce Motion read once at show time | Already so: read in `start` |
+
 ## Z. Prove and ship
 
 - [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
