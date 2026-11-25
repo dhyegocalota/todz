@@ -49,11 +49,12 @@ pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remot
 ## 4. Deploy
 
 ```bash
-pnpm --filter @todz/api exec wrangler deploy
+pnpm --filter @todz/api server:deploy
 ```
 
-Cloudflare creates the DNS records and the certificates for `api.example.com`, `example.com` and `www.example.com`; none of the three may already have an A, AAAA or CNAME record. Check three things:
+When the deploy succeeds, the script ends with `todz server ready: https://api.example.com  →  paste it in todz › Settings › Server`: that is the URL step 7 uses. Cloudflare creates the DNS records and the certificates for `api.example.com`, `example.com` and `www.example.com`; none of the three may already have an A, AAAA or CNAME record. Check four things:
 - `curl -sS https://api.example.com/owner/sign-in-method` answers `{"method":"link"}`;
+- `curl -sS https://api.example.com/health` answers `{"service":"todz","origin":"https://api.example.com"}`;
 - the account's `todz-api.<subdomain>.workers.dev` address does not answer;
 - until step 6 is done, sending a link answers 503 `sign_in_unavailable`, which is the safe state.
 
@@ -68,7 +69,7 @@ pnpm --filter @todz/api exec wrangler email sending dns get example.com --zone-i
 
 ## 6. Turnstile
 
-Sign-in, the waitlist and the admin stay closed (`sign_in_unavailable`, "The waitlist opens soon." and "The admin is closed right now.") until Turnstile is set up ([ADR 0045](adr/0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md)). In the Cloudflare dashboard, create a Turnstile widget for `example.com` in Managed mode. Put its site key in `vars.TURNSTILE_SITE_KEY` in `apps/api/wrangler.jsonc`, deploy again, and store its secret:
+Sign-in, the waitlist and the admin stay closed (`sign_in_unavailable`, "The waitlist opens soon." and "The admin is closed right now.") until Turnstile is set up ([ADR 0045](adr/0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md)). In the Cloudflare dashboard, create a Turnstile widget for `example.com` in Managed mode. Put its site key in `vars.TURNSTILE_SITE_KEY` in `apps/api/wrangler.jsonc`, deploy again with `pnpm --filter @todz/api server:deploy`, and store its secret:
 
 ```bash
 pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
@@ -84,10 +85,9 @@ pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
 
 The same address gets the waitlist digest every day at 11:00 UTC, from the cron in `triggers` in `apps/api/wrangler.jsonc`; without the secret the cron sends nothing and each run fails in the Worker's Cron Events; set `"crons": []` there to turn the digest off.
 
-## 7. Point the macOS app at your server
+## 7. Build the macOS app and point it at your server
 
 In `apps/macos/project.yml`:
-- set the `TODZ_API_BASE_URL` build setting for the Release configuration to `https://api.example.com`;
 - in both targets, replace `DEVELOPMENT_TEAM` with your own team's id (Xcode → Settings → Accounts; the free Personal Team works);
 - replace `bundleIdPrefix`, the `TODZ_APP_BUNDLE_IDENTIFIER` and `TODZ_WIDGETS_BUNDLE_IDENTIFIER` values and `TODZ_APP_GROUP` with identifiers of your own.
 
@@ -98,7 +98,7 @@ xcodegen generate --spec apps/macos/project.yml
 xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
 ```
 
-Sign in with your email, then open **Connect an agent** in the sidebar.
+Then open todz › Settings › Server and paste the URL the deploy printed. The app checks it, signs out of the server it was on and starts clean on yours. Sign in with your email, then open **Connect an agent** in the sidebar.
 
 ## 8. Point an MCP client at your server
 
@@ -112,12 +112,14 @@ A key belongs to one project, and the server reads the project from it ([`docs/p
 
 ## Updating
 
-Pull from upstream, then run:
+Pull from upstream. Update the server first, then the app: an app newer than its server cannot check the server's address. Run:
 
 ```bash
 pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
-pnpm --filter @todz/api exec wrangler deploy
+pnpm --filter @todz/api server:deploy
 ```
+
+Then build the app again as in step 7; it keeps the server you pasted.
 
 Migrations only move forward. Never roll back to a version from before the sign-in guard, whether with `wrangler rollback` or the dashboard's Deployments page. To close sign-in, delete the secret ([the runbook](runbooks/deploy-the-api.md)):
 
