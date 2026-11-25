@@ -36,6 +36,7 @@ export TODZ_RELEASE_CURL_BINARY="$fakes/curl"
 export TODZ_RELEASE_CLOUDFLARE_BINARY="$fakes/cloudflare"
 export TODZ_RELEASE_DEPLOY_WORKER_BINARY="$fakes/deploy-worker"
 export TODZ_RELEASE_XCRUN_BINARY="$fakes/xcrun"
+export TODZ_RELEASE_TEST_MODE=1
 unset FAKE_CODESIGN FAKE_CODESIGN_TARGET FAKE_PROVISION FAKE_FEED FAKE_PUBLIC_KEY FAKE_SECURITY_MISSING FAKE_WRONG_SIGNING_KEY FAKE_AGENT_HAS_IDENTITY FAKE_HANG FAKE_BREAK FAKE_DEPLOY_FAIL FAKE_DEPLOYMENT_MESSAGE TODZ_RELEASE_LOCK_HELD
 export SSH_AUTH_SOCK=/inherited/agent.sock
 
@@ -264,13 +265,16 @@ FAKE
 
 cat > "$fakes/deploy-worker" <<'FAKE'
 #!/usr/bin/env bash
-echo "deploy-worker lock=${TODZ_RELEASE_LOCK_HELD:-}" >> "$CALLS"
+echo "deploy-worker lock=${TODZ_RELEASE_LOCK_HELD:-} $*" >> "$CALLS"
 [[ "${FAKE_HANG:-}" == deploy-worker ]] && exec tail -f /dev/null
 [[ -n "${FAKE_DEPLOY_FAIL:-}" ]] && { echo "deploy-worker: refused" >&2; exit 1; }
 site="$HOME/.todz-release/site/download"
+pending=""
+[[ "${1:-}" == --with ]] && pending=$2
 for directory in "$site"/*/; do
   version=$(basename "$directory")
   [[ "$version" =~ ^[0-9] ]] || continue
+  [[ "$version" == "$pending" ]] || grep -qxF "$version" "$HOME/.todz-release/site/released" || continue
   mkdir -p "$PRODUCTION/$version"
   cp "$directory"/Todz-"$version".dmg* "$PRODUCTION/$version/"
   printf 'HTTP/2 200\r\ncontent-disposition: attachment; filename="Todz-%s.dmg"\r\n' "$version" > "$PRODUCTION/$version/Todz-$version.dmg.headers"
@@ -511,7 +515,7 @@ expect_equal "the tag sits on HEAD" "$(git -C "$repository" rev-parse "mac-v$ver
 for served in "$disk_image_name" "$disk_image_name.sha256" "$disk_image_name.sig" appcast.xml; do
   expect_equal "the release copied $served into site" "$(cmp -s "$build_directory/$served" "$site_directory/$served" && echo same || echo different)" "same"
 done
-expect_contains "the deploy ran under the release's lock" "$(cat "$CALLS")" "deploy-worker lock=yes"
+expect_contains "the deploy ran under the release's lock" "$(cat "$CALLS")" "deploy-worker lock=yes --with $version"
 expect_equal "the release frees the lock" "$(test -d "$lock" && echo held || echo free)" "free"
 expect_equal "the private key reaches the agent on standard input" "$(cat "$SSH_ADD_STDIN")" "$private_key_value"
 expect_contains "the agent is the script's own socket" "$(cat "$CALLS")" "ssh-agent -a $home/.todz-release/agent."
@@ -631,7 +635,7 @@ new_world
 FAKE_SECURITY_MISSING=yes run_release --create-release-key
 expect_equal "creating the release key exits 0" "$status" "0"
 expect_contains "the new item goes through the interactive reader" "$(cat "$CALLS")" "security -i"
-expect_contains "the key reaches the Keychain on standard input as an add command" "$(cat "$SECURITY_STDIN")" "add-generic-password -s todz-release-key -a release -w "
+expect_contains "the key reaches the Keychain on standard input as an add command" "$(cat "$SECURITY_STDIN")" 'add-generic-password -s todz-release-key -a release -T "" -w '
 expect_contains "the stored key is an OpenSSH private key" "$(cat "$SECURITY_STDIN")" "$openssh_header_encoded"
 expect_lacks "the key is never an argument of security" "$(cat "$CALLS")" "$openssh_header_encoded"
 expect_lacks "the key is never printed" "$output" "$openssh_header_encoded"
@@ -643,6 +647,22 @@ new_world
 run_release --create-release-key
 expect_refused "an existing release key is never replaced" "the Keychain item todz-release-key already exists"
 expect_equal "an existing release key stores nothing" "$(wc -c < "$SECURITY_STDIN" | tr -d ' ')" "0"
+
+new_world
+TODZ_RELEASE_TEST_MODE= run_release
+expect_equal "an override outside test mode is refused: exit status" "$status" "1"
+expect_contains "an override outside test mode is refused: message" "$output" "is set: overrides are for the tests only"
+expect_equal "an override outside test mode runs no tool" "$(wc -c < "$CALLS" | tr -d ' ')" "0"
+TODZ_RELEASE_TEST_MODE= run_release --create-release-key
+expect_contains "creating the release key refuses overrides too" "$output" "overrides are for the tests only"
+TODZ_RELEASE_TEST_MODE= TODZ_RELEASE_SPARKLE_REVISION=abc run_release --dry-run
+expect_contains "the Sparkle revision override is refused outside test mode" "$output" "TODZ_RELEASE_SPARKLE_REVISION is set"
+
+new_world
+mkdir -p "$home/.todz-release/work.stale"
+echo old > "$home/.todz-release/work.stale/leftover"
+run_release --dry-run
+expect_equal "a stale work folder is removed under the lock" "$(test -e "$home/.todz-release/work.stale" && echo present || echo absent)" "absent"
 
 reset_calls
 expect_equal "the fake private key is in no output" "$(grep -c "$private_key_value" "$all_output" || true)" "0"

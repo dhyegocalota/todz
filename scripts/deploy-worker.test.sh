@@ -16,6 +16,7 @@ export HOME="$home"
 export GIT_AUTHOR_NAME=deploy GIT_AUTHOR_EMAIL=deploy@example.com GIT_COMMITTER_NAME=deploy GIT_COMMITTER_EMAIL=deploy@example.com
 export TODZ_DEPLOY_CURL_BINARY="$fakes/curl"
 export TODZ_DEPLOY_CLOUDFLARE_BINARY="$fakes/cloudflare"
+export TODZ_RELEASE_TEST_MODE=1
 unset FAKE_CURL_FAIL FAKE_CURL_STATUS FAKE_CURL_HANG FAKE_WRANGLER_HANG TODZ_RELEASE_LOCK_HELD
 
 site="$home/.todz-release/site"
@@ -316,6 +317,58 @@ expect_refused "a hanging wrangler is killed" "wrangler deploy timed out after 1
 expect_equal "a killed deploy frees the lock" "$(test -d "$lock" && echo held || echo free)" "free"
 FAKE_CURL_HANG=1 TODZ_DEPLOY_CURL_SECONDS=1 run_deploy
 expect_refused "a hanging production request is killed" "production check timed out after 1s"
+
+new_world
+make_release 0.2.0
+make_release 0.3.0
+sed -i '' '/^0.3.0$/d' "$site/released"
+stage_only_with() {
+  stage="$scratch/stage"
+  rm -rf "$stage"
+  run_deploy --stage-only "$stage" --with "$1"
+}
+stage_only_with 0.3.0
+expect_equal "a pending version stages with the released ones" "$status" "0"
+expect_equal "the pending version is staged beside the released one" "$(list_of "$stage/download")" "0.2.0 0.3.0 appcast.xml "
+expect_equal "the pending version is the newest" "$(sed -n 1p "$stage/_redirects")" "/download /download/0.3.0/Todz-0.3.0.dmg 302"
+stage_only
+expect_equal "without --with an unreleased version stays out" "$(list_of "$stage/download")" "0.2.0 appcast.xml "
+stage_only_with 0.4.0
+expect_refused "a pending version with no folder is refused" "0.4.0: $site/download/0.4.0 is missing"
+stage_only_with 0.4
+expect_refused "a pending version that is not a version is refused" "not a version"
+echo tampered >> "$site/download/0.3.0/Todz-0.3.0.dmg"
+stage_only_with 0.3.0
+expect_refused "a pending version that does not verify is refused" "0.3.0: the sum does not match"
+
+new_world
+make_release 0.2.0
+echo dirty > "$repository/apps/api/public/untracked.txt"
+run_deploy
+expect_refused "a deploy from a dirty tree is refused" "the working tree is not clean"
+expect_equal "a dirty tree never reaches wrangler" "$(grep -c '^cloudflare' "$CALLS")" "0"
+stage_only
+expect_equal "staging only does not need a clean tree" "$status" "0"
+
+new_world
+make_release 0.2.0
+TODZ_RELEASE_TEST_MODE= run_deploy --stage-only "$scratch/stage-mode"
+expect_equal "an override outside test mode is refused: exit status" "$status" "1"
+expect_contains "an override outside test mode is refused: message" "$output" "TODZ_DEPLOY_CLOUDFLARE_BINARY is set: overrides are for the tests only"
+TODZ_RELEASE_TEST_MODE= TODZ_DEPLOY_CURL_BINARY= TODZ_DEPLOY_CLOUDFLARE_BINARY= run_deploy --stage-only "$scratch/stage-mode"
+expect_contains "an empty override outside test mode is still refused" "$output" "overrides are for the tests only"
+
+new_world
+make_release 0.2.0
+mkdir -p "$home/.todz-release/work.stale"
+echo old > "$home/.todz-release/work.stale/leftover"
+stage_only
+expect_equal "a stale work folder is removed under the lock" "$(test -e "$home/.todz-release/work.stale" && echo present || echo absent)" "absent"
+mkdir "$lock"
+mkdir -p "$home/.todz-release/work.live"
+run_deploy
+expect_equal "a held lock leaves another run's work folder alone" "$(test -e "$home/.todz-release/work.live" && echo present || echo absent)" "present"
+rmdir "$lock"
 
 rm -rf "$scratch"
 [[ "$failures" -eq 0 ]] && exit 0
