@@ -50,7 +50,7 @@ G1 and G2 run in parallel in their own worktrees: G2 codes against the JSON cont
 
 ### G3 docs
 
-- [ ] **Step 12:** Product design: the nudge as an opt-in exception to the reminders non-goal (ADR 0053); the API and app READMEs name the setting (purpose only); the runbook names migration 0007; README walk cells for the Settings window and an agent's `next` with the line, from the tester's real screenshots (ADR 0047).
+- [x] **Step 12 (evidence: 685f489 docs; the README row with `01-settings-light.png` and `02-agent-next.png`; the dark shot stays in the PR, because the README shows every committed shot):** Product design: the nudge as an opt-in exception to the reminders non-goal (ADR 0053); the API and app READMEs name the setting (purpose only); the runbook names migration 0007; README walk cells for the Settings window and an agent's `next` with the line, from the tester's real screenshots (ADR 0047).
 
 ## Failure modes
 
@@ -69,9 +69,9 @@ G1 and G2 run in parallel in their own worktrees: G2 codes against the JSON cont
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** the developers wrote `tester-briefing.md`.
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
-- [ ] **Security reviewer:** verdict `CLEAR` or findings fixed.
-- [ ] **/check-ui:** screenshots of the Settings window (light and dark) and an agent's `next` with the line, from real builds (ADR 0026: Orca for the app).
+- [x] **Tester briefing:** the developers wrote `tester-briefing.md` (Server and App sections, merged at eeb3383).
+- [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` (c7c9106: 47 pass, E1 and E2 failed; b34b9fa: E2 fixed, E1 within 1 pt, accepted by the lead).
+- [x] **Reviewer:** WITH RESERVATIONS, two IMPORTANT fixed at f0daf4f; refutation recorded in `test-plan.md`.
+- [x] **Security reviewer:** `CLEAR`, no findings.
+- [x] **/check-ui:** Settings in light and dark and the agent's `next` from real builds (Orca and a real Claude Code session), in `docs/screenshots/agent-nudge/` and `.pr-media/agent-nudge/`.
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened; then deploy through `docs/runbooks/deploy-the-api.md` (migration 0007).
