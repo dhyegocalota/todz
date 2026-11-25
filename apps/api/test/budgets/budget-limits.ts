@@ -29,14 +29,14 @@ export const MCP_NEXT_NUDGED_BUDGET_OF_ERA: Record<ClientEra, WorkBudget> = {
 };
 
 export const ROWS_READ_BUDGET: Record<RowsReadUseCase, number> = {
-  [RowsReadUseCase.Add]: 16_509,
-  [RowsReadUseCase.UpdateFirst]: 16_508,
-  [RowsReadUseCase.UpdateLast]: 16_508,
-  [RowsReadUseCase.UpdateBefore]: 16_508,
-  [RowsReadUseCase.UpdateAfter]: 16_508,
-  [RowsReadUseCase.ListOpen]: 5_610,
-  [RowsReadUseCase.Next]: 5_610,
-  [RowsReadUseCase.DueNow]: 5_610,
+  [RowsReadUseCase.Add]: 10,
+  [RowsReadUseCase.UpdateFirst]: 10,
+  [RowsReadUseCase.UpdateLast]: 10,
+  [RowsReadUseCase.UpdateBefore]: 10,
+  [RowsReadUseCase.UpdateAfter]: 10,
+  [RowsReadUseCase.ListOpen]: 105,
+  [RowsReadUseCase.Next]: 105,
+  [RowsReadUseCase.DueNow]: 105,
   [RowsReadUseCase.ReadChanges]: 113,
-  [RowsReadUseCase.ReadHistory]: 11_002,
+  [RowsReadUseCase.ReadHistory]: 7,
 };
