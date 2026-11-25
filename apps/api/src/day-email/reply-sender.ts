@@ -12,11 +12,12 @@ export enum SenderVerdict {
   MailboxNotSingle = 'mailbox_not_single',
   AddressInvalid = 'address_invalid',
   DomainMismatch = 'domain_mismatch',
+  FromMismatch = 'from_mismatch',
 }
 
 export type Sender = { verdict: SenderVerdict.Accepted; address: string } | { verdict: Exclude<SenderVerdict, SenderVerdict.Accepted> };
 
-export function senderOf({ headers, domain }: { headers: Header[]; domain: string }): Sender {
+export function senderOf({ headers, domain }: { headers: Header[]; domain: string; runtimeFrom: string | null }): Sender {
   const [fromHeader, ...otherFromHeaders] = headersNamed({ headers, name: FROM_HEADER });
   if (!fromHeader || otherFromHeaders.length > 0) return { verdict: SenderVerdict.FromNotSingle };
   const [mailbox, ...others] = addressParser(fromHeader.value);

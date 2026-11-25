@@ -10,6 +10,7 @@ import { digestCredential } from '../../src/credential-digest';
 import { DayEmailMissingPiece } from '../../src/day-email/day-email-run';
 import { calendarDateInTimeZone } from '../../src/owner-today';
 import { consoleOutput, recordingBinding } from '../email-sign-in-client';
+import { recordingEnv } from '../owner-client';
 import { CLOCK_NOW } from '../task-fixtures';
 import {
   FAILED_RUN_MESSAGE,
@@ -446,6 +447,26 @@ describe("the mail's Today", () => {
     expect(firstMail.text).not.toContain('Second owner only');
     expect(secondMail.text).toContain('Second owner only');
     expect(secondMail.text).not.toContain('First owner only');
+  });
+});
+
+describe('the work of the ticks after a send', () => {
+  test('an owner claimed earlier in the window costs no claim on the next tick', async () => {
+    const recording = recordingBinding();
+    await seedDayOwner();
+    await tick({ recording });
+    const { workerEnv, statements } = recordingEnv();
+    await tick({ recording, scheduledTime: NEXT_TICK, settings: { DIRECTORY: workerEnv.DIRECTORY } });
+    expect(statements.filter((statement) => statement.startsWith('INSERT INTO day_emails'))).toEqual([]);
+    expect(recording.sent).toHaveLength(1);
+  });
+
+  test('the day after a send the owner is claimed again', async () => {
+    const recording = recordingBinding();
+    const owner = await seedDayOwner();
+    await tick({ recording });
+    await tick({ recording, scheduledTime: UTC_SEVEN_O_CLOCK + MILLISECONDS_PER_DAY });
+    expect(await dayEmailRows(owner.ownerId)).toHaveLength(2);
   });
 });
 

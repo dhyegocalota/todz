@@ -95,17 +95,27 @@ async function admitContent(message: ForwardableEmailMessage): Promise<Admission
   return admitted({ email, domain: authentication.domain });
 }
 
-async function admitSender({ env, ownerId, parsed }: { env: Env; ownerId: string; parsed: ParsedReply }): Promise<Admission<Sender>> {
+async function admitSender({
+  env,
+  ownerId,
+  parsed,
+  runtimeFrom,
+}: {
+  env: Env;
+  ownerId: string;
+  parsed: ParsedReply;
+  runtimeFrom: string | null;
+}): Promise<Admission<Sender>> {
   const [identity, ...otherIdentities] = await findOwnerEmailIdentities({ directory: env.DIRECTORY, ownerId });
   if (identity === undefined || otherIdentities.length > 0) return refused(ReplyOutcome.NotOwner);
-  const sender = senderOf({ headers: parsed.email.headers, domain: parsed.domain });
+  const sender = senderOf({ headers: parsed.email.headers, domain: parsed.domain, runtimeFrom });
   const isOwnerSender = sender.verdict === SenderVerdict.Accepted && sender.address === identity.subject;
   if (!isOwnerSender) return refused(ReplyOutcome.NotOwner);
   return admitted({ timeZone: identity.time_zone });
 }
 
-function admitAddressing({ email, recipient }: { email: Email; recipient: string }): Admission<string> {
-  const addressing = addressingOf({ headers: email.headers, recipient });
+function admitAddressing({ parsed, recipient }: { parsed: ParsedReply; recipient: string }): Admission<string> {
+  const addressing = addressingOf({ headers: parsed.email.headers, recipient, domain: parsed.domain });
   if (addressing.verdict === AddressingVerdict.Addressed) return admitted(addressing.messageId);
   return refused(OUTCOME_OF_ADDRESSING_REFUSAL[addressing.verdict]);
 }
@@ -159,9 +169,9 @@ async function resultOf(reply: Reply): Promise<ReplyResult> {
   const content = await admitContent(message);
   if (!content.isAdmitted) return content.result;
   const parsed = content.value;
-  const sender = await admitSender({ env, ownerId, parsed });
+  const sender = await admitSender({ env, ownerId, parsed, runtimeFrom: message.headers.get('from') });
   if (!sender.isAdmitted) return sender.result;
-  const messageId = admitAddressing({ email: parsed.email, recipient: message.to });
+  const messageId = admitAddressing({ parsed, recipient: message.to });
   if (!messageId.isAdmitted) return messageId.result;
   const dailyCap = await admitDailyCap({ env, ownerId, now });
   if (!dailyCap.isAdmitted) return dailyCap.result;

@@ -133,6 +133,26 @@ describe('authenticationOf refuses', () => {
     expect(await verdictOf(['From: owner@gmail.com'])).toEqual({ verdict: AuthenticationVerdict.MissingServiceHeader });
   });
 
+  test('a DKIM pass after the DMARC result, as a sender line folded into the header would add', async () => {
+    const headers = [resultsOf(`spf=pass; dmarc=pass header.from=${OWNER_DOMAIN}; dkim=pass header.d=${OWNER_DOMAIN}`)];
+    expect(await verdictOf(headers)).toEqual({ verdict: AuthenticationVerdict.ResultsAfterDmarc });
+  });
+
+  test('a sender line led by whitespace folded into the header', async () => {
+    const headers = [
+      `${PREFIX} ${CLOUDFLARE_SERVICE}; spf=pass; dmarc=pass header.from=${OWNER_DOMAIN}`,
+      `\t; dkim=pass header.d=${OWNER_DOMAIN}`,
+    ];
+    expect(await verdictOf(headers)).toEqual({ verdict: AuthenticationVerdict.ResultsAfterDmarc });
+  });
+
+  test('two DKIM results for the authenticated domain', async () => {
+    const headers = [
+      resultsOf(`dkim=pass header.d=${OWNER_DOMAIN}; dkim=fail header.d=${OWNER_DOMAIN}; dmarc=pass header.from=${OWNER_DOMAIN}`),
+    ];
+    expect(await verdictOf(headers)).toEqual({ verdict: AuthenticationVerdict.DkimNotSingle });
+  });
+
   test('a verdict never carries header text', async () => {
     const result = await verdictOf([resultsOf('dmarc=fail header.from=secret.example')]);
     expect(JSON.stringify(result)).not.toContain('secret.example');

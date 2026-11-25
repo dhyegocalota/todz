@@ -22,6 +22,7 @@ describe('the normalized address', () => {
     ['a comma', 'a@b.c,d@e.f'],
     ['a non-ASCII character', 'mária@example.com'],
     ['a URL shape', 'https://a.bc/x?@a.bc'],
+    ['a trailing dot on the domain', 'hello+x@todz.app.'],
     ['a slash', 'a@b/c.d'],
     ['a colon', 'a:b@c.de'],
     ['nothing', ''],

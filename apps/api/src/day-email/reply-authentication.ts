@@ -29,6 +29,8 @@ export enum AuthenticationVerdict {
   DmarcNotPassed = 'dmarc_not_passed',
   DmarcDomainMissing = 'dmarc_domain_missing',
   DkimNotAligned = 'dkim_not_aligned',
+  DkimNotSingle = 'dkim_not_single',
+  ResultsAfterDmarc = 'results_after_dmarc',
 }
 
 export type Authentication =

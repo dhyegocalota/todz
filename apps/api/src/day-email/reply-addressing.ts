@@ -22,7 +22,7 @@ function addressesOf(headers: Header[]): string[] {
     .map(({ address }) => address.toLowerCase());
 }
 
-export function addressingOf({ headers, recipient }: { headers: Header[]; recipient: string }): Addressing {
+export function addressingOf({ headers, recipient }: { headers: Header[]; recipient: string; domain: string }): Addressing {
   const toHeaders = headersNamed({ headers, name: TO_HEADER });
   const namedRecipients = addressesOf([...toHeaders, ...headersNamed({ headers, name: CC_HEADER })]);
   const isReply = toHeaders.length === 1 && namedRecipients.includes(recipient.toLowerCase());

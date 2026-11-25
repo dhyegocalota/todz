@@ -55,6 +55,31 @@ describe('replyTitleOf finds no title', () => {
   });
 });
 
+describe('replyTitleOf with an attribution in the same paragraph as the reply', () => {
+  test.each([
+    ['one line', `Buy milk\n${ATTRIBUTION}\n${QUOTED}`],
+    ['two lines', 'Buy milk\nOn Wed, Nov 25, 2026 at 7:00 AM todz\n<noreply@todz.app> wrote:\n> Your day'],
+    ['three lines', 'Buy milk\nOn Wed, Nov 25, 2026\nat 7:00 AM todz\n<noreply@todz.app> wrote:\n> Your day'],
+    ['a pt-BR one', 'Buy milk\nEm qua., 25 de nov. de 2026 às 07:00, todz <noreply@todz.app> escreveu:\n> Your day'],
+  ])('%s keeps the line above it as the title', (_name, text) => {
+    expect(replyTitleOf(text)).toEqual(titled('Buy milk'));
+  });
+});
+
+describe('replyTitleOf with an attribution that does not name the address', () => {
+  test.each([
+    ['directly above the quote', 'On Wed, Nov 25, 2026 at 7:00 AM, todz wrote:\n> Your day'],
+    ['a paragraph above the quote', 'On Wed, Nov 25, 2026 at 7:00 AM, todz wrote:\n\n> Your day'],
+    ['a pt-BR one', 'Em qua., 25 de nov. de 2026 às 07:00, todz escreveu:\n> Your day'],
+  ])('%s is part of the quote and leaves no title', (_name, text) => {
+    expect(replyTitleOf(text)).toEqual({ outcome: TitleOutcome.Empty });
+  });
+
+  test('a title above it stays the title', () => {
+    expect(replyTitleOf('Buy milk\n\nOn Wed, Nov 25, 2026 at 7:00 AM, todz wrote:\n> Your day')).toEqual(titled('Buy milk'));
+  });
+});
+
 describe('replyTitleOf refuses control characters', () => {
   test.each([
     ['U+0085', 'Buy\u0085milk'],

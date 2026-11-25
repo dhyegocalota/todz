@@ -3,7 +3,10 @@ import { SenderVerdict, senderOf } from '../../src/day-email/reply-sender';
 import { OWNER_DOMAIN, parsedHeadersOf } from '../fixtures/day-email/raw-message';
 
 async function senderOfHeaders(headers: string[]) {
-  return senderOf({ headers: await parsedHeadersOf(headers), domain: OWNER_DOMAIN });
+  const parsedHeaders = await parsedHeadersOf(headers);
+  const fromHeader = parsedHeaders.find((header) => header.key.trim() === 'from');
+  const runtimeFrom = fromHeader === undefined ? null : fromHeader.value;
+  return senderOf({ headers: parsedHeaders, domain: OWNER_DOMAIN, runtimeFrom });
 }
 
 describe('senderOf', () => {
@@ -43,12 +46,31 @@ describe('senderOf', () => {
   );
 
   test.each([
-    ['From: owner@gmail.com (x) <a@evil.test>', 'a@evil.test'],
-    ['From: "owner@gmail.com" <a@evil.test>', 'a@evil.test'],
-  ])('%s is the mailbox in the angle brackets', async (header, address) => {
-    const headers = await parsedHeadersOf([header]);
-    expect(senderOf({ headers, domain: 'evil.test' })).toEqual({ verdict: SenderVerdict.Accepted, address });
-    expect(senderOf({ headers, domain: OWNER_DOMAIN })).toEqual({ verdict: SenderVerdict.DomainMismatch });
+    ['From: owner@gmail.com (x) <a@evil.test>'],
+    ['From: "owner@gmail.com" <a@evil.test>'],
+    ['From: a <owner@gmail.com> b <attacker@gmail.com>'],
+    ['From: <owner@gmail.com> attacker@gmail.com'],
+    ['From: owner@gmail.com attacker@gmail.com'],
+    ['From: attacker@gmail.com <owner@gmail.com>'],
+    ['From: Owner > <owner@gmail.com'],
+  ])('%s is refused for holding more than one address or an address in the name', async (header) => {
+    expect(await senderOfHeaders([header])).toEqual({ verdict: SenderVerdict.MailboxNotSingle });
+  });
+
+  test('the runtime From that differs from the parsed From is refused', async () => {
+    const headers = await parsedHeadersOf(['From: Owner <owner@gmail.com>']);
+    expect(senderOf({ headers, domain: OWNER_DOMAIN, runtimeFrom: 'Other <other@gmail.com>' })).toEqual({
+      verdict: SenderVerdict.FromMismatch,
+    });
+    expect(senderOf({ headers, domain: OWNER_DOMAIN, runtimeFrom: null })).toEqual({ verdict: SenderVerdict.FromMismatch });
+  });
+
+  test('the runtime From that equals the parsed From, whatever the spacing, is accepted', async () => {
+    const headers = await parsedHeadersOf(['From: Owner <owner@gmail.com>']);
+    expect(senderOf({ headers, domain: OWNER_DOMAIN, runtimeFrom: ' Owner  <owner@gmail.com> ' })).toEqual({
+      verdict: SenderVerdict.Accepted,
+      address: 'owner@gmail.com',
+    });
   });
 
   test('a mailbox whose domain differs from the authenticated one is refused', async () => {

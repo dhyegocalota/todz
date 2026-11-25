@@ -137,6 +137,49 @@ const REFUSALS: Refusal[] = [
       }),
   },
   {
+    name: 'a DKIM pass after the DMARC result in the Cloudflare header',
+    outcome: ReplyOutcome.Unauthenticated,
+    verdict: AuthenticationVerdict.ResultsAfterDmarc,
+    delivery: (context) =>
+      ownerReplyOf({
+        context,
+        overrides: { 'Authentication-Results': 'mx.cloudflare.net; dmarc=pass header.from=example.com; dkim=pass header.d=example.com' },
+      }),
+  },
+  {
+    name: 'a runtime From that differs from the parsed From',
+    outcome: ReplyOutcome.NotOwner,
+    delivery: (context) => ownerReplyOf({ context, runtimeHeaders: new Headers({ From: 'Other <other@example.com>' }) }),
+  },
+  {
+    name: 'a From holding the owner and an attacker address',
+    outcome: ReplyOutcome.NotOwner,
+    delivery: (context) =>
+      ownerReplyOf({ context, overrides: { From: `a <${context.owner.address}> b <attacker@${context.owner.address.split('@')[1]}>` } }),
+  },
+  {
+    name: 'a Cc naming the reply address beside another To',
+    outcome: ReplyOutcome.NotAReply,
+    delivery: (context) => ownerReplyOf({ context, overrides: { To: 'friend@example.com' }, extras: [`Cc: ${context.replyAddress}`] }),
+  },
+  {
+    name: 'a To naming the reply address that the signature does not cover',
+    outcome: ReplyOutcome.NotAReply,
+    delivery: (context) =>
+      ownerReplyOf({
+        context,
+        overrides: { 'DKIM-Signature': 'v=1; a=rsa-sha256; d=example.com; s=1; h=from:subject:message-id; bh=a; b=b' },
+      }),
+  },
+  {
+    name: 'a reply address of an owner who turned the day email off',
+    outcome: ReplyOutcome.UnknownRecipient,
+    prepare: async (context) => {
+      await env.DIRECTORY.prepare('UPDATE owners SET day_email = 0 WHERE id = ?').bind(context.owner.ownerId).run();
+    },
+    delivery: (context) => ownerReplyOf({ context }),
+  },
+  {
     name: 'a different address that passes authentication',
     outcome: ReplyOutcome.NotOwner,
     delivery: (context) =>
@@ -378,10 +421,18 @@ describe('a reply to the day email', () => {
     [REPLY_SUBJECT, REPLY_TITLE, context.owner.address, FAILING_STORE_MESSAGE].forEach((text) => {
       expect(failureMessage).not.toContain(text);
     });
-    expect(await replyRows(context.owner.ownerId)).toEqual([]);
+    expect(await replyRows(context.owner.ownerId)).toHaveLength(1);
     expect(replyLogLines(output)).toEqual([{ event: 'day_email_reply', outcome: ReplyOutcome.Failed }]);
     await deliverReply({ delivery: ownerReplyOf({ context, overrides }), settings });
     expect(await inboxTasks(context.owner.inboxId)).toHaveLength(1);
+    expect(await replyRows(context.owner.ownerId)).toHaveLength(1);
+  });
+
+  test('concurrent distinct replies never add more than the daily maximum', async () => {
+    const context = await seedReplyContext();
+    await Promise.all(Array.from({ length: REPLY_DAILY_MAX + 5 }, () => deliverReply({ delivery: ownerReplyOf({ context }) })));
+    expect(await inboxTasks(context.owner.inboxId)).toHaveLength(REPLY_DAILY_MAX);
+    expect(await replyRows(context.owner.ownerId)).toHaveLength(REPLY_DAILY_MAX);
   });
 
   test('replies older than the retention are not counted against the daily maximum', async () => {

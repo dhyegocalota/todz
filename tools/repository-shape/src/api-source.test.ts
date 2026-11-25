@@ -142,6 +142,10 @@ describe('the api source', () => {
     expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([CONSOLE_DAY_EMAIL_LOG, CONSOLE_EMAIL_SENDER]);
   });
 
+  test('only the reply module names the producer of a reply owner, so the brand of the routing module opens nothing else (pin)', () => {
+    expect(filesMatching(/\breplyOwnerOf\b/)).toEqual(['apps/api/src/day-email/day-email-reply.ts', 'apps/api/src/project-routing.ts']);
+  });
+
   test('the wrangler configuration is production: the email provider, the cloudflare sender and the https origin on todz.app, the public Turnstile site key as a var, and no admin address or Turnstile secret, which are secrets', () => {
     expect(wranglerConfiguration().vars).toEqual({
       SIGN_IN_PROVIDER: 'email',

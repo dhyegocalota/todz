@@ -21,7 +21,7 @@ export type ReplyCalls = { rejects: string[]; forwards: string[]; replies: numbe
 
 export type ReplyDelivery = { message: ForwardableEmailMessage; calls: ReplyCalls };
 
-export type ReplyHeaderName = 'Authentication-Results' | 'From' | 'To' | 'Message-ID' | 'Subject';
+export type ReplyHeaderName = 'Authentication-Results' | 'DKIM-Signature' | 'From' | 'To' | 'Message-ID' | 'Subject';
 
 export type ReplyHeaderOverrides = Partial<Record<ReplyHeaderName, string | null>>;
 
@@ -35,6 +35,21 @@ function domainOf(address: string): string {
 
 export function authenticationResultsOf(domain: string): string {
   return `mx.cloudflare.net; spf=pass smtp.mailfrom=owner@${domain}; dkim=pass header.d=${domain} header.s=20230601; dmarc=pass header.from=${domain}`;
+}
+
+export function signatureOf(domain: string): string {
+  return `v=1; a=rsa-sha256; d=${domain}; s=20230601; h=from:to:subject:message-id; bh=abc; b=def`;
+}
+
+function runtimeHeadersOf(lines: string[]): Headers {
+  const runtimeHeaders = new Headers();
+  lines
+    .filter((line) => !/^\s/.test(line) && line.includes(':'))
+    .forEach((line) => {
+      const separator = line.indexOf(':');
+      runtimeHeaders.append(line.slice(0, separator).trim(), line.slice(separator + 1).trim());
+    });
+  return runtimeHeaders;
 }
 
 export function uniqueMessageId(): string {
@@ -54,6 +69,7 @@ export function replyHeadersOf({
 }): string[] {
   const defaults: Record<ReplyHeaderName, string | null> = {
     'Authentication-Results': authenticationResultsOf(domainOf(address)),
+    'DKIM-Signature': signatureOf(domainOf(address)),
     From: `Owner <${address}>`,
     To: `todz <${replyAddress}>`,
     'Message-ID': uniqueMessageId(),
@@ -70,12 +86,14 @@ export function replyMessageOf({
   body = REPLY_TITLE,
   rawSize,
   raw,
+  runtimeHeaders,
 }: {
   to: string;
   headers: string[];
   body?: string;
   rawSize?: number;
   raw?: ReadableStream<Uint8Array>;
+  runtimeHeaders?: Headers;
 }): ReplyDelivery {
   const text = [...headers, '', body].join('\r\n');
   const bytes = new TextEncoder().encode(text);
@@ -83,7 +101,7 @@ export function replyMessageOf({
   const message: ForwardableEmailMessage = {
     from: 'bounce@mail.example.com',
     to,
-    headers: new Headers(),
+    headers: runtimeHeaders === undefined ? runtimeHeadersOf(headers) : runtimeHeaders,
     raw: raw === undefined ? new Blob([bytes]).stream() : raw,
     rawSize: rawSize === undefined ? bytes.byteLength : rawSize,
     canBeForwarded: true,
@@ -121,14 +139,16 @@ export function ownerReplyOf({
   overrides,
   extras,
   body,
+  runtimeHeaders,
 }: {
   context: ReplyContext;
   overrides?: ReplyHeaderOverrides;
   extras?: string[];
   body?: string;
+  runtimeHeaders?: Headers;
 }): ReplyDelivery {
   const headers = replyHeadersOf({ address: context.owner.address, replyAddress: context.replyAddress, overrides, extras });
-  return replyMessageOf({ to: context.replyAddress, headers, body });
+  return replyMessageOf({ to: context.replyAddress, headers, body, runtimeHeaders });
 }
 
 export function deliverReply({
