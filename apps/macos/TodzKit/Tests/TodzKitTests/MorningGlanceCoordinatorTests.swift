@@ -38,6 +38,7 @@ private func glanceContent(openCount: Int, workspaceIdentifier: String = "acme")
 @MainActor private final class FakeScreen {
     var isLocked = false
     var isMirrored = false
+    var isCaptured = false
 }
 
 @MainActor private final class FakeFront {
@@ -99,6 +100,7 @@ private func glanceContent(openCount: Int, workspaceIdentifier: String = "acme")
             content: { fakeContent.content },
             isScreenLocked: { screen.isLocked },
             isScreenMirrored: { screen.isMirrored },
+            isScreenCaptured: { screen.isCaptured },
             isTodayInFront: { front.isInFront },
             showPanel: { await panel.show($0) },
             closePanel: { panel.close() }
@@ -429,6 +431,85 @@ private func glanceContent(openCount: Int, workspaceIdentifier: String = "acme")
         harness.fakeContent.content = glanceContent(openCount: openTaskCount, workspaceIdentifier: otherWorkspaceIdentifier)
         await harness.coordinator.shownContentReviewing?.value
         #expect(harness.panel.closings == 1)
+        #expect(!harness.coordinator.isShowing)
+    }
+
+    @Test func aCapturedScreenShowsNothingUnmarkedAndTheNextChanceAfterTheCaptureShows() async throws {
+        let harness = try GlanceHarness()
+        harness.screen.isCaptured = true
+        await harness.coordinator.check()
+        #expect(harness.panel.attempts == 0)
+        #expect(harness.lastShownDay == nil)
+        harness.screen.isCaptured = false
+        await harness.coordinator.check()
+        #expect(harness.panel.attempts == 1)
+    }
+
+    @Test func aRetryWithNoLockedChanceShowsNothing() async throws {
+        let harness = try GlanceHarness()
+        await harness.coordinator.retryLockedChance()
+        #expect(harness.panel.attempts == 0)
+        #expect(harness.lastShownDay == nil)
+    }
+
+    @Test func aSecondCheckDuringTheTodayWaitKeepsTheFirstChanceSoALateTodayShowsNothing() async throws {
+        let harness = try GlanceHarness(content: nil)
+        await harness.coordinator.check()
+        harness.at(today, hour: 8, second: secondsOfTheCountWait * 5 / 6)
+        await harness.coordinator.check()
+        harness.at(today, hour: 8, second: secondsOfTheCountWait * 7 / 6)
+        harness.fakeContent.content = glanceContent(openCount: 2)
+        await harness.coordinator.contentWaiting?.value
+        #expect(harness.panel.attempts == 0)
+        #expect(harness.lastShownDay == nil)
+    }
+
+    @Test func aWorkspaceSwitchDuringTheShowClosesThePanelRightAfterTheAnswerAndKeepsTheDayMarked() async throws {
+        let harness = try GlanceHarness()
+        let fakeContent = harness.fakeContent
+        harness.panel.whileShowing = { fakeContent.content = glanceContent(openCount: openTaskCount, workspaceIdentifier: otherWorkspaceIdentifier) }
+        await harness.coordinator.check()
+        #expect(harness.panel.closings == 1)
+        #expect(harness.lastShownDay == today)
+        #expect(!harness.coordinator.isShowing)
+    }
+
+    @Test func aSignOutDuringTheShowClosesThePanelRightAfterTheAnswerAndKeepsTheDayMarked() async throws {
+        let harness = try GlanceHarness()
+        let fakeContent = harness.fakeContent
+        harness.panel.whileShowing = { fakeContent.content = nil }
+        await harness.coordinator.check()
+        #expect(harness.panel.closings == 1)
+        #expect(harness.lastShownDay == today)
+        #expect(!harness.coordinator.isShowing)
+    }
+
+    @Test func closingNowDuringTheShowClosesThePanelRightAfterTheAnswerAndKeepsTheDayMarked() async throws {
+        let harness = try GlanceHarness()
+        let coordinator = harness.coordinator
+        harness.panel.whileShowing = { coordinator.closeNow() }
+        await coordinator.check()
+        #expect(harness.panel.closings == 1)
+        #expect(harness.lastShownDay == today)
+        #expect(!coordinator.isShowing)
+    }
+
+    @Test func aFocusStartingWhileThePanelIsOnScreenClosesIt() async throws {
+        let harness = try GlanceHarness()
+        await harness.coordinator.check()
+        harness.gate.setQuiet(true)
+        await harness.coordinator.shownContentReviewing?.value
+        #expect(harness.panel.closings == 1)
+        #expect(!harness.coordinator.isShowing)
+    }
+
+    @Test func aFocusStartingDuringTheShowClosesThePanelRightAfterTheAnswer() async throws {
+        let harness = try GlanceHarness()
+        let gate = harness.gate
+        harness.panel.whileShowing = { gate.setQuiet(true) }
+        await harness.coordinator.check()
+        #expect(harness.panel.closings == 1)
+        #expect(harness.lastShownDay == today)
         #expect(!harness.coordinator.isShowing)
     }
 
