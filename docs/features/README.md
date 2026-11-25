@@ -52,3 +52,4 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 | [`landing-waitlist-deploy`](landing-waitlist-deploy/) | The run of the deploy runbook that applied the waitlist migration and put the join route live, recorded | Shipped 2026-11-25 ([PR #28](https://github.com/dhyegocalota/todz/pull/28)) |
 | [`landing-admin`](landing-admin/) | The owner signs in to todz.app/admin by a mail link bound to his browser, and reads and exports the waitlist | Shipped 2026-11-25 ([PR #29](https://github.com/dhyegocalota/todz/pull/29)) |
 | [`landing-digest`](landing-digest/) | A daily mail to the admin address with the waitlist's last day: new joins, the total, failed confirmations and the new addresses | Shipped 2026-11-25 ([PR #30](https://github.com/dhyegocalota/todz/pull/30)) |
+| [`landing-admin-deploy`](landing-admin-deploy/) | The run of the deploy runbook that put the admin and the daily digest live, recorded | Building |
