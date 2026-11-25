@@ -39,6 +39,8 @@ extension AppModel {
         serverURL = address
         remember(address)
         signOut(session: leavingSession, at: leavingService)
+        forgetVersions()
+        refreshCompatibility()
         return .switched
     }
 

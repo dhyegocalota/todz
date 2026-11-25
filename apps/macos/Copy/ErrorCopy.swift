@@ -22,6 +22,8 @@ enum ErrorCopy {
     static let changeNotSavedBody = "todz now shows what it has saved."
     static let cacheNotSaved = "Changes can't be kept on this Mac. They're sent while todz is open."
     static let waitingChangesLost = "Changes waiting on this Mac couldn't be read and were lost."
+    static let updateNeededTitle = "Update todz to keep syncing"
+    static let updateNeededBody = "Your changes wait here until then."
     static let signOutFailed = "todz couldn't erase this Mac's copy of your tasks, so you're still signed in. Try again."
 
     static let serverAddressInvalid = "Enter an address like https://todz.example.com."

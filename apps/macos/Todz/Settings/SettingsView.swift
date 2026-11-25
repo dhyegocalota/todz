@@ -110,6 +110,8 @@ struct SettingsView: View {
             }
             Section {
                 ServerAddressForm(layout: .row, exit: {})
+            } footer: {
+                VersionLine()
             }
         }
         .formStyle(.grouped)

@@ -11,6 +11,7 @@ extension SignInError {
         case .linkNotRequested: SignInCopy.linkNotRequested
         case .linkRefused: SignInCopy.linkRefused
         case .timeZoneInvalid: SignInCopy.timeZoneInvalid
+        case .appTooOld: SignInCopy.appTooOld
         case .unreachable: ErrorCopy.networkTitle
         case .unexpected: ErrorCopy.serverTitle
         }
@@ -20,7 +21,7 @@ extension SignInError {
         switch self {
         case .unreachable, .unexpected: true
         case .identityRejected, .signInUnavailable, .signInRefused, .invalidAddress, .linkRejected, .linkNotRequested, .linkRefused,
-            .timeZoneInvalid:
+            .timeZoneInvalid, .appTooOld:
             false
         }
     }

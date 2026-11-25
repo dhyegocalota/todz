@@ -30,6 +30,9 @@ struct ServerDisclosure: View {
             if isExpanded {
                 ServerAddressForm(layout: .column, exit: collapse)
             }
+            if isExpanded || model.isUpdateNeeded {
+                VersionLine()
+            }
         }
         .onChange(of: model.serverURL) { isExpanded = false }
     }

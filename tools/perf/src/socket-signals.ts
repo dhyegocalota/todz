@@ -1,4 +1,5 @@
 import type { ChangeSignals } from './change-feed';
+import { APP_VERSION_HEADERS } from './owner-scenario';
 
 type SocketWithHeaders = new (url: string, init: { headers: Record<string, string> }) => WebSocket;
 
@@ -17,7 +18,7 @@ export async function openSocketSignals({
   projectId: string;
 }): Promise<ChangeSignals> {
   const url = `${origin.replace(HTTP_SCHEME_PATTERN, SOCKET_SCHEME)}/owner/projects/${projectId}/socket`;
-  const socket = new SocketWithHeaders(url, { headers: { Authorization: `Bearer ${token}` } });
+  const socket = new SocketWithHeaders(url, { headers: { ...APP_VERSION_HEADERS, Authorization: `Bearer ${token}` } });
   const state = { listeners: [] as (() => void)[], unheardChanges: 0 };
   socket.addEventListener('message', (event) => {
     if (event.data !== CHANGED_MESSAGE) return;
