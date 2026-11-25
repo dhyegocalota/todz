@@ -188,20 +188,20 @@ import Observation
             return
         }
         restorePendingLink()
-        let secret: String?
+        let stored: StoredSession?
         do {
-            secret = try vault.read()
+            stored = try vault.read()
         } catch {
             loadOutbox()
             phase = .signedOut(notice: .sessionUnreadable)
             return
         }
-        guard let secret else {
+        guard let stored else {
             loadOutbox()
             phase = .signedOut(notice: nil)
             return
         }
-        session = secret
+        session = stored.secret
         phase = .loading
         openCache(cachedOwner())
         await openWorkspaces()
@@ -392,7 +392,7 @@ import Observation
 
     private func keep(secret: String) {
         do {
-            try vault.write(secret)
+            try vault.write(StoredSession(secret: secret, origin: defaultURL.origin))
         } catch {
             raise(.sessionNotSaved)
         }

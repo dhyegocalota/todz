@@ -339,6 +339,41 @@ extension AppModelTests {
         #expect(harness.preference.hasUnreadableValue)
     }
 
+    @Test(arguments: [storedText, nil])
+    func aSessionNotBoundToTheServerInUseIsErasedBeforeLaunchAndNoCallCarriesIt(sessionOrigin: String?) async throws {
+        let harness = try AppModelHarness(isLocalDataKept: true, sessionOrigin: sessionOrigin)
+        #expect(harness.vault.secret == nil)
+        #expect(harness.store.owner == nil)
+        #expect(harness.store.outbox == nil)
+        #expect(harness.pendingLinks.link == nil)
+        await harness.model.launch()
+        #expect(harness.model.phase == .signedOut(notice: nil))
+        #expect(harness.service.calls == [])
+        #expect(harness.model.serverURL == harness.defaultURL)
+    }
+
+    @Test func aSessionBoundToAnotherServerWhoseEraseFailsLaunchesSignedOutWithoutReadingIt() async throws {
+        let harness = try AppModelHarness(isLocalDataKept: true, sessionOrigin: storedText, isVaultUnerasable: true)
+        await harness.model.launch()
+        #expect(harness.model.phase == .signedOut(notice: .sessionUnreadable))
+        #expect(harness.service.calls == [])
+    }
+
+    @Test func aSessionBoundToTheServerInUseIsKept() async throws {
+        let harness = try AppModelHarness(isLocalDataKept: true)
+        #expect(harness.vault.secret == harness.session)
+        #expect(harness.vault.eraseCount == 0)
+        #expect(harness.store.owner != nil)
+    }
+
+    @Test func aSessionOpenedOnAStoredServerIsBoundToIt() async throws {
+        let harness = try AppModelHarness(storedServer: storedText)
+        await harness.model.launch()
+        await harness.model.signIn(identity: "maria")
+        #expect(harness.vault.secret == harness.service.issuedSession.sessionToken)
+        #expect(harness.vault.origin == storedText)
+    }
+
     @Test func theModelSaysWhetherItIsSignedInAndWhetherItIsOnTheDefaultServer() async throws {
         let harness = try await signedInHarness()
         #expect(harness.model.isSignedIn)

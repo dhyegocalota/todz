@@ -18,24 +18,12 @@ public struct FileSessionVault: SessionVault, Sendable {
         sessionFile.path(percentEncoded: false)
     }
 
-    public func read() throws -> String? {
-        guard FileManager.default.fileExists(atPath: sessionPath) else { return nil }
-        let secret: String
-        do {
-            secret = try String(contentsOf: sessionFile, encoding: .utf8)
-        } catch {
-            throw SessionVaultError.unreadable
-        }
-        guard !secret.isEmpty else { throw SessionVaultError.unreadable }
-        return secret
+    public func read() throws -> StoredSession? {
+        fatalError("FileSessionVault.read of a bound session is not implemented")
     }
 
-    public func write(_ secret: String) throws {
-        do {
-            try PrivateFile.write(Data(secret.utf8), to: sessionFile)
-        } catch {
-            throw SessionVaultError.unwritable
-        }
+    public func write(_ session: StoredSession) throws {
+        fatalError("FileSessionVault.write of a bound session is not implemented")
     }
 
     public func erase() throws {
