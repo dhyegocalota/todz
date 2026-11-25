@@ -19,7 +19,7 @@ private func liveSignals() throws -> SocketChangeSignals {
 }
 
 private func signedInInbox(api: OwnerAPI) async throws -> (session: String, inbox: Project) {
-    let issued = try await api.signIn(identityToken: "live-\(UUID().uuidString.lowercased())", linkVerifier: nil, timeZone: liveTimeZone)
+    let issued = try await api.signIn(identityToken: "live-\(UUID().uuidString.lowercased())", linkVerifier: nil, turnstileToken: nil, timeZone: liveTimeZone)
     let workspace = try await api.createWorkspace(session: issued.sessionToken, name: "Acme")
     return (session: issued.sessionToken, inbox: try #require(workspace.projects.first))
 }
@@ -38,7 +38,7 @@ struct LiveOwnerAPITests {
     @Test func theShellsRoutesAnswerAsTheModelsDecodeThem() async throws {
         let api = try liveAPI()
         let identity = "live-\(UUID().uuidString.lowercased())"
-        let issued = try await api.signIn(identityToken: identity, linkVerifier: nil, timeZone: liveTimeZone)
+        let issued = try await api.signIn(identityToken: identity, linkVerifier: nil, turnstileToken: nil, timeZone: liveTimeZone)
         let session = issued.sessionToken
         #expect(issued.owner.timeZone == liveTimeZone)
         #expect(try await api.updateOwner(session: session, timeZone: liveTimeZone).identifier == issued.owner.identifier)
@@ -103,10 +103,10 @@ struct LiveOwnerAPITests {
     @Test func aRefusedIdentityAndZoneMapToTheirErrors() async throws {
         let api = try liveAPI()
         await #expect(throws: OwnerAPIError.identityRejected) {
-            try await api.signIn(identityToken: "not a valid identity", linkVerifier: nil, timeZone: liveTimeZone)
+            try await api.signIn(identityToken: "not a valid identity", linkVerifier: nil, turnstileToken: nil, timeZone: liveTimeZone)
         }
         await #expect(throws: OwnerAPIError.timeZoneInvalid) {
-            try await api.signIn(identityToken: "live-\(UUID().uuidString.lowercased())", linkVerifier: nil, timeZone: "+01:00")
+            try await api.signIn(identityToken: "live-\(UUID().uuidString.lowercased())", linkVerifier: nil, turnstileToken: nil, timeZone: "+01:00")
         }
         await #expect(throws: OwnerAPIError.unauthorized) { try await api.listWorkspaces(session: UUID().uuidString) }
     }

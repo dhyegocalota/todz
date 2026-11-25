@@ -46,12 +46,12 @@ struct StatusFailure: Sendable {
         return signInMethodAnswer
     }
 
-    func requestSignInLink(email: String, challenge: String) async throws {
-        try await record(.requestSignInLink(email: email, challenge: challenge))
+    func requestSignInLink(email: String, challenge: String, turnstileToken: String) async throws {
+        try await record(.requestSignInLink(email: email, challenge: challenge, turnstileToken: turnstileToken))
     }
 
-    func signIn(identityToken: String, linkVerifier: String?, timeZone: String) async throws -> IssuedSession {
-        try await record(.signIn(identityToken: identityToken, linkVerifier: linkVerifier, timeZone: timeZone))
+    func signIn(identityToken: String, linkVerifier: String?, turnstileToken: String?, timeZone: String) async throws -> IssuedSession {
+        try await record(.signIn(identityToken: identityToken, linkVerifier: linkVerifier, turnstileToken: turnstileToken, timeZone: timeZone))
         return issuedSession
     }
 

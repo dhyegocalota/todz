@@ -7,7 +7,7 @@ private let linkToken = String(repeating: "aB3_-", count: 8) + "xyz"
 private let pendingLifetime: TimeInterval = 20 * 60
 
 private func incomingLink() throws -> SignInLink {
-    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)"))
+    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)"))
     return try #require(SignInLink(url: url))
 }
 
@@ -50,7 +50,7 @@ private func incomingLink() throws -> SignInLink {
         harness.service.signInMethodAnswer = .link
         await harness.model.loadSignInMethod()
         harness.service.suspend(.requestSignInLink)
-        let asking = Task { await harness.model.requestSignInLink(email: emailAddress) }
+        let asking = Task { await harness.askForLink(email: emailAddress) }
         await harness.service.held(.requestSignInLink)
         #expect(SignInStage(model: harness.model) == .sending)
         harness.service.unsuspend(.requestSignInLink)

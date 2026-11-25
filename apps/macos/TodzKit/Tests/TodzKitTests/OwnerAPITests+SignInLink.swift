@@ -5,6 +5,7 @@ import Testing
 private let zone = "America/Sao_Paulo"
 private let challenge = "0f007385b6f9d4b7eeb2748605afe1a984a0a3bfa3f014d09e2a784ce9e5cd1a"
 private let verifier = String(repeating: "A", count: 43)
+private let turnstileToken = "turnstile-token"
 
 extension OwnerAPITests {
     @Test(arguments: [("link", SignInMethod.link), ("identity", .identity)])
@@ -14,49 +15,42 @@ extension OwnerAPITests {
         #expect(method == expected)
     }
 
-    @Test func requestSignInLinkPostsTheAddressAndTheChallengeWithoutASession() async throws {
-        try await api(answering: .response(status: 202, body: "{}")).requestSignInLink(email: "maria@example.com", challenge: challenge)
+    @Test func requestSignInLinkPostsTheAddressTheChallengeAndTheTurnstileTokenWithoutASession() async throws {
+        try await api(answering: .response(status: 202, body: "{}")).requestSignInLink(email: "maria@example.com", challenge: challenge, turnstileToken: turnstileToken)
         try expectOnlyRequest(
             ExpectedRequest(
                 method: "POST",
                 path: "/owner/sign-in-links",
                 session: nil,
-                body: ["email": "maria@example.com", "link_challenge": challenge]
+                body: ["email": "maria@example.com", "link_challenge": challenge, "turnstile_token": turnstileToken]
             )
         )
     }
 
-    @Test func signInSendsTheLinkVerifierWhenThereIsOne() async throws {
+    @Test func signInSendsTheLinkVerifierAndTheTurnstileTokenWhenThereAreOnes() async throws {
         let body = "{\"session_token\":\"secret\",\"owner\":\(OwnerFixtures.ownerJSON(identifier: "owner-1", timeZone: zone))}"
-        _ = try await api(answering: .response(status: 201, body: body)).signIn(identityToken: "token", linkVerifier: verifier, timeZone: zone)
+        _ = try await api(answering: .response(status: 201, body: body)).signIn(identityToken: "token", linkVerifier: verifier, turnstileToken: turnstileToken, timeZone: zone)
         try expectOnlyRequest(
             ExpectedRequest(
                 method: "POST",
                 path: "/owner/sessions",
                 session: nil,
-                body: ["identity_token": "token", "link_verifier": verifier, "time_zone": zone]
+                body: ["identity_token": "token", "link_verifier": verifier, "turnstile_token": turnstileToken, "time_zone": zone]
             )
         )
     }
 
-    @Test func aSixthLinkIsRefusedAsTooManyLinks() async throws {
-        let answer = StubAnswer.response(status: 429, body: "{\"error\":\"too_many_links\"}")
-        await #expect(throws: OwnerAPIError.tooManyLinks) {
-            try await api(answering: answer).requestSignInLink(email: "maria@example.com", challenge: challenge)
+    @Test func aRefusedLinkRequestIsRefusedAsSignInRefused() async throws {
+        let answer = StubAnswer.response(status: 429, body: "{\"error\":\"sign_in_refused\"}")
+        await #expect(throws: OwnerAPIError.signInRefused) {
+            try await api(answering: answer).requestSignInLink(email: "maria@example.com", challenge: challenge, turnstileToken: turnstileToken)
         }
     }
 
-    @Test func aRateLimitedLinkRequestIsRefusedAsTooManyRequests() async throws {
-        let answer = StubAnswer.response(status: 429, body: "{\"error\":\"too_many_requests\"}")
-        await #expect(throws: OwnerAPIError.tooManyRequests) {
-            try await api(answering: answer).requestSignInLink(email: "maria@example.com", challenge: challenge)
-        }
-    }
-
-    @Test func aRateLimitedSignInIsRefusedAsTooManyRequests() async throws {
-        let answer = StubAnswer.response(status: 429, body: "{\"error\":\"too_many_requests\"}")
-        await #expect(throws: OwnerAPIError.tooManyRequests) {
-            try await api(answering: answer).signIn(identityToken: "token", linkVerifier: verifier, timeZone: zone)
+    @Test func aRefusedSignInIsRefusedAsSignInRefused() async throws {
+        let answer = StubAnswer.response(status: 429, body: "{\"error\":\"sign_in_refused\"}")
+        await #expect(throws: OwnerAPIError.signInRefused) {
+            try await api(answering: answer).signIn(identityToken: "token", linkVerifier: verifier, turnstileToken: turnstileToken, timeZone: zone)
         }
     }
 }

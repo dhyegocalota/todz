@@ -9,6 +9,7 @@ struct InboxSlot: View {
 
     var body: some View {
         VStack {
+            ChallengeView()
             if model.isRequestingLink {
                 ProgressView(SignInCopy.sendingLink)
                     .controlSize(.small)
@@ -32,7 +33,7 @@ struct InboxSlot: View {
         TimelineView(.periodic(from: .now, by: 1)) { timeline in
             Button(SignInCopy.sendAgain, action: sendAgain)
                 .keyboardShortcut(.defaultAction)
-                .disabled(because: waitingReason(at: timeline.date))
+                .disabled(because: sendAgainReason(at: timeline.date))
         }
     }
 
@@ -54,6 +55,11 @@ struct InboxSlot: View {
         return SignInCopy.sendAgainWaiting(seconds: Int(remaining.rounded(.up)))
     }
 
+    private func sendAgainReason(at date: Date) -> String? {
+        guard let waitingReason = waitingReason(at: date) else { return model.missingChallengeReason }
+        return waitingReason
+    }
+
     private func tryAgain() {
         guard model.canRedeemAgain else {
             sendAgain()
@@ -63,7 +69,7 @@ struct InboxSlot: View {
     }
 
     private func sendAgain() {
-        guard !model.isRequestingLink else { return }
+        guard !model.isRequestingLink, model.missingChallengeReason == nil else { return }
         Task { await send(pendingLink.email) }
     }
 }
