@@ -19,6 +19,11 @@ export const WAITLIST_RATE_LIMIT_MAX = 10;
 export const WAITLIST_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;
 export const WAITLIST_ADDRESS_RATE_LIMIT_MAX = 3;
 export const WAITLIST_GLOBAL_RATE_LIMIT_MAX = 60;
+export const WAITLIST_MINIMUM_FILL_MS = 2 * MILLISECONDS_PER_SECOND;
+export const WAITLIST_FILL_MARGIN_MS = MILLISECONDS_PER_SECOND;
+export const WAITLIST_FILL_HOLD_MS = WAITLIST_MINIMUM_FILL_MS + WAITLIST_FILL_MARGIN_MS;
+export const WAITLIST_JOIN_TIMEOUT_MS = 15 * MILLISECONDS_PER_SECOND;
+export const WAITLIST_CHECK_RETRY_MAX = 3;
 export const ADMIN_RATE_LIMIT_MAX = 10;
 export const ADMIN_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;
 export const ADMIN_ADDRESS_RATE_LIMIT_MAX = 3;
@@ -30,9 +35,25 @@ export const OWNER_WORKSPACES_MAX = 20;
 export const WORKSPACE_PROJECTS_MAX = 50;
 export const PROJECT_LIVE_KEYS_MAX = 10;
 export const WAITLIST_DAILY_JOINS_MAX = 500;
+export const DAY_EMAIL_MINUTES_DEFAULT = 7 * MINUTES_PER_HOUR;
+export const DAY_EMAIL_MINUTES_MAX = HOURS_PER_DAY * MINUTES_PER_HOUR - 1;
+export const DAY_EMAIL_CATCH_UP_MINUTES = 3 * MINUTES_PER_HOUR;
+export const DAY_EMAIL_SENDS_PER_TICK_MAX = 50;
+export const DAY_EMAIL_PROJECTS_PER_OWNER_MAX = 100;
+export const DAY_EMAIL_LINES_MAX = 20;
+export const DAY_EMAIL_RETENTION_MS = 30 * MILLISECONDS_PER_DAY;
+export const DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS = 7 * MILLISECONDS_PER_DAY;
 export const COMPANY = {
   tradeName: 'Logic Bit',
   legalName: 'Logic Bit AI Software Boutique Ltda',
   website: 'https://logicbit.com.br',
   logo: 'https://www.logicbit.com.br/favicon/apple-touch-icon.png',
 } as const;
+export const REPLY_SECRET_LENGTH = 32;
+export const REPLY_ADDRESS_DOMAIN = 'todz.app';
+export const MAIL_SENDER_ADDRESS = `noreply@${REPLY_ADDRESS_DOMAIN}`;
+export const REPLY_ADDRESS_LOCAL_PART = 'reply';
+export const REPLY_SIZE_MAX_BYTES = 1024 * 1024;
+export const REPLY_RATE_LIMIT_MAX = 5;
+export const REPLY_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;
+export const REPLY_DAILY_MAX = 20;

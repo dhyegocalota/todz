@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { normalizedAddress } from '../src/email-address';
+import { isOwnDomainAddress, normalizedAddress } from '../src/email-address';
 
 const ADDRESS_LENGTH_MAX = 254;
 const DOMAIN = '@example.com';
@@ -22,6 +22,7 @@ describe('the normalized address', () => {
     ['a comma', 'a@b.c,d@e.f'],
     ['a non-ASCII character', 'mária@example.com'],
     ['a URL shape', 'https://a.bc/x?@a.bc'],
+    ['a trailing dot on the domain', 'hello+x@todz.app.'],
     ['a slash', 'a@b/c.d'],
     ['a colon', 'a:b@c.de'],
     ['a query in the domain', 'a@b.c?x'],
@@ -39,4 +40,17 @@ describe('the normalized address', () => {
     expect(normalizedAddress(longest)).toBe(longest);
     expect(normalizedAddress(`a${longest}`)).toBeNull();
   });
+});
+
+describe('the own domain address', () => {
+  test.each([['x@todz.app'], ['reply+abc@todz.app'], ['hello+1@todz.app']])('%s is on todz.app', (address) => {
+    expect(isOwnDomainAddress(address)).toBe(true);
+  });
+
+  test.each([['x@todz.app.example'], ['x@mail.todz.app'], ['x@notodz.app'], ['todz.app@example.com']])(
+    '%s is not on todz.app',
+    (address) => {
+      expect(isOwnDomainAddress(address)).toBe(false);
+    },
+  );
 });

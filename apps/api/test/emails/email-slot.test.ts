@@ -12,6 +12,10 @@ describe('the email slots', () => {
       '{{failed}}',
       '{{addresses}}',
       '{{more}}',
+      '{{count}}',
+      '{{tasks}}',
+      '{{workspace}}',
+      '{{time}}',
     ]);
   });
 

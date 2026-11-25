@@ -18,6 +18,8 @@ The site also holds a small admin for the one owner address: a link mailed to it
 
 Once a day the same owner address gets a short digest of the waitlist's last day: who joined, the total and any confirmation that failed. Without that address the digest goes nowhere.
 
+An owner who turns it on gets a short mail of Today once a day at the time they pick, in their own time zone, off by default and never twice for one day. Replying to it from the owner's own mailbox adds one task, the reply's first line, to the Inbox of their first workspace, due today; a reply from anyone else, or one that cannot be proven to come from that mailbox, adds nothing and is answered by nothing. No address of todz can be an owner or join the waitlist.
+
 On every host the Worker names its own origin at a public health address, so an app can check an address before it uses one.
 
 The deployed Worker is production on its own domain, with its own database and the mail sender of todz; a development Worker overrides that configuration and keeps its state on this machine. The development database has a new name since the Worker was first deployed, so state from earlier local runs stays behind and can be deleted.

@@ -10,7 +10,8 @@
     { "pattern": "todz.app", "custom_domain": true },
     { "pattern": "www.todz.app", "custom_domain": true },
   ],
-  "triggers": { "crons": ["0 11 * * *"] },
+  "triggers": { "crons": ["0 11 * * *", "*/15 * * * *"] },
+  "observability": { "enabled": true, "logs": { "invocation_logs": false } },
   "vars": {
     "SIGN_IN_PROVIDER": "email",
     "EMAIL_SENDER": "cloudflare",
@@ -42,6 +43,7 @@
     { "name": "ADMIN_LIMITER", "namespace_id": "8607", "simple": { "limit": 10, "period": 60 } },
     { "name": "ADMIN_ADDRESS_LIMITER", "namespace_id": "8608", "simple": { "limit": 3, "period": 60 } },
     { "name": "ADMIN_GLOBAL_LIMITER", "namespace_id": "8609", "simple": { "limit": 30, "period": 60 } },
+    { "name": "DAY_EMAIL_REPLY_LIMITER", "namespace_id": "8610", "simple": { "limit": 5, "period": 60 } },
     { "name": "OWNER_LIMITER", "namespace_id": "8611", "simple": { "limit": 600, "period": 60 } },
     { "name": "MCP_LIMITER", "namespace_id": "8612", "simple": { "limit": 3600, "period": 60 } },
   ],
