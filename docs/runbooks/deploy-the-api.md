@@ -133,9 +133,11 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     scripts/todz-cloudflare.sh api GET /zones/06490974636c535e2cbfd7c5b09925a5/settings/pseudo_ipv4
     scripts/todz-cloudflare.sh api PATCH /zones/06490974636c535e2cbfd7c5b09925a5/settings/always_use_https scripts/deploy-bodies/always-use-https-on.json
     curl -sI http://api.todz.app/owner/sign-in-method
+    curl -sI http://todz.app/
+    curl -sI http://www.todz.app/
     ```
 
-    Expected: the first answers `"value":"off"` or `"value":"add_header"`; the second answers `"success":true` with `"value":"on"`; the third prints `HTTP/1.1 301` and a `location` header of `https://api.todz.app/owner/sign-in-method`.
+    Expected: the first answers `"value":"off"` or `"value":"add_header"`; the second answers `"success":true` with `"value":"on"`; the third prints `HTTP/1.1 301` and a `location` header of `https://api.todz.app/owner/sign-in-method`, and the last two each print `HTTP/1.1 301` with a `location` on `https://` of the same host. The site sends HSTS only on its pages, so this zone setting is what keeps `www.todz.app` and the site's other answers on HTTPS.
     If it fails: any other pseudo IPv4 value (`overwrite_header`) means Cloudflare replaces the client's IPv6 address with a pseudo IPv4 one, which would hide IPv6 from the per-/64 key of the sign-in limiter; stop before the PATCH and tell the owner. An authentication error names Zone Settings Edit on the zone. A connection error right after step 8 means DNS is still settling; run the second command again every minute for up to fifteen minutes. A 200 over plain HTTP means the setting did not apply; read it back with `api GET /zones/06490974636c535e2cbfd7c5b09925a5/settings/always_use_https` and tell the owner.
 
 13. **Smoke check the live routes.** Ask the live Worker, then its account's `workers.dev` address:
