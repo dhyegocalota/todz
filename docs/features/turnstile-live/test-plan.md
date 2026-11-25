@@ -4,14 +4,14 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 
 ## The failing test first
 
-- [ ] `tools/repository-shape/src/api-source.test.ts` the production vars test — input: `vars` without the key; expected: red with the received vars lacking `TURNSTILE_SITE_KEY`
-- [ ] Confirmed it fails for the right reason — expected: the diff shows only `- "TURNSTILE_SITE_KEY": "0x4AAAAAAGSI2K7Qe9Vad2nL"` missing, not a parse error
+- [x] `tools/repository-shape/src/api-source.test.ts` the production vars test — input: `vars` without the key; expected: red with the received vars lacking `TURNSTILE_SITE_KEY` — evidence: red at a6824c6, `AssertionError: expected { SIGN_IN_PROVIDER: 'email', …(3) } to deeply equal { SIGN_IN_PROVIDER: 'email', …(4) }`
+- [x] Confirmed it fails for the right reason — expected: the diff shows only `- "TURNSTILE_SITE_KEY": "0x4AAAAAAGSI2K7Qe9Vad2nL"` missing, not a parse error — evidence: the diff at a6824c6 shows only that line missing; green at f6f29f2
 
 ## Unit
 
-- [ ] `pnpm --filter @todz/repository-shape exec vitest run` — expected: all files green with the key in `vars`
-- [ ] `gitleaks detect --no-git --source apps/api/wrangler.jsonc --config .gitleaks.toml` — expected: `no leaks found`
-- [ ] `pnpm verify` — expected: every gate the diff touches green
+- [x] `pnpm --filter @todz/repository-shape exec vitest run` — expected: all files green with the key in `vars` — evidence: 18 files, 240 tests passed at cc5a66e
+- [x] `gitleaks detect --no-git --source apps/api/wrangler.jsonc --config .gitleaks.toml` — expected: `no leaks found` — evidence: `no leaks found` at cc5a66e
+- [x] `pnpm verify` — expected: every gate the diff touches green — evidence: `verify: 8 gates green at cc5a66e (product)`
 
 ## Prove it for real (production, after the secret is put and the runbook runs from step 1 on `main`)
 
