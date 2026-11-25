@@ -1,16 +1,20 @@
 import Testing
 @testable import TodzKit
 
-private let fittingWidth = 150.0
-private let overflowingWidth = 280.0
-private let cappedWidth = 900.0
-private let unfoldFrames = 8
-private let scrollFramesOfTheOverflow = 75
-private let framesPerSecond = 30
-private let scrollSpeed = 40.0
-private let widestWidth = 2000
-private let longestTimeline = Duration.seconds(9.5)
-private let mostFrames = 285
+private let windowWidth = RibbonMotion.windowWidth
+private let stripMaxWidth = RibbonMotion.stripMaxWidth
+private let framesPerSecond = RibbonMotion.framesPerSecond
+private let scrollSpeed = RibbonMotion.scrollSpeed
+private let fittingWidth = windowWidth - 30
+private let overflow = 100.0
+private let overflowingWidth = windowWidth + overflow
+private let cappedWidth = stripMaxWidth * 2
+private let longestOverflow = stripMaxWidth - windowWidth
+private let unfoldFrames = RibbonMotion.foldFrameCount
+private let scrollFramesOfTheOverflow = Int((overflow * Double(framesPerSecond) / scrollSpeed).rounded(.up))
+private let widestWidth = Int(stripMaxWidth * 5)
+private let longestTimeline = RibbonMotion.foldDuration * 2 + RibbonMotion.edgeHold * 2 + .seconds(longestOverflow / scrollSpeed)
+private let mostFrames = unfoldFrames * 2 + 2 + Int((longestOverflow * Double(framesPerSecond) / scrollSpeed).rounded(.up))
 private let unfolding = (1...unfoldFrames).map { Double($0) / Double(unfoldFrames) }
 private let folding = (0..<unfoldFrames).reversed().map { Double($0) / Double(unfoldFrames) }
 private let frameDuration = Duration.seconds(1) / framesPerSecond
@@ -28,10 +32,10 @@ private func total(_ frames: [RibbonFrame]) -> Duration {
         let frames = timeline(fittingWidth)
         #expect(frames.count == unfoldFrames + 1 + unfoldFrames)
         #expect(frames.prefix(unfoldFrames).map(\.reveal) == unfolding)
-        #expect(total(Array(frames.prefix(unfoldFrames))) == .seconds(0.25))
-        #expect(frames[unfoldFrames] == RibbonFrame(reveal: 1, offset: 0, duration: .seconds(5)))
+        #expect(total(Array(frames.prefix(unfoldFrames))) == RibbonMotion.foldDuration)
+        #expect(frames[unfoldFrames] == RibbonFrame(reveal: 1, offset: 0, duration: RibbonMotion.dwell))
         #expect(frames.suffix(unfoldFrames).map(\.reveal) == folding)
-        #expect(total(Array(frames.suffix(unfoldFrames))) == .seconds(0.25))
+        #expect(total(Array(frames.suffix(unfoldFrames))) == RibbonMotion.foldDuration)
         #expect(frames.allSatisfy { $0.offset == 0 })
     }
 
@@ -41,17 +45,17 @@ private func total(_ frames: [RibbonFrame]) -> Duration {
         let scrollEnd = scrollStart + scrollFramesOfTheOverflow
         let scrolling = Array(frames[scrollStart..<scrollEnd])
         #expect(frames.count == scrollEnd + 1 + unfoldFrames)
-        #expect(frames[unfoldFrames] == RibbonFrame(reveal: 1, offset: 0, duration: .seconds(1.5)))
+        #expect(frames[unfoldFrames] == RibbonFrame(reveal: 1, offset: 0, duration: RibbonMotion.edgeHold))
         #expect(scrolling.map(\.offset) == (1...scrollFramesOfTheOverflow).map { Double($0) * scrollSpeed / Double(framesPerSecond) })
         #expect(scrolling.allSatisfy { $0.reveal == 1 && $0.duration == frameDuration })
-        #expect(scrolling.last?.offset == 100)
-        #expect(frames[scrollEnd] == RibbonFrame(reveal: 1, offset: 100, duration: .seconds(1.5)))
+        #expect(scrolling.last?.offset == overflow)
+        #expect(frames[scrollEnd] == RibbonFrame(reveal: 1, offset: overflow, duration: RibbonMotion.edgeHold))
         #expect(frames.suffix(unfoldFrames).map(\.reveal) == folding)
     }
 
     @Test func aLongLineScrollsOnlyToTheEndOfTheStripCap() {
         let frames = timeline(cappedWidth)
-        #expect(frames.map(\.offset).max() == 240)
+        #expect(frames.map(\.offset).max() == longestOverflow)
         #expect(timeline(cappedWidth * 2) == frames)
     }
 
@@ -64,7 +68,7 @@ private func total(_ frames: [RibbonFrame]) -> Duration {
     @Test(arguments: [0.0, fittingWidth, overflowingWidth, cappedWidth])
     func reducedMotionIsOneFrameOfFiveSeconds(textWidth: Double) {
         let frames = RibbonMotion.timeline(textWidth: textWidth, isMotionReduced: true)
-        #expect(frames == [RibbonFrame(reveal: 1, offset: 0, duration: .seconds(5))])
+        #expect(frames == [RibbonFrame(reveal: 1, offset: 0, duration: RibbonMotion.dwell)])
     }
 
     @Test(arguments: [0.0, -1.0, -500.0])

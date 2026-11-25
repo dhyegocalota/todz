@@ -220,6 +220,7 @@ private func shown(_ content: RibbonContent, frames: [RibbonFrame] = fittingTime
         await bench.pauses.moments.started()
         bench.coordinator.end()
         #expect(bench.coordinator.presentation == nil)
+        #expect(bench.coordinator.running == nil)
         await bench.settled(bench.pauses.moments, heldCount: 0)
         #expect(bench.pauses.moments.durations.count == 1)
     }
@@ -316,6 +317,23 @@ private func shown(_ content: RibbonContent, frames: [RibbonFrame] = fittingTime
         bench.coordinator.agentChanged()
         await bench.pauses.moments.started(count: prior + 1)
         #expect(bench.pauses.moments.durations.last == .seconds(RibbonCoordinator.agentSettle))
+    }
+
+    @Test func anAgentChangeHeldByAQuietGateShowsOnceOnReleaseAndStartsTheCooldownThere() async throws {
+        let bench = try RibbonBench(cadence: .agentChange, hour: 14)
+        bench.gate.setQuiet(true)
+        bench.coordinator.agentChanged()
+        await bench.pauses.moments.started()
+        bench.pauses.moments.release()
+        await bench.coordinator.settling?.value
+        #expect(bench.coordinator.presentation == nil)
+        bench.gate.setQuiet(false)
+        #expect(await bench.playOut(after: 1) == shown(threeOpen))
+        bench.clock.now = bench.clock.now.addingTimeInterval(5 * 60)
+        let settling = bench.coordinator.settling
+        bench.coordinator.agentChanged()
+        #expect(bench.coordinator.settling == settling)
+        #expect(bench.pauses.moments.durations.count == 1 + fittingTimeline.count)
     }
 
     @Test func anAgentChangeWithTheHourlyCadenceDoesNothing() throws {

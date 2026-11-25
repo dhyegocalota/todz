@@ -102,6 +102,25 @@ extension AppModelTests {
         #expect(harness.model.agentChangeCount == 0)
     }
 
+    @Test func aTaskAlreadyOnTheBoardWithANewTitleCountsNothing() async throws {
+        let harness = try ribbonHarness()
+        await harness.signedIn()
+        let retitled = MutableTask(number: 1, title: "Renamed", dueDate: harness.model.today).record
+        scriptPull([retitled], in: harness)
+        await harness.model.pullProject(identifier: inboxIdentifier)
+        #expect(harness.model.agentChangeCount == 0)
+    }
+
+    @Test func aProjectPulledInTwoPagesCountsOnce() async throws {
+        let harness = try ribbonHarness()
+        await harness.signedIn()
+        harness.service.pageSize = 1
+        harness.service.tasksOfProject[inboxIdentifier]?.append(contentsOf: [agentTask(3, in: harness), agentTask(4, in: harness)])
+        await harness.model.pullProject(identifier: inboxIdentifier)
+        #expect(harness.model.board.tasks(projectIdentifier: inboxIdentifier).count == 4)
+        #expect(harness.model.agentChangeCount == 1)
+    }
+
     @Test func theRibbonContentIsNoneWhileSignedOut() throws {
         let harness = try ribbonHarness()
         #expect(harness.model.ribbonContent == nil)
