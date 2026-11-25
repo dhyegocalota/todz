@@ -12,8 +12,10 @@ public enum AppLinkScheme: String, Encodable, Sendable {
         return AppLinkScheme(rawValue: text)
     }
 
-    public static func of(bundle: Bundle) -> AppLinkScheme? {
-        guard let info = bundle.infoDictionary else { return nil }
-        return of(info: info)
+    public static func required(bundle: Bundle) -> AppLinkScheme {
+        guard let info = bundle.infoDictionary, let scheme = of(info: info) else {
+            fatalError("\(linkSchemeKey) is missing from the Info.plist of \(bundle.bundleURL.lastPathComponent) or names no link scheme of ours")
+        }
+        return scheme
     }
 }
