@@ -1,6 +1,6 @@
 # Morning glance
 
-**Status:** Approved
+**Status:** Building
 **Tier:** 🟡 (the app's first panel, five system signals, a coordinator through the gate, one Settings switch)
 **Owner approval:** approved 2026-11-25 by the owner's request to the loop (2026-11-24, ~20:30: "1,4,5,6,7,9,10 e também 11 … seja criativo, add no cron e só para quando tiver pronto"; every item "features opcionais", off by default, no push notifications), recorded in `todz-loop/STATE.md` "Owner requirements queued" → `proactive-day` item 3: "on the first wake or unlock of the day, a small glass panel shows Today for about 5 seconds and fades, with no focus steal and a click to open the window". The behaviour is the loop's call in [ADR 0062](../../adr/0062-the-morning-glance-is-a-non-activating-glass-panel-that-shows-today-on-the-first-wake-or-unlock-of-the-day.md).
 **ADRs:** [0062](../../adr/0062-the-morning-glance-is-a-non-activating-glass-panel-that-shows-today-on-the-first-wake-or-unlock-of-the-day.md), [0055](../../adr/0055-the-day-closes-once-a-day-in-the-menu-bar-popover-at-the-owner-s-time.md), [0054](../../adr/0054-the-app-learns-focus-through-a-todz-focus-filter-not-the-focus-status-api.md), [0036](../../adr/0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md), [0031](../../adr/0031-the-menu-bar-extra-is-a-swiftui-window-over-the-app-s-one-model.md)
@@ -15,13 +15,14 @@ The owner sits down and starts working without looking at what is due. He wants 
 - Settings: a switch "Morning glance" (off by default), kept in the app's defaults.
 - On the first chance of each calendar day (a launch, a wake from sleep, a display wake, a screen unlock, a return to the session), when Today of the active workspace has open tasks, a small glass panel appears at the top right of the screen with the menu bar with the heading, what is left and up to five open tasks, then fades after about 5 seconds.
 - The panel never becomes key or main and never activates todz: the frontmost app and its keyboard focus stay where they were.
-- A click anywhere on it closes it, activates todz and opens the main window on Today.
+- A click anywhere on it, released after the pointer entered it once the 0.4 s grace ended, closes it, activates todz and opens the main window on Today with the list focused, never the add field.
+- The panel stays hidden with a hidden todz and out of screen sharing and captures.
 - During a Focus with the todz filter, the glance is held and shows once when the Focus ends, on the day of its latest held chance.
 - Never twice a day; nothing shows when nothing is left, while the screen is locked or its menu bar screen is mirrored, or when the day close or Today is already in front of the owner.
 
 ## Non-goals
 
-- A time of day, notifications, actions on the rows, more than the active workspace, more than one screen, a server-side setting, a glance from the widgets, hiding the panel from screen sharing.
+- A time of day, notifications, actions on the rows, more than the active workspace, more than one screen, a server-side setting, a glance from the widgets, skipping a captured screen (no public API reports one).
 
 ## Design
 

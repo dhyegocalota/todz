@@ -131,3 +131,38 @@ Every "it works" is a hypothesis the tester tries to break.
 - A pointer already on the panel when it first appears gets no `mouseEntered` until it moves, so the dwell is the plain five seconds in that case.
 - `glassEffect` is built against the Xcode 27 SDK; macOS 14 and 15 take the `.regularMaterial` branch, which was not run.
 - The panel's height comes from the hosting view's `fittingSize` at show time; very long localized strings were not tried.
+
+## Fix round 1
+
+Gate on the last code commit (`aef88d4`): `swift test --package-path apps/macos/TodzKit` 921 tests in 63 suites passed; `xcodegen generate`; Debug and Release `xcodebuild` print `BUILD SUCCEEDED` with no `warning:` or `error:` line. The app was never launched.
+
+| Item | Change | Red commit and printed text | Green commit |
+|------|--------|------------------------------|--------------|
+| S2 | `MorningGlancePreference` and `DayClosePreference` are structs built with the defaults and the domain name; they read only `persistentDomain(forName:)` through `PersistentDomain` and write through `set`; both coordinators take `preference:` (the app passes `AppConfiguration.defaultsDomain`). A missing day-close time reads as 18:00, a stored non-number as off | `6cc7ea6`: `Expectation failed: !preference.isOn`, `preference.lastShownDay == nil` (glance) and `!preference.isOn`, `preference.minutesAfterMidnight == DayClosePreference.minutesAfterMidnightByDefault`, `preference.lastClosedDay == nil` (day close), all in `aValueOnlyInAnotherSearchedDomainIsIgnored`; `aStoredTimeThatIsNotANumberReadsAsOff`: `minutesAfterMidnight == nil`. The red tests ran against structs that still read `UserDefaults` normally | `bb7d014` |
+| S1 | `LinkSource` (`widget`, `morningGlance`) maps to an `OpeningFocus`; `MainWindowState.open(_:from:)` sets it with the link; `MainWindow`'s `.task` focuses the list for the glance and the add field otherwise, and resets on disappear; the hosting view swallows `mouseDown`, acts on `mouseUp` inside its bounds, and only after a `mouseEntered` that came after the grace ended | `a1dfedb`: `Expectation failed: LinkSource.morningGlance.openingFocus == .list`. The `NSView` half is app target, walk only | `1af0f27` (seam and window wiring), `b9950ea` (hosting view and presenter) |
+| S3 | `canHide = false` on the panel; `NSApp.unhideWithoutActivation()` removed | app target, walk only | `b9950ea` |
+| S4/R5 | after the panel is seen, `show` calls `reviewShown` once: a different or missing workspace, or a quiet gate, ends the show | `02a7906`: `aWorkspaceSwitchDuringTheShowClosesThePanelRightAfterTheAnswerAndKeepsTheDayMarked` and `aSignOutDuringTheShowClosesThePanelRightAfterTheAnswerAndKeepsTheDayMarked`: `Expectation failed: harness.panel.closings == 1` and `!harness.coordinator.isShowing`. `closingNowDuringTheShowClosesThePanelRightAfterTheAnswerAndKeepsTheDayMarked` is a pin (green when it landed) | `142cc73` |
+| S5 | the unlock notification is `retryLockedChance()`; wake, `screensDidWake` and `sessionDidBecomeActive` stay `check()` | `aRetryWithNoLockedChanceShowsNothing` is a pin; the observer mapping is app target, walk only | `b9950ea` |
+| S6 | `reviewShown` also tracks `gate.isQuiet` and ends the show when it turns true | `02a7906`: `aFocusStartingWhileThePanelIsOnScreenClosesIt` and `aFocusStartingDuringTheShowClosesThePanelRightAfterTheAnswer`: `Expectation failed: harness.panel.closings == 1`, `!harness.coordinator.isShowing` | `142cc73` |
+| S7 | `screensDidSleepNotification` and `sessionDidResignActiveNotification` join the closing notifications | app target, walk only | `b9950ea` |
+| S8 | `sharingType = .none` on the panel. The skip on a captured screen is dropped: `CGDisplayIsCaptured` is unavailable on macOS ("No longer supported", the build refused it) and no public API reports a capture, so the spec's non-goals now say so. The coordinator's `isScreenCaptured` input and its test were added in `02a7906`/`142cc73` and removed in `aef88d4` | app target, walk only | `b9950ea`, `aef88d4` |
+| R2 | `waitForContent` keeps the first waiting chance (`guard waitingChance == nil`); `isWaitingForContent` is gone | `02a7906`: `aSecondCheckDuringTheTodayWaitKeepsTheFirstChanceSoALateTodayShowsNothing`: `Expectation failed: harness.panel.attempts == 0`, `harness.lastShownDay == nil` | `142cc73` |
+| R3 | `MorningGlanceDwell.hovered()` takes no instant | refactor, the dwell suite is the proof | `1af0f27` |
+| R4 | at the grace end, a pointer already inside the panel's frame (`NSEvent.mouseLocation`) starts the hover pause, but never arms the click | app target, walk only | `b9950ea` |
+| R1 | spec status and the index row are `Building` | docs | this commit |
+| Tester: width | the code's constant and the design both say 280; the panel's content rect now takes its width from that constant and only its height from `fittingSize`, so the window cannot come out 276. The cause of the 276 was not found without launching the app | app target, walk only | `b9950ea` |
+| Tester: no-show row | the "nothing open" row starts from a cache synced by a prior launch with 0 open | docs | this commit |
+
+### Walk rows to re-check
+
+- The click opens the window without focusing the add field, and typing goes nowhere: click the panel after its grace (with the pointer entering first), then type `x`; the add field stays empty and the list holds focus. A click that begins with `mouseDown` outside and ends inside, or a pointer already resting inside at the grace end, opens nothing.
+- A todz hidden with Cmd+H stays hidden while the panel shows, and the panel still shows.
+- The panel's CGWindow width reads 280.
+- The panel is absent from a screen capture or a share of the screen.
+- The screen sleeping or the session resigning while the panel shows closes it; the unlock alone never starts a new chance.
+
+### Known gaps added
+
+- `sharingType = .none`, `canHide = false`, the mouse-up gate and the 280 width are untested assumptions until the walk.
+- The argument domain cannot be tested without leaking into other suites (a volatile argument domain is process wide), so the red tests prove the searched-domain case (the global domain's path) only.
+- The trigger's notification mapping (S5, S7) has no unit seam.
