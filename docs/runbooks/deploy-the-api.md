@@ -228,7 +228,37 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     ```
     If it fails: no 429 means run the command once more; none in the second run either means the binding is not enforcing, or Cloudflare did not send `CF-Connecting-IP` or the request counted as local; tell the owner before the app ships. A 429 on the first request means another client on this address used the quota; wait a minute and run it again.
 
-16. **Record the run.** Add one row per step above to the run log, with the date, the commit, the step and the actual result, in a pull request on `docs/`.
+16. **Check the landing's discovery files, icons and scores.** Ask the live site for each discovery file, the card on both hosts, the icon and the share image, then for the landing as two crawlers, then for the analytics beacon:
+
+    ```bash
+    curl -sS -D - https://todz.app/robots.txt
+    curl -sS -D - -o /dev/null https://todz.app/sitemap.xml
+    curl -sS -D - -o /dev/null https://todz.app/llms.txt
+    curl -sS -D - -o /dev/null https://todz.app/llms-full.txt
+    curl -sS -D - -o /dev/null https://todz.app/site.webmanifest
+    curl -sS -D - -o /dev/null https://todz.app/.well-known/ard.json
+    curl -sS -D - -o /dev/null https://todz.app/.well-known/mcp/server-card.json
+    curl -sS -D - -o /dev/null https://api.todz.app/mcp/server-card
+    curl -sS -D - -o /dev/null https://todz.app/favicon.ico
+    curl -sS -D - -o /dev/null https://todz.app/og/todz.png
+    curl -sS -o /dev/null -w "%{http_code}\n" -A GPTBot https://todz.app/
+    curl -sS -o /dev/null -w "%{http_code}\n" -A ClaudeBot https://todz.app/
+    curl -sS https://todz.app/ | grep -c cloudflareinsights
+    ```
+
+    Expected: `HTTP/2 200` for every file with `text/plain; charset=utf-8` for `robots.txt`, `llms.txt` and `llms-full.txt`, `application/xml; charset=utf-8` for the sitemap, `application/manifest+json` for the manifest, `application/json` for the catalog and `application/mcp-server-card+json` for both cards, which carry `access-control-allow-origin: *` and `cache-control: public, max-age=3600`; `image/x-icon` or `image/vnd.microsoft.icon` for the favicon and `image/png` for the share image. `robots.txt` holds the Worker's groups and both `Sitemap:` lines, and above its first `User-agent: *` line nothing or comments only. Then `200` and `200` for the two crawlers, and `0` for the beacon.
+
+    Then run Lighthouse on the landing, three times, on the Chromium that `@playwright/test` installs, and keep the five scores of each run:
+
+    ```bash
+    CHROME_PATH=~/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/"Google Chrome for Testing.app"/Contents/MacOS/"Google Chrome for Testing" pnpm dlx lighthouse@13.6.0 https://todz.app/ --chrome-flags="--headless=new" --quiet --output=json --output-path=stdout > ~/.todz-deploy/lighthouse-1.json
+    jq -c '.categories | map_values(.score)' ~/.todz-deploy/lighthouse-1.json
+    ```
+
+    Expected: on the median of three runs SEO, Best Practices, Accessibility and Agentic browsing `1` and Performance `0.95` or more; the audits `robots-txt`, `llms-txt`, `ard-schema`, `errors-in-console` and `image-aspect-ratio` pass.
+    If it fails: a `User-agent`, `Disallow` or `Content-Signal` line above the Worker's groups, or a `cloudflareinsights` match, means Cloudflare's managed `robots.txt` or its analytics beacon is on: read `scripts/todz-cloudflare.sh api GET /zones/06490974636c535e2cbfd7c5b09925a5/bot_management` and, when it shows `is_robots_txt_managed` or content signals on, turn them off with a `PATCH` of the same path through the wrapper, then run this step again. Web Analytics' automatic setup lives under the account's RUM path, which the wrapper refuses, so turning it off is an owner step (dashboard, Web Analytics, the `todz.app` site, automatic setup off), as is any setting the token's permission refuses (an authentication error). A `403` to a crawler is the zone's bot rule, an owner step. A Performance median under `0.95` is recorded in the run log and opens the follow-up `fix/landing-performance`; it does not roll the deploy back.
+
+17. **Record the run.** Add one row per step above to the run log, with the date, the commit, the step and the actual result, in a pull request on `docs/`.
     Expected: no token, link, secret or challenge appears in the log; the Version ID, the database id and the Time Travel bookmark do.
     If it fails: a secret that reached the log is rotated first (see the end of this runbook), then removed from the commit with a new one, never by rewriting history.
 
