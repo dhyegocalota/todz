@@ -7,6 +7,7 @@ import { publicOriginOf } from '../sign-in-links';
 import { dueDayOf } from './day-email-due';
 import { DayEmailEvent, logDayEmailEvent } from './day-email-log';
 import { issueReplyAddress } from './day-email-reply-address';
+import { issueStopLink } from './day-email-stop-link';
 import { DayEmailFailure, claimDay, markFailed, markSent, pruneDayEmails } from './day-email-store';
 import { dueTodayOf } from './day-email-today';
 
@@ -60,12 +61,13 @@ async function deliverDay({ scheduledTime, env, dueOwner, sender, publicOrigin }
     failure: DayEmailFailure.SendFailed,
     async run() {
       const replyTo = await issueReplyAddress({ directory: env.DIRECTORY, ownerId: candidate.owner.ownerId, now: scheduledTime });
+      const stopToken = await issueStopLink({ directory: env.DIRECTORY, ownerId: candidate.owner.ownerId, now: scheduledTime });
       await sender.send(
         dayMail({
           to: candidate.address,
           replyTo,
           origin: publicOrigin,
-          stopToken: '',
+          stopToken,
           tasks: dueToday.tasks,
           count: dueToday.count,
           workspaceName: inboxWorkspace.name,

@@ -18,7 +18,12 @@ function DayEmailTemplate({ copy, hasTasks }: { copy: DayEmailCopy; hasTasks: bo
   ];
   return createElement(
     EmailLayout,
-    { title: copy.subject, preview: copy.preview, footer: copy.footer },
+    {
+      title: copy.subject,
+      preview: copy.preview,
+      footer: copy.footer,
+      footerLink: { href: EmailSlot.StopUrl, label: copy.stopLabel },
+    },
     createElement(Heading, { as: 'h1', className: EmailClassName.Text, style: HEADING_STYLE }, copy.heading),
     ...(hasTasks ? taskElements : []),
     createElement(Text, { className: EmailClassName.Text, style: PARAGRAPH_STYLE }, copy.replyHint),

@@ -14,7 +14,7 @@ export const DAY_EMAIL_MINUTES = 420;
 export const UTC_SEVEN_O_CLOCK = Date.parse('2026-11-24T07:00:00Z');
 export const FAILED_RUN_MESSAGE = 'the day email failed for 1 owner';
 
-const DAY_EMAIL_TABLES = ['day_emails', 'day_email_reply_addresses', 'day_email_replies'];
+const DAY_EMAIL_TABLES = ['day_emails', 'day_email_reply_addresses', 'day_email_replies', 'day_email_stop_links'];
 const REPLY_ADDRESS_PATTERN = /^reply\+([0-9a-f]{32})@todz\.app$/;
 const STOP_TOKEN_PATTERN = /token=([0-9a-f]{64})>$/;
 const SECRET_GROUP = 1;

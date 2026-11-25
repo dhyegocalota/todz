@@ -93,7 +93,27 @@ export async function pruneDayEmails({ directory, now }: { directory: D1Database
     directory.prepare('DELETE FROM day_emails WHERE claimed_at < ?').bind(retainedSince),
     directory.prepare('DELETE FROM day_email_replies WHERE accepted_at < ?').bind(retainedSince),
     directory.prepare('DELETE FROM day_email_reply_addresses WHERE expires_at < ?').bind(now),
+    directory.prepare('DELETE FROM day_email_stop_links WHERE expires_at < ?').bind(now),
   ]);
+}
+
+export async function insertStopLink({
+  directory,
+  digest,
+  ownerId,
+  now,
+  expiresAt,
+}: {
+  directory: D1Database;
+  digest: string;
+  ownerId: string;
+  now: number;
+  expiresAt: number;
+}): Promise<void> {
+  await directory
+    .prepare('INSERT INTO day_email_stop_links (digest, owner_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
+    .bind(digest, ownerId, now, expiresAt)
+    .run();
 }
 
 export async function insertReplyAddress({
