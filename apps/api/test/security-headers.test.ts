@@ -1,6 +1,6 @@
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, onTestFinished, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import type { Env } from '../src/env';
 import { HttpHeader, NO_STORE } from '../src/http-header';
@@ -30,6 +30,7 @@ const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
 const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const WWW_PREFIX = 'www.';
 const UNKNOWN_ORIGIN = 'https://unknown.example';
+const CRASH_BEARER = 'todz_a-crash-bearer-never-logged';
 const ADMIN_SETTINGS: Partial<Env> = {
   ADMIN_EMAIL: ADMIN_ADDRESS,
   TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY,
@@ -134,6 +135,23 @@ describe('the answers of the worker on every host kind', () => {
     expect(response.status).toBe(HttpStatus.InternalServerError);
     expect(await response.text()).toBe('');
     expectSecurityHeaders({ response, policy: DEFAULT_POLICY });
+  });
+
+  test('a crash logs the error name and message once, and nothing of the request', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    onTestFinished(() => errorLog.mockRestore());
+    const failingDirectory = new Proxy(env.DIRECTORY, {
+      get(target, property) {
+        if (property === 'prepare') throw new Error('the directory is down');
+        return Reflect.get(target, property);
+      },
+    });
+    const request = new Request(`${API_ORIGIN}/mcp`, { method: 'POST', headers: { Authorization: `Bearer ${CRASH_BEARER}` } });
+    await answerOf({ request, settings: { DIRECTORY: failingDirectory } });
+    expect(errorLog.mock.calls).toEqual([[JSON.stringify({ event: 'worker_crash', name: 'Error', message: 'the directory is down' })]]);
+    const logged = JSON.stringify(errorLog.mock.calls);
+    expect(logged).not.toContain(CRASH_BEARER);
+    expect(logged).not.toContain(request.url);
   });
 
   test('the change feed without an upgrade answers 426 with the four headers', async () => {
