@@ -19,6 +19,14 @@ struct TaskListView: View {
                 AddTaskField(destination: destination, selection: .selectWhenSaved, focus: focus, focusedValue: .addField) { _ in
                     focus.wrappedValue = .list
                 }
+                .disabled(!windowState.addFieldArming.isArmed)
+                .overlay {
+                    if !windowState.addFieldArming.isArmed {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture { arm() }
+                    }
+                }
                 .id(destination)
             }
             TaskListBody(state: state, item: item, focus: focus)
@@ -32,5 +40,10 @@ struct TaskListView: View {
                 InspectorToggle()
             }
         }
+    }
+
+    private func arm() {
+        windowState.addFieldArming.apply(.addFieldClicked)
+        Task { focus.wrappedValue = .addField }
     }
 }

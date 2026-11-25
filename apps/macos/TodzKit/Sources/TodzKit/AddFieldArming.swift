@@ -7,8 +7,10 @@ public struct AddFieldArming: Equatable, Sendable {
     public private(set) var isArmed: Bool
 
     public init(opening: OpeningFocus) {
-        isArmed = true
+        isArmed = opening == .addField
     }
 
-    public mutating func apply(_ event: Event) {}
+    public mutating func apply(_ event: Event) {
+        isArmed = true
+    }
 }
