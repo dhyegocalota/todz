@@ -19,7 +19,8 @@ public enum WidgetToggle {
             timeZoneIdentifier: snapshot.timeZoneIdentifier,
             open: snapshot.open.map(setInPlace),
             pending: snapshot.pending,
-            doneToday: snapshot.doneToday.map(setInPlace)
+            doneToday: snapshot.doneToday.map(setInPlace),
+            showsDayTemperature: snapshot.showsDayTemperature
         )
         let request = WidgetRequest(projectIdentifier: projectIdentifier, number: number, state: state, at: instant)
         return (snapshot: changed, request: request)

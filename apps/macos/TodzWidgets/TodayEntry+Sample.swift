@@ -35,7 +35,8 @@ extension TodayEntry {
             timeZoneIdentifier: timeZone.identifier,
             open: open,
             pending: [],
-            doneToday: doneToday
+            doneToday: doneToday,
+            showsDayTemperature: false
         )
         return TodayEntry(date: date, snapshot: snapshot)
     }

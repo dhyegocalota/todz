@@ -134,6 +134,35 @@ extension AppModelTests {
         #expect(harness.widgets.snapshot?.open.map(\.isOverdue) == [true, true])
     }
 
+    @Test func showingTheDayTemperatureWritesTheSnapshotWithTheFlagOnceAndReloadsOnce() async throws {
+        let harness = try await launchedWidgetHarness()
+        harness.model.showDayTemperature(true)
+        await harness.published()
+        #expect(harness.widgets.routes() == [.writeSnapshot, .reload])
+        #expect(harness.widgets.snapshot?.showsDayTemperature == true)
+    }
+
+    @Test func showingTheDayTemperatureAgainWritesNothing() async throws {
+        let harness = try await launchedWidgetHarness()
+        harness.model.showDayTemperature(true)
+        await harness.published()
+        harness.widgets.calls = []
+        harness.model.showDayTemperature(true)
+        await harness.published()
+        #expect(harness.widgets.routes() == [])
+    }
+
+    @Test func hidingTheDayTemperatureWritesTheSnapshotWithTheFlagOffAndReloads() async throws {
+        let harness = try await launchedWidgetHarness()
+        harness.model.showDayTemperature(true)
+        await harness.published()
+        harness.widgets.calls = []
+        harness.model.showDayTemperature(false)
+        await harness.published()
+        #expect(harness.widgets.routes() == [.writeSnapshot, .reload])
+        #expect(harness.widgets.snapshot?.showsDayTemperature == false)
+    }
+
     @Test func aColdLaunchWithACacheTakesAWaitingRequestOnceReady() async throws {
         let harness = try widgetHarness()
         harness.widgets.storedRequests = [stored(number: 1, state: .done)]

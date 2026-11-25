@@ -37,12 +37,12 @@ private func row(_ number: Int?, project: Project = alpha, title: String, dueDat
     )
 }
 
-private func snapshot(_ tasks: [TaskRecord], pendingTasks: [PendingTask] = []) throws -> WidgetSnapshot {
+private func snapshot(_ tasks: [TaskRecord], pendingTasks: [PendingTask] = [], showsDayTemperature: Bool = false) throws -> WidgetSnapshot {
     let timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
     var board = TaskBoard()
     board.merge(projectIdentifier: alpha.identifier, tasks: tasks)
     let views = TaskViews(projects: acme.projects, board: board, pendingTasks: pendingTasks, day: today, timeZone: timeZone)
-    return WidgetSnapshot.of(views: views, workspace: acme, day: today, timeZone: timeZone)
+    return WidgetSnapshot.of(views: views, workspace: acme, day: today, timeZone: timeZone, showsDayTemperature: showsDayTemperature)
 }
 
 @Suite struct WidgetSnapshotTests {
@@ -101,6 +101,33 @@ private func snapshot(_ tasks: [TaskRecord], pendingTasks: [PendingTask] = []) t
         )
         let data = try OwnerCoding.encoder().encode(snapshot)
         #expect(try OwnerCoding.decoder().decode(WidgetSnapshot.self, from: data) == snapshot)
+    }
+
+    @Test(arguments: [true, false])
+    func flagRoundTrips(showsDayTemperature: Bool) throws {
+        let snapshot = try snapshot([open(1)], showsDayTemperature: showsDayTemperature)
+        let data = try OwnerCoding.encoder().encode(snapshot)
+        let decoded = try OwnerCoding.decoder().decode(WidgetSnapshot.self, from: data)
+        #expect(decoded.showsDayTemperature == showsDayTemperature)
+        #expect(decoded == snapshot)
+    }
+
+    @Test func anUnknownExtraKeyStillDecodes() throws {
+        let data = try OwnerCoding.encoder().encode(try snapshot([open(1)]))
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object["a_future_key"] = true
+        let withAnExtraKey = try JSONSerialization.data(withJSONObject: object)
+        #expect(try OwnerCoding.decoder().decode(WidgetSnapshot.self, from: withAnExtraKey) == (try snapshot([open(1)])))
+    }
+
+    @Test func missingKeyFailsToDecode() throws {
+        let data = try OwnerCoding.encoder().encode(try snapshot([open(1)]))
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "shows_day_temperature")
+        let withoutTheKey = try JSONSerialization.data(withJSONObject: object)
+        #expect(throws: DecodingError.self) {
+            try OwnerCoding.decoder().decode(WidgetSnapshot.self, from: withoutTheKey)
+        }
     }
 
     @Test func aTaskWithACreatorLabelShowsNoProjectTag() throws {

@@ -34,6 +34,9 @@ private func isFocusFilterQuiet() async -> Bool {
     let panel = MenuBarPanel()
     let gate: ProactiveGate
     var dayChangeObservation: (any NSObjectProtocol)?
+    var dayTemperatureObservation: (any NSObjectProtocol)?
+    var quietGateReaction: Task<Void, Never>?
+    let dayTemperaturePreference = DayTemperaturePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     private(set) lazy var dayClose = DayCloseCoordinator(
         gate: gate,
         preference: DayClosePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
@@ -45,6 +48,13 @@ private func isFocusFilterQuiet() async -> Bool {
         closePopover: { [panel] in panel.close() }
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
+    private(set) lazy var dayTemperatureClock = DayTemperatureClock(
+        now: Date.init,
+        timeZone: { [model] in model.timeZone },
+        isOn: { [dayTemperaturePreference] in dayTemperaturePreference.isOn },
+        pause: { try await Task.sleep(for: $0) }
+    )
+    private lazy var dayTemperatureScheduler = DayTemperatureScheduler(clock: dayTemperatureClock)
     private lazy var morningGlancePresenter = MorningGlancePresenter(windowState: windowState)
     private(set) lazy var morningGlance = MorningGlanceCoordinator.app(
         model: model,
@@ -68,6 +78,8 @@ private func isFocusFilterQuiet() async -> Bool {
         observeDayChanges()
         Task {
             await readFocusFilter()
+            startDayTemperature()
+            dayTemperatureScheduler.start()
             dayCloseScheduler.start()
             morningGlanceTrigger.start()
         }
