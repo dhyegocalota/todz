@@ -22,7 +22,7 @@ export enum ProbeEventKind {
 export type ProbeEvent =
   | { kind: ProbeEventKind.LaunchReady; ms: number }
   | { kind: ProbeEventKind.Scroll; frames: number; overBudget: number; worstMs: number; refreshMs: number }
-  | { kind: ProbeEventKind.Footprint; mb: number }
+  | { kind: ProbeEventKind.Footprint; mb: number; processIdentifier: number }
   | { kind: ProbeEventKind.TaskArrived; number: number; atMs: number };
 
 export type AppCheck = { name: string; summary: string; verdict: Verdict };
@@ -31,6 +31,7 @@ export type Send = { number: number; sentAtMs: number };
 
 type Values = Record<string, number>;
 
+export const PERF_PREDICATE = 'category == "perf"';
 const PERF_LINE_PATTERN = /\[[^\]]+:perf\]\s+(\S+)\s*(.*)$/;
 const VALUE_PATTERN = /([a-z-]+)=(\d+)/g;
 const KIND_GROUP = 1;
@@ -54,7 +55,7 @@ const PARSER_OF_KIND: Record<ProbeEventKind, (values: Values) => ProbeEvent> = {
     worstMs: valueOf({ values, name: 'worst-ms' }),
     refreshMs: valueOf({ values, name: 'refresh-ms' }),
   }),
-  [ProbeEventKind.Footprint]: (values) => ({ kind: ProbeEventKind.Footprint, mb: valueOf({ values, name: 'mb' }) }),
+  [ProbeEventKind.Footprint]: (values) => ({ kind: ProbeEventKind.Footprint, mb: valueOf({ values, name: 'mb' }), processIdentifier: 0 }),
   [ProbeEventKind.TaskArrived]: (values) => ({
     kind: ProbeEventKind.TaskArrived,
     number: valueOf({ values, name: 'number' }),

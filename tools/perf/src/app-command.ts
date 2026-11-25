@@ -8,6 +8,7 @@ import {
   arrivalCheck,
   arrivalLatencies,
   footprintCheck,
+  PERF_PREDICATE,
   launchCheck,
   probeEventsOf,
   scrollCheck,
@@ -16,7 +17,7 @@ import {
 const LOG_WINDOW = '1h';
 const LOG_TIMEOUT_MS = 60_000;
 const LOG_BUFFER_BYTES = 256 * 1024 * 1024;
-const LOG_ARGUMENTS = ['show', '--info', '--last', LOG_WINDOW, '--style', 'compact', '--predicate', 'category == "perf"'];
+const LOG_ARGUMENTS = ['show', '--info', '--last', LOG_WINDOW, '--style', 'compact', '--predicate', PERF_PREDICATE];
 const JSON_LINE_START = '{';
 
 const CHECK_OF_KIND: { kind: ProbeEventKind; check: (events: ProbeEvent[]) => AppCheck }[] = [

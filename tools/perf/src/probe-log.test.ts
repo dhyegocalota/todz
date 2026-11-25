@@ -1,5 +1,14 @@
 import { describe, expect, test } from 'vitest';
-import { ProbeEventKind, arrivalCheck, arrivalLatencies, footprintCheck, launchCheck, probeEventsOf, scrollCheck } from './probe-log';
+import {
+  PERF_PREDICATE,
+  ProbeEventKind,
+  arrivalCheck,
+  arrivalLatencies,
+  footprintCheck,
+  launchCheck,
+  probeEventsOf,
+  scrollCheck,
+} from './probe-log';
 import { Verdict } from './report';
 
 const PREFIX = '2026-11-25 10:00:00.123 Df Todz[1234:abcd] [dev.todz.Todz.debug:perf]';
@@ -32,6 +41,24 @@ describe('probeEventsOf', () => {
     expect(probeEventsOf(text)).toEqual([{ kind: ProbeEventKind.LaunchReady, ms: 620 }]);
   });
 
+  test('a perf line of any subsystem but the two bundle identifiers of the app is ignored', () => {
+    const text = [
+      '2026-11-25 10:00:00.123 Df Other[4321:abcd] [com.example.other:perf] launch-ready ms=1',
+      '2026-11-25 10:00:00.123 Df Todz[1234:abcd] [dev.todz.Todz.widgets:perf] launch-ready ms=2',
+      '2026-11-25 10:00:00.123 Df Todz[1234:abcd] [dev.todz.Todz.debug.extra:perf] launch-ready ms=3',
+      '2026-11-25 10:00:00.123 Df Todz[1234:abcd] [dev.todz.Todz:perf] launch-ready ms=620',
+      `${PREFIX} launch-ready ms=640`,
+    ].join('\n');
+    expect(probeEventsOf(text)).toEqual([
+      { kind: ProbeEventKind.LaunchReady, ms: 620 },
+      { kind: ProbeEventKind.LaunchReady, ms: 640 },
+    ]);
+  });
+
+  test('the predicate asks the unified log for the two bundle identifiers of the app and the perf category only', () => {
+    expect(PERF_PREDICATE).toBe('(subsystem == "dev.todz.Todz" OR subsystem == "dev.todz.Todz.debug") AND category == "perf"');
+  });
+
   test('each probe line of the spec parses to its event', () => {
     const text = [
       `${PREFIX} launch-ready ms=640`,
@@ -42,7 +69,7 @@ describe('probeEventsOf', () => {
     expect(probeEventsOf(text)).toEqual([
       { kind: ProbeEventKind.LaunchReady, ms: 640 },
       { kind: ProbeEventKind.Scroll, frames: 600, overBudget: 3, worstMs: 55, refreshMs: 17 },
-      { kind: ProbeEventKind.Footprint, mb: 180 },
+      { kind: ProbeEventKind.Footprint, mb: 180, processIdentifier: 1_234 },
       { kind: ProbeEventKind.TaskArrived, number: 7, atMs: 1_640 },
     ]);
   });
@@ -100,8 +127,47 @@ describe('footprintCheck', () => {
     expect(footprintCheck(footprintEvents({ atFiveMinutes: 180, atThirtyMinutes: 197 })).verdict).toBe(Verdict.Pass);
   });
 
-  test('a soak shorter than five minutes throws', () => {
-    expect(() => footprintCheck(probeEventsOf(`${PREFIX} footprint mb=180`))).toThrow('the soak is shorter than 5 minutes');
+  test('a log with no soak long enough says so and skips the verdict, never throws', () => {
+    expect(footprintCheck(probeEventsOf(`${PREFIX} footprint mb=180`))).toEqual({
+      name: 'footprint',
+      summary: 'not enough samples: the longest launch has 1 of 11',
+      verdict: Verdict.Skip,
+    });
+  });
+
+  test('each launch is its own series: a short launch after a soak does not change the soak verdict', () => {
+    const soak = Array.from({ length: 60 }, () => `${PREFIX} footprint mb=100`);
+    const shortLaunch = Array.from(
+      { length: 3 },
+      () => '2026-11-25 10:30:00.123 Df Todz[5678:abcd] [dev.todz.Todz.debug:perf] footprint mb=500',
+    );
+    expect(footprintCheck(probeEventsOf([...soak, ...shortLaunch].join('\n')))).toEqual({
+      name: 'footprint',
+      summary: '100 MB at 5 minutes, 100 MB after 60 samples',
+      verdict: Verdict.Pass,
+    });
+  });
+
+  test('two launches whose lines are interleaved are read apart', () => {
+    const other = '2026-11-25 10:00:00.456 Df Todz[5678:abcd] [dev.todz.Todz.debug:perf] footprint mb=900';
+    const lines = Array.from({ length: 60 }, (_, index) => {
+      if (index < 20) return [`${PREFIX} footprint mb=100`, other];
+      return [`${PREFIX} footprint mb=100`];
+    }).flat();
+    expect(footprintCheck(probeEventsOf(lines.join('\n')))).toEqual({
+      name: 'footprint',
+      summary: '100 MB at 5 minutes, 100 MB after 60 samples',
+      verdict: Verdict.Pass,
+    });
+  });
+
+  test('the launch with the most samples is the one that is judged', () => {
+    const grown = Array.from({ length: 12 }, (_, index) => `${PREFIX} footprint mb=${index === 11 ? 130 : 100}`);
+    const steady = Array.from(
+      { length: 11 },
+      () => '2026-11-25 10:30:00.123 Df Todz[5678:abcd] [dev.todz.Todz.debug:perf] footprint mb=100',
+    );
+    expect(footprintCheck(probeEventsOf([...steady, ...grown].join('\n'))).verdict).toBe(Verdict.Fail);
   });
 });
 

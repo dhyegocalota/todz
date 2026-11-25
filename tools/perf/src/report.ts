@@ -15,6 +15,7 @@ import type { Sample } from './timed-fetch';
 export enum Verdict {
   Pass = 'PASS',
   Fail = 'FAIL',
+  Skip = 'SKIP',
 }
 
 export type ReportRow = {

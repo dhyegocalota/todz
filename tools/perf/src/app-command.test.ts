@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { appChecks } from './app-command';
 import type { ExecFile } from './exec-file';
+import { PERF_PREDICATE } from './probe-log';
 import { Verdict } from './report';
 
 const PREFIX = '2026-11-25 10:00:00.123 Df Todz[1234:abcd] [dev.todz.Todz.debug:perf]';
@@ -26,10 +27,21 @@ describe('appChecks', () => {
     const checks = await appChecks({ execFile, readSends: unreadable, sendsPath: null });
     expect(calls).toHaveLength(1);
     expect(calls[0]?.file).toBe('log');
-    expect(calls[0]?.args).toContain('category == "perf"');
+    expect(calls[0]?.args).toContain(PERF_PREDICATE);
+    expect(PERF_PREDICATE).toContain('subsystem == "dev.todz.Todz"');
     expect(checks.map((check) => [check.name, check.verdict])).toEqual([
       ['launch', Verdict.Pass],
       ['scroll', Verdict.Pass],
+    ]);
+  });
+
+  test('footprint lines too few for a soak do not hide the launch verdict', async () => {
+    const footprints = [180, 59, 59].map((mb) => `${PREFIX} footprint mb=${mb}`);
+    const { execFile } = logOf([...LAUNCHES, ...footprints]);
+    const checks = await appChecks({ execFile, readSends: unreadable, sendsPath: null });
+    expect(checks.map((check) => [check.name, check.verdict])).toEqual([
+      ['launch', Verdict.Pass],
+      ['footprint', Verdict.Skip],
     ]);
   });
 

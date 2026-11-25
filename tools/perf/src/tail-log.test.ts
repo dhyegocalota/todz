@@ -17,6 +17,20 @@ describe('tailSummaryOf', () => {
     expect(tailSummaryOf(text)).toEqual({ outcomes: { ok: 1 }, cpuTimeMedianMs: 4, cpuTimeSlowestMs: 4, events: 1 });
   });
 
+  test('pin: the projection the runbook saves, outcome and cpuTime only, is a whole event', () => {
+    expect(tailSummaryOf('{"outcome":"ok","cpuTime":4}\n')).toEqual({
+      outcomes: { ok: 1 },
+      cpuTimeMedianMs: 4,
+      cpuTimeSlowestMs: 4,
+      events: 1,
+    });
+  });
+
+  test('pin: a line the projection filled with null is no event', () => {
+    const text = ['{"outcome":null,"cpuTime":null}', '{"outcome":"ok","cpuTime":4}'].join('\n');
+    expect(tailSummaryOf(text).events).toBe(1);
+  });
+
   test('a window with no event throws', () => {
     expect(() => tailSummaryOf('Successfully created tail\n')).toThrow('the tail window holds no event');
   });

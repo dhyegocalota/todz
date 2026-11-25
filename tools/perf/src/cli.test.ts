@@ -261,6 +261,14 @@ describe('runCli tail and app', () => {
     expect(out.join('\n')).toContain('launch: median 1700 ms, max 1800 ms over 3 launches FAIL');
   });
 
+  test('app exits 0 and prints the skip when the footprint has too few samples and the launch passes', async () => {
+    const lines = [...[600, 700, 650].map((ms) => `${PREFIX} launch-ready ms=${ms}`), `${PREFIX} footprint mb=180`].join('\n');
+    const { dependencies, out } = harness({ execFile: async () => ({ stdout: lines }) });
+    expect(await runCli({ argv: ['app'], dependencies })).toBe(0);
+    expect(out.join('\n')).toContain('launch: median 650 ms, max 700 ms over 3 launches PASS');
+    expect(out.join('\n')).toContain('footprint: not enough samples: the longest launch has 1 of 11 SKIP');
+  });
+
   test('app exits 0 when every check passes', async () => {
     const lines = [600, 700, 650].map((ms) => `${PREFIX} launch-ready ms=${ms}`).join('\n');
     const { dependencies } = harness({ execFile: async () => ({ stdout: lines }) });
