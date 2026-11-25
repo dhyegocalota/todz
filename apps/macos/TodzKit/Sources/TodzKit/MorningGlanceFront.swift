@@ -6,6 +6,7 @@ public enum MorningGlanceFront {
         isApplicationActive: Bool,
         hasVisibleMainCapableWindow: Bool
     ) -> Bool {
-        fatalError("MorningGlanceFront.isInFront is not implemented")
+        let isTodayWindowInFront = isApplicationActive && hasVisibleMainCapableWindow
+        return isDayCloseDue || isClosingDay || isPopoverShown || isTodayWindowInFront
     }
 }

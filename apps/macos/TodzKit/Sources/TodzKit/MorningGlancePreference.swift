@@ -6,18 +6,18 @@ public enum MorningGlancePreference {
     public static let isOnByDefault = false
 
     public static func registerDefaults(in defaults: UserDefaults) {
-        fatalError("MorningGlancePreference.registerDefaults is not implemented")
+        defaults.register(defaults: [isOnStorageKey: isOnByDefault])
     }
 
     static func isOn(in defaults: UserDefaults) -> Bool {
-        fatalError("MorningGlancePreference.isOn is not implemented")
+        defaults.bool(forKey: isOnStorageKey)
     }
 
     static func lastShownDay(in defaults: UserDefaults) -> CalendarDate? {
-        fatalError("MorningGlancePreference.lastShownDay is not implemented")
+        defaults.string(forKey: lastShownDayStorageKey).flatMap(CalendarDate.init(text:))
     }
 
     static func markShown(day: CalendarDate, in defaults: UserDefaults) {
-        fatalError("MorningGlancePreference.markShown is not implemented")
+        defaults.set(day.text, forKey: lastShownDayStorageKey)
     }
 }
