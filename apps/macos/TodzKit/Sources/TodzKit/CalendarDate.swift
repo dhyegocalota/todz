@@ -4,7 +4,7 @@ private let textFormat = "%04d-%02d-%02d"
 private let startFailure = "a Gregorian calendar date always has a start"
 private let arithmeticFailure = "a Gregorian calendar date always moves by whole days"
 
-private func gregorianCalendar(in timeZone: TimeZone) -> Calendar {
+func gregorianCalendar(in timeZone: TimeZone) -> Calendar {
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = timeZone
     return calendar

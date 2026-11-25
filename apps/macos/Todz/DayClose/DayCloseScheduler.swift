@@ -1,0 +1,64 @@
+import AppKit
+import TodzKit
+
+private let recheckedNotifications: [Notification.Name] = [
+    .NSSystemTimeZoneDidChange,
+    .NSSystemClockDidChange,
+    .NSCalendarDayChanged,
+    UserDefaults.didChangeNotification,
+]
+private let shortestCheckDelay: Duration = .seconds(1)
+
+private extension Notification.Name {
+    static let screenIsUnlocked = Notification.Name("com.apple.screenIsUnlocked")
+}
+
+@MainActor final class DayCloseScheduler {
+    private let coordinator: DayCloseCoordinator
+    private var nextCheck: Task<Void, Never>?
+    private var observations: [any NSObjectProtocol] = []
+
+    init(coordinator: DayCloseCoordinator) {
+        self.coordinator = coordinator
+    }
+
+    func start() {
+        let wakeObservation = observe(NSWorkspace.didWakeNotification, in: NSWorkspace.shared.notificationCenter)
+        let unlockObservation = observe(.screenIsUnlocked, in: DistributedNotificationCenter.default())
+        observations = [wakeObservation, unlockObservation] + recheckedNotifications.map { observe($0, in: .default) }
+        check()
+    }
+
+    private func observe(_ name: Notification.Name, in center: NotificationCenter) -> any NSObjectProtocol {
+        center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.check() }
+        }
+    }
+
+    private func check() {
+        nextCheck?.cancel()
+        nextCheck = Task { [weak self] in
+            await self?.decide()
+        }
+    }
+
+    private func decide() async {
+        let decision = await coordinator.check()
+        guard !Task.isCancelled else { return }
+        switch decision {
+        case let .notYet(next), let .doneToday(next): checkAgain(at: next)
+        case .off, .due: return
+        }
+    }
+
+    private func checkAgain(at next: Date) {
+        nextCheck = Task { [weak self] in
+            do {
+                try await Task.sleep(for: max(.seconds(next.timeIntervalSinceNow), shortestCheckDelay))
+            } catch {
+                return
+            }
+            await self?.decide()
+        }
+    }
+}
