@@ -1,3 +1,4 @@
+import { MILLISECONDS_PER_SECOND } from '@todz/types';
 import { AgentClient, agentSetupOf } from './agent-setup';
 import { DISCOVERY_COPY, DOCS_PAGES } from './discovery-copy';
 import { ARIA_DISABLED, EMAIL_FIELD_NAME, JOIN_BUTTON_CLASS, JOIN_FORM_CLASS } from './join-form-markup';
@@ -6,6 +7,7 @@ import { DOCS_URL, MCP_URL } from './site-urls';
 import { WEBMCP_COPY, WebMcpToolName } from './webmcp-copy';
 
 const PARAGRAPH_SEPARATOR = '\n\n';
+export const WEBMCP_CHECK_WAIT_MS = 30 * MILLISECONDS_PER_SECOND;
 
 export type WebMcpProperty = { type: 'string'; description: string; enum?: string[]; format?: string };
 

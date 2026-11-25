@@ -61,9 +61,28 @@ describe('the WebMCP tool definitions', () => {
 });
 
 describe('the WebMCP copy', () => {
-  test('says the form was submitted and that the page may ask for a human check, not that it worked', () => {
-    expect(WEBMCP_COPY.answers.sent).toContain('submitted');
-    expect(WEBMCP_COPY.answers.sent).toContain('human check');
+  const ANSWER_KEYS = [
+    'alreadySubmitting',
+    'checkFailed',
+    'checkTimedOut',
+    'invalid',
+    'joined',
+    'opensSoon',
+    'tryAgain',
+    'unknownClient',
+    'unknownPage',
+    'unreachable',
+  ];
+
+  test('answers once per outcome, the check timing out and the unknowns, and has no sent answer', () => {
+    expect(Object.keys(WEBMCP_COPY.answers).sort()).toEqual(ANSWER_KEYS);
+  });
+
+  test('the join tool says it waits for the human check and answers with the result', () => {
+    const { description } = toolNamed(WebMcpToolName.Join);
+    expect(description).toContain('waits for');
+    expect(description).toContain('answers with the result');
+    expect(description).not.toContain('before it sends');
   });
 });
 

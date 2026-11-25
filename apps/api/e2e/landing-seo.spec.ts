@@ -5,6 +5,7 @@ import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { OPEN_GRAPH_IMAGE, SITE_ICONS } from '../src/site/site-icons';
 import { DOCS_URL, DiscoveryPath, MCP_URL } from '../src/site/site-urls';
 import { WEBMCP_COPY, WebMcpToolName } from '../src/site/webmcp-copy';
+import { WEBMCP_CHECK_WAIT_MS } from '../src/site/webmcp-script';
 import {
   BOTH_MODEL_CONTEXT_STUB,
   DOCUMENT_MODEL_CONTEXT_STUB,
@@ -15,7 +16,7 @@ import {
 import { ProjectName } from './project-name';
 import {
   JAVASCRIPT_CONTENT_TYPE,
-  SLOW_TURNSTILE_STUB,
+  NEVER_SOLVING_TURNSTILE_STUB,
   TURNSTILE_DUMMY_TOKEN,
   TURNSTILE_RESPONSE_FIELD,
   TURNSTILE_SCRIPT_URL,
@@ -122,9 +123,31 @@ test.describe('WebMCP tools', () => {
     await page.waitForURL(`${DOCS_URL}/${DOCS_PAGE}`);
   });
 
-  test('join_waitlist submits the form through the page and lands on the joined notice', async ({ page }) => {
+  test('join_waitlist waits for the check, joins through the page without navigating and answers the outcome', async ({ page }) => {
     const posts: (string | null)[] = [];
     page.on('request', (request) => request.method() === 'POST' && request.url().endsWith(JOIN_PATH) && posts.push(request.postData()));
+    await page.goto(LANDING_PATH);
+    const landingUrl = page.url();
+    const answers: string[] = [];
+    await page.exposeFunction('reportToolAnswer', (text: string) => answers.push(text));
+    await page.evaluate(
+      ([name, input]) => void window.callTool(String(name), input as Record<string, string>).then((text) => window.reportToolAnswer(text)),
+      [WebMcpToolName.Join, { email: uniqueAddress() }],
+    );
+    await expect.poll(() => answers).toEqual([WEBMCP_COPY.answers.joined]);
+    await expect(page.locator('#join-notice')).toHaveText(JOINED_NOTICE);
+    expect(page.url()).toBe(landingUrl);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toContain(`${TURNSTILE_RESPONSE_FIELD}=${encodeURIComponent(TURNSTILE_DUMMY_TOKEN)}`);
+  });
+
+  test('join_waitlist answers that the check timed out when the person never solves it, and posts nothing', async ({ page }) => {
+    await page.route(TURNSTILE_SCRIPT_URL, (route) =>
+      route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: NEVER_SOLVING_TURNSTILE_STUB }),
+    );
+    const posts: string[] = [];
+    page.on('request', (request) => request.method() === 'POST' && posts.push(request.url()));
+    await page.clock.install();
     await page.goto(LANDING_PATH);
     const answers: string[] = [];
     await page.exposeFunction('reportToolAnswer', (text: string) => answers.push(text));
@@ -132,10 +155,9 @@ test.describe('WebMCP tools', () => {
       ([name, input]) => void window.callTool(String(name), input as Record<string, string>).then((text) => window.reportToolAnswer(text)),
       [WebMcpToolName.Join, { email: uniqueAddress() }],
     );
-    await expect(page.locator('#join-notice')).toHaveText(JOINED_NOTICE);
-    expect(answers).toEqual([WEBMCP_COPY.answers.sent]);
-    expect(posts).toHaveLength(1);
-    expect(posts[0]).toContain(`${TURNSTILE_RESPONSE_FIELD}=${encodeURIComponent(TURNSTILE_DUMMY_TOKEN)}`);
+    await page.clock.fastForward(WEBMCP_CHECK_WAIT_MS);
+    await expect.poll(() => answers).toEqual([WEBMCP_COPY.answers.checkTimedOut]);
+    expect(posts).toEqual([]);
   });
 
   test('join_waitlist refuses an invalid address and posts nothing', async ({ page }) => {
@@ -155,26 +177,18 @@ test.describe('WebMCP tools', () => {
     await expect(page.locator('#join-email')).toHaveValue(typedAddress);
   });
 
-  test.describe('while the Turnstile token is pending', () => {
-    test.beforeEach(async ({ page }) => {
-      await page.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: SLOW_TURNSTILE_STUB }));
-    });
-
-    test('a second join_waitlist answers already submitting and one POST /join leaves', async ({ page }) => {
-      const posts: string[] = [];
-      page.on('request', (request) => request.method() === 'POST' && request.url().endsWith(JOIN_PATH) && posts.push(request.url()));
-      await page.goto(LANDING_PATH);
-      const answers = await page.evaluate(
-        async ([name, address]) => [
-          await window.callTool(String(name), { email: String(address) }),
-          await window.callTool(String(name), { email: String(address) }),
-        ],
-        [WebMcpToolName.Join, uniqueAddress()],
-      );
-      expect(answers).toEqual([WEBMCP_COPY.answers.sent, WEBMCP_COPY.answers.alreadySubmitting]);
-      await expect(page.locator('#join-notice')).toHaveText(JOINED_NOTICE);
-      expect(posts).toHaveLength(1);
-    });
+  test('a second join_waitlist while the first is sending answers already submitting and one POST /join leaves', async ({ page }) => {
+    const posts: string[] = [];
+    page.on('request', (request) => request.method() === 'POST' && request.url().endsWith(JOIN_PATH) && posts.push(request.url()));
+    await page.goto(LANDING_PATH);
+    const answers = await page.evaluate(
+      ([name, address]) =>
+        Promise.all([window.callTool(String(name), { email: String(address) }), window.callTool(String(name), { email: String(address) })]),
+      [WebMcpToolName.Join, uniqueAddress()],
+    );
+    expect(answers).toEqual([WEBMCP_COPY.answers.joined, WEBMCP_COPY.answers.alreadySubmitting]);
+    await expect(page.locator('#join-notice')).toHaveText(JOINED_NOTICE);
+    expect(posts).toHaveLength(1);
   });
 });
 
