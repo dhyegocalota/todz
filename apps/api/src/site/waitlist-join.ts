@@ -1,6 +1,6 @@
 import { WAITLIST_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
 import { z } from 'zod';
-import { normalizedAddress } from '../email-address';
+import { isOwnDomainAddress, normalizedAddress } from '../email-address';
 import { type EmailSender, emailSenderOf } from '../email-sender';
 import { waitlistMail } from '../emails/waitlist-mail';
 import type { Env } from '../env';
@@ -89,7 +89,7 @@ async function joinNoticeOf({ request, env, executionContext }: SiteContext): Pr
   const form = await joinFormOf(request);
   if (form === null) return LandingNotice.TryAgain;
   const address = normalizedAddress(form.email);
-  if (address === null) return LandingNotice.TryAgain;
+  if (address === null || isOwnDomainAddress(address)) return LandingNotice.TryAgain;
   const token = form[TURNSTILE_RESPONSE_FIELD];
   if (!TURNSTILE_TOKEN_PATTERN.test(token)) return LandingNotice.TryAgain;
   const verdict = await verifyTurnstileToken({

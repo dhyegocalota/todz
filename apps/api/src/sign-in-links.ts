@@ -4,7 +4,7 @@ import { digestCredential } from './credential-digest';
 import { AppLinkScheme } from './app-link-scheme';
 import { generateCredentialSecret } from './credential-secret';
 import { deleteSignInLink, insertSignInLinkWithinLimit } from './directory-sign-in-links';
-import { normalizedAddress } from './email-address';
+import { isOwnDomainAddress, normalizedAddress } from './email-address';
 import { signInMail } from './emails/sign-in-mail';
 import { emailSenderOf } from './email-sender';
 import { enumValueOf } from './enum-value';
@@ -58,7 +58,8 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const address = normalizedAddress(body.email);
   const appLinkScheme = enumValueOf({ enumeration: AppLinkScheme, candidate: body.app_link_scheme });
-  const isMalformedAsk = address === null || appLinkScheme === null || !LINK_CHALLENGE_PATTERN.test(body.link_challenge);
+  const isMalformedAsk =
+    address === null || isOwnDomainAddress(address) || appLinkScheme === null || !LINK_CHALLENGE_PATTERN.test(body.link_challenge);
   if (isMalformedAsk) return errorResponse(OwnerErrorCode.InvalidRequest);
   const challengeRefusal = await challenge.refusalOf(body.turnstile_token);
   if (challengeRefusal !== null) return challengeRefusal;
