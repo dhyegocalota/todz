@@ -1,6 +1,6 @@
 # Self-host docs
 
-**Status:** In review
+**Status:** Shipped 2026-11-24
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-24 by the owner's request to the loop ("faltou também as docs com info de self-host né… mantenha a docs curta porém certeira e pode publicar também"); publishing is the loop's call in [ADR 0048](../../adr/0048-the-self-host-guide-is-one-markdown-file-that-the-landing-serves.md)
 **ADRs:** [0048](../../adr/0048-the-self-host-guide-is-one-markdown-file-that-the-landing-serves.md), [0044](../../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md), [0045](../../adr/0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md)
