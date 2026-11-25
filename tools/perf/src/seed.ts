@@ -23,8 +23,12 @@ const OPEN_TASKS_AFTER_SEED = 100;
 const PROJECTS_PER_WORKSPACE = 10;
 const HOT_WORKSPACE_INDEX = 0;
 
+export function workspaceNameOf(index: number): string {
+  return `Perf ${index + 1}`;
+}
+
 async function seededWorkspace({ connection, index }: { connection: OwnerConnection; index: number }): Promise<string[]> {
-  const { workspaceId, inboxId } = await createWorkspace({ connection, name: `Perf ${index + 1}` });
+  const { workspaceId, inboxId } = await createWorkspace({ connection, name: workspaceNameOf(index) });
   const others = await Promise.all(
     Array.from({ length: PROJECTS_PER_WORKSPACE - 1 }, (_, position) =>
       createProject({ connection, workspaceId, name: `Project ${position + 1}` }),

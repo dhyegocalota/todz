@@ -2,6 +2,7 @@ import { MILLISECONDS_PER_SECOND } from '@todz/types';
 import { PRODUCTION_ADD_CUTOFF_MS, PRODUCTION_DURATION_MAX_MS, PRODUCTION_RATE_MAX } from './budgets';
 import { ScenarioKind } from './scenario-kind';
 import { slotScenario } from './schedule';
+import { UsageError } from './usage-error';
 
 export enum PerfTarget {
   Local = 'local',
@@ -24,7 +25,7 @@ const PRODUCTION_SCENARIOS = [ScenarioKind.List, ScenarioKind.Add, ScenarioKind.
 
 export function perfTargetOf(value: string): PerfTarget {
   const target = Object.values(PerfTarget).find((candidate) => candidate === value);
-  if (target === undefined) throw new Error(`unknown target ${value}`);
+  if (target === undefined) throw new UsageError(`unknown target ${value}`);
   return target;
 }
 

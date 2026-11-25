@@ -141,6 +141,10 @@ export async function addTask({
   return numberAt({ match: ADDED_PATTERN.exec(answer), group: FIRST_GROUP });
 }
 
+export async function updateTask({ client, number, title }: { client: Client; number: number; title: string }): Promise<void> {
+  await callTool({ client, name: 'update', toolArguments: { id: `${TASK_SHORT_ID_PREFIX}${number}`, title } });
+}
+
 export async function completeTasks({ client, numbers }: { client: Client; numbers: number[] }): Promise<void> {
   await callTool({ client, name: 'done', toolArguments: { ids: numbers.map((number) => `${TASK_SHORT_ID_PREFIX}${number}`) } });
 }

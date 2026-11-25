@@ -50,7 +50,7 @@ const BUDGET_OF_SCENARIO: Record<ScenarioKind, LatencyBudget> = {
 const SUCCESS_STATUS_MIN = 200;
 const REDIRECT_STATUS_MIN = 300;
 
-function isFailure({ status }: Sample): boolean {
+export function isFailure({ status }: Sample): boolean {
   return status < SUCCESS_STATUS_MIN || status >= REDIRECT_STATUS_MIN;
 }
 
