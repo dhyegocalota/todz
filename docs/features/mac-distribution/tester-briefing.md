@@ -14,7 +14,7 @@
 | `docs/runbooks/deploy-the-api.md` step 8, `docs/runbooks/README.md`, `release-the-mac-app.md` | Step 8 runs `scripts/deploy-worker.sh`; the index names the release runbook as the fourth loop exception; the release runbook's steps call `pnpm release:mac`. |
 | `package.json`, `scripts/verify-gates.tsv`, `scripts/README.md`, `AGENTS.md` | `release:mac`; both tests in `test:verify`; `scripts/release-*` and `scripts/deploy-worker*` map to `product` / `unit` on the root package. |
 
-The `deploy` skill is G0's, not G3's: the earlier G3 commit that added it was removed in the merge of `feat/mac-distribution`.
+The `deploy` skill (plan steps D1 and D2) is also in this lane at the lead's word: `.agents/skills/deploy/SKILL.md`, its pin `tools/repository-shape/src/deploy-skill.test.ts` (red `685ebf1d`: 5 failed, each ENOENT on the skill file), the lines in `.agents/skills/README.md` and `.claude/HARNESS.md`, and the purpose paragraph of `deploy-the-api.md`. `.claude/skills` links `.agents/skills`, so one file serves Claude Code and Codex. The skill is a prompt: only its text is pinned.
 
 ### How to run
 
