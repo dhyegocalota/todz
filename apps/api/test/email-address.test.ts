@@ -21,6 +21,9 @@ describe('the normalized address', () => {
     ['angle brackets', '<a@b.c>'],
     ['a comma', 'a@b.c,d@e.f'],
     ['a non-ASCII character', 'mária@example.com'],
+    ['a URL shape', 'https://a.bc/x?@a.bc'],
+    ['a slash', 'a@b/c.d'],
+    ['a colon', 'a:b@c.de'],
     ['nothing', ''],
   ])('%s is no address', (_name, email) => {
     expect(normalizedAddress(email)).toBeNull();

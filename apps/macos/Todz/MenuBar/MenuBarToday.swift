@@ -54,7 +54,6 @@ struct MenuBarToday: View {
         .simultaneousGesture(TapGesture().onEnded { engage() })
         .onExitCommand(perform: escapeAction)
         .onChange(of: isClosingDay, initial: true) { _, isClosingDay in announceOpening(isClosingDay: isClosingDay) }
-        .onChange(of: model.activeWorkspaceIdentifier) { closeWhenTheDayCloseAsks() }
         .task(id: isDayClosed) { await closeAfterTheDayClosed(isDayClosed: isDayClosed) }
     }
 
@@ -92,11 +91,6 @@ struct MenuBarToday: View {
 
     private func closePanel() {
         panel.closeReturningToTheApplicationBefore()
-    }
-
-    private func closeWhenTheDayCloseAsks() {
-        guard dayClose.workspaceChanged() else { return }
-        panel.close()
     }
 
     private func announceOpening(isClosingDay: Bool) {

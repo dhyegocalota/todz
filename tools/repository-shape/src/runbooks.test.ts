@@ -9,7 +9,17 @@ const INDEX_FILE_NAME = 'README.md';
 const MARKDOWN_EXTENSION = '.md';
 const ROOT_PACKAGE_FILE = 'package.json';
 const DEPLOY_RUNBOOK = 'deploy-the-api.md';
-const AGENT_EXCEPTION_SENTENCE = 'agents never run them, except `deploy-the-api`';
+const AGENT_EXCEPTION_SENTENCE = "agents never run them, except `deploy-the-api` and the loop's steps of `mintlify-publish`";
+const MINTLIFY_RUNBOOK = 'mintlify-publish.md';
+const SETUP_HEADING = '## Setup';
+const NEXT_SECTION_PATTERN = /\n## /;
+const NOT_FOUND = -1;
+const OWNER_SETUP_DATE = '2026-11-25';
+const OWNER_SETUP_FACTS = ['`todz`', 'Hobby', '`dhyegocalota/todz`', '`main`', '`apps/docs`', '`docs.todz.app`', 'SSL'];
+const DOCS_ORIGIN = 'https://docs.todz.app';
+const DOCS_CHECKED_ADDRESSES = [`${DOCS_ORIGIN}/`, `${DOCS_ORIGIN}/self-host`, `${DOCS_ORIGIN}/no-such-page`];
+const DOCS_GATE_COMMANDS = ['pnpm --filter @todz/docs broken-links', 'pnpm --filter @todz/docs validate'];
+const DOMAIN_RECORD_PATTERN = /dns_records|CNAME|scripts\/todz-cloudflare\.sh/;
 const REMOTE_FLAG = '--remote';
 const DEPLOY_WITH_VARIABLE_PATTERN = /wrangler deploy[^\n]*--var/;
 const RUN_LOG_HEADER = '| Date | Commit | Step | Actual result |\n|------|--------|------|---------------|';
@@ -44,7 +54,17 @@ const CLOUDFLARE_API_HOST = 'api.cloudflare.com';
 const SMOKE_CHECK_STEP = 13;
 const HEALTH_CURL = 'curl -sS https://api.todz.app/health';
 const HEALTH_ANSWER = '{"service":"todz","origin":"https://api.todz.app"}';
-const ALL_PASS_SENTENCE = 'When all fourteen pass';
+const ALL_PASS_SENTENCE = 'When all sixteen pass';
+const HEADER_CURLS = [
+  'curl -sS -D - -o /dev/null https://api.todz.app/owner',
+  'curl -sS -D - -o /dev/null https://todz.app/brand/todz-lockup.png',
+];
+const HEADER_ANSWERS = [
+  'strict-transport-security: max-age=31536000',
+  'x-content-type-options: nosniff',
+  'referrer-policy: no-referrer',
+  "content-security-policy: default-src 'none'; frame-ancestors 'none'",
+];
 const WRONG_SESSION_BODY = 'scripts/deploy-bodies/wrong-session.json';
 const JUNK_LINK_BODY = 'scripts/deploy-bodies/junk-turnstile-link.json';
 const JUNK_WAITLIST_BODY = 'scripts/deploy-bodies/junk-turnstile-waitlist.txt';
@@ -57,7 +77,7 @@ const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
 const TURNSTILE_TOKEN_PATTERN = /^[A-Za-z0-9._-]{1,2048}$/;
 const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
 
-type DeployBody = { email?: string; link_challenge?: string; link_verifier?: string; turnstile_token?: string };
+type DeployBody = { email?: string; link_challenge?: string; link_verifier?: string; turnstile_token?: string; app_link_scheme?: string };
 
 function deployBody(path: string): DeployBody {
   return JSON.parse(readRepositoryFile(path)) as DeployBody;
@@ -187,7 +207,51 @@ describe('runbooks', () => {
     expect(unknownCommands({ file: 'x.md', text: 'Run pnpm no-such-script.' })).toEqual(['x.md: pnpm no-such-script']);
   });
 
-  test('the index says agents never run a runbook except deploy-the-api', () => {
+  test('the Mintlify runbook exists', () => {
+    expect(runbookFiles()).toContain(MINTLIFY_RUNBOOK);
+  });
+
+  test('the Mintlify runbook records the owner setup as done on 2026-11-25, each fact in its Setup section', () => {
+    const text = readRunbook(MINTLIFY_RUNBOOK).text;
+    const setupStart = text.indexOf(SETUP_HEADING);
+    const rest = text.slice(setupStart + SETUP_HEADING.length);
+    const setupEnd = rest.search(NEXT_SECTION_PATTERN);
+    const setup = rest.slice(0, setupEnd === NOT_FOUND ? undefined : setupEnd);
+    expect(setupStart).not.toBe(NOT_FOUND);
+    expect(setup).toContain(OWNER_SETUP_DATE);
+    expect(OWNER_SETUP_FACTS.filter((fact) => !setup.includes(fact))).toEqual([]);
+  });
+
+  test('the Mintlify runbook runs the docs checks before any step that asks the docs host', () => {
+    const steps = stepSections(readRunbook(MINTLIFY_RUNBOOK).text);
+    const checkStep = steps.find((step) => DOCS_GATE_COMMANDS.every((command) => step.body.includes(command)));
+    const hostSteps = steps.filter((step) => step.body.includes(DOCS_ORIGIN));
+    expect(checkStep).toBeDefined();
+    expect(hostSteps.length).toBeGreaterThan(0);
+    expect(hostSteps.filter((step) => step.number < checkStep!.number)).toEqual([]);
+  });
+
+  test('the Mintlify check after the merge asks the introduction, the guide and a missing page', () => {
+    const text = readRunbook(MINTLIFY_RUNBOOK).text;
+    expect(DOCS_CHECKED_ADDRESSES.filter((address) => !text.includes(address))).toEqual([]);
+  });
+
+  test('the Mintlify runbook names no DNS record', () => {
+    expect(readRunbook(MINTLIFY_RUNBOOK).text).not.toMatch(DOMAIN_RECORD_PATTERN);
+  });
+
+  test('the Mintlify runbook ends with a run log table', () => {
+    const text = readRunbook(MINTLIFY_RUNBOOK).text.trimEnd();
+    const logStart = text.indexOf(`${RUN_LOG_HEADING}${RUN_LOG_HEADER}`);
+    const rows = text
+      .slice(logStart + RUN_LOG_HEADING.length + RUN_LOG_HEADER.length)
+      .split(LINE_SEPARATOR)
+      .filter(Boolean);
+    expect(logStart).toBeGreaterThan(0);
+    expect(rows.filter((row) => !RUN_LOG_ROW_PATTERN.test(row))).toEqual([]);
+  });
+
+  test('the index says agents never run a runbook except deploy-the-api and the loop steps of mintlify-publish', () => {
     expect(readRunbook(INDEX_FILE_NAME).text).toContain(AGENT_EXCEPTION_SENTENCE);
   });
 
@@ -232,11 +296,17 @@ describe('runbooks', () => {
     expect(readRepositoryFile(WRAPPER_PATH)).toContain(`"${accountId}"`);
   });
 
-  test('the smoke check curls the health route of the API host and counts it among the fourteen answers', () => {
+  test('the smoke check curls the health route of the API host and counts it among the sixteen answers', () => {
     const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
     expect(smokeCheck?.body).toContain(HEALTH_CURL);
     expect(smokeCheck?.body).toContain(HEALTH_ANSWER);
     expect(smokeCheck?.body).toContain(ALL_PASS_SENTENCE);
+  });
+
+  test('the smoke check curls an API answer and a static asset and expects the four security headers', () => {
+    const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
+    HEADER_CURLS.forEach((curl) => expect(smokeCheck?.body).toContain(curl));
+    HEADER_ANSWERS.forEach((answer) => expect(smokeCheck?.body).toContain(answer));
   });
 
   test('the wrong session body is refused before siteverify, by a malformed verifier, and carries an unsolved token', () => {
@@ -250,6 +320,7 @@ describe('runbooks', () => {
   test('the junk link body is well formed but for its unsolved token, so only Turnstile refuses it', () => {
     const body = deployBody(JUNK_LINK_BODY);
     expect(body.link_challenge).toMatch(LINK_CHALLENGE_PATTERN);
+    expect(body.app_link_scheme).toBe('todz');
     expect(body.email).toMatch(/^[^@\s]+@example\.com$/);
     expect(body.turnstile_token).toMatch(TURNSTILE_TOKEN_PATTERN);
     expect(body.turnstile_token).not.toBe(TURNSTILE_DUMMY_TOKEN);

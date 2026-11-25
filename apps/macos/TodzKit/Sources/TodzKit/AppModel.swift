@@ -95,6 +95,7 @@ import Observation
     @ObservationIgnored let preference: ServerPreference
     @ObservationIgnored let connect: ServerConnectionFactory
     @ObservationIgnored let probe: ServerProbe
+    @ObservationIgnored let linkScheme: AppLinkScheme
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let pendingLinks: any PendingLinkVault
     @ObservationIgnored let store: any SyncStore
@@ -111,6 +112,7 @@ import Observation
         preference: ServerPreference,
         connect: @escaping ServerConnectionFactory,
         probe: @escaping ServerProbe,
+        linkScheme: AppLinkScheme,
         vault: any SessionVault,
         pendingLinks: any PendingLinkVault,
         store: any SyncStore,
@@ -131,6 +133,7 @@ import Observation
         self.preference = preference
         self.connect = connect
         self.probe = probe
+        self.linkScheme = linkScheme
         self.vault = vault
         self.pendingLinks = pendingLinks
         self.store = store

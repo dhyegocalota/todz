@@ -14,6 +14,10 @@ enum AppConfiguration {
         }
     }
 
+    static var linkScheme: AppLinkScheme {
+        AppLinkScheme.required(bundle: .main)
+    }
+
     static var defaultsDomain: String {
         guard let bundleIdentifier = Bundle.main.bundleIdentifier else {
             fatalError("The app's bundle has no identifier, so its defaults domain is unknown")

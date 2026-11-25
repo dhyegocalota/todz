@@ -4,6 +4,9 @@ import { type ConsoleMessage, type Locator, type Page, expect, test } from '@pla
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { ProjectName } from './project-name';
 import {
+  ERRORING_TURNSTILE_STUB,
+  FAILED_BEFORE_PRESS_TURNSTILE_STUB,
+  FAILED_MARKER_ATTRIBUTE,
   JAVASCRIPT_CONTENT_TYPE,
   SLOW_TURNSTILE_STUB,
   TURNSTILE_DUMMY_TOKEN,
@@ -33,10 +36,13 @@ enum Css {
   ZeroSeconds = '0s',
 }
 
+const BRAND_ASSET_PATH = '/brand/todz-lockup.png';
+const OK_STATUS = 200;
+const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
 const JOINED_NOTICE = "You're on the list. Check your inbox.";
 const SLOW_SCRIPT_DELAY_MS = 1_500;
 const SELF_HOST_TITLE = 'Self-host todz';
-const SELF_HOST_GUIDE_FILE = path.join(import.meta.dirname, '..', '..', '..', 'docs', 'self-host.md');
+const SELF_HOST_GUIDE_FILE = path.join(import.meta.dirname, '..', '..', '..', 'apps', 'docs', 'self-host.mdx');
 const SECOND_LEVEL_HEADING_PREFIX = '## ';
 const CODE_FENCE = '```';
 const MAXIMUM_DARK_CHANNEL = 40;
@@ -291,10 +297,64 @@ test.describe('join', () => {
     });
   });
 
+  test.describe('when the Turnstile widget errors after the visitor submits', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route(TURNSTILE_SCRIPT_URL, (route) =>
+        route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: ERRORING_TURNSTILE_STUB }),
+      );
+    });
+
+    test('the button is ready again, the address is kept and no join is posted', async ({ page }) => {
+      const posts: string[] = [];
+      page.on('request', (request) => request.method() === 'POST' && posts.push(request.url()));
+      const address = uniqueAddress();
+      const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
+      await page.goto(SitePath.Landing);
+      const label = await button.innerText();
+      await submitForm({ page, form: Fragment.Hero, address });
+      await expect(button).toHaveText(label);
+      await expect(button).not.toHaveAttribute('aria-disabled', 'true');
+      await expect(page.locator(`form#${Fragment.Hero} input[name="email"]`)).toHaveValue(address);
+      expect(posts).toEqual([]);
+    });
+  });
+
+  test.describe('when the Turnstile widget errored before the visitor pressed', () => {
+    test('the press restores the button at once, keeps the address and posts nothing', async ({ page }) => {
+      await page.route(TURNSTILE_SCRIPT_URL, (route) =>
+        route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: FAILED_BEFORE_PRESS_TURNSTILE_STUB }),
+      );
+      const posts: string[] = [];
+      page.on('request', (request) => request.method() === 'POST' && posts.push(request.url()));
+      const address = uniqueAddress();
+      const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
+      await page.goto(SitePath.Landing);
+      await expect(page.locator(`html[${FAILED_MARKER_ATTRIBUTE}]`)).toHaveCount(1);
+      const label = await button.innerText();
+      await submitForm({ page, form: Fragment.Hero, address });
+      await expect(button).toHaveText(label);
+      await expect(button).not.toHaveAttribute('aria-disabled', 'true');
+      await expect(page.locator(`form#${Fragment.Hero} input[name="email"]`)).toHaveValue(address);
+      expect(posts).toEqual([]);
+    });
+  });
+
   test('a direct GET of /join lands on the landing page', async ({ page }) => {
     await page.goto(SitePath.Join);
     await expect(page).toHaveURL(new RegExp(`${SitePath.Landing}$`));
     await expect(page.locator('.join-notice')).toHaveCount(0);
+  });
+});
+
+test.describe('static assets', () => {
+  test('a static asset answers with strict transport security, nosniff and no referrer', async ({ request }) => {
+    const response = await request.get(BRAND_ASSET_PATH);
+    expect(response.status()).toBe(OK_STATUS);
+    expect(response.headers()).toMatchObject({
+      'strict-transport-security': STRICT_TRANSPORT_SECURITY,
+      'x-content-type-options': 'nosniff',
+      'referrer-policy': 'no-referrer',
+    });
   });
 });
 

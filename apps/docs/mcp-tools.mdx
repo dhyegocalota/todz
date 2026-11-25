@@ -1,0 +1,62 @@
+---
+title: MCP tools
+description: The tools and the prompt an agent gets from the todz MCP server.
+---
+
+The todz MCP server holds the to-do list of one project: the project of the key the agent connected with. Task ids look like `T-12`.
+
+## next
+
+The one open task to work on now in this project, with its notes.
+
+It takes no arguments.
+
+## add
+
+Add one or more tasks. Give each an idempotency_key to make a retry safe.
+
+| Argument          | Type           | Description                                                                  |
+| ----------------- | -------------- | ---------------------------------------------------------------------------- |
+| `tasks`           | list           | The tasks to add, one object each.                                           |
+| `title`           | text           | Short title.                                                                 |
+| `notes`           | text or null   | Markdown notes.                                                              |
+| `due_date`        | text or null   | Calendar date, YYYY-MM-DD.                                                   |
+| `idempotency_key` | text or null   | Any string unique to this task; repeating it returns the task already added. |
+
+## list
+
+List tasks by state, due window and text, in manual order (done: newest first).
+
+| Argument | Type            | Description                                                                            |
+| -------- | --------------- | -------------------------------------------------------------------------------------- |
+| `state`  | text            | `open` or `done`. Defaults to `open`.                                                  |
+| `due`    | list of text    | Due windows to include: `overdue`, `today`, `upcoming` or `undated`. Empty means all. |
+| `text`   | text or null    | Text to find in titles and notes.                                                      |
+| `limit`  | whole number    | How many tasks to show.                                                                |
+
+## update
+
+Change a task's title, notes, due date or place in the order. null clears notes or the due date.
+
+| Argument    | Type           | Description                                                                |
+| ----------- | -------------- | -------------------------------------------------------------------------- |
+| `id`        | text           | Task id, like `T-12`.                                                      |
+| `title`     | text           | Short title.                                                               |
+| `notes`     | text or null   | Markdown notes.                                                            |
+| `due_date`  | text or null   | Calendar date, YYYY-MM-DD.                                                 |
+| `placement` | object         | Where to move the task: `first`, `last`, or `before` or `after` an anchor. |
+| `kind`      | text           | Inside `placement`: `first`, `last`, `before` or `after`.                  |
+| `anchor`    | text           | Inside `placement`, with `before` and `after`: the id of the other task.   |
+
+## done
+
+Complete one or more tasks, with an optional note of what was done.
+
+| Argument | Type           | Description                |
+| -------- | -------------- | -------------------------- |
+| `ids`    | list of text   | Task ids, like `T-12`.     |
+| `note`   | text or null   | What was done.             |
+
+## Prompts
+
+The server offers one prompt, `next`: Start working on the next task of this project.

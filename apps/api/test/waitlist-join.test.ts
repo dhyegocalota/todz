@@ -380,7 +380,7 @@ describe('a refused join answers try again, 429 with Retry-After 60, and keeps n
     expect(run.sent).toEqual([]);
   });
 
-  test.each([['a@b'], ['a b@c.d'], ['a@b.c\r\nBcc:x@y.z']])('the address %j', async (email) => {
+  test.each([['a@b'], ['a b@c.d'], ['a@b.c\r\nBcc:x@y.z'], ['https://a.bc/x?@a.bc']])('the address %j', async (email) => {
     const run = await join({ email });
     await expectTryAgain(run);
     expect(run.siteverifyBodies).toEqual([]);

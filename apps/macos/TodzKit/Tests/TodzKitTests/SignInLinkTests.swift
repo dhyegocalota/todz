@@ -39,44 +39,57 @@ private func url(_ text: String) throws -> URL {
 @Suite struct SignInLinkTests {
     @Test func aLinkWithAFortyThreeCharacterTokenATurnstileTokenAndTheOriginOfItsPageIsASignInLink() throws {
         #expect(token.count == 43)
-        let link = try SignInLink(url: url("todz://sign-in?token=\(token)&turnstile=\(turnstileToken)&origin=\(encodedOrigin)"))
+        let link = try SignInLink(url: url("todz://sign-in?token=\(token)&turnstile=\(turnstileToken)&origin=\(encodedOrigin)"), scheme: .release)
         #expect(link?.token == token)
         #expect(link?.turnstileToken == turnstileToken)
         #expect(link?.origin == origin)
     }
 
     @Test func theQueryItemsMayComeInAnyOrder() throws {
-        let link = try SignInLink(url: url("todz://sign-in?origin=\(encodedOrigin)&turnstile=\(turnstileToken)&token=\(token)"))
+        let link = try SignInLink(url: url("todz://sign-in?origin=\(encodedOrigin)&turnstile=\(turnstileToken)&token=\(token)"), scheme: .release)
         #expect(link?.token == token)
         #expect(link?.turnstileToken == turnstileToken)
         #expect(link?.origin == origin)
     }
 
     @Test func aTurnstileTokenOfTheLongestLengthIsAccepted() throws {
-        let link = try SignInLink(url: url("todz://sign-in?token=\(token)&turnstile=\(longestTurnstileToken)&origin=\(encodedOrigin)"))
+        let link = try SignInLink(url: url("todz://sign-in?token=\(token)&turnstile=\(longestTurnstileToken)&origin=\(encodedOrigin)"), scheme: .release)
         #expect(link?.turnstileToken == longestTurnstileToken)
+    }
+
+    @Test func aDebugLinkIsASignInLinkOfTheDebugApp() throws {
+        let link = try SignInLink(url: url("todz-dev://sign-in?token=\(token)&turnstile=\(turnstileToken)&origin=\(encodedOrigin)"), scheme: .debug)
+        #expect(link?.token == token)
+    }
+
+    @Test func aReleaseLinkIsNotASignInLinkOfTheDebugApp() throws {
+        #expect(try SignInLink(url: url("todz://sign-in?token=\(token)&turnstile=\(turnstileToken)&origin=\(encodedOrigin)"), scheme: .debug) == nil)
+    }
+
+    @Test func aDebugLinkIsNotASignInLinkOfTheReleaseApp() throws {
+        #expect(try SignInLink(url: url("todz-dev://sign-in?token=\(token)&turnstile=\(turnstileToken)&origin=\(encodedOrigin)"), scheme: .release) == nil)
     }
 
     @Test(arguments: linksThatAreNotSignInLinks)
     func anyOtherLinkIsNotASignInLink(text: String) throws {
-        #expect(try SignInLink(url: url(text)) == nil)
+        #expect(try SignInLink(url: url(text), scheme: .release) == nil)
     }
 }
 
 @Suite struct IncomingLinkTests {
     @Test func aSignInLinkRoutesToSignIn() throws {
         let text = "todz://sign-in?token=\(token)&turnstile=\(turnstileToken)&origin=\(encodedOrigin)"
-        let link = try #require(SignInLink(url: url(text)))
-        #expect(try IncomingLink(url: url(text)) == .signIn(link))
+        let link = try #require(SignInLink(url: url(text), scheme: .release))
+        #expect(try IncomingLink(url: url(text), scheme: .release) == .signIn(link))
     }
 
     @Test func aWidgetLinkRoutesToTheWidget() throws {
-        #expect(try IncomingLink(url: url("todz://today")) == .widget(.today))
-        #expect(try IncomingLink(url: url("todz://task/acme-inbox/3")) == .widget(.task(TaskKey(projectIdentifier: "acme-inbox", number: 3))))
+        #expect(try IncomingLink(url: url("todz://today"), scheme: .release) == .widget(.today))
+        #expect(try IncomingLink(url: url("todz://task/acme-inbox/3"), scheme: .release) == .widget(.task(TaskKey(projectIdentifier: "acme-inbox", number: 3))))
     }
 
     @Test(arguments: ["todz://sign-in?token=short", "todz://sign-in", "https://example.com", "todz://nowhere"])
     func anythingElseRoutesNowhere(text: String) throws {
-        #expect(try IncomingLink(url: url(text)) == nil)
+        #expect(try IncomingLink(url: url(text), scheme: .release) == nil)
     }
 }

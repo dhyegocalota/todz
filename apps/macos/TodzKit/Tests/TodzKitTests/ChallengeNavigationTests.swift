@@ -20,6 +20,7 @@ private let mainFrameRefused = [
     "http://api.todz.app/sign-in/challenge",
     "https://example.com/sign-in/challenge",
     "todz://sign-in?token=a&turnstile=b",
+    "todz-dev://sign-in?token=a&turnstile=b",
     "file:///etc/hosts",
     "about:config",
 ]
@@ -37,6 +38,7 @@ private let subFrameRefused = [
     "https://api.todz.app/owner/sessions",
     "https://example.com",
     "todz://sign-in?token=a&turnstile=b",
+    "todz-dev://sign-in?token=a&turnstile=b",
     "file:///etc/hosts",
     "about:config",
 ]

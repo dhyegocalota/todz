@@ -2,9 +2,10 @@ import { clientRateKey } from '../client-rate-key';
 import { digestCredential } from '../credential-digest';
 import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
+import { LimitRefusal, limitRefusal } from '../limit-refusal';
 import { isLocalSiteHost } from '../local-origin';
 import { LandingNotice } from './landing-page';
-import { SiteLimitRefusal, isSiteUnguarded, limitRefusal } from './site-limiter';
+import { isSiteUnguarded } from './site-limiter';
 import { JOIN_PATH } from './site-shell';
 
 enum WaitlistLimit {
@@ -21,9 +22,9 @@ const LIMITER_OF_LIMIT: Record<WaitlistLimit, (env: Env) => RateLimit | undefine
   [WaitlistLimit.Global]: (env) => env.WAITLIST_GLOBAL_LIMITER,
 };
 
-const NOTICE_OF_REFUSAL: Record<SiteLimitRefusal, WaitlistRefusal> = {
-  [SiteLimitRefusal.TryAgain]: LandingNotice.TryAgain,
-  [SiteLimitRefusal.Unavailable]: LandingNotice.OpensSoon,
+const NOTICE_OF_REFUSAL: Record<LimitRefusal, WaitlistRefusal> = {
+  [LimitRefusal.TryAgain]: LandingNotice.TryAgain,
+  [LimitRefusal.Unavailable]: LandingNotice.OpensSoon,
 };
 
 async function refusalOfLimit({ env, limit, key }: { env: Env; limit: WaitlistLimit; key: string }): Promise<WaitlistRefusal | null> {
@@ -40,7 +41,7 @@ export function isWaitlistUnguarded({ request, env }: { request: Request; env: E
 export async function waitlistClientRefusal({ request, env }: { request: Request; env: Env }): Promise<WaitlistRefusal | null> {
   if (isLocalSiteHost({ env, request })) return null;
   const clientAddress = request.headers.get(HttpHeader.ClientAddress);
-  if (clientAddress === null) return NOTICE_OF_REFUSAL[SiteLimitRefusal.Unavailable];
+  if (clientAddress === null) return NOTICE_OF_REFUSAL[LimitRefusal.Unavailable];
   return refusalOfLimit({ env, limit: WaitlistLimit.Client, key: `${JOIN_PATH}:${clientRateKey({ address: clientAddress })}` });
 }
 

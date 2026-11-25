@@ -20,6 +20,12 @@ struct MenuBarPopover: View {
             )
             .task { await model.launch() }
             .onChange(of: dayClose.isClosingDay, initial: true) { _, isClosingDay in clearFocus(isClosingDay: isClosingDay) }
+            .onChange(of: model.activeWorkspaceIdentifier) { closeWhenTheDayCloseAsks() }
+    }
+
+    private func closeWhenTheDayCloseAsks() {
+        guard dayClose.workspaceChanged() else { return }
+        panel.close()
     }
 
     private func endDayClose() {

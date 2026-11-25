@@ -1,0 +1,17 @@
+{
+  "name": "@todz/docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "mint dev --client-version 0.0.4077",
+    "broken-links": "mint broken-links",
+    "validate": "mint validate",
+    "test:walk": "playwright test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.0",
+    "@types/node": "24.19.2",
+    "mint": "4.3.91"
+  }
+}

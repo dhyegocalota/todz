@@ -1,6 +1,6 @@
 import { exports } from 'cloudflare:workers';
 import { describe, expect, test, vi } from 'vitest';
-import guide from '../../../docs/self-host.md?raw';
+import guide from '../../docs/self-host.mdx?raw';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { LandingNotice, serveLandingPage } from '../src/site/landing-page';
@@ -15,7 +15,9 @@ const RETRY_AFTER_SECONDS = '60';
 const UNUSABLE_SITE_KEY = 'key"><script>';
 const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const TURNSTILE_SCRIPT_TAG = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
-const WIDGET_HTML = `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="interaction-only" data-theme="auto" data-callback="waitlistTokenReady"></div>`;
+const FAILURE_CALLBACK = 'waitlistChallengeFailed';
+const FAILURE_CALLBACK_ATTRIBUTES = ['data-error-callback', 'data-expired-callback', 'data-timeout-callback'];
+const WIDGET_HTML = `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="interaction-only" data-theme="auto" data-callback="waitlistTokenReady" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${FAILURE_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div>`;
 const WIDGET_PATTERN = /<div class="cf-turnstile"[^>]*><\/div>/g;
 const CAPSULE_END = '</button>\n</div>';
 const NOTICE_PATTERN = /<p id="([a-z]+)-notice" [^>]*role="status"[^>]*tabindex="-1"[^>]*>[\s\S]*?<\/span>([^<]*)<\/p>/;
@@ -308,6 +310,15 @@ describe('the landing', () => {
     },
   );
 
+  test('the widget names one function for its error, expired and timeout callbacks, and the page script assigns it on window', async () => {
+    const { html } = await widgetLandingPage(LandingNotice.None);
+    const widget = html.match(WIDGET_PATTERN)?.[0];
+    if (widget === undefined) throw new Error('the page has no widget');
+    const named = FAILURE_CALLBACK_ATTRIBUTES.map((attribute) => new RegExp(`${attribute}="([^"]*)"`).exec(widget)?.[1]);
+    expect(named).toEqual(FAILURE_CALLBACK_ATTRIBUTES.map(() => FAILURE_CALLBACK));
+    expect(onlyInlineSource({ html, pattern: SCRIPT_PATTERN })).toContain(`window.${FAILURE_CALLBACK} =`);
+  });
+
   test.each([
     ['no site key', null],
     ['an unusable site key', UNUSABLE_SITE_KEY],
@@ -385,7 +396,7 @@ describe('the self-host guide page', () => {
     );
   });
 
-  test('holds every section heading of docs/self-host.md inside the page, in order', async () => {
+  test('holds every section heading of apps/docs/self-host.mdx inside the page, in order', async () => {
     const { html } = await selfHostPage();
     const main = MAIN_PATTERN.exec(html)?.[1];
     if (main === undefined) throw new Error('the page has a main element');
@@ -393,7 +404,7 @@ describe('the self-host guide page', () => {
     expect(headings).toEqual(captures({ html: guide, pattern: GUIDE_HEADING_PATTERN }).map(guideHeadingText));
   });
 
-  test('holds every code block of docs/self-host.md as a keyboard-scrollable code region', async () => {
+  test('holds every code block of apps/docs/self-host.mdx as a keyboard-scrollable code region', async () => {
     const { html } = await selfHostPage();
     const blocks = captures({ html: guide, pattern: GUIDE_FENCE_PATTERN }).map((block) => block.trimEnd());
     const regions = captures({ html, pattern: CODE_REGION_PATTERN }).map(decoded);

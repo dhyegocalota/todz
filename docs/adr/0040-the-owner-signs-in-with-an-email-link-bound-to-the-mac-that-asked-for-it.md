@@ -1,6 +1,6 @@
 # 0040. The owner signs in with an email link, bound to the Mac that asked for it
 
-- Status: Proposed; amends [0020](0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md) §1 (the port's input) and §3 (a deployed Worker may name `email`)
+- Status: Proposed; amends [0020](0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md) §1 (the port's input) and §3 (a deployed Worker may name `email`); amended by [0058](0058-the-app-tells-the-server-its-own-link-scheme-and-the-sign-in-link-carries-it-back.md) (§3 the request names the app's link scheme, §4 the page hands the token to that scheme)
 - Date: 2026-11-24
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) queued the magic link on 2026-11-24 and may overturn this
 - Inspired by: the owner's queue of 2026-11-24 (publish todz on `todz.app`: "an email magic link becomes the real `SignInProvider` behind the existing port"), [ADR 0020](0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md), [ADR 0021](0021-owner-sessions-are-bearer-secrets-that-last-90-days.md), [ADR 0025](0025-the-session-secret-lives-in-a-private-file-until-the-app-has-a-team.md)
