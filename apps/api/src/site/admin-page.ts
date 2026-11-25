@@ -1,6 +1,6 @@
 import { escapedHtml } from '../escaped-html';
 import { TurnstileAction } from '../turnstile';
-import { TURNSTILE_ORIGIN, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
+import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
 import { ADMIN_COPY } from './admin-copy';
 import { AdminField, AdminPath } from './admin-paths';
 import { AdminNotice, ConfirmationState, type WaitlistRow, type WaitlistSummary } from './admin-waitlist';
@@ -17,7 +17,6 @@ const ANSWER_ATTRIBUTE = 'data-answer';
 const WIDGET_APPEARANCE = 'interaction-only';
 const WIDGET_THEME = 'auto';
 const WIDGET_CLASS = 'cf-turnstile';
-const TOKEN_FIELD = 'cf-turnstile-response';
 const TOKEN_CALLBACK = 'adminTokenReady';
 const TITLE_ID = 'admin-title';
 const EMAIL_ID = 'admin-email';
@@ -45,7 +44,7 @@ const BADGE_OF_CONFIRMATION: Record<ConfirmationState, Badge> = {
 const PAGE_SCRIPT = `{
   const waitingForToken = new Set();
   const hasToken = (form) => {
-    const token = form.querySelector('[name="${TOKEN_FIELD}"]');
+    const token = form.querySelector('[name="${TURNSTILE_RESPONSE_FIELD}"]');
     return token !== null && token.value !== '';
   };
   window.${TOKEN_CALLBACK} = () => waitingForToken.forEach((form) => {

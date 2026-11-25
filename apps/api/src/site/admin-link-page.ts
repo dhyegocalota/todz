@@ -1,5 +1,7 @@
 import { escapedHtml } from '../escaped-html';
+import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
+import { MediaType } from '../request-body';
 import { ADMIN_COPY } from './admin-copy';
 import { adminCardMainHtml } from './admin-page';
 import { AdminField, AdminPath } from './admin-paths';
@@ -13,7 +15,6 @@ const BODY_ID = 'link-body';
 const RETRY_ID = 'link-retry';
 const WORKING_STATE = 'working';
 const FAILED_STATE = 'failed';
-const JSON_CONTENT_TYPE = 'application/json';
 const SAME_ORIGIN_CREDENTIALS = 'same-origin';
 
 const PAGE_SCRIPT = `{
@@ -41,7 +42,7 @@ const PAGE_SCRIPT = `{
       : fetch('${AdminPath.Sessions}', {
           method: 'POST',
           credentials: '${SAME_ORIGIN_CREDENTIALS}',
-          headers: { 'Content-Type': '${JSON_CONTENT_TYPE}' },
+          headers: { '${HttpHeader.ContentType}': '${MediaType.Json}' },
           body: JSON.stringify({ ${AdminField.Token}: token }),
         });
     answer.then(spent).catch(fail);

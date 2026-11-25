@@ -2,10 +2,10 @@ import { ADMIN_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
 import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
+import { siteKeyOf } from '../turnstile-page';
 import { serveAdminSignInPage } from './admin-page';
 import { ADMIN_RESPONSE_HEADERS, AdminPath } from './admin-paths';
 import { AdminNotice } from './admin-waitlist';
-import { waitlistSiteKeyOf } from './waitlist-join';
 
 const LOCATION_HEADER = 'Location';
 
@@ -44,7 +44,7 @@ export async function adminCardAnswerOf({
 }
 
 export function adminClosedAnswerOf({ env, cookies }: { env: Env; cookies?: string[] }): Promise<Response> {
-  return adminCardAnswerOf({ notice: AdminNotice.Closed, siteKey: waitlistSiteKeyOf(env), cookies });
+  return adminCardAnswerOf({ notice: AdminNotice.Closed, siteKey: siteKeyOf(env), cookies });
 }
 
 export function adminJsonAnswerOf({ status, cookies }: AdminAnswerParts): Response {

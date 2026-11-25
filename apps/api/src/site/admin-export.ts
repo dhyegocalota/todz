@@ -6,7 +6,6 @@ import { waitlistRowsOf } from './admin-store';
 import type { WaitlistRow } from './admin-waitlist';
 import type { SiteContext } from './site-endpoint';
 
-const CONTENT_TYPE_HEADER = 'Content-Type';
 const CSV_CONTENT_TYPE = 'text/csv; charset=utf-8';
 const CSV_DISPOSITION = 'attachment; filename="todz-waitlist.csv"';
 const CSV_HEADER_FIELDS = ['address', 'joined_at', 'confirmation'];
@@ -39,6 +38,6 @@ export async function serveAdminExport({ request, env }: SiteContext): Promise<R
   const rows = await waitlistRowsOf({ database: env.DIRECTORY }).catch(() => null);
   if (rows === null) return adminClosedAnswerOf({ env });
   return new Response(waitlistCsvOf(rows), {
-    headers: { ...ADMIN_RESPONSE_HEADERS, [CONTENT_TYPE_HEADER]: CSV_CONTENT_TYPE, [HttpHeader.ContentDisposition]: CSV_DISPOSITION },
+    headers: { ...ADMIN_RESPONSE_HEADERS, [HttpHeader.ContentType]: CSV_CONTENT_TYPE, [HttpHeader.ContentDisposition]: CSV_DISPOSITION },
   });
 }

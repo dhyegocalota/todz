@@ -1,6 +1,7 @@
 import { digestCredential } from '../credential-digest';
 import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
+import { siteKeyOf } from '../turnstile-page';
 import { adminCardAnswerOf, adminClosedAnswerOf, adminPageAnswerOf, adminRedirectAnswerOf } from './admin-answer';
 import { serveAdminExport } from './admin-export';
 import { serveAdminLinkPage } from './admin-link-page';
@@ -18,7 +19,6 @@ import { serveAdminSession, serveAdminSignInLink } from './admin-sign-in';
 import { deleteAdminSession, waitlistSummaryOf } from './admin-store';
 import { AdminNotice } from './admin-waitlist';
 import type { SiteContext, SiteRoute } from './site-endpoint';
-import { waitlistSiteKeyOf } from './waitlist-join';
 
 export type AdminRoute = { method: HttpMethod; path: AdminPath; route: SiteRoute };
 
@@ -26,7 +26,7 @@ async function servePanel({ request, env }: SiteContext): Promise<Response> {
   if (adminEmailOf(env) === null) return adminClosedAnswerOf({ env });
   const isSignedIn = await hasAdminSession({ request, env, now: Date.now() }).catch(() => null);
   if (isSignedIn === null) return adminClosedAnswerOf({ env });
-  if (!isSignedIn) return adminCardAnswerOf({ notice: AdminNotice.None, siteKey: waitlistSiteKeyOf(env) });
+  if (!isSignedIn) return adminCardAnswerOf({ notice: AdminNotice.None, siteKey: siteKeyOf(env) });
   const summary = await waitlistSummaryOf({ database: env.DIRECTORY, now: Date.now() }).catch(() => null);
   if (summary === null) return adminClosedAnswerOf({ env });
   return adminPageAnswerOf({ page: await serveAdminPanel({ summary }), status: HttpStatus.Ok });
@@ -37,7 +37,7 @@ async function serveLinkPage(): Promise<Response> {
 }
 
 async function serveSignOut({ request, env }: SiteContext): Promise<Response> {
-  if (!isSameOriginPost({ request, env })) return adminCardAnswerOf({ notice: AdminNotice.Forbidden, siteKey: waitlistSiteKeyOf(env) });
+  if (!isSameOriginPost({ request, env })) return adminCardAnswerOf({ notice: AdminNotice.Forbidden, siteKey: siteKeyOf(env) });
   const cookies = [clearedAdminCookieHeaderOf({ cookie: AdminCookie.Session })];
   const signedOut = adminRedirectAnswerOf({ cookies });
   const secret = adminCookieValueOf({ request, cookie: AdminCookie.Session });

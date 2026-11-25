@@ -2,11 +2,12 @@ import type { Env } from '../env';
 import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { noRouteResponse } from '../owner-errors';
+import { siteKeyOf } from '../turnstile-page';
 import { ADMIN_ROUTES } from './admin-routes';
 import { LandingNotice, serveLandingPage } from './landing-page';
 import { serveSelfHostPage } from './self-host-page';
 import { JOIN_PATH, LANDING_PATH, SELF_HOST_PATH } from './site-shell';
-import { serveWaitlistJoin, waitlistSiteKeyOf } from './waitlist-join';
+import { serveWaitlistJoin } from './waitlist-join';
 
 const LOCATION_HEADER = 'Location';
 
@@ -19,7 +20,7 @@ function routeKey({ method, pathname }: { method: string; pathname: string }): s
 }
 
 function serveLanding({ env }: SiteContext): Promise<Response> {
-  return serveLandingPage({ notice: LandingNotice.None, siteKey: waitlistSiteKeyOf(env) });
+  return serveLandingPage({ notice: LandingNotice.None, siteKey: siteKeyOf(env) });
 }
 
 function redirectToLanding(): Response {
