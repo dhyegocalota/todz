@@ -18,8 +18,8 @@ Red test with the guide, then the README link.
 
 ## Steps
 
-- [ ] **Step 1:** Red: `self-host.test.ts` and `docs/self-host.md`; "the root README links it" fails.
-- [ ] **Step 2:** Green: the root README links the guide.
+- [x] **Step 1:** Red: `self-host.test.ts` and `docs/self-host.md`; "the root README links it" fails — evidence: 07423ae, 1 failed and 7 passed.
+- [x] **Step 2:** Green: the root README links the guide — evidence: the next commit.
 
 ## Failure modes
 
