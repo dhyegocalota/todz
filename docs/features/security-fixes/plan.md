@@ -63,8 +63,8 @@ Every box is empty when authored. A developer ticks its own line and records the
 
 ### Lead, before the lanes
 
-- [ ] **Step 1:** After `server-url` is on `main`: `git fetch origin` and `git merge origin/main` into `feat/security-fixes`. In `docs/adr/README.md` keep the rows 0056, 0057, 0058 in number order. Add `amended by [0058](0058-the-app-tells-the-server-its-own-link-scheme-and-the-sign-in-link-carries-it-back.md) (§9 the two apps' link schemes differ)` to the end of ADR 0044's status line. Run `pnpm verify`; expected: green, including `document-indexes.test.ts`.
-- [ ] **Step 2:** Write `docs/features/security-fixes/tester-briefing.md` from the template with three sections, `## Lane W`, `## Lane M` and `## Lane T`, each holding the template's subsections (What changed, How to run, Red today and green after, Hypotheses to attack, Known gaps) and one placeholder line each, so the lanes' edits never touch the same lines. Commit (`docs(security-fixes): the tester briefing's lane sections`), then branch the three lanes from that commit.
+- [x] **Step 1:** After `server-url` is on `main`: `git fetch origin` and `git merge origin/main` into `feat/security-fixes`. In `docs/adr/README.md` keep the rows 0056, 0057, 0058 in number order. Add `amended by [0058](0058-the-app-tells-the-server-its-own-link-scheme-and-the-sign-in-link-carries-it-back.md) (§9 the two apps' link schemes differ)` to the end of ADR 0044's status line. Run `pnpm verify`; expected: green, including `document-indexes.test.ts`.
+- [x] **Step 2:** Write `docs/features/security-fixes/tester-briefing.md` from the template with three sections, `## Lane W`, `## Lane M` and `## Lane T`, each holding the template's subsections (What changed, How to run, Red today and green after, Hypotheses to attack, Known gaps) and one placeholder line each, so the lanes' edits never touch the same lines. Commit (`docs(security-fixes): the tester briefing's lane sections`), then branch the three lanes from that commit.
 
 ### G1 Lane W (API)
 
