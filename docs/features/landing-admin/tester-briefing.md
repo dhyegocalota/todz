@@ -128,7 +128,7 @@ Answers the review of `c9b2168` (spec "Review answers" V1 to V7; V8 is the lead'
 | V7 | the link page wraps the spend in `spend()`, run on load and on `hashchange`; it clears the fragment first and returns the status to the working state before each spend | `5b042b1`: `Error: the page does not listen to hashchange` | `c32f129` |
 | V7 E2E | `admin.spec.ts` opens `/admin/sign-in#token=<unknown>` in the admin context (refusal), then goes to the mailed link in the same tab; no third link request | the case fails on the old script (mutation: without the `addEventListener` line the tab stays on `/admin/sign-in#token=...` and `toHaveURL(/\/admin$/)` times out) | the E2E commit after `b9fa37d` |
 
-The E2E case replaces "the same link opened in the browser that asked" (a click from a mail page): the paste is now the walk's success path, the click from a mail page stays in the fresh-browser refusal. If the tester wants the mail-click success too, it needs a third link request.
+The walk now makes three admin link requests (R4's "at most two" no longer holds for the spec; the cap is five per fifteen minutes and the run's persist folder is fresh). The paste case spends the first link; after Sign out, a new case asks again and clicks the newest mailed link from the `mail.test` page in the admin context, which lands on the panel. `mailedLinkTo` reads the latest mail.
 
 ### Hypotheses for the tester
 

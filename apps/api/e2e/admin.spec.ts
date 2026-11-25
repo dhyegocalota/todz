@@ -54,7 +54,7 @@ function messagesTo(address: string): MailedMessage[] {
 }
 
 function mailedLinkTo(address: string): string {
-  const [message] = messagesTo(address);
+  const message = messagesTo(address).at(-1);
   if (message === undefined) throw new Error(`no mail was logged for ${address}`);
   const link = MAILED_LINK_PATTERN.exec(message.text)?.[0];
   if (link === undefined) throw new Error('the mail holds no sign-in link');
@@ -149,5 +149,14 @@ test.describe('the admin walk', () => {
     await adminPage.goto(AdminPath.Export);
     await expect(adminPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
     await expect(adminPage.getByRole('heading', { level: 1, name: SIGN_IN_TITLE })).toBeVisible();
+  });
+
+  test('a new link clicked from a mail page in the browser that asked lands on the panel', async () => {
+    await askForLink({ page: adminPage, address: ADMIN_ADDRESS });
+    await expect.poll(() => messagesTo(ADMIN_ADDRESS).length, { timeout: LINK_POLL_TIMEOUT_MS }).toBe(2);
+    const mailPage = await openFromMailPage({ context: adminContext, link: mailedLinkTo(ADMIN_ADDRESS) });
+    await expect(mailPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
+    await expect(mailPage.getByRole('heading', { level: 1, name: PANEL_TITLE })).toBeVisible();
+    expect(mailPage.url()).not.toContain('token=');
   });
 });
