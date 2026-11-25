@@ -141,6 +141,11 @@ refused_paths=(
   "/zones/$zone/"
   "/zones/$zone/[a-b]"
   "/zones/$zone/{a,b}"
+  "/zones/$zone/."
+  "/zones/$zone/./"
+  "/zones/$zone/#x"
+  "/zones/$zone/?"
+  "/zones/$zone/dns_records#x"
 )
 for refused_path in "${refused_paths[@]}"; do
   : > "$calls"
