@@ -1,8 +1,7 @@
 import { digestCredential } from '../credential-digest';
-import type { Env } from '../env';
 import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
-import { adminCardAnswerOf, adminPageAnswerOf, adminRedirectAnswerOf } from './admin-answer';
+import { adminCardAnswerOf, adminClosedAnswerOf, adminPageAnswerOf, adminRedirectAnswerOf } from './admin-answer';
 import { serveAdminExport } from './admin-export';
 import { serveAdminLinkPage } from './admin-link-page';
 import { serveAdminPanel } from './admin-page';
@@ -23,17 +22,13 @@ import { waitlistSiteKeyOf } from './waitlist-join';
 
 export type AdminRoute = { method: HttpMethod; path: AdminPath; route: SiteRoute };
 
-function closedCardOf(env: Env): Promise<Response> {
-  return adminCardAnswerOf({ notice: AdminNotice.Closed, siteKey: waitlistSiteKeyOf(env) });
-}
-
 async function servePanel({ request, env }: SiteContext): Promise<Response> {
-  if (adminEmailOf(env) === null) return closedCardOf(env);
+  if (adminEmailOf(env) === null) return adminClosedAnswerOf({ env });
   const isSignedIn = await hasAdminSession({ request, env, now: Date.now() }).catch(() => null);
-  if (isSignedIn === null) return closedCardOf(env);
+  if (isSignedIn === null) return adminClosedAnswerOf({ env });
   if (!isSignedIn) return adminCardAnswerOf({ notice: AdminNotice.None, siteKey: waitlistSiteKeyOf(env) });
   const summary = await waitlistSummaryOf({ database: env.DIRECTORY, now: Date.now() }).catch(() => null);
-  if (summary === null) return closedCardOf(env);
+  if (summary === null) return adminClosedAnswerOf({ env });
   return adminPageAnswerOf({ page: await serveAdminPanel({ summary }), status: HttpStatus.Ok });
 }
 
@@ -43,13 +38,14 @@ async function serveLinkPage(): Promise<Response> {
 
 async function serveSignOut({ request, env }: SiteContext): Promise<Response> {
   if (!isSameOriginPost({ request, env })) return adminCardAnswerOf({ notice: AdminNotice.Forbidden, siteKey: waitlistSiteKeyOf(env) });
-  const signedOut = adminRedirectAnswerOf({ cookies: [clearedAdminCookieHeaderOf({ cookie: AdminCookie.Session })] });
+  const cookies = [clearedAdminCookieHeaderOf({ cookie: AdminCookie.Session })];
+  const signedOut = adminRedirectAnswerOf({ cookies });
   const secret = adminCookieValueOf({ request, cookie: AdminCookie.Session });
   if (secret === null) return signedOut;
   const isDeleted = await deleteAdminSession({ database: env.DIRECTORY, digest: await digestCredential(secret) })
     .then(() => true)
     .catch(() => false);
-  if (!isDeleted) return closedCardOf(env);
+  if (!isDeleted) return adminClosedAnswerOf({ env, cookies });
   return signedOut;
 }
 
