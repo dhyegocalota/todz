@@ -79,3 +79,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0056](0056-the-app-keeps-its-server-url-as-a-setting-and-switching-it-starts-clean.md) | The app keeps its server URL as a setting, and switching it starts clean | Accepted | 2026-11-25 |
 | [0057](0057-the-focus-filter-stays-discoverable-so-the-owner-can-add-it.md) | The Focus filter stays discoverable, so the owner can add it in System Settings | Accepted | 2026-11-25 |
 | [0058](0058-the-app-tells-the-server-its-own-link-scheme-and-the-sign-in-link-carries-it-back.md) | The app tells the server its own link scheme, and the sign-in link carries it back | Accepted | 2026-11-25 |
+| [0059](0059-the-docs-are-a-mintlify-site-on-docs-todz-app-built-from-apps-docs-and-the-self-host-guide-moves-into-it.md) | The docs are a Mintlify site on docs.todz.app, built from apps/docs, and the self-host guide moves into it | Accepted | 2026-11-25 |

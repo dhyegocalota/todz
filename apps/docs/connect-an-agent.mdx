@@ -1,0 +1,55 @@
+---
+title: Connect an agent
+description: Give Claude Code, Codex or Cursor a key to one project.
+---
+
+Open **Connect an Agent** in the app's sidebar, pick a project and copy the command of your client: the app creates a key and puts it in the command. A key reaches one project, and you see it once.
+
+The commands below show `<key>` where the app puts yours. They point at the todz cloud; if you run your own server, the app shows commands with your server instead.
+
+<Warning>
+  The key is a password for that project. Never commit it, and keep your agent's configuration at the user level, not in a file inside a repository such as `.cursor/mcp.json` or a command run with `--scope project`. If a key leaks, open **Connect an Agent** and revoke it there.
+</Warning>
+
+## Claude Code
+
+Run it in your project's folder:
+
+```bash
+claude mcp add --transport http todz 'https://api.todz.app/mcp' --header 'Authorization: Bearer <key>'
+```
+
+## Codex
+
+Add this to your Codex configuration:
+
+```toml
+[mcp_servers.todz]
+url = "https://api.todz.app/mcp"
+bearer_token_env_var = "TODZ_API_KEY"
+```
+
+Then export the key in the shell that starts Codex:
+
+```bash
+export TODZ_API_KEY='<key>'
+```
+
+## Cursor
+
+Add this to your user-level Cursor MCP configuration, `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "todz": {
+      "url": "https://api.todz.app/mcp",
+      "headers": {
+        "Authorization": "Bearer <key>"
+      }
+    }
+  }
+}
+```
+
+The agent now has the [MCP tools](/mcp-tools).

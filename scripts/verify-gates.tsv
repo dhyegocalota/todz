@@ -15,6 +15,8 @@ apps/README.md	docs	-
 libs/README.md	docs	-
 apps/*/README.md	docs	-
 libs/*/README.md	docs	-
+apps/docs/self-host.mdx	product	unit docs	apps/api
+apps/docs/*	product	typecheck docs
 .env.example	product	unit	apps/api
 libs/types/*	product	typecheck unit
 apps/macos/*	product	macos
@@ -37,7 +39,6 @@ AGENTS.md	tooling	-
 CLAUDE.md	tooling	-
 GEMINI.md	tooling	-
 docs/scenarios/*	tooling	-
-docs/self-host.md	product	unit	apps/api
 docs/*.md	docs	-
 docs/media/*	docs	-
 *.md	docs	-

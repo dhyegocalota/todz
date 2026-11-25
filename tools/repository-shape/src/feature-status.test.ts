@@ -2,13 +2,12 @@ import { spawnSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
 import { posix } from 'node:path';
 import { describe, expect, test } from 'vitest';
-import { readRepositoryFile, REPOSITORY_ROOT, repositoryPath } from './repository-files';
+import { readRepositoryFile, REPOSITORY_ROOT, REPOSITORY_URL, repositoryPath } from './repository-files';
 
 const FEATURES_DIRECTORY = 'docs/features';
 const FEATURES_INDEX = 'docs/features/README.md';
 const SPEC_FILE = 'spec.md';
 const TEMPLATE_FOLDER = '_template';
-const REPOSITORY_URL = 'https://github.com/dhyegocalota/todz';
 const STATUS_LINE_PATTERN = /^(?:\*\*Status:\*\*|- Status:) (.+)$/m;
 const STATUS_PATTERN = /^(?:Draft|In review|Approved|Building|Shipped \d{4}-\d{2}-\d{2})$/;
 const SHIPPED_PREFIX = 'Shipped ';

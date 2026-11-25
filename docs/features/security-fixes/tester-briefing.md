@@ -170,3 +170,16 @@ Item 9 has no red test: the cause was not reproduced, so no case in `verify.test
 - `pnpm verify --plan` prints class `product` with gates `doctor format secrets typecheck audit unit e2e macos` for this lane, not the word `all`; `verify-gates.tsv` was not changed.
 - `pnpm verify` is red at the `unit` gate on a file this lane does not own: `apps/api/test/site/generated-site.test.ts` fails because step 25 changed `docs/self-host.md` and the generated self-host page (`apps/api/src/site/generated/self-host-html.ts`, from `pnpm --filter @todz/api site:generate`) was not regenerated. The lead or Lane W must regenerate it after merging; the `e2e` and `macos` gates were not reached by `pnpm verify`.
 - Step 19 left `apps/macos/build` and `.build` in the lane worktree (git-ignored); `xcodegen` produced no diff in tracked files.
+
+## Fix round 1
+
+| Item | Change | Red commit and printed text | Green commit |
+|---|---|---|---|
+| 1 | `NO_SNIFF`, `NO_REFERRER` and `STRICT_TRANSPORT_SECURITY` sit beside `NO_STORE` in `http-header.ts`; `security-headers.ts`, `site/site-headers.ts` and `turnstile-page.ts` import them and key the headers with `HttpHeader` | refactor under green tests, no red | `344181a` |
+| 3 | `focus-filter.test.ts` asserts the source does not contain `isDiscoverable` at all | pin (`a4c9fb4`); mutation `static var isDiscoverable: Bool { false }` in `TodzFocusFilter.swift` printed `AssertionError: expected 'import AppIntents\n...' not to contain 'isDiscoverable'`, then restored | `a4c9fb4` |
+| 5 | The erroring stub fires from a `submit` listener on `document`, which runs after the page's own handler (an error after the press, no timer); a second stub fires the error on load and marks `html[data-widget-failed]`; the page script remembers a failed widget, and a press that finds it restores the button at once and calls `turnstile.reset` on that form's widget when the API is loaded | `c8e0d0a`: `Expected: "Join the waitlist"`, `Received: "Joining…"`, 10 s timeout, desktop and mobile | `85785b8` |
+| 2 | `AppLinkScheme.required(bundle:)` holds the key name and the `fatalError`; `AppConfiguration.linkScheme` and the four widget call sites use it; `WidgetLinkConfiguration.swift` deleted | refactor; `swift test` 842 tests green, Debug and Release builds succeed; the built widget plists read `TodzLinkScheme` `todz-dev` (Debug) and `todz` (Release) with `plutil` | `0cfd443` |
+| 4 | `security-headers.test.ts`: own-policy rows assert `not.toBe(DEFAULT_POLICY)` and `toContain('script-src')`; new `GET /sign-in` row; the export's `Cache-Control: no-store`; the 426's `Upgrade: websocket` | pin | `b2a13c5` |
+| 8 | `() async` in `DayCloseCoordinatorTests.swift` | style | `0f88b19` |
+
+Hypotheses: a press after a widget error restores the button with the address kept and posts nothing; the next press after the reset waits for the new token as before. Item 5's stub listens in the bubble phase, not the capture phase, so the error lands after the page's handler registered the press. Not done: item 6 (the empty h1 without JavaScript) and item 7 (commit type; history stays).
