@@ -42,6 +42,10 @@ enum ErrorCopy {
         "This Mac's copy could not be erased, so todz stayed on \(server)."
     }
 
+    static func serverSwitchBusy(server: String) -> String {
+        "Sign-in was still in progress, so todz stayed on \(server)."
+    }
+
     static func changesNotSaved(count: Int) -> String {
         InflectedCopy.text("^[\(count) change](inflect: true) weren't saved.")
     }

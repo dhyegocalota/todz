@@ -80,7 +80,12 @@ public struct ServerSwitchFlow: Equatable, Sendable {
 
     public mutating func finish(result: ServerSwitchResult, server: ServerAddress) {
         guard state == .switching else { return }
-        state = result == .switched ? .switched(server: ServerName.of(address: server)) : .failed(.eraseFailed)
+        switch result {
+        case .switched: state = .switched(server: ServerName.of(address: server))
+        case .busy: state = .failed(.busy)
+        case .alreadyInUse: state = .alreadyInUse
+        case .eraseFailed: state = .failed(.eraseFailed)
+        }
     }
 
     private mutating func proceed(isSignedIn: Bool, waitingChanges: Int) {

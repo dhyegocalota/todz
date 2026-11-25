@@ -292,6 +292,7 @@ Empty when written; the lead records each answer here before the plan.
 - switchLosingSignedOutMessage(server:) "They haven't reached {server} yet. Switching erases them from this Mac."
 - switched(server:) "Switched to {server}. Sign in from the todz window."
 - ErrorCopy.serverSwitchFailed(server:) "This Mac's copy could not be erased, so todz stayed on {server}." (added by the plan review; the owner may change it)
+- ErrorCopy.serverSwitchBusy(server:) "Sign-in was still in progress, so todz stayed on {server}." (added in fix round 1, R3: a sign-in or link request began while the dialog was open; the owner may change it)
 
 **SignInCopy** (`apps/macos/Copy/SignInCopy.swift`):
 - serverDisclosure(server:) "Server: {server}"

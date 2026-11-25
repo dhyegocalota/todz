@@ -128,11 +128,16 @@ struct ServerAddressForm: View {
         case let .refused(issue): (issue.copy, true)
         case .notTodz: (ErrorCopy.notTodzServer, true)
         case let .answersAs(origin): (ErrorCopy.serverNamedOther(origin: origin), true)
-        case .failed: (ErrorCopy.serverSwitchFailed(server: ServerName.of(address: model.serverURL)), true)
+        case .failed(.eraseFailed): (ErrorCopy.serverSwitchFailed(server: serverInUseName), true)
+        case .failed(.busy): (ErrorCopy.serverSwitchBusy(server: serverInUseName), true)
         case .alreadyInUse: (SettingsCopy.serverInUse, false)
         case let .switched(server): layout == .row ? (SettingsCopy.switched(server: server), false) : nil
         case .idle, .checking, .confirming, .switching: nil
         }
+    }
+
+    private var serverInUseName: String {
+        ServerName.of(address: model.serverURL)
     }
 
     private var isInFlight: Bool {

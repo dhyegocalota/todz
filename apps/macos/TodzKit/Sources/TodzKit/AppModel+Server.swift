@@ -19,8 +19,9 @@ extension AppModel {
     // NB ADR 0056: the erase runs before the rebuild and the store, with no await between them; the old server's sign-out goes last and detached.
     @discardableResult
     public func switchServer(to address: ServerAddress) async -> ServerSwitchResult {
+        guard address != serverURL else { return .alreadyInUse }
         let isBusy = isSigningIn || isRequestingLink
-        guard address != serverURL, !isBusy else { return .eraseFailed }
+        guard !isBusy else { return .busy }
         let leavingSession = session
         let leavingService = service
         do {
