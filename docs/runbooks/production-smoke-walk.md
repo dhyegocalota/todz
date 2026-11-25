@@ -30,7 +30,7 @@ Once `version-compat` is deployed, every `/owner/*` request without a `Todz-App-
     curl -sS -D - https://api.todz.app/owner/sign-in-method
     ```
 
-    Expected: a `todz-api-version` line on all three, the same value as the `version` of step 1; `HTTP/2 200` for the second; for the third, which sends no app version, `HTTP/2 426`, `upgrade: todz-app/<minimum>` and `{"error":"app_too_old","minimum_app_version":"<minimum>"}`.
+    Expected: a `todz-api-version` line on all three, the same value as the `version` of step 1; `HTTP/2 200` for the second; for the third, which sends no app version, `HTTP/2 426` and `{"error":"app_too_old","minimum_app_version":"<minimum>"}`.
     If it fails: no line while `version-compat` is not merged is the expected answer; write `not deployed`. A missing line after it shipped means the deployed version predates it; deploy again from `main`.
 
 3. **Check the security headers on every host.** Ask each host for its landing or its first answer, and the docs for a link:
