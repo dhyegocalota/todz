@@ -65,10 +65,10 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
 7. **Record the model benchmark.** The app's model work for one change at 5,000 tasks, printed and never asserted:
 
    ```bash
-   TODZ_BENCHMARK=1 swift test --package-path apps/macos/TodzKit --filter ModelBenchmark
+   TODZ_BENCHMARK=1 swift test -c release -Xswiftc -enable-testing --package-path apps/macos/TodzKit --filter ModelBenchmark
    ```
 
-   Expected: it prints the median of seven runs, after one warm-up, for the task views, `inbox`, `today`, `upcomingDays`, `doneDays`, `project(identifier:)`, one pulled task with its cache write, the widget snapshot and the menu bar count. Record each against the 8 ms budget.
+   Expected: the release build (a debug build copies where release does not, and is not the number to compare with 8 ms) prints the median of seven runs, after one warm-up, for the task views, `inbox`, `today`, `upcomingDays`, `doneDays`, `project(identifier:)`, one pulled task with its cache write, the widget snapshot and the menu bar count. Record each against the 8 ms budget.
    If it fails: a median over 8 ms names the call to fix; the benchmark skips itself without `TODZ_BENCHMARK=1`, so a run that prints nothing means the variable was not set.
 
 8. **Measure the landing.** Against the site Worker, on the phone profile Lighthouse uses by default, three runs, the median of each number:
@@ -156,10 +156,26 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
 | 2026-11-25 | cbb90fd | local | change feed | 50/s for 120 s | 4900 | 6 | 11 | 17 | 0 | PASS |
 | 2026-11-25 | cbb90fd | local | stress, step that held | 253/s for 30 s | 4900 | - | - | 30 | 0 | PASS |
 | 2026-11-25 | cbb90fd | local | stress, step that broke | 380/s for 30 s | 4900 | - | - | 7677 | 0 | FAIL |
+| 2026-11-25 | 585ede5 | local | list | 50/s for 120 s | 4900 | 5 | 8 | 17 | 0 | PASS |
+| 2026-11-25 | 585ede5 | local | add | 50/s for 120 s | 4900 | 6 | 10 | 20 | 0 | PASS |
+| 2026-11-25 | 585ede5 | local | done | 50/s for 120 s | 4900 | 6 | 10 | 18 | 0 | PASS |
+| 2026-11-25 | 585ede5 | local | owner | 50/s for 120 s | 4900 | 5 | 9 | 17 | 0 | PASS |
+| 2026-11-25 | 585ede5 | local | workspaces (200 projects) | 50/s for 120 s | 4900 | 5 | 10 | 20 | 0 | PASS |
+| 2026-11-25 | 585ede5 | local | initialize (2025 era) | 20 clients | 4900 | 4 | 5 | 12 | 0 | PASS |
+| 2026-11-25 | 585ede5 | local | change feed | 50/s for 120 s | 4900 | 9 | 16 | 24 | 0 | PASS |
+| 2026-11-25 | 585ede5 | local | stress, step that held | 380/s for 30 s | 4900 | - | - | 315 | 0 | PASS |
+| 2026-11-25 | 585ede5 | local | stress, step that broke | 570/s for 30 s | 4900 | - | - | 11542 | 0 | FAIL |
 
-The stress ramp of 2026-11-25 on `c80c272` held 169 requests a second (p99 806 ms) and broke at 253 (p99 8.9 s, no failed request), under the budget of 200. In the Worker's log every route slowed together at the breaking step (`/mcp`, `/owner/workspaces`, the change reads and the task writes all took over a second), so the first resource to fail is the local runtime as a whole; the split between the directory and the hot project's Durable Object waits for the `Server-Timing` header.
+The rows are labelled by commit. `c80c272` is the before: the harness lane's head, whose product code is `b2d147c`, with none of the fixes of the server and app lanes. `cbb90fd` is the after of those fixes, as the tester ran it. `585ede5` is the head of fix round 1, which changes the harness, the runbook and two small app fixes (the cache load and `TaskBoard.insert`), no server code, so its rows repeat the after on the same tree and show the run-to-run spread of one Mac. The `Server-Timing` split of the `directory ms` and `project ms` columns is about 1 ms each on every row of `585ede5`. The local number covers the load generator and the runtime together and is a lab bound only, never a production capacity (ADR 0061, point 1).
+
+The stress ramp of 2026-11-25 on `c80c272` held 169 requests a second (p99 806 ms) and broke at 253 (p99 8.9 s, no failed request), under the budget of 200; on `cbb90fd` it held 253 and broke at 380; on `585ede5` it held 380 and broke at 570 (p99 11.5 s, no failed request), and the verdict is the first step that broke against 200, so the two after runs pass. In the Worker's log of the `c80c272` run every route slowed together at the breaking step (`/mcp`, `/owner/workspaces`, the change reads and the task writes all took over a second), so the first resource to fail is the local runtime as a whole; the stress lines print p99 and failures only, so the `Server-Timing` split at a breaking step is not recorded yet.
 
 ## Measured, not fixed
 
 | Date | Commit | Candidate | Number | Why it stays |
 |------|--------|-----------|--------|--------------|
+| 2026-11-25 | cbb90fd | 38b: the 5,000-task project file read and decoded on the main actor at launch | 205.8 ms read and decode, 36.9 ms write (release) | Moving the decode off the main actor does not shorten the time to the first rows (the phase stays loading until the board holds them); a cheaper decode (the snake-case key strategy, the `CalendarDate` regex per due date) is the next candidate once the launch probe gives its share of the 1 s on the seeded owner |
+| 2026-11-25 | cbb90fd | 38c: the widget snapshot and the menu bar count after a change | 3.2 ms and 3.1 ms (release), under the 8 ms budget | No coalescing is needed; a `TaskRows` identity or body change has no probe number yet, and no unit test sees SwiftUI rendering |
+| 2026-11-25 | cbb90fd | One pulled task applied with its cache write on the main actor | 6.8 ms (release), under the 8 ms budget | Nearest to the budget of the model work; the write itself is off the main actor, so the number is the board and the views |
+| 2026-11-25 | cbb90fd | The app's cold launch on the Debug app and a small session | median 226 ms, max 738 ms over 5 launches | Measured on a few tasks, not on the 5,000-task seeded owner the budget names; the seeded run waits for the owner's Mac |
+| 2026-11-25 | c80c272 | The first resource to fail in the local stress ramp | every route slowed together at 253 requests a second | The load generator and the runtime share one Mac, so the split waits for the `Server-Timing` columns and a production run |
