@@ -1,8 +1,8 @@
 # Release the Mac app
 
-Publish a release of the Mac app at `https://todz.app/download`: a development-signed DMG built from a tagged commit on `main`, its SHA-256 sum, its SSH signature and the Sparkle appcast, in the R2 bucket `todz-releases` ([ADR 0072](../adr/0072-the-mac-app-downloads-from-todz-app-as-a-development-signed-dmg-with-an-ssh-signature-and-updates-through-sparkle.md)). Steps 2, 3, 4 and 6 run once; the others run for every release. Once `mac-distribution` ships, the build loop runs it after any batch that merged a change under `apps/macos`, and every run adds a row to the releases table at the end.
+Publish a release of the Mac app at `https://todz.app/download`: a development-signed DMG built from a tagged commit on `main`, its SHA-256 sum, its SSH signature and the Sparkle appcast, served as the Worker's own static assets ([ADR 0072](../adr/0072-the-mac-app-downloads-from-todz-app-as-a-development-signed-dmg-with-an-ssh-signature-and-updates-through-sparkle.md)). Steps 2, 3 and 5 run once; the others run for every release. Once `mac-distribution` ships, the build loop runs it after any batch that merged a change under `apps/macos`, and every run adds a row to the releases table at the end.
 
-Every command runs from the repository root, one command per call. Cloudflare calls go through `scripts/todz-cloudflare.sh`, which gives the token to that one command. The two private keys live only in the login Keychain: Sparkle's EdDSA key, which Sparkle's own tools read, and the release key, the item `todz-release-key`. No step prints, exports or copies either one to a file in the repository. The run's files live in `~/.todz-release/`, outside the repository, in folders only the owner can open. `<version>` is the version step 5 or 8 prints. Agents run the per-release steps through the `deploy` skill, which stops at the first failure.
+Every command runs from the repository root, one command per call. Cloudflare calls go through `scripts/todz-cloudflare.sh`, which gives the deploy token to that one command; no R2 permission is used. The two private keys live only in the login Keychain: Sparkle's EdDSA key, which Sparkle's own tools read, and the release key, the item `todz-release-key`. No step prints, exports or copies either one to a file in the repository. The DMGs never enter git: they live in the release folder `~/.todz-release/site/`, outside the repository, in folders only the owner can open, and every deploy stages the latest two versions from it, so deploys run only from the Mac that holds it. `<version>` is the version step 4 or 7 prints. Agents run the per-release steps through the `deploy` skill, which stops at the first failure.
 
 1. **Start from a clean `main`.** Check the tree, the branch and that nothing differs from `origin/main`, then run the gate:
 
@@ -38,45 +38,35 @@ Every command runs from the repository root, one command per call. Cloudflare ca
    Expected: one line starting `release@todz.app namespaces="todz-release" ssh-ed25519 `, which goes into `apps/macos/release/allowed-signers` and the "Install on Mac" docs page; `security find-generic-password -s todz-release-key` finds the item (without `-w`, so nothing secret prints). The owner then exports both keys by hand to his password manager: the loop never runs an export.
    If it fails: "already exists" means the key was made before; the allowed-signers line in the repository is its public half. A Keychain error means the login keychain is locked; unlock it and run again.
 
-4. **Create the bucket, once.** Make `todz-releases` and check it is listed:
-
-   ```bash
-   scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler r2 bucket create todz-releases
-   scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler r2 bucket list
-   ```
-
-   Expected: Wrangler says it created the bucket, and the list has `todz-releases`. The bucket has no public access and no custom domain: only the Worker reads it.
-   If it fails: `Authentication error [code: 10000]` means the `todz-cloudflare` token lacks the R2 permission ("Workers R2 Storage: Edit"); tell the owner, who adds it, and stop. A message that R2 is not enabled means the owner enables R2 on the account in the dashboard.
-
-5. **Build a dry run and check it.** Everything but the upload and the tag push:
+4. **Build a dry run and check it.** Everything but the deploy and the tag push:
 
    ```bash
    scripts/release-mac.sh --dry-run
    ```
 
-   Expected: it prints `~/.todz-release/<version>/Todz-<version>.dmg` and its sum. Then, inside `~/.todz-release/<version>/`: `shasum -a 256 -c Todz-<version>.dmg.sha256` prints `OK`; `ssh-keygen -Y verify -f <repository>/apps/macos/release/allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg` prints `Good "todz-release" signature for release@todz.app`; on the mounted app `codesign -dv` shows `TeamIdentifier=XFWR794VS8` and `flags=0x10000(runtime)`, and `spctl -a -vv` answers `rejected` with `origin=Apple Development`.
-   If it fails: the script names its refusal (a dirty tree, a tag, a version, the signature checks, a missing key); fix that cause, never the check. `spctl` answering `accepted` means a Developer ID identity signed it; stop and read ADR 0072 decision 10.
+   Expected: it prints `~/.todz-release/site/download/<version>/Todz-<version>.dmg` and its sum. Then, inside that folder: `shasum -a 256 -c Todz-<version>.dmg.sha256` prints `OK`; `ssh-keygen -Y verify -f <repository>/apps/macos/release/allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg` prints `Good "todz-release" signature for release@todz.app`; on the mounted app `codesign -dv` shows `TeamIdentifier=XFWR794VS8` and `flags=0x10000(runtime)`, and `spctl -a -vv` answers `rejected` with `origin=Apple Development`. `git status --porcelain` still prints nothing.
+   If it fails: the script names its refusal (a dirty tree, a tag, a version, pending migrations, the signature checks, a missing key); fix that cause, never the check. `spctl` answering `accepted` means a Developer ID identity signed it; stop and read ADR 0072 decision 10.
 
-6. **Open it on another Mac, once per change of signing.** The owner sends the dry-run DMG to his other notebook by AirDrop, which marks it as downloaded, opens it, drags Todz to Applications, opens it, and when macOS refuses, opens System Settings › Privacy & Security › Open Anyway. Then he signs in and adds a widget.
+5. **Open it on another Mac, once per change of signing.** The owner sends the dry-run DMG to his other notebook by AirDrop, which marks it as downloaded, opens it, drags Todz to Applications, opens it, and when macOS refuses, opens System Settings › Privacy & Security › Open Anyway. Then he signs in and adds a widget.
 
    Expected: the app opens after Open Anyway; no "would like to access data from other apps" prompt appears; the widget shows Today. The result, with the macOS version of that Mac, goes into ADR 0072's Evidence.
    If it fails: the app killed at launch, "damaged", or the App Group prompt means decision 1 of ADR 0072 does not hold; stop, publish nothing, and write the superseding ADR for the ad hoc fallback.
 
-7. **Deploy the Worker first.** The first release, or any release after a merge under `apps/api`, follows [Deploy the API](deploy-the-api.md) so the `/download` routes are live before the release checks itself through them. The `deploy` skill runs this step and the next in this order.
+6. **Deploy the API first.** Follow [Deploy the API](deploy-the-api.md). Its deploy step stages `apps/api/public` and the release folder's current versions, so the downloads already published stay served and any pending migration is applied before the release deploys.
 
-   Expected: that runbook's smoke check passes. Before the first release, `/download` answers `404` until step 8 ends.
-   If it fails: follow that runbook's own lines and do not release; the previous release stays live.
+   Expected: that runbook's smoke check passes, and `/download/latest` answers as it did before (a `404` before the first release).
+   If it fails: follow that runbook's own lines and do not release; the previous release stays live. "would remove the published download" means this Mac lacks the release folder; deploy from the Mac that holds it.
 
-8. **Release.** The same build, uploaded:
+7. **Release.** The same build, deployed:
 
    ```bash
    scripts/release-mac.sh
    ```
 
-   Expected: it uploads the DMG, the sum and the signature under `<version>/`, checks them through `https://todz.app/download/<version>/` (the answer, the sum, the signature), saves the current pointers, writes `appcast.xml` then `latest.json`, reads them back, pushes the tag `mac-v<version>`, and prints `https://todz.app/download/<version>/Todz-<version>.dmg` and the sum. A second run of the same version prints "already published" and uploads nothing.
-   If it fails: a stop before the pointers leaves the previous release live, and a re-run skips what is published. A failed read-back puts the saved pointers back itself. "differs from the published file" means a versioned object already exists with other bytes; never delete it to make room, release the next version instead.
+   Expected: it reuses the dry run's files, stages them with the previous version, deploys, checks `https://todz.app/download/latest`, the DMG, its sum, its signature and the appcast, pushes the tag `mac-v<version>`, and prints `https://todz.app/download/<version>/Todz-<version>.dmg` and the sum. A second run of the same version prints "already published" and deploys nothing.
+   If it fails: a failed production check has already rolled the Worker back to the deployment before, so the previous release is live; read the named check. "differs from the published file" means production already serves that version with other bytes; release the next version instead. A file over 25 MiB stops the staging: that is ADR 0072's R2 fallback, by a superseding ADR.
 
-9. **Check the live download.** From any folder outside the repository:
+8. **Check the live download.** From any folder outside the repository:
 
    ```bash
    curl -sS -D - -o /dev/null https://todz.app/download
@@ -85,15 +75,15 @@ Every command runs from the repository root, one command per call. Cloudflare ca
    curl -sS https://todz.app/download/appcast.xml
    ```
 
-   Expected: the first two answer `HTTP/2 302` with `location: /download/<version>/Todz-<version>.dmg`; the third `HTTP/2 200` with `content-type: application/x-apple-diskimage`, `content-disposition: attachment; filename="Todz-<version>.dmg"` and `cache-control: public, max-age=31536000, immutable`; the appcast names `<version>` and carries `sparkle:edSignature`. A DMG downloaded from the third URL passes the two checks of step 5.
-   If it fails: a `404` on `/download` means `latest.json` is missing; re-run step 8. A `404` on every path means the Worker is older than the routes; run step 7.
+   Expected: the first two answer `HTTP/2 302` with `location: /download/<version>/Todz-<version>.dmg`; the third `HTTP/2 200` with `content-disposition: attachment; filename="Todz-<version>.dmg"` and `cache-control: public, max-age=31536000, immutable`; the appcast names `<version>` and carries `sparkle:edSignature`. A DMG downloaded from the third URL, with its `.sha256` and `.sig` beside it, passes the two checks of step 4.
+   If it fails: a `404` on `/download` means the deploy carried no release; re-run step 7. A missing header means `_headers` did not apply; compare with the staging test and roll back with `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler rollback`.
 
-10. **Check the update, from the second release on.** On a Mac with the previous version installed, choose Todz › Check for Updates….
+9. **Check the update, from the second release on.** On a Mac with the previous version installed, choose Todz › Check for Updates….
 
-    Expected: Sparkle offers `<version>`, installs it after the owner confirms, relaunches, and About Todz shows `<version>`.
-    If it fails: "improperly signed" means the appcast's signature does not match `SUPublicEDKey`; put back the previous `appcast.xml` and `latest.json` and investigate the key. No offer means the build number is not greater than the installed one.
+   Expected: Sparkle offers `<version>`, installs it after the owner confirms, relaunches, and About Todz shows `<version>`.
+   If it fails: "improperly signed" means the appcast's signature does not match `SUPublicEDKey`; roll the Worker back to the deployment before and investigate the key. No offer means the build number is not greater than the installed one.
 
-11. **Record the release.** Add a row to the table below: the date, the version, the build number, the short commit and the sum.
+10. **Record the release.** Add a row to the table below: the date, the version, the build number, the short commit and the sum.
 
     Expected: one new row, in date order.
     If it fails: a release without a row is not done; add it.

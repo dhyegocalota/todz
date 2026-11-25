@@ -35,7 +35,7 @@ System Settings › Privacy & Security. Install steps         "Install steps" li
 | Focus (keyboard) | `outline: 3px solid var(--color-focus); outline-offset: 2px` |
 | `prefers-reduced-motion` | the hero's `rise` animation is skipped as for the rest of the hero; no transform on press |
 | `prefers-reduced-transparency` / `forced-colors` | the button falls back as `.join-button` does (`ButtonFace`, `ButtonText`, a 1 px border) |
-| No release published yet | not a state of the page: the runbook publishes the first release before the Worker that renders the button deploys |
+| No release published yet | not a state of the page: the button's `/download` answers `404` only for the minutes between the first deploy and the first release, which the `deploy` skill runs back to back |
 
 ## 3. Light and dark
 
