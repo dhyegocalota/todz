@@ -34,6 +34,14 @@
 		<key>NSAllowsLocalNetworking</key>
 		<string>$(TODZ_ALLOWS_LOCAL_NETWORKING)</string>
 	</dict>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>$(TODZ_UPDATE_FEED_URL)</string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
 	<key>TodzAPIBaseURL</key>
 	<string>$(TODZ_API_BASE_URL)</string>
 	<key>TodzAppGroup</key>
