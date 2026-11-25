@@ -3,7 +3,7 @@ import Foundation
 public struct MorningGlancePreference {
     public static let isOnStorageKey = "showsMorningGlance"
     public static let lastShownDayStorageKey = "lastMorningGlanceDay"
-    public static let isOnByDefault = false
+    public static let isOnByDefault = true
 
     private let domain: PersistentDomain
 
@@ -16,7 +16,8 @@ public struct MorningGlancePreference {
     }
 
     var isOn: Bool {
-        domain.value(forKey: Self.isOnStorageKey) as? Bool == true
+        guard let stored = domain.value(forKey: Self.isOnStorageKey) as? Bool else { return Self.isOnByDefault }
+        return stored
     }
 
     var lastShownDay: CalendarDate? {

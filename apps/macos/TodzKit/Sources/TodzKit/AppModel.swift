@@ -59,14 +59,20 @@ import Observation
 
     var refreshesInFlight = 0
     public internal(set) var isOffline = false
+    public internal(set) var agentChangeCount = 0
     var isOwnerConfirmed = false
     public internal(set) var agentNudge: Bool?
     var isSavingAgentNudge = false
     var isAgentNudgeNotSaved = false
     public internal(set) var showsDayTemperature = false
+    public internal(set) var compatibility: VersionCompatibility
+    public internal(set) var dayEmail: Bool?
+    public internal(set) var dayEmailMinutes: Int?
+    var isSavingDayEmail = false
+    var isDayEmailNotSaved = false
 
     @ObservationIgnored var hasLaunched = false
-    @ObservationIgnored var isLaunchSettled = false
+    var isLaunchSettled = false
     var heldSignInLink: SignInLink?
     @ObservationIgnored var session: String?
     @ObservationIgnored var ownerIdentifier: String?
@@ -101,6 +107,9 @@ import Observation
     @ObservationIgnored var revokedKeyIdentifiers: Set<String> = []
     @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored var serverSignOut: Task<Void, Never>?
+    @ObservationIgnored var compatibilityRefresh: Task<Void, Never>?
+    @ObservationIgnored var serverVersions: ServerVersions?
+    @ObservationIgnored var refusal: AppRefusal?
     @ObservationIgnored var isLocalDataUnerased = false
     @ObservationIgnored public var onTaskArrived: ((Int) -> Void)?
     @ObservationIgnored var service: any OwnerService
@@ -109,6 +118,7 @@ import Observation
     @ObservationIgnored let preference: ServerPreference
     @ObservationIgnored let connect: ServerConnectionFactory
     @ObservationIgnored let probe: ServerProbe
+    @ObservationIgnored let appVersion: String
     @ObservationIgnored let linkScheme: AppLinkScheme
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let pendingLinks: any PendingLinkVault
@@ -129,6 +139,7 @@ import Observation
         preference: ServerPreference,
         connect: @escaping ServerConnectionFactory,
         probe: @escaping ServerProbe,
+        appVersion: String,
         linkScheme: AppLinkScheme,
         vault: any SessionVault,
         pendingLinks: any PendingLinkVault,
@@ -151,6 +162,8 @@ import Observation
         self.preference = preference
         self.connect = connect
         self.probe = probe
+        self.appVersion = appVersion
+        self.compatibility = .serverUnknown(app: appVersion)
         self.linkScheme = linkScheme
         self.vault = vault
         self.pendingLinks = pendingLinks
@@ -207,6 +220,7 @@ import Observation
     public func launch() async {
         guard !hasLaunched else { return }
         hasLaunched = true
+        refreshCompatibility()
         await openLaunchSession()
         isLaunchSettled = true
         await redeemHeldSignInLink()
@@ -232,6 +246,12 @@ import Observation
             phase = .signedOut(notice: nil)
             return
         }
+        guard stored.origin == serverURL.origin else {
+            eraseDataOfAnotherServer()
+            loadOutbox()
+            phase = .signedOut(notice: isLocalDataUnerased ? .sessionUnreadable : nil)
+            return
+        }
         session = stored.secret
         phase = .loading
         openCache(cachedOwner())
@@ -255,6 +275,7 @@ import Observation
             issued = try await issuing()
         } catch let failure as OwnerAPIError {
             guard serverURL == issuingServer else { return false }
+            recordRefusal(of: failure)
             signInError = SignInError(failure)
             return false
         } catch {
@@ -278,6 +299,8 @@ import Observation
         ownerIdentifier = issued.owner.identifier
         isOwnerConfirmed = true
         agentNudge = issued.owner.agentNudge
+        dayEmail = issued.owner.dayEmail
+        dayEmailMinutes = issued.owner.dayEmailMinutes
         phase = .loading
         keep(secret: issued.sessionToken)
         discardPendingLink()
@@ -357,6 +380,7 @@ import Observation
         ownerIdentifier = nil
         isOwnerConfirmed = false
         forgetAgentNudge()
+        forgetDayEmail()
         forgetWindow()
     }
 
@@ -397,6 +421,8 @@ import Observation
         ownerConfirmationFailures = 0
         ownerIdentifier = owner.identifier
         agentNudge = owner.agentNudge
+        dayEmail = owner.dayEmail
+        dayEmailMinutes = owner.dayEmailMinutes
     }
 
     private func openWorkspaces() async {

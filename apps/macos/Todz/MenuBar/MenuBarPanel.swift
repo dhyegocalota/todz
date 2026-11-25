@@ -6,6 +6,7 @@ import TodzKit
 @MainActor @Observable final class MenuBarPanel {
     @ObservationIgnored weak var window: NSWindow?
     @ObservationIgnored private var applicationBeforeEngaging: NSRunningApplication?
+    @ObservationIgnored var onShown: (() -> Void)?
 
     // NB ADR 0031: a close from code clicks the status item's own button so the next click reopens.
     func close() {
@@ -42,7 +43,7 @@ import TodzKit
         applicationBeforeEngaging = nil
         close()
         guard let applicationToReturnTo else { return }
-        let hasOtherVisibleWindow = NSApp.windows.contains { $0.isVisible && $0.canBecomeMain }
+        let hasOtherVisibleWindow = NSApp.windows.contains(where: \.isOpenAppWindow)
         guard !hasOtherVisibleWindow else { return }
         applicationToReturnTo.activate()
     }
@@ -52,6 +53,7 @@ import TodzKit
     }
 
     func openMainWindow(_ openWindow: OpenWindowAction) {
+        NSApp.activateForAnOpeningWindow()
         close()
         Task { openWindow.mainWindow() }
     }

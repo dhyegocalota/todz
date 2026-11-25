@@ -1,3 +1,4 @@
+import { APP_VERSION_HEADER, MINIMUM_APP_VERSION } from '@todz/types';
 import { booleanOf, fieldOf, listOf, numberOf, textOf } from './json-reader';
 
 export type OwnerConnection = { origin: string; token: string; fetch: typeof fetch };
@@ -11,8 +12,10 @@ type OwnerCall = { connection: OwnerConnection; method: string; path: string; bo
 const JSON_MEDIA_TYPE = 'application/json';
 const TIME_ZONE = 'UTC';
 
+export const APP_VERSION_HEADERS = { [APP_VERSION_HEADER]: MINIMUM_APP_VERSION };
+
 async function answerOf({ connection, method, path, body }: OwnerCall): Promise<unknown> {
-  const headers = { Authorization: `Bearer ${connection.token}`, 'Content-Type': JSON_MEDIA_TYPE };
+  const headers = { ...APP_VERSION_HEADERS, Authorization: `Bearer ${connection.token}`, 'Content-Type': JSON_MEDIA_TYPE };
   const response = await connection.fetch(`${connection.origin}${path}`, {
     method,
     headers,
@@ -43,7 +46,7 @@ export async function signInOwner({
 }): Promise<OwnerConnection> {
   const response = await fetch(`${origin}/owner/sessions`, {
     method: 'POST',
-    headers: { 'Content-Type': JSON_MEDIA_TYPE },
+    headers: { ...APP_VERSION_HEADERS, 'Content-Type': JSON_MEDIA_TYPE },
     body: JSON.stringify({ identity_token: identity, time_zone: TIME_ZONE }),
   });
   if (!response.ok) throw new Error(`POST /owner/sessions answered ${response.status}`);

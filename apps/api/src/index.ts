@@ -1,3 +1,7 @@
+import { logCrash } from './crash-log';
+import { handleReply } from './day-email/day-email-reply';
+import { dayEmailStopResponse } from './day-email/day-email-stop';
+import { DAY_EMAIL_STOP_PATH } from './day-email/day-email-stop-url';
 import type { Env } from './env';
 import { HEALTH_PATH, serveHealth } from './health';
 import { HostKind, WWW_PREFIX, hostKindOf } from './host-kind';
@@ -6,14 +10,15 @@ import { serveMcp } from './mcp-endpoint';
 import { serveServerCard } from './mcp-server-card';
 import { serveOwner } from './owner-endpoint';
 import { noRouteResponse } from './owner-errors';
+import { runScheduled } from './scheduled';
 import { withSecurityHeaders } from './security-headers';
+import { SERVER_VERSION, withServerVersion } from './server-version';
 import { serveTimed } from './server-timing';
 import { SIGN_IN_CHALLENGE_PAGE_PATH, serveSignInChallengePage } from './sign-in-challenge-page';
 import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
 import { SELF_HOST_PATH, redirectToDocs } from './site/self-host-redirect';
 import { serveSite } from './site/site-endpoint';
 import { SERVER_CARD_PATH } from './site/site-urls';
-import { runScheduled } from './site/waitlist-digest';
 
 export { ProjectStore } from './project-store';
 
@@ -27,6 +32,7 @@ type HostHandler = (context: HostContext) => Promise<Response>;
 const ROUTE_OF_PATH: Record<string, Route> = {
   [MCP_PATH]: ({ request, env }) => serveTimed({ env, serve: (observedEnv) => serveMcp({ request, env: observedEnv, now: Date.now() }) }),
   [SERVER_CARD_PATH]: async ({ request }) => serveServerCard({ request }),
+  [DAY_EMAIL_STOP_PATH]: ({ request, env }) => dayEmailStopResponse({ request, env }),
   [SIGN_IN_PAGE_PATH]: ({ request, env }) => serveSignInPage({ request, env }),
   [SIGN_IN_CHALLENGE_PAGE_PATH]: ({ request, env }) => serveSignInChallengePage({ request, env }),
 };
@@ -65,11 +71,20 @@ async function serveHost({ request, env, executionContext }: HostContext): Promi
   return HANDLER_OF_HOST_KIND[hostKind]({ request, env, executionContext });
 }
 
+function crashResponse(error: unknown): Response {
+  logCrash(error);
+  return new Response(null, { status: HttpStatus.InternalServerError });
+}
+
 export default {
   async fetch(request, env, executionContext): Promise<Response> {
-    return withSecurityHeaders(await serveHost({ request, env, executionContext }));
+    const response = await serveHost({ request, env, executionContext }).catch(crashResponse);
+    return withSecurityHeaders(withServerVersion({ response, version: SERVER_VERSION }));
   },
   async scheduled(controller, env): Promise<void> {
     await runScheduled({ controller, env });
+  },
+  async email(message, env): Promise<void> {
+    await handleReply({ message, env, now: Date.now() });
   },
 } satisfies ExportedHandler<Env>;

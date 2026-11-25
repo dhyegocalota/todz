@@ -1,4 +1,4 @@
-import { MILLISECONDS_PER_DAY } from '@todz/types';
+import { APP_VERSION_HEADER, MILLISECONDS_PER_DAY, MINIMUM_APP_VERSION } from '@todz/types';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, test } from 'vitest';
@@ -11,7 +11,7 @@ import { ADMIN_RESPONSE_HEADERS, AdminPath } from '../src/site/admin-paths';
 import { ADMIN_SESSION_LIFETIME_MS, AdminCookie } from '../src/site/admin-session';
 import { openAdminSession } from '../src/site/admin-store';
 import { AdminNotice, ConfirmationState } from '../src/site/admin-waitlist';
-import { joinWaitlist } from '../src/site/waitlist-store';
+import { joinWaitlistWithinLimit } from '../src/site/waitlist-store';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
 import { adminSessionRows } from './admin-client';
 import { CLIENT_ADDRESS, CLIENT_ADDRESS_HEADER, TURNSTILE_TEST_SECRET, consoleOutput, mailSent } from './email-sign-in-client';
@@ -50,8 +50,8 @@ function serve(request: Request): Promise<Response> {
   return serveWith({ request, settings: {} });
 }
 
-function requestOf({ url, method = 'GET' }: { url: string; method?: string }): Request {
-  return new Request(url, { method, redirect: 'manual' });
+function requestOf({ url, method = 'GET', headers }: { url: string; method?: string; headers?: Record<string, string> }): Request {
+  return new Request(url, { method, headers, redirect: 'manual' });
 }
 
 describe('the site host', () => {
@@ -160,7 +160,9 @@ describe('the API host', () => {
   });
 
   test('GET /owner/sign-in-method answers as it did before the site', async () => {
-    const response = await serve(requestOf({ url: `${API_ORIGIN}/owner/sign-in-method` }));
+    const response = await serve(
+      requestOf({ url: `${API_ORIGIN}/owner/sign-in-method`, headers: { [APP_VERSION_HEADER]: MINIMUM_APP_VERSION } }),
+    );
     expect(response.status).toBe(UNAVAILABLE_STATUS);
   });
 });
@@ -272,7 +274,7 @@ describe('the admin routes on the site host', () => {
     test('with a session answers the panel of the waitlist summary', async () => {
       await signIn();
       const joinedAt = Date.now() - 2 * MILLISECONDS_PER_DAY;
-      await joinWaitlist({ database: env.DIRECTORY, address: 'maria@example.com', now: joinedAt });
+      await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: 'maria@example.com', now: joinedAt });
       const summary = {
         total: 1,
         joinedLastDay: 0,
@@ -459,7 +461,7 @@ describe('the admin routes on the site host', () => {
   describe('GET /admin/export.csv', () => {
     test('with a session answers the CSV through the route', async () => {
       await signIn();
-      await joinWaitlist({ database: env.DIRECTORY, address: 'maria@example.com', now: Date.now() });
+      await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: 'maria@example.com', now: Date.now() });
       const request = adminRequest({ path: AdminPath.Export, headers: { Cookie: SIGNED_IN_COOKIE } });
       const response = await serveWith({ request, settings: ADMIN_SETTINGS });
       expect(response.status).toBe(OK_STATUS);

@@ -50,6 +50,13 @@ enum AccessibilityCopy {
         InflectedCopy.text("todz, \(count) left today")
     }
 
+    static func menuBarRibbon(_ content: RibbonContent) -> String {
+        switch content {
+        case let .remaining(left, next): "\(menuBarCount(count: left)). Next: \(MenuBarCopy.ribbonTask(next))"
+        case let .last(next): "todz, last one today: \(MenuBarCopy.ribbonTask(next))"
+        }
+    }
+
     static func morningGlance(count: Int) -> String {
         InflectedCopy.text("Today, \(count) left")
     }

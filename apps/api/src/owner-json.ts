@@ -3,7 +3,13 @@ import { ActorKind } from '@todz/types';
 import type { KeyRecord, OwnerRecord, ProjectRecord, WorkspaceRecord } from './owner-records';
 
 export function ownerJson(owner: OwnerRecord) {
-  return { id: owner.id, time_zone: owner.timeZone, agent_nudge: owner.agentNudge };
+  return {
+    id: owner.id,
+    time_zone: owner.timeZone,
+    agent_nudge: owner.agentNudge,
+    day_email: owner.dayEmail,
+    day_email_minutes: owner.dayEmailMinutes,
+  };
 }
 
 export function projectJson(project: ProjectRecord) {

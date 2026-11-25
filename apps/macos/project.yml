@@ -32,7 +32,7 @@ targets:
       base:
         PRODUCT_NAME: Todz
         PRODUCT_BUNDLE_IDENTIFIER: $(TODZ_APP_BUNDLE_IDENTIFIER)
-        MARKETING_VERSION: "0.1.0"
+        MARKETING_VERSION: "0.2.0"
         CURRENT_PROJECT_VERSION: "1"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         SWIFT_VERSION: "6.0"
@@ -46,6 +46,7 @@ targets:
       configs:
         Debug:
           TODZ_API_BASE_URL: http://localhost:8787
+          INFOPLIST_KEY_CFBundleDisplayName: Todz Dev
         Release:
           TODZ_API_BASE_URL: https://api.todz.app
     entitlements:
@@ -78,7 +79,7 @@ targets:
       base:
         PRODUCT_NAME: TodzWidgets
         PRODUCT_BUNDLE_IDENTIFIER: $(TODZ_WIDGETS_BUNDLE_IDENTIFIER)
-        MARKETING_VERSION: "0.1.0"
+        MARKETING_VERSION: "0.2.0"
         CURRENT_PROJECT_VERSION: "1"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         SWIFT_VERSION: "6.0"

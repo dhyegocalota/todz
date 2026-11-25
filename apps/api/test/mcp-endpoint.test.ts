@@ -10,7 +10,7 @@ import { serveMcp } from '../src/mcp-endpoint';
 import { MCP_SESSIONS_PER_KEY_MAX } from '../src/mcp-sessions';
 import { issueProjectKey } from '../src/project-keys';
 import { countingEnv } from './counting-namespace';
-import { revokeKey, seedIssuedKey } from './directory-seed';
+import { issuedKeyOf, revokeKey, seedIssuedKey } from './directory-seed';
 import { CLOCK_NOW } from './task-fixtures';
 
 const MCP_URL = 'http://localhost:8787/mcp';
@@ -276,7 +276,7 @@ describe('a later legacy request', () => {
 
   test('with a session of another key of the same project answers 404 session not found', async () => {
     const { projectId, key } = await seedIssuedKey();
-    const { secret: otherKey } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+    const { secret: otherKey } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
     const sessionId = await openSession(otherKey);
     const response = await toolsList({ key, sessionId });
     expect(response.status).toBe(NOT_FOUND_STATUS);

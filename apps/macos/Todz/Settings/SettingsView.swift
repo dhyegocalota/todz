@@ -2,6 +2,8 @@ import SwiftUI
 import TodzKit
 
 let subtitleLines = 2
+private let unknownDayEmailHour = 7
+private let unknownDayEmailMinutes = unknownDayEmailHour * DayCloseSchedule.minutesPerHour
 private let focusSettingsAddress = "x-apple.systempreferences:com.apple.Focus-Settings.extension"
 
 struct SettingsView: View {
@@ -9,10 +11,14 @@ struct SettingsView: View {
     @Environment(ProactiveGate.self) private var gate
     @Environment(\.openURL) private var openURL
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
+    @AppStorage(MenuBarOnlyPreference.isOnStorageKey) private var isMenuBarOnlyOn = MenuBarOnlyPreference.isOnByDefault
     @AppStorage(DayClosePreference.isOnStorageKey) private var isDayCloseOn = DayClosePreference.isOnByDefault
     @AppStorage(DayClosePreference.timeStorageKey) private var dayCloseMinutes = DayClosePreference.minutesAfterMidnightByDefault
     @AppStorage(MorningGlancePreference.isOnStorageKey) private var isMorningGlanceOn = MorningGlancePreference.isOnByDefault
     @AppStorage(DayTemperaturePreference.isOnStorageKey) private var isDayTemperatureOn = DayTemperaturePreference.isOnByDefault
+    @AppStorage(RibbonPreference.isOnStorageKey) private var isRibbonOn = RibbonPreference.isOnByDefault
+    @AppStorage(RespectFocusPreference.isOnStorageKey) private var isRespectFocusOn = RespectFocusPreference.isOnByDefault
+    @AppStorage(RibbonPreference.cadenceStorageKey) private var ribbonCadenceName = RibbonPreference.cadenceByDefault.rawValue
 
     var body: some View {
         Form {
@@ -21,20 +27,19 @@ struct SettingsView: View {
                 Text(SettingsCopy.showPendingCountDetail)
             }
             .toggleStyle(.switch)
+            Toggle(isOn: $isMenuBarOnlyOn) {
+                Text(SettingsCopy.keepInMenuBar)
+                Text(SettingsCopy.keepInMenuBarDetail)
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            .toggleStyle(.switch)
             Toggle(isOn: agentNudge) {
                 Text(SettingsCopy.agentNudge)
-                Text(SettingsCopy.agentNudgeSubtitle(notice: model.agentNudgeNotice))
+                Text(SettingsCopy.ownerSettingSubtitle(notice: model.agentNudgeNotice, detail: SettingsCopy.agentNudgeDetail))
                     .lineLimit(subtitleLines, reservesSpace: true)
             }
             .toggleStyle(.switch)
             .disabled(!model.canChangeAgentNudge)
-            LabeledContent {
-                Button(SettingsCopy.openFocusSettings, action: openFocusSettings)
-            } label: {
-                Text(SettingsCopy.focusQuiet)
-                Text(SettingsCopy.focusQuietSubtitle(notice: FocusQuietNotice(isQuiet: gate.isQuiet)))
-                    .lineLimit(subtitleLines, reservesSpace: true)
-            }
             LabeledContent {
                 HStack {
                     DatePicker(SettingsCopy.closeTheDayTime, selection: dayCloseTime, displayedComponents: .hourAndMinute)
@@ -62,14 +67,68 @@ struct SettingsView: View {
                     .lineLimit(subtitleLines, reservesSpace: true)
             }
             .toggleStyle(.switch)
+            LabeledContent {
+                HStack {
+                    DatePicker(SettingsCopy.dayEmailTime, selection: dayEmailTime, displayedComponents: .hourAndMinute)
+                        .datePickerStyle(.stepperField)
+                        .labelsHidden()
+                        .disabled(!canChangeDayEmailTime)
+                    Toggle(SettingsCopy.dayEmail, isOn: dayEmail)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                        .disabled(!model.canChangeDayEmail)
+                }
+            } label: {
+                Text(SettingsCopy.dayEmail)
+                Text(SettingsCopy.ownerSettingSubtitle(notice: model.dayEmailNotice, detail: SettingsCopy.dayEmailDetail))
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            LabeledContent {
+                HStack {
+                    Picker(SettingsCopy.menuBarRibbonCadence, selection: ribbonCadence) {
+                        ForEach(RibbonCadence.allCases, id: \.self) { cadence in
+                            Text(SettingsCopy.cadenceName(cadence)).tag(cadence)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .disabled(!isRibbonOn)
+                    Toggle(SettingsCopy.menuBarRibbon, isOn: $isRibbonOn)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+            } label: {
+                Text(SettingsCopy.menuBarRibbon)
+                Text(ribbonDetail)
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            Toggle(isOn: $isRespectFocusOn) {
+                Text(SettingsCopy.respectFocus)
+                Text(SettingsCopy.focusQuietSubtitle(notice: FocusQuietNotice(isQuiet: gate.isQuiet)))
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            .toggleStyle(.switch)
+            if isRespectFocusOn {
+                LabeledContent {
+                    Button(SettingsCopy.openFocusSettings, action: openFocusSettings)
+                } label: {
+                    Text(SettingsCopy.respectFocusHelper)
+                }
+            }
             Section {
                 ServerAddressForm(layout: .row, exit: {})
+            } footer: {
+                VersionLine()
             }
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
         .onChange(of: model.agentNudgeNotice) { _, notice in announce(notice) }
-        .onDisappear { model.forgetAgentNudgeFailure() }
+        .onChange(of: model.dayEmailNotice) { _, notice in announce(notice) }
+        .onDisappear {
+            model.forgetAgentNudgeFailure()
+            model.forgetDayEmailFailure()
+        }
     }
 
     private var agentNudge: Binding<Bool> {
@@ -78,6 +137,32 @@ struct SettingsView: View {
         } set: { isEnabled in
             Task { await model.changeAgentNudge(isEnabled: isEnabled) }
         }
+    }
+
+    private var dayEmail: Binding<Bool> {
+        Binding {
+            model.dayEmail == true
+        } set: { isEnabled in
+            Task { await model.changeDayEmail(isEnabled: isEnabled) }
+        }
+    }
+
+    private var canChangeDayEmailTime: Bool {
+        model.canChangeDayEmail && model.dayEmail == true
+    }
+
+    private var dayEmailTime: Binding<Date> {
+        Binding {
+            guard let minutes = model.dayEmailMinutes else { return dayEmailInstant(minutes: unknownDayEmailMinutes) }
+            return dayEmailInstant(minutes: minutes)
+        } set: { time in
+            let minutes = DayCloseSchedule.minutesAfterMidnight(of: time, timeZone: model.timeZone)
+            Task { await model.changeDayEmail(minutes: minutes) }
+        }
+    }
+
+    private func dayEmailInstant(minutes: Int) -> Date {
+        DayCloseSchedule.instant(day: model.today, minutesAfterMidnight: minutes, timeZone: model.timeZone)
     }
 
     private var dayCloseTime: Binding<Date> {
@@ -89,12 +174,26 @@ struct SettingsView: View {
         }
     }
 
+    private var ribbonCadence: Binding<RibbonCadence> {
+        Binding {
+            RibbonPreference.pickerCadence(stored: ribbonCadenceName)
+        } set: { cadence in
+            ribbonCadenceName = cadence.rawValue
+        }
+    }
+
+    private var ribbonDetail: String {
+        let isOverlappingDayClose = isDayCloseOn && ribbonCadence.wrappedValue == .dayClose
+        guard isOverlappingDayClose else { return SettingsCopy.menuBarRibbonDetail }
+        return SettingsCopy.menuBarRibbonDayCloseOverlap
+    }
+
     private func openFocusSettings() {
         guard let focusSettings = URL(string: focusSettingsAddress) else { return }
         openURL(focusSettings)
     }
 
-    private func announce(_ notice: AgentNudgeNotice) {
+    private func announce(_ notice: OwnerSettingNotice) {
         guard notice == .notSaved else { return }
         AccessibilityNotification.Announcement(ErrorCopy.changeNotSaved).post()
     }

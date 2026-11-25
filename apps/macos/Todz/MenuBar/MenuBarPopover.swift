@@ -6,6 +6,7 @@ struct MenuBarPopover: View {
     @Environment(MenuBarPanel.self) private var panel
     @Environment(DayCloseCoordinator.self) private var dayClose
     @Environment(MorningGlanceCoordinator.self) private var morningGlance
+    @Environment(RibbonCoordinator.self) private var ribbon
     @FocusState private var focus: MenuBarFocus?
 
     var body: some View {
@@ -30,8 +31,10 @@ struct MenuBarPopover: View {
     }
 
     private func showPopover() {
+        panel.onShown?()
         dayClose.popoverShown()
         morningGlance.popoverShown()
+        ribbon.end()
     }
 
     private func endDayClose() {

@@ -17,6 +17,7 @@ struct RecordedRequest: Sendable {
     let query: String?
     let authorization: String?
     let contentType: String?
+    let appVersion: String?
     let body: Data
 }
 
@@ -61,6 +62,7 @@ final class StubURLProtocol: URLProtocol {
             query: request.url?.query(),
             authorization: request.value(forHTTPHeaderField: "Authorization"),
             contentType: request.value(forHTTPHeaderField: "Content-Type"),
+            appVersion: request.value(forHTTPHeaderField: "Todz-App-Version"),
             body: bodyOf(request)
         )
         let answer = Self.state.withLock { state in

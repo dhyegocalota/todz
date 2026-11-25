@@ -9,7 +9,10 @@ extension AppDelegate {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.showDayTemperature() }
+            MainActor.assumeIsolated {
+                self?.showDayTemperature()
+                Task { await self?.focusSwitch.preferencesChanged() }
+            }
         }
         observeQuietGate()
         showDayTemperature()

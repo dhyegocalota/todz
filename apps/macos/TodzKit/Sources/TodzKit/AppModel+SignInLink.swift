@@ -10,6 +10,7 @@ extension AppModel {
             signInMethod = method
         } catch let failure as OwnerAPIError {
             guard serverURL == askedServer else { return }
+            recordRefusal(of: failure)
             signInMethodError = SignInError(failure)
         } catch {
             guard serverURL == askedServer else { return }
@@ -37,6 +38,7 @@ extension AppModel {
             try await service.requestSignInLink(email: email, challenge: SignInLinkChallenge.challenge(for: verifier), turnstileToken: turnstileToken, linkScheme: linkScheme)
         } catch let failure as OwnerAPIError {
             guard serverURL == askedServer else { return }
+            recordRefusal(of: failure)
             signInError = SignInError(asking: failure)
             return
         } catch {

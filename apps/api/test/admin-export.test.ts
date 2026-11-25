@@ -10,7 +10,7 @@ import { serveAdminExport, waitlistCsvOf } from '../src/site/admin-export';
 import { ADMIN_SESSION_LIFETIME_MS, AdminCookie } from '../src/site/admin-session';
 import { openAdminSession } from '../src/site/admin-store';
 import { AdminNotice, ConfirmationState, type WaitlistRow } from '../src/site/admin-waitlist';
-import { joinWaitlist, recordConfirmationFailure } from '../src/site/waitlist-store';
+import { joinWaitlistWithinLimit, recordConfirmationFailure } from '../src/site/waitlist-store';
 import { workerEnvWith } from './owner-client';
 
 const SITE_ORIGIN = 'https://todz.app';
@@ -127,8 +127,8 @@ describe('the export route with a session', () => {
     await openSession();
     const oldest = 'oldest@example.com';
     const failed = 'failed@example.com';
-    await joinWaitlist({ database: env.DIRECTORY, address: oldest, now: JOINED_AT });
-    await joinWaitlist({ database: env.DIRECTORY, address: failed, now: JOINED_AT + MILLISECONDS_PER_MINUTE });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: oldest, now: JOINED_AT });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: failed, now: JOINED_AT + MILLISECONDS_PER_MINUTE });
     await recordConfirmationFailure({ database: env.DIRECTORY, address: failed, now: JOINED_AT + MILLISECONDS_PER_HOUR });
     await env.DIRECTORY.batch(
       Array.from({ length: 200 }, (_, index) =>
@@ -156,14 +156,14 @@ describe('the export route with a session', () => {
 
   test('a hostile address reaches the file only prefixed', async () => {
     await openSession();
-    await joinWaitlist({ database: env.DIRECTORY, address: '=cmd|calc@example.com', now: JOINED_AT });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: '=cmd|calc@example.com', now: JOINED_AT });
     expect(await (await exported()).text()).toContain('"\'=cmd|calc@example.com"');
   });
 });
 
 describe('the export route without a session redirects to the panel and exports nothing', () => {
   test('no cookie', async () => {
-    await joinWaitlist({ database: env.DIRECTORY, address: 'maria@example.com', now: JOINED_AT });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: 'maria@example.com', now: JOINED_AT });
     const response = await exported({ request: exportRequest({ cookie: null }) });
     expectRedirectToPanel(response);
     expect(await response.text()).toBe('');

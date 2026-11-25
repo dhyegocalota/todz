@@ -1,7 +1,9 @@
+import { APP_VERSION_HEADER, MINIMUM_APP_VERSION } from '@todz/types';
 import { env, exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 
 const WORKER_ORIGIN = 'http://localhost:8787';
+const APP_VERSION_HEADERS = { [APP_VERSION_HEADER]: MINIMUM_APP_VERSION };
 const OK_STATUS = 200;
 const NOT_FOUND_STATUS = 404;
 const UNAVAILABLE_STATUS = 503;
@@ -9,6 +11,10 @@ const UNAUTHORIZED_STATUS = 401;
 const DIRECTORY_TABLES = [
   'admin_sessions',
   'admin_sign_in_links',
+  'day_email_replies',
+  'day_email_reply_addresses',
+  'day_email_stop_links',
+  'day_emails',
   'mcp_sessions',
   'owner_identities',
   'owners',
@@ -53,12 +59,12 @@ describe('the handler routes the paths the static assets never answer (the asset
   });
 
   test('GET /owner without a session answers 401 from the Worker', async () => {
-    const response = await exports.default.fetch(`${WORKER_ORIGIN}/owner`);
+    const response = await exports.default.fetch(`${WORKER_ORIGIN}/owner`, { headers: APP_VERSION_HEADERS });
     expect(response.status).toBe(UNAUTHORIZED_STATUS);
   });
 
   test('POST /owner/sign-in-links answers from the Worker', async () => {
-    const response = await exports.default.fetch(`${WORKER_ORIGIN}/owner/sign-in-links`, { method: 'POST' });
+    const response = await exports.default.fetch(`${WORKER_ORIGIN}/owner/sign-in-links`, { method: 'POST', headers: APP_VERSION_HEADERS });
     expect(response.status).toBe(UNAVAILABLE_STATUS);
   });
 
@@ -69,7 +75,7 @@ describe('the handler routes the paths the static assets never answer (the asset
 });
 
 describe('the directory', () => {
-  test('lists exactly the eleven directory tables', async () => {
+  test('lists exactly the fifteen directory tables', async () => {
     expect(await directoryTables()).toEqual(DIRECTORY_TABLES);
   });
 

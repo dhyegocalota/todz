@@ -22,6 +22,11 @@ const PREVIEW_VALUES = {
   [EmailSlot.Failed]: '1',
   [EmailSlot.Addresses]: 'maria@example.com\njoao@example.com',
   [EmailSlot.More]: 'and 3 more.',
+  [EmailSlot.Count]: '3',
+  [EmailSlot.Tasks]: 'T-12 Review the release notes · Inbox · overdue\nT-4 Call the bank · Home\nT-31 Ship the beta · Work / todz',
+  [EmailSlot.Workspace]: 'Personal',
+  [EmailSlot.Time]: '07:00',
+  [EmailSlot.StopUrl]: 'http://localhost:8787/day-email/stop?token=preview-only-not-a-token',
 };
 
 async function generate(): Promise<number> {

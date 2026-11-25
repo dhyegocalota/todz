@@ -5,19 +5,32 @@ import Testing
 private let storageKey = "showsDayTemperature"
 
 @Suite struct DayTemperaturePreferenceTests {
-    @Test func aFreshDomainReadsOff() throws {
+    @Test func aFreshDomainReadsOn() throws {
         let domain = try EmptyDomain()
+        #expect(DayTemperaturePreference(defaults: domain.defaults, domainName: domain.name).isOn)
+    }
+
+    @Test func aStoredFalseStaysOff() throws {
+        let domain = try EmptyDomain()
+        domain.defaults.set(false, forKey: storageKey)
+        DayTemperaturePreference.registerDefaults(in: domain.defaults)
         #expect(!DayTemperaturePreference(defaults: domain.defaults, domainName: domain.name).isOn)
+    }
+
+    @Test func aNonBoolValueReadsAsTheDefault() throws {
+        let domain = try EmptyDomain()
+        domain.defaults.set("no", forKey: storageKey)
+        #expect(DayTemperaturePreference(defaults: domain.defaults, domainName: domain.name).isOn)
     }
 
     @Test func theStorageKeyIsShowsDayTemperature() {
         #expect(DayTemperaturePreference.isOnStorageKey == storageKey)
     }
 
-    @Test func registeringTheDefaultsRegistersOff() throws {
+    @Test func registeringTheDefaultsRegistersOn() throws {
         let domain = try EmptyDomain()
         DayTemperaturePreference.registerDefaults(in: domain.defaults)
-        #expect(domain.defaults.object(forKey: storageKey) as? Bool == false)
+        #expect(domain.defaults.object(forKey: storageKey) as? Bool == true)
     }
 
     @Test func registeringNeverOverwritesTheOwnersChoice() throws {
@@ -40,8 +53,8 @@ private let storageKey = "showsDayTemperature"
         let domain = try EmptyDomain()
         let searched = try EmptyDomain()
         defer { searched.defaults.removePersistentDomain(forName: searched.name) }
-        searched.defaults.set(true, forKey: storageKey)
+        searched.defaults.set(false, forKey: storageKey)
         domain.defaults.addSuite(named: searched.name)
-        #expect(!DayTemperaturePreference(defaults: domain.defaults, domainName: domain.name).isOn)
+        #expect(DayTemperaturePreference(defaults: domain.defaults, domainName: domain.name).isOn)
     }
 }

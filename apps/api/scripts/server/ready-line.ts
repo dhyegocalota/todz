@@ -9,8 +9,16 @@ function withoutLineComments(text: string): string {
   return text.replace(STRING_OR_LINE_COMMENT_PATTERN, (match) => (match.startsWith(STRING_QUOTE) ? match : ''));
 }
 
-export function readyLine({ publicOrigin }: { publicOrigin: string }): string {
-  return `todz server ready: ${publicOrigin}  →  paste it in todz › Settings › Server`;
+export function readyLine({
+  publicOrigin,
+  serverVersion,
+  minimumAppVersion,
+}: {
+  publicOrigin: string;
+  serverVersion: string;
+  minimumAppVersion: string;
+}): string {
+  return `todz server ready: ${publicOrigin} · server ${serverVersion} · accepts app ${minimumAppVersion} or later  →  paste it in todz › Settings › Server`;
 }
 
 export function publicOriginInWranglerText(wranglerText: string): string {

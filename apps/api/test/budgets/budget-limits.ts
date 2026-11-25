@@ -18,6 +18,10 @@ export enum RowsReadUseCase {
 export const OWNER_PROJECT_ROUTE_BUDGET: WorkBudget = { roundTrips: 1, statements: 1, projectCalls: 1 };
 export const OWNER_WORKSPACE_LIST_BUDGET: WorkBudget = { roundTrips: 3, statements: 3, projectCalls: 0 };
 
+export const DAY_EMAIL_TICK_BUDGET: WorkBudget = { roundTrips: 2, statements: 5, projectCalls: 0 };
+export const DAY_EMAIL_OWNER_BUDGET: WorkBudget = { roundTrips: 6, statements: 6, projectCalls: 0 };
+export const DAY_EMAIL_REPLY_BUDGET: WorkBudget = { roundTrips: 4, statements: 4, projectCalls: 1 };
+
 export const MCP_LIST_BUDGET_OF_ERA: Record<ClientEra, WorkBudget> = {
   [ClientEra.Legacy]: { roundTrips: 1, statements: 2, projectCalls: 1 },
   [ClientEra.Modern]: { roundTrips: 1, statements: 1, projectCalls: 1 },

@@ -29,7 +29,7 @@ extension MorningGlanceCoordinator {
                     isClosingDay: dayClose.isClosingDay,
                     isPopoverShown: popover.isShown,
                     isApplicationActive: NSApp.isActive,
-                    hasVisibleMainCapableWindow: NSApp.windows.contains { $0.isVisible && $0.canBecomeMain }
+                    hasVisibleMainCapableWindow: NSApp.windows.contains(where: \.isOpenAppWindow)
                 )
             },
             showPanel: { await presenter.show($0) },

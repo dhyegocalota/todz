@@ -5,6 +5,8 @@ private let tickSeconds: TimeInterval = 1
 private let inboxName = "Inbox"
 private let keyHintLength = 4
 
+let compatibleStamp = "2026.11.25+3f9c2ab"
+
 struct UndecodableAnswer: Error {}
 
 struct StatusFailure: Sendable {
@@ -21,6 +23,7 @@ struct StatusFailure: Sendable {
     var projectFailures: [String: OwnerAPIError] = [:]
     var changeScripts: [String: [Result<ChangePage, OwnerAPIError>]] = [:]
     var onCall: ((FakeCall) -> Void)?
+    var healthAnswer = FakeOwnerService.compatibleHealth
     var pageSize = 50
     var issuedSession = IssuedSession(
         sessionToken: UUID().uuidString,
@@ -36,6 +39,14 @@ struct StatusFailure: Sendable {
     private var suspendedRoutes: Set<FakeRoute> = []
     private var heldCalls: [FakeRoute: [CheckedContinuation<Void, Never>]] = [:]
     private var waiters: [HeldCallWaiter] = []
+
+    static let compatibleHealth: Result<ServerHealthAnswer, OwnerAPIError> = .success(
+        .todz(origin: harnessDefaultServer, versions: ServerVersions(server: compatibleStamp, minimumApp: OwnerFixtures.appVersion))
+    )
+
+    func health() async throws -> ServerHealthAnswer {
+        try healthAnswer.get()
+    }
 
     func routes() -> [FakeRoute] {
         calls.map(\.route)
@@ -66,12 +77,23 @@ struct StatusFailure: Sendable {
 
     func updateOwner(session: String, timeZone: String) async throws -> Owner {
         try await record(.updateOwner(session: session, timeZone: timeZone))
-        return Owner(identifier: issuedSession.owner.identifier, timeZone: timeZone, agentNudge: issuedSession.owner.agentNudge)
+        let issued = issuedSession.owner
+        return Owner(identifier: issued.identifier, timeZone: timeZone, agentNudge: issued.agentNudge, dayEmail: issued.dayEmail, dayEmailMinutes: issued.dayEmailMinutes)
     }
 
     func updateAgentNudge(session: String, isEnabled: Bool) async throws -> Owner {
         try await record(.updateAgentNudge(session: session, isEnabled: isEnabled))
-        return Owner(identifier: issuedSession.owner.identifier, timeZone: issuedSession.owner.timeZone, agentNudge: isEnabled)
+        return revisedOwner { $0.agentNudge = isEnabled }
+    }
+
+    func updateDayEmail(session: String, isEnabled: Bool) async throws -> Owner {
+        try await record(.updateDayEmail(session: session, isEnabled: isEnabled))
+        return revisedOwner { $0.dayEmail = isEnabled }
+    }
+
+    func updateDayEmailMinutes(session: String, minutes: Int) async throws -> Owner {
+        try await record(.updateDayEmailMinutes(session: session, minutes: minutes))
+        return revisedOwner { $0.dayEmailMinutes = minutes }
     }
 
     func listWorkspaces(session: String) async throws -> [Workspace] {
@@ -188,6 +210,12 @@ struct StatusFailure: Sendable {
 
     func nextKeyIdentifier() -> String {
         "project-key-\(issuedKeyCount + 1)"
+    }
+
+    private func revisedOwner(_ revision: (inout Owner) -> Void) -> Owner {
+        var owner = issuedSession.owner
+        revision(&owner)
+        return owner
     }
 
     private func page(projectIdentifier: String, cursor: Int) -> ChangePage {

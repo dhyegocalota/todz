@@ -10,7 +10,7 @@
     "emails:generate": "tsx scripts/emails/cli.ts generate",
     "emails:check": "tsx scripts/emails/cli.ts check",
     "emails:preview": "tsx scripts/emails/cli.ts preview",
-    "server:deploy": "wrangler deploy && tsx scripts/server/cli.ts",
+    "server:deploy": "tsx scripts/server/cli.ts",
     "site:assets": "tsx scripts/site-assets/cli.ts generate",
     "site:assets:check": "tsx scripts/site-assets/cli.ts check",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
@@ -21,6 +21,7 @@
     "@modelcontextprotocol/server": "2.4.0",
     "@todz/core": "workspace:*",
     "@todz/types": "workspace:*",
+    "postal-mime": "4.2.1",
     "zod": "4.6.7"
   },
   "devDependencies": {
