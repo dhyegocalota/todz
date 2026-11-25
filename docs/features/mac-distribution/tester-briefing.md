@@ -146,7 +146,7 @@ The green commit is `5928a230`.
 
 ### Gaps I know about
 
-- Step 6 (the docs page: signature verification, the public key and its fingerprint, the trust statement, `docs-pages.test.ts`) is not done: it waits for the lead's step 9, because `apps/macos/release/allowed-signers` does not exist yet.
+- Step 6 is done (`docs-pages.test.ts` "the install page", red `4215579a`). `quickstart.mdx` still says "coming soon"; it is not in G1's files.
 - Files outside the plan's G1 list that I had to touch: `apps/api/wrangler.jsonc` (`assets.binding: "ASSETS"`), `apps/api/src/env.ts` (optional `ASSETS`), `apps/api/src/http-status.ts` (`Found`), `apps/api/src/site/site-endpoint.ts` and `waitlist-join.ts` (they pass `isReleased` to the landing), `apps/api/test/waitlist-join.test.ts`, `site-discovery.test.ts` and `owner-client.ts` (a helper's env gains `ASSETS`).
 - The landing asks `ASSETS` on every landing render and every no-JavaScript join answer; the answer is local to the Worker, not a network call, and the page is not cached.
 - `/llms.txt` says "a download" whether or not a release is staged: the file is static. The landing is the gated surface.
