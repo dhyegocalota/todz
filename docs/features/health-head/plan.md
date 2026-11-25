@@ -26,8 +26,8 @@ G1 then G2; the feature folder's docs land first, the runbook edits after the co
 
 ### G2
 
-- [ ] **Step 3:** Runbooks: the `Server-Timing` sentence in two places, the HEAD probe in step 13, the performance run-log rows.
-- [ ] **Step 4:** Tester briefing.
+- [x] **Step 3:** Runbooks: the `Server-Timing` sentence in two places, the HEAD probe in step 13, the performance run-log rows (`runbooks.test.ts` green).
+- [x] **Step 4:** Tester briefing (`tester-briefing.md`).
 
 ## Failure modes
 
@@ -41,7 +41,7 @@ G1 then G2; the feature folder's docs land first, the runbook edits after the co
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict.
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
