@@ -149,3 +149,56 @@ Every "it works" is a hypothesis the tester tries to break.
 - The 192 and 512 `any` icons have transparent corners (the squircle); only the touch icon and the maskable pair are full-bleed.
 - `pnpm verify` stops red at `tools/repository-shape/src/site-assets.test.ts` (no lane owns it): it expects every file under `apps/api/public/landing` to be a byte copy of a README screenshot, so the 12 WebP files fail its first and third rows. Left unedited per the ownership list; the fix is to filter `SERVED` to the `.png` files. `apps/api` typecheck, the full `apps/api` unit run (1740 tests) and `site:assets:check` are green.
 - The runbook index row (`docs/runbooks/README.md`) still describes only the app icon and menu bar glyph; the file belongs to no lane.
+
+
+## Fix round 1
+
+The lead's decisions after review, security review and the first test run. Red commit `574837f`, green `160a829`, pin `2e7344e`, shared module `83cf057` (with `6064cae`, which keeps `site-style.ts`'s page colour literal because `tools/repository-shape/src/docs-site.test.ts` reads it from the source), runbook log `9a3afc0`, documents `ca4b19d`.
+
+### What changed
+
+- S3: `siteContentSecurityPolicy` takes `declaresManifest`; the landing passes `true`, the three admin policies and the link page `false`, so they are as on `main` (no `manifest-src`).
+- R4 and T2: `join_waitlist` answers `WEBMCP_COPY.answers.sent` ("The form was submitted. The page may ask the person for a quick human check before it finishes, and then shows the result."), puts the typed value back on the invalid path, and its `email` property has `format: "email"` (`WebMcpProperty` gains `format?`).
+- T5: `.shot-window` is `display:none` below the desktop breakpoint (`display:block` from it), and the window `<img>` is `loading="lazy"` (the `isEager` parameter and `fetchpriority="high"` left `landing-page.ts`). `landing.spec.ts`: the two window-shot `complete` rows run on desktop only (a phone does not load the image now); the dark tokens row runs on both.
+- R5: `inputPathsOf` takes `docs/brand` files by `svg` and `png` extension; `site-assets.lock.json` regenerated (`pnpm site:assets` rewrote no image: the outputs are byte-stable on this machine).
+- S2: `apps/api/public/_headers` gains the `/icon.svg` rule; `api-source.test.ts`'s pattern pins it.
+- R3: `apps/api/src/site/site-constants.ts` (`DARK_THEME_COLOR`, `KEY_PLACEHOLDER`, `scriptJson`), imported by `site-discovery.ts`, `site-shell.ts`, `landing-copy.ts`, `webmcp-script.ts`, `site-json-ld.ts`. The tests keep their own literals as an independent oracle.
+- R1, R2, S4: ADR 0060's dated addendum (and its Consequences and Revisit bullets), spec goals 1, 3, 6, 7, 9 and 11, the data-flow line, the non-goals, the failure-handling line; plan wording in the test plan (rows 10, 17, 22, 97, 102, 118, 120, the window-shot edge case, a new "Fix round 1" block of rows, all unticked).
+- Runbooks: the 15 docs-cutover deploy rows at `26842db` appended to `deploy-the-api.md`'s run log; the Mintlify step 5 line is a row (`| 2026-11-25 | 26842db | 5 |`) in `mintlify-publish.md`'s run log.
+
+### Red today, green after
+
+| Test | Red text (printed at `574837f`) | Green after |
+|------|---------------------------------|-------------|
+| `admin-pages.test.ts` "allows no manifest, which only the public pages declare" (9 rows) | `AssertionError: expected 'default-src \'none\'; script-src \'sh…' not to contain 'manifest-src'` (the panel rows: `expected 'default-src \'none\'; style-src \'sha…' not to contain 'manifest-src'`) | `160a829` |
+| `webmcp-tools.test.ts` "ask for the waitlist address by its email format" | `AssertionError: expected undefined to be 'email' // Object.is equality` | `160a829` |
+| `webmcp-tools.test.ts` "says the form was submitted…" | `AssertionError: expected 'The form was sent. The page shows the…' to contain 'submitted'` | `160a829` |
+| `site-pages.test.ts` "keeps the window shot, which a phone never shows, from loading there" | `AssertionError: expected '<picture><source media="(prefers-colo…' to contain 'loading="lazy"'` | `160a829` |
+| `site-assets.test.ts` "ignores a stray file beside the brand sources" | `AssertionError: expected [ 'docs/brand/.DS_Store' ] to deeply equal []` | `160a829` |
+| `api-source.test.ts` "every static file answers with nosniff … and the icon with a policy that allows no script" | `AssertionError: expected '/*\n  X-Content-Type-Options: nosniff…' to match /…/` | `160a829` |
+| `landing-seo.spec.ts` "join_waitlist puts the previous value of the field back…" (desktop and mobile) | `Error: expect(locator).toHaveValue(expected) failed` … `Expected: "maria.desktop.…@example.com"` `Received: "not-an-address"` | `160a829` |
+| `landing-seo.spec.ts` "downloads no window shot on a phone…" (mobile, light and dark) | `Error: expect(received).toEqual(expected)` … `+ "/landing/v1-walk/01-agent-tasks-in-a-project-760.webp"` (dark; the light run printed the light shot's 760 copy) | `160a829` |
+
+Pins: `site-assets.test.ts` "icon.svg holds nothing active" (four rows, in `574837f`), `webmcp-tools.test.ts` "the scripts the landing ships" (two rows, `2e7344e`), `site-constants.test.ts` "the shared site values" (two rows, `83cf057`).
+
+### Results
+
+- `pnpm --filter @todz/api exec vitest run`: 74 files, 1867 tests green (after `83cf057`); `tsc --noEmit` for both configs clean; `site:assets:check` exit 0; `tools/repository-shape` 323 tests green; e2e `playwright test`: 109 passed, 6 skipped (desktop and mobile).
+- Local Lighthouse 13.6.0, phone profile, `wrangler dev` on 8788, Chromium 149, three runs, Performance, Accessibility, Best Practices, SEO, Agentic browsing: run 1 100, 100, 100, 100, 100; run 2 100, 100, 100, 100, 100; run 3 100, 100, 100, 100, 100 (FCP 0.6 s, LCP 0.6 s, TBT 0 ms each); `image-aspect-ratio` passes with the window shot `display:none` and lazy. The only audits under 1 are informative insights (`image-delivery-insight` 0.5, `network-dependency-tree-insight` 0). Light appearance only.
+
+### Hypotheses to attack
+
+1. A phone (375, device ratio 1 and 2, light and dark) requests neither window shot copy; a desktop (1280) still loads the right one for its scheme; resizing a desktop window below 40rem and back keeps the shot (it loads when the box appears).
+2. Resizing across the breakpoint with the dark scheme on loads the dark copy once, no console error, no layout shift.
+3. The landing's policy still carries `manifest-src 'self'` and `connect-src 'self'` exactly once each; `/admin`, `/admin/sign-in` and the panel carry no `manifest-src`, and no `connect-src` except the link page, as on `main`.
+4. `join_waitlist` with an invalid address leaves what the person typed in the field; with a valid address it still posts once with the token, and its answer no longer claims the join worked.
+5. `curl -sS -D - http://localhost:8788/icon.svg` shows the `/*` headers and the `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'` rule beside them (`wrangler dev` serves `_headers` for assets; if it merges differently the live check after the deploy decides).
+6. A `.DS_Store` dropped into `docs/brand` leaves `site:assets:check` green; a changed `docs/brand/*.svg` or `.png` still fails it.
+
+### Known gaps
+
+- Lighthouse ran in a light appearance only. The dark phone case is covered by the e2e request check, not by Lighthouse.
+- The window shot is now lazy and not `fetchpriority="high"` on a desktop: Lighthouse is mobile-only here, so a desktop LCP change is not measured.
+- `site-style.ts` keeps its own `#070812` (R3 left it out because `docs-site.test.ts` reads that file's source).
+- The `/icon.svg` header is proven by the shape test on the file and by a live curl after the deploy (test-plan "Fix round 1"), not by a unit test of Cloudflare's asset layer.
+- The new test-plan rows are unticked; they are the tester's.
