@@ -57,7 +57,7 @@ popover closes → the mode ends
 | the popover is already open when the day close is due | the mode starts in place without a click; the add field hides and keeps its draft until the mode ends |
 | a Focus read at launch throws | no todz filter, so not quiet: before the 3 s timeout the gate applies not quiet; after it, the held quiet is released with a not-quiet read |
 | a click is in flight (sent, popover not yet seen) | a check in the next 5 s clicks nothing; after that unseen, a later check clicks again |
-| the popover is seen for a mode left from an earlier day | the mode ends and nothing is marked; that day's own day close is due as usual |
+| the popover is seen for a mode left from an earlier day | before that day's time, the mode ends and nothing is marked; at or after it, the mode counts as that day's day close and the day is marked |
 | the owner switches workspace while the mode is on and unengaged | the popover closes (the mode ends with it) and ⌘1-9 is ignored until the owner engages; an engaged mode ends in place |
 | a Focus read at launch is still pending | the first check waits for it at most 3 s, then the gate holds as quiet until the answer arrives (a late answer still applies unless a Focus change came first) |
 | the screen is locked when the day close is due | nothing opens or is marked; the check runs again at the unlock; an unreadable session counts as locked |
