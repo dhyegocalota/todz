@@ -1,4 +1,4 @@
-import { escapedHtml } from './escaped-html';
+import { escapedHtml } from '../escaped-html';
 import { SELF_HOST_HTML } from './generated/self-host-html';
 import { LANDING_COPY } from './landing-copy';
 import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';

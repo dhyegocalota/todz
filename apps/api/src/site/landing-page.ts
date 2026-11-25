@@ -1,4 +1,4 @@
-import { escapedHtml } from './escaped-html';
+import { escapedHtml } from '../escaped-html';
 import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
