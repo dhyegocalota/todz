@@ -14,7 +14,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] `hostKindOf` with `https://api.todz.app/x` — expected: `Api`
 - [ ] `https://todz.app/` — expected: `Site`
 - [ ] `https://www.todz.app/` — expected: `WwwRedirect`
-- [ ] `http://localhost:8787/` with the development origins — expected: `Api`; `http://127.0.0.1:8787/` — expected: `Site`
+- [ ] `http://localhost:8787/` with the development origins — expected: `Api`; `http://localhost:8788/` — expected: `Site`
 - [ ] `https://todz-api.example.workers.dev/`, `https://203.0.113.7/` and `https://evil.todz.app/` — expected: `null`, then 404
 - [ ] `SITE_ORIGIN` absent, and `SITE_ORIGIN` `not a url` — expected: the site host is unknown (404) and the API host still serves `/owner/sign-in-method`
 - [ ] `GET todz.app/owner/sign-in-method`, `/mcp`, `/sign-in`, `/sign-in/challenge` — expected: 404 each

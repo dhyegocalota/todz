@@ -20,7 +20,8 @@ The owner wants a landing on `https://todz.app`: short, polished, with a waitlis
      - any other host answers 404.
    - The site never mounts `/owner`, `/mcp` or `/sign-in`, and the API host never serves the site.
    - `SITE_ORIGIN` (`https://todz.app`) joins `PUBLIC_ORIGIN`.
-   - Development maps the site to `127.0.0.1` and the API to `localhost` on the same port, so both run under one `wrangler dev`.
+   - ~~Development maps the site to `127.0.0.1` and the API to `localhost` on the same port, so both run under one `wrangler dev`.~~ Amended 2026-11-24 (run 14): a spike showed that `wrangler dev` hands the Worker the upstream host whatever the client sent, so one instance cannot serve two hosts. Development tells them apart by port: the API on `localhost:8787`, the site on `localhost:8788` through its own `dev:site` instance.
+   - The kind compares the request's `URL.host` with each origin's; when the API and site hosts are equal, the API wins.
 2. **Pages are template strings.** The site follows `sign-in-page.ts`: HTML, CSS and script as constants, with a hashed CSP and copy in `*-copy.ts` modules. No Hono and no JSX in the Worker, because one page and one form do not justify a first runtime framework. zapbip's CSS and markup are ported by hand into that shape.
 3. **Three features, in order.** Each goes through the harness and ships on its own:
    1. `landing`:

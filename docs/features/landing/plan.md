@@ -6,7 +6,7 @@
 **Assumptions (decided, owner can override):**
 - `design.md`'s recommended options are the ones built.
 - `@playwright/test` joins `apps/api`'s devDependencies for the E2E (named in the PR). Playwright MCP's own browser is missing on this machine, so the E2E uses the system Chrome channel when bundled Chromium is absent.
-- Development maps the site to `127.0.0.1:8787` and the API to `localhost:8787` (ADR 0049 §1).
+- Development serves the API on `localhost:8787` and the site on `localhost:8788` through `dev:site` (ADR 0049 §1 as amended, spec R1).
 
 ## File map
 
@@ -18,6 +18,12 @@
 | Lead | `docs/runbooks/deploy-the-api.md` (DNS check and custom domains), the README hero row, `apps/api/README.md`, `tester-briefing.md`, the ADR status lines | the lead |
 
 G1 and G2 share `apps/api/package.json`: G1 edits only the dev scripts' `--var` flags, G2 adds only the `site:*` scripts. The lead merges them.
+
+**Amended by the plan review answers (spec R1–R17):**
+
+- G1 also owns `apps/api/src/turnstile-page.ts` (export `sourceHash`), `apps/api/public/_headers`, the `dev:site` script, and the test files that reach `exports.default.fetch` with `https://api.todz.test` (R2).
+- G2 also owns `docs/self-host.md`, `tools/repository-shape/src/self-host.test.ts`, `apps/api/test/site/`, the `site:*` aliases in the root `package.json`, `apps/api/tsconfig.json` and `tsconfig.scripts.json` (for `test/site`), `apps/api/vitest.config.mts`'s `NODE_TESTS` (after G1's binding, merged by the lead), and the `docs/self-host.md` row of `scripts/verify-gates.tsv` with its `scripts/verify.test.sh` case.
+- G3 also owns the `e2e` gate: its `scripts/verify.sh` and `verify-gates.tsv` rows, its `verify.test.sh` case, the `ci-workflow.test.ts` pin, and `tsconfig.scripts.json`'s include of `e2e` and `playwright.config.ts`.
 
 ## Sequencing
 
@@ -46,7 +52,7 @@ G1 and G2 run in parallel. G2 builds its pages as functions `serveLandingPage({ 
   - `site-headers.ts`: HSTS, `nosniff`, the Referrer-Policy, and a CSP builder from hashes that allows `img-src 'self'` and `form-action 'self'`;
   - `join-placeholder.ts`;
   - the `wrangler.jsonc` routes and the `SITE_ORIGIN` var;
-  - the dev scripts' `--var SITE_ORIGIN:http://127.0.0.1:8787`;
+  - the dev scripts' `--var SITE_ORIGIN:http://localhost:8788` and a `dev:site` script on port 8788 with `--local-upstream localhost:8788` (R1);
   - the Miniflare binding;
   - `api-source.test.ts` pins the routes and `SITE_ORIGIN`.
 
