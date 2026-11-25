@@ -15,6 +15,7 @@ The product stack and every product decision have not been made yet: they arrive
 
 ```
 apps/api                the Worker: the directory, one project store per project, routing from a credential to a project, and the todz.app website by host
+apps/docs               the documentation site Mintlify builds for docs.todz.app: the introduction, the quickstart, connecting an agent, the MCP tools and the self-host guide
 apps/macos              the native macOS app: an XcodeGen project whose Todz target holds the views and whose TodzWidgets extension holds the desktop widgets, sharing the copy, over the TodzKit Swift package
 libs/core               the task and project rules behind ports, no I/O
 libs/types              shared enums and constants, no logic
