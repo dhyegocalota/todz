@@ -15,6 +15,7 @@
     "EMAIL_SENDER": "cloudflare",
     "PUBLIC_ORIGIN": "https://api.todz.app",
     "SITE_ORIGIN": "https://todz.app",
+    "ADMIN_EMAIL": "hello@todz.app",
   },
   "d1_databases": [
     {
@@ -37,6 +38,9 @@
     { "name": "WAITLIST_LIMITER", "namespace_id": "8604", "simple": { "limit": 10, "period": 60 } },
     { "name": "WAITLIST_ADDRESS_LIMITER", "namespace_id": "8605", "simple": { "limit": 3, "period": 60 } },
     { "name": "WAITLIST_GLOBAL_LIMITER", "namespace_id": "8606", "simple": { "limit": 60, "period": 60 } },
+    { "name": "ADMIN_LIMITER", "namespace_id": "8607", "simple": { "limit": 10, "period": 60 } },
+    { "name": "ADMIN_ADDRESS_LIMITER", "namespace_id": "8608", "simple": { "limit": 3, "period": 60 } },
+    { "name": "ADMIN_GLOBAL_LIMITER", "namespace_id": "8609", "simple": { "limit": 30, "period": 60 } },
   ],
   "assets": { "directory": "./public", "run_worker_first": ["/owner", "/owner/*", "/mcp", "/sign-in", "/sign-in/challenge"] },
 }
