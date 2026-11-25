@@ -40,7 +40,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>
    scripts/todz-cloudflare.sh api GET "/zones/06490974636c535e2cbfd7c5b09925a5/dns_records?per_page=100" | jq -r '.result | map(.type + " " + .name + " " + .content) | join("\n")'
    ```
 
-   Expected: the first answers `"success":true` with `"result":[]`. The second prints one line per record; write the apex `MX` and `TXT` lines (name `todz.app`) in the run log, because step 10 compares them.
+   Expected: the first answers `"success":true` with `"result":[]`. The second prints one line per record; write the apex `MX` and `TXT` lines (name `todz.app`) in the run log, because step 11 compares them.
    If it fails: `"success":false` with an authentication error names the missing permission, Zone Read or DNS Edit (read). One or more records named `api.todz.app` mean something else already answers there; stop and tell the owner, because the custom domain would refuse to attach over it.
 
 4. **Check that the database exists, by id.** Read it by the id in `apps/api/wrangler.jsonc`:
@@ -69,7 +69,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>
    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 export todz-directory --remote --output ~/.todz-deploy/backups/before-<commit>.sql
    ```
 
-   Expected: the file `before-<commit>.sql` exists in the folder; on the first deploy the database is empty and it holds the schema only, or nothing. Step 12 deletes it once the smoke check passes, because after the first sign-in it holds owners' email addresses.
+   Expected: the file `before-<commit>.sql` exists in the folder; on the first deploy the database is empty and it holds the schema only, or nothing. Step 13 deletes it once the smoke check passes, because after the first sign-in it holds owners' email addresses.
    If it fails: an authentication error names D1 Edit. An empty database that the export refuses is the one failure to accept, and only on a first deploy that step 4 showed to be empty; say so in the run log.
 
 7. **Apply the migrations.** List what is unapplied, apply it, and list again:
@@ -89,7 +89,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>
    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler deploy
    ```
 
-   Expected: the bindings list `env.DIRECTORY (todz-directory)`, `env.PROJECT_STORE (ProjectStore)`, `env.EMAIL`, `env.SIGN_IN_LIMITER (10 requests/60s)` and the three variables `SIGN_IN_PROVIDER ("email")`, `EMAIL_SENDER ("cloudflare")` and `PUBLIC_ORIGIN ("https://api.todz.app")`; the output names `api.todz.app (custom domain)` and a Current Version ID, which goes in the run log. Wrangler creates the DNS record and the certificate for the custom domain.
+   Expected: the bindings list `env.DIRECTORY (todz-directory)`, `env.PROJECT_STORE (ProjectStore)`, `env.EMAIL`, `env.SIGN_IN_LIMITER (10 requests/60s)`, `env.SIGN_IN_ADDRESS_LIMITER (3 requests/60s)` and `env.SIGN_IN_GLOBAL_LIMITER (100 requests/60s)` (rate limit namespaces `8601`, `8602` and `8603`), the three variables `SIGN_IN_PROVIDER ("email")`, `EMAIL_SENDER ("cloudflare")` and `PUBLIC_ORIGIN ("https://api.todz.app")`, and `TURNSTILE_SITE_KEY` once a pull request has put the widget's site key in `wrangler.jsonc`; the output names `api.todz.app (custom domain)` and a Current Version ID, which goes in the run log. Wrangler creates the DNS record and the certificate for the custom domain.
    If it fails: an authentication error names Workers Scripts Edit; an error about the custom domain names Workers Routes Edit and DNS Edit on the zone. An error that names a plan, or refuses a Durable Object, the rate limit binding or the email binding, means Workers Paid lapsed (it was active on 2026-11-24); tell the owner. A deploy that fails changes nothing in production; the first deploy's backout and a later deploy's rollback are at the end of this runbook.
 
 9. **Confirm the Worker and its custom domain.** Read the account's domain entry for `api.todz.app`, then the deployments:
@@ -102,7 +102,17 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>
    Expected: exactly one domain entry, with `"hostname":"api.todz.app"` and `"service":"todz-api"`; the newest deployment names the Version ID of step 8 at 100 percent.
    If it fails: no entry, or an entry for another service, means the custom domain is not attached to this Worker; run step 8 again once, and if it repeats, roll back as at the end. A permission error names Workers Scripts Read. Another version at 100 percent means the deploy did not finish.
 
-10. **Onboard `todz.app` for Email Sending.** Enable sending for the zone, read the state and the records, and list the zone again to compare it with the snapshot of step 3:
+10. **Create the Turnstile widget and put its secret.** The owner creates the widget in the dashboard, because the token lacks Turnstile Edit: Turnstile, Add widget, name `todz`, hostname `todz.app` (it covers `api.todz.app`), widget mode Managed. The dashboard then shows a site key and a secret key. The site key is public: a pull request puts it in the `vars` of `apps/api/wrangler.jsonc` as `TURNSTILE_SITE_KEY`, with its pin in `api-source.test.ts`, and this runbook runs again from step 1 once it is on `main`. The secret never touches a file or a command line: the owner runs the first command and pastes it at its prompt, then anyone lists the secrets:
+
+    ```bash
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret list
+    ```
+
+    Expected: the first asks for the value and says it uploaded the secret `TURNSTILE_SECRET_KEY` for `todz-api`; the list names `TURNSTILE_SECRET_KEY` and prints no value. Until both the secret and the site key exist, the two sign-in posts answer 503 `sign_in_unavailable` and both pages answer 503, which is the safe state; steps 13 to 15 say what each state answers.
+    If it fails: an authentication error on the secret names Workers Scripts Edit. A dashboard that refuses `todz.app` as a hostname means the zone is not on this account; tell the owner. If the owner grants the token Account, Turnstile, Edit instead, the widget can be made through the API only once `scripts/todz-cloudflare.sh` allows the widget path; until then it stays a dashboard step. A secret that was pasted anywhere else, a chat, a file or a log, is rotated: the owner rotates it in the widget's settings and puts it again.
+
+11. **Onboard `todz.app` for Email Sending.** Enable sending for the zone, read the state and the records, and list the zone again to compare it with the snapshot of step 3:
 
     ```bash
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler email sending enable todz.app --zone-id 06490974636c535e2cbfd7c5b09925a5
@@ -112,9 +122,9 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>
     ```
 
     Expected: the first prints `Email Sending enabled for todz.app (enabled: ...)`, and an already onboarded domain says so, which is fine. The list is a table with the columns `name`, `enabled` and `tag`, and `todz.app` shows `enabled` `yes`. `dns get` prints each record with its type, Name, Content, Priority and TTL, and the zone listing now holds them. The apex `MX` and `TXT` lines of step 3 are unchanged. Never add an apex SPF record by hand and never edit one: the sending records belong to the names `dns get` prints, and a merge of the apex SPF is the owner's call. The zone already publishes DMARC with `p=none`; leave it. Raising the policy is a later step, after the first deliveries are seen.
-    If it fails: an authentication error names Email Sending Edit and Zone Read. If `enabled` is `no` or the records are missing, run steps 11 and 12 and repeat this list for up to fifteen minutes, because the records verify in the background; link requests answer 503 until then, which is the safe state. If Cloudflare did not add the records to the zone, stop and tell the owner; no record is written by hand. A changed or missing apex record means stop and tell the owner. The Email Sending API is in open beta, and its documentation was not available to check this step beyond Wrangler 4.167.0's own commands.
+    If it fails: an authentication error names Email Sending Edit and Zone Read. If `enabled` is `no` or the records are missing, run steps 12 and 13 and repeat this list for up to fifteen minutes, because the records verify in the background; link requests answer 503 until then, which is the safe state. If Cloudflare did not add the records to the zone, stop and tell the owner; no record is written by hand. A changed or missing apex record means stop and tell the owner. The Email Sending API is in open beta, and its documentation was not available to check this step beyond Wrangler 4.167.0's own commands.
 
-11. **Turn on Always Use HTTPS for the zone.** Read the pseudo IPv4 setting, set the zone setting, then ask for the plain address:
+12. **Turn on Always Use HTTPS for the zone.** Read the pseudo IPv4 setting, set the zone setting, then ask for the plain address:
 
     ```bash
     scripts/todz-cloudflare.sh api GET /zones/06490974636c535e2cbfd7c5b09925a5/settings/pseudo_ipv4
@@ -125,49 +135,48 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>
     Expected: the first answers `"value":"off"` or `"value":"add_header"`; the second answers `"success":true` with `"value":"on"`; the third prints `HTTP/1.1 301` and a `location` header of `https://api.todz.app/owner/sign-in-method`.
     If it fails: any other pseudo IPv4 value (`overwrite_header`) means Cloudflare replaces the client's IPv6 address with a pseudo IPv4 one, which would hide IPv6 from the per-/64 key of the sign-in limiter; stop before the PATCH and tell the owner. An authentication error names Zone Settings Edit on the zone. A connection error right after step 8 means DNS is still settling; run the second command again every minute for up to fifteen minutes. A 200 over plain HTTP means the setting did not apply; read it back with `api GET /zones/06490974636c535e2cbfd7c5b09925a5/settings/always_use_https` and tell the owner.
 
-12. **Smoke check the live routes.** Ask the live Worker, then its account's `workers.dev` address:
+13. **Smoke check the live routes.** Ask the live Worker, then its account's `workers.dev` address:
 
     ```bash
     curl -sS https://api.todz.app/owner/sign-in-method
     curl -sS -D - -o /dev/null https://api.todz.app/sign-in
+    curl -sS -D - -o /dev/null https://api.todz.app/sign-in/challenge
     curl -sS -D - -o /dev/null https://api.todz.app/mcp
     scripts/todz-cloudflare.sh api GET /accounts/e2035d8e0b7173d520ccf643f6f4661c/workers/subdomain
     curl -sS -D - -o /dev/null https://todz-api.<subdomain>.workers.dev/owner/sign-in-method
     ```
 
-    Expected: `{"method":"link"}`, then `HTTP/2 200` with `content-type: text/html; charset=utf-8`, then `HTTP/2 401`, then the account's `workers.dev` subdomain, then for the last no answer from the Worker: a connection error, 404 or a Cloudflare error page, never `{"method":"link"}`. The first proves the production variables are the ones in `wrangler.jsonc`; any other body means a `--var` or a dashboard variable overrides them, so stop and read the Worker's settings. When all five pass, delete the export of step 6:
+    Expected: `{"method":"link"}`, then for each page `HTTP/2 503` with `content-type: text/html; charset=utf-8` until the site key is in `wrangler.jsonc` and `HTTP/2 200` after, then `HTTP/2 401`, then the account's `workers.dev` subdomain, then for the last no answer from the Worker: a connection error, 404 or a Cloudflare error page, never `{"method":"link"}`. The first proves the production variables are the ones in `wrangler.jsonc`; any other body means a `--var` or a dashboard variable overrides them, so stop and read the Worker's settings. When all six pass, delete the export of step 6:
 
     ```bash
     rm ~/.todz-deploy/backups/before-<commit>.sql
     ```
 
-    If it fails: a TLS error right after step 8 means the certificate is still being issued; run it again every minute for up to fifteen minutes. `{"method":"identity"}` or a 503 `sign_in_unavailable` on the method route means the fake provider was refused or the variables are wrong; never leave it, and roll back as at the end. A 522 or 1014 means the custom domain is not attached; go back to step 9 (token permission Workers Routes Edit). A reply from the `workers.dev` host means `workers_dev` is on in the dashboard or in a stale deploy; turn it off in the Worker's settings, deploy again and tell the owner. A missing account subdomain means there is no address to check; write that in the run log. A permission error names Workers Scripts Read.
+    If it fails: a TLS error right after step 8 means the certificate is still being issued; run it again every minute for up to fifteen minutes. `{"method":"identity"}` or a 503 `sign_in_unavailable` on the method route means the fake provider was refused or the variables are wrong; never leave it, and roll back as at the end. A 522 or 1014 means the custom domain is not attached; go back to step 9 (token permission Workers Routes Edit). A page that answers 503 with the site key in `wrangler.jsonc` means the deployed version is older than that pull request; run step 8 again from its commit. A reply from the `workers.dev` host means `workers_dev` is on in the dashboard or in a stale deploy; turn it off in the Worker's settings, deploy again and tell the owner. A missing account subdomain means there is no address to check; write that in the run log. A permission error names Workers Scripts Read.
 
-13. **Send one real sign-in link.** Ask for a link to the address the owner gives at run time. Print a fresh challenge, then write the request body with the file-writing tool to a file outside the repository: a JSON object with `email` set to `<owner-address>` and `link_challenge` set to the 64 hexadecimal characters printed:
+14. **Check that a link request needs a solved challenge.** Post a link request whose Turnstile token was never solved, and keep only the status, the `retry-after` line and the body:
 
     ```bash
-    openssl rand -hex 32
-    curl -sS -D - -X POST -H "Content-Type: application/json" --data-binary @<body-file> https://api.todz.app/owner/sign-in-links
-    rm <body-file>
+    curl -sS -D - -X POST -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/junk-turnstile-link.json https://api.todz.app/owner/sign-in-links
     ```
 
-    Expected: `HTTP/2 202` and the body `{}`, and within a minute a mail from `todz <noreply@todz.app>` whose button opens `https://api.todz.app/sign-in#token=...`. Never open or paste that link into a log; the production smoke walk with the app does that. The owner confirms the mail arrived.
-    If it fails: a 503 with `{"error":"sign_in_unavailable"}` means the sender is not ready; go back to step 10. A 202 with no mail within fifteen minutes means the binding accepted it and the delivery failed; read the sending activity in the dashboard (Email Sending Read) and tell the owner. A 429 means this address used its quota; wait a minute and ask again.
+    Expected: before step 10's secret exists, `HTTP/2 503` and `{"error":"sign_in_unavailable"}`; after it, `HTTP/2 429`, `retry-after: 60` and `{"error":"sign_in_refused"}`. No mail leaves either way. A real link, with a real mail to the owner, is asked for in the production smoke walk with the app, never here.
+    If it fails: a 202 means the Worker sent a link without a solved challenge; close sign-in as the Rollback section says and tell the owner. A 503 after the secret exists means siteverify, the secret or a binding is missing; read step 8's bindings and step 10's list again. A 400 means the body file changed; restore it from `main`.
 
-14. **Check the per-client limit.** Post wrong session tokens from this machine, fourteen in one command, and keep only the status and `retry-after` lines:
+15. **Check the per-client limit.** Post wrong session tokens from this machine, fourteen in one command, and keep only the status and `retry-after` lines. The body carries a malformed link verifier, which the Worker refuses before it asks siteverify, and an unsolved Turnstile token:
 
     ```bash
     curl -sS -D - -X POST -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/wrong-session.json https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions https://api.todz.app/owner/sessions | grep -iE "^HTTP|^retry-after"
     ```
 
-    Expected: the first answers are `HTTP/2 401` (the wrong token) and at least one of the last four is `HTTP/2 429` followed by `retry-after: 60`, because the binding counts per Cloudflare location and may let a request or two more than ten through. A minute later, one single request answers `HTTP/2 401` again:
+    Expected: the first ten answers are `HTTP/2 401` (the malformed verifier), or `HTTP/2 503` before step 10's secret exists, and from the eleventh on they are `HTTP/2 429` followed by `retry-after: 60`; the binding counts per Cloudflare location and may let a request or two more than ten through, so at least one of the last four is a 429. A minute later, one single request answers as the first did:
 
     ```bash
     curl -sS -D - -o /dev/null -X POST -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/wrong-session.json https://api.todz.app/owner/sessions
     ```
     If it fails: no 429 means run the command once more; none in the second run either means the binding is not enforcing, or Cloudflare did not send `CF-Connecting-IP` or the request counted as local; tell the owner before the app ships. A 429 on the first request means another client on this address used the quota; wait a minute and run it again.
 
-15. **Record the run.** Add one row per step above to the run log, with the date, the commit, the step and the actual result, in a pull request on `docs/`.
+16. **Record the run.** Add one row per step above to the run log, with the date, the commit, the step and the actual result, in a pull request on `docs/`.
     Expected: no token, link, secret or challenge appears in the log; the Version ID, the database id and the Time Travel bookmark do.
     If it fails: a secret that reached the log is rotated first (see the end of this runbook), then removed from the commit with a new one, never by rewriting history.
 
@@ -177,6 +186,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>
 - With the count at `0`, detach the custom domain chosen by hostname and service, never by a remembered id: run `scripts/todz-cloudflare.sh api GET "/accounts/e2035d8e0b7173d520ccf643f6f4661c/workers/domains?hostname=api.todz.app&service=todz-api"`. Exactly one entry must come back, else stop, and its `hostname` must be `api.todz.app` and its `service` `todz-api`, else stop. Delete it with `scripts/todz-cloudflare.sh api DELETE /accounts/e2035d8e0b7173d520ccf643f6f4661c/workers/domains/<domain-id>`, using that entry's `id` (the endpoint is not verified; the dashboard's Worker settings detach it too). Then run `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler delete todz-api`.
 - Later deploys: run `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler rollback` to go back to the previous version, or the same with a version id for a named one, and note the reason with `-m`. The migrations stay applied: they only move forward and must keep working with the previous Worker, so write each one that way.
 - A bad migration: restore the bookmark of step 5, which needs the owner's word because it discards writes made since.
+- Never roll back to a version from before `sign-in-guard`: it reopens the unguarded sign-in routes. To close sign-in on the current version instead, delete the secret with `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY`; both posts then answer 503 `sign_in_unavailable` until it is put again.
 - Durable Object classes are never deleted: a `migrations` entry in `wrangler.jsonc` never removes `ProjectStore`.
 
 ## Rotate the token

@@ -1,6 +1,6 @@
 import { digestCredential } from './credential-digest';
 import { spendSignInLink } from './directory-sign-in-links';
-import { isLocalOrigin } from './local-origin';
+import { isLocalHost } from './local-origin';
 import { enumValueOf } from './enum-value';
 import type { Env } from './env';
 
@@ -55,9 +55,6 @@ export function signInKindOf(configured: string | undefined): SignInProviderKind
 export function signInKindForRequest({ env, request }: { env: Env; request: Request }): SignInProviderKind | null {
   const kind = signInKindOf(env.SIGN_IN_PROVIDER);
   if (kind !== SignInProviderKind.Fake) return kind;
-  const { PUBLIC_ORIGIN: publicOrigin } = env;
-  if (publicOrigin === undefined) return null;
-  const isLocalHost = isLocalOrigin(publicOrigin) && isLocalOrigin(request.url);
-  if (!isLocalHost) return null;
+  if (!isLocalHost({ env, request })) return null;
   return kind;
 }

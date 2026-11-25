@@ -8,4 +8,8 @@ export type Env = {
   EMAIL_SENDER?: string;
   PUBLIC_ORIGIN?: string;
   SIGN_IN_LIMITER?: RateLimit;
+  SIGN_IN_ADDRESS_LIMITER?: RateLimit;
+  SIGN_IN_GLOBAL_LIMITER?: RateLimit;
+  TURNSTILE_SITE_KEY?: string;
+  TURNSTILE_SECRET_KEY?: string;
 };
