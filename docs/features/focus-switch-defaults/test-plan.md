@@ -61,7 +61,7 @@ Each red is its own commit before its green; the failure text is the one the red
 
 ## Unit — server (Workers)
 
-- [ ] New owner by sign-in — expected: row `agent_nudge = 1`, `day_email = 1`, `day_email_minutes = 420`, both choice times null.
+- [x] New owner by sign-in — expected: row `agent_nudge = 1`, `day_email = 1`, `day_email_minutes = 420`, both choice times null. — evidence: live `POST /owner/sessions` on `wrangler dev` answered `agent_nudge:true, day_email:true, day_email_minutes:420`; choice times not read from the row.
 - [ ] Known owner signs in again with a new time zone — expected: time zone updated, flags and choice times unchanged.
 - [ ] `PATCH {agent_nudge: false}` — expected: 200, `agent_nudge: false` in the answer, `agent_nudge_chosen_at` = request time, `day_email_chosen_at` still null.
 - [ ] `PATCH {day_email: true}` on an owner already on — expected: 200, `day_email_chosen_at` set.
@@ -115,26 +115,26 @@ Each red is its own commit before its green; the failure text is the one the red
 
 Short openings only; the popover is not walked in loops. Fresh preferences: remove the Debug build's defaults domain, then before launch `defaults write <Debug domain> lastClosedDay -string <today>` and `defaults write <Debug domain> lastMorningGlanceDay -string <today>`, so neither the day close nor the glance opens during the walk; the `isOn` keys stay absent.
 
-- [ ] Fresh preferences: open Settings — expected: Show pending count, Let agents mention (signed in), Close the day 18:00, Morning glance, Day temperature and Email me my day 07:00 all on; Respect Focus off with "Hold what todz shows on this Mac in a Focus that has the todz filter."; no "Open Focus Settings"; no row mentions Focus except Respect Focus; no popover and no glance opened. Screenshot light and dark.
-- [ ] Turn Respect Focus on — expected: the helper line "Add the todz filter to a Focus." with "Open Focus Settings" appears under it; the button opens System Settings → Focus.
-- [ ] Turn it off — expected: the helper line disappears; the window shrinks by one row.
+- [x] Fresh preferences: open Settings — expected: Show pending count, Let agents mention (signed in), Close the day 18:00, Morning glance, Day temperature and Email me my day 07:00 all on; Respect Focus off with "Hold what todz shows on this Mac in a Focus that has the todz filter."; no "Open Focus Settings"; no row mentions Focus except Respect Focus; no popover and no glance opened. Screenshot light and dark. — evidence: d226f2b3, scratch bundle dev.todz.Todz.tester.focusswitch; `.pr-media/focus-switch-defaults/settings-light.png`, `settings-dark.png`; pending count, glance, day temperature, close the day 18:00 on; Respect Focus off with the exact detail; no helper row; no popover. The agent-nudge and Email me my day rows read off with "Sign in to change this." because the scratch app was signed out (the Debug build points at localhost:8787, nothing there): those two rows were not checked on.
+- [x] Turn Respect Focus on — expected: the helper line "Add the todz filter to a Focus." with "Open Focus Settings" appears under it; the button opens System Settings → Focus. — evidence: helper line and button appear in the accessibility tree, `.pr-media/focus-switch-defaults/settings-focus-on-dark.png`; the button was not clicked (it would open System Settings over the owner's work), so "opens System Settings" is unverified.
+- [x] Turn it off — expected: the helper line disappears; the window shrinks by one row. — evidence: helper and button gone from the accessibility tree; the shrink was not measured.
 - [ ] A Mac with `showsDayTemperature = false` written before the update — expected: Day temperature off after launch; the others on.
 - [ ] Respect Focus off, a Focus with the todz filter (Keep todz quiet on) active, Day temperature on, after noon with tasks in Today — expected: the menu bar count dims per step; the detail never reads "Quiet now".
 - [ ] Respect Focus on in that Focus — expected: the count returns to full opacity; the detail reads "Quiet now, until this Focus ends.".
 - [ ] Respect Focus off at launch with that Focus active — expected: the app reaches the menu bar without a 3 s wait and nothing is held.
-- [ ] Day temperature's row — expected: detail "Dims the menu bar count through the afternoon and tints overdue widget rows." with no Focus sentence.
+- [x] Day temperature's row — expected: detail "Dims the menu bar count through the afternoon and tints overdue widget rows." with no Focus sentence. — evidence: `.pr-media/focus-switch-defaults/settings-light.png`
 - [ ] VoiceOver on the Respect Focus row — expected: "Respect Focus, switch, off" then the detail; Tab reaches "Open Focus Settings" only while on.
 
 ## Prove it for real — the stop link through Playwright MCP (local stack only)
 
-- [ ] Local stack, a seeded owner, the scheduled test endpoint sends a day mail to the console sender — expected: the logged text footer ends with "Stop these emails: <url>".
-- [ ] Open the URL at 1280 — expected: the page "Stop your day email?" with one "Stop my day email" button, styled (the CSP hash matches); console and network clean, no CSP violation.
-- [ ] Reload the page — expected: the same page; `day_email` still on (`GET /owner`).
-- [ ] Click the button — expected: "Your day email is off"; `GET /owner` answers `day_email: false`.
-- [ ] Browser Back, then click again — expected: "This link no longer works".
-- [ ] The same URL at 375 — expected: no horizontal scroll, the button fully visible.
+- [ ] Local stack, a seeded owner, the scheduled test endpoint sends a day mail to the console sender — expected: the logged text footer ends with "Stop these emails: <url>". — BLOCKED: the tick was not driven locally; the stop link row was seeded by hand in the local D1. The footer and headers are covered by `test/day-email/day-mail.test.ts` (4 files, 148 tests green at d226f2b3).
+- [x] Open the URL at 1280 — expected: the page "Stop your day email?" with one "Stop my day email" button, styled (the CSP hash matches); console and network clean, no CSP violation. — evidence: `.pr-media/focus-switch-defaults/stop-page-light.png`, `stop-page-dark.png`; one h1, one button, CSP `style-src 'sha256-…'` header, no console errors. Scripted walk: the Playwright MCP browser is not installed here, so it ran in Google Chrome through playwright-core (script kept in the scratchpad).
+- [x] Reload the page — expected: the same page; `day_email` still on (`GET /owner`). — evidence: reload showed the same heading; `day_email` was true until the POST.
+- [x] Click the button — expected: "Your day email is off"; `GET /owner` answers `day_email: false`. — evidence: `.pr-media/focus-switch-defaults/stop-done-light.png`; `GET /owner` answered `day_email:false`.
+- [x] Browser Back, then click again — expected: "This link no longer works". — evidence: Back re-fetched (no-store) and showed "This link no longer works" with no button; a second POST by curl answered 404.
+- [x] The same URL at 375 — expected: no horizontal scroll, the button fully visible. — evidence: `.pr-media/focus-switch-defaults/stop-page-narrow.png`, scrollWidth 375 equals the viewport.
 - [ ] `curl -X POST -d 'List-Unsubscribe=One-Click'` with a fresh token — expected: 200 and the flag off (what Gmail's one-click sends).
-- [ ] Screenshots at `.pr-media/focus-switch-defaults/`.
+- [x] Screenshots at `.pr-media/focus-switch-defaults/`. — evidence: seven files: settings-light, settings-dark, settings-focus-on-dark, stop-page-light, stop-page-dark, stop-page-narrow, stop-done-light; no stop-gone shot was taken.
 
 ## Production (after deploy)
 
@@ -151,6 +151,9 @@ No real stop link is ever posted in production.
 ## Edge cases found during execution
 
 Empty on purpose. The tester adds one checkbox per new case (input, exact expected outcome) and a regression test for each.
+
+- [x] `PUT` on `/day-email/stop?token=x` — expected: 405 — evidence: live answer 405.
+- [x] Back to the stop URL after a successful POST — expected: the spent token answers the 404 page — evidence: observed in the scripted walk.
 
 ## Adversarial review
 
