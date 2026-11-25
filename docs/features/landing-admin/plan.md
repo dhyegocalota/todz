@@ -71,8 +71,8 @@ Step 0 by the lead on `feat/landing-admin`; then G1 and G2 branch from it and ru
 
 ### Lead
 
-- [ ] **Step 10:** Merge G2 into G1, `pnpm emails:generate` and `emails:check`, the E2E without `test.fail`, `pnpm verify`.
-- [ ] **Step 11:** The runbook (step 7 lists 0006; step 8 expects nine limiters and `ADMIN_EMAIL`; step 13 checks `GET https://todz.app/admin` answers 200 with `no-store` and `noindex`; step 14 posts an unsolved admin link request and expects 503), the API README, the ADR index, the tester briefing.
+- [x] **Step 10:** Merge G2 into G1, `pnpm emails:generate` and `emails:check`, the E2E without `test.fail`, `pnpm verify` — evidence: merge 49377c6; the walk without `test.fail` in d52a562 (7 passed; its CSV header now quoted, as the spec says); the mail-link pattern fix 93ac924; `pnpm verify` 8 gates green at 93ac924.
+- [x] **Step 11:** The runbook (step 7 lists 0006; step 8 expects nine limiters and `ADMIN_EMAIL`; step 13 checks `GET https://todz.app/admin` answers 200 with `no-store` and `noindex`; step 14 posts an unsolved admin link request and expects 503), the API README, the ADR index, the tester briefing — evidence: 8af564f (with the R9 recovery and R13 rollback lines, the self-host guide and its generated page, the probe body and its shape test); the ADR index in 5bb5246; the briefing merged in 49377c6.
 
 ## Failure modes
 
