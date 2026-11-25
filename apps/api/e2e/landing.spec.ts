@@ -59,6 +59,10 @@ test.beforeEach(async ({ page }) => {
   await page.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: TURNSTILE_STUB }));
 });
 
+function webpPathsOf(shot: LandingShot): string[] {
+  return LANDING_SHOTS[shot].webp.map(({ path }) => path);
+}
+
 function uniqueAddress(): string {
   const { project, testId } = test.info();
   return `maria.${project.name}.${testId}@example.com`;
@@ -144,8 +148,8 @@ test.describe('first fold', () => {
     await page.goto(SitePath.Landing);
     const windowImage = page.locator('.shot-window img');
     await expect(windowImage).toHaveJSProperty('complete', true);
-    expect(await windowImage.evaluate((image: HTMLImageElement) => new URL(image.currentSrc).pathname)).toBe(
-      LANDING_SHOTS[LandingShot.Window].path,
+    expect(webpPathsOf(LandingShot.Window)).toContain(
+      await windowImage.evaluate((image: HTMLImageElement) => new URL(image.currentSrc).pathname),
     );
   });
 });
@@ -203,8 +207,8 @@ test.describe('dark scheme', () => {
     expect(darkestChannelLimitHolds(pageColor)).toBe(true);
     const windowImage = page.locator('.shot-window img');
     await expect(windowImage).toHaveJSProperty('complete', true);
-    expect(await windowImage.evaluate((image: HTMLImageElement) => new URL(image.currentSrc).pathname)).toBe(
-      LANDING_SHOTS[LandingShot.WindowDark].path,
+    expect(webpPathsOf(LandingShot.WindowDark)).toContain(
+      await windowImage.evaluate((image: HTMLImageElement) => new URL(image.currentSrc).pathname),
     );
   });
 });

@@ -25,6 +25,7 @@ enum JoinForm {
 
 const JOIN_NOTICE_CLASS = 'join-notice';
 const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
+const SRCSET_LIST_SEPARATOR = ', ';
 const CLASS_SEPARATOR = ' ';
 const WORD_SEPARATOR = ' ';
 const WIDGET_APPEARANCE = 'interaction-only';
@@ -117,15 +118,21 @@ const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   connectsToSelf: true,
 });
 
+function webpSourceAttributes(shot: LandingShot): string {
+  const { webp } = LANDING_SHOTS[shot];
+  const srcset = webp.map(({ path, width }) => `${path}${WORD_SEPARATOR}${width}w`).join(SRCSET_LIST_SEPARATOR);
+  return `srcset="${srcset}" sizes="${Math.min(...webp.map(({ width }) => width))}px"`;
+}
+
 function shotImage({ shot, alt, isEager }: { shot: LandingShot; alt: string; isEager: boolean }): string {
   const { path, width, height } = LANDING_SHOTS[shot];
   const loading = isEager ? 'fetchpriority="high"' : 'loading="lazy" decoding="async"';
-  return `<img src="${path}" width="${width}" height="${height}" alt="${escapedHtml(alt)}" ${loading}>`;
+  return `<img src="${path}" ${webpSourceAttributes(shot)} width="${width}" height="${height}" alt="${escapedHtml(alt)}" ${loading}>`;
 }
 
 function windowPicture(): string {
-  const { path, width, height } = LANDING_SHOTS[LandingShot.WindowDark];
-  return `<picture><source media="${DARK_SCHEME_MEDIA}" srcset="${path}" width="${width}" height="${height}">${shotImage({ shot: LandingShot.Window, alt: LANDING_COPY.alt.window, isEager: true })}</picture>`;
+  const { width, height } = LANDING_SHOTS[LandingShot.WindowDark];
+  return `<picture><source media="${DARK_SCHEME_MEDIA}" ${webpSourceAttributes(LandingShot.WindowDark)} width="${width}" height="${height}">${shotImage({ shot: LandingShot.Window, alt: LANDING_COPY.alt.window, isEager: true })}</picture>`;
 }
 
 function joinStatusHtml({ form, notice }: { form: JoinForm; notice: LandingNotice }): string {
