@@ -50,9 +50,9 @@ G1 and G2 run in parallel; the lead merges G2 into G1's result, then runs the E2
 
 ### G2
 
-- [ ] **Step 5:** Red: `site-pages.test.ts`: the `Joined` and `TryAgain` notices under the posting form only; the widget with `data-action="waitlist"` and the site key in both forms only when a key is given; the CSP gains the challenges origin only then; still no `style=` attribute and one hash each. Then green.
-- [ ] **Step 6:** Red: the waitlist mail template's tests beside the sign-in and welcome ones; then the template, its copy, `EmailTemplateName.Waitlist`, `waitlist-mail.ts` and `pnpm emails:generate`.
-- [ ] **Step 7:** The E2E: a join with the dummy keys answers "You're on the list." under the posting form, focused; a second join of the same address answers the same.
+- [x] **Step 5:** Red: `site-pages.test.ts`: the `Joined` and `TryAgain` notices ~~under the posting form only~~ under both forms (R7); the widget with `data-action="waitlist"` and the site key in both forms only when a key is given; the CSP gains the challenges origin only then; still no `style=` attribute and one hash each. Then green. Red `9aa20c5`, green `5b9ed78`.
+- [x] **Step 6:** Red: the waitlist mail template's tests beside the sign-in and welcome ones; then the template, its copy, `EmailTemplateName.Waitlist`, `waitlist-mail.ts` and `pnpm emails:generate`. Red `c229693`, green `a67aed7`.
+- [x] **Step 7:** The E2E: a join with the dummy keys answers "You're on the list." under the posting form, focused; a second join of the same address answers the same. `694678b`; the four join tests carry `test.fail` until G1's route lands (R1).
 
 ### Lead
 
