@@ -1,6 +1,7 @@
 import { type Page, expect, test } from '@playwright/test';
 import { AgentClient, agentSetupOf } from '../src/site/agent-setup';
 import { DISCOVERY_COPY } from '../src/site/discovery-copy';
+import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { OPEN_GRAPH_IMAGE, SITE_ICONS } from '../src/site/site-icons';
 import { DOCS_URL, DiscoveryPath, MCP_URL } from '../src/site/site-urls';
 import { WEBMCP_COPY, WebMcpToolName } from '../src/site/webmcp-copy';
@@ -11,6 +12,7 @@ import {
   NAVIGATOR_MODEL_CONTEXT_STUB,
   NO_MODEL_CONTEXT_STUB,
 } from './model-context-stub';
+import { ProjectName } from './project-name';
 import {
   JAVASCRIPT_CONTENT_TYPE,
   SLOW_TURNSTILE_STUB,
@@ -145,6 +147,14 @@ test.describe('WebMCP tools', () => {
     expect(posts).toEqual([]);
   });
 
+  test('join_waitlist puts the previous value of the field back when the address is invalid', async ({ page }) => {
+    await page.goto(LANDING_PATH);
+    const typedAddress = uniqueAddress();
+    await page.locator('#join-email').fill(typedAddress);
+    await callTool({ page, name: WebMcpToolName.Join, input: { email: NOT_AN_ADDRESS } });
+    await expect(page.locator('#join-email')).toHaveValue(typedAddress);
+  });
+
   test.describe('while the Turnstile token is pending', () => {
     test.beforeEach(async ({ page }) => {
       await page.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: SLOW_TURNSTILE_STUB }));
@@ -224,6 +234,20 @@ COLOR_SCHEMES.forEach((colorScheme) => {
       await page.waitForLoadState('networkidle');
       expect(errors).toEqual([]);
       expect(await page.evaluate(() => window.policyViolations)).toEqual([]);
+    });
+
+    test('downloads no window shot on a phone, which does not show it', async ({ page }) => {
+      test.skip(test.info().project.name !== ProjectName.Mobile, 'runs on mobile only');
+      const windowShotPaths = [LandingShot.Window, LandingShot.WindowDark].flatMap((shot) => [
+        LANDING_SHOTS[shot].path,
+        ...LANDING_SHOTS[shot].webp.map(({ path }) => path),
+      ]);
+      const requestedPaths: string[] = [];
+      page.on('request', (request) => requestedPaths.push(new URL(request.url()).pathname));
+      await page.goto(LANDING_PATH);
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.waitForLoadState('networkidle');
+      expect(requestedPaths.filter((path) => windowShotPaths.includes(path))).toEqual([]);
     });
 
     test('gives every image the ratio of its file, from its box or, when hidden, from its width and height attributes', async ({

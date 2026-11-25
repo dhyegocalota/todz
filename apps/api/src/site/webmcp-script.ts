@@ -9,7 +9,7 @@ const SCRIPT_OPENER = '<';
 const ESCAPED_SCRIPT_OPENER = '\\u003c';
 const PARAGRAPH_SEPARATOR = '\n\n';
 
-export type WebMcpProperty = { type: 'string'; description: string; enum?: string[] };
+export type WebMcpProperty = { type: 'string'; description: string; enum?: string[]; format?: string };
 
 export type WebMcpTool = {
   name: WebMcpToolName;

@@ -34,6 +34,7 @@ const MUTATED_INPUT_PREFIXES = [
   'apps/api/src/site/landing-shots.ts',
   'apps/api/scripts/site-assets/site-assets.ts',
 ];
+const ACTIVE_SVG_PATTERNS = [/<script/i, /\son[a-z]+=/i, /<foreignObject/i, /href="(?!#)/i];
 const WEBP_FORMS = { lossy: 'VP8 ', extended: 'VP8X', lossless: 'VP8L' };
 
 type Picture = { width: number; height: number; channels: number; data: Buffer };
@@ -190,6 +191,10 @@ describe('icon.svg', () => {
   test('lifts the gradient under prefers-color-scheme: dark', () => {
     expect(svg()).toContain(DARK_SCHEME_RULE);
   });
+
+  test.each(ACTIVE_SVG_PATTERNS)('holds nothing active: no match for %s (pin: green when it landed)', (pattern) => {
+    expect(svg()).not.toMatch(pattern);
+  });
 });
 
 describe('the full-bleed icons', () => {
@@ -247,7 +252,7 @@ describe('site:assets:check', () => {
     return Object.keys(JSON.parse(readFileSync(join(REPOSITORY_ROOT, LOCK_PATH), 'utf8')).inputs);
   }
 
-  function copiedRootWithChangedInput(changedInput: string): string {
+  function copiedRoot(): string {
     const root = mkdtempSync(join(tmpdir(), TEMPORARY_ROOT_PREFIX));
     temporaryRoots.push(root);
     [...lockedInputs(), LOCK_PATH].forEach((relativePath) => {
@@ -255,6 +260,11 @@ describe('site:assets:check', () => {
       mkdirSync(dirname(target), { recursive: true });
       writeFileSync(target, readFileSync(join(REPOSITORY_ROOT, relativePath)));
     });
+    return root;
+  }
+
+  function copiedRootWithChangedInput(changedInput: string): string {
+    const root = copiedRoot();
     const changedPath = join(root, changedInput);
     const changedBytes = readFileSync(changedPath);
     changedBytes.writeUInt8(changedBytes.readUInt8(0) ^ 1, 0);
@@ -286,6 +296,12 @@ describe('site:assets:check', () => {
     const changedInput = lockedInputs().find((input) => input.startsWith(prefix))!;
     const root = copiedRootWithChangedInput(changedInput);
     expect(staleInputsOf({ root })).toEqual([changedInput]);
+  });
+
+  test('ignores a stray file beside the brand sources, which is no input', () => {
+    const root = copiedRoot();
+    writeFileSync(join(root, 'docs', 'brand', '.DS_Store'), 'stray');
+    expect(staleInputsOf({ root })).toEqual([]);
   });
 
   test('exits 1 naming the stale input and the regenerate command', () => {

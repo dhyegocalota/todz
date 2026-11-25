@@ -48,9 +48,20 @@ describe('the WebMCP tool definitions', () => {
     expect(enumOf({ name: WebMcpToolName.Docs, property: 'page' })).toEqual(DOCS_PAGES.map(({ slug }) => slug));
   });
 
+  test('ask for the waitlist address by its email format', () => {
+    expect(toolNamed(WebMcpToolName.Join).inputSchema.properties.email?.format).toBe('email');
+  });
+
   test('mark three tools read-only and the waitlist join consequential', () => {
     expect(READ_ONLY_TOOLS.map((name) => toolNamed(name).annotations)).toEqual(READ_ONLY_TOOLS.map(() => ({ readOnlyHint: true })));
     expect(toolNamed(WebMcpToolName.Join).annotations).toEqual({ consequentialHint: true });
+  });
+});
+
+describe('the WebMCP copy', () => {
+  test('says the form was submitted and that the page may ask for a human check, not that it worked', () => {
+    expect(WEBMCP_COPY.answers.sent).toContain('submitted');
+    expect(WEBMCP_COPY.answers.sent).toContain('human check');
   });
 });
 

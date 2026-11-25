@@ -289,6 +289,15 @@ describe('the landing', () => {
     fallbackShots.forEach(([, { path }]) => expect(html).toContain(`src="${path}" srcset="`));
   });
 
+  test('keeps the window shot, which a phone never shows, from loading there: lazy and display none below the desktop breakpoint', async () => {
+    const { html } = await landingPage(LandingNotice.None);
+    const windowShot = html.match(/<div class="shot shot-window[^"]*">([\s\S]*?)<\/div>/)?.[1];
+    expect(windowShot).toContain('loading="lazy"');
+    expect(windowShot).not.toContain('fetchpriority');
+    expect(SITE_STYLE).toContain('.shot-window{display:none;');
+    expect(SITE_STYLE).not.toContain('.shot-window{visibility');
+  });
+
   test('has the two waitlist forms, each posting to /join with the fragment that returns to it', async () => {
     const { html } = await landingPage(LandingNotice.None);
     const forms = [...html.matchAll(FORM_PATTERN)].map(([form]) => form);
