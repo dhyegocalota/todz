@@ -11,7 +11,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 ## Unit
 
 - [x] Style carries `html,body{margin:0;overflow:hidden;background:transparent}` and the policy's `style-src` hash matches it — evidence: served `GET /sign-in/challenge` from `wrangler dev`: style contains the rule; sha256 of the served `<style>` text = `2lw1U0IbDmCpuVFFv1CoETZkor6VDRkBxyldiY1NSXY=` equals the served CSP `style-src` hash; script hash `6p5l1GotMJtny50bEw0aYg04IoVug8dy8zaVwJ45uPs=` equals `script-src`
-- [x] `ChallengeHeight.clamped`: 0 and negative give 65; NaN and infinity give 65; 65 gives 65; 120 gives 120; 9999 gives the maximum — evidence: `swift test --filter ChallengeHeightTests` at 210574b, the three clamp tests pass (5 + 4 + 3 cases, from the red run's case counts); `pnpm typecheck` clean
+- [x] `ChallengeHeight.clamped`: 0 and negative give 65; NaN and ±infinity are ignored (nil); 65 gives 65; 120 gives 120; 9999 gives the maximum — evidence: `swift test --filter ChallengeHeightTests` at 210574b, the three clamp tests pass (5 + 4 + 3 cases, from the red run's case counts); `pnpm typecheck` clean
 - [x] The script posts to the height handler and reads the `.cf-turnstile` element — evidence: `theScriptReportsTheWidgetHeightToTheHeightHandler` passes at 210574b; at runtime the grown view (below) proves the script reached the app
 
 ## Prove it for real (macOS app, signed out, scratch data container, the sign-in window only)
@@ -31,7 +31,7 @@ Setup: Debug builds of `origin/main` (before) and 210574b (after) with scratch b
 
 - The widget measures 280 wide in a 1100 and in a 760 point window, not 300: the form column is 280 points and the dummy widget shrank to it with both borders visible, so nothing is clipped. Outcome: the 300 in the plan and spec is the widget's nominal width; the view spans the form column. Not a defect, state it in the PR.
 - When the widget is shorter than the view (200 point view after reload, before the new height arrives), a darker rectangle shows under the widget: the web view's own backdrop, not the transparent page. Outcome: visible only in the transient between a reload and the next height report (`after-grown-after-send.png`); with a real 65 high widget the view is flush. Minor.
-- The challenge view's height state lives in `ChallengeView`, which survives the round's reload (`.id(model.challengeRound)` is on the web view only), so the view keeps the previous height until the new page reports. Outcome: harmless when the new report arrives, which it did.
+- Found at 210574b, fixed in f4813bd: the height state survived the round's reload, so the view kept the previous height until the new page reported. The round id now sits on the view that owns the height, which returns to 65 at once.
 - The dummy test widget's "Success!" label and check are invisible in dark appearance in both builds; a property of the test widget, not of this change.
 - The dummy widget's "For testing only" banner overlays the widget's lower part in both builds; not seen with a real key (cannot be checked locally).
 - Page Down in the focused email field changed the window capture only by the field's focus ring (`cmp` differs; visual diff shows the focus ring and nothing scrolled).
