@@ -71,11 +71,28 @@ The default and the cadence:
 
 ## Evidence
 
-Not measured yet. The first build step is a spike in a scratch Xcode target outside the repository, not committed, on the owner's Mac:
+Measured on 2026-11-25 on the owner's Mac (macOS 26.6, a 14-inch notched display, 1512 points wide), by a scratch `MenuBarExtra` app outside the repository, not committed: its label swapped template `NSImage` frames of a glyph and a 420-point strip "3 left · next: T-12 Review the onboarding copy before Friday's release", on the §4 timeline (unfold, hold, scroll, hold, fold; 198 frames, 9.5 s). Three full runs of 9.5 s; two earlier launches crashed 1.5 s in, in the harness's own window lookup, before any frame. No popover was opened and no appearance, Focus or accessibility setting changed.
 
-- A scratch `MenuBarExtra` whose label swaps template `NSImage` frames of a glyph and a 420-point strip "3 left · next: T-12 Review the onboarding copy before Friday's release", for the §4 timeline (unfold, hold, scroll, hold, fold), each run at most 10 s, at most three runs, no popover opened, no appearance, Focus or accessibility setting changed.
-- Measured: frames that land per second (the label's image changes, counted by the frames the app hands over against `screencapture -l` of the item's window at fixed instants), the item window's width at each phase and back at rest, a neighbour item's frame before, during and after (it returns to the same origin), whether the item window stays on screen at 180 points, the app's CPU during a run (Activity Monitor or `ps`), and the popover's anchor when the popover is opened right after a ribbon ends.
-- Pass: 20 or more frames per second land, no torn frame in the captures, the width returns exactly, the neighbour returns exactly. Otherwise §8's fallback applies and is recorded here.
+| Measure | Result |
+|---------|--------|
+| Frames handed to the label | 198 of 198 in every run |
+| Images the status button held, sampled every 2 ms | 199 distinct (the 198 frames and the image at rest) in every run: none dropped |
+| Images that landed during the 6 s scroll | 179 of 180, 29.9 per second |
+| Window width, sampled every 2 ms | 10 distinct values from 34 (rest) to 222 (glyph, spacing and 180 points); back at 34.0 exactly after every run |
+| Window right edge while it grew | fixed at 764; the left edge moved from 730 to 542, so the items to the left shift by exactly the ribbon's width |
+| Torn frames, steady width | none in the captures at 1.0 s (hold) and 2.5 s (scroll): the glyph whole, the text continuous, 444 px wide; the captures from 4 s on resolved another window (the harness found the item by diffing the window list) and are discarded |
+| Torn frames, while the width changes | two of two: the captures asked for at 0.09 s and 0.2 s, in the unfold, show the item's window at 199.5 and 222 points with its image shifted left, the glyph missing in one and cut at the edge in the other, while the same image sits whole in the steady captures; the window's width and its image's width were out of step for a frame |
+| Item inside the screen at 180 points | the window's bounds stayed inside the screen (542 to 764 of 1512) |
+| CPU over a 9.7 s run | 4.8 %, 5.0 % and 5.4 % of one core, with the harness polling the main thread at 500 Hz and the frames composed beforehand; an upper bound for the label's 30 Hz |
+| Longest gap between two hand-overs | 1.5 s, the holds; 48 ms mean |
+
+Verdict: **frame rate and the width pass, the unfold and fold are not cleared**. At least 20 frames per second land (29.9 during the scroll) and the width returns exactly; the 7.5 s of steady width (hold, scroll, hold) captured clean. The 0.5 s of unfold and fold, where the item's window changes width on every frame, showed the window and the image a frame apart in both captures taken there, and the budget of three runs is spent, so whether a person sees it is not measured. §8 is not applied by the developer: the lead decides between a bounded fourth run on the unfold alone, the Reduce Motion presentation for everyone (§8), or an unfold that sets the window to its full width once and reveals inside it, which removes the per-frame resize and keeps the scroll. The window stays 180 points.
+
+What the spike could not measure, and why:
+
+- **The item was hidden on the owner's bar.** At rest (x 730 to 764) the todz item sits inside the notch's span (about 656 to 856), and the window list flagged it not on screen at rest and at every width of the run; every item to its left was hidden too, so there was no visible neighbour to the left to compare, and the owner would see nothing of a ribbon while his bar stays this crowded. This is the situation ADR 0065's walk found. §6 keeps its consequence line; the ribbon is for a bar with room.
+- **The popover's anchor** was not measured, because no popover was opened. The width and the right edge return exactly, and the anchor follows the item's frame at the click, so the plan's `end()` on the panel's show, before it anchors, stays the design and the walk checks it by hand.
+- **The per-frame crop's cost** is not in the CPU figure: the frames were composed before the clock started.
 
 ## Revisit when
 
