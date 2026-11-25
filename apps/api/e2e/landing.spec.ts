@@ -386,7 +386,9 @@ test.describe('self-host guide', () => {
   test('the narrow header shows the short install label', async ({ page }) => {
     onlyOn(ProjectName.Mobile);
     await page.goto(SitePath.Landing);
-    await expect(page.locator(HEADER_INSTALL_LINK)).toHaveText('Install');
+    await expect(page.locator(`${HEADER_INSTALL_LINK} .label-short`)).toHaveText('Install');
+    await expect(page.locator(`${HEADER_INSTALL_LINK} .label-short`)).toBeVisible();
+    await expect(page.locator(`${HEADER_INSTALL_LINK} .label-long`)).toBeHidden();
   });
 
   test(`${SitePath.SelfHost} answers 301 to the guide on the docs`, async ({ request }) => {
