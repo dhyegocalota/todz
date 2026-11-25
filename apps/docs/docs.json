@@ -1,4 +1,37 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "name": "todz"
+  "theme": "mint",
+  "name": "todz",
+  "favicon": "/favicon.svg",
+  "logo": { "light": "/logo/light.svg", "dark": "/logo/dark.svg", "href": "/" },
+  "errors": {
+    "404": {
+      "redirect": false,
+      "title": "Page not found",
+      "description": "This page does not exist.\n\n[Back to the Introduction](/)"
+    }
+  },
+  "colors": {
+    "primary": "#2F5BFF",
+    "light": "#7C95FF",
+    "dark": "#2F5BFF"
+  },
+  "background": { "color": { "light": "#F2F4FA", "dark": "#070812" } },
+  "appearance": { "default": "system" },
+  "navbar": { "links": [{ "label": "todz.app", "href": "https://todz.app" }] },
+  "footer": {
+    "links": [
+      {
+        "header": "Logic Bit",
+        "items": [{ "label": "todz is a product of Logic Bit, made in Brazil", "href": "https://logicbit.com.br" }]
+      }
+    ]
+  },
+  "navigation": {
+    "groups": [
+      { "group": "Get started", "pages": ["index", "quickstart", "connect-an-agent"] },
+      { "group": "Reference", "pages": ["mcp-tools"] },
+      { "group": "Self-host", "pages": ["self-host"] }
+    ]
+  }
 }
