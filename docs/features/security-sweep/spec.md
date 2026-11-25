@@ -1,6 +1,6 @@
 # Security sweep
 
-**Status:** Approved
+**Status:** Building
 **Tier:** 🔴 (quotas and rate limits on every signed-in route, the change socket's lifetime, the headers of every host, the app's session vault)
 **Owner approval:** approved 2026-11-24 by the owner's directive in `todz-loop/PROMPT.md` ("Security": "queremos rate limit e captcha nos endpoints públicos como send magic link; e também já faz varredura pra corrigir brechas de segurança"): a full adversarial review of the whole codebase and the production configuration, every finding fixed red-first with a test in this PR, the result recorded in `docs/runbooks/` or a dated learning
 **ADRs:** [0073](../../adr/0073-signed-in-writes-have-quotas-and-signed-in-routes-a-rate-limit-per-owner-and-per-key.md), [0045](../../adr/0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md), [0050](../../adr/0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md), [0061](../../adr/0061-performance-has-written-budgets-a-fetch-based-load-harness-behind-pnpm-perf-and-work-count-budgets-in-verify.md)
