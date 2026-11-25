@@ -40,6 +40,12 @@ private func opacity(of task: WidgetSnapshotTask, isShown: Bool = true, isContra
         #expect(opacity(of: overdue) == band.opacity)
     }
 
+    @Test(arguments: [0, -1])
+    func anOverdueFlagThatTheDayDisagreesWithUsesTheOneDayBand(daysOverdue: Int) {
+        let flagged = task(dueDate: today.adding(days: -daysOverdue))
+        #expect(opacity(of: flagged) == 0.06)
+    }
+
     @Test func aTaskNotOverdueHasNoWash() {
         #expect(opacity(of: task(dueDate: today, isOverdue: false)) == 0)
         #expect(opacity(of: task(dueDate: nil, isOverdue: false)) == 0)

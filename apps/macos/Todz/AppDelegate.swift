@@ -48,9 +48,10 @@ private func isFocusFilterQuiet() async -> Bool {
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
     private(set) lazy var dayTemperatureClock = DayTemperatureClock(
-        timeZone: model.timeZone,
-        pause: { try await Task.sleep(for: $0) },
-        isOn: { [dayTemperaturePreference] in dayTemperaturePreference.isOn }
+        now: Date.init,
+        timeZone: { [model] in model.timeZone },
+        isOn: { [dayTemperaturePreference] in dayTemperaturePreference.isOn },
+        pause: { try await Task.sleep(for: $0) }
     )
     private lazy var dayTemperatureScheduler = DayTemperatureScheduler(clock: dayTemperatureClock)
     private lazy var morningGlancePresenter = MorningGlancePresenter(windowState: windowState)
