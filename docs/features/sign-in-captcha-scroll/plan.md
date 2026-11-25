@@ -23,17 +23,17 @@ G3 docs first, then G1 and G2 each red then green, then the briefing.
 
 ### G1
 
-- [ ] **Step 1:** Red: the style test in `sign-in-challenge-page.test.ts`, committed alone.
-- [ ] **Step 2:** Green: `PAGE_STYLE` hides the overflow and centers the widget.
+- [x] **Step 1:** Red: the style test in `sign-in-challenge-page.test.ts`, committed alone (0717a9a).
+- [x] **Step 2:** Green: `PAGE_STYLE` hides the overflow and centers the widget (d61065e).
 
 ### G2
 
-- [ ] **Step 3:** Red: `ChallengeHeightTests` with a stub `ChallengeHeight`, committed alone.
-- [ ] **Step 4:** Green: `ChallengeHeight` clamp and script; `ChallengeView` follows the reported height, hides the scrollers and passes scroll events up.
+- [x] **Step 3:** Red: `ChallengeHeightTests` with a stub `ChallengeHeight`, committed alone (f252703).
+- [x] **Step 4:** Green: `ChallengeHeight` clamp and script; `ChallengeView` follows the reported height, hides the scrollers and passes scroll events up (f8b1f24).
 
 ### G3
 
-- [ ] **Step 5:** Tester briefing (`tester-briefing.md`).
+- [x] **Step 5:** Tester briefing (`tester-briefing.md`).
 
 ## Failure modes
 
@@ -49,7 +49,7 @@ G3 docs first, then G1 and G2 each red then green, then the briefing.
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict.
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
