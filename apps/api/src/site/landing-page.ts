@@ -39,9 +39,11 @@ const PAGE_SCRIPT = `{
       button.textContent = label;
     });
   });
-  const answered = document.getElementById(location.hash.slice(1));
-  const notice = answered === null ? null : answered.querySelector('.${JOIN_NOTICE_CLASS}');
-  if (notice !== null) notice.focus();
+  addEventListener('load', () => requestAnimationFrame(() => {
+    const answered = document.getElementById(location.hash.slice(1));
+    const notice = answered === null ? null : answered.querySelector('.${JOIN_NOTICE_CLASS}');
+    if (notice !== null) notice.focus({ preventScroll: true });
+  }));
 }`;
 
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({ style: SITE_STYLE, script: PAGE_SCRIPT });

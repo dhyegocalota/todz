@@ -36,8 +36,6 @@ const SUBPIXEL_TOLERANCE = 0.5;
 const KEYBOARD_ORDER = ['.skip-link', '.site-header .brand', '.site-header .nav-link', '#join-email', '#join .join-button'];
 const SCRIPT_OWNED_TRANSITION_PROPERTIES = ['color', 'background-color', 'opacity'];
 const JOIN_FORMS = [Fragment.Hero, Fragment.Final];
-const DEFECT_NOTICE_FOCUS_LOST =
-  'defect: the page script focuses the notice while the document loads and Chromium drops that focus when it scrolls to the fragment';
 const SITE_PAGES = [SitePath.Landing, SitePath.Join, SitePath.SelfHost];
 
 function onlyOn(projectName: ProjectName): void {
@@ -187,7 +185,6 @@ test.describe('join', () => {
     });
 
     test(`the ${form} form's notice is focused after the answer`, async ({ page }) => {
-      test.fail(true, DEFECT_NOTICE_FOCUS_LOST);
       await page.goto(SitePath.Landing);
       await submitForm({ page, form, address: JOIN_ADDRESS });
       await expect(page.locator(`#${form}-notice`)).toBeFocused();
