@@ -22,6 +22,11 @@ final class InMemorySessionVault: SessionVault {
         origin = session.origin
     }
 
+    func bind(to origin: String) throws {
+        guard !isUnwritable else { throw SessionVaultError.unwritable }
+        self.origin = origin
+    }
+
     func erase() throws {
         eraseCount += 1
         guard !isUnerasable else { throw SessionVaultError.unwritable }

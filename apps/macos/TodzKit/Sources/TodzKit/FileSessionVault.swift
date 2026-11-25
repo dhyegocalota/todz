@@ -39,6 +39,8 @@ public struct FileSessionVault: SessionVault, Sendable {
         }
     }
 
+    public func bind(to origin: String) throws {}
+
     public func erase() throws {
         guard FileManager.default.fileExists(atPath: sessionPath) else { return }
         try FileManager.default.removeItem(at: sessionFile)

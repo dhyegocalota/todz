@@ -339,9 +339,8 @@ extension AppModelTests {
         #expect(harness.preference.hasUnreadableValue)
     }
 
-    @Test(arguments: [storedText, nil])
-    func aSessionNotBoundToTheServerInUseIsErasedBeforeLaunchAndNoCallCarriesIt(sessionOrigin: String?) async throws {
-        let harness = try AppModelHarness(isLocalDataKept: true, sessionOrigin: sessionOrigin)
+    @Test func aSessionBoundToAnotherServerIsErasedBeforeLaunchAndNoCallCarriesIt() async throws {
+        let harness = try AppModelHarness(isLocalDataKept: true, sessionOrigin: storedText)
         #expect(harness.vault.secret == nil)
         #expect(harness.store.owner == nil)
         #expect(harness.store.outbox == nil)
@@ -350,6 +349,31 @@ extension AppModelTests {
         #expect(harness.model.phase == .signedOut(notice: nil))
         #expect(harness.service.calls == [])
         #expect(harness.model.serverURL == harness.defaultURL)
+    }
+
+    @Test func anEarlierBuildsSessionWithNoStoredServerIsBoundToTheDefaultAndKeepsTheCacheAndOutbox() async throws {
+        let harness = try AppModelHarness(isLocalDataKept: true, sessionOrigin: nil)
+        #expect(harness.vault.secret == harness.session)
+        #expect(harness.vault.origin == harnessDefaultServer)
+        #expect(harness.vault.eraseCount == 0)
+        #expect(harness.store.owner != nil)
+        #expect(harness.store.outbox != nil)
+        #expect(harness.pendingLinks.link != nil)
+        await harness.model.launch()
+        #expect(harness.model.isSignedIn)
+        #expect(harness.model.phase != .signedOut(notice: .sessionUnreadable))
+    }
+
+    @Test func anEarlierBuildsSessionWithAStoredServerIsErasedBeforeLaunchAndNoCallCarriesIt() async throws {
+        let harness = try AppModelHarness(storedServer: storedText, isLocalDataKept: true, sessionOrigin: nil)
+        #expect(harness.vault.secret == nil)
+        #expect(harness.store.owner == nil)
+        #expect(harness.store.outbox == nil)
+        #expect(harness.pendingLinks.link == nil)
+        await harness.model.launch()
+        #expect(harness.model.phase == .signedOut(notice: nil))
+        #expect(harness.service.calls == [])
+        #expect(harness.model.serverURL == (try address(storedText)))
     }
 
     @Test func aSessionBoundToAnotherServerWhoseEraseFailsLaunchesSignedOutWithoutReadingIt() async throws {

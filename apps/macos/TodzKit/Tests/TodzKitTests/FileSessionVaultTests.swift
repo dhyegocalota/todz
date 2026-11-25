@@ -88,6 +88,16 @@ private func freshSession() -> StoredSession {
         #expect(throws: SessionVaultError.unbound) { try vault.read() }
     }
 
+    @Test func bindingAnEarlierBuildsSecretWritesItBackBoundToTheServer() throws {
+        let vault = FileSessionVault(folder: folder)
+        let secret = UUID().uuidString
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data(secret.utf8).write(to: folder.appending(path: sessionFileName))
+        try vault.bind(to: origin)
+        #expect(try vault.read() == StoredSession(secret: secret, origin: origin))
+        #expect(try modeOfFile(at: folder.appending(path: sessionFileName)) == privateMode)
+    }
+
     @Test func eraseRemovesTheSecretAndCanRunTwice() throws {
         let vault = FileSessionVault(folder: folder)
         try vault.write(freshSession())
