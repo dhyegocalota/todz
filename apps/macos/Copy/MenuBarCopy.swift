@@ -2,6 +2,7 @@ import TodzKit
 
 enum MenuBarCopy {
     static let openWindow = "Open todz"
+    static let quit = "Quit todz"
     static let signedOut = "Sign in to see what's due today."
     static let naming = "Name your first workspace to see what's due today."
     static let closeTheDay = "Close the day"

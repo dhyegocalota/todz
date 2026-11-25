@@ -9,7 +9,7 @@ private func activationPolicy(_ activation: AppActivation) -> NSApplication.Acti
 }
 
 extension AppDelegate {
-    func observeWindows() {
+    func observeWindows(_ launchActivation: LaunchActivation) {
         let keyObservation = NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification,
             object: nil,
@@ -26,15 +26,17 @@ extension AppDelegate {
             MainActor.assumeIsolated { self?.applyActivationPolicy(closing: closingWindow) }
         }
         windowObservations = [keyObservation, closeObservation]
+        guard launchActivation == .atLaunch else { return }
         Task { applyActivationPolicy(closing: nil) }
     }
 
-    // NB ADR 0074: the policy follows the visible windows that can become main, so the popover and the glance never count.
+    // NB ADR 0074: the policy follows the open windows that can become main, so the popover and the glance never count.
     private func applyActivationPolicy(closing closingWindow: NSWindow?) {
         let isLaunchedForAnIntent = NSApp.activationPolicy() == .prohibited
-        guard !isLaunchedForAnIntent else { return }
-        let visibleWindowCount = NSApp.windows.filter { $0 !== closingWindow && $0.isVisible && $0.canBecomeMain }.count
-        let activation = ActivationPolicyRule.policy(isSettingOn: menuBarOnlyPreference.isOn, visibleWindowCount: visibleWindowCount)
+        let isLeftAlone = isLaunchedForAnIntent || NSApp.isHidden
+        guard !isLeftAlone else { return }
+        let openWindowCount = NSApp.windows.filter { $0 !== closingWindow && $0.isOpenAppWindow }.count
+        let activation = ActivationPolicyRule.policy(isSettingOn: menuBarOnlyPreference.isOn, visibleWindowCount: openWindowCount)
         let policy = activationPolicy(activation)
         guard NSApp.activationPolicy() != policy else { return }
         NSApp.setActivationPolicy(policy)

@@ -43,7 +43,7 @@ import TodzKit
         applicationBeforeEngaging = nil
         close()
         guard let applicationToReturnTo else { return }
-        let hasOtherVisibleWindow = NSApp.windows.contains { $0.isVisible && $0.canBecomeMain }
+        let hasOtherVisibleWindow = NSApp.windows.contains(where: \.isOpenAppWindow)
         guard !hasOtherVisibleWindow else { return }
         applicationToReturnTo.activate()
     }

@@ -87,7 +87,7 @@ private func isFocusFilterQuiet() async -> Bool {
         decideLaunchSurfaceStart(notification)
         observeWidgetRequests()
         observeDayChanges()
-        observeWindows()
+        observeWindows(LaunchActivation.of(isDefaultLaunch: notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool))
         launchReading = Task {
             await readFocusFilter()
             startDayTemperature()
@@ -147,6 +147,11 @@ private func isFocusFilterQuiet() async -> Bool {
         case let .signIn(signInLink): windowState.waitingSignInLink = signInLink
         case let .widget(widgetLink): windowState.open(widgetLink, from: .widget)
         }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        windowState.isMainWindowRequested = true
+        return true
     }
 
     // NB ADR 0031: the app keeps running in the menu bar when the main window closes; ⌘Q quits.
