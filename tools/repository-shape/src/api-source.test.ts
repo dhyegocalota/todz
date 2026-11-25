@@ -46,6 +46,7 @@ const REPLY_RATE_LIMIT_NAMESPACE_ID = '8610';
 const REPLY_LIMITER_NAME_PATTERN = /REPLY/;
 const OWNER_RATE_LIMIT_NAMESPACE_ID = '8611';
 const MCP_RATE_LIMIT_NAMESPACE_ID = '8612';
+const STOP_RATE_LIMIT_NAMESPACE_ID = '8613';
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -62,7 +63,7 @@ const NO_LOCAL_PROVIDER_PATTERN = /"(fake|console)"/;
 const SEND_EMAIL_BINDING_PATTERN =
   /"send_email":\s*\[\s*\{\s*"name":\s*"EMAIL",\s*"allowed_sender_addresses":\s*\["noreply@todz\.app"\]\s*,?\s*\}\s*,?\s*\]/;
 const ASSETS_PATTERN =
-  /"assets":\s*\{\s*"directory":\s*"\.\/public",\s*"run_worker_first":\s*\["\/owner",\s*"\/owner\/\*",\s*"\/mcp",\s*"\/sign-in",\s*"\/sign-in\/challenge",\s*"\/health"\]\s*,?\s*\}/;
+  /"assets":\s*\{\s*"directory":\s*"\.\/public",\s*"run_worker_first":\s*\["\/owner",\s*"\/owner\/\*",\s*"\/mcp",\s*"\/sign-in",\s*"\/sign-in\/challenge",\s*"\/day-email\/stop",\s*"\/health"\]\s*,?\s*\}/;
 const DEBUG_API_BASE_URL_PATTERN = /configs:\s*\n\s+Debug:\s*\n\s+TODZ_API_BASE_URL: (\S+)\s*\n/;
 const RELEASE_API_BASE_URL_PATTERN = /\n\s+Release:\s*\n\s+TODZ_API_BASE_URL: (\S+)\s*\n/;
 const INFO_PLIST_API_BASE_URL_PATTERN = /TodzAPIBaseURL: \$\(TODZ_API_BASE_URL\)/;
@@ -271,6 +272,11 @@ describe('the api source', () => {
         name: 'MCP_LIMITER',
         namespace_id: MCP_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('MCP_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'DAY_EMAIL_STOP_LIMITER',
+        namespace_id: STOP_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('DAY_EMAIL_STOP_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
   });
