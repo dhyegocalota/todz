@@ -17,7 +17,7 @@ const UNAUTHORIZED_STATUS = 401;
 const NOT_FOUND_STATUS = 404;
 const NOT_FOUND = { error: 'not_found' };
 const CLIENT_NAME = 'Claude Code';
-const MCP_URL = 'https://api.todz.test/mcp';
+const MCP_URL = 'http://localhost:8787/mcp';
 
 type KeyBody = { id: string; hint: string; created_at: number };
 type IssuedBody = { key: KeyBody; secret: string };

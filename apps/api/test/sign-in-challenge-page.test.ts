@@ -6,7 +6,7 @@ import { workerEnvWith } from './owner-client';
 import { TEST_SITE_KEY, onlyInlineSource, runPageScript, sourceHash } from './page-script';
 
 const PAGE_PATH = '/sign-in/challenge';
-const PAGE_URL = `https://api.todz.test${PAGE_PATH}`;
+const PAGE_URL = `http://localhost:8787${PAGE_PATH}`;
 const OK_STATUS = 200;
 const NOT_FOUND_STATUS = 404;
 const UNAVAILABLE_STATUS = 503;
@@ -19,7 +19,7 @@ const SOLVED_CALLBACK = 'challengeSolved';
 const LOST_CALLBACK = 'challengeLost';
 
 async function pageSource(path = PAGE_PATH): Promise<{ response: Response; html: string }> {
-  const response = await exports.default.fetch(`https://api.todz.test${path}`);
+  const response = await exports.default.fetch(`http://localhost:8787${path}`);
   return { response, html: await response.text() };
 }
 

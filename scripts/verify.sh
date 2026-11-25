@@ -6,12 +6,13 @@ readonly REMOTE_NAME=origin
 readonly MAIN_BRANCH=main
 readonly MAIN_REF="$REMOTE_NAME/$MAIN_BRANCH"
 readonly FETCH_FAILED="verify: could not fetch origin main; the base is origin/main as last fetched"
-readonly ALL_GATES="doctor format secrets typecheck audit hooks shape unit macos"
+readonly ALL_GATES="doctor format secrets typecheck audit hooks shape unit e2e macos"
 readonly ALWAYS_GATES="doctor format secrets audit shape"
 readonly ALREADY_GREEN_GATES="secrets audit"
 readonly EVERYTHING_GATES=all
 readonly NO_GATES=-
 readonly SHAPE_PACKAGE=@todz/repository-shape
+readonly E2E_PACKAGE=@todz/api
 readonly TIME_ZONE_PROBE=Asia/Kolkata
 readonly NO_RECORD_UNFETCHED="verify: no record: origin main could not be fetched"
 readonly USAGE="usage: verify.sh [auto|all] [--plan]"
@@ -61,9 +62,9 @@ class_rank() {
 }
 
 row_for() {
-  local path=$1 glob row_class row_gates
-  while IFS=$'\t' read -r glob row_class row_gates; do
-    [[ $path == $glob ]] && { printf '%s\t%s\n' "$row_class" "$row_gates"; return; }
+  local path=$1 glob row_class row_gates row_folder
+  while IFS=$'\t' read -r glob row_class row_gates row_folder; do
+    [[ $path == $glob ]] && { printf '%s\t%s\t%s\n' "$row_class" "$row_gates" "$row_folder"; return; }
   done < "$root/$GATES_MAP"
   printf 'product\t%s\n' "$EVERYTHING_GATES"
 }
@@ -73,10 +74,11 @@ depends_on() {
 }
 
 absorb_path() {
-  local path=$1 row_class row_gates
-  IFS=$'\t' read -r row_class row_gates <<< "$(row_for "$path")"
+  local path=$1 row_class row_gates row_folder unit_folder
+  IFS=$'\t' read -r row_class row_gates row_folder <<< "$(row_for "$path")"
   [[ $row_gates == "$EVERYTHING_GATES" ]] && run_everything=true
-  has_word "$row_gates" unit && unit_folders="$unit_folders $(cut -d/ -f1-2 <<< "$path")"
+  unit_folder=${row_folder:-$(cut -d/ -f1-2 <<< "$path")}
+  has_word "$row_gates" unit && unit_folders="$unit_folders $unit_folder"
   [[ $row_gates == "$EVERYTHING_GATES" || $row_gates == "$NO_GATES" ]] || wanted_gates="$wanted_gates $row_gates"
 }
 
@@ -180,6 +182,7 @@ gate_unit() {
   TZ=$TIME_ZONE_PROBE pnpm $(printf -- '--filter %s ' $probed_packages) test:unit
 }
 
+gate_e2e() { pnpm --filter "$E2E_PACKAGE" test:e2e; }
 
 write_record() {
   mkdir -p "$records_directory"

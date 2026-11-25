@@ -42,6 +42,7 @@ The approved design is in [docs/product](docs/product/); how each piece was buil
 | ![Medium Today list](docs/screenshots/widgets/03-medium-today.png)<br>Medium Today list (rendered) | ![Large Today list](docs/screenshots/widgets/04-large-today.png)<br>Large Today list (rendered) |
 | ![Connect an agent](docs/screenshots/connect-an-agent/01-key-screen.png)<br>Connect an agent | ![An agent's tasks in a project, via Claude Code](docs/screenshots/v1-walk/01-agent-tasks-in-a-project.png)<br>An agent's tasks in a project, via Claude Code |
 | ![The sign-in mail](docs/screenshots/transactional-email/01-sign-in-mail.png)<br>The sign-in mail | ![The welcome mail](docs/screenshots/transactional-email/02-welcome-mail.png)<br>The welcome mail |
+| ![todz.app, the landing with its waitlist form](docs/screenshots/landing/01-landing-light.png)<br>todz.app, the landing | ![todz.app on a phone, in dark](docs/screenshots/landing/02-landing-phone-dark.png)<br>todz.app on a phone, in dark |
 
 The widget shots are rendered from the widgets' own views until a desktop capture replaces them.
 

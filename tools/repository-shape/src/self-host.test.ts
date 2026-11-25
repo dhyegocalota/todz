@@ -26,7 +26,8 @@ const PNPM_COMMAND_PATTERN = /\bpnpm ([a-z][\w:-]*)/g;
 const API_SCRIPT_PATTERN = /pnpm --filter @todz\/api ([a-z][\w:-]*)/g;
 const DATABASE_COMMAND_PATTERN = /wrangler d1 (?:create|migrations apply) ([\w-]+)/g;
 const DATABASE_NAME_PATTERN = /"database_name": "([\w-]+)"/;
-const ENVIRONMENT_NAME_PATTERN = /`(?:vars\.)?((?:PUBLIC_ORIGIN|TURNSTILE_[A-Z_]+))`/g;
+const ENVIRONMENT_NAME_PATTERN = /`(?:vars\.)?((?:PUBLIC_ORIGIN|SITE_ORIGIN|TURNSTILE_[A-Z_]+))`/g;
+const ROUTE_PATTERN = /"pattern": "([^"]+)"/g;
 const XCODE_LINE_PATTERN = /^(xcode(?:gen|build) .+?)(?: \\)?$/gm;
 const SECRET_COMMAND_PATTERN = /wrangler secret (?:put|delete) ([A-Z_]+)/g;
 const REPOSITORY_PATH_PATTERN = /`((?:apps|libs|tools|scripts|docs)\/[\w./@-]+)`/g;
@@ -43,6 +44,7 @@ const WRANGLER_KEYS = [
   'routes',
   'custom_domain',
   'PUBLIC_ORIGIN',
+  'SITE_ORIGIN',
   'send_email',
   'allowed_sender_addresses',
   'd1_databases',
@@ -119,6 +121,12 @@ describe('the self-host guide', () => {
     const configuration = readRepositoryFile(WRANGLER_CONFIGURATION);
     expect(WRANGLER_KEYS.filter((key) => !configuration.includes(`"${key}"`))).toEqual([]);
     expect(WRANGLER_KEYS.filter((key) => !guide.includes(key))).toEqual([]);
+  });
+
+  test('it names every configured route, so a fork replaces each with its own domain', () => {
+    const routes = captured(ROUTE_PATTERN, readRepositoryFile(WRANGLER_CONFIGURATION));
+    expect(routes.length).toBeGreaterThan(0);
+    expect(routes.filter((route) => !guide.includes(`\`${route}\``))).toEqual([]);
   });
 
   test('the rate-limit namespaces it names are the configured ones', () => {

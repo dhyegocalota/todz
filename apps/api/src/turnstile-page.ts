@@ -12,7 +12,7 @@ export const TURNSTILE_EXPLICIT_SCRIPT_URL = `${TURNSTILE_SCRIPT_URL}?render=exp
 
 export type TurnstilePage = { available: (siteKey: string) => string; unavailable: string; contentSecurityPolicy: string };
 
-async function sourceHash(source: string): Promise<string> {
+export async function sourceHash(source: string): Promise<string> {
   const digest = await crypto.subtle.digest(HASH_ALGORITHM, new TextEncoder().encode(source));
   return `'sha256-${btoa(String.fromCharCode(...new Uint8Array(digest)))}'`;
 }

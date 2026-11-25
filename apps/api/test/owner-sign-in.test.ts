@@ -559,7 +559,7 @@ describe('owner sessions', () => {
     const { key } = await seedIssuedKey();
     await expectUnauthorized(await readOwner(key));
     const { token } = await signInOwner();
-    const mcp = await exports.default.fetch('https://api.todz.test/mcp', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+    const mcp = await exports.default.fetch(`${PUBLIC_ORIGIN}/mcp`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
     await expectUnauthorized(mcp);
   });
 });

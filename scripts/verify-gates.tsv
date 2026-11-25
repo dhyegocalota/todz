@@ -15,9 +15,13 @@ apps/README.md	docs	-
 libs/README.md	docs	-
 apps/*/README.md	docs	-
 libs/*/README.md	docs	-
-.env.example	product	unit
+.env.example	product	unit	apps/api
 libs/types/*	product	typecheck unit
 apps/macos/*	product	macos
+apps/api/src/site/*	product	typecheck unit e2e
+apps/api/public/*	product	typecheck unit e2e
+apps/api/e2e/*	product	typecheck unit e2e
+apps/api/playwright.config.ts	product	typecheck unit e2e
 apps/*	product	typecheck unit
 libs/*	product	typecheck unit
 .agents/hooks/*	tooling	hooks
@@ -31,6 +35,7 @@ AGENTS.md	tooling	-
 CLAUDE.md	tooling	-
 GEMINI.md	tooling	-
 docs/scenarios/*	tooling	-
+docs/self-host.md	product	unit	apps/api
 docs/*.md	docs	-
 docs/media/*	docs	-
 *.md	docs	-

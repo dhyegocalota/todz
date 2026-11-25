@@ -1,9 +1,4 @@
-enum HttpMethod {
-  Get = 'GET',
-  Post = 'POST',
-  Patch = 'PATCH',
-  Delete = 'DELETE',
-}
+import { HttpMethod } from './http-method';
 
 export enum RouteParam {
   WorkspaceId = 'workspaceId',

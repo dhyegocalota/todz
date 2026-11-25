@@ -2,9 +2,10 @@ import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-plugin';
 import { configDefaults, defineConfig } from 'vitest/config';
 
 const LOADED_MACHINE_TEST_TIMEOUT_MS = 30_000;
+const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
 const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
 const TURNSTILE_TEST_SECRET_KEY = '1x0000000000000000000000000000000AA';
-const NODE_TESTS = ['test/emails/**/*.test.ts', 'test/brand-asset.test.ts'];
+const NODE_TESTS = ['test/emails/**/*.test.ts', 'test/site/**/*.test.ts', 'test/brand-asset.test.ts'];
 
 export default defineConfig(async () => {
   const migrations = await readD1Migrations('migrations');
@@ -21,6 +22,7 @@ export default defineConfig(async () => {
                   SIGN_IN_PROVIDER: 'fake',
                   EMAIL_SENDER: 'console',
                   PUBLIC_ORIGIN: 'http://localhost:8787',
+                  SITE_ORIGIN: LOCAL_SITE_ORIGIN,
                   TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY,
                   TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET_KEY,
                 },

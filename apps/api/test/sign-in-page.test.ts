@@ -5,7 +5,7 @@ import { serveSignInPage } from '../src/sign-in-page';
 import { workerEnvWith } from './owner-client';
 import { type PageScriptRun, TEST_SITE_KEY, WIDGET_ID, inlineSources, onlyInlineSource, runPageScript, sourceHash } from './page-script';
 
-const PAGE_URL = 'https://api.todz.test/sign-in';
+const PAGE_URL = 'http://localhost:8787/sign-in';
 const PAGE_PATH = '/sign-in';
 const OK_STATUS = 200;
 const NOT_FOUND_STATUS = 404;
@@ -30,7 +30,7 @@ const ERROR_CALLBACK = 'error-callback';
 const TIMEOUT_CALLBACK = 'timeout-callback';
 
 async function pageSource(path = PAGE_PATH): Promise<{ response: Response; html: string }> {
-  const response = await exports.default.fetch(`https://api.todz.test${path}`);
+  const response = await exports.default.fetch(`http://localhost:8787${path}`);
   return { response, html: await response.text() };
 }
 
