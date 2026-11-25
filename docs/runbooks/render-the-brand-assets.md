@@ -60,6 +60,10 @@ Render the app icon, its glass layers and the menu bar glyph again from the SVGs
    Expected: six 512 pixel PNGs; Default and Dark show the blue gradient with the glass mint spark and white check, the clear looks show the glass alone, the tinted looks wear the tint.
    If it fails: `ictool` without the tint flags renders the tinted looks untinted; add them. A blank or missing layer means `icon.json` names an image that is not in `Assets`.
 
-8. **Prove the catalog.** Run `pnpm verify`.
+8. **Render the site assets.** After a change to a file in `docs/brand`, to a landing shot under `apps/api/public/landing`, or to `site-icons.ts`, `landing-shots.ts` or the generator under `apps/api/scripts/site-assets/`, run `pnpm --filter @todz/api site:assets` from the repository root, then `pnpm --filter @todz/api site:assets:check`. The generator drives the Chromium that `@playwright/test` installs and needs none of the tools of step 1.
+   Expected: the favicon, the SVG icon, the touch icon, the 192 and 512 icons and their maskable twins, `og/todz.png` and the WebP copies of the landing shots change under `apps/api/public`, `site-assets.lock.json` changes with them, and the check exits 0. Commit the outputs and the lock together.
+   If it fails: a check that names a stale input means the outputs were not rendered after that input changed; run the generator again, format any generator source file with Prettier first, because the lock hashes the source as it stands. A launch error naming a missing executable means the pinned Chromium is not installed; run `pnpm --filter @todz/api exec playwright install chromium`. An icon that looks wrong beside `todz-loop/brand/todz-icon-1024.png` means the brand SVG changed shape; read the generator's view box and mark constants.
+
+9. **Prove the catalog.** Run `pnpm verify`.
    Expected: the `shape` gate passes `brand-assets.test.ts` and the `macos` gate builds with no `actool` warning.
    If it fails: the test names the image whose file is missing or whose pixel size disagrees with its slot, or the layer whose copy differs from its source; render that size or copy that layer again.
