@@ -225,7 +225,7 @@ ${CROP_RULES}
 .site-footer-inner{display:flex;flex-direction:column;align-items:center;gap:var(--space-2);padding-block:var(--space-5);font-size:var(--text-small);color:var(--color-text-muted)}
 .footer-link{display:inline-flex;align-items:center;min-height:var(--size-tap);color:var(--color-text-muted);text-decoration:none}
 .footer-link:hover{color:var(--color-text)}
-.footer-credit-link{color:var(--color-text)}
+.footer-credit-link{color:var(--color-text);text-decoration:underline;text-underline-offset:0.2em}
 .guide{padding-top:var(--space-7)}
 .prose{width:min(100% - 2 * var(--space-side), var(--measure-prose));margin-inline:auto;font-size:1.0625rem;line-height:1.65}
 .prose h1{margin-top:var(--space-5);font-size:var(--text-section);line-height:1.1;letter-spacing:-0.025em}

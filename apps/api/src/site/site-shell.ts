@@ -30,7 +30,7 @@ ${brandHtml()}
 
 function creditHtml(): string {
   const { creditLead, creditName, creditTail } = LANDING_COPY.shell;
-  return `<p class="footer-credit">${escapedHtml(creditLead)} <a class="footer-credit-link" href="${escapedHtml(COMPANY.website)}" rel="noopener">${escapedHtml(creditName)}</a>${escapedHtml(creditTail)}</p>`;
+  return `<p class="footer-credit">${escapedHtml(creditLead)} <a class="footer-credit-link" href="${escapedHtml(COMPANY.website)}" rel="noopener noreferrer">${escapedHtml(creditName)}</a>${escapedHtml(creditTail)}</p>`;
 }
 
 function footerHtml(): string {
