@@ -25,7 +25,7 @@ One developer: the red tests in one commit, then the redirect and the links, the
 - [x] **Step 2:** `self-host-redirect.ts`, the routes, the `www` short cut and the links in the site shell — evidence: 38f14a7.
 - [x] **Step 3:** Remove the generated guide, its generator, scripts, styles, copy and tests; drop the gate map row; the API README — evidence: c5b9f3e.
 - [x] **Step 4:** The README link; deploy runbook step 13; the Mintlify runbook's setup, step 3 and run log; ADR 0048's status and ADR 0059's evidence — evidence: f5e102e. The Mintlify step 3 change was added here: the live footer never held the full credit sentence.
-- [x] **Step 5:** The after-merge rows of `docs-mintlify`'s test plan; the tester briefing; `apps/api` unit and e2e, `repository-shape`, `pnpm verify` green — evidence: the commit after f5e102e; unit 1673 passed, e2e 50 passed 2 skipped, shape 311 passed; `pnpm verify` in the tester briefing.
+- [x] **Step 5:** The after-merge rows of `docs-mintlify`'s test plan; the tester briefing; `apps/api` unit and e2e, `repository-shape`, `pnpm verify` green — evidence: 7f02ed9; unit 1673 passed, e2e 50 passed 2 skipped, shape 311 passed; `pnpm verify` 9 gates green at 7f02ed9.
 
 ## Failure modes
 

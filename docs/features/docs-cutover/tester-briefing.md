@@ -48,7 +48,7 @@ Red commit 856ff51; implementation 38f14a7 (redirect and links), c5b9f3e (remova
 
 Pins (green when they landed): the `www` host keeps `/?ref=x` → `https://todz.app/?ref=x` (the old row used `/self-host?ref=x`); `site-pages.test.ts` › the landing links only to this site, a fragment or an https address (moved from the removed guide page, c5b9f3e).
 
-Developer's own runs on f5e102e plus the uncommitted test-plan ticks: `@todz/api` unit 64 files, 1673 tests passed; e2e 50 passed, 2 skipped; `tools/repository-shape` 311 passed; `scripts/verify.test.sh` exit 0; `pnpm typecheck` exit 0.
+Developer's own runs on f5e102e plus the uncommitted test-plan ticks: `@todz/api` unit 64 files, 1673 tests passed; e2e 50 passed, 2 skipped; `tools/repository-shape` 311 passed; `scripts/verify.test.sh` exit 0; `pnpm typecheck` exit 0. `pnpm verify`: `verify: 9 gates green at 7f02ed9 (product)` (doctor, format, secrets, typecheck, audit, unit 181s, e2e 50 passed, macos 828 tests, docs 32 passed 6 skipped); the first run failed at `e2e` only because the `security-fixes` lane's `workerd` held inspector port 9291, and the second run, after the port was free, was green.
 
 ## Hypotheses to attack
 
