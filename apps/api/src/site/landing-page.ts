@@ -82,11 +82,17 @@ const PAGE_SCRIPT = `{
   }));
 }`;
 
-const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({ style: SITE_STYLE, script: PAGE_SCRIPT, widgetOrigin: null });
+const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
+  style: SITE_STYLE,
+  script: PAGE_SCRIPT,
+  widgetOrigin: null,
+  connectsToSelf: false,
+});
 const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
   script: PAGE_SCRIPT,
   widgetOrigin: TURNSTILE_ORIGIN,
+  connectsToSelf: false,
 });
 
 function shotImage({ shot, alt, isEager }: { shot: LandingShot; alt: string; isEager: boolean }): string {

@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'vitest';
-import { LANDING_COPY } from '../../src/site/landing-copy';
-import { ADMIN_COPY } from '../../src/site/admin-copy';
-import { serveAdminLinkPage } from '../../src/site/admin-link-page';
-import { serveAdminPanel, serveAdminSignInPage } from '../../src/site/admin-page';
-import { AdminField, AdminPath } from '../../src/site/admin-paths';
-import { AdminNotice, ConfirmationState, type WaitlistRow, type WaitlistSummary } from '../../src/site/admin-waitlist';
-import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from '../page-script';
+import { LANDING_COPY } from '../src/site/landing-copy';
+import { ADMIN_COPY } from '../src/site/admin-copy';
+import { serveAdminLinkPage } from '../src/site/admin-link-page';
+import { serveAdminPanel, serveAdminSignInPage } from '../src/site/admin-page';
+import { AdminField, AdminPath } from '../src/site/admin-paths';
+import { AdminNotice, ConfirmationState, type WaitlistRow, type WaitlistSummary } from '../src/site/admin-waitlist';
+import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
 
 const OK_STATUS = 200;
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
@@ -161,7 +161,7 @@ function runLinkScript({ html, hash, answer }: { html: string; hash: string; ans
     document,
     fetcher,
   );
-  return { steps, elements, settled: () => new Promise((resolve) => setImmediate(resolve)) };
+  return { steps, elements, settled: () => new Promise((resolve) => setTimeout(resolve)) };
 }
 
 describe('every admin page', () => {
