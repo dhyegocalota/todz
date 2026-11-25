@@ -173,6 +173,12 @@ describe('the three sign-in limits on a public host', () => {
     },
   );
 
+  test('a link request over the client limit is refused before the configuration is checked, even with no secret', async () => {
+    const { limiters } = recordedLimiters({ refusing: [LimiterBinding.Client] });
+    const workerEnv = emailEnv({ ...guardedSettings(), EMAIL: recordingBinding().binding, ...limiters, TURNSTILE_SECRET_KEY: undefined });
+    await expectRefused(await serve({ call: linkCall().call, workerEnv }));
+  });
+
   test('a link request over the global cap never spends the slot of its address', async () => {
     const { limiters, keys } = recordedLimiters({ refusing: [LimiterBinding.Global] });
     await expectRefused(await serve({ call: linkCall().call, workerEnv: guardedEnv({ limiters }) }));
@@ -310,6 +316,7 @@ describe('the sign-in limits failing closed on a public host', () => {
     { name: 'the link request', binding: LimiterBinding.Client, call: () => linkCall().call },
     { name: 'the link request', binding: LimiterBinding.Address, call: () => linkCall().call },
     { name: 'the link request', binding: LimiterBinding.Global, call: () => linkCall().call },
+    { name: 'the session post', binding: LimiterBinding.Client, call: () => sessionCall() },
     { name: 'the session post', binding: LimiterBinding.Global, call: () => sessionCall() },
   ])('$name whose $binding throws answers 503 sign_in_unavailable', async ({ binding, call }) => {
     const { limiters } = recordedLimiters();
