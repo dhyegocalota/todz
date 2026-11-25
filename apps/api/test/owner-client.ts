@@ -31,7 +31,11 @@ function requestOf(call: OwnerCall): Request {
   const contentType: Record<string, string> =
     payload === undefined ? {} : { 'Content-Type': JSON_MEDIA_TYPE, 'Content-Length': String(new TextEncoder().encode(payload).length) };
   const appVersion = { [APP_VERSION_HEADER]: MINIMUM_APP_VERSION };
-  return new Request(`${origin}${path}`, { method, headers: { ...appVersion, ...authorization, ...contentType, ...headers }, body: payload });
+  return new Request(`${origin}${path}`, {
+    method,
+    headers: { ...appVersion, ...authorization, ...contentType, ...headers },
+    body: payload,
+  });
 }
 
 export function ownerCall(call: OwnerCall): Promise<Response> {
