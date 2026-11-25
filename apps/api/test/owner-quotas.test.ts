@@ -120,6 +120,18 @@ describe('the key quota', () => {
     expect(await liveKeyCount(projectId)).toBe(PROJECT_LIVE_KEYS_MAX);
   });
 
+  test('issuing and revoking past the cap keeps no more rows than the cap', async () => {
+    const { token } = await signInOwner();
+    const projectId = inboxOf(await createdWorkspace(token));
+    await inSequence(PROJECT_LIVE_KEYS_MAX + 1, async () => {
+      const issued = await issueKey({ token, projectId });
+      const { key } = await issued.json<{ key: { id: string } }>();
+      return ownerCall({ method: 'DELETE', path: `/owner/projects/${projectId}/keys/${key.id}`, token });
+    });
+    const rows = await countOf({ statement: 'SELECT count(*) AS total FROM project_keys WHERE project_id = ?', value: projectId });
+    expect(rows).toBeLessThanOrEqual(PROJECT_LIVE_KEYS_MAX);
+  });
+
   test('a revoked key frees its place', async () => {
     const { token } = await signInOwner();
     const projectId = await inboxOf(await createdWorkspace(token));
