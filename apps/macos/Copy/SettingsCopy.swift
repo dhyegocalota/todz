@@ -11,6 +11,9 @@ enum SettingsCopy {
     static let focusQuietDetail = "todz stays quiet in any Focus with the todz filter on."
     static let focusQuietNow = "Quiet now, until this Focus ends."
     static let openFocusSettings = "Open Focus Settings"
+    static let closeTheDay = "Close the day"
+    static let closeTheDayDetail = "At this time each day, todz opens on what's left of Today."
+    static let closeTheDayTime = "Time to close the day"
 
     static func agentNudgeSubtitle(notice: AgentNudgeNotice) -> String {
         switch notice {

@@ -9,6 +9,8 @@ struct SettingsView: View {
     @Environment(ProactiveGate.self) private var gate
     @Environment(\.openURL) private var openURL
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
+    @AppStorage(DayClosePreference.isOnStorageKey) private var isDayCloseOn = DayClosePreference.isOnByDefault
+    @AppStorage(DayClosePreference.timeStorageKey) private var dayCloseMinutes = DayClosePreference.minutesAfterMidnightByDefault
 
     var body: some View {
         Form {
@@ -31,6 +33,21 @@ struct SettingsView: View {
                 Text(SettingsCopy.focusQuietSubtitle(notice: FocusQuietNotice(isQuiet: gate.isQuiet)))
                     .lineLimit(subtitleLines, reservesSpace: true)
             }
+            LabeledContent {
+                HStack {
+                    DatePicker(SettingsCopy.closeTheDayTime, selection: dayCloseTime, displayedComponents: .hourAndMinute)
+                        .datePickerStyle(.stepperField)
+                        .labelsHidden()
+                        .disabled(!isDayCloseOn)
+                    Toggle(SettingsCopy.closeTheDay, isOn: $isDayCloseOn)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+            } label: {
+                Text(SettingsCopy.closeTheDay)
+                Text(SettingsCopy.closeTheDayDetail)
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
@@ -43,6 +60,14 @@ struct SettingsView: View {
             model.agentNudge == true
         } set: { isEnabled in
             Task { await model.changeAgentNudge(isEnabled: isEnabled) }
+        }
+    }
+
+    private var dayCloseTime: Binding<Date> {
+        Binding {
+            DayCloseSchedule.instant(day: model.today, minutesAfterMidnight: dayCloseMinutes, timeZone: model.timeZone)
+        } set: { time in
+            dayCloseMinutes = DayCloseSchedule.minutesAfterMidnight(of: time, timeZone: model.timeZone)
         }
     }
 

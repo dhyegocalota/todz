@@ -18,8 +18,17 @@ private let cacheFolderName = "Cache"
         pause: { try await Task.sleep(for: $0) }
     )
     let windowState = MainWindowState()
+    let panel = MenuBarPanel()
     let gate: ProactiveGate
     var dayChangeObservation: (any NSObjectProtocol)?
+    private(set) lazy var dayClose = DayCloseCoordinator(
+        gate: gate,
+        defaults: .standard,
+        timeZone: model.timeZone,
+        openCount: { [model] in model.todayHeadingCount },
+        openPopover: { [panel] in panel.open() }
+    )
+    private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
 
     override init() {
         let gate = ProactiveGate()
@@ -31,7 +40,10 @@ private let cacheFolderName = "Cache"
     func applicationDidFinishLaunching(_ notification: Notification) {
         observeWidgetRequests()
         observeDayChanges()
-        Task { await readFocusFilter() }
+        Task {
+            await readFocusFilter()
+            dayCloseScheduler.start()
+        }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {

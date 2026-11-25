@@ -11,6 +11,16 @@ import SwiftUI
         statusItemButton?.performClick(nil)
     }
 
+    // NB ADR 0055: an open from code unhides the app without activating it and clicks the same button, never while the popover shows.
+    func open() -> Bool {
+        let isShown = window?.isVisible == true
+        guard !isShown else { return true }
+        guard let statusItemButton else { return false }
+        NSApp.unhideWithoutActivation()
+        statusItemButton.performClick(nil)
+        return true
+    }
+
     func openMainWindow(_ openWindow: OpenWindowAction) {
         close()
         Task { openWindow.mainWindow() }

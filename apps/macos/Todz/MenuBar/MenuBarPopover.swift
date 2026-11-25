@@ -3,20 +3,26 @@ import TodzKit
 
 struct MenuBarPopover: View {
     @Environment(AppModel.self) private var model
-    @State private var panel = MenuBarPanel()
+    @Environment(MenuBarPanel.self) private var panel
+    @Environment(DayCloseCoordinator.self) private var dayClose
     @FocusState private var focus: MenuBarFocus?
 
     var body: some View {
         screen
-            .environment(panel)
             .background(
                 MenuBarPanelReader(
                     panel: panel,
-                    onBecomeKey: { Task { focus = .addField } },
+                    onBecomeKey: focusAddField,
+                    onHide: { dayClose.end() },
                     onWorkspaceNumber: { number in Task { await model.switchWorkspace(number: number) } }
                 )
             )
             .task { await model.launch() }
+    }
+
+    private func focusAddField() {
+        guard !dayClose.isClosingDay else { return }
+        Task { focus = .addField }
     }
 
     @ViewBuilder private var screen: some View {

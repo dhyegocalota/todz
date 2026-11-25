@@ -12,12 +12,15 @@ struct TodzApp: App {
 
     init() {
         MenuBarBadge.registerDefault(in: .standard)
+        DayClosePreference.registerDefaults(in: .standard)
     }
 
     var body: some Scene {
         let model = appDelegate.model
         let windowState = appDelegate.windowState
         let gate = appDelegate.gate
+        let panel = appDelegate.panel
+        let dayClose = appDelegate.dayClose
         Window(MainWindowCopy.windowTitle, id: MainWindowScene.identifier) {
             RootView()
                 .environment(model)
@@ -31,6 +34,8 @@ struct TodzApp: App {
                 .frame(width: popoverWidth)
                 .environment(model)
                 .environment(windowState)
+                .environment(panel)
+                .environment(dayClose)
         } label: {
             MenuBarLabel()
                 .environment(model)
