@@ -25,7 +25,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 
 ### Gate (server, through the Worker)
 
-- [ ] No header, `0.1.9`, `v0.2.0` on `GET /owner/sign-in-method` → `426`, header `Upgrade: todz-app/0.2.0`, body exactly `{"error":"app_too_old","minimum_app_version":"0.2.0"}`
+- [ ] No header, `0.1.9`, `v0.2.0` on `GET /owner/sign-in-method` → `426`, header `Cache-Control: no-store`, no `Upgrade` header, body exactly `{"error":"app_too_old","minimum_app_version":"0.2.0"}`
 - [ ] Pre-0058 sign-in-link body with no header → `426` with that body, not `400`
 - [ ] Signed in, `GET /owner` with `0.1.0` → `426`; the session is not touched (a later call with `0.2.0` and the same token → `200`)
 - [ ] `GET /owner/projects/:id/socket` with an upgrade request and no app header → `426` with the todz body, not the store's bare WebSocket `426`
@@ -111,6 +111,6 @@ The reviewer picks the three claims most likely to be wrong and tries to refute 
 ## Coverage honesty
 
 - The Download link opens `https://todz.app`, which has no download yet; the owner gets the update from todz-6f's rebuild. Accepted until a release page exists (ADR 0069 Revisit).
-- The owner's current Release app (`0.1.0`) cannot read `app_too_old`: between the deploy and todz-6f's rebuild it shows the generic server error. Accepted for one evening.
+- The owner's `0.1.0` Release app cannot read `app_too_old` and drops a queued change at the third attempt, so the deploy waits until the `0.2.0` app is installed and its queue is empty.
 - A real `wrangler deploy --define` is proven only by the production deploy in G3; the tests cover the argument builder.
 - Static assets served before the Worker carry no `Todz-Api-Version`; not tested because the Worker never sees them.

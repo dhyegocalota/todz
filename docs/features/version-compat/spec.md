@@ -43,7 +43,7 @@ sequenceDiagram
   Worker-->>App: the route's answer · Todz-Api-Version
   participant Old as Older app (no header)
   Old->>Worker: POST /owner/sign-in-links
-  Worker-->>Old: 426 {"error":"app_too_old","minimum_app_version":"0.2.0"} · Upgrade: todz-app/0.2.0
+  Worker-->>Old: 426 {"error":"app_too_old","minimum_app_version":"0.2.0"}
 ```
 
 1. **Stamp.** `server:deploy` reads `git log -1` for the deployed commit's UTC date and short hash, builds `YYYY.MM.DD+<hash>`, runs `wrangler deploy --define TODZ_SERVER_VERSION:"<stamp>"`, then prints the ready line with both versions. `wrangler.jsonc` defines `TODZ_SERVER_VERSION` as `null`.
@@ -60,7 +60,7 @@ sequenceDiagram
 | `GET /health` body | `{"service":"todz","origin":"https://api.todz.app"}` | `{"service":"todz","origin":"https://api.todz.app","version":"2026.11.25+3f9c2ab","minimum_app_version":"0.2.0"}` (`version` is `null` unstamped) |
 | Every Worker answer | security headers | + `Todz-Api-Version: 2026.11.25+3f9c2ab` when stamped |
 | Every app request | `Authorization`, `Content-Type` | + `Todz-App-Version: 0.2.0` |
-| `/owner/*` from a too-old or silent app | the route's answer (today a `400` on sign-in) | `426`, `Upgrade: todz-app/0.2.0`, `{"error":"app_too_old","minimum_app_version":"0.2.0"}` |
+| `/owner/*` from a too-old or silent app | the route's answer (today a `400` on sign-in) | `426`, `Cache-Control: no-store`, `{"error":"app_too_old","minimum_app_version":"0.2.0"}` |
 | `libs/types` | — | `MINIMUM_APP_VERSION = '0.2.0'`, `API_VERSION_HEADER = 'Todz-Api-Version'`, `APP_VERSION_HEADER = 'Todz-App-Version'` |
 | `server:deploy` | `wrangler deploy && tsx scripts/server/cli.ts` | `tsx scripts/server/cli.ts`, which stamps, deploys and prints `todz server ready: https://api.todz.app · server 2026.11.25+3f9c2ab · accepts app 0.2.0 or later  →  paste it in todz › Settings › Server` |
 | `apps/macos/project.yml` | `MARKETING_VERSION: "0.1.0"` | `"0.2.0"` for the app and the widgets |
@@ -92,7 +92,7 @@ The compatibility rule, in order:
 | Server version format | semver in `package.json`; deploy date; commit date + short hash | the loop's call: commit date + short hash, stamped by a `--define` (ADR 0069 §2) | 2026-11-25 |
 | Where the minimum lives | the Worker env; `libs/types` | the loop's call: `MINIMUM_APP_VERSION` in `libs/types` (§3) | 2026-11-25 |
 | Which routes check | every route; `/owner/*` and `/mcp`; `/owner/*` only | the loop's call: `/owner/*` only, after the route matches (§7) | 2026-11-25 |
-| Status and body | `400` with a code; `426` with a code | the loop's call: `426`, `Upgrade: todz-app/<minimum>`, `{"error":"app_too_old","minimum_app_version":…}` (§7) | 2026-11-25 |
+| Status and body | `400` with a code; `426` with a code | the loop's call: `426`, `Cache-Control: no-store`, no `Upgrade` (HTTP/2 forbids it), `{"error":"app_too_old","minimum_app_version":…}` (§7) | 2026-11-25 |
 | An app without the header | allow; refuse | the loop's call: refuse, as too old (§7) | 2026-11-25 |
 | Header on CORS or preflight | expose it; nothing | the loop's call: the API has no CORS; `OPTIONS` falls to `404` and still carries the header (§4) | 2026-11-25 |
 | First app version | keep `0.1.0`; `0.2.0` | the loop's call: `0.2.0`, so every build before the header is older by number too (§1) | 2026-11-25 |
