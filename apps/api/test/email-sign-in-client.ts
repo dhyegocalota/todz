@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { digestCredential } from '../src/credential-digest';
 import { generateCredentialSecret } from '../src/credential-secret';
 import type { Env } from '../src/env';
-import { TurnstileAction } from '../src/turnstile';
+import { TURNSTILE_DUMMY_TOKEN, TurnstileAction } from '../src/turnstile';
 import { serveOwnerCall, workerEnvWith } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
 
@@ -159,15 +159,18 @@ export function requestLink({
   now = CLOCK_NOW,
   workerEnv = emailEnv(),
   origin = PUBLIC_ORIGIN,
+  turnstileToken = TURNSTILE_DUMMY_TOKEN,
 }: {
   email?: unknown;
   challenge?: unknown;
   now?: number;
   workerEnv?: Env;
   origin?: string;
+  turnstileToken?: unknown;
 } = {}): Promise<Response> {
+  const body = { email, link_challenge: challenge, turnstile_token: turnstileToken };
   return serveOwnerCall({
-    call: { method: 'POST', path: LINKS_PATH, body: { email, link_challenge: challenge }, headers: CLIENT_HEADERS, origin },
+    call: { method: 'POST', path: LINKS_PATH, body, headers: CLIENT_HEADERS, origin },
     now,
     workerEnv,
   });
@@ -193,6 +196,7 @@ export function redeemLink({
   timeZone = 'UTC',
   workerEnv = emailEnv(),
   executionContext,
+  turnstileToken = TURNSTILE_DUMMY_TOKEN,
 }: {
   token: string;
   verifier?: string;
@@ -200,12 +204,13 @@ export function redeemLink({
   timeZone?: string;
   workerEnv?: Env;
   executionContext?: ExecutionContext;
+  turnstileToken?: unknown;
 }): Promise<Response> {
   return serveOwnerCall({
     call: {
       method: 'POST',
       path: SESSIONS_PATH,
-      body: { identity_token: token, link_verifier: verifier, time_zone: timeZone },
+      body: { identity_token: token, link_verifier: verifier, time_zone: timeZone, turnstile_token: turnstileToken },
       headers: CLIENT_HEADERS,
     },
     now,
