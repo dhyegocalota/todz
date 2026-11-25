@@ -78,7 +78,8 @@ describe('the 2025 era on the wire', () => {
     const { client } = await connectedClient({ era: McpEra.Legacy, samples });
     expect(samples).toEqual([]);
     await listTasks({ client });
-    expect(samples).toHaveLength(1);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(samples.map((sample) => [sample.scenario, sample.status])).toEqual([[ScenarioKind.List, 200]]);
   });
 
   test('the initialize scenario records only each client initialize request', async () => {

@@ -24,6 +24,10 @@ function rpcMethodOf(request: RecordedRequest): string | null {
   return textOf(fieldOf({ value: request.body, name: 'method' }));
 }
 
+function afterATurn(response: Response): Promise<Response> {
+  return new Promise((resolve) => setImmediate(() => resolve(response)));
+}
+
 function labelOf(request: RecordedRequest): string {
   const rpcMethod = rpcMethodOf(request);
   if (rpcMethod === null) return request.method;
@@ -64,7 +68,7 @@ export function fakeMcpServer({ toolAnswers = {}, failingTools = [], isUnauthori
   const server = recordingFetch((request) => {
     const rpcMethod = rpcMethodOf(request);
     if (request.method === 'DELETE') return new Response(null, { status: 200 });
-    if (rpcMethod === null) return new Response(null, { status: 405 });
+    if (rpcMethod === null) return afterATurn(new Response(null, { status: 405 }));
     if (rpcMethod === 'initialize') {
       const result = { protocolVersion: LEGACY_VERSION, capabilities: { tools: {} }, serverInfo: { name: 'fake', version: '1' } };
       return resultResponse({ request, result, headers: { 'Mcp-Session-Id': FAKE_SESSION_IDENTIFIER } });
