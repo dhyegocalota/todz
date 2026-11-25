@@ -1,4 +1,6 @@
 import { escapedHtml } from '../escaped-html';
+import { TurnstileAction } from '../turnstile';
+import { SITE_KEY_PATTERN, TURNSTILE_ORIGIN, TURNSTILE_SCRIPT_TAG } from '../turnstile-page';
 import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
@@ -25,6 +27,20 @@ const ARIA_DISABLED = 'aria-disabled';
 const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const CLASS_SEPARATOR = ' ';
 const WORD_SEPARATOR = ' ';
+const WIDGET_APPEARANCE = 'interaction-only';
+const WIDGET_THEME = 'auto';
+
+type LandingPage = { available: (siteKey: string) => string; unavailable: string };
+
+type LandingChallenge = { widget: string; scriptTag: string };
+
+const NO_CHALLENGE: LandingChallenge = { widget: '', scriptTag: '' };
+
+const NOTICE_TEXT: Record<Exclude<LandingNotice, LandingNotice.None>, string> = {
+  [LandingNotice.OpensSoon]: LANDING_COPY.join.opensSoon,
+  [LandingNotice.Joined]: LANDING_COPY.join.joined,
+  [LandingNotice.TryAgain]: LANDING_COPY.join.tryAgain,
+};
 
 const PAGE_SCRIPT = `{
   document.querySelectorAll('.${JOIN_FORM_CLASS}').forEach((form) => {
@@ -47,7 +63,12 @@ const PAGE_SCRIPT = `{
   }));
 }`;
 
-const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({ style: SITE_STYLE, script: PAGE_SCRIPT });
+const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({ style: SITE_STYLE, script: PAGE_SCRIPT, widgetOrigin: null });
+const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
+  style: SITE_STYLE,
+  script: PAGE_SCRIPT,
+  widgetOrigin: TURNSTILE_ORIGIN,
+});
 
 function shotImage({ shot, alt, isEager }: { shot: LandingShot; alt: string; isEager: boolean }): string {
   const { path, width, height } = LANDING_SHOTS[shot];
@@ -62,10 +83,28 @@ function windowPicture(): string {
 
 function joinStatusHtml({ form, notice }: { form: JoinForm; notice: LandingNotice }): string {
   if (notice === LandingNotice.None) return `<p class="join-note">${escapedHtml(LANDING_COPY.join.note)}</p>`;
-  return `<p id="${form}-notice" class="${JOIN_NOTICE_CLASS}" role="status" tabindex="-1"><span class="notice-dot" aria-hidden="true"></span>${escapedHtml(LANDING_COPY.join.opensSoon)}</p>`;
+  return `<p id="${form}-notice" class="${JOIN_NOTICE_CLASS}" role="status" tabindex="-1"><span class="notice-dot" aria-hidden="true"></span>${escapedHtml(NOTICE_TEXT[notice])}</p>`;
 }
 
-function joinFormHtml({ form, notice, classNames }: { form: JoinForm; notice: LandingNotice; classNames: string[] }): string {
+// NB ADR 0046: the site key sits in a data attribute, so the page script stays one fixed source with one hash.
+function challengeOf(siteKey: string): LandingChallenge {
+  return {
+    widget: `<div class="cf-turnstile" data-sitekey="${siteKey}" data-action="${TurnstileAction.Waitlist}" data-appearance="${WIDGET_APPEARANCE}" data-theme="${WIDGET_THEME}"></div>\n`,
+    scriptTag: `${TURNSTILE_SCRIPT_TAG}\n`,
+  };
+}
+
+function joinFormHtml({
+  form,
+  notice,
+  widget,
+  classNames,
+}: {
+  form: JoinForm;
+  notice: LandingNotice;
+  widget: string;
+  classNames: string[];
+}): string {
   const inputId = `${form}-email`;
   return `<form id="${form}" class="${[JOIN_FORM_CLASS, ...classNames].join(CLASS_SEPARATOR)}" method="post" action="${JOIN_PATH}#${form}">
 <div class="join-capsule">
@@ -73,17 +112,17 @@ function joinFormHtml({ form, notice, classNames }: { form: JoinForm; notice: La
 <input id="${inputId}" class="join-input" name="email" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(LANDING_COPY.join.emailPlaceholder)}" required>
 <button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(LANDING_COPY.join.submitting)}">${escapedHtml(LANDING_COPY.join.submit)}</button>
 </div>
-${joinStatusHtml({ form, notice })}
+${widget}${joinStatusHtml({ form, notice })}
 </form>`;
 }
 
-function heroHtml(notice: LandingNotice): string {
+function heroHtml({ notice, widget }: { notice: LandingNotice; widget: string }): string {
   return `<section class="hero page-width" aria-labelledby="hero-title">
 <div class="hero-copy">
 <p class="eyebrow-pill glass rise"><span class="eyebrow-dot" aria-hidden="true"></span>${escapedHtml(LANDING_COPY.hero.eyebrow)}</p>
 <h1 id="hero-title" class="hero-title rise delay-1">${escapedHtml(LANDING_COPY.hero.title)}</h1>
 <p class="hero-lead rise delay-2">${escapedHtml(LANDING_COPY.hero.lead)}</p>
-${joinFormHtml({ form: JoinForm.Hero, notice, classNames: ['rise', 'delay-3'] })}
+${joinFormHtml({ form: JoinForm.Hero, notice, widget, classNames: ['rise', 'delay-3'] })}
 </div>
 <figure class="desk-stage arrive delay-3">
 <figcaption class="visually-hidden">${escapedHtml(LANDING_COPY.stage.label)}</figcaption>
@@ -141,36 +180,47 @@ ${steps}
 </section>`;
 }
 
-function finalCallHtml(notice: LandingNotice): string {
+function finalCallHtml({ notice, widget }: { notice: LandingNotice; widget: string }): string {
   return `<section class="final-call page-width reveal" aria-labelledby="final-title">
 ${glyphHtml({ glyph: SiteGlyph.Icon, className: 'final-icon' })}
 <h2 id="final-title" class="section-title">${escapedHtml(LANDING_COPY.final.title)}</h2>
 <p class="final-body">${escapedHtml(LANDING_COPY.final.body)}</p>
-${joinFormHtml({ form: JoinForm.Final, notice, classNames: [] })}
+${joinFormHtml({ form: JoinForm.Final, notice, widget, classNames: [] })}
 </section>`;
 }
 
-function landingHtml(notice: LandingNotice): string {
+function landingHtml({ notice, challenge }: { notice: LandingNotice; challenge: LandingChallenge }): string {
+  const { widget, scriptTag } = challenge;
   return siteDocumentHtml({
     title: LANDING_COPY.meta.title,
     description: LANDING_COPY.meta.description,
     main: `<main id="${CONTENT_ID}">
-${heroHtml(notice)}
+${heroHtml({ notice, widget })}
 ${benefitsHtml()}
 ${howItWorksHtml()}
-${finalCallHtml(notice)}
-</main>`,
+${finalCallHtml({ notice, widget })}
+${scriptTag}</main>`,
     script: PAGE_SCRIPT,
   });
 }
 
-const LANDING_HTML: Partial<Record<LandingNotice, string>> = {
-  [LandingNotice.None]: landingHtml(LandingNotice.None),
-  [LandingNotice.OpensSoon]: landingHtml(LandingNotice.OpensSoon),
+function landingPageOf(notice: LandingNotice): LandingPage {
+  return {
+    available: (siteKey) => landingHtml({ notice, challenge: challengeOf(siteKey) }),
+    unavailable: landingHtml({ notice, challenge: NO_CHALLENGE }),
+  };
+}
+
+const LANDING_PAGES: Record<LandingNotice, LandingPage> = {
+  [LandingNotice.None]: landingPageOf(LandingNotice.None),
+  [LandingNotice.OpensSoon]: landingPageOf(LandingNotice.OpensSoon),
+  [LandingNotice.Joined]: landingPageOf(LandingNotice.Joined),
+  [LandingNotice.TryAgain]: landingPageOf(LandingNotice.TryAgain),
 };
 
-export async function serveLandingPage({ notice }: { notice: LandingNotice; siteKey: string | null }): Promise<Response> {
-  const html = LANDING_HTML[notice];
-  if (html === undefined) throw new Error('serveLandingPage is not implemented');
-  return sitePageResponse({ html, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+export async function serveLandingPage({ notice, siteKey }: { notice: LandingNotice; siteKey: string | null }): Promise<Response> {
+  const page = LANDING_PAGES[notice];
+  const isUsableSiteKey = siteKey !== null && SITE_KEY_PATTERN.test(siteKey);
+  if (!isUsableSiteKey) return sitePageResponse({ html: page.unavailable, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+  return sitePageResponse({ html: page.available(siteKey), contentSecurityPolicy: CHALLENGE_CONTENT_SECURITY_POLICY });
 }

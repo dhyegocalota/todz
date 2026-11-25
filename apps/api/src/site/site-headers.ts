@@ -7,13 +7,23 @@ const REFERRER_POLICY = 'no-referrer';
 const CONTENT_TYPE_OPTIONS = 'nosniff';
 export const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
 
-export async function siteContentSecurityPolicy({ style, script }: { style: string; script: string | null }): Promise<string> {
-  const scriptDirectives = script === null ? [] : [`script-src ${await sourceHash(script)}`];
+export async function siteContentSecurityPolicy({
+  style,
+  script,
+  widgetOrigin,
+}: {
+  style: string;
+  script: string | null;
+  widgetOrigin: string | null;
+}): Promise<string> {
+  const widgetOrigins = widgetOrigin === null ? [] : [widgetOrigin];
+  const scriptDirectives = script === null ? [] : [['script-src', await sourceHash(script), ...widgetOrigins].join(' ')];
   return [
     "default-src 'none'",
     ...scriptDirectives,
     `style-src ${await sourceHash(style)}`,
     "img-src 'self'",
+    ...widgetOrigins.map((origin) => `frame-src ${origin}`),
     "form-action 'self'",
     "frame-ancestors 'none'",
     "base-uri 'none'",

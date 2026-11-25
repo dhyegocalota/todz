@@ -95,6 +95,7 @@ a{color:var(--color-link);text-underline-offset:0.12em}
 .join-button:hover{filter:brightness(1.06)}
 .join-button:active{transform:scale(0.98)}
 .join-button[aria-disabled=true]{cursor:progress;filter:saturate(0.7)}
+.cf-turnstile{display:flex;justify-content:center}
 .join-note,.join-notice{margin-top:var(--space-3);font-size:var(--text-small);color:var(--color-text-muted);text-align:center}
 .join-notice{display:flex;align-items:center;justify-content:center;gap:var(--space-2);color:var(--color-text);font-weight:500}
 .join-notice:focus{outline:none}
