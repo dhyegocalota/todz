@@ -1,3 +1,4 @@
+import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import guide from '../../../docs/self-host.md?raw';
 import { MCP_COPY } from '../src/mcp-copy';
@@ -7,6 +8,9 @@ import { serveSelfHostPage } from '../src/site/self-host-page';
 import { inlineSources, onlyInlineSource, sourceHash } from './page-script';
 
 const OK_STATUS = 200;
+const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
+const JOIN_FORM_BODY = 'email=maria%40example.com';
+const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
 const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
 const SCRIPT_PATTERN = /<script>([\s\S]*?)<\/script>/g;
@@ -200,6 +204,33 @@ describe('the landing', () => {
       expect(form).toMatch(new RegExp(`<p [^>]*role="status"[^>]*tabindex="-1"[^>]*>[\\s\\S]*${LANDING_COPY.join.opensSoon}`));
       expect(form).not.toContain(LANDING_COPY.join.note);
     });
+  });
+});
+
+describe('the site host through the Worker', () => {
+  test.each([
+    { method: 'GET', path: '/', page: () => landingPage(LandingNotice.None) },
+    { method: 'GET', path: '/self-host', page: selfHostPage },
+  ])('$method $path answers the page this module renders, with its headers', async ({ method, path, page }) => {
+    const response = await exports.default.fetch(`${LOCAL_SITE_ORIGIN}${path}`, { method });
+    const expected = await page();
+    expect(response.status).toBe(OK_STATUS);
+    expect(await response.text()).toBe(expected.html);
+    expect(response.headers.get('Content-Security-Policy')).toBe(expected.response.headers.get('Content-Security-Policy'));
+    expect(response.headers.get('Strict-Transport-Security')).toBe(STRICT_TRANSPORT_SECURITY);
+  });
+
+  test('POST /join answers the landing with the opens-soon notices and its headers', async () => {
+    const response = await exports.default.fetch(`${LOCAL_SITE_ORIGIN}/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': FORM_CONTENT_TYPE },
+      body: JOIN_FORM_BODY,
+    });
+    const expected = await landingPage(LandingNotice.OpensSoon);
+    expect(response.status).toBe(OK_STATUS);
+    expect(await response.text()).toBe(expected.html);
+    expect(response.headers.get('Content-Security-Policy')).toBe(expected.response.headers.get('Content-Security-Policy'));
+    expect(response.headers.get('Strict-Transport-Security')).toBe(STRICT_TRANSPORT_SECURITY);
   });
 });
 
