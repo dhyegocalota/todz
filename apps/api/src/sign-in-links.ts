@@ -10,9 +10,11 @@ import { HttpStatus } from './http-status';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
 import { type OwnerContext, parsedPublicBody } from './owner-request';
 import { OwnerRoute } from './owner-routes';
+import { signInChallengeOf } from './sign-in-challenge';
 import { addressLimitRefusal, globalLimitRefusal, signInRefusal } from './sign-in-limiter';
 import { SIGN_IN_PAGE_PATH } from './sign-in-page';
 import { SignInProviderKind, signInKindOf } from './sign-in-provider';
+import { TurnstileAction } from './turnstile';
 
 const SIGN_IN_LINK_LIFETIME_MINUTES = 15;
 const SIGN_IN_LINK_LIFETIME_MS = SIGN_IN_LINK_LIFETIME_MINUTES * MILLISECONDS_PER_MINUTE;
@@ -24,7 +26,7 @@ const SECURE_PROTOCOL = 'https:';
 const PLAIN_PROTOCOL = 'http:';
 const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
 
-const RequestBodySchema = z.object({ email: z.string(), link_challenge: z.string() });
+const RequestBodySchema = z.object({ email: z.string(), link_challenge: z.string(), turnstile_token: z.string() });
 
 export function publicOriginOf(configured: string | undefined): string | null {
   if (configured === undefined) return null;
@@ -52,11 +54,15 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   if (isLinkUnsendable) return errorResponse(OwnerErrorCode.SignInUnavailable);
   const sender = emailSenderOf({ configured: env.EMAIL_SENDER, publicOrigin, requestUrl: request.url, binding: env.EMAIL });
   if (sender === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
+  const challenge = signInChallengeOf({ request, env, action: TurnstileAction.RequestLink });
+  if (challenge === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
   const body = await parsedPublicBody({ request, schema: RequestBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const address = normalizedAddress(body.email);
   const isMalformedAsk = address === null || !LINK_CHALLENGE_PATTERN.test(body.link_challenge);
   if (isMalformedAsk) return errorResponse(OwnerErrorCode.InvalidRequest);
+  const challengeRefusal = await challenge.refusalOf(body.turnstile_token);
+  if (challengeRefusal !== null) return challengeRefusal;
   const addressRefusal = await addressLimitRefusal({ request, env, address });
   if (addressRefusal !== null) return addressRefusal;
   const globalRefusal = await globalLimitRefusal({ request, env, route: OwnerRoute.RequestSignInLink });

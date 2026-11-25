@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { generateCredentialSecret } from '../src/credential-secret';
 import type { Env } from '../src/env';
 import { TURNSTILE_DUMMY_TOKEN, TurnstileAction } from '../src/turnstile';
 import {
@@ -337,7 +338,7 @@ describe('what the guard writes to the log', () => {
     expect((await publicLink({ workerEnv, email, turnstileToken: REQUEST_LINK_TOKEN })).status).toBe(ACCEPTED_STATUS);
     const token = tokenOfMail(messageSent(sent));
     await expectRefused(await publicLink({ workerEnv, email, turnstileToken: SIGN_IN_TOKEN }));
-    const refused = await redeemLink({ token, verifier: 'wrong', workerEnv, turnstileToken: REQUEST_LINK_TOKEN });
+    const refused = await redeemLink({ token, verifier: generateCredentialSecret(), workerEnv, turnstileToken: REQUEST_LINK_TOKEN });
     expect(refused.status).toBe(TOO_MANY_STATUS);
     const logged = lines.flatMap((spy) => spy.mock.calls.map((call) => JSON.stringify(call))).join('\n');
     [email, token, REQUEST_LINK_TOKEN, SIGN_IN_TOKEN].forEach((secret) => expect(logged).not.toContain(secret));
