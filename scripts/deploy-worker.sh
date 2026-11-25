@@ -27,7 +27,7 @@ ssh_keygen_binary=${TODZ_DEPLOY_SSH_KEYGEN_BINARY:-/usr/bin/ssh-keygen}
 curl_seconds=${TODZ_DEPLOY_CURL_SECONDS:-30}
 wrangler_seconds=${TODZ_DEPLOY_WRANGLER_SECONDS:-600}
 
-usage="usage: deploy-worker.sh [--stage-only <folder>] [--with <version>]"
+usage="usage: deploy-worker.sh [--stage-only <folder>] [--candidate <version>]"
 stage_only_directory=""
 pending_version=""
 automatic_stage=""
@@ -52,7 +52,7 @@ parse_arguments() {
     [[ $# -ge 2 ]] || fail "$usage"
     case "$1" in
       --stage-only) stage_only_directory=$2 ;;
-      --with) pending_version=$2 ;;
+      --candidate) pending_version=$2 ;;
       *) fail "$usage" ;;
     esac
     shift 2

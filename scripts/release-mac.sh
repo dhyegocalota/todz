@@ -475,7 +475,7 @@ check_production() {
 release_to_production() {
   copy_build_into_site
   rollback_pending=true
-  bounded "$deploy_seconds" "deploy-worker" "$deploy_worker_binary" --with "$version" || fail "deploy-worker failed"
+  bounded "$deploy_seconds" "deploy-worker" "$deploy_worker_binary" --candidate "$version" || fail "deploy-worker failed"
   check_production
   rollback_pending=false
   echo "$version" >> "$site/released"
