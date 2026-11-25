@@ -46,6 +46,7 @@ struct TodayListView: View {
         switch row.key {
         case let .some(key):
             WidgetTaskRow(task: row, key: key, showsTag: family == .large, widgetDay: widgetDay)
+                .overdueWash(task: row, widgetDay: widgetDay, isShown: entry.showsDayTemperature)
         case .none:
             WidgetPendingRow(task: row)
         }

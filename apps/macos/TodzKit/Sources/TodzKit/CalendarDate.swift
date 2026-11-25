@@ -71,4 +71,10 @@ public struct CalendarDate: Codable, Sendable, Hashable, Comparable {
         guard let moved else { preconditionFailure(arithmeticFailure) }
         return CalendarDate.today(in: .gmt, at: moved)
     }
+
+    public func days(since earlier: CalendarDate) -> Int {
+        let difference = gregorianCalendar(in: .gmt).dateComponents([.day], from: earlier.start(in: .gmt), to: start(in: .gmt))
+        guard let days = difference.day else { preconditionFailure(arithmeticFailure) }
+        return days
+    }
 }

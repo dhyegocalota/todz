@@ -47,7 +47,7 @@ struct NextUpView: View {
     @ViewBuilder private func todayBody(_ today: WidgetToday, widgetDay: WidgetDay) -> some View {
         switch today.nextUp {
         case let .some(task):
-            NextUpTask(task: task, widgetDay: widgetDay)
+            NextUpTask(task: task, widgetDay: widgetDay, isWashShown: entry.showsDayTemperature)
         case .none:
             Text(WidgetCopy.allDone)
                 .foregroundStyle(.secondary)

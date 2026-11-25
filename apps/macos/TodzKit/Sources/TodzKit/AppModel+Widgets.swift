@@ -11,7 +11,7 @@ extension AppModel {
 
     private var readyWidgetSnapshot: WidgetSnapshotState {
         guard let workspace = activeWorkspace, isTodayKnown(in: workspace), let views = taskViews else { return .absent }
-        return .ready(WidgetSnapshot.of(views: views, workspace: workspace, day: today, timeZone: timeZone))
+        return .ready(WidgetSnapshot.of(views: views, workspace: workspace, day: today, timeZone: timeZone, showsDayTemperature: showsDayTemperature))
     }
 
     func isTodayKnown(in workspace: Workspace) -> Bool {

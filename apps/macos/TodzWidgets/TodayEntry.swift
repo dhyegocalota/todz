@@ -13,6 +13,10 @@ struct TodayEntry: TimelineEntry {
         return WidgetDay(day: CalendarDate.today(in: timeZone, at: date), timeZone: timeZone)
     }
 
+    var showsDayTemperature: Bool {
+        snapshot?.showsDayTemperature == true
+    }
+
     var nextMidnight: Date? {
         guard let widgetDay else { return nil }
         return widgetDay.day.adding(days: daysToNextMidnight).start(in: widgetDay.timeZone)
