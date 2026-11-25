@@ -244,6 +244,7 @@ describe('runbooks', () => {
       .split(LINE_SEPARATOR)
       .filter(Boolean);
     expect(logStart).toBeGreaterThan(0);
+    expect(rows.length).toBeGreaterThan(0);
     expect(rows.filter((row) => !RUN_LOG_ROW_PATTERN.test(row))).toEqual([]);
   });
 });

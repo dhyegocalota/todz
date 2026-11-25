@@ -2,6 +2,7 @@
 
 - Date: 2026-11-24
 - Inspired by: the first production run of [`deploy-the-api.md`](../runbooks/deploy-the-api.md) at 2bde053 (Version `8d389ed9-126b-475d-b936-ab951e1141c9`), [ADR 0044](../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md)
+- Revisited: 2026-11-24 — still true (written the same day)
 
 ## Signal
 

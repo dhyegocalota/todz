@@ -31,6 +31,6 @@ One commit after the run.
 
 ## Z. Prove and ship
 
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md`.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict.
-- [ ] **/open-pr:** gates passed, PR opened.
+- [x] **Tester run:** 8 of 8 at e912c57, no defect — evidence: c638373.
+- [x] **Reviewer:** WITH RESERVATIONS, all fixed: `<version-id>` is defined, the run-log test requires at least one row, the owner's name is gone from the subdomain row, and the learning carries a Revisited line. Security CLEAR; the live Worker answers 503 on both sign-in posts until the secret exists.
+- [x] **/open-pr:** gates passed, PR opened.

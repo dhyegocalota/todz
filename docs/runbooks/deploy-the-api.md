@@ -6,7 +6,7 @@ Every command runs from the repository root, one command per call, and every com
 
 Prerequisites: the `sign-in-guard` feature has shipped. It adds Turnstile, failing closed, and the per-client, per-address and global limits on every public sign-in endpoint. The owner said on 2026-11-24 that sign-in never goes to production without it, so check `docs/features/README.md` for its `Shipped` row and stop if it is missing. The account is on Workers Paid (the owner confirmed it active on 2026-11-24), and the token has these permissions by the dashboard's names: Workers Scripts Edit, D1 Edit, Workers Routes Edit and DNS Edit and Zone Settings Edit on the zone, Zone Read scoped to the `todz.app` zone, and Email Sending Edit. The dashboard names are not checked against Cloudflare's documentation.
 
-Where a step says `<commit>`, use the short hash step 1 prints; `<owner-address>` is the address the owner gives at run time. Files the run writes live in `~/.todz-deploy/`, outside the repository, in folders only the owner can open.
+Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` is the Current Version ID step 8 prints; `<owner-address>` is the address the owner gives at run time. Files the run writes live in `~/.todz-deploy/`, outside the repository, in folders only the owner can open.
 
 1. **Start from a clean `main`.** Check the tree, the branch and that nothing differs from `origin/main`, then run the gate:
 
@@ -210,6 +210,6 @@ The owner rotates the Keychain token after a run that went wrong, when it may ha
 | 2026-11-24 | 2bde053 | 10 | Not run: the widget is the owner's step (the token lacks Turnstile Edit). No site key and no secret, so sign-in stays closed by design |
 | 2026-11-24 | 2bde053 | 11 | Sending enabled for `todz.app` (tag `e334383f152c44038f0216e0e35bcf85`, enabled yes). Cloudflare added the `cf-bounce` MX, SPF and DKIM records. The apex MX and SPF and `_dmarc` `p=none` are unchanged. `dns get` suggests `_dmarc p=reject`; left as is |
 | 2026-11-24 | 2bde053 | 12 | pseudo IPv4 `off`; Always Use HTTPS `on`. The first plain request answered 404 while it propagated; read back `on`, then `HTTP/1.1 301` to `https://api.todz.app/owner/sign-in-method` |
-| 2026-11-24 | 2bde053 | 13 | `{"method":"link"}`; `/sign-in` and `/sign-in/challenge` `HTTP/2 503` text/html (no site key yet); `/mcp` `HTTP/2 401`; subdomain `dhyegofernando`, and `todz-api.dhyegofernando.workers.dev` gave no answer in 120 s. A wrong session on `/owner` answered 401, so D1 serves. The export was deleted |
+| 2026-11-24 | 2bde053 | 13 | `{"method":"link"}`; `/sign-in` and `/sign-in/challenge` `HTTP/2 503` text/html (no site key yet); `/mcp` `HTTP/2 401`; the account subdomain read, and the Worker's `workers.dev` address gave no answer in 120 s. A wrong session on `/owner` answered 401, so D1 serves. The export was deleted |
 | 2026-11-24 | 2bde053 | 14 | `HTTP/2 503` `{"error":"sign_in_unavailable"}`, as expected before the secret; no mail |
 | 2026-11-24 | 2bde053 | 15 | First run: 503s, then `429` with `retry-after: 60` (three visible through the old `^HTTP` grep, which this run corrected). The second run within the window: fourteen `429` `sign_in_refused`. A minute later, one request answered `503` again |

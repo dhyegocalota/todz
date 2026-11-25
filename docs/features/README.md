@@ -45,4 +45,4 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 | [`sign-in-guard`](sign-in-guard/) | A per-client, per-address and global limit and a Turnstile check on the public sign-in routes, failing closed, with the check shown in the app and on the link page | Shipped 2026-11-24 ([PR #21](https://github.com/dhyegocalota/todz/pull/21)) |
 | [`readme-walk`](readme-walk/) | The README walk cut to the twelve shots that tell the product's story | Shipped 2026-11-24 ([PR #22](https://github.com/dhyegocalota/todz/pull/22)) |
 | [`self-host-docs`](self-host-docs/) | A short, tested guide to running your own todz server on Cloudflare and pointing the app and an agent at it | Shipped 2026-11-24 ([PR #23](https://github.com/dhyegocalota/todz/pull/23)) |
-| [`deploy-run`](deploy-run/) | The first production run of the deploy runbook, recorded, with the three corrections it taught | Building |
+| [`deploy-run`](deploy-run/) | The first production run of the deploy runbook, recorded, with the three corrections it taught | In review |
