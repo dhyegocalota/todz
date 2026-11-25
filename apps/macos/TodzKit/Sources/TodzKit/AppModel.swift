@@ -100,6 +100,8 @@ import Observation
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let pendingLinks: any PendingLinkVault
     @ObservationIgnored let store: any SyncStore
+    @ObservationIgnored let cacheScheduler: CacheScheduler
+    @ObservationIgnored var taskViewsBuildCount = 0
     @ObservationIgnored let widgetStore: any WidgetStore
     @ObservationIgnored let reloadWidgets: @Sendable () -> Void
     @ObservationIgnored public let timeZone: TimeZone
@@ -117,6 +119,7 @@ import Observation
         vault: any SessionVault,
         pendingLinks: any PendingLinkVault,
         store: any SyncStore,
+        cacheScheduler: CacheScheduler = .immediate,
         widgetStore: any WidgetStore,
         reloadWidgets: @escaping @Sendable () -> Void,
         timeZone: TimeZone,
@@ -138,6 +141,7 @@ import Observation
         self.vault = vault
         self.pendingLinks = pendingLinks
         self.store = store
+        self.cacheScheduler = cacheScheduler
         self.widgetStore = widgetStore
         self.reloadWidgets = reloadWidgets
         self.timeZone = timeZone
@@ -162,6 +166,7 @@ import Observation
 
     public var taskViews: TaskViews? {
         guard let activeWorkspace else { return nil }
+        taskViewsBuildCount += 1
         return TaskViews(
             projects: activeWorkspace.projects,
             board: board.applying(outbox),
@@ -170,6 +175,8 @@ import Observation
             timeZone: timeZone
         )
     }
+
+    public func flushCache() {}
 
     public var canTryAgain: Bool {
         retry != nil
