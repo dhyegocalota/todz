@@ -1,7 +1,14 @@
 import { escapedHtml } from '../escaped-html';
 import { TurnstileAction } from '../turnstile';
 import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
-import { ARIA_DISABLED, EMAIL_FIELD_NAME, JOIN_BUTTON_CLASS, JOIN_FORM_CLASS } from './join-form-markup';
+import {
+  ARIA_DISABLED,
+  EMAIL_FIELD_NAME,
+  HONEYPOT_FIELD_NAME,
+  JOIN_BUTTON_CLASS,
+  JOIN_FORM_CLASS,
+  STAMP_FIELD_NAME,
+} from './join-form-markup';
 import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
@@ -10,6 +17,7 @@ import { LANDING_STRUCTURED_DATA } from './site-json-ld';
 import { CONTENT_ID, JOIN_PATH, LANDING_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE, cropClassOf } from './site-style';
 import { WEBMCP_SCRIPT } from './webmcp-script';
+import { renderStampOf } from './waitlist-stamp';
 
 export enum LandingNotice {
   None = 'none',
@@ -28,17 +36,20 @@ const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const SRCSET_LIST_SEPARATOR = ', ';
 const CLASS_SEPARATOR = ' ';
 const WORD_SEPARATOR = ' ';
-const WIDGET_APPEARANCE = 'interaction-only';
+const WIDGET_APPEARANCE = 'always';
+const WIDGET_SIZE = 'flexible';
+const JOIN_CHECK_CLASS = 'join-check';
+const JOIN_EXTRA_CLASS = 'join-extra';
 const WIDGET_THEME = 'auto';
 const WIDGET_CLASS = 'cf-turnstile';
 const TOKEN_CALLBACK = 'waitlistTokenReady';
 const FAILURE_CALLBACK = 'waitlistChallengeFailed';
 
-type LandingPage = { available: (siteKey: string) => string; unavailable: string };
+type LandingPage = { available: ({ siteKey, stamp }: { siteKey: string; stamp: string }) => string; unavailable: string };
 
-type LandingChallenge = { widget: string; scriptTag: string };
+type LandingChallenge = { widget: string; scriptTag: string; fieldsOf: (form: JoinForm) => string };
 
-const NO_CHALLENGE: LandingChallenge = { widget: '', scriptTag: '' };
+const NO_CHALLENGE: LandingChallenge = { widget: '', scriptTag: '', fieldsOf: () => '' };
 
 const NOTICE_TEXT: Record<Exclude<LandingNotice, LandingNotice.None>, string> = {
   [LandingNotice.OpensSoon]: LANDING_COPY.join.opensSoon,
@@ -137,27 +148,39 @@ function windowPicture(): string {
 }
 
 function joinStatusHtml({ form, notice }: { form: JoinForm; notice: LandingNotice }): string {
-  if (notice === LandingNotice.None) return `<p class="join-note">${escapedHtml(LANDING_COPY.join.note)}</p>`;
+  if (notice === LandingNotice.None)
+    return `<p id="${form}-notice" class="join-note" role="status">${escapedHtml(LANDING_COPY.join.note)}</p>`;
   return `<p id="${form}-notice" class="${JOIN_NOTICE_CLASS}" role="status" tabindex="-1"><span class="notice-dot" aria-hidden="true"></span>${escapedHtml(NOTICE_TEXT[notice])}</p>`;
 }
 
+function honeypotAndStampHtml({ form, stamp }: { form: JoinForm; stamp: string }): string {
+  const honeypotId = `${form}-${HONEYPOT_FIELD_NAME}`;
+  return `<div class="${JOIN_EXTRA_CLASS}" aria-hidden="true">
+<label for="${honeypotId}">${escapedHtml(LANDING_COPY.join.honeypotLabel)}</label>
+<input id="${honeypotId}" name="${HONEYPOT_FIELD_NAME}" type="text" tabindex="-1" autocomplete="off">
+</div>
+<input type="hidden" name="${STAMP_FIELD_NAME}" value="${stamp}">
+`;
+}
+
 // NB ADR 0046: the site key sits in a data attribute, so the page script stays one fixed source with one hash.
-function challengeOf(siteKey: string): LandingChallenge {
+function challengeOf({ siteKey, stamp }: { siteKey: string; stamp: string }): LandingChallenge {
   return {
-    widget: `<div class="${WIDGET_CLASS}" data-sitekey="${siteKey}" data-action="${TurnstileAction.Waitlist}" data-appearance="${WIDGET_APPEARANCE}" data-theme="${WIDGET_THEME}" data-callback="${TOKEN_CALLBACK}" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${FAILURE_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div>\n`,
+    widget: `<div class="${JOIN_CHECK_CLASS}"><div class="${WIDGET_CLASS}" data-sitekey="${siteKey}" data-action="${TurnstileAction.Waitlist}" data-appearance="${WIDGET_APPEARANCE}" data-size="${WIDGET_SIZE}" data-theme="${WIDGET_THEME}" data-callback="${TOKEN_CALLBACK}" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${FAILURE_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div></div>\n`,
     scriptTag: `${TURNSTILE_SCRIPT_TAG}\n`,
+    fieldsOf: (form) => honeypotAndStampHtml({ form, stamp }),
   };
 }
 
 function joinFormHtml({
   form,
   notice,
-  widget,
+  challenge,
   classNames,
 }: {
   form: JoinForm;
   notice: LandingNotice;
-  widget: string;
+  challenge: LandingChallenge;
   classNames: string[];
 }): string {
   const inputId = `${form}-email`;
@@ -167,17 +190,17 @@ function joinFormHtml({
 <input id="${inputId}" class="join-input" name="${EMAIL_FIELD_NAME}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(LANDING_COPY.join.emailPlaceholder)}" required>
 <button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(LANDING_COPY.join.submitting)}">${escapedHtml(LANDING_COPY.join.submit)}</button>
 </div>
-${widget}${joinStatusHtml({ form, notice })}
+${challenge.widget}${challenge.fieldsOf(form)}${joinStatusHtml({ form, notice })}
 </form>`;
 }
 
-function heroHtml({ notice, widget }: { notice: LandingNotice; widget: string }): string {
+function heroHtml({ notice, challenge }: { notice: LandingNotice; challenge: LandingChallenge }): string {
   return `<section class="hero page-width" aria-labelledby="hero-title">
 <div class="hero-copy">
 <p class="eyebrow-pill glass rise"><span class="eyebrow-dot" aria-hidden="true"></span>${escapedHtml(LANDING_COPY.hero.eyebrow)}</p>
 <h1 id="hero-title" class="hero-title rise delay-1">${escapedHtml(LANDING_COPY.hero.title)}</h1>
 <p class="hero-lead rise delay-2">${escapedHtml(LANDING_COPY.hero.lead)}</p>
-${joinFormHtml({ form: JoinForm.Hero, notice, widget, classNames: ['rise', 'delay-3'] })}
+${joinFormHtml({ form: JoinForm.Hero, notice, challenge, classNames: ['rise', 'delay-3'] })}
 </div>
 <figure class="desk-stage arrive delay-3">
 <figcaption class="visually-hidden">${escapedHtml(LANDING_COPY.stage.label)}</figcaption>
@@ -235,17 +258,17 @@ ${steps}
 </section>`;
 }
 
-function finalCallHtml({ notice, widget }: { notice: LandingNotice; widget: string }): string {
+function finalCallHtml({ notice, challenge }: { notice: LandingNotice; challenge: LandingChallenge }): string {
   return `<section class="final-call page-width reveal" aria-labelledby="final-title">
 ${glyphHtml({ glyph: SiteGlyph.Icon, className: 'final-icon' })}
 <h2 id="final-title" class="section-title">${escapedHtml(LANDING_COPY.final.title)}</h2>
 <p class="final-body">${escapedHtml(LANDING_COPY.final.body)}</p>
-${joinFormHtml({ form: JoinForm.Final, notice, widget, classNames: [] })}
+${joinFormHtml({ form: JoinForm.Final, notice, challenge, classNames: [] })}
 </section>`;
 }
 
 function landingHtml({ notice, challenge }: { notice: LandingNotice; challenge: LandingChallenge }): string {
-  const { widget, scriptTag } = challenge;
+  const { scriptTag } = challenge;
   return siteDocumentHtml({
     kind: SitePageKind.Public,
     path: LANDING_PATH,
@@ -253,10 +276,10 @@ function landingHtml({ notice, challenge }: { notice: LandingNotice; challenge: 
     title: LANDING_COPY.meta.title,
     description: LANDING_COPY.meta.description,
     main: `<main id="${CONTENT_ID}">
-${heroHtml({ notice, widget })}
+${heroHtml({ notice, challenge })}
 ${benefitsHtml()}
 ${howItWorksHtml()}
-${finalCallHtml({ notice, widget })}
+${finalCallHtml({ notice, challenge })}
 ${scriptTag}</main>`,
     scripts: PAGE_SCRIPTS,
   });
@@ -264,7 +287,7 @@ ${scriptTag}</main>`,
 
 function landingPageOf(notice: LandingNotice): LandingPage {
   return {
-    available: (siteKey) => landingHtml({ notice, challenge: challengeOf(siteKey) }),
+    available: ({ siteKey, stamp }) => landingHtml({ notice, challenge: challengeOf({ siteKey, stamp }) }),
     unavailable: landingHtml({ notice, challenge: NO_CHALLENGE }),
   };
 }
@@ -279,13 +302,19 @@ const LANDING_PAGES: Record<LandingNotice, LandingPage> = {
 export async function serveLandingPage({
   notice,
   siteKey,
+  stampSecret,
 }: {
   notice: LandingNotice;
   siteKey: string | null;
-  stampSecret?: string | undefined;
+  stampSecret: string | undefined;
 }): Promise<Response> {
   const page = LANDING_PAGES[notice];
   const usableSiteKey = usableSiteKeyOf(siteKey);
-  if (usableSiteKey === null) return sitePageResponse({ html: page.unavailable, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
-  return sitePageResponse({ html: page.available(usableSiteKey), contentSecurityPolicy: CHALLENGE_CONTENT_SECURITY_POLICY });
+  const isChallengeAvailable = usableSiteKey !== null && stampSecret !== undefined;
+  if (!isChallengeAvailable) return sitePageResponse({ html: page.unavailable, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+  const stamp = await renderStampOf({ secret: stampSecret, renderedAt: Date.now() });
+  return sitePageResponse({
+    html: page.available({ siteKey: usableSiteKey, stamp }),
+    contentSecurityPolicy: CHALLENGE_CONTENT_SECURITY_POLICY,
+  });
 }

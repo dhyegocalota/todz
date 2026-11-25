@@ -28,6 +28,7 @@ import {
   recordedLimiters,
   throwingLimiter,
   waitlistRows,
+  withoutStamps,
 } from './waitlist-client';
 
 const SITE_ORIGIN = 'https://todz.app';
@@ -180,7 +181,7 @@ async function join({
   const siteverifyCallsBefore = siteverifyCalls().length;
   const executionContext = createExecutionContext();
   const response = await serveWaitlistJoin({ request, env: workerEnv, executionContext });
-  const html = await response.text();
+  const html = withoutStamps(await response.text());
   await waitOnExecutionContext(executionContext);
   const siteverifyBodies = siteverifyCalls()
     .slice(siteverifyCallsBefore)
@@ -189,7 +190,8 @@ async function join({
 }
 
 async function landingHtml({ notice, siteKey }: { notice: LandingNotice; siteKey: string | null }): Promise<string> {
-  return (await serveLandingPage({ notice, siteKey })).text();
+  const page = await serveLandingPage({ notice, siteKey, stampSecret: TURNSTILE_TEST_SECRET });
+  return withoutStamps(await page.text());
 }
 
 function siteverifyAnswering(answer: () => Promise<Response>): void {

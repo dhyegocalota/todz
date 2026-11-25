@@ -5,6 +5,12 @@ import { TURNSTILE_TEST_SECRET, recordingLimiter } from './email-sign-in-client'
 
 export const JSON_ACCEPT = 'application/json';
 
+const STAMP_VALUE_PATTERN = /(name="stamp" value=")[^"]*(")/g;
+
+export function withoutStamps(html: string): string {
+  return html.replace(STAMP_VALUE_PATTERN, '$1$2');
+}
+
 export enum LimiterBinding {
   Client = 'WAITLIST_LIMITER',
   Address = 'WAITLIST_ADDRESS_LIMITER',

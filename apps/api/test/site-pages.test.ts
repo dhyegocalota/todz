@@ -10,7 +10,7 @@ import { StampVerdict, stampVerdictOf } from '../src/site/waitlist-stamp';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
 import { TURNSTILE_TEST_SECRET } from './email-sign-in-client';
 import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
-import { joinStampOf } from './waitlist-client';
+import { joinStampOf, withoutStamps } from './waitlist-client';
 
 const OK_STATUS = 200;
 const TOO_MANY_STATUS = 429;
@@ -20,7 +20,7 @@ const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const TURNSTILE_SCRIPT_TAG = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
 const FAILURE_CALLBACK = 'waitlistChallengeFailed';
 const FAILURE_CALLBACK_ATTRIBUTES = ['data-error-callback', 'data-expired-callback', 'data-timeout-callback'];
-const WIDGET_HTML = `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="interaction-only" data-theme="auto" data-callback="waitlistTokenReady" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${FAILURE_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div>`;
+const WIDGET_HTML = `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="always" data-size="flexible" data-theme="auto" data-callback="waitlistTokenReady" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${FAILURE_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div>`;
 const WIDGET_PATTERN = /<div class="cf-turnstile"[^>]*><\/div>/g;
 const CAPSULE_END = '</button>\n</div>';
 const NOTICE_PATTERN = /<p id="([a-z]+)-notice" [^>]*role="status"[^>]*tabindex="-1"[^>]*>[\s\S]*?<\/span>([^<]*)<\/p>/;
@@ -83,11 +83,11 @@ async function pageOf(response: Promise<Response>): Promise<SitePage> {
 }
 
 function landingPage(notice: LandingNotice): Promise<SitePage> {
-  return pageOf(serveLandingPage({ notice, siteKey: null }));
+  return pageOf(serveLandingPage({ notice, siteKey: null, stampSecret: TURNSTILE_TEST_SECRET }));
 }
 
 function widgetLandingPage(notice: LandingNotice): Promise<SitePage> {
-  return pageOf(serveLandingPage({ notice, siteKey: TEST_SITE_KEY }));
+  return pageOf(serveLandingPage({ notice, siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }));
 }
 
 const LANDING_PAGES: NamedPage[] = NOTICES.map((notice) => [`the landing with the ${notice} notice`, () => landingPage(notice)]);
@@ -337,7 +337,7 @@ describe('the landing', () => {
       expect(forms).toHaveLength(JOIN_FORMS.length);
       expect(html.match(WIDGET_PATTERN)).toHaveLength(JOIN_FORMS.length);
       forms.forEach((form) => {
-        expect(form).toContain(`${CAPSULE_END}\n${WIDGET_HTML}\n<p `);
+        expect(form).toContain(`${CAPSULE_END}\n<div class="join-check">${WIDGET_HTML}</div>\n`);
       });
     },
   );
@@ -355,7 +355,9 @@ describe('the landing', () => {
     ['no site key', null],
     ['an unusable site key', UNUSABLE_SITE_KEY],
   ])('with %s, the landing renders no widget, no Turnstile script and no Turnstile origin', async (_name, siteKey) => {
-    const { response, html } = await pageOf(serveLandingPage({ notice: LandingNotice.Joined, siteKey }));
+    const { response, html } = await pageOf(
+      serveLandingPage({ notice: LandingNotice.Joined, siteKey, stampSecret: TURNSTILE_TEST_SECRET }),
+    );
     expect(html).not.toMatch(WIDGET_PATTERN);
     expect(html).not.toContain(TURNSTILE_SCRIPT_TAG);
     expect(html).not.toContain(UNUSABLE_SITE_KEY);
@@ -472,7 +474,7 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
 
 describe('the site host through the Worker', () => {
   function keyedLandingPage(notice: LandingNotice): Promise<SitePage> {
-    return pageOf(serveLandingPage({ notice, siteKey: TURNSTILE_TEST_SITE_KEY }));
+    return pageOf(serveLandingPage({ notice, siteKey: TURNSTILE_TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }));
   }
 
   async function postJoin(token: string | null): Promise<Response> {
@@ -488,7 +490,7 @@ describe('the site host through the Worker', () => {
 
   async function expectPage({ response, expected, status }: { response: Response; expected: SitePage; status: number }): Promise<void> {
     expect(response.status).toBe(status);
-    expect(await response.text()).toBe(expected.html);
+    expect(withoutStamps(await response.text())).toBe(withoutStamps(expected.html));
     expect(response.headers.get('Content-Security-Policy')).toBe(expected.response.headers.get('Content-Security-Policy'));
     expect(response.headers.get('Strict-Transport-Security')).toBe(STRICT_TRANSPORT_SECURITY);
   }

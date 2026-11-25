@@ -21,7 +21,7 @@ function routeKey({ method, pathname }: { method: string; pathname: string }): s
 }
 
 function serveLanding({ env }: SiteContext): Promise<Response> {
-  return serveLandingPage({ notice: LandingNotice.None, siteKey: siteKeyOf(env) });
+  return serveLandingPage({ notice: LandingNotice.None, siteKey: siteKeyOf(env), stampSecret: env.TURNSTILE_SECRET_KEY });
 }
 
 function redirectToLanding(): Response {
