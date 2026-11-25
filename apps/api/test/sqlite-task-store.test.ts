@@ -142,6 +142,121 @@ describe('SqliteTaskStore', () => {
     expect(listed).toEqual([...orderKeys].sort());
   });
 
+  describe('the order key reads', () => {
+    const NO_EXCLUDED_NUMBER = 0;
+    const KEY_ABSENT_FROM_STORE = 'a3V';
+
+    function insertTasks({ store, count }: { store: SqliteTaskStore; count: number }): void {
+      Array.from({ length: count }, (_unused, index) => index + 1).forEach((number) =>
+        store.insertTask(buildTask({ number, orderKey: `a${number}`, state: number % 2 === 0 ? TaskState.Done : TaskState.Open })),
+      );
+    }
+
+    test('on an empty store every read answers null', async () => {
+      const answers = await inStore({
+        run: ({ store }) => [
+          store.firstOrderKey({ excludingNumber: NO_EXCLUDED_NUMBER }),
+          store.lastOrderKey({ excludingNumber: NO_EXCLUDED_NUMBER }),
+          store.orderKeyBefore({ orderKey: 'a1', excludingNumber: NO_EXCLUDED_NUMBER }),
+          store.orderKeyAfter({ orderKey: 'a1', excludingNumber: NO_EXCLUDED_NUMBER }),
+        ],
+      });
+      expect(answers).toEqual([null, null, null, null]);
+    });
+
+    test('on one task the first and the last are its key until it is excluded, and it has no neighbour', async () => {
+      const answers = await inStore({
+        run: ({ store }) => {
+          insertTasks({ store, count: 1 });
+          return [
+            store.firstOrderKey({ excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.lastOrderKey({ excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.firstOrderKey({ excludingNumber: 1 }),
+            store.lastOrderKey({ excludingNumber: 1 }),
+            store.orderKeyBefore({ orderKey: 'a1', excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.orderKeyAfter({ orderKey: 'a1', excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.orderKeyBefore({ orderKey: 'a2', excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.orderKeyAfter({ orderKey: 'a0', excludingNumber: NO_EXCLUDED_NUMBER }),
+          ];
+        },
+      });
+      expect(answers).toEqual(['a1', 'a1', null, null, null, null, 'a1', 'a1']);
+    });
+
+    test('on five tasks, open and done mixed, the first and the last are the smallest and the largest key of either state', async () => {
+      const answers = await inStore({
+        run: ({ store }) => {
+          insertTasks({ store, count: 5 });
+          return [
+            store.firstOrderKey({ excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.lastOrderKey({ excludingNumber: NO_EXCLUDED_NUMBER }),
+          ];
+        },
+      });
+      expect(answers).toEqual(['a1', 'a5']);
+    });
+
+    test('excluding the first task the first read gives the second, and excluding the last the last read gives the fourth', async () => {
+      const answers = await inStore({
+        run: ({ store }) => {
+          insertTasks({ store, count: 5 });
+          return [
+            store.firstOrderKey({ excludingNumber: 1 }),
+            store.lastOrderKey({ excludingNumber: 5 }),
+            store.firstOrderKey({ excludingNumber: 3 }),
+            store.lastOrderKey({ excludingNumber: 3 }),
+          ];
+        },
+      });
+      expect(answers).toEqual(['a2', 'a4', 'a1', 'a5']);
+    });
+
+    test('the neighbour before a key is the largest smaller key and the neighbour after the smallest larger one', async () => {
+      const answers = await inStore({
+        run: ({ store }) => {
+          insertTasks({ store, count: 5 });
+          return [
+            store.orderKeyBefore({ orderKey: 'a3', excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.orderKeyAfter({ orderKey: 'a3', excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.orderKeyBefore({ orderKey: 'a1', excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.orderKeyAfter({ orderKey: 'a5', excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.orderKeyBefore({ orderKey: KEY_ABSENT_FROM_STORE, excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.orderKeyAfter({ orderKey: KEY_ABSENT_FROM_STORE, excludingNumber: NO_EXCLUDED_NUMBER }),
+          ];
+        },
+      });
+      expect(answers).toEqual(['a2', 'a4', null, null, 'a3', 'a4']);
+    });
+
+    test('a neighbour read skips the excluded task', async () => {
+      const answers = await inStore({
+        run: ({ store }) => {
+          insertTasks({ store, count: 5 });
+          return [
+            store.orderKeyBefore({ orderKey: 'a3', excludingNumber: 2 }),
+            store.orderKeyAfter({ orderKey: 'a3', excludingNumber: 4 }),
+            store.orderKeyBefore({ orderKey: 'a2', excludingNumber: 1 }),
+            store.orderKeyAfter({ orderKey: 'a4', excludingNumber: 5 }),
+          ];
+        },
+      });
+      expect(answers).toEqual(['a1', 'a5', null, null]);
+    });
+
+    test('keys compare as JavaScript strings, so Zz sorts before a0V and a1', async () => {
+      const answers = await inStore({
+        run: ({ store }) => {
+          ['a1', 'Zz', 'a0V'].forEach((orderKey, index) => store.insertTask(buildTask({ number: index + 1, orderKey })));
+          return [
+            store.firstOrderKey({ excludingNumber: NO_EXCLUDED_NUMBER }),
+            store.lastOrderKey({ excludingNumber: NO_EXCLUDED_NUMBER }),
+          ];
+        },
+      });
+      expect(answers).toEqual(['Zz', 'a1']);
+    });
+  });
+
   test('the counter survives a task row that stopped existing', async () => {
     const lastIssued = await inStore({
       run: ({ store, sql }) => {

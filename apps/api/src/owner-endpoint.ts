@@ -4,7 +4,7 @@ import { ACCOUNT_HANDLERS } from './owner-account';
 import { noRouteResponse } from './owner-errors';
 import { KEY_HANDLERS } from './owner-keys';
 import type { OwnerContext, PublicHandler, PublicRoute, SessionHandler, SessionRoute } from './owner-request';
-import { OwnerRoute, matchOwnerRoute } from './owner-routes';
+import { OwnerRoute, RouteParam, matchOwnerRoute } from './owner-routes';
 import { signIn } from './owner-sign-in';
 import { signInLimitRefusal } from './sign-in-limiter';
 import { requestSignInLink } from './sign-in-links';
@@ -53,7 +53,7 @@ export async function serveOwner({
   if (isPublicRoute(match.route)) return servePublic({ context, route: match.route });
   const secret = bearerSecret(request);
   if (secret === null) return unauthorized();
-  const owner = await resolveSessionOwner({ env, secret, now });
+  const owner = await resolveSessionOwner({ env, secret, now, projectId: match.params[RouteParam.ProjectId] });
   if (owner === null) return unauthorized();
   return SESSION_HANDLERS[match.route]({ ...context, owner, secret });
 }
