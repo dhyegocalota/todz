@@ -77,3 +77,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0054](0054-the-app-learns-focus-through-a-todz-focus-filter-not-the-focus-status-api.md) | The app learns Focus through a todz Focus filter, not the Focus status API | Accepted | 2026-11-25 |
 | [0055](0055-the-day-closes-once-a-day-in-the-menu-bar-popover-at-the-owner-s-time.md) | The day closes once a day in the menu bar popover, at the owner's time | Accepted | 2026-11-25 |
 | [0057](0057-the-focus-filter-stays-discoverable-so-the-owner-can-add-it.md) | The Focus filter stays discoverable, so the owner can add it in System Settings | Accepted | 2026-11-25 |
+| [0058](0058-the-app-tells-the-server-its-own-link-scheme-and-the-sign-in-link-carries-it-back.md) | The app tells the server its own link scheme, and the sign-in link carries it back | Accepted | 2026-11-25 |
