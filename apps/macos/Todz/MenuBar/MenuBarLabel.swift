@@ -9,6 +9,8 @@ struct MenuBarLabel: View {
     @Environment(MainWindowState.self) private var windowState
     @Environment(ProactiveGate.self) private var gate
     @Environment(DayTemperatureClock.self) private var dayTemperatureClock
+    @Environment(RibbonCoordinator.self) private var ribbon
+    @Environment(MenuBarRibbonStripCache.self) private var ribbonStrips
     @Environment(\.openWindow) private var openWindow
     @Environment(\.displayScale) private var displayScale
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
@@ -25,7 +27,7 @@ struct MenuBarLabel: View {
             openCount: openCount
         )
         content(badgeText: badgeText, countOpacity: countOpacity)
-            .accessibilityLabel(accessibilityLabel(badgeText: badgeText, openCount: openCount))
+            .accessibilityLabel(accessibilityLabel(badgeText: badgeText, openCount: openCount, presentation: ribbon.presentation))
             .task { await model.launch() }
             .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification)) { _ in
                 isContrastIncreased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
@@ -48,6 +50,17 @@ struct MenuBarLabel: View {
 
     @ViewBuilder
     private func content(badgeText: String?, countOpacity: Double) -> some View {
+        switch ribbon.presentation {
+        case let presentation?:
+            MenuBarRibbonLabel(content: presentation.content, frame: presentation.frame, displayScale: displayScale, strips: ribbonStrips)
+                .equatable()
+        case nil:
+            countContent(badgeText: badgeText, countOpacity: countOpacity)
+        }
+    }
+
+    @ViewBuilder
+    private func countContent(badgeText: String?, countOpacity: Double) -> some View {
         switch toneBadgeText(badgeText) {
         case let toneBadgeText?:
             MenuBarCountLabel(badgeText: toneBadgeText, opacity: countOpacity, displayScale: displayScale)
@@ -68,7 +81,8 @@ struct MenuBarLabel: View {
         return badgeText
     }
 
-    private func accessibilityLabel(badgeText: String?, openCount: Int?) -> String {
+    private func accessibilityLabel(badgeText: String?, openCount: Int?, presentation: RibbonPresentation?) -> String {
+        if let presentation { return AccessibilityCopy.menuBarRibbon(presentation.content) }
         guard badgeText != nil, let openCount else { return MainWindowCopy.windowTitle }
         return AccessibilityCopy.menuBarCount(count: openCount)
     }

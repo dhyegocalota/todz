@@ -55,6 +55,9 @@ private func isFocusFilterQuiet() async -> Bool {
         pause: { try await Task.sleep(for: $0) }
     )
     private lazy var dayTemperatureScheduler = DayTemperatureScheduler(clock: dayTemperatureClock)
+    let ribbonStrips = MenuBarRibbonStripCache()
+    private(set) lazy var ribbon = makeRibbon()
+    lazy var ribbonScheduler = RibbonScheduler(coordinator: ribbon, model: model, panel: panel)
     private lazy var morningGlancePresenter = MorningGlancePresenter(windowState: windowState)
     private(set) lazy var morningGlance = MorningGlanceCoordinator.app(
         model: model,
@@ -80,6 +83,7 @@ private func isFocusFilterQuiet() async -> Bool {
             await readFocusFilter()
             startDayTemperature()
             dayTemperatureScheduler.start()
+            startRibbon()
             dayCloseScheduler.start()
             morningGlanceTrigger.start()
         }

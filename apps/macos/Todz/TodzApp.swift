@@ -26,6 +26,8 @@ struct TodzApp: App {
         let dayClose = appDelegate.dayClose
         let morningGlance = appDelegate.morningGlance
         let dayTemperatureClock = appDelegate.dayTemperatureClock
+        let ribbon = appDelegate.ribbon
+        let ribbonStrips = appDelegate.ribbonStrips
         Window(MainWindowCopy.windowTitle, id: MainWindowScene.identifier) {
             RootView()
                 .environment(model)
@@ -48,6 +50,8 @@ struct TodzApp: App {
                 .environment(windowState)
                 .environment(gate)
                 .environment(dayTemperatureClock)
+                .environment(ribbon)
+                .environment(ribbonStrips)
         }
         .menuBarExtraStyle(.window)
         Settings {
