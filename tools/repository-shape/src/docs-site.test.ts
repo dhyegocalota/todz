@@ -38,6 +38,15 @@ const FENCED_BLOCK_PATTERN = /```[\s\S]*?```/g;
 const TITLE_HEADING_PATTERN = /^# /m;
 const MINT_VERSION_PATTERN = /mint@([\d.]+)/g;
 const CLIENT_VERSION_FLAG = '--client-version';
+const PLAYWRIGHT_CONFIGURATION = 'apps/docs/playwright.config.ts';
+const DOCS_PORT_SOURCE = 'apps/docs/e2e/support/docs-port.ts';
+const DOCS_PORT_CALL = 'await docsPortOf()';
+const DOCS_PORT_DECLARATION = "DOCS_PORT_VARIABLE = 'TODZ_DOCS_PORT'";
+const DOCS_PORT_READ = 'process.env[DOCS_PORT_VARIABLE]';
+const FREE_PORT_CALL = 'await freePort()';
+const DOCS_PORT_WRITE = 'process.env[DOCS_PORT_VARIABLE] = ';
+const LITERAL_PORT_PATTERN = /(?:--port|localhost:)\s*\d/;
+const SCRATCH_SPEC_IGNORE = 'testIgnore: IGNORED_SPECS_PATTERN';
 
 type Scheme = 'light' | 'dark';
 
@@ -172,5 +181,19 @@ describe('the package', () => {
     const versions = new Set(capturedNames({ text: Object.values(scripts).join('\n'), pattern: MINT_VERSION_PATTERN }));
     expect(versions.size).toBe(1);
     expect(scripts.dev).toContain(CLIENT_VERSION_FLAG);
+  });
+
+  test('the walk takes its port only from docsPortOf, which reads TODZ_DOCS_PORT before choosing a free one and writes the choice back (pin)', () => {
+    const configuration = readRepositoryFile(PLAYWRIGHT_CONFIGURATION);
+    const portSource = readRepositoryFile(DOCS_PORT_SOURCE);
+    expect(configuration).toContain(DOCS_PORT_CALL);
+    expect(configuration.match(LITERAL_PORT_PATTERN)).toBeNull();
+    expect(portSource).toContain(DOCS_PORT_DECLARATION);
+    expect(portSource.indexOf(DOCS_PORT_READ)).toBeLessThan(portSource.indexOf(FREE_PORT_CALL));
+    expect(portSource).toContain(DOCS_PORT_WRITE);
+  });
+
+  test('the walk ignores scratch specs (pin)', () => {
+    expect(readRepositoryFile(PLAYWRIGHT_CONFIGURATION)).toContain(SCRATCH_SPEC_IGNORE);
   });
 });

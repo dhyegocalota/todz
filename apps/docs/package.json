@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "pnpm dlx mint@4.3.91 dev --client-version 0.0.4077",
     "broken-links": "pnpm dlx mint@4.3.91 broken-links",
-    "validate": "pnpm dlx mint@4.3.91 validate"
+    "validate": "pnpm dlx mint@4.3.91 validate",
+    "test:walk": "playwright test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
     "@playwright/test": "1.61.0",
