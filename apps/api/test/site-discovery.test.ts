@@ -35,7 +35,7 @@ const LINK_URL_PATTERN = /\]\((https:\/\/[^)]+)\)/;
 const SECTIONS = ['## Connect an agent', '## MCP tools', '## Docs', '## Optional'];
 const FACTS = [
   'in development',
-  'a download, not yet notarized by Apple',
+  'not yet notarized by Apple',
   'Pricing has not been announced',
   'Joining the waitlist is free',
   'Logic Bit',
@@ -199,6 +199,10 @@ describe('llms.txt', () => {
     const body = await bodyOf(DiscoveryPath.Llms);
     expect(body.startsWith('# todz\n\n> ')).toBe(true);
     FACTS.forEach((fact) => expect(body).toContain(fact));
+  });
+
+  test('never says the app is a download: the file is static and a release may not be staged', async () => {
+    expect(await bodyOf(DiscoveryPath.Llms)).not.toContain('is a download');
   });
 
   test('holds the four sections in order', async () => {

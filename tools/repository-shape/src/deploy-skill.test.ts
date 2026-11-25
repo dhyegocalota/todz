@@ -21,7 +21,9 @@ const PRODUCTION_CHECKS = [
   'curl -sS -D - -o /dev/null https://todz.app/download/latest',
   'shasum -a 256 -c',
   'ssh-keygen -Y verify -f apps/macos/release/allowed-signers -I release@todz.app -n todz-release',
-  'sparkle:shortVersionString="<version>"',
+  '<sparkle:shortVersionString><version></sparkle:shortVersionString>',
+  'mkdir -p ~/.todz-release/<version>/check',
+  '-s ~/.todz-release/<version>/check/Todz-<version>.dmg.sig < ~/.todz-release/<version>/check/Todz-<version>.dmg',
 ];
 const STOP_SENTENCES = ['stops at the first failure', 'leaves the previous release live'];
 const NOT_LIVE_SENTENCE = 'the Mac release is not live yet';

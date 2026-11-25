@@ -163,6 +163,13 @@ describe('the install page', () => {
     expect(REQUIRED_PHRASES.filter((phrase) => !page.includes(phrase))).toEqual([]);
   });
 
+  test('says the download exists only once todz.app shows the button, and points to the source build until then', () => {
+    const page = pageText('install-on-mac');
+    expect(page).toContain('When todz.app shows **Download for Mac**');
+    expect(page).toContain('until then, build it from source (section 5)');
+    expect(page).not.toMatch(/^Download todz for Mac from /m);
+  });
+
   test('no longer says the download is not there yet', () => {
     expect(pageText('install-on-mac')).not.toMatch(/no download or notarized build yet/);
   });

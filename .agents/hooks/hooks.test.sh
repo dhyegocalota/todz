@@ -89,6 +89,7 @@ for form in "${allowed_release_commands[@]}"; do
   expect_exit "claude: $form is allowed" 0 guard-secrets.sh "$(bash_call "$form")"
   expect_exit "codex: $form is allowed" 0 guard-secrets.sh "$(codex_bash_call "$form")"
 done
+expect_stderr "the release secrets message names a dump and a change" 'reads, dumps, changes or exports' guard-secrets.sh "$(bash_call 'security dump-keychain')"
 expect_exit "empty input is allowed" 0 guard-secrets.sh '{}'
 
 expect_exit "git add -A is blocked" 2 guard-git-add-all.sh "$(bash_call 'git add -A')"

@@ -322,24 +322,25 @@ new_world
 make_release 0.2.0
 make_release 0.3.0
 sed -i '' '/^0.3.0$/d' "$site/released"
-stage_only_with() {
+stage_only_candidate() {
   stage="$scratch/stage"
   rm -rf "$stage"
-  run_deploy --stage-only "$stage" --with "$1"
+  run_deploy --stage-only "$stage" --candidate "$1"
 }
-stage_only_with 0.3.0
-expect_equal "a pending version stages with the released ones" "$status" "0"
-expect_equal "the pending version is staged beside the released one" "$(list_of "$stage/download")" "0.2.0 0.3.0 appcast.xml "
-expect_equal "the pending version is the newest" "$(sed -n 1p "$stage/_redirects")" "/download /download/0.3.0/Todz-0.3.0.dmg 302"
+stage_only_candidate 0.3.0
+expect_equal "a candidate stages with the released ones" "$status" "0"
+expect_equal "the candidate is staged beside the released one" "$(list_of "$stage/download")" "0.2.0 0.3.0 appcast.xml "
+expect_equal "the candidate is the newest" "$(sed -n 1p "$stage/_redirects")" "/download /download/0.3.0/Todz-0.3.0.dmg 302"
+expect_equal "the candidate's appcast is the newest" "$(cat "$stage/download/appcast.xml")" "<rss>0.3.0</rss>"
 stage_only
-expect_equal "without --with an unreleased version stays out" "$(list_of "$stage/download")" "0.2.0 appcast.xml "
-stage_only_with 0.4.0
-expect_refused "a pending version with no folder is refused" "0.4.0: $site/download/0.4.0 is missing"
-stage_only_with 0.4
-expect_refused "a pending version that is not a version is refused" "not a version"
+expect_equal "without --candidate an unreleased version stays out" "$(list_of "$stage/download")" "0.2.0 appcast.xml "
+stage_only_candidate 0.4.0
+expect_refused "a candidate with no folder is refused" "0.4.0: $site/download/0.4.0 is missing"
+stage_only_candidate 0.4
+expect_refused "a candidate that is not a version is refused" "not a version"
 echo tampered >> "$site/download/0.3.0/Todz-0.3.0.dmg"
-stage_only_with 0.3.0
-expect_refused "a pending version that does not verify is refused" "0.3.0: the sum does not match"
+stage_only_candidate 0.3.0
+expect_refused "a candidate that does not verify is refused" "0.3.0: the sum does not match"
 
 new_world
 make_release 0.2.0

@@ -270,7 +270,7 @@ echo "deploy-worker lock=${TODZ_RELEASE_LOCK_HELD:-} $*" >> "$CALLS"
 [[ -n "${FAKE_DEPLOY_FAIL:-}" ]] && { echo "deploy-worker: refused" >&2; exit 1; }
 site="$HOME/.todz-release/site/download"
 pending=""
-[[ "${1:-}" == --with ]] && pending=$2
+[[ "${1:-}" == --candidate ]] && pending=$2
 for directory in "$site"/*/; do
   version=$(basename "$directory")
   [[ "$version" =~ ^[0-9] ]] || continue
@@ -292,12 +292,22 @@ case "${FAKE_BREAK:-}" in
   appcast) echo changed >> "$PRODUCTION/appcast.xml" ;;
 esac
 FAKE
+cat > "$fakes/real-deploy-worker" <<'FAKE'
+#!/usr/bin/env bash
+rm -rf "$REAL_STAGE"
+bash scripts/deploy-worker.sh --stage-only "$REAL_STAGE" "$@" || exit 1
+exec "$FAKE_DEPLOY_WORKER" "$@"
+FAKE
 chmod +x "$fakes"/*
+export REAL_STAGE="$scratch/real-stage"
+export FAKE_DEPLOY_WORKER="$fakes/deploy-worker"
+export TODZ_DEPLOY_CURL_BINARY="$fakes/curl"
 
 new_world() {
   cat "$CALLS" >> "$all_calls" 2> /dev/null
   rm -rf "$origin" "$repository" "$production" "$home"
-  mkdir -p "$production" "$home" "$repository/scripts" "$repository/apps/macos/release"
+  mkdir -p "$production" "$home" "$repository/scripts" "$repository/apps/macos/release" "$repository/apps/api/public"
+  printf '/*\n  X-Content-Type-Options: nosniff\n' > "$repository/apps/api/public/_headers"
   : > "$CALLS"
   : > "$SECURITY_STDIN"
   : > "$SSH_ADD_STDIN"
@@ -305,7 +315,7 @@ new_world() {
   printf '#!/usr/bin/env bash\necho "git-push released=$(tr "\\n" "," < "%s/.todz-release/site/released")" >> "%s"\n' "$home" "$CALLS" > "$origin/hooks/pre-receive"
   chmod +x "$origin/hooks/pre-receive"
   printf 'release@todz.app namespaces="todz-release" %s\n' "$(cut -d' ' -f1,2 "$release_key.pub")" > "$repository/apps/macos/release/allowed-signers"
-  cp "$here/release-mac.sh" "$here/release-shared.sh" "$repository/scripts/"
+  cp "$here/release-mac.sh" "$here/release-shared.sh" "$here/deploy-worker.sh" "$repository/scripts/"
   git init -q -b main "$repository"
   git -C "$repository" remote add origin "$origin"
   git -C "$repository" add .
@@ -515,7 +525,7 @@ expect_equal "the tag sits on HEAD" "$(git -C "$repository" rev-parse "mac-v$ver
 for served in "$disk_image_name" "$disk_image_name.sha256" "$disk_image_name.sig" appcast.xml; do
   expect_equal "the release copied $served into site" "$(cmp -s "$build_directory/$served" "$site_directory/$served" && echo same || echo different)" "same"
 done
-expect_contains "the deploy ran under the release's lock" "$(cat "$CALLS")" "deploy-worker lock=yes --with $version"
+expect_contains "the deploy ran under the release's lock" "$(cat "$CALLS")" "deploy-worker lock=yes --candidate $version"
 expect_equal "the release frees the lock" "$(test -d "$lock" && echo held || echo free)" "free"
 expect_equal "the private key reaches the agent on standard input" "$(cat "$SSH_ADD_STDIN")" "$private_key_value"
 expect_contains "the agent is the script's own socket" "$(cat "$CALLS")" "ssh-agent -a $home/.todz-release/agent."
@@ -529,6 +539,14 @@ expect_equal "ssh-add checks the agent is empty first" "$([[ "$(line_of 'ssh-add
 expect_equal "the release key is read once" "$(call_count 'security find-generic-password -s todz-release-key -w')" "1"
 expect_lacks "the key is never an argument" "$(cat "$CALLS")" "$private_key_value"
 expect_lacks "the encoded key is never an argument" "$(cat "$CALLS")" "$private_key_encoded"
+
+new_world
+TODZ_RELEASE_DEPLOY_WORKER_BINARY="$fakes/real-deploy-worker" run_release
+expect_equal "a release through the real deploy-worker exits 0" "$status" "0"
+expect_equal "the real staging holds the version being released and its appcast" "$(ls "$REAL_STAGE/download" | tr '\n' ' ')" "$version appcast.xml "
+expect_equal "the real staging redirects to the version being released" "$(sed -n 1p "$REAL_STAGE/_redirects")" "/download /download/$version/Todz-$version.dmg 302"
+expect_equal "the real staging holds the version's disk image" "$(cmp -s "$REAL_STAGE/download/$version/$disk_image_name" "$build_directory/$disk_image_name" && echo same || echo different)" "same"
+expect_equal "the version is released once the real deploy passed" "$(cat "$site/released")" "$version"
 
 new_world
 FAKE_AGENT_HAS_IDENTITY=1 run_release
