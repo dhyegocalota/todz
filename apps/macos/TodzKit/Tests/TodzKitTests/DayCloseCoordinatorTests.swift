@@ -184,4 +184,51 @@ private let minutesPerHour = 60
         #expect(!harness.coordinator.isClosingDay)
         #expect(harness.lastClosedDay == today)
     }
+
+    @Test func aModeStartedByTheCoordinatorIsNotEngagedAndRefusesKeyActions() throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.at(today, hour: 18)
+        harness.coordinator.check()
+        #expect(harness.coordinator.isClosingDay)
+        #expect(!harness.coordinator.isEngaged)
+        #expect(!harness.coordinator.acceptsKeyActions)
+    }
+
+    @Test func engagingTheModeAcceptsKeyActions() throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.at(today, hour: 18)
+        harness.coordinator.check()
+        harness.coordinator.engage()
+        #expect(harness.coordinator.isEngaged)
+        #expect(harness.coordinator.acceptsKeyActions)
+    }
+
+    @Test func aNewModeIsNotEngagedAgain() throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.at(today, hour: 18)
+        harness.coordinator.check()
+        harness.coordinator.engage()
+        harness.coordinator.end()
+        harness.at(tomorrow, hour: 18)
+        harness.coordinator.check()
+        #expect(harness.coordinator.isClosingDay)
+        #expect(!harness.coordinator.isEngaged)
+        #expect(!harness.coordinator.acceptsKeyActions)
+    }
+
+    @Test func aModeStartingInPlaceAfterTheOwnerEngagedIsNotEngaged() throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.coordinator.engage()
+        harness.at(today, hour: 18)
+        harness.coordinator.check()
+        #expect(harness.coordinator.isClosingDay)
+        #expect(!harness.coordinator.isEngaged)
+        #expect(!harness.coordinator.acceptsKeyActions)
+    }
+
+    @Test func theUsualPopoverAcceptsKeyActions() throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        #expect(!harness.coordinator.isClosingDay)
+        #expect(harness.coordinator.acceptsKeyActions)
+    }
 }

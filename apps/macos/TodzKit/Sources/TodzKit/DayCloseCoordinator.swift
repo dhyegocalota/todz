@@ -41,6 +41,18 @@ import Observation
         isClosingDay = false
     }
 
+    public var isEngaged: Bool {
+        fatalError("DayCloseCoordinator.isEngaged is not implemented")
+    }
+
+    public var acceptsKeyActions: Bool {
+        fatalError("DayCloseCoordinator.acceptsKeyActions is not implemented")
+    }
+
+    public func engage() {
+        fatalError("DayCloseCoordinator.engage is not implemented")
+    }
+
     private var decision: DayCloseDecision {
         DayCloseSchedule.decision(
             at: now(),
