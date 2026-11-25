@@ -139,7 +139,7 @@ describe('the quickstart', () => {
 
 describe('the install page', () => {
   const ALLOWED_SIGNERS_FILE = 'apps/macos/release/allowed-signers';
-  const FINGERPRINT = 'SHA256:iAmt/q/wvvXipQj1eqttpuEhRUeL8DPAS8mGKF+mxRg';
+  const FINGERPRINT = 'SHA256:yBlPOn96/UZM6GGCo//eqZtFjWl440Hr6rxWa0VS5Tk';
   const TRUST_SENTENCE =
     "The signature proves a download is the file the todz release key signed. It does not protect against someone who controls the todz.app zone or todz's Cloudflare account, because this page is served from that zone too.";
   const REQUIRED_PHRASES = [
