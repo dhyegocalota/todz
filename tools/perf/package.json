@@ -1,0 +1,17 @@
+{
+  "name": "@todz/perf",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "perf": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.4.0",
+    "@todz/types": "workspace:*",
+    "@types/node": "24.19.2",
+    "tsx": "4.23.15",
+    "vitest": "5.0.5"
+  }
+}
