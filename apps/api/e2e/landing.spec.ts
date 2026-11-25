@@ -383,6 +383,12 @@ test.describe('self-host guide', () => {
     await expect(page.locator(FOOTER_INSTALL_LINK)).toBeVisible();
   });
 
+  test('the narrow header shows the short install label', async ({ page }) => {
+    onlyOn(ProjectName.Mobile);
+    await page.goto(SitePath.Landing);
+    await expect(page.locator(HEADER_INSTALL_LINK)).toHaveText('Install');
+  });
+
   test(`${SitePath.SelfHost} answers 301 to the guide on the docs`, async ({ request }) => {
     const response = await request.get(SitePath.SelfHost, { maxRedirects: 0 });
     expect(response.status()).toBe(MOVED_PERMANENTLY_STATUS);
