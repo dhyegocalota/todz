@@ -132,9 +132,6 @@ async function joinOutcomeOf({ request, env, executionContext }: SiteContext): P
   const now = Date.now();
   const stampVerdict = await stampVerdictOf({ secret: guard.secret, stamp: form.stamp, now });
   if (stampVerdict === StampVerdict.Missing) return JoinOutcome.CheckFailed;
-  const isHoneypotFilled = form.website !== undefined && form.website !== '';
-  if (isHoneypotFilled) return JoinOutcome.Joined;
-  if (stampVerdict !== StampVerdict.Patient) return JoinOutcome.Joined;
   const verdict = await verifyTurnstileToken({
     token,
     secret: guard.secret,
@@ -145,6 +142,9 @@ async function joinOutcomeOf({ request, env, executionContext }: SiteContext): P
   });
   const challengeRefusal = REFUSAL_OF_VERDICT[verdict];
   if (challengeRefusal !== null) return challengeRefusal;
+  const isHoneypotFilled = form.website !== undefined && form.website !== '';
+  if (isHoneypotFilled) return JoinOutcome.Joined;
+  if (stampVerdict !== StampVerdict.Patient) return JoinOutcome.Joined;
   const globalRefusal = outcomeOfRefusal(await waitlistGlobalRefusal({ request, env }));
   if (globalRefusal !== null) return globalRefusal;
   const addressRefusal = outcomeOfRefusal(await waitlistAddressRefusal({ request, env, address }));
