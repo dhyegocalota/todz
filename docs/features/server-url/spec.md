@@ -29,7 +29,7 @@ A self-hoster has to edit `apps/macos/project.yml` and rebuild the app to point 
 
 ```
 Settings / sign-in disclosure: text → ServerAddress.check → issue? show it, stop
-   → probe GET <url>/health → not {"service":"todz","origin":url}? show "not a todz server", stop
+   → probe GET <url>/health → not {"service":"todz","origin":url}? show "No todz server answered at that address.", stop
    → confirm (signed in, or changes waiting: "Switching signs you out and clears N unsynced changes")
    → model.switchServer(to:): sign out at the old server (if signed in, best effort)
         → erase session, cache + outbox, widget snapshot, pending link, sign-in method
@@ -51,8 +51,8 @@ deploy: pnpm --filter @todz/api <script> → wrangler deploy → "todz server re
 | Case | Effect |
 |---|---|
 | not https, or http to a non-loopback host, or a query, fragment or credentials | refused before any request, with the reason |
-| the probe times out, errors, or answers anything else | "That address is not a todz server", nothing changes |
-| the probe's origin differs from the URL typed | refused the same way |
+| the probe times out, errors, or answers anything else | "No todz server answered at that address.", nothing changes |
+| the probe's origin differs from the URL typed | refused with "That server answers as <origin>. Enter that address instead." (design.md O5 B) |
 | sign-out at the old server fails (offline) | the switch goes on; the old session is erased locally |
 | erasing the cache or the session fails | no switch, the error shows, the old server stays |
 | the same URL as in use | nothing happens |
