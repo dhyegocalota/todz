@@ -4,6 +4,7 @@ import WebKit
 
 private let messageHandlerName = "turnstile"
 private let noToken = ""
+private let drawsBackgroundKey = "drawsBackground"
 
 struct ChallengeView: View {
     @Environment(AppModel.self) private var model
@@ -61,6 +62,7 @@ private struct ChallengeWebView: NSViewRepresentable {
             WKUserScript(source: ChallengeHeight.observerScript, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
         )
         let webView = FixedWebView(frame: .zero, configuration: configuration)
+        webView.setValue(false, forKey: drawsBackgroundKey)
         webView.navigationDelegate = context.coordinator
         webView.setAccessibilityLabel(SignInCopy.challengeLabel)
         webView.load(URLRequest(url: ChallengeNavigation.pageURL(apiBaseURL: model.serverURL.url)))
@@ -106,7 +108,8 @@ private struct ChallengeWebView: NSViewRepresentable {
     }
 
     private func reportHeight(_ body: Any) {
-        guard let reported = body as? Double, let clamped = ChallengeHeight.clamped(reported: reported) else { return }
+        guard let reported = body as? Double else { return }
+        guard let clamped = ChallengeHeight.clamped(reported: reported) else { return }
         height.wrappedValue = clamped
     }
 
