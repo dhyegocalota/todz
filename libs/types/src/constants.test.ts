@@ -2,6 +2,8 @@ import { describe, expect, test } from 'vitest';
 import {
   ABSENT_INDEX,
   AGENT_NUDGE_BY_DEFAULT,
+  API_VERSION_HEADER,
+  APP_VERSION_HEADER,
   COMPANY,
   DAY_EMAIL_BY_DEFAULT,
   DAY_EMAIL_CATCH_UP_MINUTES,
@@ -26,6 +28,7 @@ import {
   MILLISECONDS_PER_HOUR,
   MILLISECONDS_PER_MINUTE,
   MILLISECONDS_PER_SECOND,
+  MINIMUM_APP_VERSION,
   PROJECT_KEY_PREFIX,
   REPLY_ADDRESS_LOCAL_PART,
   REPLY_DAILY_MAX,
@@ -87,6 +90,17 @@ describe('company constants', () => {
 describe('health constants', () => {
   test('a todz server names itself todz, the name the app checks (pin)', () => {
     expect(HEALTH_SERVICE_NAME).toBe('todz');
+  });
+});
+
+describe('version constants', () => {
+  test('the oldest app the server accepts is 0.2.0 (pin)', () => {
+    expect(MINIMUM_APP_VERSION).toBe('0.2.0');
+  });
+
+  test('the server and the app name their versions in these headers (pin)', () => {
+    expect(API_VERSION_HEADER).toBe('Todz-Api-Version');
+    expect(APP_VERSION_HEADER).toBe('Todz-App-Version');
   });
 });
 

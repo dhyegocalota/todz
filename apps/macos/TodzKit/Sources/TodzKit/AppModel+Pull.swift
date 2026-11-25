@@ -15,6 +15,9 @@ extension AppModel {
         switch SendOutcome.of(failure) {
         case .unreachable, .unexpected: isOffline = true
         case .refused: noteAnswer()
+        case .updateNeeded:
+            noteAnswer()
+            recordRefusal(of: failure)
         case .sessionGone: return
         }
     }

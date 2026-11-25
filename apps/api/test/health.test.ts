@@ -7,7 +7,7 @@ import { workerEnvWith } from './owner-client';
 const API_ORIGIN = 'http://localhost:8787';
 const SITE_ORIGIN = 'http://localhost:8788';
 const UNKNOWN_ORIGIN = 'http://localhost:8799';
-const HEALTH_BODY = { service: 'todz', origin: API_ORIGIN };
+const HEALTH_BODY = { service: 'todz', origin: API_ORIGIN, version: '2026.11.25+0000000', minimum_app_version: '0.2.0' };
 const OK_STATUS = 200;
 const NOT_FOUND_STATUS = 404;
 

@@ -5,6 +5,8 @@ private let tickSeconds: TimeInterval = 1
 private let inboxName = "Inbox"
 private let keyHintLength = 4
 
+let compatibleStamp = "2026.11.25+3f9c2ab"
+
 struct UndecodableAnswer: Error {}
 
 struct StatusFailure: Sendable {
@@ -21,6 +23,7 @@ struct StatusFailure: Sendable {
     var projectFailures: [String: OwnerAPIError] = [:]
     var changeScripts: [String: [Result<ChangePage, OwnerAPIError>]] = [:]
     var onCall: ((FakeCall) -> Void)?
+    var healthAnswer = FakeOwnerService.compatibleHealth
     var pageSize = 50
     var issuedSession = IssuedSession(
         sessionToken: UUID().uuidString,
@@ -36,6 +39,14 @@ struct StatusFailure: Sendable {
     private var suspendedRoutes: Set<FakeRoute> = []
     private var heldCalls: [FakeRoute: [CheckedContinuation<Void, Never>]] = [:]
     private var waiters: [HeldCallWaiter] = []
+
+    static let compatibleHealth: Result<ServerHealthAnswer, OwnerAPIError> = .success(
+        .todz(origin: harnessDefaultServer, versions: ServerVersions(server: compatibleStamp, minimumApp: OwnerFixtures.appVersion))
+    )
+
+    func health() async throws -> ServerHealthAnswer {
+        try healthAnswer.get()
+    }
 
     func routes() -> [FakeRoute] {
         calls.map(\.route)

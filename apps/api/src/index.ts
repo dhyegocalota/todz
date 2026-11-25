@@ -12,6 +12,7 @@ import { serveOwner } from './owner-endpoint';
 import { noRouteResponse } from './owner-errors';
 import { runScheduled } from './scheduled';
 import { withSecurityHeaders } from './security-headers';
+import { SERVER_VERSION, withServerVersion } from './server-version';
 import { serveTimed } from './server-timing';
 import { SIGN_IN_CHALLENGE_PAGE_PATH, serveSignInChallengePage } from './sign-in-challenge-page';
 import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
@@ -77,7 +78,8 @@ function crashResponse(error: unknown): Response {
 
 export default {
   async fetch(request, env, executionContext): Promise<Response> {
-    return withSecurityHeaders(await serveHost({ request, env, executionContext }).catch(crashResponse));
+    const response = await serveHost({ request, env, executionContext }).catch(crashResponse);
+    return withSecurityHeaders(withServerVersion({ response, version: SERVER_VERSION }));
   },
   async scheduled(controller, env): Promise<void> {
     await runScheduled({ controller, env });

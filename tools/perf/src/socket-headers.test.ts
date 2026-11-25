@@ -1,3 +1,4 @@
+import { MINIMUM_APP_VERSION } from '@todz/types';
 import { createHash } from 'node:crypto';
 import { type IncomingHttpHeaders, type Server, createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -44,6 +45,13 @@ describe('the socket of the change feed', () => {
     expect(upgrades).toHaveLength(1);
     expect(upgrades[0]?.headers.authorization).toBe('Bearer probe');
     expect(upgrades[0]?.url).toBe('/owner/projects/project-1/socket');
+  });
+
+  test("Node's WebSocket carries the app version header on the upgrade", async () => {
+    const { origin, upgrades } = await startUpgradeServer();
+    const signals = await openSocketSignals({ origin, token: 'probe', projectId: 'project-1' });
+    signals.close();
+    expect(upgrades[0]?.headers['todz-app-version']).toBe(MINIMUM_APP_VERSION);
   });
 
   test('a changed message reaches the listener', async () => {

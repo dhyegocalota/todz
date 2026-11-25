@@ -11,6 +11,7 @@ struct KeyScreen: View {
             if let project = model.keyProject {
                 VStack(alignment: .leading) {
                     KeyScreenHeader(workspace: workspace, project: project)
+                    VersionLine()
                     Text(KeyScreenCopy.intro)
                         .foregroundStyle(.secondary)
                     KeyCreation()

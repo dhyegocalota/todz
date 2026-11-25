@@ -16,7 +16,7 @@ struct ExpectedRequest {
 
 func api(answering answer: StubAnswer) throws -> OwnerAPI {
     let baseURL = try #require(URL(string: baseText))
-    return OwnerAPI(baseURL: baseURL, transport: StubURLProtocol.session(answering: answer))
+    return OwnerAPI(baseURL: baseURL, appVersion: OwnerFixtures.appVersion, transport: StubURLProtocol.session(answering: answer))
 }
 
 func expectOnlyRequest(_ expected: ExpectedRequest) throws {
@@ -230,7 +230,10 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
         (503, "", .signInUnavailable),
         (511, "<html><body>Sign in to the network</body></html>", .unexpected(status: 511)),
         (500, "", .unexpected(status: 500)),
-        (426, "", .unexpected(status: 426)),
+        (426, "", .appTooOld(minimum: nil)),
+        (426, "{\"error\":\"app_too_old\",\"minimum_app_version\":\"0.3.0\"}", .appTooOld(minimum: "0.3.0")),
+        (426, "{\"error\":\"app_too_old\"}", .appTooOld(minimum: nil)),
+        (426, "<html>upgrade</html>", .appTooOld(minimum: nil)),
         (418, "{\"error\":\"teapot\"}", .unexpected(status: 418)),
     ])
     func mapsEachRowOfTheErrorTable(status: Int, body: String, expected: OwnerAPIError) async throws {
@@ -249,7 +252,7 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
     }
 
     @Test func theDefaultTransportKeepsNoCache() throws {
-        let configuration = OwnerAPI(baseURL: try #require(URL(string: baseText))).transport.configuration
+        let configuration = OwnerAPI(baseURL: try #require(URL(string: baseText)), appVersion: OwnerFixtures.appVersion).transport.configuration
         #expect(configuration.urlCache == nil)
         #expect(configuration.requestCachePolicy == .reloadIgnoringLocalCacheData)
     }

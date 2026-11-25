@@ -8,7 +8,7 @@ extension AppModel {
 
     func startSending() {
         sendWait?.cancel()
-        guard let session, sendingSession == nil else { return }
+        guard let session, sendingSession == nil, !isUpdateNeeded else { return }
         guard isOwnerConfirmed else {
             requestWorkspaceReload()
             return
@@ -109,7 +109,7 @@ extension AppModel {
         case .unexpected:
             await countAttempt(sending: change)
             return true
-        case .sessionGone:
+        case .sessionGone, .updateNeeded:
             return false
         }
     }

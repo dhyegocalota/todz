@@ -98,6 +98,7 @@ final class HarnessClock {
             preference: preference,
             connect: { servers.connect($0) },
             probe: { await probes.probe($0) },
+            appVersion: OwnerFixtures.appVersion,
             linkScheme: harnessLinkScheme,
             vault: vault,
             pendingLinks: pendingLinks,
@@ -141,6 +142,10 @@ final class HarnessClock {
 
     func flushed() async {
         await model.sendLoop?.value
+    }
+
+    func versionsRead() async {
+        await model.compatibilityRefresh?.value
     }
 
     func signedOutAtTheOldServer() async {

@@ -1,7 +1,9 @@
+import { APP_VERSION_HEADER, MINIMUM_APP_VERSION } from '@todz/types';
+import { isAppVersionAccepted } from './app-version';
 import { bearerSecret, unauthorized } from './bearer-secret';
 import type { Env } from './env';
 import { ACCOUNT_HANDLERS } from './owner-account';
-import { OwnerErrorCode, errorResponse, noRouteResponse } from './owner-errors';
+import { OwnerErrorCode, appTooOldResponse, errorResponse, noRouteResponse } from './owner-errors';
 import { KEY_HANDLERS } from './owner-keys';
 import type { OwnerContext, PublicHandler, PublicRoute, SessionHandler, SessionRoute } from './owner-request';
 import { OwnerRoute, RouteParam, matchOwnerRoute } from './owner-routes';
@@ -37,6 +39,12 @@ async function servePublic({ context, route }: { context: OwnerContext; route: P
   return PUBLIC_HANDLERS[route](context);
 }
 
+function appVersionRefusal(request: Request): Response | null {
+  const candidate = request.headers.get(APP_VERSION_HEADER);
+  if (isAppVersionAccepted({ candidate, minimum: MINIMUM_APP_VERSION })) return null;
+  return appTooOldResponse();
+}
+
 export async function serveOwner({
   request,
   env,
@@ -50,6 +58,8 @@ export async function serveOwner({
 }): Promise<Response> {
   const match = matchOwnerRoute(request);
   if (match === null) return noRouteResponse();
+  const versionRefusal = appVersionRefusal(request);
+  if (versionRefusal !== null) return versionRefusal;
   const context = { request, env, now, executionContext, params: match.params };
   if (isPublicRoute(match.route)) return servePublic({ context, route: match.route });
   const secret = bearerSecret(request);
