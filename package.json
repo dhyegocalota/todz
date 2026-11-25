@@ -21,11 +21,12 @@
     "security:audit": "pnpm audit --prod --audit-level=high",
     "test:unit": "pnpm -r test:unit && pnpm test:hooks && pnpm test:verify",
     "test:hooks": "bash .agents/hooks/hooks.test.sh",
-    "test:verify": "bash scripts/verify.test.sh && bash scripts/pr-media.test.sh && bash scripts/todz-cloudflare.test.sh",
+    "test:verify": "bash scripts/verify.test.sh && bash scripts/pr-media.test.sh && bash scripts/todz-cloudflare.test.sh && bash scripts/release-mac.test.sh",
     "perf": "pnpm --filter @todz/perf perf",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "bash scripts/verify.sh"
+    "verify": "bash scripts/verify.sh",
+    "release:mac": "bash scripts/release-mac.sh"
   },
   "devDependencies": {
     "@types/node": "24.19.2",

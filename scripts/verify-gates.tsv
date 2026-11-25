@@ -1,4 +1,5 @@
 scripts/verify*	product	all
+scripts/release-mac*	product	unit	.
 package.json	product	all
 pnpm-lock.yaml	product	all
 pnpm-workspace.yaml	product	all
