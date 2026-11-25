@@ -44,7 +44,7 @@ macOS asks once; later launches open normally.
 
 ## 3. Verify it
 
-Check that the signature is intact. No output and no errors means it is:
+Check that the signature is intact. It ends with `valid on disk` and `satisfies its Designated Requirement` when it is:
 
 ```bash
 codesign --verify --deep --strict --verbose=2 /Applications/Todz.app
