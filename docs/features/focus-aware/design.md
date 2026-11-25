@@ -55,6 +55,8 @@ System Settings → Focus → a mode → Focus filters → Add Filter lists todz
 | on | `todz` | `Stays quiet` |
 | off (the default) | `todz` | `Shows as usual` |
 
+As built (tester E1, 2026-11-25): macOS heads the sheet with the app's name, `Todz`, and shows the intent's title `Quiet todz` as the subtitle of the todz row in the Add Filter list, as it does for every app (Calendar / `Filter Calendars`). The words stand; only their places follow the platform.
+
 The intent's `title`, `description` and the parameter's `title` are read at build time by the App Intents metadata extractor and must be string literals in the intent, as `ToggleTaskIntent.title` is; only `displayRepresentation` is computed at run time and comes from `FocusCopy`. The developer confirms in a build whether a `static let` from `FocusCopy` survives extraction; if it does, all four live there.
 
 ## 2. Components
