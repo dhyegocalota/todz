@@ -35,7 +35,7 @@ private func isFocusFilterQuiet() async -> Bool {
     var dayChangeObservation: (any NSObjectProtocol)?
     private(set) lazy var dayClose = DayCloseCoordinator(
         gate: gate,
-        defaults: .standard,
+        preference: DayClosePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
         timeZone: model.timeZone,
         openCount: { [model] in model.todayHeadingCount },
         isScreenLocked: { ScreenLock.isLocked },

@@ -26,7 +26,7 @@ private enum PanelState {
     @ObservationIgnored private var heldDay: CalendarDate?
     @ObservationIgnored private var showGeneration = 0
     @ObservationIgnored private let gate: ProactiveGate
-    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let preference: MorningGlancePreference
     @ObservationIgnored private let timeZone: TimeZone
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let content: () -> MorningGlanceContent?
@@ -38,7 +38,7 @@ private enum PanelState {
 
     public init(
         gate: ProactiveGate,
-        defaults: UserDefaults,
+        preference: MorningGlancePreference,
         timeZone: TimeZone,
         now: @escaping () -> Date = Date.init,
         content: @escaping () -> MorningGlanceContent?,
@@ -49,7 +49,7 @@ private enum PanelState {
         closePanel: @escaping () -> Void
     ) {
         self.gate = gate
-        self.defaults = defaults
+        self.preference = preference
         self.timeZone = timeZone
         self.now = now
         self.content = content
@@ -99,8 +99,8 @@ private enum PanelState {
 
     private func run(_ chance: Chance) async {
         lockedChance = nil
-        guard MorningGlancePreference.isOn(in: defaults) else { return }
-        guard MorningGlancePreference.lastShownDay(in: defaults) != chance.day else { return }
+        guard preference.isOn else { return }
+        guard preference.lastShownDay != chance.day else { return }
         guard panelState == .hidden else { return }
         guard let content = content() else {
             waitForContent(chance)
@@ -149,7 +149,7 @@ private enum PanelState {
 
     // NB ADR 0062: the day is marked only once the panel is seen, and only the chance's own day.
     private func markShown(day: CalendarDate) {
-        MorningGlancePreference.markShown(day: day, in: defaults)
+        preference.markShown(day: day)
     }
 
     private func endShow() {

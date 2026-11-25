@@ -18,7 +18,7 @@ extension MorningGlanceCoordinator {
     ) -> MorningGlanceCoordinator {
         let coordinator = MorningGlanceCoordinator(
             gate: gate,
-            defaults: .standard,
+            preference: MorningGlancePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
             timeZone: model.timeZone,
             content: { model.morningGlanceContent },
             isScreenLocked: { ScreenLock.isLocked },

@@ -51,11 +51,15 @@ private let minutesOutsideADay = [-2880, 1440]
     let popover = FakePopover()
     let screen = FakeScreen()
     let defaults: UserDefaults
+    let preference: DayClosePreference
     let timeZone: TimeZone
     let coordinator: DayCloseCoordinator
 
     init(openCount: @escaping () -> Int?) throws {
-        defaults = try emptyDefaults()
+        let domain = try EmptyDomain()
+        defaults = domain.defaults
+        let preference = DayClosePreference(defaults: defaults, domainName: domain.name)
+        self.preference = preference
         DayClosePreference.registerDefaults(in: defaults)
         defaults.set(true, forKey: DayClosePreference.isOnStorageKey)
         timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
@@ -64,7 +68,7 @@ private let minutesOutsideADay = [-2880, 1440]
         let screen = screen
         coordinator = DayCloseCoordinator(
             gate: gate,
-            defaults: defaults,
+            preference: preference,
             timeZone: timeZone,
             now: { clock.now },
             openCount: openCount,
@@ -88,7 +92,7 @@ private let minutesOutsideADay = [-2880, 1440]
     }
 
     var lastClosedDay: CalendarDate? {
-        DayClosePreference.lastClosedDay(in: defaults)
+        preference.lastClosedDay
     }
 }
 

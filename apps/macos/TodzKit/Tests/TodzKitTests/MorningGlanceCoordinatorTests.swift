@@ -73,11 +73,15 @@ private func glanceContent(openCount: Int, workspaceIdentifier: String = "acme")
     let front = FakeFront()
     let panel = FakeGlancePanel()
     let defaults: UserDefaults
+    let preference: MorningGlancePreference
     let timeZone: TimeZone
     let coordinator: MorningGlanceCoordinator
 
     init(content: MorningGlanceContent? = glanceContent(openCount: openTaskCount), timeZoneIdentifier: String = harnessTimeZoneIdentifier) throws {
-        defaults = try emptyDefaults()
+        let domain = try EmptyDomain()
+        defaults = domain.defaults
+        let preference = MorningGlancePreference(defaults: defaults, domainName: domain.name)
+        self.preference = preference
         MorningGlancePreference.registerDefaults(in: defaults)
         defaults.set(true, forKey: MorningGlancePreference.isOnStorageKey)
         timeZone = try #require(TimeZone(identifier: timeZoneIdentifier))
@@ -89,7 +93,7 @@ private func glanceContent(openCount: Int, workspaceIdentifier: String = "acme")
         let panel = panel
         coordinator = MorningGlanceCoordinator(
             gate: gate,
-            defaults: defaults,
+            preference: preference,
             timeZone: timeZone,
             now: { clock.now },
             content: { fakeContent.content },
@@ -108,7 +112,7 @@ private func glanceContent(openCount: Int, workspaceIdentifier: String = "acme")
     }
 
     var lastShownDay: CalendarDate? {
-        MorningGlancePreference.lastShownDay(in: defaults)
+        preference.lastShownDay
     }
 }
 
@@ -447,7 +451,7 @@ private func glanceContent(openCount: Int, workspaceIdentifier: String = "acme")
         let tokyo = try GlanceHarness(timeZoneIdentifier: tokyoTimeZoneIdentifier)
         let saoPaulo = try GlanceHarness()
         for harness in [tokyo, saoPaulo] {
-            MorningGlancePreference.markShown(day: today, in: harness.defaults)
+            harness.preference.markShown(day: today)
             harness.clock.now = instant
             await harness.coordinator.check()
         }
