@@ -32,7 +32,8 @@ Settings / sign-in disclosure: text → ServerAddress.check → issue? show it, 
    → probe GET <url>/health → not {"service":"todz","origin":url}? show "No todz server answered at that address.", stop
    → confirm (signed in, or changes waiting: "Switching signs you out and clears N unsynced changes")
    → model.switchServer(to:): capture the old session
-        → erase session, cache + outbox, pending link, sign-in method (each throws → stop, the old server stays, show the error)
+        → refused while a sign-in or a link request is in flight
+        → erase session, cache + outbox, pending link, sign-in state (challenge token, sign-in method and errors, last identity, issued key, challenge round) (each throws → stop, the old server stays, show the error)
         → widget snapshot, in-memory state, phase = signed out, rebuild the owner API and the change socket, serverURL, store the URL (no await from the erase to the store)
         → sign out at the old server with the captured session, detached, best effort
 Connect an Agent, the sign-in check: read model.serverURL
@@ -58,12 +59,13 @@ deploy: pnpm --filter @todz/api <script> → wrangler deploy → "todz server re
 | erasing the session, the cache, the outbox or the pending link fails | no switch, the error shows, the old server stays |
 | the same URL as in use | nothing happens, no probe |
 | "Use todz cloud" | switches without a probe: the default comes from the build |
-| the stored URL is unreadable at launch | the default is used |
+| a sign-in or a link request is in flight when a switch is asked | the switch does not start; answers from the old server that arrive later are dropped, and a session they would have opened is signed out at the service that issued it |
+| a stored value is present but does not parse | treated as a switch away from the default: the session, cache, outbox and pending link are erased before launch, so the app starts signed out and no request carries the old session |
 | the app quits mid-switch | the erase runs before the address is stored, so the next launch is on the old server, signed out with the erased data |
 
 ### Rollback
 
-Revert the app change: the stored key stays unread and the build's default applies. Revert the API change: `/health` answers 404 again, and an app that probes it refuses a switch.
+Revert the app change to a build without this feature: that build ignores the stored address and uses the build's default, which is production in Release, while the session vault still holds the session of the server in use. The next request sends that session to production, so the revert must be followed by a sign-out in the reverted app, or by the owner deleting the app's container, before anything else. Revert the API change: `/health` answers 404 again, and an app that probes it refuses a switch.
 
 ## Open questions → answers
 

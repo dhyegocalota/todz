@@ -155,6 +155,7 @@ The address issues, one line each, shown after a submit:
 | no scheme, or one other than http and https | `Start the address with https://.` (O4, A) |
 | `http://` to a host that is not loopback | `Use https://. Plain http:// works only for localhost.` |
 | no host (`https://`) | `Add the server's name after https://.` |
+| a path | `The address has no path. Enter the server's root address.` |
 | a query | `Remove the part from ? on.` |
 | a fragment | `Remove the part from # on.` |
 | credentials | `Remove the name and password before @.` |
@@ -290,6 +291,7 @@ Empty when written; the lead records each answer here before the plan.
 - switchLosingSignedInMessage(server:) "They haven't reached {server} yet. Switching signs you out and erases them from this Mac."
 - switchLosingSignedOutMessage(server:) "They haven't reached {server} yet. Switching erases them from this Mac."
 - switched(server:) "Switched to {server}. Sign in from the todz window."
+- ErrorCopy.serverSwitchFailed(server:) "This Mac's copy could not be erased, so todz stayed on {server}." (added by the plan review; the owner may change it)
 
 **SignInCopy** (`apps/macos/Copy/SignInCopy.swift`):
 - serverDisclosure(server:) "Server: {server}"
