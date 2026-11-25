@@ -82,6 +82,8 @@ The admin at `https://example.com/admin`, where you read and export the waitlist
 pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
 ```
 
+The same address gets the waitlist digest every day at 11:00 UTC, from the cron in `triggers` in `apps/api/wrangler.jsonc`; without the secret the cron sends nothing.
+
 ## 7. Point the macOS app at your server
 
 In `apps/macos/project.yml`:
