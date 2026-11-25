@@ -80,3 +80,5 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0057](0057-the-focus-filter-stays-discoverable-so-the-owner-can-add-it.md) | The Focus filter stays discoverable, so the owner can add it in System Settings | Accepted | 2026-11-25 |
 | [0058](0058-the-app-tells-the-server-its-own-link-scheme-and-the-sign-in-link-carries-it-back.md) | The app tells the server its own link scheme, and the sign-in link carries it back | Accepted | 2026-11-25 |
 | [0059](0059-the-docs-are-a-mintlify-site-on-docs-todz-app-built-from-apps-docs-and-the-self-host-guide-moves-into-it.md) | The docs are a Mintlify site on docs.todz.app, built from apps/docs, and the self-host guide moves into it | Accepted | 2026-11-25 |
+| [0063](0063-the-day-email-is-claimed-once-a-day-per-owner-from-a-quarter-hour-cron.md) | The day email is claimed once a day per owner from a quarter-hour cron | Accepted | 2026-11-25 |
+| [0064](0064-a-reply-to-the-day-email-adds-one-task-only-from-the-owner-s-own-authenticated-address.md) | A reply to the day email adds one task, only from the owner's own authenticated address | Accepted | 2026-11-25 |
