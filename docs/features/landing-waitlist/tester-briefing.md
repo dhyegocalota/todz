@@ -44,12 +44,14 @@ Lane `feat/landing-waitlist-page`, commits `9aa20c5` (red), `5b9ed78`, `c229693`
   - a unique address per test and project;
   - the foreign-request tests allow exactly the Turnstile script URL;
   - the console tests keep main-frame messages only.
-- Sibling files touched so the lane typechecks. G1's version wins in the merge:
-  - `src/turnstile.ts`: `TurnstileAction.Waitlist`;
-  - `src/turnstile-page.ts`: `export` on `SITE_KEY_PATTERN` and `TURNSTILE_ORIGIN`;
-  - `src/site/site-endpoint.ts`: `siteKey: null` on both calls;
-  - `test/email-sign-in-client.ts`: a `Waitlist` token in `TURNSTILE_TOKEN_OF_ACTION`;
-  - `src/site/self-host-page.ts` (unowned): `widgetOrigin: null`.
+- Sibling files touched so the lane typechecks, as the lead reconciles them at the merge:
+  - G1's version wins:
+    - `src/turnstile.ts`: `TurnstileAction.Waitlist`;
+    - `src/turnstile-page.ts`: `export` on `SITE_KEY_PATTERN` and `TURNSTILE_ORIGIN`;
+    - `src/site/site-endpoint.ts`: `siteKey: null` on both calls;
+    - `test/email-sign-in-client.ts`: a `Waitlist` token in `TURNSTILE_TOKEN_OF_ACTION` (G1 needs the same entry).
+  - G2's change stays:
+    - `src/site/self-host-page.ts` (unowned): `widgetOrigin: null`.
 
 ### How to run
 
