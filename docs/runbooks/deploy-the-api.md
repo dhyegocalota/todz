@@ -251,3 +251,18 @@ The owner rotates the Keychain token after a run that went wrong, when it may ha
 | 2026-11-25 | fe34431 | 13 | `{"method":"link"}`; `/sign-in` and `/sign-in/challenge` `HTTP/2 503` text/html; `/mcp` `HTTP/2 401`; `todz.app/` and `/self-host` `HTTP/2 200` with `strict-transport-security: max-age=31536000` and a CSP starting `default-src 'none'`; `www.todz.app/self-host?from=runbook` `HTTP/2 301` to `https://todz.app/self-host?from=runbook`; `todz.app/owner/sign-in-method` and `api.todz.app/` `HTTP/2 404`; the `workers.dev` address timed out with no answer. The export was deleted |
 | 2026-11-25 | fe34431 | 14 | `HTTP/2 503` `{"error":"sign_in_unavailable"}`, as expected before the secret; no mail |
 | 2026-11-25 | fe34431 | 15 | Run after the reviews, through the new host dispatch: eleven `HTTP/2 503`, then three `HTTP/2 429` each with `retry-after: 60`. The single request a minute later was not repeated |
+| 2026-11-25 | 6a65b68 | 1 | Clean tree on `main`, 0 ahead and 0 behind `origin/main`; `pnpm verify all` 8 gates green at 6a65b68 (with `e2e` and `macos`) |
+| 2026-11-25 | 6a65b68 | 2 | `whoami`: an API Token, one account `e2035d8e0b7173d520ccf643f6f4661c`; verify `"status":"active"` |
+| 2026-11-25 | 6a65b68 | 3 | `api.todz.app`, `todz.app` and `www.todz.app`: only the Worker's `AAAA 100::` each; apex `MX` route1, route2, route3 `.mx.cloudflare.net` and `TXT "v=spf1 include:_spf.mx.cloudflare.net ~all"`, unchanged |
+| 2026-11-25 | 6a65b68 | 4 | `todz-directory`, uuid `dc22b1c3-1869-44a0-b805-91bf92017f19` |
+| 2026-11-25 | 6a65b68 | 5 | Bookmark `00000003-00000000-0000512e-db31c6c3d5077076a0d3e0d4f7143620` |
+| 2026-11-25 | 6a65b68 | 6 | Exported `before-6a65b68.sql` (3031 bytes) into the private folder |
+| 2026-11-25 | 6a65b68 | 7 | The first list named `0005_waitlist.sql`; applied; the second list says nothing to apply |
+| 2026-11-25 | 6a65b68 | 8 | Deployed, Current Version ID `15252c7f-ec20-42f9-9e53-17db3a4c7ba1`; the three custom domains; the six limiters (10, 3, 100, 10, 3 and 60 requests/60s) and the four variables; no asset changed |
+| 2026-11-25 | 6a65b68 | 9 | One domain entry per host, each `todz-api`; the version at 100 percent; `versions view` binds `DIRECTORY` to `dc22b1c3-1869-44a0-b805-91bf92017f19` |
+| 2026-11-25 | 6a65b68 | 10 | Not run: the owner's `todz` widget does not exist yet. Sign-in and the waitlist stay closed by design |
+| 2026-11-25 | 6a65b68 | 11 | Not enabled again: the list shows `todz.app` enabled yes, tag `e334383f152c44038f0216e0e35bcf85`; the zone records match step 3 |
+| 2026-11-25 | 6a65b68 | 12 | pseudo IPv4 `off`; Always Use HTTPS `on`; plain HTTP on the three hosts each `HTTP/1.1 301` to `https://` on the same host |
+| 2026-11-25 | 6a65b68 | 13 | `{"method":"link"}`; `/sign-in` and `/sign-in/challenge` `HTTP/2 503` text/html; `/mcp` `HTTP/2 401`; `todz.app/` and `/self-host` `HTTP/2 200` with HSTS `max-age=31536000` and a CSP starting `default-src 'none'`; the `www` redirect `HTTP/2 301`; the two cross-host routes `HTTP/2 404`; the `workers.dev` address timed out with no answer. The export was deleted |
+| 2026-11-25 | 6a65b68 | 14 | Link post `HTTP/2 503` `{"error":"sign_in_unavailable"}`; waitlist probe counts `0`, post `503`, count `0`; no mail |
+| 2026-11-25 | 6a65b68 | 15 | Eleven `HTTP/2 503`, then three `HTTP/2 429` each with `retry-after: 60` |
