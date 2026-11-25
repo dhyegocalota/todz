@@ -92,7 +92,7 @@ import Observation
     @ObservationIgnored var isLocalDataUnerased = false
     @ObservationIgnored var service: any OwnerService
     @ObservationIgnored var signals: any ChangeSignals
-    @ObservationIgnored let defaultURL: ServerAddress
+    @ObservationIgnored public let defaultURL: ServerAddress
     @ObservationIgnored let preference: ServerPreference
     @ObservationIgnored let connect: ServerConnectionFactory
     @ObservationIgnored let probe: ServerProbe

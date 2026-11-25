@@ -4,6 +4,14 @@ extension AppModel {
         return stored
     }
 
+    public var isSignedIn: Bool {
+        session != nil
+    }
+
+    public var isOnDefaultServer: Bool {
+        serverURL == defaultURL
+    }
+
     public func probeServer(_ address: ServerAddress) async -> ServerProbeOutcome {
         await probe(address)
     }

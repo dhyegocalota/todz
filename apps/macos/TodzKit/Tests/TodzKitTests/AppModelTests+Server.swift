@@ -330,6 +330,17 @@ extension AppModelTests {
         #expect(harness.preference.hasUnreadableValue)
     }
 
+    @Test func theModelSaysWhetherItIsSignedInAndWhetherItIsOnTheDefaultServer() async throws {
+        let harness = try await signedInHarness()
+        #expect(harness.model.isSignedIn)
+        #expect(harness.model.isOnDefaultServer)
+        await harness.model.switchServer(to: try address(otherText))
+        #expect(!harness.model.isSignedIn)
+        #expect(!harness.model.isOnDefaultServer)
+        await harness.model.switchServer(to: harness.defaultURL)
+        #expect(harness.model.isOnDefaultServer)
+    }
+
     @Test func probingAsksTheInjectedProbeOncePerCheck() async throws {
         let harness = try AppModelHarness()
         let other = try address(otherText)
