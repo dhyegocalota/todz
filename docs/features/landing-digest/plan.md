@@ -21,10 +21,10 @@ One lane, then the lead's docs.
 
 ### G1
 
-- [ ] **Step 1:** Red: the facts query's cases (inside, before and after the window, both edges, the cap of fifty and `moreAddresses`, failed confirmations only in the window, the total). Then green.
-- [ ] **Step 2:** Red: the mail template tests and `waitlistDigestMail` (subject for N and for none, the counts, each address escaped, "and N more" only past fifty, the button to `<origin>/admin`, no slot left). Then the template, its copy, the enum member, the slots and `pnpm emails:generate`.
-- [ ] **Step 3:** Red: `waitlist-digest.test.ts` through `worker.scheduled` (or the handler) with `workerEnvWith`: each missing piece sends nothing and logs one line without an address; an unknown cron rejects; D1 and the sender throwing reject; an empty day sends the "no one new" mail; a normal day sends one mail to `ADMIN_EMAIL` with the facts. Then green with `scheduled` in `index.ts`.
-- [ ] **Step 4:** Red: `api-source.test.ts` pins `triggers.crons` to `["0 11 * * *"]` and that `DIGEST_CRON` matches it. Then green in `wrangler.jsonc`.
+- [x] **Step 1:** Red `b409645`, green `a480c1c`: the facts query's cases (inside, before and after the window, both edges, the cap of fifty and `moreAddresses`, failed confirmations only in the window, the total). Then green.
+- [x] **Step 2:** Red `83313a1`, green `38b4aa2`: the mail template tests and `waitlistDigestMail` (subject for N and for none, the counts, each address escaped, "and N more" only past fifty, the button to `<origin>/admin`, no slot left). Then the template, its copy, the enum member, the slots and `pnpm emails:generate`.
+- [x] **Step 3:** Red `ea11368`, green `be2d534`: `waitlist-digest.test.ts` through `worker.scheduled` (or the handler) with `workerEnvWith`: each missing piece sends nothing and logs one line without an address; an unknown cron rejects; D1 and the sender throwing reject; an empty day sends the "no one new" mail; a normal day sends one mail to `ADMIN_EMAIL` with the facts. Then green with `scheduled` in `index.ts`.
+- [x] **Step 4:** Red `c9396c7`, green `491c603`: `api-source.test.ts` pins `triggers.crons` to `["0 11 * * *"]` and that `DIGEST_CRON` matches it. Then green in `wrangler.jsonc`.
 
 ### Lead
 
