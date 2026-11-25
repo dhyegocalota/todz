@@ -2,6 +2,7 @@ import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 
 type WorkspaceRow = { id: string; name: string; created_at: number };
 type WorkspaceIdRow = { id: string };
+type ProjectIdRow = { id: string };
 type ProjectRow = { id: string; workspace_id: string; name: string; is_inbox: number; created_at: number };
 
 export type WorkspaceListing = { workspace: WorkspaceRecord; projects: ProjectRecord[] };
@@ -31,6 +32,14 @@ export async function listOwnerWorkspaces({ directory, ownerId }: { directory: D
     workspace: workspaceRecordOf(row),
     projects: projectRows.results.filter((project) => project.workspace_id === row.id).map(projectRecordOf),
   }));
+}
+
+export async function listOwnerProjectIds({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<string[]> {
+  const { results } = await directory
+    .prepare('SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ?')
+    .bind(ownerId)
+    .all<ProjectIdRow>();
+  return results.map((row) => row.id);
 }
 
 export async function findOwnerWorkspace({

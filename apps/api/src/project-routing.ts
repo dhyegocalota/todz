@@ -7,7 +7,7 @@ import {
   findSessionOwner,
   findSessionProject,
 } from './directory';
-import { findOwnedWorkspace } from './directory-workspaces';
+import { findOwnedWorkspace, listOwnerProjectIds } from './directory-workspaces';
 import type { Env } from './env';
 import type { ProjectStore } from './project-store';
 import { type RecordWait, measured } from './timed-call';
@@ -168,4 +168,13 @@ export async function openOwnedProject({
   const ownedProjectId = await findOwnedProjectId({ env, owner, projectId });
   if (ownedProjectId === null) return null;
   return openProject({ env, projectId: ownedProjectId });
+}
+
+export async function closeSessionSockets({ env, owner, secret }: { env: Env; owner: SessionOwner; secret: string }): Promise<void> {
+  if (!resolvedOwners.has(owner)) return;
+  const [projectIds, sessionDigest] = await Promise.all([
+    listOwnerProjectIds({ directory: env.DIRECTORY, ownerId: owner.ownerId }),
+    digestCredential(secret),
+  ]);
+  await Promise.all(projectIds.map((projectId) => openProject({ env, projectId }).closeSessionSockets({ sessionDigest })));
 }
