@@ -12,7 +12,7 @@ const SPARKLE_PACKAGE = ['  Sparkle:', '    url: https://github.com/sparkle-proj
 const SPARKLE_DEPENDENCY = '- package: Sparkle';
 const FEED_URL_REFERENCE = '$(TODZ_UPDATE_FEED_URL)';
 const RELEASE_FEED_URL = 'https://todz.app/download/appcast.xml';
-const RELEASE_ONLY_NO_INJECTION = /Release:\n\s+CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO\n/;
+const RELEASE_ONLY_NO_INJECTION = /Release:\n(?:\s+.*\n)*?\s+CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO\n/;
 const PUBLIC_KEY_PATTERN = /^[A-Za-z0-9+/]{43}=$/;
 const PUBLIC_KEY_SETTING = /\n\s+SUPublicEDKey: "?([^"\n]+)"?\n/;
 const MACH_LOOKUP_KEY = 'com.apple.security.temporary-exception.mach-lookup.global-name';
@@ -74,6 +74,7 @@ describe('the macOS release settings', () => {
   test('the app carries the public key that verifies every update', () => {
     const publicKey = PUBLIC_KEY_SETTING.exec(appTarget())?.[FIRST_CAPTURE];
     expect(publicKey).toMatch(PUBLIC_KEY_PATTERN);
+    expect(readRepositoryFile(APP_INFO_PLIST)).toContain('<key>SUPublicEDKey</key>');
   });
 
   test('the app, and only the app, may look up the two Sparkle installer services', () => {
@@ -90,6 +91,5 @@ describe('the macOS release settings', () => {
   test('the generated Info.plist carries the update keys', () => {
     const plist = readRepositoryFile(APP_INFO_PLIST);
     expect(plist).toMatch(/<key>SUFeedURL<\/key>\s*<string>\$\(TODZ_UPDATE_FEED_URL\)<\/string>/);
-    expect(plist).toContain('<key>SUPublicEDKey</key>');
   });
 });
