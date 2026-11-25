@@ -57,7 +57,7 @@ A stub's `fatalError` kills the test process, so each red run stops at the first
 
 Red inside a green commit (`68ec2a4`, as the plan allows): `WidgetToggleTests/togglingARowOfASnapshotThatShowsTheDayTemperatureKeepsItShown` printed `Expectation failed: toggled.snapshot.showsDayTemperature` against a toggle that wrote `false`, then went green when the toggle carried `snapshot.showsDayTemperature`.
 
-Pins (green on landing, R27): `WidgetSnapshotTests/flagRoundTrips` and the `WidgetToggleTests` carry case (`68ec2a4`; its in-commit red above was seen locally against a toggle that wrote `false`). The re-review commit adds the one-day-band cases of `OverdueWashTests` (R29, red before its change, landed with it) and drops the DST cases of `days(since:)` (R26). `DayTemperaturePreferenceTests/theStorageKeyIsShowsDayTemperature` only reads a constant and so ran green beside its suite.
+Pins (green on landing, R27): `WidgetSnapshotTests/flagRoundTrips` and the `WidgetToggleTests` carry case (`68ec2a4`; its in-commit red above was seen locally against a toggle that wrote `false`). R29's one-day band was superseded by R30 (`137be4b` red, `fdccb65` green): an overdue flag the day disagrees with, and an overdue task without a due date, have no wash. `fdccb65` also pins a negative count (plain) and an unknown extra snapshot key (decodes); R26 dropped the DST cases of `days(since:)`. `DayTemperaturePreferenceTests/theStorageKeyIsShowsDayTemperature` only reads a constant and so ran green beside its suite.
 
 `5baa2d6` removed the key as `showsDayTemperature`, but the owner coding spells it `shows_day_temperature`, so the case would have stayed red after the green; `f51a813` fixes the spelling and is red for the same printed reason.
 
@@ -108,3 +108,10 @@ Do not place widgets on the desktop. Render the views offscreen: in the scratchp
 - No automated proof of the drawing: the build and the walk are the proof (plan Step 19, no unit target).
 - I did not render any capture; the hypotheses above are unverified.
 - The corner radius (8) is a constant in `OverdueWashBackground.swift`; the spec gives no value, so the tester judges it against the row.
+
+### Fix round 1 (G1)
+
+- The Settings detail now reads `Dims the menu bar count through the afternoon and tints overdue widget rows. Quiet in a Focus.` so it fits the two reserved lines at 420 pt.
+- The label draws through `MenuBarCountLabel` (`Equatable`, `.equatable()`), so the image renders only when the badge text, the opacity or the display scale changes; both label paths use `menuBarLabelSpacing` (8, the measured default of the plain `HStack`) so the image and the plain label stay the same size.
+- The label reads the setting from `DayTemperatureClock.isOn` (the app's own-domain read taken at each refresh), not from `@AppStorage`.
+- `countOpacity` composes `DayTemperatureTone.isShown`; the gate re-arm stores its task in `quietGateReaction`; spec, test-plan bands (0.06, 0.09, 0.12) and index status (`Building`) corrected.

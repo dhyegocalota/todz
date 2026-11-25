@@ -1,6 +1,6 @@
 # Day temperature
 
-**Status:** Approved
+**Status:** Building
 **Tier:** 🟡 (one Settings switch, one required key in the widget snapshot, the menu bar label's alpha and a clock, and a row wash; no server, no schema, no new entitlement)
 **Owner approval:** approved 2026-11-25 by the owner's request to the loop (2026-11-24, ~20:30: "1,4,5,6,7,9,10 e também 11 … seja criativo, add no cron e só para quando tiver pronto"; every item "features opcionais", off by default, no push notifications), recorded in `todz-loop/STATE.md` "Owner requirements queued" → `proactive-day` item 4 (`day-temperature`, idea 6): "the menu bar count shifts tone as the afternoon advances with Today still full, and overdue tasks age visually in the widgets (fade or tint). It stays subtle, uses the template glyph, and reads in light and dark." The behaviour is the loop's call in [ADR 0065](../../adr/0065-the-day-temperature-steps-the-menu-bar-count-s-opacity-after-noon-and-washes-overdue-widget-rows-by-age-behind-a-setting.md).
 **ADRs:** [0065](../../adr/0065-the-day-temperature-steps-the-menu-bar-count-s-opacity-after-noon-and-washes-overdue-widget-rows-by-age-behind-a-setting.md), [0054](../../adr/0054-the-app-learns-focus-through-a-todz-focus-filter-not-the-focus-status-api.md), [0036](../../adr/0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md), [0032](../../adr/0032-widgets-read-a-snapshot-in-an-app-group-that-a-team-prefix-replaces-later.md), [0055](../../adr/0055-the-day-closes-once-a-day-in-the-menu-bar-popover-at-the-owner-s-time.md), [0062](../../adr/0062-the-morning-glance-is-a-non-activating-glass-panel-that-shows-today-on-the-first-wake-or-unlock-of-the-day.md)
@@ -15,7 +15,7 @@ The menu bar count says how many tasks are left, but not how far into the day th
 - Settings: a switch "Day temperature", off by default, kept in the app's defaults, next to the other proactive switches.
 - With the switch on, the menu bar count's opacity steps down at 12:00, 15:00 and 18:00 in the Mac's time zone, from 1.0 to 0.65. Before 12:00 and at midnight it is plain. The glyph does not change.
 - The tone applies only while the menu bar shows a count (open Today tasks above zero). At zero, the icon only.
-- With the switch on, an open overdue row in the Today list and the next-up card of the widgets sits on a red wash that deepens with the days overdue: 0.06 for one day, 0.12 for two to six days, 0.18 from seven. The title keeps its contrast; the existing due label stays.
+- With the switch on, an open overdue row in the Today list and the next-up card of the widgets sits on a red wash that deepens with the days overdue: 0.06 for one day, 0.09 for two to six days, 0.12 from seven (0.18 measured 2.78:1 for the red due words in light, so the fallback caps of ADR 0065 Evidence apply). The title keeps its contrast; the existing due label stays.
 - During a Focus that holds todz, neither the menu bar nor the widgets show a tone; when the Focus ends the tone returns without a notification.
 - Increase Contrast turns the tone off in both places.
 - The clock wakes the app only at a step boundary; the widgets need no new timeline entries (the wash changes only with the day).
@@ -57,10 +57,10 @@ App Group snapshot (FileWidgetStore)  ──►  TodayTimelineProvider (unchange
 - `TodzKit`:
   - `DayTemperatureStep` (enum: `plain`, `noon`, `afternoon`, `evening`): `step(at:in:)` from a date and a Mac zone; `countOpacity` per step; `boundaries(on:in:)` for the clock's next wait; `nextBoundary(after:in:)`.
   - `DayTemperatureStep.countOpacity(step:isSettingOn:isQuiet:isContrastIncreased:openCount:)`: 1.0 unless the setting is on, the gate is not quiet, contrast is not increased, the count is above zero and the step is not plain; the constants at the top of the file.
-  - `OverdueWash.opacity(of:on:isShown:isContrastIncreased:)` with a `WidgetSnapshotTask` and a `CalendarDate`: 0 unless the task is open and overdue and both switches allow it; otherwise 0.06 / 0.12 / 0.18 by the bands of `day.days(since: dueDate)`; the constants at the top of the file.
+  - `OverdueWash.opacity(of:on:isShown:isContrastIncreased:)` with a `WidgetSnapshotTask` and a `CalendarDate`: 0 unless the task is open and overdue and both switches allow it; otherwise 0.06 / 0.09 / 0.12 by the bands of `day.days(since: dueDate)`; the constants at the top of the file.
   - `CalendarDate.days(since:)`: the whole calendar days between two dates.
   - `DayTemperatureTone.isShown(isSettingOn:isQuiet:)`: the one composition the app and the snapshot share.
-  - `DayTemperatureClock` (`@MainActor @Observable`): `step`, `refresh()`, with injected `now` and `pause`; one pending wait to the next boundary.
+  - `DayTemperatureClock` (`@MainActor @Observable`): `step`, `refresh()`, built as `DayTemperatureClock(now:timeZone:isOn:pause:)`, `.plain` until the first `refresh()`; one pending wait to the next boundary.
   - `DayTemperaturePreference`: `showsDayTemperature` key, default `false`, registration, as `MorningGlancePreference`.
   - `WidgetSnapshot.showsDayTemperature: Bool`: a required key in the Codable shape, carried by `WidgetToggle.setting`.
   - `AppModel.showsDayTemperature` (observable) and `showDayTemperature(_:)`.

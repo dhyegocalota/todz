@@ -105,12 +105,12 @@ All owner-facing copy goes in the copy modules. No string sits inline in a view.
 | Where | Key | Text (en-US, the repository's language; the product copy lang is set by a later ADR) |
 |---|---|---|
 | `SettingsCopy` | `dayTemperature` | Day temperature |
-| `SettingsCopy` | `dayTemperatureDetail` | The count fades a little after noon, and overdue widget rows get a faint red tint. Quiet during a Focus that holds todz. |
+| `SettingsCopy` | `dayTemperatureDetail` | Dims the menu bar count through the afternoon and tints overdue widget rows. Quiet in a Focus. |
 
 Options for the detail:
 
 - **A:** "After noon the menu bar count fades a little, and overdue tasks get a faint red wash in the widgets. Quiet during a Focus that holds todz."
-- **B:** "The count fades a little after noon, and overdue widget rows get a faint red tint. Quiet during a Focus that holds todz."
+- **B:** "Dims the menu bar count through the afternoon and tints overdue widget rows. Quiet in a Focus."
 
 **Loop's pick: B.** It is two lines in the form, names both effects, and states the Focus rule without the word "wash", which an owner may not read as a tint. No copy for the widgets or the menu bar: the overdue words already exist (`WidgetDay`, `DueLabel`), and the count is unchanged.
 
