@@ -13,7 +13,7 @@ Written by the developer sub-agents when their steps are done. The developers do
 
 ### How to run
 
-- Unit and typecheck: `pnpm --filter @todz/perf test:unit` and `pnpm --filter @todz/perf typecheck`; the gate is `pnpm verify`.
+- Unit and typecheck: `pnpm --filter @todz/perf test:unit` (162 tests in 19 files) and `pnpm --filter @todz/perf typecheck`; the gate is `pnpm verify`, which printed `9 gates green at cbf8807 (product)` on the lane's head before this line.
 - Live, local only: start the Worker (runbook step 1; if 8787 is busy run `pnpm --filter @todz/api exec wrangler dev --port <n> --inspector-port <m>` with the `dev` script's `--var` settings and `PUBLIC_ORIGIN` for that port), then `pnpm perf load --port <n>`, `pnpm perf stress --port <n>`, `pnpm perf seed --tasks 5000 --projects 200 --port <n>`, `pnpm perf soak --minutes 1 --port <n>`.
 - `pnpm perf production`, `pnpm perf production --cleanup <run>`, `pnpm perf app` and `pnpm perf tail <file>` are the lead's or the owner's: production is never run by the developer. `app` and `tail` can be tried on recorded text through their tests.
 
