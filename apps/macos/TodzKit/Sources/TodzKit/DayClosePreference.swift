@@ -1,5 +1,7 @@
 import Foundation
 
+private let minutesOfADay = 0..<(24 * 60)
+
 public enum DayClosePreference {
     public static let isOnStorageKey = "closesTheDay"
     public static let timeStorageKey = "dayCloseMinutes"
@@ -16,8 +18,10 @@ public enum DayClosePreference {
         defaults.bool(forKey: isOnStorageKey)
     }
 
-    static func minutesAfterMidnight(in defaults: UserDefaults) -> Int {
-        defaults.integer(forKey: timeStorageKey)
+    static func minutesAfterMidnight(in defaults: UserDefaults) -> Int? {
+        let minutes = defaults.integer(forKey: timeStorageKey)
+        guard minutesOfADay.contains(minutes) else { return nil }
+        return minutes
     }
 
     static func lastClosedDay(in defaults: UserDefaults) -> CalendarDate? {
