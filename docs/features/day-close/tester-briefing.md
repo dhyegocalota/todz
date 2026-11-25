@@ -119,6 +119,13 @@ At `51aa146`: `swift test --package-path apps/macos/TodzKit` → `Test run with 
 
 ### Known gaps
 
-- Settings still converts the stored minutes straight to the picker's date: a crafted `dayCloseMinutes` far outside a day may hit `DayCloseSchedule.instant`'s `preconditionFailure` when the Settings window opens. Unverified without a launch; the day close itself reads as off.
+- ~~Settings still converts the stored minutes straight to the picker's date~~ closed by the lead at 37b3e97 (red: `DayClosePreference.pickerMinutes is not implemented`) / 8392f4e: the picker shows 18:00 for a stored time outside a day.
 - With Full Keyboard Access, a stale focus on a Done, Tomorrow or No date button would still take Space before engagement; the buttons are not gated so VoiceOver keeps working.
 - Hover engagement fires if the popover appears under a resting pointer.
+
+## Fix round 2 (the lead, after the first tester run)
+
+- Tester E1 (crash on the first opening after launch): `DayCloseCoordinator.check()` now does nothing while a day close is opening or open (`isClosingDay`). Red at df293f0: `aCheckWhileTheDayCloseIsOpeningOpensNothingMore` and `aCheckWhileTheDayCloseIsOpenOpensNothingMore` re-enter until the test process dies (the run reports `TodzKitTests (Swift Testing)` failed, both tests started, none finished). Green at the next commit: 738 tests pass.
+- Tester E2 (the first row focused on opening): fix round 1 clears the focus and gates D/T/N on engagement (676e309); re-walk it.
+- Hypotheses for the re-walk: a hidden launch (`open -g -j`) with the time a minute ahead opens the popover once and does not crash; the first row has no focus; D before any click, hover or Tab does nothing; Escape closes the popover.
+- Still without a test or a walk: Many (12 rows) and Offline at the time; add a model test for each before the re-walk.

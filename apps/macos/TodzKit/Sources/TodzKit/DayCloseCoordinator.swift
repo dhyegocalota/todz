@@ -33,7 +33,8 @@ import Observation
 
     @discardableResult
     public func check() -> DayCloseDecision {
-        guard decision == .due else { return decision }
+        let isDueAndIdle = decision == .due && !isClosingDay
+        guard isDueAndIdle else { return decision }
         closeTheDay()
         return decision
     }
