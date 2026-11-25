@@ -313,7 +313,7 @@ Steps 19 to 24 ship a setting that is on by default (the agent nudge and the day
 20. **Deploy the Worker, then check the stop route.** From the merged head, deploy as step 8 does, then ask the live route with a token that names nothing (`openssl rand -hex 32` prints one; use it as `<random-token>`), once with `GET` and once with `POST`:
 
     ```bash
-    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler deploy
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api server:deploy
     curl -sS https://api.todz.app/health
     curl -sS -D - -o /dev/null "https://api.todz.app/day-email/stop?token=<random-token>"
     curl -sS -D - -o /dev/null -X POST "https://api.todz.app/day-email/stop?token=<random-token>"
@@ -334,11 +334,13 @@ Steps 19 to 24 ship a setting that is on by default (the agent nudge and the day
 22. **Count the candidates.** Read-only; it answers four numbers and no address or id:
 
     ```bash
-    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --file ./scripts/setting-defaults/candidate-counts.sql
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --json --command "$(cat apps/api/scripts/setting-defaults/candidate-counts.sql)"
     ```
 
+    The SQL is passed with `--command` because `--file` imports the statements remotely and prints no rows.
+
     Expected: `owners`, `candidates`, `agent_nudge_on` and `untouched_email_owners`, which go in the run log. `untouched_email_owners` counts every owner with an email identity whose day email was never chosen, with or without a workspace. Step 21 proved the project owner's `day_email` is on, so 0009 stamped that row and the count holds only other owners.
-    If it fails: an error on the file path means the command ran outside the package folder; run it as written.
+    If it fails: `No such file or directory` from `cat` means the command ran outside the repository root; run it from there as written.
 
 23. **Apply migration 0010.** From the merged head, as step 7 does, then count the nudges still off with no choice:
 
@@ -587,3 +589,49 @@ The owner rotates the Keychain token after a run that went wrong, when it may ha
 | 2026-11-25 | 2ac3e03 | 16 | `robots.txt` `HTTP/2 200` `text/plain; charset=utf-8`, starts at `User-agent: *`, no `Disallow` and no `Content-Signal` line, two `Sitemap:` lines; `sitemap.xml` `application/xml; charset=utf-8`; `llms.txt` and `llms-full.txt` `text/plain; charset=utf-8`; `site.webmanifest` `application/manifest+json`; `ard.json` `application/json`; both cards `application/mcp-server-card+json` (the site's with `access-control-allow-origin: *` and `cache-control: public, max-age=3600`, the API's the same plus `access-control-allow-methods: GET`); `favicon.ico` `image/vnd.microsoft.icon`; `og/todz.png` `image/png`; all `HTTP/2 200`; `GPTBot` 200, `ClaudeBot` 200; `cloudflareinsights` count `0`. Lighthouse on `todz.app`, three runs, each Performance 1, Accessibility 1, Best Practices 1, SEO 1, Agentic browsing 1; audits `robots-txt`, `llms-txt`, `ard-schema`, `errors-in-console` and `image-aspect-ratio` score 1 (checked on run 3) |
 | 2026-11-25 | 2ac3e03 | 17 | These rows; nothing was committed to the repository by this run, and no token, link, secret or challenge is in them |
 | 2026-11-25 | 217d5c3 | 9 | The digest check of that deploy, closed on 2026-11-25: the owner confirmed that the first waitlist digest arrived at `ADMIN_EMAIL`; the loop did not read the Cron Events dashboard |
+| 2026-11-25 | 701f3f4 | 1 | Deviation: run from a detached worktree at `origin/main` (clean, 0 ahead, 0 behind); first targeted 78b8d959 and retargeted to 701f3f4f before any deploy; `pnpm verify all` 9 gates green at 701f3f4f |
+| 2026-11-25 | 701f3f4 | 2 | `whoami`: a User API Token, one account `e2035d8e0b7173d520ccf643f6f4661c`; verify `"status":"active"` |
+| 2026-11-25 | 701f3f4 | 3 | `api.todz.app`, `todz.app`, `www.todz.app`: only the Worker's `AAAA 100::` each; apex `MX` route1, route2, route3 `.mx.cloudflare.net` and `TXT "v=spf1 include:_spf.mx.cloudflare.net ~all"`; `_dmarc` `p=none` |
+| 2026-11-25 | 701f3f4 | 4 | `todz-directory`, uuid `dc22b1c3-1869-44a0-b805-91bf92017f19` |
+| 2026-11-25 | 701f3f4 | 5 | Bookmark `00000027-00000000-0000512e-5ee7a910cf25a2ca2460e214caed1373` |
+| 2026-11-25 | 701f3f4 | 6 | Exported `before-701f3f4f.sql` (5972 bytes) into the private folder |
+| 2026-11-25 | 701f3f4 | 7 | Listed `0008_day_email.sql`; applied; second list says nothing to apply. No new secret |
+| 2026-11-25 | 701f3f4 | 8 | Deployed, Current Version ID `1c2e6dee-ecf9-485f-bcc3-81f7613e9ab5`; `api.todz.app`, `todz.app`, `www.todz.app (custom domain)`; schedules `0 11 * * *` and `*/15 * * * *`; ten limiters including `DAY_EMAIL_REPLY_LIMITER (5 requests/60s)`; four variables and `TURNSTILE_SITE_KEY`; `env.DIRECTORY` shown with the nil preview id |
+| 2026-11-25 | 701f3f4 | 9 | One domain entry per host, each `todz-api`; the version at 100 percent; `versions view` binds `DIRECTORY` to `dc22b1c3-1869-44a0-b805-91bf92017f19` |
+| 2026-11-25 | 701f3f4 | 10 | Before: routing enabled, `support_subaddress` false; rules `todz support`, `todz hello` forwards and the disabled catch-all. PATCH `"success":true` (subaddressing true); POST `"success":true` created `todz day email replies`, literal `to` `reply@todz.app`, action `worker` `todz-api`, enabled. Read back: subaddressing true, four rules, forwards unchanged, catch-all still disabled. `day_emails` has no rows. The Workers Logs `rcptTo` and `mailFrom` search is a dashboard read and was not run: owner step |
+| 2026-11-25 | 701f3f4 | 11 | Nothing put: `wrangler secret list` already names `ADMIN_EMAIL` and `TURNSTILE_SECRET_KEY`; the site key is in the deployed variables |
+| 2026-11-25 | 701f3f4 | 12 | `enable` failed with `already exists [code: 2040]` (the already-onboarded case); the list shows `todz.app` enabled yes; apex `MX` and `TXT` unchanged |
+| 2026-11-25 | 701f3f4 | 13 | pseudo IPv4 `off`; Always Use HTTPS `on`; `http://api.todz.app/owner/sign-in-method`, `http://todz.app/` and `http://www.todz.app/` each `HTTP/1.1 301` to `https://` on the same host |
+| 2026-11-25 | 701f3f4 | 14 | `{"method":"link"}`; `/health` body and HEAD `200` with `no-store`, no `server-timing`; `/sign-in` and `/sign-in/challenge` `200`; `/mcp` `401`; `todz.app/` `200` with HSTS and CSP `default-src 'none'`; `/self-host` and `www` `/self-host?from=runbook` `301` to `https://docs.todz.app/self-host` with `max-age=3600`; `todz.app/owner/sign-in-method` and `api.todz.app/` `404`; `todz.app/admin` `200` `no-store` `noindex`; `api.todz.app/admin` `404`; `api.todz.app/owner` `401`; lockup `200` `image/png`; the `workers.dev` address timed out with no answer. The export was deleted |
+| 2026-11-25 | 701f3f4 | 14 extra 1 | Landing holds `data-appearance="always"`, the `todz_fax` honeypot and a `stamp` hidden field; no `unsafe-inline` in its CSP |
+| 2026-11-25 | 701f3f4 | 14 extra 2 | JSON post without a token: `HTTP/2 403`, `{"outcome":"check-failed"}`, `cache-control: no-store`, `vary: Accept` |
+| 2026-11-25 | 701f3f4 | 14 extra 3 | The same without `Accept`: `HTTP/2 429` |
+| 2026-11-25 | 701f3f4 | 14 extra 4 | Count for `nobody@example.com` is 0 after the posts. A real join with a solved Turnstile needs a browser: left to the owner |
+| 2026-11-25 | 701f3f4 | 15 | Link request: `HTTP/2 429`, `retry-after: 60`, `{"error":"sign_in_refused"}`; waitlist count 0, post `429`, count 0; admin links 0, post `429`, links 0; no mail |
+| 2026-11-25 | 701f3f4 | 16 | Eleven `HTTP/2 401`, then three `HTTP/2 429` each with `retry-after: 60`. A single request right after step 17's checks answered `429` (inside the window); one later, after Lighthouse, answered `401` |
+| 2026-11-25 | 701f3f4 | 17 | Every discovery file `200` with the expected content types; both cards carry `access-control-allow-origin: *` and `max-age=3600`; `robots.txt` has the Worker's groups and both `Sitemap:` lines; GPTBot and ClaudeBot `200`; beacon count 0. Lighthouse three runs: Performance 0.86, 1, 1 (median 1); Accessibility, Best Practices, SEO and Agentic browsing 1 each run; `robots-txt`, `llms-txt`, `ard-schema`, `errors-in-console` and `image-aspect-ratio` pass |
+| 2026-11-25 | 701f3f4 | 18 | This file |
+| 2026-11-25 | 6f283d2 | 1 | Deviation: detached worktree at `origin/main` (clean, 0 ahead, 0 behind); `pnpm verify all` 9 gates green at 6f283d2b |
+| 2026-11-25 | 6f283d2 | 2 | `whoami`: a User API Token, one account `e2035d8e0b7173d520ccf643f6f4661c`; verify `"status":"active"` |
+| 2026-11-25 | 6f283d2 | 3 | `api.todz.app`, `todz.app`, `www.todz.app`: only the Worker's `AAAA 100::` each; apex `MX` route1 to route3 and `TXT "v=spf1 include:_spf.mx.cloudflare.net ~all"` unchanged |
+| 2026-11-25 | 6f283d2 | 4 | `todz-directory`, uuid `dc22b1c3-1869-44a0-b805-91bf92017f19` |
+| 2026-11-25 | 6f283d2 | 5 | Bookmark `00000038-00000000-0000512e-7fb638e2078dd3c092647cdc23b79861` |
+| 2026-11-25 | 6f283d2 | 6 | Exported `before-6f283d2b.sql` (7840 bytes) into the private folder; deleted after step 14 |
+| 2026-11-25 | 6f283d2 | 7 | Skipped, replaced by steps 19 and 23 as the runbook says |
+| 2026-11-25 | 6f283d2 | 19 | Worktree at `8c92d9f5` (parent of the commit adding 0010), no 0010 file. Counts before and after identical: one owner, `agent_nudge` 0, `day_email` 1. List named `0009_setting_choices.sql` only; applied. Worktree removed |
+| 2026-11-25 | 6f283d2 | 8 / 20 | Deployed with `pnpm --filter @todz/api server:deploy` (step 8's script), not the bare `wrangler deploy` that step 20's block shows, which would serve no version. Current Version ID `2d31bf84-da1e-4fb7-99f8-0837c512ab0d`, created 2026-11-25T23:51:05Z. Ready line: `todz server ready: https://api.todz.app · server 2026.11.25+6f283d2 · accepts app 0.2.0 or later`. Bindings: the thirteen limiters including `OWNER_LIMITER (600/60s)`, `MCP_LIMITER (3600/60s)`, `DAY_EMAIL_REPLY_LIMITER`, `DAY_EMAIL_STOP_LIMITER (10/60s)`; four variables and `TURNSTILE_SITE_KEY`; custom domains `api.todz.app`, `todz.app`, `www.todz.app`; schedules `0 11 * * *` and `*/15 * * * *` |
+| 2026-11-25 | 6f283d2 | 9 | One domain entry per host, each `todz-api`; the version at 100 percent; `DIRECTORY` bound to `dc22b1c3-1869-44a0-b805-91bf92017f19` |
+| 2026-11-25 | 6f283d2 | 10 | Read only: routing enabled, subaddressing true, four rules (`todz day email replies` worker, the two forwards, the disabled catch-all), as left on 701f3f4f |
+| 2026-11-25 | 6f283d2 | 11 | Nothing put: `ADMIN_EMAIL` and `TURNSTILE_SECRET_KEY` are listed |
+| 2026-11-25 | 6f283d2 | 12 | `todz.app` sending enabled yes; `enable` not rerun |
+| 2026-11-25 | 6f283d2 | 13 | pseudo IPv4 `off`; Always Use HTTPS `on`; the three hosts each `HTTP/1.1 301` to `https://` on the same host |
+| 2026-11-25 | 6f283d2 | 20 checks | `/health`: `{"service":"todz","origin":"https://api.todz.app","version":"2026.11.25+6f283d2","minimum_app_version":"0.2.0"}`. `GET` and `POST` of `/day-email/stop` with a random unknown token: `HTTP/2 404`, `x-robots-tag: noindex`, `cache-control: no-store`, CSP `default-src 'none'; style-src 'sha256-…'; img-src data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`. No real stop link was posted |
+| 2026-11-25 | 6f283d2 | 14 | With `Todz-App-Version: 0.2.0`: `{"method":"link"}`; without it: `{"error":"app_too_old","minimum_app_version":"0.2.0"}`; `/health` as above; `/health` HEAD `200`, `no-store`, `todz-api-version: 2026.11.25+6f283d2`, no `server-timing`; `/sign-in`, `/sign-in/challenge` `200`; `/mcp` `401`; `todz.app/` `200`; `/self-host` and `www` `/self-host?from=runbook` `301` to `https://docs.todz.app/self-host`; `todz.app/owner/sign-in-method`, `api.todz.app/` `404`; `todz.app/admin` `200` `no-store` `noindex`; `api.todz.app/admin` `404`; `api.todz.app/owner` with the version header `401`; lockup `200` `image/png`; every API answer carries `todz-api-version`; HSTS now `max-age=31536000; includeSubDomains`; `workers.dev` timed out with no answer. The landing links `https://docs.todz.app/install-on-mac` and `https://docs.todz.app/self-host` |
+| 2026-11-25 | 6f283d2 | 15 | Link request `HTTP/2 429`, `retry-after: 60`, `{"error":"sign_in_refused"}`; waitlist post `429`, probe-address count 0; admin post `429`; no mail |
+| 2026-11-25 | 6f283d2 | 16 | Eleven `HTTP/2 401`, then three `HTTP/2 429` each with `retry-after: 60`. The single request after the window was not repeated |
+| 2026-11-25 | 6f283d2 | 17 | Every discovery file `200` with the expected content types, both cards `access-control-allow-origin: *`; `robots.txt` starts at `User-agent: *` and has two `Sitemap:` lines; GPTBot and ClaudeBot `200`; beacon 0. Lighthouse once: Performance 0.85, Accessibility, Best Practices, SEO and Agentic browsing 1; `robots-txt`, `llms-txt`, `ard-schema`, `errors-in-console`, `image-aspect-ratio` pass. Performance under 0.95 on a single run on a machine at load average 6 to 10; the previous run's three-run median was 1 |
+| 2026-11-25 | 6f283d2 | 21 | Failed sends since the deploy (`claimed_at` after 1795650665000): `0`. The newest `day_emails` row is `2026-11-25`, `sent`, no failure. The mail-source check (`List-Unsubscribe` and `List-Unsubscribe-Post`, stop link opened with `GET`) waits for the owner's next day mail after the deploy: not yet done |
+| 2026-11-25 | 6f283d2 | 22 | `owners` 1, `candidates` 1, `agent_nudge_on` 0, `untouched_email_owners` 0. The runbook's `--file` form prints no SELECT rows (only query statistics), so the same SQL was run through `--command` |
+| 2026-11-25 | 6f283d2 | 23 | The build loop's call: 23 and 24 ran before step 21's header check closed, because neither sends mail (0010 turns on only the nudge for the one untouched owner, who asked for it on; step 24 changes no row). Step 21's check closes at the owner's next day mail, 2026-11-26 10:00 UTC; if it fails, roll back per the runbook. List named `0010_agent_nudge_default.sql` only; applied. `untouched_off` 0. Read-back for the owner: `agent_nudge` 1, `agent_nudge_chosen_at` null, `day_email` 1, `day_email_chosen_at` 1795650649791 |
+| 2026-11-25 | 6f283d2 | 24 | `day-email-default.sql` ran with `untouched_email_owners` 0: `changes` 0, rows written 0, no row changed |
+| 2026-11-25 | 6f283d2 | Deviations | Step 20's block shows a bare `wrangler deploy`; `server:deploy` was used, as step 8 says. `wrangler d1 execute --file` prints no SELECT rows, so step 22's counts came through `--command` with the file's SQL. Step 7 was skipped by design. Worktree detached |
