@@ -21,7 +21,8 @@ G1 and G2 share `apps/api/package.json`: G1 edits only the dev scripts' `--var` 
 
 **Amended by the plan review answers (spec R1–R17):**
 
-- G1 also owns `apps/api/src/turnstile-page.ts` (export `sourceHash`), `apps/api/public/_headers`, the `dev:site` script, and the test files that reach `exports.default.fetch` with `https://api.todz.test` (R2).
+- `site-headers.ts` and `apps/api/src/turnstile-page.ts` (export `sourceHash`) move to G2, because only the pages use them; G1's site router (`apps/api/src/site/site-endpoint.ts`, which takes the place of `join-placeholder.ts`) calls G2's `serveLandingPage({ notice })` and `serveSelfHostPage()` through stubs until the merge.
+- G1 also owns `apps/api/public/_headers`, the `dev:site` script, and the test files that reach `exports.default.fetch` with `https://api.todz.test` (R2).
 - G2 also owns `docs/self-host.md`, `tools/repository-shape/src/self-host.test.ts`, `apps/api/test/site/`, the `site:*` aliases in the root `package.json`, `apps/api/tsconfig.json` and `tsconfig.scripts.json` (for `test/site`), `apps/api/vitest.config.mts`'s `NODE_TESTS` (after G1's binding, merged by the lead), and the `docs/self-host.md` row of `scripts/verify-gates.tsv` with its `scripts/verify.test.sh` case.
 - G3 also owns the `e2e` gate: its `scripts/verify.sh` and `verify-gates.tsv` rows, its `verify.test.sh` case, the `ci-workflow.test.ts` pin, and `tsconfig.scripts.json`'s include of `e2e` and `playwright.config.ts`.
 
