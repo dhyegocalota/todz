@@ -46,6 +46,8 @@ const SEED_IDENTITY = 'todz-perf-seed';
 const HOT_PROJECT_TASK_COUNT = 5_000;
 const OWNER_PROJECT_COUNT = 200;
 const TARGET_FLAG = 'target';
+const PORT_FLAG = 'port';
+const PORT_MAX = 65_535;
 const CLEANUP_FLAG = 'cleanup';
 const SENDS_FLAG = 'sends';
 
@@ -54,13 +56,22 @@ function exitCodeOf(isPassing: boolean): ExitCode {
   return ExitCode.Failed;
 }
 
+function localPortOrigin(parsed: ParsedArguments): string {
+  const localOrigin = ORIGIN_OF_TARGET[PerfTarget.Local];
+  if (flagValueOf({ parsed, name: PORT_FLAG }) === null) return localOrigin;
+  const port = numberFlagOf({ parsed, name: PORT_FLAG });
+  if (!Number.isInteger(port) || port > PORT_MAX) throw new UsageError(`--${PORT_FLAG} needs a port from 1 to ${PORT_MAX}`);
+  const url = new URL(localOrigin);
+  url.port = String(port);
+  return url.origin;
+}
+
 function localOriginOf({ parsed, command }: { parsed: ParsedArguments; command: CliCommand }): string {
   const value = flagValueOf({ parsed, name: TARGET_FLAG });
-  if (value === null) return ORIGIN_OF_TARGET[PerfTarget.Local];
-  const target = perfTargetOf(value);
-  if (target === PerfTarget.Production)
+  if (value !== null && perfTargetOf(value) === PerfTarget.Production) {
     throw new UsageError(`${command} runs on local only; the bounded production run is pnpm perf production`);
-  return ORIGIN_OF_TARGET[target];
+  }
+  return localPortOrigin(parsed);
 }
 
 function localDependencies({ dependencies, origin }: { dependencies: CliDependencies; origin: string }): LocalRunDependencies {
