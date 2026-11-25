@@ -22,8 +22,8 @@
   "footer": {
     "links": [
       {
-        "header": "Logic Bit",
-        "items": [{ "label": "todz is a product of Logic Bit, made in Brazil", "href": "https://logicbit.com.br" }]
+        "header": "todz is a product of",
+        "items": [{ "label": "Logic Bit", "href": "https://logicbit.com.br" }]
       }
     ]
   },

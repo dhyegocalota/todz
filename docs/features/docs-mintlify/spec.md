@@ -53,7 +53,7 @@ pnpm verify (docs gate) ──▶ broken-links ──▶ validate ──▶ test
   - `name` `todz`; `theme` `mint`; `appearance.default` `system`; `favicon` `/favicon.svg`; `logo` `{ light: /logo/light.svg, dark: /logo/dark.svg, href: / }`.
   - `colors`: `primary` and `dark` are the landing's light `--color-accent` (`#2F5BFF`), `light` its dark `--color-accent` (`#7C95FF`); `background.color` is the landing's `--color-page` (`#F2F4FA` light, `#070812` dark).
   - `navbar.links`: one link, `todz.app` to `https://todz.app`.
-  - `footer.links`: one column headed `Logic Bit` with one item, `todz is a product of Logic Bit, made in Brazil`, linking `https://logicbit.com.br`.
+  - `footer.links`: one column headed `todz is a product of` (the landing's credit lead; the `mint` theme renders only the links) with one item, `Logic Bit`, linking `https://logicbit.com.br`; the full sentence made the link 291 px wide inside a 144 px box that clips it, so the label is the company name and a walk asserts `scrollWidth === clientWidth` for it.
   - `errors.404`: `redirect` false, title `Page not found`, a description linking back to `/`.
   - `navigation.groups`: `Get started` (`index`, `quickstart`, `connect-an-agent`), `Reference` (`mcp-tools`), `Self-host` (`self-host`).
 - Every page has front matter with a `title`; no page has a `# ` heading of its own.
