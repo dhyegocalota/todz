@@ -4,6 +4,7 @@ import TodzKit
 import WidgetKit
 
 private let cacheFolderName = "Cache"
+private let focusFilterReadTimeoutMilliseconds = 3000
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel(
@@ -14,7 +15,7 @@ private let cacheFolderName = "Cache"
         widgetStore: AppConfiguration.widgetStore,
         reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
         signals: SocketChangeSignals(baseURL: AppConfiguration.baseURL),
-        timeZone: .current,
+        timeZone: .autoupdatingCurrent,
         pause: { try await Task.sleep(for: $0) }
     )
     let windowState = MainWindowState()
@@ -65,12 +66,18 @@ private let cacheFolderName = "Cache"
     }
 
     private func readFocusFilter() async {
-        let filter: TodzFocusFilter
-        do {
-            filter = try await TodzFocusFilter.current
-        } catch {
-            return
+        let (answers, answer) = AsyncStream.makeStream(of: Bool?.self)
+        Task {
+            answer.yield(try? await TodzFocusFilter.current.isQuiet)
+            answer.finish()
         }
-        gate.applyLaunchRead(isQuiet: filter.isQuiet)
+        Task {
+            try? await Task.sleep(for: .milliseconds(focusFilterReadTimeoutMilliseconds))
+            answer.yield(nil)
+            answer.finish()
+        }
+        var iterator = answers.makeAsyncIterator()
+        guard let firstAnswer = await iterator.next(), let isQuiet = firstAnswer else { return }
+        gate.applyLaunchRead(isQuiet: isQuiet)
     }
 }
