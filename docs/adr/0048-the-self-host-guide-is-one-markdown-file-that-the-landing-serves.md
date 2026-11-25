@@ -1,6 +1,6 @@
 # 0048. The self-host guide is one Markdown file that the landing serves
 
-- Status: Proposed
+- Status: Proposed, partly superseded by [0059](0059-the-docs-are-a-mintlify-site-on-docs-todz-app-built-from-apps-docs-and-the-self-host-guide-moves-into-it.md) (§ 1's file, which moves to `apps/docs/self-host.mdx`, and, once `docs-cutover` ships, § 3's landing page)
 - Date: 2026-11-24
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) asked on 2026-11-24 for short, exact self-host docs, "e pode publicar também", and may overturn this
 - Inspired by: [ADR 0044](0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md), [ADR 0045](0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md), the owner's PROMPT.md, which forbids publishing to claude.ai Artifacts or any outside service
