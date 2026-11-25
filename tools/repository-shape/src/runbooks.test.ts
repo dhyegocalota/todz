@@ -78,6 +78,12 @@ const LINE_SEPARATOR = '\n';
 const ACCOUNT_ID_CAPTURE = 1;
 const CLOUDFLARE_API_HOST = 'api.cloudflare.com';
 const SMOKE_CHECK_STEP = 14;
+const CANDIDATE_COUNT_STEP = 22;
+const CANDIDATE_COUNT_SQL = 'apps/api/scripts/setting-defaults/candidate-counts.sql';
+const INLINE_COMMAND_PATTERN = /--command "([^"]+)"/;
+const INLINE_COMMAND_CAPTURE = 1;
+const WHITESPACE_RUN_PATTERN = /\s+/g;
+const SINGLE_SPACE = ' ';
 const HEALTH_CURL = 'curl -sS https://api.todz.app/health';
 const HEALTH_HEAD_CURL = 'curl -sSI https://api.todz.app/health';
 const HEALTH_ANSWER = '{"service":"todz","origin":"https://api.todz.app","version":"<stamp>","minimum_app_version":"0.2.0"}';
@@ -375,6 +381,14 @@ describe('runbooks', () => {
     });
     expect(named.length).toBeGreaterThan(0);
     expect(named.filter((path) => !existsSync(repositoryPath(posix.join(API_PACKAGE_DIRECTORY, path))))).toEqual([]);
+  });
+
+  test('the candidate count step runs the tested counts statement inline, because wrangler prints no rows for a file', () => {
+    const countStep = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === CANDIDATE_COUNT_STEP);
+    if (!countStep) throw new Error(`the deploy runbook has no step ${CANDIDATE_COUNT_STEP}`);
+    const inlineStatement = INLINE_COMMAND_PATTERN.exec(countStep.body)?.[INLINE_COMMAND_CAPTURE];
+    const testedStatement = readRepositoryFile(CANDIDATE_COUNT_SQL).replace(WHITESPACE_RUN_PATTERN, SINGLE_SPACE).trim();
+    expect(inlineStatement).toBe(testedStatement);
   });
 
   test('the smoke check curls the health route of the API host and counts it among the eighteen answers', () => {
