@@ -29,7 +29,7 @@ docs/scenarios          agentic walks of the product core, one file per flow, ru
 .agents/skills          skills (single source; `.claude/skills` links here)
 .agents/roles           agent role bodies shared by `.claude/agents` and `.codex/agents`
 .agents/hooks           hook scripts shared by `.claude/settings.json` and `.codex/hooks.json`
-scripts                 the local gate, the Mac release command and their tests
+scripts                 the local gate, the Worker deploy, the Mac release command and their tests
 ```
 
 Applications go under `apps/`, shared libraries under `libs/`; a feature that adds one adds its line here and, for a new root entry, its entry to `delivery-docs.test.ts`.

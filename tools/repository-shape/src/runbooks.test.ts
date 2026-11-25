@@ -9,6 +9,8 @@ const INDEX_FILE_NAME = 'README.md';
 const MARKDOWN_EXTENSION = '.md';
 const ROOT_PACKAGE_FILE = 'package.json';
 const DEPLOY_RUNBOOK = 'deploy-the-api.md';
+const DEPLOY_STEP = 8;
+const DEPLOY_WORKER_SCRIPT = 'scripts/deploy-worker.sh';
 const AGENT_EXCEPTION_SENTENCE =
   "agents never run them, except `deploy-the-api`, the loop's steps of `mintlify-publish`, the loop's steps of `performance` and the loop's steps of `release-the-mac-app`";
 const MINTLIFY_RUNBOOK = 'mintlify-publish.md';
@@ -343,6 +345,12 @@ describe('runbooks', () => {
   test('the guard hook helper blocks a command that writes a dotenv file and passes a plain read', () => {
     expect(isBlockedByGuard('touch .env')).toBe(true);
     expect(isBlockedByGuard('git status')).toBe(false);
+  });
+
+  test('the deploy step runs scripts/deploy-worker.sh and no bare wrangler deploy', () => {
+    const deployStep = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === DEPLOY_STEP);
+    expect(deployStep).toBeDefined();
+    expect(commandLines(deployStep!.body)).toEqual([DEPLOY_WORKER_SCRIPT]);
   });
 
   test('every wrangler call of the deploy runbook goes through the wrapper, and no line calls the Cloudflare API directly', () => {
