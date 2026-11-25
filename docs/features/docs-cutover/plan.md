@@ -21,11 +21,11 @@ One developer: the red tests in one commit, then the redirect and the links, the
 
 ### G1
 
-- [ ] **Step 1:** Failing tests: the 301 per host and method and the kept 404s (`site-dispatch.test.ts`), the landing's links (`site-pages.test.ts`), the end-to-end link and redirect (`landing.spec.ts`), the README link (`self-host.test.ts`), step 13's expectations and the Mintlify setup (`runbooks.test.ts`), the gate map (`verify.test.sh`).
-- [ ] **Step 2:** `self-host-redirect.ts`, the routes, the `www` short cut and the links in the site shell.
-- [ ] **Step 3:** Remove the generated guide, its generator, scripts, styles, copy and tests; drop the gate map row; the API README.
-- [ ] **Step 4:** The README link; deploy runbook step 13; the Mintlify runbook's setup, step 3 and run log; ADR 0048's status and ADR 0059's evidence.
-- [ ] **Step 5:** The after-merge rows of `docs-mintlify`'s test plan; the tester briefing; `apps/api` unit and e2e, `repository-shape`, `pnpm verify` green.
+- [x] **Step 1:** Failing tests: the 301 per host and method and the kept 404s (`site-dispatch.test.ts`), the landing's links (`site-pages.test.ts`), the end-to-end link and redirect (`landing.spec.ts`), the README link (`self-host.test.ts`), step 13's expectations and the Mintlify setup (`runbooks.test.ts`), the gate map (`verify.test.sh`) — evidence: 856ff51 (10 api unit, 4 e2e, 4 shape and 2 `verify.test.sh` failures, texts in the tester briefing).
+- [x] **Step 2:** `self-host-redirect.ts`, the routes, the `www` short cut and the links in the site shell — evidence: 38f14a7.
+- [x] **Step 3:** Remove the generated guide, its generator, scripts, styles, copy and tests; drop the gate map row; the API README — evidence: c5b9f3e.
+- [x] **Step 4:** The README link; deploy runbook step 13; the Mintlify runbook's setup, step 3 and run log; ADR 0048's status and ADR 0059's evidence — evidence: f5e102e. The Mintlify step 3 change was added here: the live footer never held the full credit sentence.
+- [x] **Step 5:** The after-merge rows of `docs-mintlify`'s test plan; the tester briefing; `apps/api` unit and e2e, `repository-shape`, `pnpm verify` green — evidence: the commit after f5e102e; unit 1673 passed, e2e 50 passed 2 skipped, shape 311 passed; `pnpm verify` in the tester briefing.
 
 ## Failure modes
 
@@ -41,7 +41,7 @@ One developer: the red tests in one commit, then the redirect and the links, the
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
 - [ ] **/check-ui:** screenshots of the landing's header and footer links and the redirect, recorded and uploaded.
