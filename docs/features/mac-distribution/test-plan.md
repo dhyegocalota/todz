@@ -139,6 +139,21 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] Gentle reminders: with N running in the background and another app in front, a scheduled check that finds N+1 opens no window over that app; bringing todz forward or "Check for Updates…" shows it.
 - [ ] Debug build: no "Check for Updates…" item.
 
+## Tester results: one pass under lighter gates, at `b4ae3f0e`
+
+Scope: visible behaviour only, against a local `wrangler dev` (8891 with no release staged, 8892 with the staged fixture from `stage-fixture-site.sh`), the docs page read as text, and a scratch Release bundle. The Playwright MCP browser is not installed on this Mac, so the walk was scripted with Playwright's library on system Chrome; no spec file was committed. Unit, E2E, typecheck and the release-by-hand boxes above were not run in this pass.
+
+- PASS: landing with nothing released: the eyebrow reads "macOS · Coming soon", no `a.download-button`, the waitlist form is the hero's action.
+- PASS: landing with the fixture released: eyebrow "macOS 14 or later", "Download for Mac" with `href="/download"` and `download`, above the waitlist form; the note reads "Not notarized by Apple yet: the first time, open it from System Settings › Privacy & Security." and "Install steps" links `https://docs.todz.app/install-on-mac`; no "coming soon" in the page.
+- PASS: `/download` and `/download/latest` answer 302 to `/download/0.0.2/Todz-0.0.2.dmg`; the DMG answers 200 with `Content-Disposition: attachment; filename="Todz-0.0.2.dmg"`, `Cache-Control: public, max-age=31536000, immutable`, `Content-Type: application/octet-stream`; `/download/appcast.xml` answers 200 `application/xml`. The 302 carries HSTS, CSP `default-src 'none'`, referrer-policy and `nosniff`. With nothing released `/download` answers 404.
+- PASS: `/llms.txt` makes no download claim in either state ("in development: the macOS app is not yet notarized by Apple and the waitlist is open").
+- PASS: no horizontal overflow and no console error or 4xx/5xx response at 1280 and 375, light and dark, in both states. At 375 the button is the column's width (343 of 343 px, x=16), the note wraps; at 1280 the button is 200 px wide, centred, above the form.
+- PASS: `apps/docs/install-on-mac.mdx` (read as text; Mintlify not run): offers the download only "When todz.app shows **Download for Mac**", gives the build-from-source section, the `allowed-signers` line, `ssh-keygen -Y verify` and `shasum -a 256 -c`, and the trust statement. The fingerprint `SHA256:yBlPOn96/UZM6GGCo//eqZtFjWl440Hr6rxWa0VS5Tk` was recomputed from the key (`ssh-keygen -lf -` on the key alone) and matches the page.
+- PASS: the scratch Release app (`dev.todz.Todz`, built into the scratchpad, never `/Applications`) launched with `lastClosedDay` and `lastMorningGlanceDay` passed as argument-domain overrides, showed "Check for Updates…" under the Todz menu, and was quit.
+- PASS: `codesign -dv`: `flags=0x10000(runtime)`, `TeamIdentifier=XFWR794VS8`; `codesign --verify --deep --strict` passes; the built Info.plist's `SUFeedURL` is `https://todz.app/download/appcast.xml`.
+- NOT RUN: the update check (no release exists), `pnpm release:mac`, any Keychain read, anything against production, the Mintlify render, the click-to-download event and the Tab-focus ring.
+- Media: `.pr-media/mac-distribution/landing-{nothing-released,released}-{1280,375}-{light,dark}.png`.
+
 ## Edge cases hunted during execution
 
 - [ ] (add each new one here with its regression test)
