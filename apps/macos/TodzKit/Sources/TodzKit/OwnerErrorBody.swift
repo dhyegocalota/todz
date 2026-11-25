@@ -11,6 +11,7 @@ struct OwnerErrorBody: Decodable {
     let number: Int?
     let issue: RuleIssue?
     let index: Int?
+    let minimumAppVersion: String?
 
     static func failure(status: Int, body: Data) -> OwnerAPIError {
         let codedFailure = (try? OwnerCoding.decoder().decode(OwnerErrorBody.self, from: body))?.failure
@@ -32,6 +33,7 @@ struct OwnerErrorBody: Decodable {
         case .timeZoneInvalid: .timeZoneInvalid
         case .signInUnavailable: .signInUnavailable
         case .signInRefused: .signInRefused
+        case .appTooOld: minimumAppVersion.map { .appTooOld(minimum: $0) }
         }
     }
 }

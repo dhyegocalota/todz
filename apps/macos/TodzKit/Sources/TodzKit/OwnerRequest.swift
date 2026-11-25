@@ -4,6 +4,7 @@ private let authorizationHeader = "Authorization"
 private let bearerPrefix = "Bearer "
 private let contentTypeHeader = "Content-Type"
 private let jsonContentType = "application/json"
+private let appVersionHeader = "Todz-App-Version"
 
 struct OwnerRequest {
     let method: RequestMethod
@@ -25,6 +26,7 @@ struct OwnerRequest {
         var request = URLRequest(url: queryItems.isEmpty ? address : address.appending(queryItems: queryItems))
         request.httpMethod = method.rawValue
         request.httpBody = body
+        request.setValue(appVersion, forHTTPHeaderField: appVersionHeader)
         if let session { request.setValue(bearerPrefix + session, forHTTPHeaderField: authorizationHeader) }
         if body != nil { request.setValue(jsonContentType, forHTTPHeaderField: contentTypeHeader) }
         return request

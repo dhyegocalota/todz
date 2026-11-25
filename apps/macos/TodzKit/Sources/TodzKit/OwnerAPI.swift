@@ -34,6 +34,8 @@ private func keysPath(_ projectIdentifier: String) -> String {
 private struct HealthBody: Decodable {
     let service: String
     let origin: String?
+    let version: String?
+    let minimumAppVersion: String?
 }
 
 private final class RedirectRefusal: NSObject, URLSessionTaskDelegate {
@@ -120,7 +122,7 @@ public struct OwnerAPI: OwnerService {
         guard body.count <= healthBodyLimit else { return .notTodz }
         guard let answer = try? OwnerCoding.decoder().decode(HealthBody.self, from: body), answer.service == todzServiceName else { return .notTodz }
         guard let origin = answer.origin else { return .notTodz }
-        return .todz(origin: origin, versions: ServerVersions(server: nil, minimumApp: nil))
+        return .todz(origin: origin, versions: ServerVersions(server: answer.version, minimumApp: answer.minimumAppVersion))
     }
 
     public func signInMethod() async throws -> SignInMethod {
