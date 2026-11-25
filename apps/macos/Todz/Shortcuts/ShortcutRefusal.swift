@@ -6,6 +6,8 @@ enum ShortcutRefusal: Error, CustomLocalizedStringResourceConvertible {
     case noWorkspace
     case loading
     case taskGone
+    case noMatch(text: String, workspaceName: String)
+    case ambiguous(text: String, titles: [String])
     case rule(RuleIssue)
 
     init?(_ readiness: ShortcutReadiness) {
@@ -27,6 +29,8 @@ enum ShortcutRefusal: Error, CustomLocalizedStringResourceConvertible {
         case .noWorkspace: ShortcutsCopy.noWorkspace
         case .loading: ShortcutsCopy.loading
         case .taskGone: ShortcutsCopy.taskGone
+        case let .noMatch(text, workspaceName): ShortcutsCopy.noMatch(text: text, workspaceName: workspaceName)
+        case let .ambiguous(text, titles): ShortcutsCopy.ambiguous(text: text, titles: titles)
         case let .rule(issue): issue.copy
         }
     }

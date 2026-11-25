@@ -14,7 +14,12 @@ struct TodzTaskQuery: EntityStringQuery {
     @MainActor
     func entities(matching string: String) async throws -> [TodzTaskEntity] {
         try await model.requireShortcutReadiness()
-        return model.shortcutTasks(matching: string).map(TodzTaskEntity.init)
+        guard let workspace = model.activeWorkspace else { throw ShortcutRefusal.noWorkspace }
+        switch model.shortcutResolution(matching: string) {
+        case let .one(task): return [TodzTaskEntity(task: task)]
+        case let .many(tasks): throw ShortcutRefusal.ambiguous(text: string, titles: tasks.prefix(ShortcutLimits.spokenTitleLimit).map(\.title))
+        case .none: throw ShortcutRefusal.noMatch(text: string, workspaceName: workspace.name)
+        }
     }
 
     @MainActor

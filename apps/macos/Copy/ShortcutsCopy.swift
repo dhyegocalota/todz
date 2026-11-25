@@ -48,6 +48,15 @@ enum ShortcutsCopy {
         }
     }
 
+    static func noMatch(text: String, workspaceName: String) -> String {
+        "No open task in \(workspaceName) matches “\(text)”."
+    }
+
+    static func ambiguous(text: String, titles: [String]) -> String {
+        let listedTitles = titles.map { "“\($0)”" }.formatted(.list(type: .and))
+        return "More than one open task matches “\(text)”: \(listedTitles). Say more of the title."
+    }
+
     static func completed(title: String) -> String {
         "Done: “\(title)”."
     }
