@@ -10,6 +10,7 @@ import {
 import { findOwnedWorkspace } from './directory-workspaces';
 import type { Env } from './env';
 import type { ProjectStore } from './project-store';
+import { type RecordWait, measured } from './timed-call';
 
 export type SessionOwner = { readonly ownerId: string } & { readonly sessionOwner: unique symbol };
 
@@ -40,6 +41,28 @@ function resolvedOwnerOf(ownerId: string): SessionOwner {
   const owner = Object.freeze({ ownerId }) as SessionOwner;
   resolvedOwners.add(owner);
   return owner;
+}
+
+function timedStub({ stub, record }: { stub: DurableObjectStub<ProjectStore>; record: RecordWait }): DurableObjectStub<ProjectStore> {
+  return new Proxy(stub, {
+    get(target, property) {
+      const member = Reflect.get(target, property);
+      if (typeof member !== 'function' || typeof property === 'symbol' || property === 'then') return member;
+      return (...parameters: unknown[]) => measured({ call: () => Reflect.apply(member, target, parameters), record });
+    },
+  });
+}
+
+export function withTimedProjects({ env, record }: { env: Env; record: RecordWait }): Env {
+  const timedNamespace = new Proxy(env.PROJECT_STORE, {
+    get(target, property) {
+      const member = Reflect.get(target, property);
+      if (typeof member !== 'function') return member;
+      if (property === 'get') return (id: DurableObjectId) => timedStub({ stub: target.get(id), record });
+      return member.bind(target);
+    },
+  });
+  return { ...env, PROJECT_STORE: timedNamespace };
 }
 
 export async function openKeyProject({

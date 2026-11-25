@@ -1,25 +1,15 @@
 import type { Env } from './env';
 import { HttpHeader } from './http-header';
 import { HttpStatus } from './http-status';
+import { withTimedProjects } from './project-routing';
+import { type RecordWait, measured } from './timed-call';
 
 export type RequestTimings = { directoryMs: number; projectMs: number };
-
-type RecordWait = (milliseconds: number) => void;
 
 const EVENT_STREAM_MEDIA_TYPE = 'text/event-stream';
 const DURATION_DIGITS = 1;
 const TIMED_STATEMENT_METHODS = new Set<PropertyKey>(['first', 'all', 'run', 'raw']);
-const PASSED_THROUGH_STUB_PROPERTIES = new Set<PropertyKey>(['then']);
 const preparedStatements = new WeakMap<object, D1PreparedStatement>();
-
-async function measured<Value>({ call, record }: { call: () => Value | Promise<Value>; record: RecordWait }): Promise<Value> {
-  const startedAt = performance.now();
-  try {
-    return await call();
-  } finally {
-    record(performance.now() - startedAt);
-  }
-}
 
 function preparedStatementOf(statement: D1PreparedStatement): D1PreparedStatement {
   const prepared = preparedStatements.get(statement);
@@ -56,35 +46,13 @@ function timedDirectory({ directory, record }: { directory: D1Database; record: 
   });
 }
 
-function timedStub({ stub, record }: { stub: DurableObjectStub; record: RecordWait }): DurableObjectStub {
-  return new Proxy(stub, {
-    get(target, property) {
-      const member = Reflect.get(target, property);
-      if (typeof member !== 'function') return member;
-      if (typeof property === 'symbol' || PASSED_THROUGH_STUB_PROPERTIES.has(property)) return member;
-      return (...parameters: unknown[]) => measured({ call: () => Reflect.apply(member, target, parameters), record });
-    },
-  });
-}
-
-function timedNamespace({ namespace, record }: { namespace: Env['PROJECT_STORE']; record: RecordWait }): Env['PROJECT_STORE'] {
-  return new Proxy(namespace, {
-    get(target, property) {
-      const member = Reflect.get(target, property);
-      if (typeof member !== 'function') return member;
-      if (property === 'get') return (id: DurableObjectId) => timedStub({ stub: target.get(id), record });
-      return member.bind(target);
-    },
-  });
-}
-
 export function timedEnv(env: Env): { env: Env; timings: RequestTimings } {
   const timings: RequestTimings = { directoryMs: 0, projectMs: 0 };
-  const observedEnv: Env = {
+  const directoryTimedEnv: Env = {
     ...env,
     DIRECTORY: timedDirectory({ directory: env.DIRECTORY, record: (milliseconds) => (timings.directoryMs += milliseconds) }),
-    PROJECT_STORE: timedNamespace({ namespace: env.PROJECT_STORE, record: (milliseconds) => (timings.projectMs += milliseconds) }),
   };
+  const observedEnv = withTimedProjects({ env: directoryTimedEnv, record: (milliseconds) => (timings.projectMs += milliseconds) });
   return { env: observedEnv, timings };
 }
 
