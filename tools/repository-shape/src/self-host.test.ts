@@ -29,6 +29,15 @@ const DATABASE_NAME_PATTERN = /"database_name": "([\w-]+)"/;
 const ENVIRONMENT_NAME_PATTERN = /`(?:vars\.)?((?:PUBLIC_ORIGIN|TURNSTILE_[A-Z_]+))`/g;
 const XCODE_LINE_PATTERN = /^(xcode(?:gen|build) .+?)(?: \\)?$/gm;
 const SECRET_COMMAND_PATTERN = /wrangler secret (?:put|delete) ([A-Z_]+)/g;
+const REPOSITORY_PATH_PATTERN = /`((?:apps|libs|tools|scripts|docs)\/[\w./@-]+)`/g;
+const PROJECT_KEYS = [
+  'TODZ_API_BASE_URL',
+  'DEVELOPMENT_TEAM',
+  'bundleIdPrefix',
+  'TODZ_APP_BUNDLE_IDENTIFIER',
+  'TODZ_WIDGETS_BUNDLE_IDENTIFIER',
+  'TODZ_APP_GROUP',
+];
 const SERVER_NAME_PATTERN = /private let serverName = "([\w-]+)"/;
 const ANCHOR_SEPARATOR = '#';
 const FIRST_CAPTURE = 1;
@@ -97,6 +106,18 @@ describe('the self-host guide', () => {
     expect(readRepositoryFile(AGENT_COMMAND)).toContain(CLAUDE_CODE_PREFIX);
     expect(guide).toContain(`${CLAUDE_CODE_PREFIX} ${serverName} '`);
     expect(guide).toContain(`${MCP_PATH}'`);
+  });
+
+  test('every repository path it names exists', () => {
+    const paths = captured(REPOSITORY_PATH_PATTERN);
+    expect(paths.length).toBeGreaterThan(0);
+    expect(paths.filter((path) => !existsSync(repositoryPath(path)))).toEqual([]);
+  });
+
+  test('every app setting it asks a fork to change is in the app project, and the guide names each', () => {
+    const project = readRepositoryFile(APP_PROJECT);
+    expect(PROJECT_KEYS.filter((key) => !project.includes(`${key}:`))).toEqual([]);
+    expect(PROJECT_KEYS.filter((key) => !guide.includes(`\`${key}\``))).toEqual([]);
   });
 
   test('the sender it asks to change lives where it says', () => {

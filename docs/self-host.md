@@ -8,9 +8,20 @@ Run your own todz server on Cloudflare and point the macOS app and your agents a
 - Node and pnpm, in the versions of `.nvmrc` and `package.json`, and a Mac with Xcode and XcodeGen for the app.
 - Wrangler logged in to your account: `pnpm --filter @todz/api exec wrangler login`.
 
-## 1. Fork and rename
+## 1. Fork, install and check
 
-Fork the repository, then edit `apps/api/wrangler.jsonc`:
+Fork the repository, then, before renaming anything:
+
+```bash
+pnpm install
+pnpm verify all
+```
+
+The gate also needs gitleaks; its doctor names anything missing. Run it now, because some tests pin todz's own production names, for example `tools/repository-shape/src/api-source.test.ts` and `apps/api/test/email-sender.test.ts`. After step 2 those pins fail until you update them to your names.
+
+## 2. Rename
+
+Edit `apps/api/wrangler.jsonc`:
 
 - `account_id`: your account's id.
 - `routes`: `api.example.com` as a custom domain.
@@ -20,7 +31,7 @@ Fork the repository, then edit `apps/api/wrangler.jsonc`:
 
 Edit `apps/api/src/email-sender.ts` so the sender and the reply-to address are yours.
 
-## 2. Create the database and apply the migrations
+## 3. Create the database and apply the migrations
 
 ```bash
 pnpm --filter @todz/api exec wrangler d1 create todz-directory
@@ -32,16 +43,15 @@ Put the printed id in `d1_databases[0].database_id`, then:
 pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
 ```
 
-## 3. Deploy
+## 4. Deploy
 
 ```bash
-pnpm verify all
 pnpm --filter @todz/api exec wrangler deploy
 ```
 
 Cloudflare creates the DNS record and the certificate for `api.example.com`. Check it with `curl -sS https://api.example.com/owner/sign-in-method`, which answers `{"method":"link"}`.
 
-## 4. Email sending
+## 5. Email sending
 
 Enable sending for your domain and add the records Cloudflare lists:
 
@@ -50,7 +60,7 @@ pnpm --filter @todz/api exec wrangler email sending enable example.com --zone-id
 pnpm --filter @todz/api exec wrangler email sending dns get example.com --zone-id <your zone id>
 ```
 
-## 5. Turnstile
+## 6. Turnstile
 
 Sign-in stays closed (`sign_in_unavailable`) until Turnstile is set up ([ADR 0045](adr/0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md)). In the Cloudflare dashboard, create a Turnstile widget for `example.com` in Managed mode. Put its site key in `vars.TURNSTILE_SITE_KEY` in `apps/api/wrangler.jsonc`, deploy again, and store its secret:
 
@@ -58,9 +68,14 @@ Sign-in stays closed (`sign_in_unavailable`) until Turnstile is set up ([ADR 004
 pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
 ```
 
-## 6. Point the macOS app at your server
+## 7. Point the macOS app at your server
 
-Set the `TODZ_API_BASE_URL` build setting to `https://api.example.com` for the Release configuration in `apps/macos/project.yml`, then build:
+In `apps/macos/project.yml`:
+- set the `TODZ_API_BASE_URL` build setting for the Release configuration to `https://api.example.com`;
+- in both targets, replace `DEVELOPMENT_TEAM` with your own team's id (Xcode → Settings → Accounts; the free Personal Team works);
+- replace `bundleIdPrefix`, the `TODZ_APP_BUNDLE_IDENTIFIER` and `TODZ_WIDGETS_BUNDLE_IDENTIFIER` values and `TODZ_APP_GROUP` with identifiers of your own.
+
+Then build:
 
 ```bash
 xcodegen generate --spec apps/macos/project.yml
@@ -69,7 +84,7 @@ xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration 
 
 Sign in with your email, then open **Connect an agent** in the sidebar.
 
-## 7. Point an MCP client at your server
+## 8. Point an MCP client at your server
 
 **Connect an agent** shows a ready command with your server and a new key. For Claude Code it has this shape:
 
@@ -81,4 +96,15 @@ A key belongs to one project, and the server reads the project from it ([`docs/p
 
 ## Updating
 
-Pull from upstream, run `pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote`, then `wrangler deploy` again. Migrations only move forward. Never roll back to a version from before the sign-in guard; to close sign-in, delete the secret with `wrangler secret delete TURNSTILE_SECRET_KEY` ([the runbook](runbooks/deploy-the-api.md)).
+Pull from upstream, then run:
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+pnpm --filter @todz/api exec wrangler deploy
+```
+
+Migrations only move forward. Never roll back to a version from before the sign-in guard. To close sign-in, delete the secret ([the runbook](runbooks/deploy-the-api.md)):
+
+```bash
+pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
+```
