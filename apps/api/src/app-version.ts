@@ -1,6 +1,6 @@
 import { FORMATTER_LOCALE } from '@todz/types';
 
-const VERSION_PATTERN = /^\d+(\.\d+){0,2}$/;
+const VERSION_PATTERN = /^\d{1,9}(\.\d{1,9}){0,2}$/;
 const PART_SEPARATOR = '.';
 const PART_COUNT = 3;
 const ZERO_PART = '0';

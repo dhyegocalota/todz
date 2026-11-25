@@ -256,7 +256,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     ```bash
     curl -sS -D - -o /dev/null -X POST -H "Todz-App-Version: 0.2.0" -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/wrong-session.json https://api.todz.app/owner/sessions
     ```
-    If it fails: no 429 means run the command once more; none in the second run either means the binding is not enforcing, or Cloudflare did not send `CF-Connecting-IP` or the request counted as local; tell the owner before the app ships. A 429 on the first request means another client on this address used the quota; wait a minute and run it again.
+    If it fails: a 426 means the `Todz-App-Version` header was left off and the check proved nothing; run the commands as written. No 429 means run the command once more; none in the second run either means the binding is not enforcing, or Cloudflare did not send `CF-Connecting-IP` or the request counted as local; tell the owner before the app ships. A 429 on the first request means another client on this address used the quota; wait a minute and run it again.
 
 17. **Check the landing's discovery files, icons and scores.** Ask the live site for each discovery file, the card on both hosts, the icon and the share image, then for the landing as two crawlers, then for the analytics beacon:
 

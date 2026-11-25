@@ -16,7 +16,6 @@ export enum HttpHeader {
   ContentTypeOptions = 'X-Content-Type-Options',
   ReferrerPolicy = 'Referrer-Policy',
   ServerTiming = 'Server-Timing',
-  Upgrade = 'Upgrade',
   Accept = 'Accept',
   Vary = 'Vary',
 }
