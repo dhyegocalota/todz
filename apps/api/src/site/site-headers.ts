@@ -4,7 +4,8 @@ import { sourceHash } from '../turnstile-page';
 import { ADMIN_RESPONSE_HEADERS } from './admin-paths';
 
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
-const CACHE_CONTROL = 'no-cache';
+// NB ADR 0060: no-transform stops Cloudflare injecting its analytics beacon, which the policy would refuse.
+const CACHE_CONTROL = 'no-cache, no-transform';
 const CONNECT_SELF = "connect-src 'self'";
 
 export async function siteContentSecurityPolicy({
@@ -27,6 +28,7 @@ export async function siteContentSecurityPolicy({
     ...scriptDirectives,
     `style-src ${await sourceHash(style)}`,
     "img-src 'self'",
+    "manifest-src 'self'",
     ...connectDirectives,
     ...widgetOrigins.map((origin) => `frame-src ${origin}`),
     "form-action 'self'",

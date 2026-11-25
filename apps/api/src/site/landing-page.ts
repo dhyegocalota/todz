@@ -5,6 +5,7 @@ import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
 import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
+import { LANDING_STRUCTURED_DATA } from './site-json-ld';
 import { CONTENT_ID, JOIN_PATH, LANDING_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE, cropClassOf } from './site-style';
 
@@ -104,13 +105,13 @@ const PAGE_SCRIPT = `{
 
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  scripts: [PAGE_SCRIPT],
+  scripts: [LANDING_STRUCTURED_DATA, PAGE_SCRIPT],
   widgetOrigin: null,
   connectsToSelf: false,
 });
 const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  scripts: [PAGE_SCRIPT],
+  scripts: [LANDING_STRUCTURED_DATA, PAGE_SCRIPT],
   widgetOrigin: TURNSTILE_ORIGIN,
   connectsToSelf: false,
 });
@@ -239,6 +240,7 @@ function landingHtml({ notice, challenge }: { notice: LandingNotice; challenge: 
   return siteDocumentHtml({
     kind: SitePageKind.Public,
     path: LANDING_PATH,
+    structuredData: LANDING_STRUCTURED_DATA,
     title: LANDING_COPY.meta.title,
     description: LANDING_COPY.meta.description,
     main: `<main id="${CONTENT_ID}">

@@ -103,13 +103,15 @@ function formsOf(html: string): string[] {
 }
 
 async function landingPolicy({ html, widgetOrigins }: { html: string; widgetOrigins: string[] }): Promise<string> {
+  const structuredDataHash = await sourceHash(onlyInlineSource({ html, pattern: STRUCTURED_DATA_PATTERN }));
   const scriptHash = await sourceHash(onlyInlineSource({ html, pattern: SCRIPT_PATTERN }));
   const styleHash = await sourceHash(onlyInlineSource({ html, pattern: STYLE_PATTERN }));
   return [
     "default-src 'none'",
-    ['script-src', scriptHash, ...widgetOrigins].join(' '),
+    ['script-src', structuredDataHash, scriptHash, ...widgetOrigins].join(' '),
     `style-src ${styleHash}`,
     "img-src 'self'",
+    "manifest-src 'self'",
     ...widgetOrigins.map((origin) => `frame-src ${origin}`),
     "form-action 'self'",
     "frame-ancestors 'none'",
@@ -133,6 +135,7 @@ function textNodes(html: string): string[] {
   return html
     .replace(TERMINAL_WORD_PATTERN, '$1')
     .replace(SCRIPT_PATTERN, '')
+    .replace(STRUCTURED_DATA_PATTERN, '')
     .replace(STYLE_PATTERN, '')
     .replace(SVG_PATTERN, '')
     .split(TAG_PATTERN)
@@ -379,16 +382,19 @@ describe('the site host through the Worker', () => {
 });
 
 describe('the self-host guide page', () => {
-  test('the content security policy allows its one style by hash and no script', async () => {
+  test('the content security policy allows its one style and its JSON-LD block by hash and no other script', async () => {
     const { response, html } = await selfHostPage();
     const style = onlyInlineSource({ html, pattern: STYLE_PATTERN });
+    const structuredData = onlyInlineSource({ html, pattern: STRUCTURED_DATA_PATTERN });
     expect(inlineSources({ html, pattern: SCRIPT_PATTERN })).toEqual([]);
-    expect(html).not.toContain('<script');
+    expect(html.match(/<script/g)).toHaveLength(1);
     expect(response.headers.get('Content-Security-Policy')).toBe(
       [
         "default-src 'none'",
+        `script-src ${await sourceHash(structuredData)}`,
         `style-src ${await sourceHash(style)}`,
         "img-src 'self'",
+        "manifest-src 'self'",
         "form-action 'self'",
         "frame-ancestors 'none'",
         "base-uri 'none'",

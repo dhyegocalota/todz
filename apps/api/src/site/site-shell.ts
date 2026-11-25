@@ -23,7 +23,8 @@ export enum SitePageKind {
 type SiteDocumentContent = { title: string; description: string; main: string; scripts: string[] };
 
 export type SiteDocument =
-  (SiteDocumentContent & { kind: SitePageKind.Public; path: string }) | (SiteDocumentContent & { kind: SitePageKind.Private });
+  | (SiteDocumentContent & { kind: SitePageKind.Public; path: string; structuredData: string })
+  | (SiteDocumentContent & { kind: SitePageKind.Private });
 
 function brandHtml(): string {
   return `<a class="brand" href="${LANDING_PATH}" aria-label="${escapedHtml(LANDING_COPY.shell.homeLabel)}">${glyphHtml({ glyph: SiteGlyph.Icon, className: 'brand-icon' })}<span class="wordmark">${escapedHtml(LANDING_COPY.shell.wordmark)}</span></a>`;
@@ -71,7 +72,17 @@ function iconLinksHtml(): string {
 <link rel="icon" href="${vector.path}" type="${vector.mediaType}">`;
 }
 
-function publicHeadHtml({ title, description, path }: { title: string; description: string; path: string }): string {
+function publicHeadHtml({
+  title,
+  description,
+  path,
+  structuredData,
+}: {
+  title: string;
+  description: string;
+  path: string;
+  structuredData: string;
+}): string {
   const pageUrl = `${SITE_URL}${path}`;
   return `<link rel="canonical" href="${escapedHtml(pageUrl)}">
 <link rel="apple-touch-icon" href="${SITE_ICONS[SiteIcon.AppleTouch].path}">
@@ -86,6 +97,7 @@ ${propertyMetaHtml({ property: 'og:image:width', content: String(OPEN_GRAPH_IMAG
 ${propertyMetaHtml({ property: 'og:image:height', content: String(OPEN_GRAPH_IMAGE.height) })}
 ${propertyMetaHtml({ property: 'og:image:alt', content: OPEN_GRAPH_IMAGE.alt })}
 <meta name="twitter:card" content="${TWITTER_CARD}">
+<script type="application/ld+json">${structuredData}</script>
 `;
 }
 

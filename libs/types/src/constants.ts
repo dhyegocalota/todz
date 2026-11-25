@@ -27,4 +27,5 @@ export const COMPANY = {
   tradeName: 'Logic Bit',
   legalName: 'Logic Bit AI Software Boutique Ltda',
   website: 'https://logicbit.com.br',
+  logo: 'https://www.logicbit.com.br/favicon/apple-touch-icon.png',
 } as const;
