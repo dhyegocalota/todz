@@ -1,3 +1,5 @@
+import { MINIMUM_APP_VERSION } from '@todz/types';
+import { HttpHeader } from './http-header';
 import { HttpStatus } from './http-status';
 import { type ProjectFailure, ProjectFailureKind } from './project-result';
 
@@ -12,7 +14,10 @@ export enum OwnerErrorCode {
   TimeZoneInvalid = 'time_zone_invalid',
   SignInUnavailable = 'sign_in_unavailable',
   SignInRefused = 'sign_in_refused',
+  AppTooOld = 'app_too_old',
 }
+
+const APP_UPGRADE_PRODUCT = 'todz-app';
 
 const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
   [OwnerErrorCode.InvalidRequest]: HttpStatus.BadRequest,
@@ -25,10 +30,21 @@ const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
   [OwnerErrorCode.TimeZoneInvalid]: HttpStatus.Unprocessable,
   [OwnerErrorCode.SignInUnavailable]: HttpStatus.Unavailable,
   [OwnerErrorCode.SignInRefused]: HttpStatus.TooManyRequests,
+  [OwnerErrorCode.AppTooOld]: HttpStatus.UpgradeRequired,
 };
 
 export function errorResponse(code: OwnerErrorCode): Response {
   return Response.json({ error: code }, { status: STATUS_OF_CODE[code] });
+}
+
+export function appTooOldResponse(): Response {
+  return Response.json(
+    { error: OwnerErrorCode.AppTooOld, minimum_app_version: MINIMUM_APP_VERSION },
+    {
+      status: STATUS_OF_CODE[OwnerErrorCode.AppTooOld],
+      headers: { [HttpHeader.Upgrade]: `${APP_UPGRADE_PRODUCT}/${MINIMUM_APP_VERSION}` },
+    },
+  );
 }
 
 export function noRouteResponse(): Response {

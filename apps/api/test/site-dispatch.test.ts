@@ -1,4 +1,4 @@
-import { MILLISECONDS_PER_DAY } from '@todz/types';
+import { APP_VERSION_HEADER, MILLISECONDS_PER_DAY, MINIMUM_APP_VERSION } from '@todz/types';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, test } from 'vitest';
@@ -50,8 +50,8 @@ function serve(request: Request): Promise<Response> {
   return serveWith({ request, settings: {} });
 }
 
-function requestOf({ url, method = 'GET' }: { url: string; method?: string }): Request {
-  return new Request(url, { method, redirect: 'manual' });
+function requestOf({ url, method = 'GET', headers }: { url: string; method?: string; headers?: Record<string, string> }): Request {
+  return new Request(url, { method, headers, redirect: 'manual' });
 }
 
 describe('the site host', () => {
@@ -160,7 +160,9 @@ describe('the API host', () => {
   });
 
   test('GET /owner/sign-in-method answers as it did before the site', async () => {
-    const response = await serve(requestOf({ url: `${API_ORIGIN}/owner/sign-in-method` }));
+    const response = await serve(
+      requestOf({ url: `${API_ORIGIN}/owner/sign-in-method`, headers: { [APP_VERSION_HEADER]: MINIMUM_APP_VERSION } }),
+    );
     expect(response.status).toBe(UNAVAILABLE_STATUS);
   });
 });

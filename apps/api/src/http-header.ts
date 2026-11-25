@@ -16,6 +16,7 @@ export enum HttpHeader {
   ContentTypeOptions = 'X-Content-Type-Options',
   ReferrerPolicy = 'Referrer-Policy',
   ServerTiming = 'Server-Timing',
+  Upgrade = 'Upgrade',
 }
 
 export const NO_STORE = 'no-store';
