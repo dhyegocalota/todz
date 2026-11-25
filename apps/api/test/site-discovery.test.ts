@@ -51,6 +51,7 @@ const CRAWLERS = [
 const DOCS_LINKS = [
   `${DOCS_URL}/`,
   `${DOCS_URL}/quickstart`,
+  `${DOCS_URL}/install-on-mac`,
   `${DOCS_URL}/connect-an-agent`,
   `${DOCS_URL}/mcp-tools`,
   `${DOCS_URL}/self-host`,

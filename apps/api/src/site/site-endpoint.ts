@@ -3,10 +3,9 @@ import { HttpHeader } from '../http-header';
 import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { noRouteResponse } from '../owner-errors';
-import { siteKeyOf } from '../turnstile-page';
 import { ADMIN_ROUTES } from './admin-routes';
 import { discoveryResponse } from './discovery-response';
-import { LandingNotice, serveLandingPage } from './landing-page';
+import { LandingNotice, landingChallengeKeysOf, serveLandingPage } from './landing-page';
 import { SELF_HOST_PATH, redirectToDocs } from './self-host-redirect';
 import { DISCOVERY_FILES } from './site-discovery';
 import { JOIN_PATH, LANDING_PATH } from './site-shell';
@@ -21,7 +20,7 @@ function routeKey({ method, pathname }: { method: string; pathname: string }): s
 }
 
 function serveLanding({ env }: SiteContext): Promise<Response> {
-  return serveLandingPage({ notice: LandingNotice.None, siteKey: siteKeyOf(env) });
+  return serveLandingPage({ notice: LandingNotice.None, challenge: landingChallengeKeysOf(env) });
 }
 
 function redirectToLanding(): Response {

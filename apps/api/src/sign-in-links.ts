@@ -4,7 +4,7 @@ import { digestCredential } from './credential-digest';
 import { AppLinkScheme } from './app-link-scheme';
 import { generateCredentialSecret } from './credential-secret';
 import { deleteSignInLink, insertSignInLinkWithinLimit } from './directory-sign-in-links';
-import { normalizedAddress } from './email-address';
+import { isOwnDomainAddress, normalizedAddress } from './email-address';
 import { signInMail } from './emails/sign-in-mail';
 import { emailSenderOf } from './email-sender';
 import { enumValueOf } from './enum-value';
@@ -66,6 +66,7 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   if (globalRefusal !== null) return globalRefusal;
   const addressRefusal = await addressLimitRefusal({ request, env, address });
   if (addressRefusal !== null) return addressRefusal;
+  if (isOwnDomainAddress(address)) return Response.json({}, { status: HttpStatus.Accepted });
   const token = generateCredentialSecret();
   const digest = await digestCredential(token);
   const isWithinLimit = await insertSignInLinkWithinLimit({

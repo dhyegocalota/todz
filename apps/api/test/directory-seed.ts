@@ -17,6 +17,18 @@ export async function enableAgentNudge({ directory, ownerId }: { directory: D1Da
   await directory.prepare('UPDATE owners SET agent_nudge = 1 WHERE id = ?').bind(ownerId).run();
 }
 
+export async function enableDayEmail({
+  directory,
+  ownerId,
+  minutes,
+}: {
+  directory: D1Database;
+  ownerId: string;
+  minutes: number;
+}): Promise<void> {
+  await directory.prepare('UPDATE owners SET day_email = 1, day_email_minutes = ? WHERE id = ?').bind(minutes, ownerId).run();
+}
+
 export async function seedEmailIdentity({ ownerId, email }: { ownerId: string; email: string }): Promise<void> {
   await env.DIRECTORY.prepare('INSERT INTO owner_identities (provider, subject, owner_id, created_at) VALUES (?, ?, ?, ?)')
     .bind('email', email, ownerId, CLOCK_NOW)
