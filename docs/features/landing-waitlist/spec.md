@@ -36,15 +36,14 @@ POST todz.app/join
   → address normalised (trim, lowercase) and checked (one @, ≤ 254)                             invalid → "try again"
   → Turnstile siteverify (action waitlist, hostname = SITE_ORIGIN host)                         refused → "try again"; unavailable → "opens soon"
   → per-address limit (digest of the address) and global limit                                  refusal → "try again"
-  → INSERT … ON CONFLICT DO NOTHING into waitlist
-  → claim: UPDATE … SET confirmation_sent_at WHERE confirmation_sent_at IS NULL
+  → INSERT … (address, joined_at, confirmation_claimed_at) ON CONFLICT DO NOTHING; one changed row claims the mail (R11)
       claimed → waitUntil(send confirmation; on failure set confirmation_failed_at)
-  → 200, the landing with "You're on the list." under the posting form
+  → 200, the landing with "You're on the list." under both forms (R7)
 ```
 
 ### Interfaces
 
-- `apps/api/migrations/0005_waitlist.sql`: `waitlist(address TEXT PRIMARY KEY, joined_at INTEGER NOT NULL, confirmation_sent_at INTEGER, confirmation_failed_at INTEGER) STRICT`.
+- `apps/api/migrations/0005_waitlist.sql`: `waitlist(address TEXT PRIMARY KEY, joined_at INTEGER NOT NULL, confirmation_claimed_at INTEGER, confirmation_failed_at INTEGER) STRICT`.
 - `apps/api/src/site/waitlist-join.ts`: `serveWaitlistJoin({ request, env, executionContext })`, the route behind `POST /join` in `site-endpoint.ts`.
 - `apps/api/src/site/waitlist-store.ts`: `joinWaitlist({ database, address, now })` answering whether this join claimed the confirmation, and `recordConfirmationFailure(...)`.
 - `apps/api/src/site/waitlist-limiter.ts`: the three limits, reusing `clientRateKey` and `digestCredential`, keyed and typed on its own enum, failing closed as `sign-in-limiter.ts` does.

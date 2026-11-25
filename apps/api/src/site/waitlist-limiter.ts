@@ -1,11 +1,10 @@
 import { clientRateKey } from '../client-rate-key';
 import { digestCredential } from '../credential-digest';
 import type { Env } from '../env';
+import { HttpHeader } from '../http-header';
 import { isLocalSiteHost } from '../local-origin';
 import { LandingNotice } from './landing-page';
 import { JOIN_PATH } from './site-shell';
-
-const CLIENT_ADDRESS_HEADER = 'CF-Connecting-IP';
 
 enum WaitlistLimit {
   Client = 'client',
@@ -33,12 +32,12 @@ async function limitRefusal({ env, limit, key }: { env: Env; limit: WaitlistLimi
 export function isWaitlistUnguarded({ request, env }: { request: Request; env: Env }): boolean {
   if (isLocalSiteHost({ env, request })) return false;
   const hasEveryLimiter = Object.values(WaitlistLimit).every((limit) => LIMITER_OF_LIMIT[limit](env) !== undefined);
-  return request.headers.get(CLIENT_ADDRESS_HEADER) === null || !hasEveryLimiter;
+  return request.headers.get(HttpHeader.ClientAddress) === null || !hasEveryLimiter;
 }
 
 export async function waitlistClientRefusal({ request, env }: { request: Request; env: Env }): Promise<WaitlistRefusal | null> {
   if (isLocalSiteHost({ env, request })) return null;
-  const clientAddress = request.headers.get(CLIENT_ADDRESS_HEADER);
+  const clientAddress = request.headers.get(HttpHeader.ClientAddress);
   if (clientAddress === null) return LandingNotice.OpensSoon;
   return limitRefusal({ env, limit: WaitlistLimit.Client, key: `${JOIN_PATH}:${clientRateKey({ address: clientAddress })}` });
 }

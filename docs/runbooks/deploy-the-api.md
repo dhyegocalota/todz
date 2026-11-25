@@ -181,7 +181,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "SELECT COUNT(*) AS waitlist_rows FROM waitlist WHERE address = 'nobody@example.com'"
     ```
 
-    Expected: both counts are `0`; the post prints `503` (the waitlist opens soon) before step 10's secret exists and `429` (try again) after it. Only a count of the probe address is read, never a visitor's address, so a real join during the check changes nothing.
+    Expected: both counts are `0`; the post prints `503` (the waitlist opens soon) until both the site key is in `wrangler.jsonc` and step 10's secret exists, and `429` (try again) after both. Only a count of the probe address is read, never a visitor's address, so a real join during the check changes nothing.
     If it fails: a `200` or a count of `1` means the waitlist kept an address without a solved challenge; detach `todz.app` as the Rollback section says and tell the owner.
 
 15. **Check the per-client limit.** Post wrong session tokens from this machine, fourteen in one command, and keep only the statuses and `retry-after` values; each answer's body ends without a newline, so the next status starts mid-line and a `^HTTP` match would miss it. The body carries a malformed link verifier, which the Worker refuses before it asks siteverify, and an unsolved Turnstile token:

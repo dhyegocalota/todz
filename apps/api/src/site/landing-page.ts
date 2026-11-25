@@ -1,6 +1,6 @@
 import { escapedHtml } from '../escaped-html';
 import { TurnstileAction } from '../turnstile';
-import { SITE_KEY_PATTERN, TURNSTILE_ORIGIN, TURNSTILE_SCRIPT_TAG } from '../turnstile-page';
+import { TURNSTILE_ORIGIN, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
 import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
@@ -220,7 +220,7 @@ const LANDING_PAGES: Record<LandingNotice, LandingPage> = {
 
 export async function serveLandingPage({ notice, siteKey }: { notice: LandingNotice; siteKey: string | null }): Promise<Response> {
   const page = LANDING_PAGES[notice];
-  const isUsableSiteKey = siteKey !== null && SITE_KEY_PATTERN.test(siteKey);
-  if (!isUsableSiteKey) return sitePageResponse({ html: page.unavailable, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
-  return sitePageResponse({ html: page.available(siteKey), contentSecurityPolicy: CHALLENGE_CONTENT_SECURITY_POLICY });
+  const usableSiteKey = usableSiteKeyOf(siteKey);
+  if (usableSiteKey === null) return sitePageResponse({ html: page.unavailable, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+  return sitePageResponse({ html: page.available(usableSiteKey), contentSecurityPolicy: CHALLENGE_CONTENT_SECURITY_POLICY });
 }

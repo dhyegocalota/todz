@@ -4,6 +4,7 @@ import { normalizedAddress } from '../email-address';
 import { type EmailSender, emailSenderOf } from '../email-sender';
 import { waitlistMail } from '../emails/waitlist-mail';
 import type { Env } from '../env';
+import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
 import { isLocalSiteHost } from '../local-origin';
 import { publicOriginOf } from '../sign-in-links';
@@ -26,7 +27,6 @@ const FORM_MEDIA_TYPE = 'application/x-www-form-urlencoded';
 const MEDIA_TYPE_PARAMETER_SEPARATOR = ';';
 const CONTENT_TYPE_HEADER = 'Content-Type';
 const CONTENT_LENGTH_HEADER = 'Content-Length';
-const RETRY_AFTER_HEADER = 'Retry-After';
 const TOKEN_FIELD = 'cf-turnstile-response';
 
 const JoinFormSchema = z.object({ email: z.string(), [TOKEN_FIELD]: z.string() });
@@ -143,6 +143,6 @@ export async function serveWaitlistJoin(context: SiteContext): Promise<Response>
   const notice = await joinNoticeOf(context);
   const page = await serveLandingPage({ notice, siteKey: waitlistSiteKeyOf(context.env) });
   const answer = new Response(page.body, { status: STATUS_OF_NOTICE[notice], headers: page.headers });
-  if (notice === LandingNotice.TryAgain) answer.headers.set(RETRY_AFTER_HEADER, String(WAITLIST_RATE_LIMIT_PERIOD_SECONDS));
+  if (notice === LandingNotice.TryAgain) answer.headers.set(HttpHeader.RetryAfter, String(WAITLIST_RATE_LIMIT_PERIOD_SECONDS));
   return answer;
 }
