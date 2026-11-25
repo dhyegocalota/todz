@@ -17,10 +17,10 @@ fail() {
 refuse_unlisted_path() {
   local path=$1
   case "$path" in
-    *..* | *%2[eE]* | *\[* | *\]* | *\{* | *\}*) fail "refused $path: not on the allowlist" ;;
+    *..* | *%2[eE]* | *\[* | *\]* | *\{* | *\}* | *\#* | */. | */./*) fail "refused $path: not on the allowlist" ;;
     /user/tokens/verify) ;;
     "/accounts/$account_id/tokens/verify") ;;
-    "/zones/$zone_id/"?*) ;;
+    "/zones/$zone_id/"[!?.]*) ;;
     "/accounts/$account_id/d1/database/$database_id" | "/accounts/$account_id/d1/database/$database_id/"* | "/accounts/$account_id/d1/database/$database_id?"*) ;;
     "/accounts/$account_id/workers/domains" | "/accounts/$account_id/workers/domains/"* | "/accounts/$account_id/workers/domains?"*) ;;
     "/accounts/$account_id/workers/subdomain") ;;
