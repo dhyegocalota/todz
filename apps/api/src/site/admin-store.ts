@@ -2,6 +2,7 @@ import { MILLISECONDS_PER_DAY } from '@todz/types';
 import { ConfirmationState, type WaitlistRow, type WaitlistSummary } from './admin-waitlist';
 
 export const ADMIN_WAITLIST_ROWS_MAX = 200;
+export const DIGEST_ADDRESSES_MAX = 50;
 
 const COUNTS_STATEMENT =
   'SELECT count(*) AS total, count(CASE WHEN joined_at > ? THEN 1 END) AS joined_last_day, count(confirmation_failed_at) AS failed_confirmations FROM waitlist';
@@ -21,6 +22,14 @@ type AdminLinkInsertion = {
 type AdminLinkSpending = { database: D1Database; digest: string; challenge: string; email: string; now: number };
 
 type AdminSessionOpening = { database: D1Database; digest: string; email: string; now: number; expiresAt: number };
+
+export type WaitlistDigestFacts = {
+  joined: number;
+  total: number;
+  failedConfirmations: number;
+  addresses: string[];
+  moreAddresses: number;
+};
 
 type WaitlistCounts = { total: number; joined_last_day: number; failed_confirmations: number };
 
@@ -116,4 +125,8 @@ export async function waitlistSummaryOf({ database, now }: { database: D1Databas
 export async function waitlistRowsOf({ database }: { database: D1Database }): Promise<WaitlistRow[]> {
   const { results } = await database.prepare(ROWS_STATEMENT).all<WaitlistRecord>();
   return results.map(waitlistRowOf);
+}
+
+export async function waitlistDigestFacts(_window: { database: D1Database; since: number; until: number }): Promise<WaitlistDigestFacts> {
+  throw new Error('waitlistDigestFacts is not implemented');
 }
