@@ -26,10 +26,13 @@ const ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8602';
 const GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8603';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
-const RATE_LIMIT_MAX = 10;
-const ADDRESS_RATE_LIMIT_MAX = 3;
-const GLOBAL_RATE_LIMIT_MAX = 100;
 const RATE_LIMIT_PERIOD_SECONDS = 60;
+const SHARED_CONSTANTS = 'libs/types/src/constants.ts';
+const TURNSTILE_SECRET_NAME = 'TURNSTILE_SECRET_KEY';
+const TURNSTILE_TEST_KEY_VARIABLES = [
+  '--var TURNSTILE_SITE_KEY:1x00000000000000000000AA',
+  '--var TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA',
+];
 const RESOURCE_NAME_PREFIX = 'todz';
 const TRAILING_COMMA_PATTERN = /,(\s*[}\]])/g;
 const NO_LOCAL_PROVIDER_PATTERN = /"(fake|console)"/;
@@ -89,6 +92,12 @@ function scriptsNaming(flag: string): string[] {
   );
 }
 
+function sharedLimit(name: string): number {
+  const value = new RegExp(`export const ${name} = (\\d+);`).exec(readRepositoryFile(SHARED_CONSTANTS))?.[FIRST_CAPTURE];
+  if (value === undefined) throw new Error(`libs/types declares no ${name}`);
+  return Number(value);
+}
+
 function projectSetting(pattern: RegExp): string | undefined {
   return pattern.exec(readRepositoryFile(MACOS_PROJECT))?.[FIRST_CAPTURE];
 }
@@ -146,19 +155,23 @@ describe('the api source', () => {
       {
         name: 'SIGN_IN_LIMITER',
         namespace_id: RATE_LIMIT_NAMESPACE_ID,
-        simple: { limit: RATE_LIMIT_MAX, period: RATE_LIMIT_PERIOD_SECONDS },
+        simple: { limit: sharedLimit('SIGN_IN_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
       {
         name: 'SIGN_IN_ADDRESS_LIMITER',
         namespace_id: ADDRESS_RATE_LIMIT_NAMESPACE_ID,
-        simple: { limit: ADDRESS_RATE_LIMIT_MAX, period: RATE_LIMIT_PERIOD_SECONDS },
+        simple: { limit: sharedLimit('SIGN_IN_ADDRESS_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
       {
         name: 'SIGN_IN_GLOBAL_LIMITER',
         namespace_id: GLOBAL_RATE_LIMIT_NAMESPACE_ID,
-        simple: { limit: GLOBAL_RATE_LIMIT_MAX, period: RATE_LIMIT_PERIOD_SECONDS },
+        simple: { limit: sharedLimit('SIGN_IN_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
+  });
+
+  test('the wrangler configuration never holds the Turnstile secret, which is a Worker secret', () => {
+    expect(readRepositoryFile(WRANGLER_CONFIGURATION)).not.toContain(TURNSTILE_SECRET_NAME);
   });
 
   test('every cloudflare resource name starts with todz', () => {
@@ -191,7 +204,9 @@ describe('the api source', () => {
       const command = apiScript(script);
       expect(command.indexOf(MIGRATIONS_COMMAND)).toBeGreaterThanOrEqual(0);
       expect(command.indexOf(MIGRATIONS_COMMAND)).toBeLessThan(command.indexOf(DEV_COMMAND));
-      [...variables, LOCAL_ORIGIN_VARIABLE, LOCAL_UPSTREAM_FLAG].forEach((fragment) => expect(command).toContain(fragment));
+      [...variables, ...TURNSTILE_TEST_KEY_VARIABLES, LOCAL_ORIGIN_VARIABLE, LOCAL_UPSTREAM_FLAG].forEach((fragment) =>
+        expect(command).toContain(fragment),
+      );
     },
   );
 
