@@ -13,7 +13,7 @@ Nothing in todz says who built it.
 ## Change
 
 - `libs/types` gains `COMPANY` with the facts the credit needs, once: the trade name `Logic Bit`, the legal name `Logic Bit AI Software Boutique Ltda` and the website `https://logicbit.com.br`, as zapbip's constant has them.
-- The landing footer, on every site page, gains one line: "todz is a product of Logic Bit, made in Brazil", the name linking the website (opening in the same tab, `rel="noopener"`), the copy in `landing-copy.ts` and the facts from `COMPANY`.
+- The landing footer, on every site page, gains one line: "todz is a product of Logic Bit, made in Brazil", the name linking the website (opening in the same tab, `rel="noopener noreferrer"`, underlined), the copy in `landing-copy.ts` and the facts from `COMPANY`.
 - The root README gains the same line under the hero, as zapbip's README has it.
 - The CSP and the landing's console and network checks stay green: the link is a plain anchor, no new request.
 
