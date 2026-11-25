@@ -88,6 +88,7 @@ struct ServerAddressForm: View {
                 ProgressView(SettingsCopy.checkingServer)
                     .controlSize(.small)
                 Button(SheetCopy.cancel, action: cancelCheck)
+                    .keyboardShortcut(.cancelAction)
             }
         case .switching:
             ProgressView(SettingsCopy.switchingServer)
