@@ -36,6 +36,8 @@ private func isFocusFilterQuiet() async -> Bool {
     var dayChangeObservation: (any NSObjectProtocol)?
     var dayTemperatureObservation: (any NSObjectProtocol)?
     var quietGateReaction: Task<Void, Never>?
+    private var isIntentLaunch = false
+    private var hasStartedProactiveSurfaces = false
     let dayTemperaturePreference = DayTemperaturePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     private(set) lazy var dayClose = DayCloseCoordinator(
         gate: gate,
@@ -70,19 +72,29 @@ private func isFocusFilterQuiet() async -> Bool {
         AppDependencyManager.shared.add(dependency: gate)
         self.gate = gate
         super.init()
+        AppDependencyManager.shared.add(dependency: self.model)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         PerfProbe.shared?.start(model: model)
+        isIntentLaunch = (notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool) == false
         observeWidgetRequests()
         observeDayChanges()
         Task {
             await readFocusFilter()
             startDayTemperature()
             dayTemperatureScheduler.start()
-            dayCloseScheduler.start()
-            morningGlanceTrigger.start()
+            guard !isIntentLaunch else { return }
+            startProactiveSurfaces()
         }
+    }
+
+    // NB ADR 0066: a launch for an intent starts no pushed surface until the owner first activates the app.
+    private func startProactiveSurfaces() {
+        guard !hasStartedProactiveSurfaces else { return }
+        hasStartedProactiveSurfaces = true
+        dayCloseScheduler.start()
+        morningGlanceTrigger.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -90,6 +102,7 @@ private func isFocusFilterQuiet() async -> Bool {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        if isIntentLaunch { startProactiveSurfaces() }
         Task { await model.takeWidgetRequests() }
     }
 
