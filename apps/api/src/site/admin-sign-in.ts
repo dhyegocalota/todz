@@ -170,6 +170,7 @@ async function sessionTokenOf(request: Request): Promise<string | null> {
 export async function serveAdminSession({ request, env }: SiteContext): Promise<Response> {
   const adminEmail = adminEmailOf(env);
   if (adminEmail === null) return adminJsonAnswerOf({ status: HttpStatus.Unavailable });
+  if (publicOriginOf(env.SITE_ORIGIN) === null) return adminJsonAnswerOf({ status: HttpStatus.Unavailable });
   if (isAdminUnguarded({ request, env, limits: [AdminLimit.Client] })) return adminJsonAnswerOf({ status: HttpStatus.Unavailable });
   if (!isSameOriginPost({ request, env })) return adminJsonAnswerOf({ status: HttpStatus.Forbidden });
   const clientRefusal = await adminClientRefusal({ request, env, path: AdminPath.Sessions });
