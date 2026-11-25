@@ -1,3 +1,5 @@
+import { ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES } from './admin-paths';
+
 export const ADMIN_COPY = {
   meta: {
     description: 'The todz waitlist, for the owner.',
@@ -19,7 +21,7 @@ export const ADMIN_COPY = {
   },
   inbox: {
     title: 'Check your inbox',
-    body: 'If that address can sign in, a link is on its way. It works once, for 15 minutes, in this browser.',
+    body: `If that address can sign in, a link is on its way. It works once, for ${ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES} minutes, in this browser.`,
     back: 'Back to sign in',
   },
   refusal: {

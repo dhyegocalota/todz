@@ -36,10 +36,16 @@ describe('the admin sign-in email template', () => {
     expect((await adminEmail()).subject).toBe(SUBJECT);
   });
 
-  test.each([HEADING, INTRO, ACTION, FALLBACK, FOOTER, PREVIEW])('says "%s" in both parts', async (line) => {
+  test.each([HEADING, INTRO, ACTION, FALLBACK, FOOTER])('says "%s" in both parts', async (line) => {
     const email = await adminEmail();
     expect(email.html).toContain(htmlOf(line));
     expect(email.text).toContain(line);
+  });
+
+  test('previews its link in the html only', async () => {
+    const email = await adminEmail();
+    expect(email.html).toContain(PREVIEW);
+    expect(email.text).not.toContain(PREVIEW);
   });
 
   test('holds the link slot in the href of its button and in its visible fallback, never the address slot', async () => {
