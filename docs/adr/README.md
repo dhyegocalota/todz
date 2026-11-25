@@ -67,3 +67,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0044](0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md) | The Wrangler configuration is production on api.todz.app, and development overrides it | Proposed | 2026-11-24 |
 | [0045](0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md) | The public sign-in routes are limited three ways and Turnstile-guarded, failing closed | Proposed | 2026-11-24 |
 | [0046](0046-the-app-solves-the-challenge-in-a-web-view-and-the-link-page-solves-it-for-the-sign-in.md) | The app solves the challenge in a web view, and the link page solves it for the sign-in | Proposed | 2026-11-24 |
+| [0047](0047-the-readme-walk-shows-only-the-shots-that-tell-the-product-s-story.md) | The README walk shows only the shots that tell the product's story | Proposed | 2026-11-24 |
