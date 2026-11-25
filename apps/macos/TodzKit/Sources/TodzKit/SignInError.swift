@@ -24,9 +24,10 @@ public enum SignInError: Equatable, Sendable {
         case .identityRejected: self = .identityRejected
         case .signInUnavailable: self = .signInUnavailable
         case .signInRefused: self = .signInRefused
+        case .appTooOld: self = .appTooOld
         case .timeZoneInvalid: self = .timeZoneInvalid
         case .unreachable: self = .unreachable
-        case .unauthorized, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead, .ruleViolated, .invalidRequest, .appTooOld, .unexpected:
+        case .unauthorized, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead, .ruleViolated, .invalidRequest, .unexpected:
             self = .unexpected
         }
     }

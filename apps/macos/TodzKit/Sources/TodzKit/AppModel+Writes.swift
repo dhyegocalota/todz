@@ -41,12 +41,12 @@ extension AppModel {
             return
         }
         switch failure {
-        case .unauthorized:
+        case .unauthorized, .appTooOld:
             return
         case .unreachable:
             raise(.network, retry: retry)
         case .identityRejected, .signInUnavailable, .signInRefused, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead,
-            .ruleViolated, .timeZoneInvalid, .invalidRequest, .appTooOld, .unexpected:
+            .ruleViolated, .timeZoneInvalid, .invalidRequest, .unexpected:
             raise(.server, retry: retry)
         }
     }
@@ -58,7 +58,7 @@ extension AppModel {
             return
         }
         switch failure {
-        case .unauthorized:
+        case .unauthorized, .appTooOld:
             return
         case let .ruleViolated(issue, _):
             ruleIssues[target] = issue
@@ -70,7 +70,7 @@ extension AppModel {
             raise(.network, retry: retry, retryTarget: target)
         case .inboxIsFixed:
             raise(.inboxIsFixed)
-        case .identityRejected, .signInUnavailable, .signInRefused, .cursorAhead, .timeZoneInvalid, .invalidRequest, .appTooOld, .unexpected:
+        case .identityRejected, .signInUnavailable, .signInRefused, .cursorAhead, .timeZoneInvalid, .invalidRequest, .unexpected:
             raise(.changeNotSaved)
         }
     }

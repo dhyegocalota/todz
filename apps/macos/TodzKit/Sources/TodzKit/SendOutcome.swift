@@ -3,6 +3,7 @@ enum SendOutcome: Equatable, Sendable {
     case unreachable
     case unexpected
     case sessionGone
+    case updateNeeded
 
     // NB ADR 0028: a refusal drops the change, unreachable waits, an unexpected failure counts only after an answer since the last, and the third drops it.
     static func of(_ error: any Error) -> SendOutcome {
@@ -15,8 +16,11 @@ enum SendOutcome: Equatable, Sendable {
             return .unreachable
         case .unexpected, .signInUnavailable, .signInRefused:
             return .unexpected
-        case .unauthorized, .appTooOld:
+        case .unauthorized:
             return .sessionGone
+        // NB ADR 0069: app_too_old keeps the change and stops the flush, because the server never judged it.
+        case .appTooOld:
+            return .updateNeeded
         }
     }
 }

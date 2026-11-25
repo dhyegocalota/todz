@@ -103,6 +103,8 @@ import Observation
     @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored var serverSignOut: Task<Void, Never>?
     @ObservationIgnored var compatibilityRefresh: Task<Void, Never>?
+    @ObservationIgnored var serverVersions: ServerVersions?
+    @ObservationIgnored var refusedMinimum: String?
     @ObservationIgnored var isLocalDataUnerased = false
     @ObservationIgnored public var onTaskArrived: ((Int) -> Void)?
     @ObservationIgnored var service: any OwnerService
@@ -213,6 +215,7 @@ import Observation
     public func launch() async {
         guard !hasLaunched else { return }
         hasLaunched = true
+        refreshCompatibility()
         await openLaunchSession()
         isLaunchSettled = true
         await redeemHeldSignInLink()
@@ -261,6 +264,7 @@ import Observation
             issued = try await issuing()
         } catch let failure as OwnerAPIError {
             guard serverURL == issuingServer else { return false }
+            recordRefusal(of: failure)
             signInError = SignInError(failure)
             return false
         } catch {
