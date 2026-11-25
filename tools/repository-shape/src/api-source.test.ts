@@ -16,6 +16,16 @@ const DEV_COMMAND = 'wrangler dev';
 const LOCAL_ORIGIN = 'http://localhost:8787';
 const LOCAL_ORIGIN_VARIABLE = `--var PUBLIC_ORIGIN:${LOCAL_ORIGIN}`;
 const LOCAL_UPSTREAM_FLAG = '--local-upstream localhost:8787';
+const DEV_SITE_SCRIPT = 'dev:site';
+const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
+const LOCAL_SITE_ORIGIN_VARIABLE = `--var SITE_ORIGIN:${LOCAL_SITE_ORIGIN}`;
+const LOCAL_SITE_PORT_FLAG = '--port 8788';
+const LOCAL_SITE_UPSTREAM_FLAG = '--local-upstream localhost:8788';
+const ASSET_HEADERS_FILE = 'apps/api/public/_headers';
+const NOSNIFF_HEADERS_PATTERN = /^\/\*\n {2}X-Content-Type-Options: nosniff\n$/;
+const SITE_HOST = 'todz.app';
+const SITE_ORIGIN = `https://${SITE_HOST}`;
+const WWW_HOST = `www.${SITE_HOST}`;
 const REMOTE_FLAG = '--remote';
 const PRODUCTION_DATABASE_NAME = 'todz-directory';
 const PRODUCTION_DATABASE_ID = 'dc22b1c3-1869-44a0-b805-91bf92017f19';
@@ -116,6 +126,7 @@ describe('the api source', () => {
       SIGN_IN_PROVIDER: 'email',
       EMAIL_SENDER: 'cloudflare',
       PUBLIC_ORIGIN: PRODUCTION_ORIGIN,
+      SITE_ORIGIN,
     });
   });
 
@@ -143,9 +154,9 @@ describe('the api source', () => {
     expect(directory?.preview_database_id).not.toBe(directory?.database_id);
   });
 
-  test('the wrangler configuration serves api.todz.app as a custom domain and no other host', () => {
+  test('the wrangler configuration serves api.todz.app, todz.app and www.todz.app as custom domains and no other host', () => {
     const configuration = wranglerConfiguration();
-    expect(configuration.routes).toEqual([{ pattern: PRODUCTION_HOST, custom_domain: true }]);
+    expect(configuration.routes).toEqual([PRODUCTION_HOST, SITE_HOST, WWW_HOST].map((pattern) => ({ pattern, custom_domain: true })));
     expect(configuration.workers_dev).toBe(false);
     expect(configuration.preview_urls).toBe(false);
   });
@@ -204,11 +215,23 @@ describe('the api source', () => {
       const command = apiScript(script);
       expect(command.indexOf(MIGRATIONS_COMMAND)).toBeGreaterThanOrEqual(0);
       expect(command.indexOf(MIGRATIONS_COMMAND)).toBeLessThan(command.indexOf(DEV_COMMAND));
-      [...variables, ...TURNSTILE_TEST_KEY_VARIABLES, LOCAL_ORIGIN_VARIABLE, LOCAL_UPSTREAM_FLAG].forEach((fragment) =>
-        expect(command).toContain(fragment),
+      [...variables, ...TURNSTILE_TEST_KEY_VARIABLES, LOCAL_ORIGIN_VARIABLE, LOCAL_SITE_ORIGIN_VARIABLE, LOCAL_UPSTREAM_FLAG].forEach(
+        (fragment) => expect(command).toContain(fragment),
       );
     },
   );
+
+  test('the dev:site script runs a second instance on port 8788 with the same overrides, upstream included, so request urls carry the site host', () => {
+    const command = apiScript(DEV_SITE_SCRIPT);
+    const siteFragments = [LOCAL_SITE_PORT_FLAG, LOCAL_SITE_UPSTREAM_FLAG, LOCAL_SITE_ORIGIN_VARIABLE, LOCAL_ORIGIN_VARIABLE];
+    siteFragments.forEach((fragment) => expect(command).toContain(fragment));
+    expect(command).not.toContain(LOCAL_UPSTREAM_FLAG);
+    expect(command.indexOf(MIGRATIONS_COMMAND)).toBeLessThan(command.indexOf(DEV_COMMAND));
+  });
+
+  test('every static file answers with X-Content-Type-Options nosniff', () => {
+    expect(readRepositoryFile(ASSET_HEADERS_FILE)).toMatch(NOSNIFF_HEADERS_PATTERN);
+  });
 
   test('only the routing module and the env type name the project store namespace', () => {
     expect(filesMatching(PROJECT_STORE_IDENTIFIER).filter((path) => ![ROUTING_MODULE, ENV_MODULE].includes(path))).toEqual([]);

@@ -27,7 +27,7 @@ import { SqliteTaskStore } from '../src/sqlite-task-store';
 import { seedIssuedKey } from './directory-seed';
 import { CLIENT_NAME_OF_ERA, ClientEra, MODERN_PROTOCOL_VERSION, callTool, connectClient } from './mcp-client';
 
-const MODERN_MCP_URL = 'https://api.todz.test/mcp';
+const MODERN_MCP_URL = 'http://localhost:8787/mcp';
 const UTC_TIME_ZONE = 'UTC';
 const KIRITIMATI_TIME_ZONE = 'Pacific/Kiritimati';
 const INPUT_VALIDATION_ERROR = 'Input validation error:';

@@ -2,7 +2,7 @@ import { type CallToolResult, Client, type ClientOptions, StreamableHTTPClientTr
 import { exports } from 'cloudflare:workers';
 import { onTestFinished } from 'vitest';
 
-const MCP_URL = new URL('https://api.todz.test/mcp');
+const MCP_URL = new URL('http://localhost:8787/mcp');
 const CLIENT_VERSION = '1.0.0';
 export const MODERN_PROTOCOL_VERSION = '2026-07-28';
 

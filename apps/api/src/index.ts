@@ -1,9 +1,12 @@
 import type { Env } from './env';
+import { HostKind, WWW_PREFIX, hostKindOf } from './host-kind';
 import { HttpStatus } from './http-status';
 import { serveMcp } from './mcp-endpoint';
 import { serveOwner } from './owner-endpoint';
+import { noRouteResponse } from './owner-errors';
 import { SIGN_IN_CHALLENGE_PAGE_PATH, serveSignInChallengePage } from './sign-in-challenge-page';
 import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
+import { serveSite } from './site/site-endpoint';
 
 export { ProjectStore } from './project-store';
 
@@ -11,6 +14,8 @@ const MCP_PATH = '/mcp';
 const OWNER_PATH = '/owner';
 
 type Route = ({ request, env }: { request: Request; env: Env }) => Promise<Response>;
+type HostContext = { request: Request; env: Env; executionContext: ExecutionContext };
+type HostHandler = (context: HostContext) => Promise<Response>;
 
 const ROUTE_OF_PATH: Record<string, Route> = {
   [MCP_PATH]: ({ request, env }) => serveMcp({ request, env, now: Date.now() }),
@@ -22,12 +27,30 @@ function isOwnerPath(pathname: string): boolean {
   return pathname === OWNER_PATH || pathname.startsWith(`${OWNER_PATH}/`);
 }
 
+async function serveApi({ request, env, executionContext }: HostContext): Promise<Response> {
+  const { pathname } = new URL(request.url);
+  if (isOwnerPath(pathname)) return serveOwner({ request, env, now: Date.now(), executionContext });
+  const route = ROUTE_OF_PATH[pathname];
+  if (route === undefined) return noRouteResponse();
+  return route({ request, env });
+}
+
+async function redirectToSite({ request }: { request: Request }): Promise<Response> {
+  const siteUrl = new URL(request.url);
+  siteUrl.hostname = siteUrl.hostname.slice(WWW_PREFIX.length);
+  return Response.redirect(siteUrl, HttpStatus.MovedPermanently);
+}
+
+const HANDLER_OF_HOST_KIND: Record<HostKind, HostHandler> = {
+  [HostKind.Api]: serveApi,
+  [HostKind.Site]: ({ request }) => serveSite({ request }),
+  [HostKind.WwwRedirect]: redirectToSite,
+};
+
 export default {
   async fetch(request, env, executionContext): Promise<Response> {
-    const { pathname } = new URL(request.url);
-    if (isOwnerPath(pathname)) return serveOwner({ request, env, now: Date.now(), executionContext });
-    const route = ROUTE_OF_PATH[pathname];
-    if (route === undefined) return new Response(null, { status: HttpStatus.NotFound });
-    return route({ request, env });
+    const hostKind = hostKindOf({ request, env });
+    if (hostKind === null) return noRouteResponse();
+    return HANDLER_OF_HOST_KIND[hostKind]({ request, env, executionContext });
   },
 } satisfies ExportedHandler<Env>;

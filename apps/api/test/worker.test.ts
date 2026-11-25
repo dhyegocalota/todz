@@ -1,7 +1,7 @@
 import { env, exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 
-const WORKER_ORIGIN = 'https://api.todz.test';
+const WORKER_ORIGIN = 'http://localhost:8787';
 const OK_STATUS = 200;
 const NOT_FOUND_STATUS = 404;
 const UNAVAILABLE_STATUS = 503;
