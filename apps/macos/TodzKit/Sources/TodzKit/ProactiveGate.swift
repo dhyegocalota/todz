@@ -6,7 +6,11 @@ import Observation
     private var held: [ProactiveSurface] = []
     @ObservationIgnored private var hasFocusChanged = false
 
-    public init() {}
+    public init(respectsFocus: Bool) {}
+
+    public func setRespectsFocus(_ respectsFocus: Bool) {
+        fatalError("ProactiveGate.setRespectsFocus is not implemented")
+    }
 
     public func admit(_ surface: ProactiveSurface) -> GateDecision {
         guard isQuiet else { return .show }

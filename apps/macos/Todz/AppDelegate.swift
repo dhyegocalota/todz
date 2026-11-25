@@ -75,7 +75,7 @@ private func isFocusFilterQuiet() async -> Bool {
     private lazy var morningGlanceTrigger = MorningGlanceTrigger(coordinator: morningGlance)
 
     override init() {
-        let gate = ProactiveGate()
+        let gate = ProactiveGate(respectsFocus: true)
         AppDependencyManager.shared.add(dependency: gate)
         self.gate = gate
         super.init()
