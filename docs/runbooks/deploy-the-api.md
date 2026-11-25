@@ -193,7 +193,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     ```
 
     Expected: before step 10's secret exists, `HTTP/2 503` and `{"error":"sign_in_unavailable"}`; after it, `HTTP/2 429`, `retry-after: 60` and `{"error":"sign_in_refused"}`. No mail leaves either way. A real link, with a real mail to the owner, is asked for in the production smoke walk with the app, never here.
-    If it fails: a 202 means the Worker sent a link without a solved challenge; close sign-in as the Rollback section says and tell the owner. A 503 after the secret exists means siteverify, the secret or a binding is missing; read step 8's bindings and step 10's list again. A 400 means the body file changed; restore it from `main`. A 426 means the `Todz-App-Version` header was lost; run the command as written.
+    If it fails: a 202 means the Worker sent a link without a solved challenge; close sign-in as the Rollback section says and tell the owner. A 503 after the secret exists means siteverify, the secret or a binding is missing; read step 8's bindings and step 10's list again. A 400 means the body file changed; restore it from `main`. A 426 means the `Todz-App-Version` header was left off and the check proved nothing; run the command as written.
 
     Then check that the waitlist keeps nothing without a solved challenge. Count the rows, post an address with an unsolved token, and count again:
 
@@ -228,7 +228,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     ```bash
     curl -sS -D - -o /dev/null -X POST -H "Todz-App-Version: 0.2.0" -H "Content-Type: application/json" --data-binary @scripts/deploy-bodies/wrong-session.json https://api.todz.app/owner/sessions
     ```
-    If it fails: no 429 means run the command once more; none in the second run either means the binding is not enforcing, or Cloudflare did not send `CF-Connecting-IP` or the request counted as local; tell the owner before the app ships. A 429 on the first request means another client on this address used the quota; wait a minute and run it again.
+    If it fails: a 426 means the `Todz-App-Version` header was left off and the check proved nothing; run the commands as written. No 429 means run the command once more; none in the second run either means the binding is not enforcing, or Cloudflare did not send `CF-Connecting-IP` or the request counted as local; tell the owner before the app ships. A 429 on the first request means another client on this address used the quota; wait a minute and run it again.
 
 16. **Check the landing's discovery files, icons and scores.** Ask the live site for each discovery file, the card on both hosts, the icon and the share image, then for the landing as two crawlers, then for the analytics beacon:
 

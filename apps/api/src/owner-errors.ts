@@ -1,5 +1,5 @@
 import { MINIMUM_APP_VERSION } from '@todz/types';
-import { HttpHeader } from './http-header';
+import { HttpHeader, NO_STORE } from './http-header';
 import { HttpStatus } from './http-status';
 import { type ProjectFailure, ProjectFailureKind } from './project-result';
 
@@ -16,8 +16,6 @@ export enum OwnerErrorCode {
   SignInRefused = 'sign_in_refused',
   AppTooOld = 'app_too_old',
 }
-
-const APP_UPGRADE_PRODUCT = 'todz-app';
 
 const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
   [OwnerErrorCode.InvalidRequest]: HttpStatus.BadRequest,
@@ -40,10 +38,7 @@ export function errorResponse(code: OwnerErrorCode): Response {
 export function appTooOldResponse(): Response {
   return Response.json(
     { error: OwnerErrorCode.AppTooOld, minimum_app_version: MINIMUM_APP_VERSION },
-    {
-      status: STATUS_OF_CODE[OwnerErrorCode.AppTooOld],
-      headers: { [HttpHeader.Upgrade]: `${APP_UPGRADE_PRODUCT}/${MINIMUM_APP_VERSION}` },
-    },
+    { status: STATUS_OF_CODE[OwnerErrorCode.AppTooOld], headers: { [HttpHeader.CacheControl]: NO_STORE } },
   );
 }
 

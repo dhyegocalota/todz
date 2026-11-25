@@ -54,7 +54,7 @@ pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remot
 pnpm --filter @todz/api server:deploy
 ```
 
-When the deploy succeeds, the script ends with `todz server ready: https://api.example.com · server 2026.11.25+3f9c2ab · accepts app 0.2.0 or later  →  paste it in todz › Settings › Server`: that is the URL step 7 uses, with the server's own version and the oldest app version it accepts. Cloudflare creates the DNS records and the certificates for `api.example.com`, `example.com` and `www.example.com`; none of the three may already have an A, AAAA or CNAME record. Check four things:
+Deploy from a git clone: the script names the build after the commit it reads with `git log`. When the deploy succeeds, the script ends with `todz server ready: https://api.example.com · server 2026.11.25+3f9c2ab · accepts app 0.2.0 or later  →  paste it in todz › Settings › Server`: that is the URL step 7 uses, with the server's own version and the oldest app version it accepts. Cloudflare creates the DNS records and the certificates for `api.example.com`, `example.com` and `www.example.com`; none of the three may already have an A, AAAA or CNAME record. Check four things:
 - `curl -sS -H "Todz-App-Version: 0.2.0" https://api.example.com/owner/sign-in-method` answers `{"method":"link"}`, and the same request without the header answers `{"error":"app_too_old","minimum_app_version":"0.2.0"}`;
 - `curl -sS https://api.example.com/health` answers `{"service":"todz","origin":"https://api.example.com","version":"2026.11.25+3f9c2ab","minimum_app_version":"0.2.0"}`, and its `version` is the one the ready line printed;
 - the account's `todz-api.<subdomain>.workers.dev` address does not answer;

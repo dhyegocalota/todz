@@ -1,12 +1,14 @@
 # Tester briefing: Version compatibility
 
-## G1 server (branch `lane/version-compat-g1`)
+## Server (G1, branch `lane/version-compat-g1`)
+
+Review amendments applied after the first pass, red `a5259c78`: the refusal carries `Cache-Control: no-store` and no `Upgrade`; a version part has at most nine digits (`1234567890` refused); a test row for the www redirect carrying the header (a pin: `withServerVersion` already copied the response).
 
 ### What changed and where
 
 - `libs/types/src/constants.ts`: `MINIMUM_APP_VERSION` (`0.2.0`), `API_VERSION_HEADER` (`Todz-Api-Version`), `APP_VERSION_HEADER` (`Todz-App-Version`), pinned in `constants.test.ts`.
-- `apps/api/src/app-version.ts`: `isAppVersionAccepted({ candidate, minimum })`. `^\d+(\.\d+){0,2}$`, padded to three parts, compared numerically with an `Intl.Collator` set to numeric; `null` is refused.
-- `apps/api/src/owner-endpoint.ts`: after `matchOwnerRoute` and before the public or session dispatch, `appVersionRefusal(request)` returns `appTooOldResponse()`. `apps/api/src/owner-errors.ts` holds `OwnerErrorCode.AppTooOld` (`426`) and `appTooOldResponse()` (`Upgrade: todz-app/0.2.0`, body `{"error":"app_too_old","minimum_app_version":"0.2.0"}`). `HttpHeader.Upgrade` is new.
+- `apps/api/src/app-version.ts`: `isAppVersionAccepted({ candidate, minimum })`. `^\d{1,9}(\.\d{1,9}){0,2}$`, padded to three parts, compared numerically with an `Intl.Collator` set to numeric; `null` is refused.
+- `apps/api/src/owner-endpoint.ts`: after `matchOwnerRoute` and before the public or session dispatch, `appVersionRefusal(request)` returns `appTooOldResponse()`. `apps/api/src/owner-errors.ts` holds `OwnerErrorCode.AppTooOld` (`426`) and `appTooOldResponse()` (`Cache-Control: no-store`, no `Upgrade` header since HTTP/2 forbids it, body `{"error":"app_too_old","minimum_app_version":"0.2.0"}`).
 - `apps/api/src/server-version.ts` (`SERVER_VERSION`, the only read of the `TODZ_SERVER_VERSION` global declared in `server-version-global.d.ts`, and `withServerVersion`), wired in `index.ts` inside `withSecurityHeaders`. `health.ts` adds `version` and `minimum_app_version`. `wrangler.jsonc` defines `TODZ_SERVER_VERSION` as `null`; `vitest.config.mts` defines it as `2026.11.25+0000000` for the Workers project.
 - `apps/api/scripts/server/`: `version-stamp.ts`, `deploy-arguments.ts`, `ready-line.ts` (three fields), `cli.ts` (reads git, runs `wrangler deploy --define`, prints the ready line). `server:deploy` is `tsx scripts/server/cli.ts`.
 - Callers outside the app now send the header: `apps/api/test/owner-client.ts`, `worker.test.ts`, `site-dispatch.test.ts`, `tools/perf/src/owner-scenario.ts` (`APP_VERSION_HEADERS`) and `tools/perf/src/socket-signals.ts`.
