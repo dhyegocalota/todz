@@ -12,6 +12,12 @@ export const TURNSTILE_EXPLICIT_SCRIPT_URL = `${TURNSTILE_SCRIPT_URL}?render=exp
 
 export type TurnstilePage = { available: (siteKey: string) => string; unavailable: string; contentSecurityPolicy: string };
 
+export function usableSiteKeyOf(configured: string | undefined): string | null {
+  if (configured === undefined) return null;
+  if (!SITE_KEY_PATTERN.test(configured)) return null;
+  return configured;
+}
+
 export async function sourceHash(source: string): Promise<string> {
   const digest = await crypto.subtle.digest(HASH_ALGORITHM, new TextEncoder().encode(source));
   return `'sha256-${btoa(String.fromCharCode(...new Uint8Array(digest)))}'`;
@@ -54,9 +60,8 @@ function pageResponse({
 // NB ADR 0046: the site key sits in a data attribute, so each page's script stays one fixed source with one hash.
 export function serveTurnstilePage({ request, env, page }: { request: Request; env: Env; page: TurnstilePage }): Response {
   if (request.method !== PAGE_METHOD) return noRouteResponse();
-  const { TURNSTILE_SITE_KEY: siteKey } = env;
+  const siteKey = usableSiteKeyOf(env.TURNSTILE_SITE_KEY);
   const { contentSecurityPolicy } = page;
-  const isUsableSiteKey = siteKey !== undefined && SITE_KEY_PATTERN.test(siteKey);
-  if (!isUsableSiteKey) return pageResponse({ html: page.unavailable, status: HttpStatus.Unavailable, contentSecurityPolicy });
+  if (siteKey === null) return pageResponse({ html: page.unavailable, status: HttpStatus.Unavailable, contentSecurityPolicy });
   return pageResponse({ html: page.available(siteKey), status: HttpStatus.Ok, contentSecurityPolicy });
 }

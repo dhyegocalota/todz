@@ -34,6 +34,9 @@ const PRODUCTION_ORIGIN = `https://${PRODUCTION_HOST}`;
 const RATE_LIMIT_NAMESPACE_ID = '8601';
 const ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8602';
 const GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8603';
+const WAITLIST_RATE_LIMIT_NAMESPACE_ID = '8604';
+const WAITLIST_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8605';
+const WAITLIST_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8606';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
 const RATE_LIMIT_PERIOD_SECONDS = 60;
@@ -161,7 +164,7 @@ describe('the api source', () => {
     expect(configuration.preview_urls).toBe(false);
   });
 
-  test('the wrangler configuration limits sign-in per client, per address and globally with the shared limits', () => {
+  test('the wrangler configuration limits sign-in and the waitlist per client, per address and globally with the shared limits', () => {
     expect(wranglerConfiguration().ratelimits).toEqual([
       {
         name: 'SIGN_IN_LIMITER',
@@ -178,7 +181,28 @@ describe('the api source', () => {
         namespace_id: GLOBAL_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('SIGN_IN_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
+      {
+        name: 'WAITLIST_LIMITER',
+        namespace_id: WAITLIST_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('WAITLIST_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'WAITLIST_ADDRESS_LIMITER',
+        namespace_id: WAITLIST_ADDRESS_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('WAITLIST_ADDRESS_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'WAITLIST_GLOBAL_LIMITER',
+        namespace_id: WAITLIST_GLOBAL_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('WAITLIST_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
     ]);
+  });
+
+  test('every rate-limit binding of the wrangler configuration is an optional RateLimit of the Worker environment', () => {
+    const environment = readRepositoryFile(ENV_MODULE);
+    const names = wranglerConfiguration().ratelimits.map(({ name }) => name);
+    expect(names.filter((name) => !environment.includes(`${name}?: RateLimit;`))).toEqual([]);
   });
 
   test('the wrangler configuration never holds the Turnstile secret, which is a Worker secret', () => {

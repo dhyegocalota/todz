@@ -43,10 +43,10 @@ G1 and G2 run in parallel; the lead merges G2 into G1's result, then runs the E2
 
 ### G1
 
-- [ ] **Step 1:** Red: `waitlist-store.test.ts`: an insert keeps a normalised row; a second join keeps one row; only the first join claims the confirmation; a failure is recorded. Then green with the migration and the store.
-- [ ] **Step 2:** Red: `waitlist-limiter.test.ts`: each limit refuses; a missing binding or client address is unguarded; a local site host skips. Then green.
-- [ ] **Step 3:** Red: `waitlist-join.test.ts`, one test per row of the spec's failure table, with a counting limiter, a stub siteverify `fetcher` and a recording email sender; assert the D1 rows and the mails each time. Then green, with `TurnstileAction.Waitlist`, the bindings in `env.ts` and `wrangler.jsonc`, and the route in `site-endpoint.ts`.
-- [ ] **Step 4:** `api-source.test.ts` pins the three bindings and namespaces; `site-dispatch.test.ts` moves its `POST /join` cases to the new answers.
+- [x] **Step 1:** Red: `waitlist-store.test.ts`: an insert keeps a normalised row; a second join keeps one row; only the first join claims the confirmation; a failure is recorded. Then green with the migration and the store. Evidence: red 649d83d, green bfdb2f0; the directory-tables pin follows in ce8653f.
+- [x] **Step 2:** Red: `waitlist-limiter.test.ts`: each limit refuses; a missing binding or client address is unguarded; a local site host skips. Then green. Evidence: red 4536123, green 3d3ba18.
+- [x] **Step 3:** Red: `waitlist-join.test.ts`, one test per row of the spec's failure table, with a counting limiter, a stub siteverify `fetcher` and a recording email sender; assert the D1 rows and the mails each time. Then green, with `TurnstileAction.Waitlist`, the bindings in `env.ts` and `wrangler.jsonc`, and the route in `site-endpoint.ts`. Evidence: red 527c6b5, green 58b8879; `env.ts` landed in 4536123, `wrangler.jsonc` and the route in f3151ff.
+- [x] **Step 4:** `api-source.test.ts` pins the three bindings and namespaces; `site-dispatch.test.ts` moves its `POST /join` cases to the new answers. Evidence: red d8bdf6d, green f3151ff.
 
 ### G2
 

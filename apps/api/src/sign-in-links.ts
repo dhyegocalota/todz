@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { digestCredential } from './credential-digest';
 import { generateCredentialSecret } from './credential-secret';
 import { deleteSignInLink, insertSignInLinkWithinLimit } from './directory-sign-in-links';
+import { normalizedAddress } from './email-address';
 import { signInMail } from './emails/sign-in-mail';
 import { emailSenderOf } from './email-sender';
 import { isLocalOrigin } from './local-origin';
@@ -19,9 +20,6 @@ import { TurnstileAction } from './turnstile';
 const SIGN_IN_LINK_LIFETIME_MINUTES = 15;
 const SIGN_IN_LINK_LIFETIME_MS = SIGN_IN_LINK_LIFETIME_MINUTES * MILLISECONDS_PER_MINUTE;
 const SIGN_IN_LINKS_PER_ADDRESS_MAX = 5;
-const ADDRESS_LENGTH_MAX = 254;
-const ADDRESS_CHARACTER = '[^@<>,"\\x00-\\x20\\x7f-\\uffff]';
-const ADDRESS_PATTERN = new RegExp(`^${ADDRESS_CHARACTER}+@${ADDRESS_CHARACTER}+\\.${ADDRESS_CHARACTER}+$`);
 const SECURE_PROTOCOL = 'https:';
 const PLAIN_PROTOCOL = 'http:';
 const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
@@ -37,13 +35,6 @@ export function publicOriginOf(configured: string | undefined): string | null {
   const isPlainOnLocalHost = protocol === PLAIN_PROTOCOL && isLocalOrigin(configured);
   if (!isSecure && !isPlainOnLocalHost) return null;
   return configured;
-}
-
-function normalizedAddress(email: string): string | null {
-  const address = email.trim().toLowerCase();
-  const isAddress = address.length <= ADDRESS_LENGTH_MAX && ADDRESS_PATTERN.test(address);
-  if (!isAddress) return null;
-  return address;
 }
 
 // NB ADR 0040: a link lasts 15 minutes, an address gets five in that window, and one statement counts and inserts.
