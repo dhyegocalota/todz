@@ -9,7 +9,14 @@ export enum EmailSenderKind {
   Cloudflare = 'cloudflare',
 }
 
-export type EmailMessage = { to: string; subject: string; html: string; text: string };
+export type EmailMessage = {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  replyTo?: string;
+  headers?: Record<string, string>;
+};
 
 export type EmailSender = { send(message: EmailMessage): Promise<void> };
 
