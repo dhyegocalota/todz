@@ -7,9 +7,11 @@ public struct RibbonPreference {
     public static let cadenceByDefault = RibbonCadence.hourly
 
     private let domain: PersistentDomain
+    private let dayClose: DayClosePreference
 
     public init(defaults: UserDefaults, domainName: String) {
         domain = PersistentDomain(defaults: defaults, name: domainName)
+        dayClose = DayClosePreference(defaults: defaults, domainName: domainName)
     }
 
     public static func registerDefaults(in defaults: UserDefaults) {
@@ -23,6 +25,10 @@ public struct RibbonPreference {
 
     var isOn: Bool {
         domain.value(forKey: Self.isOnStorageKey) as? Bool == true
+    }
+
+    var closeMinutesAfterMidnight: Int? {
+        dayClose.minutesAfterMidnight
     }
 
     var cadence: RibbonCadence? {
