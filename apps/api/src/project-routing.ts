@@ -7,7 +7,8 @@ import {
   findSessionOwner,
   findSessionProject,
 } from './directory';
-import { findOwnedWorkspace } from './directory-workspaces';
+import { findCandidateRows } from './day-email/day-email-store';
+import { findOwnedWorkspace, listOwnerWorkspaces } from './directory-workspaces';
 import type { Env } from './env';
 import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 import type { ProjectStore } from './project-store';
@@ -179,10 +180,30 @@ export type ScheduledWorkspace = { workspace: WorkspaceRecord; projects: Schedul
 
 export type DayEmailCandidate = { owner: ScheduledOwner; timeZone: string; minutes: number; address: string };
 
-export async function listDayEmailCandidates(input: { env: Env }): Promise<DayEmailCandidate[]> {
-  throw new Error(`listDayEmailCandidates is not implemented for ${typeof input.env}`);
+const scheduledOwners = new WeakSet<ScheduledOwner>();
+
+function scheduledOwnerOf(ownerId: string): ScheduledOwner {
+  const owner = Object.freeze({ ownerId }) as ScheduledOwner;
+  scheduledOwners.add(owner);
+  return owner;
 }
 
-export async function listScheduledWorkspaces(input: { env: Env; owner: ScheduledOwner }): Promise<ScheduledWorkspace[] | null> {
-  throw new Error(`listScheduledWorkspaces is not implemented for ${input.owner.ownerId}`);
+// NB ADR 0063: only the candidates query makes a scheduled owner, and only that owner's own projects are listed and opened.
+export async function listDayEmailCandidates({ env }: { env: Env }): Promise<DayEmailCandidate[]> {
+  const rows = await findCandidateRows({ directory: env.DIRECTORY });
+  return rows.map((row) => ({
+    owner: scheduledOwnerOf(row.owner_id),
+    timeZone: row.time_zone,
+    minutes: row.day_email_minutes,
+    address: row.address,
+  }));
+}
+
+export async function listScheduledWorkspaces({ env, owner }: { env: Env; owner: ScheduledOwner }): Promise<ScheduledWorkspace[] | null> {
+  if (!scheduledOwners.has(owner)) return null;
+  const listings = await listOwnerWorkspaces({ directory: env.DIRECTORY, ownerId: owner.ownerId });
+  return listings.map(({ workspace, projects }) => ({
+    workspace,
+    projects: projects.map((record) => ({ record, project: openProject({ env, projectId: record.id }) })),
+  }));
 }

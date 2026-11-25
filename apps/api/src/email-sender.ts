@@ -1,3 +1,4 @@
+import type { Env } from './env';
 import { enumValueOf } from './enum-value';
 import { isLocalOrigin } from './local-origin';
 
@@ -54,4 +55,9 @@ export function emailSenderOf({
   const isConsoleOnPublicHost = kind === EmailSenderKind.Console && !(isLocalOrigin(publicOrigin) && isLocalOrigin(requestUrl));
   if (isConsoleOnPublicHost) return null;
   return EMAIL_SENDER_FACTORY_OF_KIND[kind](binding);
+}
+
+export function emailSenderForOrigin({ env, origin }: { env: Env; origin: string | null }): EmailSender | null {
+  if (origin === null) return null;
+  return emailSenderOf({ configured: env.EMAIL_SENDER, publicOrigin: origin, requestUrl: origin, binding: env.EMAIL });
 }
