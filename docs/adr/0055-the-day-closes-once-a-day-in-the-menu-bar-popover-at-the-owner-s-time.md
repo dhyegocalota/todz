@@ -33,6 +33,10 @@ The owner wants todz to close his day: once, at a time he picks, the popover he 
 - With two Macs, each closes the day on its own; the second finds less left, or nothing, and stays silent.
 - The popover appears over the owner's work once a day, which is the feature; the walk proves it with as few openings as the test plan needs.
 
+## Evidence
+
+Run-16 spike (scratch, not committed), Xcode 27.2, macOS 26: the SDK offers no public way to open a `MenuBarExtra` (`init(isInserted:)` and `menuBarExtraStyle` only). `performClick(nil)` on the `NSStatusBarButton` found through `NSApp.windows` opened the popover anchored under the item with its highlight, and an outside click closed it as a user-opened one; a second click toggles it closed, so the opener checks that the popover is not already visible. An app launched hidden showed nothing until `NSApp.unhideWithoutActivation()`. Not tested: full screen with an auto-hidden menu bar, several displays, Stage Manager.
+
 ## Revisit when
 
 The owner wants the day close on one Mac only, or a different meaning for Drop.

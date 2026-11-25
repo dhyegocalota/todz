@@ -144,6 +144,7 @@ Empty when written; the lead records each answer here before the plan.
 
 | Option | Answer | Date |
 |---|---|---|
+| O1–O7 | each one's recommendation in § 6, the build loop's call (the owner may overturn it) | 2026-11-25 |
 
 ## 8. Every new copy string
 

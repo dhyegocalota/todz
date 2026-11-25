@@ -52,7 +52,10 @@ popover closes → the mode ends
 | the owner changes the time to a later one after it fired today | does not fire again today |
 | the owner turns it on after today's time | fires now if not closed today (a first chance after the time) |
 | held through midnight by a Focus | dropped; tomorrow's day close is due as usual |
-| the status button cannot be found | nothing opens; `lastClosedDay` is not set, so a later wake tries again that day |
+| the status button cannot be found, or the open fails | nothing opens and the mode is cleared; `lastClosedDay` is not set, so a later check tries again that day (no fallback) |
+| Today is still loading, failed to load, or the owner is signed out | wait; decide again when the count is known; nothing is marked |
+| the popover is already open when the day close is due | the mode starts in place without a click; the add field hides and keeps its draft until the mode ends |
+| a Focus read at launch is still pending | the first check waits for it |
 | a row action fails (offline) | the outbox queues it as any write; the row reflects the change at once |
 
 ### Rollback

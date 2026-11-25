@@ -19,13 +19,19 @@ Pinned strings (`design.md` § 8): heading `Close the day` with `<N> left`; row 
 - [ ] Missed: 23:59 not closed — expected: `.due`; 00:01 the next day — expected: `.notYet` (yesterday's is not carried over)
 - [ ] The time moved to 20:00 after closing today at 18:00 — expected: `.doneToday`
 - [ ] Turned on at 19:00, not closed today — expected: `.due`
-- [ ] A DST-change day in a zone that has one — expected: the wall-clock 18:00 that day
-- [ ] Preference defaults: off and 18:00; registering keeps a stored choice
-- [ ] Day-close mode with three open Today tasks — expected: the three rows; Done completes, Tomorrow sets tomorrow's date, No date clears the date (one write each)
-- [ ] A due day close with nothing open — expected: nothing opens; the day is marked closed
-- [ ] Held during quiet and released the same day — expected: shown then; released after midnight — expected: dropped
-- [ ] `lastClosedDay` set only when the popover opened
-- [ ] Leaving the mode — expected: the next opening shows the usual Today
+- [ ] DST in America/New_York: 2026-03-08 and 2026-11-01 with the time 18:00 — expected: due at the wall-clock 18:00 each day; the time 02:30 on 2026-03-08 (inside the spring-forward gap) — expected: due at 03:30, the first instant after it
+- [ ] Preference defaults: off and 1080 minutes (18:00); registering keeps a stored choice
+- [ ] Coordinator, due with the count nil (loading) — expected: nothing opens, nothing marked; the count becomes 2 — expected: opens, `lastClosedDay` today
+- [ ] Coordinator, due while signed out — expected: nothing opens, nothing marked
+- [ ] Coordinator, due with 0 open — expected: nothing opens; `lastClosedDay` today
+- [ ] Coordinator, the opener returns false — expected: nothing marked, the mode cleared; a later check that day opens
+- [ ] Coordinator, quiet from the launch read, due at 18:00 — expected: held; released at 18:20 — expected: opens, marked; released at 00:10 the next day — expected: nothing opens, `claimRelease(.dayClose)` consumed it
+- [ ] Linger: Tomorrow and No date — expected: the row shows `Due tomorrow` / `No due date` for 1 s, then leaves (red-first in `CompletionLingers`' tests)
+- [ ] Pins (green when they land): the mode's Done completes, Tomorrow sets tomorrow's date, No date clears the date, one write each
+- [ ] Day closed — expected: shows when the mode is on, Today's open list is empty and nothing lingers; "Done today" hidden in the mode
+- [ ] Leaving the mode (the popover window not visible) — expected: the next opening shows the usual Today
+- [ ] Many: 12 open Today tasks — expected: `12 left`, the list scrolls inside the 360-wide popover
+- [ ] Offline at the time with 2 open in the cache — expected: opens on the cached rows; an action is queued and shows its result
 - [ ] `swift test --package-path apps/macos/TodzKit` green, count recorded; Debug `xcodebuild` succeeds
 
 ## Prove it for real
@@ -37,7 +43,9 @@ Orca (ADR 0026), the Debug build launched with `open -g -j` against a local `wra
 - [ ] The server agrees: the first task done, the second due tomorrow, the third with no due date and still open
 - [ ] The same day, quit and relaunch — expected: nothing opens (once a day)
 - [ ] Opening 2: click the status item — expected: the usual Today, no action buttons
-- [ ] Accessibility tree: the row buttons carry their labels; the announcement on opening (read from the tree or the log)
+- [ ] The launch in the walk is hidden (`open -g -j`) — expected: the popover still becomes visible at the time (`unhideWithoutActivation`)
+- [ ] Keys in the mode, during opening 1: D on a focused row — expected: done; Escape — expected: the popover closes; ⌘N — expected: nothing
+- [ ] Accessibility tree: each row's buttons read `Done`, `Move <title> to tomorrow`, `Remove the due date from <title>`; the opening announcement is not readable from the tree: BLOCKED unless VoiceOver runs, and recorded as such
 - [ ] Screenshots at `docs/screenshots/day-close/`; extra media at `.pr-media/day-close/`
 
 ## Edge cases found during execution
