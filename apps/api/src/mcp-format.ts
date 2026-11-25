@@ -5,6 +5,7 @@ import { type ProjectFailure, ProjectFailureKind } from './project-result';
 
 const LINE_BREAK = '\n';
 const PARAGRAPH_BREAK = '\n\n';
+const NO_OVERDUE = 0;
 
 function escapedMarkup(text: string): string {
   return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
@@ -67,12 +68,19 @@ export function nextPromptText(task: Task | null): string {
   return paragraphs([MCP_COPY.workOnTask, fencedTask, MCP_COPY.finishWith(formatShortId(task.number))]);
 }
 
-export function nudgeLine(_: { count: number; overdue: number; taskNumber: number }): string {
-  throw new Error('nudgeLine is not implemented');
+function nudgeSummary({ count, overdue }: { count: number; overdue: number }): string {
+  if (overdue === NO_OVERDUE) return MCP_COPY.agentNudge.due(count);
+  if (overdue === count) return MCP_COPY.agentNudge.overdue(count);
+  return MCP_COPY.agentNudge.dueWithOverdue({ count, overdue });
 }
 
-export function nudgedText(_: { nudge: string | null; text: string }): string {
-  throw new Error('nudgedText is not implemented');
+export function nudgeLine({ count, overdue, taskNumber }: { count: number; overdue: number; taskNumber: number }): string {
+  return MCP_COPY.agentNudge.line({ summary: nudgeSummary({ count, overdue }), taskId: formatShortId(taskNumber) });
+}
+
+export function nudgedText({ nudge, text }: { nudge: string | null; text: string }): string {
+  if (nudge === null) return text;
+  return paragraphs([nudge, text]);
 }
 
 export function failureText(failure: ProjectFailure): string {

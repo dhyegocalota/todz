@@ -4,6 +4,7 @@ import {
   type CalendarDate,
   type Clock,
   type CompletedTask,
+  type DueNow,
   type HistoryEntry,
   OWNER_ACTOR,
   type ReopenedTask,
@@ -16,6 +17,7 @@ import {
   addTasks,
   agentActor,
   completeTasks,
+  dueNow,
   listTasks,
   nextTask,
   parseCalendarDate,
@@ -90,6 +92,10 @@ export class ProjectStore extends DurableObject<Env> {
 
   nextTask({ today }: { today: string }): ProjectResult<Task | null> {
     return this.run(() => nextTask({ store: this.store, today: trustedToday(today) }));
+  }
+
+  dueNow({ today }: { today: string }): ProjectResult<DueNow> {
+    return this.run(() => dueNow({ store: this.store, today: trustedToday(today) }));
   }
 
   fetch(request: Request): Response {
