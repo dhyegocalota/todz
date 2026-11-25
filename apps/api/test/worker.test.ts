@@ -14,6 +14,7 @@ const DIRECTORY_TABLES = [
   'projects',
   'sessions',
   'sign_in_links',
+  'waitlist',
   'workspaces',
 ];
 const TASK_COLUMNS = ['title', 'notes', 'note', 'due_date', 'order_key'];
@@ -66,7 +67,7 @@ describe('the handler routes the paths the static assets never answer (the asset
 });
 
 describe('the directory', () => {
-  test('lists exactly the eight directory tables', async () => {
+  test('lists exactly the nine directory tables', async () => {
     expect(await directoryTables()).toEqual(DIRECTORY_TABLES);
   });
 
