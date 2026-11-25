@@ -26,6 +26,14 @@ public enum DayTemperatureStep: Sendable, Equatable {
         return started.step
     }
 
+    public static func boundaries(on day: CalendarDate, in timeZone: TimeZone) -> [Date] {
+        fatalError("DayTemperatureStep.boundaries is not implemented")
+    }
+
+    public static func nextBoundary(after instant: Date, in timeZone: TimeZone) -> Date {
+        fatalError("DayTemperatureStep.nextBoundary is not implemented")
+    }
+
     // NB ADR 0065: the count dims 0.85, 0.75, 0.65 after noon, 15:00 and 18:00, and only while a count shows and nothing quiets it.
     public static func countOpacity(
         step: DayTemperatureStep,
