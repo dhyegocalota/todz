@@ -1,6 +1,7 @@
 import { MILLISECONDS_PER_SECOND, WAITLIST_FILL_HOLD_MS, WAITLIST_JOIN_TIMEOUT_MS } from '@todz/types';
 import type { Env } from '../env';
 import { escapedHtml } from '../escaped-html';
+import { HttpHeader } from '../http-header';
 import { MediaType } from '../request-body';
 import { TurnstileAction } from '../turnstile';
 import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, siteKeyOf, usableSiteKeyOf } from '../turnstile-page';
@@ -14,9 +15,8 @@ import {
   JOIN_STATE_ATTRIBUTE,
   JoinFormState,
   JoinOutcome,
+  PageAnswer,
   STAMP_FIELD_NAME,
-  UNREACHABLE_ANSWER,
-  WAITING_ANSWER,
   WAITLIST_ANSWERED_EVENT,
 } from './join-form-markup';
 import { LANDING_COPY } from './landing-copy';
@@ -130,10 +130,10 @@ export const PAGE_SCRIPT = `{
     try {
       const response = await fetch('${JOIN_PATH}', { method: 'POST', headers: { Accept: '${MediaType.Json}' }, body, signal: controller.signal });
       const { outcome } = await response.json();
-      if (!Object.hasOwn(copy.lines, outcome)) return { outcome: '${UNREACHABLE_ANSWER}', retryAfterSeconds: 0 };
-      return { outcome, retryAfterSeconds: Number(response.headers.get('Retry-After')) };
+      if (!Object.hasOwn(copy.lines, outcome)) return { outcome: '${PageAnswer.Unreachable}', retryAfterSeconds: 0 };
+      return { outcome, retryAfterSeconds: Number(response.headers.get('${HttpHeader.RetryAfter}')) };
     } catch (error) {
-      return { outcome: '${UNREACHABLE_ANSWER}', retryAfterSeconds: 0 };
+      return { outcome: '${PageAnswer.Unreachable}', retryAfterSeconds: 0 };
     } finally {
       clearTimeout(timer);
     }
@@ -143,7 +143,7 @@ export const PAGE_SCRIPT = `{
     progress.isSending = false;
     progress.hasToken = !progress.hasWidget;
     form.dataset.${JOIN_OUTCOME_ATTRIBUTE} = outcome;
-    showLine({ form, text: outcome === '${UNREACHABLE_ANSWER}' ? copy.unreachable : copy.lines[outcome] });
+    showLine({ form, text: outcome === '${PageAnswer.Unreachable}' ? copy.unreachable : copy.lines[outcome] });
     if (outcome === '${JoinOutcome.Joined}') form.querySelector('[name="${EMAIL_FIELD_NAME}"]').value = '';
     if (retryAfterSeconds > 0) {
       progress.isBlocked = true;
@@ -159,7 +159,9 @@ export const PAGE_SCRIPT = `{
   const sendFrom = async (form) => {
     progressOf.get(form).isSending = true;
     render(form);
-    const remainingHoldMs = ${WAITLIST_FILL_HOLD_MS} - performance.now();
+    const [navigation] = performance.getEntriesByType('navigation');
+    const firstByteMs = navigation === undefined ? 0 : navigation.responseStart;
+    const remainingHoldMs = firstByteMs + ${WAITLIST_FILL_HOLD_MS} - performance.now();
     if (remainingHoldMs > 0) await new Promise((resolve) => setTimeout(resolve, remainingHoldMs));
     finish({ form, ...(await answerOf(new URLSearchParams(new FormData(form)))) });
   };
@@ -186,7 +188,7 @@ export const PAGE_SCRIPT = `{
       if (form.dataset.${JOIN_STATE_ATTRIBUTE} === state.Ready) return sendFrom(form);
       if (progress.isSending || progress.isBlocked) return;
       showLine({ form, text: copy.waitingForCheck });
-      form.dispatchEvent(new CustomEvent('${WAITLIST_ANSWERED_EVENT}', { detail: { outcome: '${WAITING_ANSWER}' } }));
+      form.dispatchEvent(new CustomEvent('${WAITLIST_ANSWERED_EVENT}', { detail: { outcome: '${PageAnswer.Waiting}' } }));
     });
   });
   addEventListener('pageshow', (event) => {

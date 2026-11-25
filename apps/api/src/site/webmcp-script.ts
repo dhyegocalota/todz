@@ -8,8 +8,7 @@ import {
   JOIN_STATE_ATTRIBUTE,
   JoinFormState,
   JoinOutcome,
-  UNREACHABLE_ANSWER,
-  WAITING_ANSWER,
+  PageAnswer,
   WAITLIST_ANSWERED_EVENT,
 } from './join-form-markup';
 import { KEY_PLACEHOLDER, scriptJson } from './site-constants';
@@ -75,9 +74,9 @@ const JOIN_ANSWER_OF_OUTCOME = {
   [JoinOutcome.CheckFailed]: WEBMCP_COPY.answers.checkFailed,
   [JoinOutcome.TryAgain]: WEBMCP_COPY.answers.tryAgain,
   [JoinOutcome.OpensSoon]: WEBMCP_COPY.answers.opensSoon,
-  [UNREACHABLE_ANSWER]: WEBMCP_COPY.answers.unreachable,
-  [WAITING_ANSWER]: WEBMCP_COPY.answers.checkTimedOut,
-};
+  [PageAnswer.Unreachable]: WEBMCP_COPY.answers.unreachable,
+  [PageAnswer.Waiting]: WEBMCP_COPY.answers.checkTimedOut,
+} satisfies Record<JoinOutcome | PageAnswer, string>;
 
 const OVERVIEW_TEXT = [
   DISCOVERY_COPY.summary,
@@ -133,9 +132,11 @@ export const WEBMCP_SCRIPT = `{
       return textOf(form.dataset.${JOIN_OUTCOME_ATTRIBUTE} === '${JoinOutcome.TryAgain}' ? answers.tryAgain : answers.checkTimedOut);
     }
     if (isForm(form, '${JoinFormState.Sending}')) return textOf(answers.alreadySubmitting);
+    field.value = email;
+    if (!field.checkValidity()) return textOf(answers.invalid);
     const answered = new Promise((resolve) => {
       form.addEventListener('${WAITLIST_ANSWERED_EVENT}', (event) => resolve(event.detail.outcome), { once: true });
-      setTimeout(() => resolve('${UNREACHABLE_ANSWER}'), ${WEBMCP_ANSWER_WAIT_MS});
+      setTimeout(() => resolve('${PageAnswer.Unreachable}'), ${WEBMCP_ANSWER_WAIT_MS});
     });
     form.requestSubmit();
     return textOf(answerOfOutcome[await answered]);

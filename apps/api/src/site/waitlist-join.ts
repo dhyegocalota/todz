@@ -11,7 +11,7 @@ import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import { publicOriginOf } from '../sign-in-links';
 import { TURNSTILE_TOKEN_PATTERN, TurnstileAction, TurnstileVerdict, verifyTurnstileToken } from '../turnstile';
 import { TURNSTILE_RESPONSE_FIELD, siteKeyOf } from '../turnstile-page';
-import { HONEYPOT_FIELD_NAME, JoinOutcome } from './join-form-markup';
+import { HONEYPOT_FIELD_NAME, JoinOutcome, STAMP_FIELD_NAME } from './join-form-markup';
 import { LandingNotice, landingChallengeKeysOf, serveLandingPage } from './landing-page';
 import type { SiteContext } from './site-endpoint';
 import {
@@ -24,16 +24,14 @@ import {
 import { StampVerdict, stampVerdictOf } from './waitlist-stamp';
 import { joinWaitlist, recordConfirmationFailure } from './waitlist-store';
 
-const ACCEPT_HEADER = 'Accept';
-const VARY_HEADER = 'Vary';
 const ACCEPT_SEPARATOR = ',';
 const PARAMETER_SEPARATOR = ';';
-const REFUSED_QUALITY = 'q=0';
+const QUALITY_PREFIX = 'q=';
 
 const JoinFormSchema = z.object({
   email: z.string(),
   [TURNSTILE_RESPONSE_FIELD]: z.string().optional(),
-  stamp: z.string().optional(),
+  [STAMP_FIELD_NAME]: z.string().optional(),
   [HONEYPOT_FIELD_NAME]: z.string().optional(),
 });
 
@@ -133,7 +131,7 @@ async function joinOutcomeOf({ request, env, executionContext }: SiteContext): P
   const hasUsableToken = token !== undefined && TURNSTILE_TOKEN_PATTERN.test(token);
   if (!hasUsableToken) return JoinOutcome.CheckFailed;
   const now = Date.now();
-  const stampVerdict = await stampVerdictOf({ secret: guard.secret, stamp: form.stamp, now });
+  const stampVerdict = await stampVerdictOf({ secret: guard.secret, stamp: form[STAMP_FIELD_NAME], now });
   if (stampVerdict === StampVerdict.Missing) return JoinOutcome.CheckFailed;
   const verdict = await verifyTurnstileToken({
     token,
@@ -145,14 +143,14 @@ async function joinOutcomeOf({ request, env, executionContext }: SiteContext): P
   });
   const challengeRefusal = REFUSAL_OF_VERDICT[verdict];
   if (challengeRefusal !== null) return challengeRefusal;
-  const honeypot = form[HONEYPOT_FIELD_NAME];
-  const isHoneypotFilled = honeypot !== undefined && honeypot !== '';
-  if (isHoneypotFilled) return JoinOutcome.Joined;
-  if (stampVerdict !== StampVerdict.Patient) return JoinOutcome.Joined;
   const globalRefusal = outcomeOfRefusal(await waitlistGlobalRefusal({ request, env }));
   if (globalRefusal !== null) return globalRefusal;
   const addressRefusal = outcomeOfRefusal(await waitlistAddressRefusal({ request, env, address }));
   if (addressRefusal !== null) return addressRefusal;
+  const honeypot = form[HONEYPOT_FIELD_NAME];
+  const isHoneypotFilled = honeypot !== undefined && honeypot !== '';
+  if (isHoneypotFilled) return JoinOutcome.Joined;
+  if (stampVerdict !== StampVerdict.Patient) return JoinOutcome.Joined;
   const isClaimed = await joinWaitlist({ database: env.DIRECTORY, address, now }).catch(() => null);
   if (isClaimed === null) return JoinOutcome.TryAgain;
   if (!isClaimed) return JoinOutcome.Joined;
@@ -165,7 +163,8 @@ function isJsonAccepted(acceptedTypes: string | null): boolean {
   if (acceptedTypes === null) return false;
   return acceptedTypes.split(ACCEPT_SEPARATOR).some((range) => {
     const [mediaType, ...parameters] = range.split(PARAMETER_SEPARATOR).map((part) => part.trim().toLowerCase());
-    const isRefused = parameters.includes(REFUSED_QUALITY);
+    const quality = parameters.find((parameter) => parameter.startsWith(QUALITY_PREFIX));
+    const isRefused = quality !== undefined && Number(quality.slice(QUALITY_PREFIX.length)) === 0;
     return mediaType === MediaType.Json && !isRefused;
   });
 }
@@ -183,9 +182,9 @@ async function pageAnswer({ outcome, env }: { outcome: JoinOutcome; env: Env }):
 
 export async function serveWaitlistJoin(context: SiteContext): Promise<Response> {
   const outcome = await joinOutcomeOf(context);
-  const wantsJson = isJsonAccepted(context.request.headers.get(ACCEPT_HEADER));
+  const wantsJson = isJsonAccepted(context.request.headers.get(HttpHeader.Accept));
   const answer = wantsJson ? jsonAnswer(outcome) : await pageAnswer({ outcome, env: context.env });
-  answer.headers.set(VARY_HEADER, ACCEPT_HEADER);
+  answer.headers.set(HttpHeader.Vary, HttpHeader.Accept);
   if (answer.status === HttpStatus.TooManyRequests) answer.headers.set(HttpHeader.RetryAfter, String(WAITLIST_RATE_LIMIT_PERIOD_SECONDS));
   return answer;
 }
