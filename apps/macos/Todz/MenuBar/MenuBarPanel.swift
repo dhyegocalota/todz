@@ -53,6 +53,7 @@ import TodzKit
     }
 
     func openMainWindow(_ openWindow: OpenWindowAction) {
+        NSApp.activateAsRegularApp()
         close()
         Task { openWindow.mainWindow() }
     }

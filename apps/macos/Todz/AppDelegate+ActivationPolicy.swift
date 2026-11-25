@@ -25,7 +25,18 @@ extension AppDelegate {
             let closingWindow = notification.object as? NSWindow
             MainActor.assumeIsolated { self?.applyActivationPolicy(closing: closingWindow) }
         }
-        windowObservations = [keyObservation, closeObservation]
+        let visibilityObservation = NotificationCenter.default.addObserver(
+            forName: NSWindow.didChangeOcclusionStateNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            let changedWindow = notification.object as? NSWindow
+            MainActor.assumeIsolated {
+                guard changedWindow?.canBecomeMain == true else { return }
+                self?.applyActivationPolicy(closing: nil)
+            }
+        }
+        windowObservations = [keyObservation, closeObservation, visibilityObservation]
         guard launchActivation == .atLaunch else { return }
         Task { applyActivationPolicy(closing: nil) }
     }
