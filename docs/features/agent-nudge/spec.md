@@ -55,7 +55,7 @@ MCP request → findKeyProject (joins owners: time_zone, agent_nudge)
 
 ### Rollback
 
-`wrangler rollback`; the column stays and an older version never reads it. The app's toggle then writes a field the older server rejects (400), which the app shows as a failed save.
+`wrangler rollback`; the column stays and an older version never reads it. An app still running holds the value, and a flip then writes a field the older server rejects (400), shown as a failed save; an app that relaunches reads no field, so the switch is unknown and disabled.
 
 ## Open questions → answers
 

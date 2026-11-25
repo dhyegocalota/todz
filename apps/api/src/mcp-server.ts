@@ -73,7 +73,8 @@ async function nudgeOf({ scope, task }: { scope: McpServerScope; task: Task | nu
   const isSilent = !scope.agentNudge || task === null;
   if (isSilent) return null;
   const dueNow = await dueNowOf(scope);
-  if (dueNow === null || dueNow.count === NOTHING_DUE) return null;
+  const isNothingToSay = dueNow === null || dueNow.count === NOTHING_DUE;
+  if (isNothingToSay) return null;
   return nudgeLine({ ...dueNow, taskNumber: task.number });
 }
 
