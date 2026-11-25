@@ -36,9 +36,9 @@ app launch      → TodzFocusFilter.current → gate.quiet
 
 ### Interfaces
 
-- `TodzKit`: `ProactiveSurface` enum with one case per planned surface that shows itself (`dayClose`, `morningGlance`, `ribbon`), so the gate's tests are concrete; `ProactiveGate` (`@MainActor`, `@Observable`): `isQuiet`, `admit(_:) -> GateDecision` (`.show` or `.held`), `setQuiet(_:) -> [ProactiveSurface]` returning the held surfaces released, in the order they were held.
-- App target: `TodzFocusFilter: SetFocusFilterIntent` with `@Parameter(default: false) var isQuiet`, a title and a display representation from `FocusCopy.swift`; `perform()` hands the value to the app's gate on the main actor. The app reads `current` at launch.
-- Settings: a row "Quiet during Focus" with the detail and an "Open Focus Settings" button opening the Focus pane; copy in `SettingsCopy.swift`.
+- `TodzKit`: `ProactiveSurface` enum with one case per planned surface that shows itself (`dayClose`, `morningGlance`, `ribbon`), so the gate's tests are concrete; `ProactiveGate` (`@MainActor`, `@Observable`): `isQuiet`, `admit(_:) -> GateDecision` (`.show` or `.held`), `setQuiet(_:)`, and the delivery of held surfaces through the gate itself (plan review R1): when quiet ends, the held kinds become `released` (observable, in the order first held), and a surface takes its own with `claimRelease(_:) -> Bool`, true once; the launch read `applyLaunchRead(isQuiet:)` is ignored once a `perform()` has set the gate (R7). `FocusQuietNotice` (`.notQuiet`, `.quietNow`) derives the Settings detail from `isQuiet` (R5).
+- App target: `TodzFocusFilter: SetFocusFilterIntent` in `Todz/FocusFilter/` with `@Parameter(default: false) var isQuiet`; the title, description and parameter title are literals in the intent, as `ToggleTaskIntent` does, and only the display representation reads `FocusCopy.swift` (R4); `perform()` sets the gate, reached through `AppDependencyManager`, registered in `AppDelegate.init` (R3). The app reads `current` at launch.
+- Settings: a row "Quiet during Focus" with the live detail and an "Open Focus Settings" button opening the Focus pane; the Settings scene receives the gate in its environment (R6); copy in `SettingsCopy.swift`.
 
 ### Failure handling
 
@@ -49,6 +49,8 @@ app launch      → TodzFocusFilter.current → gate.quiet
 | two `perform()` calls with the same value | the second changes nothing and releases nothing |
 | the same surface asked twice while quiet | held once; released once |
 | the Focus pane URL cannot open | the button does nothing visible; the detail still says where to go |
+| todz is not running when a Focus with the filter turns on or off | the system launches todz to run `perform()` (the intent lives in the app); todz starts as it does at login, in the menu bar; whether a window opens is checked by hand (Human checklist) (R2) |
+| a `perform()` arrives while the launch read is pending | `perform()` wins; the launch read is ignored (R7) |
 
 ### Rollback
 

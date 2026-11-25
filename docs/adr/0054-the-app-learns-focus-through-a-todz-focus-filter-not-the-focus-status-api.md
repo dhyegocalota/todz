@@ -33,7 +33,7 @@ The proactive surfaces the owner asked for (`day-close`, `morning-glance`, `day-
 
 - No new entitlement, no provisioning profile, no paid membership.
 - Quiet is opt-in twice over: each proactive surface is off by default, and only Focus modes the owner gives the todz filter quiet them.
-- `perform()` may run in an extension process when the app is not running; the app re-reads `current` at launch, so nothing depends on that run.
+- The intent lives in the app, so when todz is not running the system launches it to run `perform()`; todz starts in the menu bar as at login. The app also re-reads `current` at launch, and a `perform()` that arrives first wins over that read.
 
 ## Evidence
 
