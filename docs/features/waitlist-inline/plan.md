@@ -135,6 +135,16 @@ Applied after Steps 1 to 12 were built, as follow-up commits (red then green whe
 | C8 | Stale tester briefing | Rewritten: what changed, hypotheses 2 and 7 |
 | C9 | The no-secret test passed a null challenge | Applied: a row through the Worker with a site key and no secret (a pin) |
 
+## Fix round 2
+
+| # | Finding | Answer |
+|---|---------|--------|
+| D1 | After an offline press the check never returns | Applied: the page resets the widgets again on `online`; an error callback while offline waits for it; after `WAITLIST_CHECK_RETRY_MAX` resets with no token the check-error line shows (936a2c2, 38fa53a) |
+| O1 | Refusals share the green dot of a join | Applied: `join-notice-neutral` (muted dot) for every outcome but `joined`, in the script and in the server notices |
+| O2 | The widget not framed in a glass card | Design.md §1 says the frame has no border or shadow of its own; the row was amended, no style change |
+| E2E gaps | Rows 107, 119, 120, 141 and 152 | Added as pins: the hold label and its three seconds, expiry after a solve, leaving during the hold and coming back, the tool's 403, a bad address |
+| R-1b | The second `checkValidity` in the tool | Dropped: the same address was validated before the wait |
+
 **Steps with no backout:** 15's real join keeps its probe row (deleting data is the owner's call).
 
 ## Z. Prove and ship
