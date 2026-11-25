@@ -7,6 +7,10 @@ enum SettingsCopy {
     static let agentNudgeDetail = "When an agent asks what's next, it hears what's due today in its project."
     static let agentNudgeOffline = "Can't reach todz. You can change this when it's back."
     static let agentNudgeSignedOut = "Sign in to change this."
+    static let focusQuiet = "Quiet during Focus"
+    static let focusQuietDetail = "todz stays quiet in any Focus with the todz filter on."
+    static let focusQuietNow = "Quiet now, until this Focus ends."
+    static let openFocusSettings = "Open Focus Settings"
 
     static func agentNudgeSubtitle(notice: AgentNudgeNotice) -> String {
         switch notice {
@@ -14,6 +18,13 @@ enum SettingsCopy {
         case .signedOut: agentNudgeSignedOut
         case .offline: agentNudgeOffline
         case .notSaved: ErrorCopy.changeNotSaved
+        }
+    }
+
+    static func focusQuietSubtitle(notice: FocusQuietNotice) -> String {
+        switch notice {
+        case .notQuiet: focusQuietDetail
+        case .quietNow: focusQuietNow
         }
     }
 }

@@ -1,3 +1,4 @@
+import AppIntents
 import AppKit
 import TodzKit
 import WidgetKit
@@ -17,11 +18,20 @@ private let cacheFolderName = "Cache"
         pause: { try await Task.sleep(for: $0) }
     )
     let windowState = MainWindowState()
+    let gate: ProactiveGate
     var dayChangeObservation: (any NSObjectProtocol)?
+
+    override init() {
+        let gate = ProactiveGate()
+        AppDependencyManager.shared.add(dependency: gate)
+        self.gate = gate
+        super.init()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         observeWidgetRequests()
         observeDayChanges()
+        Task { await readFocusFilter() }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -39,5 +49,15 @@ private let cacheFolderName = "Cache"
     // NB ADR 0031: the app keeps running in the menu bar when the main window closes; ⌘Q quits.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    private func readFocusFilter() async {
+        let filter: TodzFocusFilter
+        do {
+            filter = try await TodzFocusFilter.current
+        } catch {
+            return
+        }
+        gate.applyLaunchRead(isQuiet: filter.isQuiet)
     }
 }

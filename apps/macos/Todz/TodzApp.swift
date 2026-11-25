@@ -17,6 +17,7 @@ struct TodzApp: App {
     var body: some Scene {
         let model = appDelegate.model
         let windowState = appDelegate.windowState
+        let gate = appDelegate.gate
         Window(MainWindowCopy.windowTitle, id: MainWindowScene.identifier) {
             RootView()
                 .environment(model)
@@ -40,6 +41,7 @@ struct TodzApp: App {
             SettingsView()
                 .frame(width: settingsWidth)
                 .environment(model)
+                .environment(gate)
         }
         .windowResizability(.contentSize)
     }
