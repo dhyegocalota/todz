@@ -25,7 +25,9 @@ async function issueKey(context: SessionContext): Promise<Response> {
   const projectId = await ownedProjectId(context);
   if (projectId === null) return errorResponse(OwnerErrorCode.NotFound);
   const { now } = context;
-  const { id, secret } = await issueProjectKey({ directory: context.env.DIRECTORY, projectId, now });
+  const issued = await issueProjectKey({ directory: context.env.DIRECTORY, projectId, now });
+  if (issued === null) return errorResponse(OwnerErrorCode.LimitReached);
+  const { id, secret } = issued;
   return Response.json({ key: keyJson({ id, hint: keyHintOf(secret), createdAt: now }), secret }, { status: HttpStatus.Created });
 }
 
@@ -33,7 +35,7 @@ async function revokeKey(context: SessionContext): Promise<Response> {
   const projectId = await ownedProjectId(context);
   if (projectId === null) return errorResponse(OwnerErrorCode.NotFound);
   const keyId = routeParam({ context, name: RouteParam.KeyId });
-  const isRevoked = await revokeProjectKey({ directory: context.env.DIRECTORY, keyId, projectId, now: context.now });
+  const isRevoked = await revokeProjectKey({ directory: context.env.DIRECTORY, keyId, projectId });
   if (!isRevoked) return errorResponse(OwnerErrorCode.NotFound);
   return new Response(null, { status: HttpStatus.NoContent });
 }

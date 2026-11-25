@@ -19,7 +19,7 @@ const CATALOG_IDENTIFIER_PATTERN = /^urn:air:[^:]+:.+/;
 const DESCRIPTION_MAX_LENGTH = 100;
 const OPEN_ACCESS = '*';
 const PUBLIC_CACHE_CONTROL = 'public, max-age=3600';
-const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
+const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
 const API_CARD_URL = `${LOCAL_API_ORIGIN}${SERVER_CARD_PATH}`;
 const SITE_CARD_URL = `${LOCAL_SITE_ORIGIN}${DiscoveryPath.ServerCard}`;
 const CARD_URLS = [API_CARD_URL, SITE_CARD_URL];

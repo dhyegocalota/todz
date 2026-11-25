@@ -9,7 +9,7 @@ import { McpToolName } from '../src/mcp-copy';
 import { calendarDateInTimeZone } from '../src/owner-today';
 import { TurnstileAction } from '../src/turnstile';
 import { issueProjectKey } from '../src/project-keys';
-import { enableAgentNudge, seedIssuedKey, seedProject } from './directory-seed';
+import { enableAgentNudge, issuedKeyOf, seedIssuedKey, seedProject } from './directory-seed';
 import {
   PUBLIC_HTTPS_ORIGIN,
   PUBLIC_ORIGIN,
@@ -779,7 +779,7 @@ describe('the owner time zone and the MCP today', () => {
   test('switching between Kiritimati and Pago Pago moves a task due on the Kiritimati date in and out of today', async () => {
     const { token, ownerId } = await signInOwner({ timeZone: KIRITIMATI_TIME_ZONE });
     const projectId = await seedProject({ ownerId });
-    const { secret } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+    const { secret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
     const client = await connectClient({ era: ClientEra.Modern, key: secret });
     const dueDate = calendarDateInTimeZone({ timeZone: KIRITIMATI_TIME_ZONE, now: Date.now() });
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'Due on the Kiritimati date', due_date: dueDate }] } });

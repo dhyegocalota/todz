@@ -14,12 +14,10 @@ export async function revokeProjectKey({
   directory,
   keyId,
   projectId,
-  now,
 }: {
   directory: D1Database;
   keyId: string;
   projectId: string;
-  now: number;
 }): Promise<boolean> {
   const [, revocation] = await directory.batch([
     directory
@@ -27,9 +25,7 @@ export async function revokeProjectKey({
         'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT digest FROM project_keys WHERE id = ? AND project_id = ? AND revoked_at IS NULL)',
       )
       .bind(keyId, projectId),
-    directory
-      .prepare('UPDATE project_keys SET revoked_at = ? WHERE id = ? AND project_id = ? AND revoked_at IS NULL')
-      .bind(now, keyId, projectId),
+    directory.prepare('DELETE FROM project_keys WHERE id = ? AND project_id = ? AND revoked_at IS NULL').bind(keyId, projectId),
   ]);
   if (revocation === undefined) throw new Error('the batch answers one result per statement');
   return revocation.meta.changes > 0;

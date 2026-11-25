@@ -12,6 +12,8 @@ export enum OwnerErrorCode {
   TimeZoneInvalid = 'time_zone_invalid',
   SignInUnavailable = 'sign_in_unavailable',
   SignInRefused = 'sign_in_refused',
+  LimitReached = 'limit_reached',
+  RateLimited = 'rate_limited',
 }
 
 const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
@@ -25,6 +27,8 @@ const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
   [OwnerErrorCode.TimeZoneInvalid]: HttpStatus.Unprocessable,
   [OwnerErrorCode.SignInUnavailable]: HttpStatus.Unavailable,
   [OwnerErrorCode.SignInRefused]: HttpStatus.TooManyRequests,
+  [OwnerErrorCode.LimitReached]: HttpStatus.Conflict,
+  [OwnerErrorCode.RateLimited]: HttpStatus.TooManyRequests,
 };
 
 export function errorResponse(code: OwnerErrorCode): Response {

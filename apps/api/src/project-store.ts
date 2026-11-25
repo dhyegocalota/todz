@@ -27,6 +27,7 @@ import {
 import { ActorKind, LAST_INDEX } from '@todz/types';
 import { DurableObject } from 'cloudflare:workers';
 import type { Env } from './env';
+import { HttpHeader } from './http-header';
 import { HttpStatus } from './http-status';
 import { applyProjectSchema } from './project-schema';
 import { ProjectFailureKind, type ProjectResult, resultOf } from './project-result';
@@ -36,6 +37,8 @@ export const CHANGE_PAGE_SIZE = 100;
 const NO_CHANGE_NUMBER = 0;
 const CHANGED_MESSAGE = 'changed';
 const WEBSOCKET_UPGRADE = 'websocket';
+const NORMAL_CLOSURE_CODE = 1000;
+const SESSION_ENDED_REASON = 'session ended';
 
 export type TaskChanges = { tasks: Task[]; cursor: number; hasMore: boolean };
 
@@ -44,6 +47,14 @@ const SYSTEM_CLOCK: Clock = { now: () => Date.now() };
 function sendChanged(socket: WebSocket): void {
   try {
     socket.send(CHANGED_MESSAGE);
+  } catch {
+    return;
+  }
+}
+
+function closeEndedSession(socket: WebSocket): void {
+  try {
+    socket.close(NORMAL_CLOSURE_CODE, SESSION_ENDED_REASON);
   } catch {
     return;
   }
@@ -101,9 +112,15 @@ export class ProjectStore extends DurableObject<Env> {
   fetch(request: Request): Response {
     const isSocketUpgrade = request.headers.get('Upgrade')?.toLowerCase() === WEBSOCKET_UPGRADE;
     if (!isSocketUpgrade) return new Response(null, { status: HttpStatus.UpgradeRequired, headers: { Upgrade: WEBSOCKET_UPGRADE } });
+    const sessionDigest = request.headers.get(HttpHeader.SessionDigest);
+    if (sessionDigest === null) return new Response(null, { status: HttpStatus.BadRequest });
     const { 0: client, 1: server } = new WebSocketPair();
-    this.ctx.acceptWebSocket(server);
+    this.ctx.acceptWebSocket(server, [sessionDigest]);
     return new Response(null, { status: HttpStatus.SwitchingProtocols, webSocket: client });
+  }
+
+  closeSessionSockets({ sessionDigest }: { sessionDigest: string }): void {
+    this.ctx.getWebSockets(sessionDigest).forEach(closeEndedSession);
   }
 
   webSocketMessage(): void {}
