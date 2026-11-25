@@ -102,7 +102,7 @@ Each red is its own commit before its green; the failure text is the one the red
 - [ ] The prune step — expected: expired stop links deleted, live ones kept.
 - [ ] Every stop page answer — expected: exactly `Content-Security-Policy: default-src 'none'; style-src 'sha256-<hash of the page style>'; img-src data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'` with the hash of the page's style block, `X-Robots-Tag: noindex`, `Cache-Control: no-store`, the shared headers of `withSecurityHeaders`, one `h1`.
 - [ ] Workers log lines during a send and a stop — expected: no `token=` and no token value, except the local console sender's text, which prints the mail by design (ADR 0041).
-- [ ] `wrangler.jsonc` — expected: `DAY_EMAIL_STOP_LIMITER` on namespace `8615`; `/day-email/stop` in `assets.run_worker_first`.
+- [ ] `wrangler.jsonc` — expected: `DAY_EMAIL_STOP_LIMITER` on namespace `8613`; `/day-email/stop` in `assets.run_worker_first`.
 - [ ] The work budget for a day mail tick — expected: within the updated limit in `budget-limits.ts`.
 
 ## Repository shape
