@@ -139,6 +139,10 @@ expect_line "a docs page" "$output" class docs
 classify docs/scenarios/x.md
 expect_line "a scenario" "$output" class tooling
 
+classify docs/self-host.md
+expect_line "the self-host guide" "$output" class product
+expect_line "the self-host guide" "$output" gates "doctor format secrets audit shape unit"
+
 classify docs/adr/0001-x.md
 expect_line "an ADR" "$output" class docs
 
