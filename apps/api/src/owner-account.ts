@@ -38,7 +38,7 @@ async function readOwner({ env, owner }: SessionContext): Promise<Response> {
   return Response.json({ owner: ownerJson(ownerRecord) });
 }
 
-async function updateOwner({ request, env, owner }: SessionContext): Promise<Response> {
+async function updateOwner({ request, env, owner, now }: SessionContext): Promise<Response> {
   const body = await parsedBody({ request, schema: UpdateOwnerBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const timeZone = body.time_zone === undefined ? null : canonicalTimeZone(body.time_zone);
@@ -51,6 +51,7 @@ async function updateOwner({ request, env, owner }: SessionContext): Promise<Res
     agentNudge: absentAsNull(body.agent_nudge),
     dayEmail: absentAsNull(body.day_email),
     dayEmailMinutes: absentAsNull(body.day_email_minutes),
+    now,
   });
   if (ownerRecord === null) throw new Error('a live session names an owner with no row');
   return Response.json({ owner: ownerJson(ownerRecord) });

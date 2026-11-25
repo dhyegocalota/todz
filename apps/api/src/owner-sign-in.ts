@@ -46,12 +46,14 @@ async function retimedOwner({
   directory,
   ownerId,
   timeZone,
+  now,
 }: {
   directory: D1Database;
   ownerId: string;
   timeZone: string;
+  now: number;
 }): Promise<IdentityOwner> {
-  const owner = await storeOwnerChanges({ directory, ownerId, timeZone, agentNudge: null, dayEmail: null, dayEmailMinutes: null });
+  const owner = await storeOwnerChanges({ directory, ownerId, timeZone, agentNudge: null, dayEmail: null, dayEmailMinutes: null, now });
   if (owner === null) throw new Error('an identity names an owner with no row');
   return { owner, isNewOwner: false };
 }
@@ -64,7 +66,7 @@ async function identityOwner({
   now,
 }: OwnerIdentity & { timeZone: string; now: number }): Promise<IdentityOwner> {
   const knownOwnerId = await findIdentityOwner({ directory, provider: kind, subject });
-  if (knownOwnerId !== null) return retimedOwner({ directory, ownerId: knownOwnerId, timeZone });
+  if (knownOwnerId !== null) return retimedOwner({ directory, ownerId: knownOwnerId, timeZone, now });
   const ownerId = crypto.randomUUID();
   try {
     await insertOwnerWithIdentity({ directory, ownerId, provider: kind, subject, timeZone, now });
@@ -81,7 +83,7 @@ async function identityOwner({
   } catch (failure) {
     const rivalOwnerId = await findIdentityOwner({ directory, provider: kind, subject });
     if (rivalOwnerId === null) throw failure;
-    return retimedOwner({ directory, ownerId: rivalOwnerId, timeZone });
+    return retimedOwner({ directory, ownerId: rivalOwnerId, timeZone, now });
   }
 }
 
