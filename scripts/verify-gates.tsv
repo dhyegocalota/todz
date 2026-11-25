@@ -1,6 +1,6 @@
 scripts/verify*	product	all
-scripts/release-*	product	unit	.
-scripts/deploy-worker*	product	unit	.
+scripts/release-*	product	all
+scripts/deploy-worker*	product	all
 package.json	product	all
 pnpm-lock.yaml	product	all
 pnpm-workspace.yaml	product	all
