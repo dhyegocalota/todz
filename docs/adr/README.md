@@ -73,3 +73,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0050](0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md) | The waitlist answers alike for every address, mails once, and is guarded like sign-in | Accepted | 2026-11-25 |
 | [0051](0051-the-admin-signs-in-by-a-mail-link-bound-to-the-browser-that-asked-into-a-cookie-session.md) | The admin signs in by a mail link bound to the browser that asked, into a cookie session | Accepted | 2026-11-25 |
 | [0052](0052-the-waitlist-digest-goes-to-the-admin-address-once-a-day-from-a-cron.md) | The waitlist digest goes to the admin address once a day from a cron | Accepted | 2026-11-25 |
+| [0053](0053-agents-mention-today-s-tasks-in-next-when-the-owner-turns-it-on.md) | Agents mention today's tasks in `next` when the owner turns it on | Accepted | 2026-11-25 |
