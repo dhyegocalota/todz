@@ -83,11 +83,21 @@ public struct OwnerAPI: OwnerService {
         self.transport = transport
     }
 
-    private static func uncachedTransport() -> URLSession {
+    public static let probeTransport = URLSession(configuration: probeConfiguration(deadline: ServerTiming.probeSeconds))
+
+    static func probeConfiguration(deadline: TimeInterval) -> URLSessionConfiguration {
+        uncachedConfiguration()
+    }
+
+    private static func uncachedConfiguration() -> URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        return URLSession(configuration: configuration)
+        return configuration
+    }
+
+    private static func uncachedTransport() -> URLSession {
+        URLSession(configuration: uncachedConfiguration())
     }
 
     public func health() async throws -> ServerHealthAnswer {
