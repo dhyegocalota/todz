@@ -56,7 +56,7 @@ public enum DayTemperatureStep: Sendable, Equatable {
         isContrastIncreased: Bool,
         openCount: Int?
     ) -> Double {
-        let isToneAllowed = isSettingOn && !isQuiet && !isContrastIncreased
+        let isToneAllowed = DayTemperatureTone.isShown(isSettingOn: isSettingOn, isQuiet: isQuiet) && !isContrastIncreased
         guard isToneAllowed, let openCount, openCount > 0 else { return plainOpacity }
         return step.opacity
     }

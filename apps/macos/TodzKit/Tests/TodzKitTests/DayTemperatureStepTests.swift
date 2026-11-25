@@ -99,6 +99,10 @@ extension DayTemperatureStepTests {
         #expect(countOpacity(openCount: 0) == 1.0)
     }
 
+    @Test func aNegativeCountLeavesTheCountPlain() {
+        #expect(countOpacity(openCount: -1) == 1.0)
+    }
+
     @Test func anUnknownCountLeavesTheCountPlain() {
         #expect(countOpacity(openCount: nil) == 1.0)
     }

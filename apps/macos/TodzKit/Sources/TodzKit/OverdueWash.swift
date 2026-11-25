@@ -18,7 +18,7 @@ public enum OverdueWash {
         let isWashed = isShown && !isContrastIncreased && task.state == .open && task.isOverdue
         guard isWashed, let dueDate = task.dueDate else { return noWashOpacity }
         let daysOverdue = day.days(since: dueDate)
-        guard let band = bands.last(where: { daysOverdue >= $0.fromDays }) else { return singleDayOpacity }
+        guard let band = bands.last(where: { daysOverdue >= $0.fromDays }) else { return noWashOpacity }
         return band.opacity
     }
 }
