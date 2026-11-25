@@ -2,7 +2,10 @@ import { DAY_EMAIL_CATCH_UP_MINUTES, FORMATTER_LOCALE, MINUTES_PER_HOUR } from '
 import { calendarDateInTimeZone } from '../owner-today';
 import { canonicalTimeZone } from '../time-zone';
 
-type ClockPartType = 'hour' | 'minute';
+enum ClockPartType {
+  Hour = 'hour',
+  Minute = 'minute',
+}
 
 function clockPart({ parts, type }: { parts: Intl.DateTimeFormatPart[]; type: ClockPartType }): number {
   const part = parts.find((candidate) => candidate.type === type);
@@ -14,7 +17,7 @@ function localMinuteOfDay({ timeZone, now }: { timeZone: string; now: number }):
   const parts = new Intl.DateTimeFormat(FORMATTER_LOCALE, { timeZone, hourCycle: 'h23', hour: '2-digit', minute: '2-digit' }).formatToParts(
     now,
   );
-  return clockPart({ parts, type: 'hour' }) * MINUTES_PER_HOUR + clockPart({ parts, type: 'minute' });
+  return clockPart({ parts, type: ClockPartType.Hour }) * MINUTES_PER_HOUR + clockPart({ parts, type: ClockPartType.Minute });
 }
 
 // NB ADR 0063: due from the chosen local minute until the catch-up minutes pass, on the same local date, in a zone that still resolves.

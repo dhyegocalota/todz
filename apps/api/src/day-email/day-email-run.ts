@@ -149,7 +149,7 @@ export async function runDayEmails({ scheduledTime, env }: DayEmailRun): Promise
     throw new Error(`the day email is missing ${missingPieces.join(', ')}`);
   }
   await pruneDayEmails({ directory: env.DIRECTORY, now: scheduledTime });
-  const candidates = await listDayEmailCandidates({ env });
+  const candidates = await listDayEmailCandidates({ env, now: scheduledTime });
   const dueOwners = candidates.flatMap((candidate) => {
     const day = dueDayOf({ timeZone: candidate.timeZone, minutes: candidate.minutes, now: scheduledTime });
     if (day === null) return [];

@@ -11,7 +11,7 @@ describe('a scheduled owner', () => {
   test('is made only for an owner the candidates query returns', async () => {
     const enabled = await seedDayOwner();
     const disabled = await seedDayOwner({ isEnabled: false });
-    const candidates = await listDayEmailCandidates({ env });
+    const candidates = await listDayEmailCandidates({ env, now: Date.now() });
     const candidateIds = candidates.map((candidate) => candidate.owner.ownerId);
     expect(candidateIds).toContain(enabled.ownerId);
     expect(candidateIds).not.toContain(disabled.ownerId);
@@ -19,7 +19,7 @@ describe('a scheduled owner', () => {
 
   test('carries the stored zone, the chosen minute and the sign-in address', async () => {
     const owner = await seedDayOwner({ timeZone: 'Asia/Kolkata', minutes: 450 });
-    const candidate = (await listDayEmailCandidates({ env })).find((entry) => entry.owner.ownerId === owner.ownerId);
+    const candidate = (await listDayEmailCandidates({ env, now: Date.now() })).find((entry) => entry.owner.ownerId === owner.ownerId);
     expect(candidate).toMatchObject({ timeZone: 'Asia/Kolkata', minutes: 450, address: owner.address });
   });
 
@@ -27,7 +27,7 @@ describe('a scheduled owner', () => {
     const owner = await seedDayOwner({ workspaceName: 'Personal' });
     const other = await seedDayOwner({ workspaceName: 'Other' });
     const home = await seedProjectOf({ workspaceId: owner.workspaceId, name: 'Home' });
-    const candidate = (await listDayEmailCandidates({ env })).find((entry) => entry.owner.ownerId === owner.ownerId);
+    const candidate = (await listDayEmailCandidates({ env, now: Date.now() })).find((entry) => entry.owner.ownerId === owner.ownerId);
     if (candidate === undefined) throw new Error('the owner should be a candidate');
     const workspaces = await listScheduledWorkspaces({ env, owner: candidate.owner });
     expect(workspaces?.map(({ workspace }) => workspace.name)).toEqual(['Personal']);

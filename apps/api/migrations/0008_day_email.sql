@@ -33,3 +33,5 @@ CREATE TABLE day_email_replies (
 ) STRICT;
 
 CREATE INDEX day_email_replies_owner_accepted_at ON day_email_replies (owner_id, accepted_at);
+
+CREATE INDEX owners_day_email ON owners (id) WHERE day_email = 1;

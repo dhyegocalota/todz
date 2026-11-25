@@ -39,7 +39,7 @@ export const COMPANY = {
 } as const;
 export const REPLY_SECRET_LENGTH = 32;
 export const REPLY_ADDRESS_DOMAIN = 'todz.app';
-export const REPLY_ATTRIBUTION_ADDRESS = 'noreply@todz.app';
+export const MAIL_SENDER_ADDRESS = `noreply@${REPLY_ADDRESS_DOMAIN}`;
 export const REPLY_ADDRESS_LOCAL_PART = 'reply';
 export const REPLY_SIZE_MAX_BYTES = 1024 * 1024;
 export const REPLY_RATE_LIMIT_MAX = 5;

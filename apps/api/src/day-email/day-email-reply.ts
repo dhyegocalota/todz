@@ -1,5 +1,5 @@
 import { OWNER_ACTOR } from '@todz/core';
-import { MILLISECONDS_PER_DAY, REPLY_DAILY_MAX, REPLY_SIZE_MAX_BYTES } from '@todz/types';
+import { REPLY_SIZE_MAX_BYTES } from '@todz/types';
 import PostalMime from 'postal-mime';
 import type { Email } from 'postal-mime';
 import { digestCredential } from '../credential-digest';
@@ -8,7 +8,7 @@ import { limitRefusal } from '../limit-refusal';
 import { calendarDateInTimeZone } from '../owner-today';
 import { openReplyInbox, replyOwnerOf } from '../project-routing';
 import { DayEmailEvent, logDayEmailEvent } from './day-email-log';
-import { countRepliesSince, findOwnerEmailIdentities, findReplyAddressOwner, insertReply } from './day-email-store';
+import { ReplyClaim, claimReply, findOwnerEmailIdentities, findReplyAddressOwner } from './day-email-store';
 import { AddressingVerdict, addressingOf } from './reply-addressing';
 import { isAutomaticReply } from './reply-automatic';
 import { AuthenticationVerdict, authenticationOf } from './reply-authentication';
@@ -120,12 +120,6 @@ function admitAddressing({ parsed, recipient }: { parsed: ParsedReply; recipient
   return refused(OUTCOME_OF_ADDRESSING_REFUSAL[addressing.verdict]);
 }
 
-async function admitDailyCap({ env, ownerId, now }: { env: Env; ownerId: string; now: number }): Promise<Admission<null>> {
-  const accepted = await countRepliesSince({ directory: env.DIRECTORY, ownerId, since: now - MILLISECONDS_PER_DAY });
-  if (accepted >= REPLY_DAILY_MAX) return refused(ReplyOutcome.DailyCap);
-  return admitted(null);
-}
-
 function admitTitle(email: Email): Admission<string> {
   const reply = replyTitleOf(email.text);
   if (reply.outcome === TitleOutcome.Titled) return admitted(reply.title);
@@ -150,13 +144,14 @@ async function addReplyTask({
   const inbox = await openReplyInbox({ env, owner: replyOwnerOf(ownerId) });
   if (inbox === null) return { outcome: ReplyOutcome.NoInbox };
   const messageDigest = await digestCredential(messageId);
+  const claim = await claimReply({ directory: env.DIRECTORY, ownerId, messageDigest, now });
+  if (claim === ReplyClaim.DailyMaximum) return { outcome: ReplyOutcome.DailyCap };
   const dueDate = calendarDateInTimeZone({ timeZone, now });
   const result = await inbox.addTasks({
     actor: OWNER_ACTOR,
     drafts: [{ title, notes: null, dueDate, idempotencyKey: `${MAIL_KEY_PREFIX}${messageDigest}` }],
   });
   if (!result.ok) throw new Error(FAILURE_MESSAGE);
-  await insertReply({ directory: env.DIRECTORY, ownerId, messageDigest, now });
   return { outcome: ReplyOutcome.Added };
 }
 
@@ -173,8 +168,6 @@ async function resultOf(reply: Reply): Promise<ReplyResult> {
   if (!sender.isAdmitted) return sender.result;
   const messageId = admitAddressing({ parsed, recipient: message.to });
   if (!messageId.isAdmitted) return messageId.result;
-  const dailyCap = await admitDailyCap({ env, ownerId, now });
-  if (!dailyCap.isAdmitted) return dailyCap.result;
   const title = admitTitle(parsed.email);
   if (!title.isAdmitted) return title.result;
   return addReplyTask({ env, now, ownerId, timeZone: sender.value.timeZone, messageId: messageId.value, title: title.value });

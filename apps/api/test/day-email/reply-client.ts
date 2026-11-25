@@ -4,11 +4,11 @@ import { issueReplyAddress } from '../../src/day-email/day-email-reply-address';
 import type { Env } from '../../src/env';
 import worker from '../../src/index';
 import type { ProjectStore } from '../../src/project-store';
-import { seedEmailIdentity, seedOwner } from '../directory-seed';
+import { enableDayEmail, seedEmailIdentity, seedOwner } from '../directory-seed';
 import { CLOUDFLARE_SETTINGS, type RecordingBinding, freshAddress, recordingLimiter } from '../email-sign-in-client';
 import { workerEnvWith } from '../owner-client';
 import { openTasksFilter, unwrap } from '../task-fixtures';
-import { type SeededDayOwner, seedDayOwner } from './day-email-client';
+import { DAY_EMAIL_MINUTES, type SeededDayOwner, seedDayOwner } from './day-email-client';
 
 export const REPLY_SUBJECT = 'Re: Your day, Wednesday';
 export const REPLY_TITLE = 'Buy milk';
@@ -130,6 +130,7 @@ export async function seedWorkspacelessContext(): Promise<ReplyContext> {
   const ownerId = await seedOwner();
   const address = freshAddress();
   await seedEmailIdentity({ ownerId, email: address });
+  await enableDayEmail({ directory: env.DIRECTORY, ownerId, minutes: DAY_EMAIL_MINUTES });
   const replyAddress = await issueReplyAddress({ directory: env.DIRECTORY, ownerId, now: Date.now() });
   return { owner: { ownerId, address, workspaceId: '', inboxId: '' }, replyAddress };
 }

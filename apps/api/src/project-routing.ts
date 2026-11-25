@@ -189,8 +189,8 @@ function scheduledOwnerOf(ownerId: string): ScheduledOwner {
 }
 
 // NB ADR 0063: only the candidates query makes a scheduled owner, and only that owner's own projects are listed and opened.
-export async function listDayEmailCandidates({ env }: { env: Env }): Promise<DayEmailCandidate[]> {
-  const rows = await findCandidateRows({ directory: env.DIRECTORY });
+export async function listDayEmailCandidates({ env, now }: { env: Env; now: number }): Promise<DayEmailCandidate[]> {
+  const rows = await findCandidateRows({ directory: env.DIRECTORY, now });
   return rows.map((row) => ({
     owner: scheduledOwnerOf(row.owner_id),
     timeZone: row.time_zone,

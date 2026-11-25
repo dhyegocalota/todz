@@ -1,8 +1,9 @@
+import { MAIL_SENDER_ADDRESS } from '@todz/types';
 import type { Env } from './env';
 import { enumValueOf } from './enum-value';
 import { isLocalOrigin } from './local-origin';
 
-const SENDER_ADDRESS: EmailAddress = { name: 'todz', email: 'noreply@todz.app' };
+const SENDER_ADDRESS: EmailAddress = { name: 'todz', email: MAIL_SENDER_ADDRESS };
 export const REPLY_TO_ADDRESS = 'hello@todz.app';
 
 export enum EmailSenderKind {

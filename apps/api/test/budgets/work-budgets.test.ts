@@ -227,7 +227,7 @@ describe('the directory and Durable Object work of a reply to the day email', ()
     await resetDayEmails();
   });
 
-  test('an accepted reply costs one digest read, one identity read, one count, one Inbox lookup, one add and one write', async () => {
+  test('an accepted reply costs one digest read, one identity read, one Inbox lookup, one conditional claim and one add', async () => {
     const context = await seedReplyContext();
     const { countedEnv, counts } = countedWorkEnv();
     await deliverReply({

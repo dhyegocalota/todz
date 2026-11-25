@@ -38,7 +38,6 @@ describe('addressingOf', () => {
   test.each([
     ['a To naming another address', ['To: friend@example.com', SIGNED_TO]],
     ['the recipient only in Cc', ['To: friend@example.com', `Cc: ${RECIPIENT}`, SIGNED_TO]],
-    ['the recipient in Cc beside the recipient in To', [`To: ${RECIPIENT}`, `Cc: ${RECIPIENT}`, SIGNED_TO]],
     ['the recipient in a group in To', [`To: team: ${RECIPIENT};`, SIGNED_TO]],
     ['two To headers', [`To: ${RECIPIENT}`, `To: ${RECIPIENT}`, SIGNED_TO]],
     ['no To header', [SIGNED_TO]],

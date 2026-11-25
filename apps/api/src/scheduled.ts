@@ -3,7 +3,7 @@ import type { Env } from './env';
 import { enumValueOf } from './enum-value';
 import { runWaitlistDigest } from './site/waitlist-digest';
 
-// NB ADR 0052: the digest runs once a day at 11:00 UTC; NB ADR 0063: the day email runs on every quarter hour; wrangler.jsonc's triggers must name each cron.
+// NB ADR 0063: wrangler.jsonc's triggers must name each cron: the digest at 11:00 UTC and the day email every quarter hour.
 export enum ScheduledCron {
   WaitlistDigest = '0 11 * * *',
   DayEmail = '*/15 * * * *',

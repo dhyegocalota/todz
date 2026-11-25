@@ -59,21 +59,40 @@ function endSegment(scan: Scan): void {
   scan.segment = [];
 }
 
+function scannedCommentCharacter(scan: Scan, character: string): Scan {
+  if (scan.isEscaped) {
+    scan.isEscaped = false;
+    return scan;
+  }
+  if (character === ESCAPE) {
+    scan.isEscaped = true;
+    return scan;
+  }
+  if (character === COMMENT_OPEN) {
+    scan.commentDepth += 1;
+    return scan;
+  }
+  if (character === COMMENT_CLOSE) scan.commentDepth -= 1;
+  return scan;
+}
+
+function scannedQuotedCharacter(scan: Scan, character: string): Scan {
+  scan.token += character;
+  if (scan.isEscaped) {
+    scan.isEscaped = false;
+    return scan;
+  }
+  if (character === ESCAPE) {
+    scan.isEscaped = true;
+    return scan;
+  }
+  if (character === QUOTE) scan.isInQuote = false;
+  return scan;
+}
+
 function scannedCharacter(scan: Scan, character: string): Scan {
-  if (scan.commentDepth > 0) {
-    if (scan.isEscaped) scan.isEscaped = false;
-    else if (character === ESCAPE) scan.isEscaped = true;
-    else if (character === COMMENT_OPEN) scan.commentDepth += 1;
-    else if (character === COMMENT_CLOSE) scan.commentDepth -= 1;
-    return scan;
-  }
-  if (scan.isInQuote) {
-    scan.token += character;
-    if (scan.isEscaped) scan.isEscaped = false;
-    else if (character === ESCAPE) scan.isEscaped = true;
-    else if (character === QUOTE) scan.isInQuote = false;
-    return scan;
-  }
+  if (scan.commentDepth > 0) return scannedCommentCharacter(scan, character);
+  if (scan.isInQuote) return scannedQuotedCharacter(scan, character);
   if (character === QUOTE) {
     scan.isInQuote = true;
     scan.token += character;
@@ -132,7 +151,7 @@ function isNoResultsSegment(segment: string[]): boolean {
 
 function resultInfoOf(segment: string[]): ResultInfo | null {
   const [head, ...rest] = segment;
-  if (!head) return null;
+  if (head === undefined) return null;
   const result = propertyOf(head);
   const properties = rest.map(propertyOf).filter(isProperty);
   const isWellFormed = result !== null && properties.length === rest.length;
@@ -142,7 +161,7 @@ function resultInfoOf(segment: string[]): ResultInfo | null {
 
 function serviceOf(segments: string[][]): string | null {
   const [identification] = segments;
-  if (!identification) return null;
+  if (identification === undefined) return null;
   const [service, version] = identification;
   const hasValidVersion = version === undefined || VERSION_PATTERN.test(version);
   const isIdentification = service !== undefined && identification.length <= IDENTIFICATION_TOKEN_MAX && hasValidVersion;
@@ -176,20 +195,22 @@ function valuesOf({ resultInfo, key }: { resultInfo: ResultInfo; key: string }):
 export function authenticationOf(headers: Header[]): Authentication {
   const resultsHeaders = headersNamed({ headers, name: AUTHENTICATION_RESULTS_HEADER });
   const [cloudflareHeader, ...otherCloudflareHeaders] = resultsHeaders.filter(isCloudflareHeader);
-  if (!cloudflareHeader) return { verdict: AuthenticationVerdict.MissingServiceHeader };
+  if (cloudflareHeader === undefined) return { verdict: AuthenticationVerdict.MissingServiceHeader };
   if (otherCloudflareHeaders.length > 0) return { verdict: AuthenticationVerdict.DuplicateServiceHeader };
   if (resultsHeaders[0] !== cloudflareHeader) return { verdict: AuthenticationVerdict.ServiceHeaderNotFirst };
   const resultInfos = resultInfosOf(cloudflareHeader);
   if (resultInfos === null) return { verdict: AuthenticationVerdict.MalformedServiceHeader };
   const [dmarcResult, ...otherDmarcResults] = resultInfos.filter((resultInfo) => resultInfo.method === DMARC_METHOD);
-  if (!dmarcResult || otherDmarcResults.length > 0) return { verdict: AuthenticationVerdict.DmarcNotSingle };
+  if (dmarcResult === undefined || otherDmarcResults.length > 0) return { verdict: AuthenticationVerdict.DmarcNotSingle };
   if (dmarcResult.result !== PASS_RESULT) return { verdict: AuthenticationVerdict.DmarcNotPassed };
   const [domain, ...otherDomains] = valuesOf({ resultInfo: dmarcResult, key: DMARC_DOMAIN_PROPERTY });
-  if (!domain || otherDomains.length > 0) return { verdict: AuthenticationVerdict.DmarcDomainMissing };
-  const isAlignedDkimPass = (resultInfo: ResultInfo): boolean =>
-    resultInfo.method === DKIM_METHOD &&
-    resultInfo.result === PASS_RESULT &&
-    valuesOf({ resultInfo, key: DKIM_DOMAIN_PROPERTY }).includes(domain);
-  if (!resultInfos.some(isAlignedDkimPass)) return { verdict: AuthenticationVerdict.DkimNotAligned };
+  if (domain === undefined || otherDomains.length > 0) return { verdict: AuthenticationVerdict.DmarcDomainMissing };
+  const hasResultsAfterDmarc = resultInfos.indexOf(dmarcResult) !== resultInfos.length - 1;
+  if (hasResultsAfterDmarc) return { verdict: AuthenticationVerdict.ResultsAfterDmarc };
+  const [domainDkimResult, ...otherDomainDkimResults] = resultInfos.filter(
+    (resultInfo) => resultInfo.method === DKIM_METHOD && valuesOf({ resultInfo, key: DKIM_DOMAIN_PROPERTY }).includes(domain),
+  );
+  if (otherDomainDkimResults.length > 0) return { verdict: AuthenticationVerdict.DkimNotSingle };
+  if (domainDkimResult === undefined || domainDkimResult.result !== PASS_RESULT) return { verdict: AuthenticationVerdict.DkimNotAligned };
   return { verdict: AuthenticationVerdict.Passed, domain };
 }
