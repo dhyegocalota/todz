@@ -3,6 +3,7 @@ import Testing
 
 private let openWindowCounts = [1, 2]
 private let everyWindowCount = [0, 1, 2]
+private let everySetting = [true, false]
 
 @Suite struct ActivationPolicyRuleTests {
     @Test func aClosedWindowWithTheSettingOnIsAnAccessory() {
@@ -17,5 +18,10 @@ private let everyWindowCount = [0, 1, 2]
     @Test(arguments: everyWindowCount)
     func theSettingOffIsAlwaysRegular(visibleWindowCount: Int) {
         #expect(ActivationPolicyRule.policy(isSettingOn: false, visibleWindowCount: visibleWindowCount) == .regular)
+    }
+
+    @Test(arguments: everySetting)
+    func aWindowAboutToOpenIsRegularBeforeItShows(isSettingOn: Bool) {
+        #expect(ActivationPolicyRule.policyForAnOpeningWindow(isSettingOn: isSettingOn) == .regular)
     }
 }

@@ -5,4 +5,8 @@ public enum ActivationPolicyRule {
         guard isMenuBarOnly else { return .regular }
         return .accessory
     }
+
+    public static func policyForAnOpeningWindow(isSettingOn: Bool) -> AppActivation {
+        fatalError("ActivationPolicyRule.policyForAnOpeningWindow is not implemented")
+    }
 }
