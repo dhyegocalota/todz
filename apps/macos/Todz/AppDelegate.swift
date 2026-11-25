@@ -72,6 +72,7 @@ private func isFocusFilterQuiet() async -> Bool {
         AppDependencyManager.shared.add(dependency: gate)
         self.gate = gate
         super.init()
+        AppDependencyManager.shared.add(dependency: self.model)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
