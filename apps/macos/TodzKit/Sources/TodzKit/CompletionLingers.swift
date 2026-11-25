@@ -3,6 +3,7 @@ private typealias LingeringTask = (index: Int, task: BoardTask)
 private struct CompletionLinger: Sendable, Equatable {
     let item: SidebarItem
     let index: Int
+    let outcome: LingerOutcome
 }
 
 private func keyOf(_ boardTask: BoardTask) -> TaskKey {
@@ -28,22 +29,22 @@ public struct CompletionLingers: Sendable, Equatable {
     }
 
     public func toggling(task key: TaskKey, in item: SidebarItem, views: TaskViews) -> CompletionLingers {
+        starting(.done, task: key, in: item, views: views)
+    }
+
+    public func starting(_ outcome: LingerOutcome, task key: TaskKey, in item: SidebarItem, views: TaskViews) -> CompletionLingers {
         let ended = ending(task: key)
         guard let openTasks = Self.openTasks(of: item, views: views) else { return ended }
         let shownTasks = placed(into: openTasks, item: item, views: views)
         let index = shownTasks.firstIndex { keyOf($0) == key && $0.task.state == .open }
         guard let index else { return ended }
         var started = lingers
-        started[key] = CompletionLinger(item: item, index: index)
+        started[key] = CompletionLinger(item: item, index: index, outcome: outcome)
         return CompletionLingers(lingers: started)
     }
 
-    public func starting(_ outcome: LingerOutcome, task key: TaskKey, in item: SidebarItem, views: TaskViews) -> CompletionLingers {
-        fatalError("CompletionLingers.starting is not implemented")
-    }
-
     public func outcome(of key: TaskKey) -> LingerOutcome? {
-        fatalError("CompletionLingers.outcome is not implemented")
+        lingers[key]?.outcome
     }
 
     public func ending(task key: TaskKey) -> CompletionLingers {
@@ -80,7 +81,9 @@ public struct CompletionLingers: Sendable, Equatable {
         guard !itemLingers.isEmpty else { return [] }
         let doneTasks = views.done
         return itemLingers.sorted(by: isEarlierLinger).compactMap { key, linger in
-            doneTasks.first { keyOf($0) == key }.map { (index: linger.index, task: $0) }
+            let candidates = views.project(identifier: key.projectIdentifier) + doneTasks
+            let lingering = candidates.first { keyOf($0) == key && $0.task.state == linger.outcome.state }
+            return lingering.map { (index: linger.index, task: $0) }
         }
     }
 
