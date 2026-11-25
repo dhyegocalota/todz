@@ -7,6 +7,7 @@ import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
 import { isLocalSiteHost } from '../local-origin';
+import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import { publicOriginOf } from '../sign-in-links';
 import { TURNSTILE_TOKEN_PATTERN, TurnstileAction, TurnstileVerdict, verifyTurnstileToken } from '../turnstile';
 import { usableSiteKeyOf } from '../turnstile-page';
@@ -21,12 +22,6 @@ import {
 } from './waitlist-limiter';
 import { joinWaitlist, recordConfirmationFailure } from './waitlist-store';
 
-const BODY_LENGTH_MAX = 4096;
-const CONTENT_LENGTH_PATTERN = /^\d+$/;
-const FORM_MEDIA_TYPE = 'application/x-www-form-urlencoded';
-const MEDIA_TYPE_PARAMETER_SEPARATOR = ';';
-const CONTENT_TYPE_HEADER = 'Content-Type';
-const CONTENT_LENGTH_HEADER = 'Content-Length';
 const TOKEN_FIELD = 'cf-turnstile-response';
 
 const JoinFormSchema = z.object({ email: z.string(), [TOKEN_FIELD]: z.string() });
@@ -67,21 +62,8 @@ function waitlistGuardOf({ request, env }: { request: Request; env: Env }): Wait
   return { siteOrigin, secret, sender };
 }
 
-function isFormRequest(request: Request): boolean {
-  const contentType = request.headers.get(CONTENT_TYPE_HEADER);
-  if (contentType === null) return false;
-  const [mediaType] = contentType.split(MEDIA_TYPE_PARAMETER_SEPARATOR);
-  return mediaType?.trim().toLowerCase() === FORM_MEDIA_TYPE;
-}
-
-function isBoundedRequest(request: Request): boolean {
-  const contentLength = request.headers.get(CONTENT_LENGTH_HEADER);
-  if (contentLength === null) return false;
-  return CONTENT_LENGTH_PATTERN.test(contentLength) && Number(contentLength) <= BODY_LENGTH_MAX;
-}
-
 async function joinFormOf(request: Request): Promise<JoinForm | null> {
-  const isReadableForm = isBoundedRequest(request) && isFormRequest(request);
+  const isReadableForm = isBoundedRequest(request) && hasMediaType({ request, mediaType: MediaType.Form });
   if (!isReadableForm) return null;
   const parsed = JoinFormSchema.safeParse(Object.fromEntries(new URLSearchParams(await request.text())));
   if (!parsed.success) return null;

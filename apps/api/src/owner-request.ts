@@ -3,6 +3,7 @@ import type { Env } from './env';
 import type { OwnerRoute, RouteParam } from './owner-routes';
 import { parsedJson } from './parsed-json';
 import type { SessionOwner } from './project-routing';
+import { MediaType, hasMediaType } from './request-body';
 
 export type PublicRoute = OwnerRoute.SignIn | OwnerRoute.ReadSignInMethod | OwnerRoute.RequestSignInLink;
 
@@ -28,16 +29,6 @@ export function routeParam({ context, name }: { context: OwnerContext; name: Rou
   return value;
 }
 
-const JSON_MEDIA_TYPE = 'application/json';
-const MEDIA_TYPE_PARAMETER_SEPARATOR = ';';
-
-function isJsonRequest(request: Request): boolean {
-  const contentType = request.headers.get('Content-Type');
-  if (contentType === null) return false;
-  const [mediaType] = contentType.split(MEDIA_TYPE_PARAMETER_SEPARATOR);
-  return mediaType?.trim().toLowerCase() === JSON_MEDIA_TYPE;
-}
-
 export async function parsedBody<Schema extends z.ZodType>({
   request,
   schema,
@@ -57,6 +48,6 @@ export async function parsedPublicBody<Schema extends z.ZodType>({
   request: Request;
   schema: Schema;
 }): Promise<z.output<Schema> | null> {
-  if (!isJsonRequest(request)) return null;
+  if (!hasMediaType({ request, mediaType: MediaType.Json })) return null;
   return parsedBody({ request, schema });
 }

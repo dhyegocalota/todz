@@ -7,6 +7,7 @@ import { adminSignInMail } from '../emails/admin-sign-in-mail';
 import type { Env } from '../env';
 import { HttpStatus } from '../http-status';
 import { isLocalSiteHost } from '../local-origin';
+import { parsedJson } from '../parsed-json';
 import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import { publicOriginOf } from '../sign-in-links';
 import { TURNSTILE_TOKEN_PATTERN, TurnstileAction, TurnstileVerdict, verifyTurnstileToken } from '../turnstile';
@@ -159,7 +160,7 @@ export async function serveAdminSignInLink({ request, env, executionContext }: S
 async function sessionTokenOf(request: Request): Promise<string | null> {
   const isReadableJson = isBoundedRequest(request) && hasMediaType({ request, mediaType: MediaType.Json });
   if (!isReadableJson) return null;
-  const parsed = SessionBodySchema.safeParse(await request.json().catch(() => null));
+  const parsed = SessionBodySchema.safeParse(parsedJson(await request.text()));
   if (!parsed.success) return null;
   const token = parsed.data[AdminField.Token];
   if (!LINK_TOKEN_PATTERN.test(token)) return null;
