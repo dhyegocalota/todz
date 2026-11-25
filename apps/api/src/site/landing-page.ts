@@ -1,6 +1,6 @@
 import { escapedHtml } from '../escaped-html';
 import { TurnstileAction } from '../turnstile';
-import { TURNSTILE_ORIGIN, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
+import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
 import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
@@ -30,7 +30,6 @@ const WORD_SEPARATOR = ' ';
 const WIDGET_APPEARANCE = 'interaction-only';
 const WIDGET_THEME = 'auto';
 const WIDGET_CLASS = 'cf-turnstile';
-const TOKEN_FIELD = 'cf-turnstile-response';
 const TOKEN_CALLBACK = 'waitlistTokenReady';
 
 type LandingPage = { available: (siteKey: string) => string; unavailable: string };
@@ -48,7 +47,7 @@ const NOTICE_TEXT: Record<Exclude<LandingNotice, LandingNotice.None>, string> = 
 const PAGE_SCRIPT = `{
   const waitingForToken = new Set();
   const hasToken = (form) => {
-    const token = form.querySelector('[name="${TOKEN_FIELD}"]');
+    const token = form.querySelector('[name="${TURNSTILE_RESPONSE_FIELD}"]');
     return token !== null && token.value !== '';
   };
   window.${TOKEN_CALLBACK} = () => waitingForToken.forEach((form) => {
@@ -82,11 +81,17 @@ const PAGE_SCRIPT = `{
   }));
 }`;
 
-const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({ style: SITE_STYLE, script: PAGE_SCRIPT, widgetOrigin: null });
+const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
+  style: SITE_STYLE,
+  script: PAGE_SCRIPT,
+  widgetOrigin: null,
+  connectsToSelf: false,
+});
 const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
   script: PAGE_SCRIPT,
   widgetOrigin: TURNSTILE_ORIGIN,
+  connectsToSelf: false,
 });
 
 function shotImage({ shot, alt, isEager }: { shot: LandingShot; alt: string; isEager: boolean }): string {

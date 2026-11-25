@@ -41,6 +41,8 @@ The owner wants a landing on `https://todz.app`: short, polished, with a waitlis
       - the waitlist list and `export.csv`;
       - a daily digest to `hello@todz.app` from a `0 11 * * *` cron, sent even when nobody joined.
 
+      Amended by [0051](0051-the-admin-signs-in-by-a-mail-link-bound-to-the-browser-that-asked-into-a-cookie-session.md): the cookie is a `__Host-` cookie on path `/`, and the digest ships as its own feature, `landing-digest`.
+
 ## Alternatives considered
 
 | Option | Pros | Cons | Why not |

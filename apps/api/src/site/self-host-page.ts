@@ -5,7 +5,12 @@ import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
 import { CONTENT_ID, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE } from './site-style';
 
-const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({ style: SITE_STYLE, script: null, widgetOrigin: null });
+const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
+  style: SITE_STYLE,
+  script: null,
+  widgetOrigin: null,
+  connectsToSelf: false,
+});
 
 const SELF_HOST_PAGE_HTML = siteDocumentHtml({
   title: LANDING_COPY.selfHost.title,

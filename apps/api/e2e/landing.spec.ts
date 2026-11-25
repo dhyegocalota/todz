@@ -3,6 +3,14 @@ import path from 'node:path';
 import { type ConsoleMessage, type Locator, type Page, expect, test } from '@playwright/test';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { ProjectName } from './project-name';
+import {
+  JAVASCRIPT_CONTENT_TYPE,
+  SLOW_TURNSTILE_STUB,
+  TURNSTILE_DUMMY_TOKEN,
+  TURNSTILE_RESPONSE_FIELD,
+  TURNSTILE_SCRIPT_URL,
+  TURNSTILE_STUB,
+} from './turnstile-stub';
 
 enum SitePath {
   Landing = '/',
@@ -26,29 +34,7 @@ enum Css {
 }
 
 const JOINED_NOTICE = "You're on the list. Check your inbox.";
-const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
-const TURNSTILE_RESPONSE_FIELD = 'cf-turnstile-response';
-const JAVASCRIPT_CONTENT_TYPE = 'text/javascript';
-const SLOW_TOKEN_DELAY_MS = 1_000;
 const SLOW_SCRIPT_DELAY_MS = 1_500;
-const TURNSTILE_SOLVE = `const solve = () => document.querySelectorAll('.cf-turnstile').forEach((widget) => {
-  const token = document.createElement('input');
-  token.type = 'hidden';
-  token.name = '${TURNSTILE_RESPONSE_FIELD}';
-  token.value = '${TURNSTILE_DUMMY_TOKEN}';
-  widget.append(token);
-  const solved = window[widget.dataset.callback];
-  if (typeof solved === 'function') solved(token.value);
-});`;
-const TURNSTILE_STUB = `{
-${TURNSTILE_SOLVE}
-solve();
-}`;
-const SLOW_TURNSTILE_STUB = `{
-${TURNSTILE_SOLVE}
-setTimeout(solve, ${SLOW_TOKEN_DELAY_MS});
-}`;
 const SELF_HOST_TITLE = 'Self-host todz';
 const SELF_HOST_GUIDE_FILE = path.join(import.meta.dirname, '..', '..', '..', 'docs', 'self-host.md');
 const SECOND_LEVEL_HEADING_PREFIX = '## ';

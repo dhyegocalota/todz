@@ -80,7 +80,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 migrations list todz-directory --remote
    ```
 
-   Expected: the first list names `0001_directory.sql` to `0004_sign_in_links.sql` on a first deploy and nothing after; the apply prints each migration as applied; the second list says there is nothing to apply. Migrations only move forward and must keep working with the Worker that is live.
+   Expected: the first list names `0001_directory.sql` to `0006_admin.sql` on a first deploy, and only the migrations that are new since the last run after it (`0006_admin.sql` for the admin's first deploy); the apply prints each migration as applied; the second list says there is nothing to apply. Migrations only move forward and must keep working with the Worker that is live.
    If it fails: a failed migration changes nothing from that file on; read the error, fix the migration in a pull request and start over. An authentication error names D1 Edit. To undo a bad migration, ask the owner; on their word, restore the bookmark of step 5 with `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 time-travel restore todz-directory --bookmark <bookmark>`, because it discards the writes made since. Never restore without that word.
 
 8. **Deploy the Worker.** Deploy alone: no variable override and no environment:
@@ -89,7 +89,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler deploy
    ```
 
-   Expected: the bindings list `env.DIRECTORY`, shown with the nil `preview_database_id` (Wrangler 4.167.0 prints the preview id there; step 9 reads the version's real binding), `env.PROJECT_STORE (ProjectStore)`, `env.EMAIL`, `env.SIGN_IN_LIMITER (10 requests/60s)`, `env.SIGN_IN_ADDRESS_LIMITER (3 requests/60s)`, `env.SIGN_IN_GLOBAL_LIMITER (100 requests/60s)`, `env.WAITLIST_LIMITER (10 requests/60s)`, `env.WAITLIST_ADDRESS_LIMITER (3 requests/60s)` and `env.WAITLIST_GLOBAL_LIMITER (60 requests/60s)` (rate limit namespaces `8601` to `8606`), the four variables `SIGN_IN_PROVIDER ("email")`, `EMAIL_SENDER ("cloudflare")`, `PUBLIC_ORIGIN ("https://api.todz.app")` and `SITE_ORIGIN ("https://todz.app")`, and `TURNSTILE_SITE_KEY` once a pull request has put the widget's site key in `wrangler.jsonc`; the output names `api.todz.app (custom domain)`, `todz.app (custom domain)` and `www.todz.app (custom domain)`, and a Current Version ID, which goes in the run log. Wrangler creates the DNS record and the certificate for each custom domain.
+   Expected: the bindings list `env.DIRECTORY`, shown with the nil `preview_database_id` (Wrangler 4.167.0 prints the preview id there; step 9 reads the version's real binding), `env.PROJECT_STORE (ProjectStore)`, `env.EMAIL`, `env.SIGN_IN_LIMITER (10 requests/60s)`, `env.SIGN_IN_ADDRESS_LIMITER (3 requests/60s)`, `env.SIGN_IN_GLOBAL_LIMITER (100 requests/60s)`, `env.WAITLIST_LIMITER (10 requests/60s)`, `env.WAITLIST_ADDRESS_LIMITER (3 requests/60s)`, `env.WAITLIST_GLOBAL_LIMITER (60 requests/60s)`, `env.ADMIN_LIMITER (10 requests/60s)`, `env.ADMIN_ADDRESS_LIMITER (3 requests/60s)` and `env.ADMIN_GLOBAL_LIMITER (30 requests/60s)` (rate limit namespaces `8601` to `8609`), the four variables `SIGN_IN_PROVIDER ("email")`, `EMAIL_SENDER ("cloudflare")`, `PUBLIC_ORIGIN ("https://api.todz.app")` and `SITE_ORIGIN ("https://todz.app")`, and `TURNSTILE_SITE_KEY` once a pull request has put the widget's site key in `wrangler.jsonc`; the output names `api.todz.app (custom domain)`, `todz.app (custom domain)` and `www.todz.app (custom domain)`, and a Current Version ID, which goes in the run log. Wrangler creates the DNS record and the certificate for each custom domain.
    If it fails: an authentication error names Workers Scripts Edit; an error about the custom domain names Workers Routes Edit and DNS Edit on the zone. An error that names a plan, or refuses a Durable Object, the rate limit binding or the email binding, means Workers Paid lapsed (it was active on 2026-11-24); tell the owner. A deploy that fails changes nothing in production; the first deploy's backout and a later deploy's rollback are at the end of this runbook.
 
 9. **Confirm the Worker and its custom domains.** Read the account's domain entry for each host, then the deployments:
@@ -113,6 +113,14 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     ```
 
     Expected: the first asks for the value and says it uploaded the secret `TURNSTILE_SECRET_KEY` for `todz-api`; the list names `TURNSTILE_SECRET_KEY` and prints no value. Until both the secret and the site key exist, the two sign-in posts answer 503 `sign_in_unavailable` and both pages answer 503, which is the safe state; steps 13 to 15 say what each state answers.
+    The admin's address is a secret too, though not a sensitive one: it keeps a fork that never sets it closed ([ADR 0051](../adr/0051-the-admin-signs-in-by-a-mail-link-bound-to-the-browser-that-asked-into-a-cookie-session.md)). Put it once, without waiting for the widget, by typing `hello@todz.app` at the prompt, then list the secrets again:
+
+    ```bash
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret list
+    ```
+
+    Expected: the first says it uploaded the secret `ADMIN_EMAIL` for `todz-api`; the list names `ADMIN_EMAIL`. Until it exists `https://todz.app/admin` answers 503, "The admin is closed right now."; after it, the sign-in card, whose post answers 503 until the Turnstile secret and site key exist too.
     If it fails: an authentication error on the secret names Workers Scripts Edit. A dashboard that refuses `todz.app` as a hostname means the zone is not on this account; tell the owner. If the owner grants the token Account, Turnstile, Edit instead, the widget can be made through the API only once `scripts/todz-cloudflare.sh` allows the widget path; until then it stays a dashboard step. A secret that was pasted anywhere else, a chat, a file or a log, is rotated: the owner rotates it in the widget's settings and puts it again.
 
 11. **Onboard `todz.app` for Email Sending.** Enable sending for the zone, read the state and the records, and list the zone again to compare it with the snapshot of step 3:
@@ -152,11 +160,13 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     curl -sS -D - -o /dev/null "https://www.todz.app/self-host?from=runbook"
     curl -sS -D - -o /dev/null https://todz.app/owner/sign-in-method
     curl -sS -D - -o /dev/null https://api.todz.app/
+    curl -sS -D - -o /dev/null https://todz.app/admin
+    curl -sS -D - -o /dev/null https://api.todz.app/admin
     scripts/todz-cloudflare.sh api GET /accounts/e2035d8e0b7173d520ccf643f6f4661c/workers/subdomain
     curl -sS -D - -o /dev/null https://todz-api.<subdomain>.workers.dev/owner/sign-in-method
     ```
 
-    Expected: `{"method":"link"}`, then for each page `HTTP/2 503` with `content-type: text/html; charset=utf-8` until the site key is in `wrangler.jsonc` and `HTTP/2 200` after, then `HTTP/2 401`, then `HTTP/2 200` for the landing and for the self-host guide, each with `strict-transport-security: max-age=31536000` and a `content-security-policy` that starts with `default-src 'none'`, then `HTTP/2 301` with `location: https://todz.app/self-host?from=runbook`, then `HTTP/2 404` for the owner route on the site host and for the landing on the API host, then the account's `workers.dev` subdomain, then for the last no answer from the Worker: a connection error, 404 or a Cloudflare error page, never `{"method":"link"}`. The first proves the production variables are the ones in `wrangler.jsonc`; any other body means a `--var` or a dashboard variable overrides them, so stop and read the Worker's settings. When all eleven pass, delete the export of step 6:
+    Expected: `{"method":"link"}`, then for each page `HTTP/2 503` with `content-type: text/html; charset=utf-8` until the site key is in `wrangler.jsonc` and `HTTP/2 200` after, then `HTTP/2 401`, then `HTTP/2 200` for the landing and for the self-host guide, each with `strict-transport-security: max-age=31536000` and a `content-security-policy` that starts with `default-src 'none'`, then `HTTP/2 301` with `location: https://todz.app/self-host?from=runbook`, then `HTTP/2 404` for the owner route on the site host and for the landing on the API host, then for `todz.app/admin` `HTTP/2 200` with `cache-control: no-store` and `x-robots-tag: noindex` (the admin's sign-in card), then `HTTP/2 404` for `api.todz.app/admin`, then the account's `workers.dev` subdomain, then for the last no answer from the Worker: a connection error, 404 or a Cloudflare error page, never `{"method":"link"}`. The first proves the production variables are the ones in `wrangler.jsonc`; any other body means a `--var` or a dashboard variable overrides them, so stop and read the Worker's settings. When all thirteen pass, delete the export of step 6:
 
     ```bash
     rm ~/.todz-deploy/backups/before-<commit>.sql
@@ -183,6 +193,17 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
 
     Expected: both counts are `0`; the post prints `503` (the waitlist opens soon) until both the site key is in `wrangler.jsonc` and step 10's secret exists, and `429` (try again) after both. Only a count of the probe address is read, never a visitor's address, so a real join during the check changes nothing.
     If it fails: a `200` or a count of `1` means the waitlist kept an address without a solved challenge; detach `todz.app` as the Rollback section says and tell the owner.
+
+    Then check that the admin stores no link without a solved challenge. Count the unspent admin links, post an unsolved request from the site's origin, and count again:
+
+    ```bash
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "SELECT COUNT(*) AS admin_links FROM admin_sign_in_links WHERE consumed_at IS NULL"
+    curl -sS -o /dev/null -w "%{http_code}\n" -X POST -H "Origin: https://todz.app" -H "Content-Type: application/x-www-form-urlencoded" --data-binary @scripts/deploy-bodies/junk-turnstile-admin.txt https://todz.app/admin/sign-in-links
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "SELECT COUNT(*) AS admin_links FROM admin_sign_in_links WHERE consumed_at IS NULL"
+    ```
+
+    Expected: the status code is the check; the two counts only show that nothing was written, which holds for any probe address that is not `ADMIN_EMAIL`. They are equal, and the post prints `503` (the admin is closed) until the site key is in `wrangler.jsonc` and both of step 10's secrets exist, and `429` (try again) after all three. No mail leaves.
+    If it fails: a `403` means the `Origin` header was lost; run the command as written. A `200` means siteverify accepted an unsolved token or the guard was skipped; close the admin as the Rollback section says, and tell the owner.
 
 15. **Check the per-client limit.** Post wrong session tokens from this machine, fourteen in one command, and keep only the statuses and `retry-after` values; each answer's body ends without a newline, so the next status starts mid-line and a `^HTTP` match would miss it. The body carries a malformed link verifier, which the Worker refuses before it asks siteverify, and an unsolved Turnstile token:
 
@@ -211,6 +232,8 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
 - Never roll back to a version from before `sign-in-guard`: it reopens the unguarded sign-in routes. To close sign-in on the current version instead, delete the secret with `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY`; both posts then answer 503 `sign_in_unavailable` until it is put again.
 - The site alone: detach `todz.app` and `www.todz.app` the same way, each chosen by `?hostname=<host>&service=todz-api` with exactly one entry back, and delete each by its `id`; `api.todz.app` keeps answering. The site sends `Strict-Transport-Security: max-age=31536000` without `includeSubDomains` or `preload`, so browsers that saw it keep using HTTPS on `todz.app` for a year; to lift it, a version must first serve `max-age=0` to those browsers.
 - The `waitlist` table (migration 0005) stays through any rollback: `wrangler rollback` changes the code, never the rows, and an older version simply never reads it.
+- The `admin_sign_in_links` and `admin_sessions` tables and the `waitlist_joined_at` index (migration 0006) stay through any rollback; an older version never reads them, so no admin session works on it, but the rows live up to twelve hours and work again if a version with the admin comes back in that time. To close the admin on the current version, delete the secret with `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret delete ADMIN_EMAIL`: the panel then answers 503, the link request 503, the export and sign-out redirect to the panel, and no session counts while the secret is missing; putting it back revives the unexpired ones. To end every session for good, and only on the owner's word, run `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "DELETE FROM admin_sessions"`.
+- When the admin's own request mails nothing because someone filled its five links per fifteen minutes, and only on the owner's word, clear the unspent links with `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "DELETE FROM admin_sign_in_links WHERE consumed_at IS NULL"`; spent links and sessions are untouched.
 - Durable Object classes are never deleted: a `migrations` entry in `wrangler.jsonc` never removes `ProjectStore`.
 
 ## Rotate the token

@@ -1,0 +1,67 @@
+import { ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES } from './admin-paths';
+
+export const ADMIN_COPY = {
+  meta: {
+    description: 'The todz waitlist, for the owner.',
+    signInTitle: 'Sign in · todz admin',
+    inboxTitle: 'Check your inbox · todz admin',
+    refusedTitle: 'Request refused · todz admin',
+    closedTitle: 'Admin closed · todz admin',
+    linkTitle: 'Signing in · todz admin',
+    panelTitle: 'Waitlist · todz admin',
+  },
+  shell: {
+    navLabel: 'Admin',
+  },
+  signIn: {
+    title: 'Sign in to the admin',
+    lead: 'Enter your address to get a sign-in link.',
+    submit: 'Email me a link',
+    submitting: 'Sending…',
+  },
+  inbox: {
+    title: 'Check your inbox',
+    body: `If that address can sign in, a link is on its way. It works once, for ${ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES} minutes, in this browser.`,
+    back: 'Back to sign in',
+  },
+  refusal: {
+    tooMany: "Couldn't send a link right now. Try again in a minute.",
+    closed: 'The admin is closed right now.',
+    crossOriginTitle: 'Request refused',
+    crossOriginBody: "That request didn't come from this site.",
+  },
+  link: {
+    working: 'Signing you in…',
+    failedTitle: "This link can't be used.",
+    failedBody: 'Ask for a new one from this browser.',
+    failedAction: 'Get a new link',
+    noScriptTitle: 'Finish signing in',
+    noScript: 'This page needs JavaScript to finish signing you in. Turn it on, then open the link again.',
+  },
+  panel: {
+    title: 'Waitlist',
+    signOut: 'Sign out',
+    download: 'Download CSV',
+    summaryHeading: 'Summary',
+    tableHeading: 'Addresses',
+  },
+  stats: {
+    total: 'On the list',
+    recent: 'Last 24 hours',
+    failed: 'Failed confirmations',
+  },
+  table: {
+    caption: 'Waitlist, newest first',
+    address: 'Address',
+    joined: 'Joined',
+    confirmation: 'Confirmation',
+    sent: 'Sent',
+    failed: 'Failed',
+    timeZone: 'UTC',
+    capNote: ({ shown, total }: { shown: string; total: string }) => `Showing the newest ${shown} of ${total}. The CSV has all.`,
+  },
+  empty: {
+    title: 'No one on the list yet.',
+    body: 'Addresses show up here as soon as someone joins.',
+  },
+};
