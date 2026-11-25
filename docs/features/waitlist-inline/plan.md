@@ -120,6 +120,21 @@ Applied after Steps 1 to 12 were built, as follow-up commits (red then green whe
 | R21 | Production CSP report | The lead's (Step 15) |
 | R22 | Rotation note | In the ADR consequences; the runbook line is the lead's (Step 13) |
 
+## Fix round 1
+
+| # | Finding | Answer |
+|---|---------|--------|
+| S1 | The silent paths skip the global and per-address limits | Applied: the limits run after siteverify and before the honeypot and the stamp age; ADR 0067 §5 amended (674da48, d67d718) |
+| S2 | The client hold counts from navigation start | Applied: from `responseStart` plus the hold; an E2E with a delayed first byte (674da48, d67d718) |
+| C1 | `join_waitlist` submits whatever the field holds after the wait | Applied: the field is set again and re-validated after the wait; an overlapping-calls E2E (d67d718) |
+| C3 | `q=0.0` selects JSON | Applied: the quality is parsed |
+| C4 | Local `Accept`, `Vary` and a literal `Retry-After` | Applied: `HttpHeader.Accept`, `HttpHeader.Vary`, `HttpHeader.RetryAfter` |
+| C5 | Literal stamp key | Applied: `[STAMP_FIELD_NAME]` |
+| C6 | Loose answer strings | Applied: the `PageAnswer` enum and `satisfies Record<JoinOutcome \| PageAnswer, string>` |
+| C7 | Status `Approved` while building | Applied: `Building` in the spec and the index |
+| C8 | Stale tester briefing | Rewritten: what changed, hypotheses 2 and 7 |
+| C9 | The no-secret test passed a null challenge | Applied: a row through the Worker with a site key and no secret (a pin) |
+
 **Steps with no backout:** 15's real join keeps its probe row (deleting data is the owner's call).
 
 ## Z. Prove and ship
