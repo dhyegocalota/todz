@@ -13,6 +13,7 @@ struct TodzApp: App {
     init() {
         MenuBarBadge.registerDefault(in: .standard)
         DayClosePreference.registerDefaults(in: .standard)
+        MorningGlancePreference.registerDefaults(in: .standard)
     }
 
     var body: some Scene {
@@ -21,6 +22,7 @@ struct TodzApp: App {
         let gate = appDelegate.gate
         let panel = appDelegate.panel
         let dayClose = appDelegate.dayClose
+        let morningGlance = appDelegate.morningGlance
         Window(MainWindowCopy.windowTitle, id: MainWindowScene.identifier) {
             RootView()
                 .environment(model)
@@ -36,6 +38,7 @@ struct TodzApp: App {
                 .environment(windowState)
                 .environment(panel)
                 .environment(dayClose)
+                .environment(morningGlance)
         } label: {
             MenuBarLabel()
                 .environment(model)

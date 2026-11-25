@@ -14,6 +14,8 @@ enum SettingsCopy {
     static let closeTheDay = "Close the day"
     static let closeTheDayDetail = "At this time each day, todz opens on what's left of Today."
     static let closeTheDayTime = "Time to close the day"
+    static let morningGlance = "Morning glance"
+    static let morningGlanceDetail = "On the first wake or unlock of each day, todz shows Today for a few seconds."
     static let server = "Server"
     static let serverDetail = "Where your tasks are kept. Switching signs you out and erases this Mac's copy."
     static let serverAddressLabel = "Server address"

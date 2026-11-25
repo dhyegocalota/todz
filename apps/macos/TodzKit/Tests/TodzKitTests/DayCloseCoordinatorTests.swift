@@ -51,11 +51,15 @@ private let minutesOutsideADay = [-2880, 1440]
     let popover = FakePopover()
     let screen = FakeScreen()
     let defaults: UserDefaults
+    let preference: DayClosePreference
     let timeZone: TimeZone
     let coordinator: DayCloseCoordinator
 
     init(openCount: @escaping () -> Int?) throws {
-        defaults = try emptyDefaults()
+        let domain = try EmptyDomain()
+        defaults = domain.defaults
+        let preference = DayClosePreference(defaults: defaults, domainName: domain.name)
+        self.preference = preference
         DayClosePreference.registerDefaults(in: defaults)
         defaults.set(true, forKey: DayClosePreference.isOnStorageKey)
         timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
@@ -64,7 +68,7 @@ private let minutesOutsideADay = [-2880, 1440]
         let screen = screen
         coordinator = DayCloseCoordinator(
             gate: gate,
-            defaults: defaults,
+            preference: preference,
             timeZone: timeZone,
             now: { clock.now },
             openCount: openCount,
@@ -88,7 +92,7 @@ private let minutesOutsideADay = [-2880, 1440]
     }
 
     var lastClosedDay: CalendarDate? {
-        DayClosePreference.lastClosedDay(in: defaults)
+        preference.lastClosedDay
     }
 }
 
@@ -99,6 +103,21 @@ private let minutesOutsideADay = [-2880, 1440]
         harness.at(today, hour: 18)
         #expect(await harness.coordinator.check() == .off)
         #expect(harness.popover.openings == 0)
+    }
+
+    @Test func aDayCloseIsDueAndIdleOnlyWhenOnDueAndNoClickIsInFlight() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.popover.showsWhenClicked = false
+        harness.defaults.set(false, forKey: DayClosePreference.isOnStorageKey)
+        harness.at(today, hour: 18)
+        #expect(!harness.coordinator.isDueAndIdle)
+        harness.defaults.set(true, forKey: DayClosePreference.isOnStorageKey)
+        #expect(harness.coordinator.isDueAndIdle)
+        await harness.coordinator.check()
+        harness.clock.now = harness.clock.now.addingTimeInterval(2)
+        #expect(!harness.coordinator.isDueAndIdle)
+        harness.coordinator.popoverShown()
+        #expect(!harness.coordinator.isDueAndIdle)
     }
 
     @Test func beforeTheTimeNothingOpens() async throws {

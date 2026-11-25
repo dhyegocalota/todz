@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
     @AppStorage(DayClosePreference.isOnStorageKey) private var isDayCloseOn = DayClosePreference.isOnByDefault
     @AppStorage(DayClosePreference.timeStorageKey) private var dayCloseMinutes = DayClosePreference.minutesAfterMidnightByDefault
+    @AppStorage(MorningGlancePreference.isOnStorageKey) private var isMorningGlanceOn = MorningGlancePreference.isOnByDefault
 
     var body: some View {
         Form {
@@ -48,6 +49,12 @@ struct SettingsView: View {
                 Text(SettingsCopy.closeTheDayDetail)
                     .lineLimit(subtitleLines, reservesSpace: true)
             }
+            Toggle(isOn: $isMorningGlanceOn) {
+                Text(SettingsCopy.morningGlance)
+                Text(SettingsCopy.morningGlanceDetail)
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            .toggleStyle(.switch)
             Section {
                 ServerAddressForm(layout: .row, exit: {})
             }

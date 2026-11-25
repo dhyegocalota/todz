@@ -19,12 +19,24 @@ struct TaskListView: View {
                 AddTaskField(destination: destination, selection: .selectWhenSaved, focus: focus, focusedValue: .addField) { _ in
                     focus.wrappedValue = .list
                 }
+                .disabled(!windowState.addFieldArming.isArmed)
+                .overlay {
+                    if !windowState.addFieldArming.isArmed {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture { arm() }
+                    }
+                }
                 .id(destination)
             }
             TaskListBody(state: state, item: item, focus: focus)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onChange(of: windowState.addFieldArming.isArmed) { _, isArmed in
+            guard isArmed else { return }
+            Task { focus.wrappedValue = .addField }
+        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SyncStatusItem(announcesChanges: true)
@@ -32,5 +44,9 @@ struct TaskListView: View {
                 InspectorToggle()
             }
         }
+    }
+
+    private func arm() {
+        windowState.addFieldArming.apply(.addFieldClicked)
     }
 }
