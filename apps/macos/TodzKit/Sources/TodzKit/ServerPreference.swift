@@ -1,5 +1,7 @@
 import Foundation
 
+private let storedKey = "serverURL"
+
 public struct ServerPreference {
     private let defaults: UserDefaults
 
@@ -8,18 +10,19 @@ public struct ServerPreference {
     }
 
     public var hasUnreadableValue: Bool {
-        preconditionFailure("ServerPreference.hasUnreadableValue is not implemented")
+        defaults.object(forKey: storedKey) != nil && storedAddress() == nil
     }
 
     public func storedAddress() -> ServerAddress? {
-        preconditionFailure("ServerPreference.storedAddress is not implemented")
+        guard let text = defaults.string(forKey: storedKey) else { return nil }
+        return try? ServerAddress.checked(text: text).get()
     }
 
     public func store(_ address: ServerAddress) {
-        preconditionFailure("ServerPreference.store is not implemented")
+        defaults.set(address.origin, forKey: storedKey)
     }
 
     public func clear() {
-        preconditionFailure("ServerPreference.clear is not implemented")
+        defaults.removeObject(forKey: storedKey)
     }
 }
