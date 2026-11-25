@@ -225,6 +225,7 @@ ${CROP_RULES}
 .site-footer-inner{display:flex;flex-direction:column;align-items:center;gap:var(--space-2);padding-block:var(--space-5);font-size:var(--text-small);color:var(--color-text-muted)}
 .footer-link{display:inline-flex;align-items:center;min-height:var(--size-tap);color:var(--color-text-muted);text-decoration:none}
 .footer-link:hover{color:var(--color-text)}
+.footer-credit-link{color:var(--color-text);text-decoration:underline;text-underline-offset:0.2em}
 .guide{padding-top:var(--space-7)}
 .prose{width:min(100% - 2 * var(--space-side), var(--measure-prose));margin-inline:auto;font-size:1.0625rem;line-height:1.65}
 .prose h1{margin-top:var(--space-5);font-size:var(--text-section);line-height:1.1;letter-spacing:-0.025em}
@@ -256,7 +257,8 @@ ${CROP_RULES}
 .benefit-card{padding:var(--space-5)}
 .benefit-well{height:160px}
 .site-footer-inner{flex-direction:row;justify-content:space-between;min-height:72px;padding-block:0}
-.footer-copyright{margin-right:auto;margin-left:var(--space-4)}}
+.footer-copyright{margin-right:auto;margin-left:var(--space-4)}
+.footer-credit{margin-right:var(--space-4)}}
 @media (min-width: ${WIDE_BREAKPOINT}){
 .benefit-list{grid-template-columns:repeat(3, 1fr);gap:var(--space-5)}
 .how-it-works{grid-template-columns:5fr 7fr;gap:var(--space-7)}}

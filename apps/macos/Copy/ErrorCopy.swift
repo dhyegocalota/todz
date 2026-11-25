@@ -24,6 +24,28 @@ enum ErrorCopy {
     static let waitingChangesLost = "Changes waiting on this Mac couldn't be read and were lost."
     static let signOutFailed = "todz couldn't erase this Mac's copy of your tasks, so you're still signed in. Try again."
 
+    static let serverAddressInvalid = "Enter an address like https://todz.example.com."
+    static let serverSchemeMissing = "Start the address with https://."
+    static let serverInsecureRemoteHost = "Use https://. Plain http:// works only for localhost."
+    static let serverHostMissing = "Add the server's name after https://."
+    static let serverAddressHasPath = "The address has no path. Enter the server's root address."
+    static let serverAddressHasQuery = "Remove the part from ? on."
+    static let serverAddressHasFragment = "Remove the part from # on."
+    static let serverAddressHasCredentials = "Remove the name and password before @."
+    static let notTodzServer = "No todz server answered at that address."
+
+    static func serverNamedOther(origin: String) -> String {
+        "That server answers as \(origin). Enter that address instead."
+    }
+
+    static func serverSwitchFailed(server: String) -> String {
+        "This Mac's copy could not be erased, so todz stayed on \(server)."
+    }
+
+    static func serverSwitchBusy(server: String) -> String {
+        "Sign-in was still in progress, so todz stayed on \(server)."
+    }
+
     static func changesNotSaved(count: Int) -> String {
         InflectedCopy.text("^[\(count) change](inflect: true) weren't saved.")
     }

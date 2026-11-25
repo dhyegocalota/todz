@@ -1,7 +1,7 @@
 import SwiftUI
 import TodzKit
 
-private let subtitleLines = 2
+let subtitleLines = 2
 private let focusSettingsAddress = "x-apple.systempreferences:com.apple.Focus-Settings.extension"
 
 struct SettingsView: View {
@@ -47,6 +47,9 @@ struct SettingsView: View {
                 Text(SettingsCopy.closeTheDay)
                 Text(SettingsCopy.closeTheDayDetail)
                     .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            Section {
+                ServerAddressForm(layout: .row, exit: {})
             }
         }
         .formStyle(.grouped)

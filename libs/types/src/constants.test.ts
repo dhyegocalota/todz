@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import {
   ABSENT_INDEX,
+  COMPANY,
   FORMATTER_LOCALE,
+  HEALTH_SERVICE_NAME,
   HOURS_PER_DAY,
   LAST_INDEX,
   LIST_LIMIT_DEFAULT,
@@ -49,6 +51,22 @@ describe('time constants', () => {
     expect(MILLISECONDS_PER_MINUTE % MILLISECONDS_PER_SECOND).toBe(0);
     expect(MILLISECONDS_PER_HOUR % MILLISECONDS_PER_MINUTE).toBe(0);
     expect(MILLISECONDS_PER_DAY % MILLISECONDS_PER_HOUR).toBe(0);
+  });
+});
+
+describe('company constants', () => {
+  test('the company is Logic Bit with its legal name and website, and nothing else', () => {
+    expect(COMPANY).toEqual({
+      tradeName: 'Logic Bit',
+      legalName: 'Logic Bit AI Software Boutique Ltda',
+      website: 'https://logicbit.com.br',
+    });
+  });
+});
+
+describe('health constants', () => {
+  test('a todz server names itself todz, the name the app checks (pin)', () => {
+    expect(HEALTH_SERVICE_NAME).toBe('todz');
   });
 });
 

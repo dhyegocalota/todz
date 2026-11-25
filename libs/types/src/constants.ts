@@ -9,6 +9,7 @@ export const MILLISECONDS_PER_MINUTE = MILLISECONDS_PER_SECOND * SECONDS_PER_MIN
 export const MILLISECONDS_PER_HOUR = MILLISECONDS_PER_MINUTE * MINUTES_PER_HOUR;
 export const MILLISECONDS_PER_DAY = MILLISECONDS_PER_HOUR * HOURS_PER_DAY;
 export const PROJECT_KEY_PREFIX = 'todz_';
+export const HEALTH_SERVICE_NAME = 'todz';
 export const LIST_LIMIT_DEFAULT = 20;
 export const SIGN_IN_RATE_LIMIT_MAX = 10;
 export const SIGN_IN_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;
@@ -22,3 +23,8 @@ export const ADMIN_RATE_LIMIT_MAX = 10;
 export const ADMIN_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;
 export const ADMIN_ADDRESS_RATE_LIMIT_MAX = 3;
 export const ADMIN_GLOBAL_RATE_LIMIT_MAX = 30;
+export const COMPANY = {
+  tradeName: 'Logic Bit',
+  legalName: 'Logic Bit AI Software Boutique Ltda',
+  website: 'https://logicbit.com.br',
+} as const;

@@ -4,6 +4,7 @@ import TodzKit
 private let noIdentity = ""
 
 struct CredentialSlot: View {
+    let isServerFormOpen: Bool
     @Environment(AppModel.self) private var model
     @Environment(\.controlActiveState) private var controlActiveState
     @State private var identity = noIdentity
@@ -36,14 +37,19 @@ struct CredentialSlot: View {
         }
         .task {
             await Task.yield()
-            isIdentityFocused = true
+            focusIdentity()
             guard let lastIdentity = model.lastIdentity else { return }
             identity = lastIdentity
         }
         .onChange(of: controlActiveState) {
             guard controlActiveState == .key else { return }
-            isIdentityFocused = true
+            focusIdentity()
         }
+    }
+
+    private func focusIdentity() {
+        guard !isServerFormOpen else { return }
+        isIdentityFocused = true
     }
 
     private var missingIdentityReason: String? {
@@ -55,7 +61,7 @@ struct CredentialSlot: View {
         guard missingIdentityReason == nil, !model.isSigningIn else { return }
         isFormatRefused = !IdentityFormat.isValid(identity)
         guard !isFormatRefused else {
-            isIdentityFocused = true
+            focusIdentity()
             return
         }
         Task { await model.signIn(identity: identity) }

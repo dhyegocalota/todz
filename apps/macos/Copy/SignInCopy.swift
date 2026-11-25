@@ -34,6 +34,12 @@ enum SignInCopy {
     static let linkRejected = "That link has expired or was already used. Send a new one."
     static let linkNotRequested = "Open the link on the Mac that asked for it, or send a new one."
 
+    static let serverDisclosureHint = "Change the server todz signs in to."
+
+    static func serverDisclosure(server: String) -> String {
+        "Server: \(server)"
+    }
+
     static var linkLifetime: String {
         let minutes = Int(Measurement(value: SignInLinkTiming.lifetime, unit: UnitDuration.seconds).converted(to: .minutes).value)
         return InflectedCopy.text("The link works for ^[\(minutes) minute](inflect: true), on this Mac only.")

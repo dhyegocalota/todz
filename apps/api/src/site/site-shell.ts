@@ -1,3 +1,4 @@
+import { COMPANY } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
 import { LANDING_COPY } from './landing-copy';
 import { SITE_GLYPH_SPRITE, SiteGlyph, glyphHtml } from './site-glyphs';
@@ -27,11 +28,17 @@ ${brandHtml()}
 </header>`;
 }
 
+function creditHtml(): string {
+  const { creditLead, creditName, creditTail } = LANDING_COPY.shell;
+  return `<p class="footer-credit">${escapedHtml(creditLead)} <a class="footer-credit-link" href="${escapedHtml(COMPANY.website)}" rel="noopener noreferrer">${escapedHtml(creditName)}</a>${escapedHtml(creditTail)}</p>`;
+}
+
 function footerHtml(): string {
   return `<footer class="site-footer">
 <div class="site-footer-inner page-width">
 ${brandHtml()}
 <p class="footer-copyright">${escapedHtml(LANDING_COPY.shell.copyright)}</p>
+${creditHtml()}
 <a class="footer-link" href="${SELF_HOST_PATH}">${escapedHtml(LANDING_COPY.shell.footerSelfHost)}</a>
 </div>
 </footer>`;

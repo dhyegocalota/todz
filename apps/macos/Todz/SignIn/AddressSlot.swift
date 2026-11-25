@@ -3,6 +3,7 @@ import TodzKit
 
 struct AddressSlot: View {
     @Binding var email: String
+    let isServerFormOpen: Bool
     let send: (String) async -> Void
     @Environment(AppModel.self) private var model
     @Environment(\.controlActiveState) private var controlActiveState
@@ -39,19 +40,24 @@ struct AddressSlot: View {
         }
         .task {
             await Task.yield()
-            isEmailFocused = true
+            focusEmail()
         }
         .onChange(of: model.isRequestingLink) {
             guard !model.isRequestingLink, model.signInError != nil else { return }
             Task {
                 await Task.yield()
-                isEmailFocused = true
+                focusEmail()
             }
         }
         .onChange(of: controlActiveState) {
             guard controlActiveState == .key else { return }
-            isEmailFocused = true
+            focusEmail()
         }
+    }
+
+    private func focusEmail() {
+        guard !isServerFormOpen else { return }
+        isEmailFocused = true
     }
 
     private var address: String {
@@ -72,7 +78,7 @@ struct AddressSlot: View {
         guard sendReason == nil, !model.isRequestingLink else { return }
         isFormatRefused = !EmailAddressFormat.isValid(address)
         guard !isFormatRefused else {
-            isEmailFocused = true
+            focusEmail()
             return
         }
         Task { await send(address) }

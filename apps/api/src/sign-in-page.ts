@@ -9,6 +9,7 @@ const TOKEN_PARAMETER = 'token';
 const TOKEN_PATTERN_SOURCE = '^[A-Za-z0-9_-]{43}$';
 const APP_LINK_PREFIX = 'todz://sign-in?token=';
 const APP_LINK_TURNSTILE_SEPARATOR = '&turnstile=';
+const APP_LINK_ORIGIN_SEPARATOR = '&origin=';
 const OPEN_BUTTON_ID = 'open';
 const CHECK_ID = 'check';
 const CHECKING_STATE = 'checking';
@@ -27,7 +28,7 @@ const PAGE_SCRIPT = `{
     const checked = (turnstileToken) => {
       if (!/${TURNSTILE_TOKEN_PATTERN_SOURCE}/.test(turnstileToken)) return fail();
       const isFirstCheck = appLink === null;
-      appLink = '${APP_LINK_PREFIX}' + token + '${APP_LINK_TURNSTILE_SEPARATOR}' + turnstileToken;
+      appLink = '${APP_LINK_PREFIX}' + token + '${APP_LINK_TURNSTILE_SEPARATOR}' + turnstileToken + '${APP_LINK_ORIGIN_SEPARATOR}' + encodeURIComponent(location.origin);
       document.body.dataset.state = '${READY_STATE}';
       if (!isFirstCheck) return;
       button.focus();

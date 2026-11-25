@@ -18,8 +18,28 @@ public struct FileSessionVault: SessionVault, Sendable {
         sessionFile.path(percentEncoded: false)
     }
 
-    public func read() throws -> String? {
+    public func read() throws -> StoredSession? {
         guard FileManager.default.fileExists(atPath: sessionPath) else { return nil }
+        let contents: Data
+        do {
+            contents = try Data(contentsOf: sessionFile)
+        } catch {
+            throw SessionVaultError.unreadable
+        }
+        guard !contents.isEmpty else { throw SessionVaultError.unreadable }
+        guard let session = try? OwnerCoding.decoder().decode(StoredSession.self, from: contents) else { throw SessionVaultError.unbound }
+        return session
+    }
+
+    public func write(_ session: StoredSession) throws {
+        do {
+            try PrivateFile.write(OwnerCoding.encoder().encode(session), to: sessionFile)
+        } catch {
+            throw SessionVaultError.unwritable
+        }
+    }
+
+    public func bind(to origin: String) throws {
         let secret: String
         do {
             secret = try String(contentsOf: sessionFile, encoding: .utf8)
@@ -27,15 +47,7 @@ public struct FileSessionVault: SessionVault, Sendable {
             throw SessionVaultError.unreadable
         }
         guard !secret.isEmpty else { throw SessionVaultError.unreadable }
-        return secret
-    }
-
-    public func write(_ secret: String) throws {
-        do {
-            try PrivateFile.write(Data(secret.utf8), to: sessionFile)
-        } catch {
-            throw SessionVaultError.unwritable
-        }
+        try write(StoredSession(secret: secret, origin: origin))
     }
 
     public func erase() throws {

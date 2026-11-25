@@ -43,5 +43,5 @@
     { "name": "ADMIN_ADDRESS_LIMITER", "namespace_id": "8608", "simple": { "limit": 3, "period": 60 } },
     { "name": "ADMIN_GLOBAL_LIMITER", "namespace_id": "8609", "simple": { "limit": 30, "period": 60 } },
   ],
-  "assets": { "directory": "./public", "run_worker_first": ["/owner", "/owner/*", "/mcp", "/sign-in", "/sign-in/challenge"] },
+  "assets": { "directory": "./public", "run_worker_first": ["/owner", "/owner/*", "/mcp", "/sign-in", "/sign-in/challenge", "/health"] },
 }

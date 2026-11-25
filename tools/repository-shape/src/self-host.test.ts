@@ -31,8 +31,14 @@ const ROUTE_PATTERN = /"pattern": "([^"]+)"/g;
 const XCODE_LINE_PATTERN = /^(xcode(?:gen|build) .+?)(?: \\)?$/gm;
 const SECRET_COMMAND_PATTERN = /wrangler secret (?:put|delete) ([A-Z_]+)/g;
 const REPOSITORY_PATH_PATTERN = /`((?:apps|libs|tools|scripts|docs)\/[\w./@-]+)`/g;
+const SERVER_DEPLOY_SCRIPT = 'server:deploy';
+const SERVER_DEPLOY_COMMAND = 'wrangler deploy && tsx scripts/server/cli.ts';
+const GUIDE_SERVER_DEPLOY = `pnpm --filter @todz/api ${SERVER_DEPLOY_SCRIPT}`;
+const DEPLOY_HEADING = '## 4. Deploy';
+const UPDATING_HEADING = '## Updating';
+const UPDATE_ORDER_PHRASE = 'Update the server first, then the app';
+const SETTINGS_PHRASE = 'open todz › Settings › Server and paste the URL the deploy printed';
 const PROJECT_KEYS = [
-  'TODZ_API_BASE_URL',
   'DEVELOPMENT_TEAM',
   'bundleIdPrefix',
   'TODZ_APP_BUNDLE_IDENTIFIER',
@@ -64,6 +70,8 @@ const NAMESPACE_ID_PATTERN = /"namespace_id": "(\d+)"/g;
 const NAMESPACE_RANGE_PATTERN = /`(\d+)` to `(\d+)`/;
 const SERVER_NAME_PATTERN = /private let serverName = "([\w-]+)"/;
 const ANCHOR_PATTERN = /#.*$/;
+const NEXT_HEADING_PATTERN = /\n## /;
+const NOT_FOUND = -1;
 const FIRST_CAPTURE = 1;
 const LAST_CAPTURE = 2;
 
@@ -75,6 +83,14 @@ function scriptsOf(manifest: string): string[] {
 
 function isBrokenLink(target: string): boolean {
   return !existsSync(repositoryPath(posix.join(posix.dirname(GUIDE), target.replace(ANCHOR_PATTERN, ''))));
+}
+
+function sectionOf(heading: string): string {
+  const start = guide.indexOf(heading);
+  const rest = guide.slice(start + heading.length);
+  const end = rest.search(NEXT_HEADING_PATTERN);
+  if (end === NOT_FOUND) return rest;
+  return rest.slice(0, end);
 }
 
 function captured(pattern: RegExp, text = guide): string[] {
@@ -150,6 +166,23 @@ describe('the self-host guide', () => {
     expect(readRepositoryFile(APP_PROJECT)).toContain(`${BASE_URL_SETTING}:`);
     expect(guideLines.length).toBeGreaterThan(0);
     expect(guideLines.filter((line) => !verifyScript.includes(line))).toEqual([]);
+  });
+
+  test('the deploy step and the Updating section deploy with the script that prints the URL to paste, which wraps wrangler deploy', () => {
+    expect(sectionOf(DEPLOY_HEADING)).toContain(GUIDE_SERVER_DEPLOY);
+    expect(sectionOf(UPDATING_HEADING)).toContain(GUIDE_SERVER_DEPLOY);
+    expect(JSON.parse(readRepositoryFile(API_PACKAGE_FILE)).scripts[SERVER_DEPLOY_SCRIPT]).toBe(SERVER_DEPLOY_COMMAND);
+  });
+
+  test('it never asks a fork to rebuild the app for its server, and says to paste the URL in Settings', () => {
+    expect(guide).not.toContain(BASE_URL_SETTING);
+    expect(guide).toContain(SETTINGS_PHRASE);
+  });
+
+  test('the Updating section updates the server before the app', () => {
+    const updating = sectionOf(UPDATING_HEADING);
+    expect(updating).toContain(UPDATE_ORDER_PHRASE);
+    expect(updating.indexOf(UPDATE_ORDER_PHRASE)).toBeLessThan(updating.indexOf(GUIDE_SERVER_DEPLOY));
   });
 
   test('the Claude Code command has the shape the key screen copies', () => {

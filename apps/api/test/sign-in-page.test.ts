@@ -3,7 +3,16 @@ import { describe, expect, test } from 'vitest';
 import { SIGN_IN_PAGE_COPY } from '../src/sign-in-page-copy';
 import { serveSignInPage } from '../src/sign-in-page';
 import { workerEnvWith } from './owner-client';
-import { type PageScriptRun, TEST_SITE_KEY, WIDGET_ID, inlineSources, onlyInlineSource, runPageScript, sourceHash } from './page-script';
+import {
+  type PageScriptRun,
+  TEST_PAGE_ORIGIN,
+  TEST_SITE_KEY,
+  WIDGET_ID,
+  inlineSources,
+  onlyInlineSource,
+  runPageScript,
+  sourceHash,
+} from './page-script';
 
 const PAGE_URL = 'http://localhost:8787/sign-in';
 const PAGE_PATH = '/sign-in';
@@ -28,6 +37,10 @@ const CHECKED_CALLBACK = 'callback';
 const EXPIRED_CALLBACK = 'expired-callback';
 const ERROR_CALLBACK = 'error-callback';
 const TIMEOUT_CALLBACK = 'timeout-callback';
+
+function appLink(turnstileToken: string): string {
+  return `todz://sign-in?token=${TOKEN}&turnstile=${turnstileToken}&origin=${encodeURIComponent(TEST_PAGE_ORIGIN)}`;
+}
 
 async function pageSource(path = PAGE_PATH): Promise<{ response: Response; html: string }> {
   const response = await exports.default.fetch(`http://localhost:8787${path}`);
@@ -172,18 +185,25 @@ describe('the script of the page', () => {
     expect(state()).toBe(CHECKING_STATE);
   });
 
-  test('a solved check shows the opening state, focuses the button and opens the app with both tokens', async () => {
+  test('a solved check shows the opening state, focuses the button and opens the app with both tokens and the page origin', async () => {
     const { steps, state, widgetCallback } = await checkingRun();
     widgetCallback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
-    expect(steps).toEqual([`replace ${PAGE_PATH}`, 'focus', `navigate todz://sign-in?token=${TOKEN}&turnstile=${TURNSTILE_TOKEN}`]);
+    expect(steps).toEqual([`replace ${PAGE_PATH}`, 'focus', `navigate ${appLink(TURNSTILE_TOKEN)}`]);
     expect(state()).toBe(READY_STATE);
+  });
+
+  test('the origin in the app link is read from the page at run time, so the script stays one source for its hash', async () => {
+    const { steps, widgetCallback } = await checkingRun();
+    widgetCallback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
+    expect(steps.at(-1)).toMatch(/&origin=http%3A%2F%2Flocalhost%3A8787$/);
+    expect(await onlyScript()).not.toContain(TEST_PAGE_ORIGIN);
   });
 
   test('the button opens the app again with the same tokens', async () => {
     const { steps, widgetCallback, pressButton } = await checkingRun();
     widgetCallback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
     pressButton();
-    expect(steps.slice(-1)).toEqual([`navigate todz://sign-in?token=${TOKEN}&turnstile=${TURNSTILE_TOKEN}`]);
+    expect(steps.slice(-1)).toEqual([`navigate ${appLink(TURNSTILE_TOKEN)}`]);
     expect(steps).toHaveLength(4);
   });
 
@@ -216,7 +236,7 @@ describe('the script of the page', () => {
     expect(state()).toBe(READY_STATE);
     expect(steps).toHaveLength(3);
     pressButton();
-    expect(steps.slice(-1)).toEqual([`navigate todz://sign-in?token=${TOKEN}&turnstile=${OTHER_TURNSTILE_TOKEN}`]);
+    expect(steps.slice(-1)).toEqual([`navigate ${appLink(OTHER_TURNSTILE_TOKEN)}`]);
   });
 
   test.each([[ERROR_CALLBACK], [TIMEOUT_CALLBACK]])('the widget %s shows the failed state', async (name) => {
