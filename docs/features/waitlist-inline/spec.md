@@ -23,6 +23,7 @@ Joining the todz.app waitlist reloads the page onto `/join#hero`. The Turnstile 
 
 ## Non-goals
 
+- A viewport narrower than 375 px: Turnstile's flexible widget needs 300 px.
 - A double opt-in, a per-address cooldown beyond the existing limiter, or a reputation score.
 - Restyling the inside of the Turnstile iframe (Cloudflare owns it; only its frame, size and theme are ours).
 - Letting the no-JavaScript post join: it has no token by construction, so it answers "try again".
@@ -43,8 +44,8 @@ sequenceDiagram
   V->>V: submit → hold until 3 s after navigation start
   V->>W: fetch POST /join, Accept: application/json, form body
   W->>W: guard, client limit, body, token shape, stamp present
-  W->>W: honeypot empty? stamp valid and ≥ 2 s old? (else 200 joined, nothing kept)
   W->>T: siteverify (hostname, action waitlist)
+  W->>W: honeypot empty? stamp valid and ≥ 2 s old? (else 200 joined, nothing kept)
   W->>W: global and address limits
   W->>D: INSERT … ON CONFLICT DO NOTHING
   W-->>V: {"outcome": "joined"} 200
@@ -53,7 +54,7 @@ sequenceDiagram
 
 ### Interfaces
 
-- `POST /join`, body `application/x-www-form-urlencoded` (at most 4 KB, as today): `email`, `cf-turnstile-response`, `stamp`, `website`.
+- `POST /join`, body `application/x-www-form-urlencoded` (at most 4 KB, as today): `email`, `cf-turnstile-response`, `stamp`, `todz_fax` (the honeypot).
   - `Accept` naming `application/json` → `application/json` body `{"outcome": "joined" | "invalid" | "check-failed" | "try-again" | "opens-soon"}` with statuses 200, 400, 403, 429 (`Retry-After: 60`), 503, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `Vary: Accept` (ADR 0067 §2).
   - Otherwise → today's landing HTML with its notice, statuses 200, 429 (`Retry-After: 60`), 503, plus `Vary: Accept`.
 - `GET /` (site host): each form gains the hidden `stamp` input and the off-screen honeypot; the widget becomes `data-appearance="always"`, `data-size="flexible"`, `data-theme="auto"`; each form has one `role="status"` paragraph holding the note until an answer replaces it.
@@ -72,9 +73,9 @@ sequenceDiagram
 | Body unreadable, wrong media type or bad address | 400 `invalid` | 429 try again | nothing | none |
 | Token missing or malformed | 403 `check-failed` | 429 try again | nothing | none |
 | Stamp missing (a page from before the deploy) | 403 `check-failed` | 429 try again | nothing | none |
-| Honeypot filled | 200 `joined` | 200 joined | nothing | none |
-| Stamp forged, from the future or younger than 2 s | 200 `joined` | 200 joined | nothing | none |
-| siteverify refuses (hostname, action, success) | 403 `check-failed` | 429 try again | nothing | none |
+| Honeypot filled, token accepted | 200 `joined` | 200 joined | nothing | none |
+| Stamp forged, from the future or younger than 2 s, token accepted | 200 `joined` | 200 joined | nothing | none |
+| siteverify refuses (hostname, action, success), whatever the honeypot or stamp hold | 403 `check-failed` | 429 try again | nothing | none |
 | siteverify unreachable or our own fault | 503 `opens-soon` | 503 opens soon | nothing | none |
 | Store fails | 429 `try-again` | 429 try again | nothing | none |
 | Address already on the list | 200 `joined` | 200 joined | unchanged | none |

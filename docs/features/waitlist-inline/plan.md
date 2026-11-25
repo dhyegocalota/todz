@@ -92,6 +92,34 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 | 15 | Turnstile challenges or refuses the automated browser in production | the widget shows a failure or keeps asking | The owner joins by hand from his browser and the count query confirms it; recorded as the owner's step |
 | 15 | A scripted post without a token is accepted | `200` or a count of `1` for `nobody@example.com` | Detach `todz.app` as the runbook's Rollback says and tell the owner |
 
+## Plan review answers
+
+Applied after Steps 1 to 12 were built, as follow-up commits (red then green where behaviour changed).
+
+| # | Finding | Answer |
+|---|---------|--------|
+| R1 | Silent refusals sit before siteverify | Applied: siteverify runs right after the stamp-present check; tests assert one siteverify call and 403 for a refused token (c84dab9, 533fa81) |
+| R2 | Honeypot `website` is autofillable | Applied: `todz_fax` with the manager opt-outs (f1e385a, 624c8d3) |
+| R3 | A stamp replays for ever | ADR alternatives row and test-plan coverage honesty reworded |
+| R4 | Final widget overflows at 375 px | Applied: narrower final-card padding below the breakpoint; the stub renders a 300 x 65 frame and the fit test measures it; 320 px is out of scope in the spec (624c8d3, 2e82230) |
+| R5 | Reserve the widget height | Applied: `min-height: 65px` on `.join-check` |
+| R6 | No state for a page without a widget | Applied: ready at once; unit pin and E2E with the widget stripped |
+| R7 | Callbacks share one global | Applied: `waitlistTokenExpired`; each form recomputes from its own token; E2E for one form's expiry |
+| R8 | Unbounded fetch and tool wait | Applied: `WAITLIST_JOIN_TIMEOUT_MS` (an `AbortController` on `setTimeout`, so the fake clock drives it), bounded tool wait, `waiting` event for a refused press (2e82230, a84dab9) |
+| R9 | 1 999 ms integration test is flaky | Applied: 1 000 ms and 2 500 ms; the boundary only in pure tests |
+| R10, R11 | Production probes | The lead's (Steps 13 to 15) |
+| R12 | "No mail" proofs can pass vacuously | Applied: count before the second press; the follow-up in a new context without the clock |
+| R13 | `aria-disabled` in markup, cursor | Applied: none in markup (pin), `not-allowed` waiting, `progress` sending |
+| R14 | Name the struck tests | Struck in 94f701e: the five navigation joins (the form answers on `/join#form`, a second join from the final form, the late script, the late token, a second click while pending) and the two submit-time widget error tests; rewritten as the in-place rows |
+| R15 | `framenavigated` on the main frame | Applied (already filtered to `page.mainFrame()`) |
+| R16 | Accept matching | Applied: per media range, case-insensitive, `q=0` ignored, wildcard not enough |
+| R17 | WebMCP timeout copy and field restore | Applied: `tryAgain` after a `try-again`, typed value restored |
+| R18 | ADR 0060 network-call line | Applied |
+| R19 | Key without secret | Applied: `serveLandingPage({ notice, challenge })` with `landingChallengeKeysOf(env)` (3fe7da0) |
+| R20 | `waitlist-limiter.ts` not in the file map | Not touched: the outcome mapping lives in `waitlist-join.ts` |
+| R21 | Production CSP report | The lead's (Step 15) |
+| R22 | Rotation note | In the ADR consequences; the runbook line is the lead's (Step 13) |
+
 **Steps with no backout:** 15's real join keeps its probe row (deleting data is the owner's call).
 
 ## Z. Prove and ship

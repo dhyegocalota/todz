@@ -13,9 +13,9 @@ Each form (hero and final) keeps its order and gains one row:
 [ status line: dot + text ]          role="status"
 ```
 
-- The widget sits in `.join-check`, a frame with the capsule's corner radius and the card's inner spacing above and below (the spacing the note uses today), no border or shadow of its own: the Turnstile iframe draws its own light or dark surface, and `data-theme="auto"` follows the visitor's scheme, so the card's glass shows around it in both.
-- At 375 px the capsule wraps as today and the widget takes the full form width (at least 300 px, which fits 375 − 2 × 16 px gutters − the card padding); no horizontal scroll.
-- The honeypot sits in `.join-extra`, off screen (`position: absolute`, `width: 1px`, `height: 1px`, `overflow: hidden`, `clip-path: inset(50%)`, `white-space: nowrap`), so it takes no space and no focus.
+- The widget sits in `.join-check`, a frame with the capsule's corner radius and the card's inner spacing above and below (the spacing the note uses today), `min-height: 65px` so the iframe fills reserved space and the first fold does not shift, no border or shadow of its own: the Turnstile iframe draws its own light or dark surface, and `data-theme="auto"` follows the visitor's scheme, so the card's glass shows around it in both.
+- At 375 px the capsule wraps as today and the widget takes the full form width (at least 300 px: below the narrow breakpoint the final-call card uses `padding-inline: var(--space-4)`, so the form is 311 px at 375 px; 320 px is out of scope); no horizontal scroll.
+- The honeypot (`todz_fax`, with the password-manager opt-outs) sits in `.join-extra`, off screen (`position: absolute`, `width: 1px`, `height: 1px`, `overflow: hidden`, `clip-path: inset(50%)`, `white-space: nowrap`), so it takes no space and no focus.
 
 ## 2. States
 
@@ -34,7 +34,8 @@ The status line is the one live region per form; the button label changes only w
 | `opens-soon` | `waiting` | label restored | "The waitlist opens soon." |
 | Fetch failed or a non-JSON answer | `waiting` | label restored | "Couldn't reach todz. Check your connection and try again." |
 | Turnstile never loaded, or errored | `waiting` | `aria-disabled` | "The check couldn't load. Reload the page to try again." |
-| Token expired | `waiting` (the widget refreshes itself) | `aria-disabled` | unchanged |
+| Token expired | `waiting` (the widget refreshes itself; the separate expiry callback recomputes each form from its own token) | `aria-disabled` | unchanged |
+| No widget on the page (no key or secret) | `ready` at once | enabled, no `aria-disabled` in the markup | the post answers `opens-soon` |
 
 Answer lines carry the existing `notice-dot` before the text, as the HTML notices do. Focus never moves; the polite region announces the line.
 

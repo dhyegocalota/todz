@@ -66,15 +66,17 @@ Copy referenced below, from `LANDING_COPY.join`: JOINED "You're on the list. Che
 
 ### Bots (`waitlist-join.test.ts`)
 
-- [ ] Honeypot filled — input: `website=https://spam.example`, valid stamp and token; expected: JSON 200 `joined`, HTML 200 JOINED, no row, no mail, no siteverify call.
-- [ ] Honeypot empty — input: `website=`; expected: a normal join, one row.
-- [ ] Honeypot absent — input: no `website` field; expected: a normal join, one row.
+- [ ] Honeypot filled — input: `todz_fax=https://spam.example`, valid stamp, accepted token; expected: JSON 200 `joined`, HTML 200 JOINED, no row, no mail, one siteverify call, a client-limit slot spent.
+- [ ] Honeypot filled, token refused — expected: 403 `check-failed`, no row.
+- [ ] Honeypot empty — input: `todz_fax=`; expected: a normal join, one row.
+- [ ] Honeypot absent — input: no `todz_fax` field; expected: a normal join, one row.
 - [ ] Honeypot and no token — expected: 403 `check-failed` (the token check is first).
 - [ ] Stamp missing — expected: JSON 403 `check-failed`, HTML 429 TRY_AGAIN, no row.
-- [ ] Stamp forged — input: signed with another secret; expected: 200 `joined`, no row, no mail, no siteverify call.
-- [ ] Too fast — input: rendered 1 999 ms before `now`; expected: 200 `joined`, no row, no mail, no siteverify call.
+- [ ] Stamp forged — input: signed with another secret, accepted token; expected: 200 `joined`, no row, no mail, one siteverify call.
+- [ ] Stamp forged, token refused — expected: 403 `check-failed`, no row.
+- [ ] Too fast — input: rendered 1 000 ms before `now`; expected: 200 `joined`, no row, no mail. The 1 999 and 2 000 ms boundary is proven only in `waitlist-stamp.test.ts`.
 - [ ] Future stamp — input: rendered 1 000 ms after `now`; expected: 200 `joined`, no row, no mail.
-- [ ] Exactly on time — input: rendered 2 000 ms before `now`; expected: 200 `joined`, one row, one mail.
+- [ ] Patient — input: rendered 2 500 ms before `now`; expected: 200 `joined`, one row, one mail.
 
 ### The page markup (`site-pages.test.ts`)
 
@@ -97,15 +99,15 @@ Copy referenced below, from `LANDING_COPY.join`: JOINED "You're on the list. Che
 
 `apps/api/e2e/landing.spec.ts`, desktop (1280) and mobile (375) projects, the Turnstile stub unless stated.
 
-- [ ] No navigation, hero — steps: open `/`, type a fresh address, press Join; expected: JOINED in `#join-notice`, zero `load` and zero `framenavigated` events after the first load, `page.url()` unchanged, one `POST /join` with `Accept: application/json`, `cf-turnstile-response`, `stamp`, empty `website`, answered 200 `{"outcome":"joined"}`; the field empty; the address nowhere in the DOM; the server log holds one mail to it.
+- [ ] No navigation, hero — steps: open `/`, type a fresh address, press Join; expected: JOINED in `#join-notice`, zero `load` and zero `framenavigated` events after the first load, `page.url()` unchanged, one `POST /join` with `Accept: application/json`, `cf-turnstile-response`, `stamp`, empty `todz_fax`, answered 200 `{"outcome":"joined"}`; the field empty; the address nowhere in the DOM; the server log holds one mail to it.
 - [ ] No navigation, final — the same from the final form, JOINED in `#final-notice`.
 - [ ] Disabled until token — steps: open `/` with the never-solving stub; expected: both buttons `aria-disabled="true"`, `data-join-state="waiting"`; a press posts nothing and shows WAITING.
 - [ ] Ready on token — steps: the stub solves; expected: no `aria-disabled`, `data-join-state="ready"`.
 - [ ] Reset after every answer — steps: one join; expected: `data-turnstile-resets` is `1` and the button waits for the new token before it is ready.
 - [ ] Hold — steps: press Join at once on load; expected: the label "Joining…" until at least 3 s after navigation start, then one post.
 - [ ] Duplicate — steps: join an address, then the same address again after the new token; expected: JOINED both times, one mail in the server log.
-- [ ] Honeypot — steps: fill `website` through `locator.evaluate`, join; expected: JOINED, no mail; then reload and join the same address normally: one mail (nothing was kept).
-- [ ] Too fast — steps: `page.clock.install()`, load, `fastForward` past 3 s, join within 2 s of the render; expected: JOINED, no mail; then reload and join the same address normally: one mail.
+- [ ] Honeypot — steps: fill `todz_fax` through `locator.evaluate`, join; expected: JOINED; after the reload and before the second press the mail count of the address is 0; then join it normally: exactly one mail.
+- [ ] Too fast — steps: `page.clock.install()`, load, `fastForward` past 3 s, join within 2 s of the render; expected: JOINED, no mail; then count mails (0) and join the same address in a new browser context without `page.clock`: exactly one mail.
 - [ ] Invalid answer — steps: `page.route` fulfils 400 `{"outcome":"invalid"}`; expected: INVALID, label restored, reset count 1.
 - [ ] Check failed — fulfils 403 `{"outcome":"check-failed"}`; expected: CHECK_FAILED, reset count 1.
 - [ ] Opens soon — fulfils 503 `{"outcome":"opens-soon"}`; expected: OPENS_SOON.
@@ -123,13 +125,17 @@ Copy referenced below, from `LANDING_COPY.join`: JOINED "You're on the list. Che
 - [ ] Light 1280 — expected: the widget box inside its form box and the viewport, `data-theme="auto"`.
 - [ ] Dark 1280 (`colorScheme: dark`) — expected: the same; the dark tokens applied.
 - [ ] 375 — expected: no horizontal scroll, the widget box inside the viewport, the capsule, widget and status stacked.
+- [ ] Timeout — steps: `page.route` never fulfils `/join`, `page.clock` past 15 s; expected: UNREACHABLE, label restored, reset count 1.
+- [ ] One form's token expires — steps: remove one form's token and call `waitlistTokenExpired`; expected: that form waiting, the other ready, no CHECK_ERROR.
+- [ ] No widget — steps: the landing served without its widget; expected: the button ready at once, a press shows the server's answer.
 - [ ] Keyboard — Tab from the email reaches the button with a visible focus ring, including while `aria-disabled`; the honeypot is never focused.
 - [ ] Existing tests kept — the first fold, narrow screen, images, dark, reduced motion, assets, self-host, credit, keyboard and console groups pass unchanged.
 
 `apps/api/e2e/landing-seo.spec.ts`:
 
 - [ ] `join_waitlist` joins — input: `{ email: "maria.<unique>@example.com" }`; expected: the tool returns the joined answer, JOINED in `#join-notice`, no navigation, one `POST /join`.
-- [ ] `join_waitlist` waits for the check — with the never-solving stub and `page.clock` past 30 s; expected: `checkTimedOut`, no post.
+- [ ] `join_waitlist` waits for the check — with the never-solving stub and `page.clock` past 30 s; expected: `checkTimedOut`, no post, the person's typed value restored.
+- [ ] `join_waitlist` in a `try-again` wait — expected: `tryAgain`, not `checkTimedOut`.
 - [ ] `join_waitlist` invalid — input: `{ email: "not-an-address" }`; expected: `invalid`, no post, the field's previous value restored.
 - [ ] `join_waitlist` twice — the second call while the first is `sending`; expected: `alreadySubmitting`, one `POST /join`.
 - [ ] `join_waitlist` refused — `page.route` fulfils 403 `check-failed`; expected: the tool returns `checkFailed`.
@@ -176,6 +182,7 @@ The reviewer picks the three claims most likely to be wrong and tries to refute 
 ## Coverage honesty
 
 - The limits' 429 is proven by unit tests with refusing limiter stubs; a local site host skips the limiters, so no E2E reaches them. The production runbook's step 15 exercises the per-client limit on sign-in, not on the waitlist.
+- The stamp proves only that the poster fetched the page at least 2 s before posting; one stamp can be replayed for ever, and the single-use token is what bounds it. Real autofill of the honeypot and 320 px are not under test.
 - siteverify's refusal is proven by unit tests with a fake fetcher; the E2E uses Cloudflare's always-pass test keys and refuses only malformed tokens before siteverify.
 - The look of the Turnstile iframe in light and dark is Cloudflare's; the tests prove its frame, size and theme attribute, and the screenshots show the rest.
 - Whether Turnstile challenges an automated browser in production is not under test; the production check falls back to the owner's own browser if it does.

@@ -64,3 +64,15 @@ Counts at f0d327d: 77 unit files, 1972 tests; E2E 137 passed and 6 skipped acros
 - `admin.spec.ts` keeps its own server-log reader; `e2e/server-log.ts` is new and a follow-up can fold the two.
 - Work-count budgets (ADR 0061) passed in `pnpm verify`; the per-render HKDF is cached per secret but the HMAC still runs once per render.
 - Steps 13 to 15 (runbook, deploy, production check) are the lead's and untouched.
+
+## After the plan review (R1 to R22)
+
+Applied as follow-up commits; see the `## Plan review answers` table in `plan.md`. What the tester must know:
+
+- The honeypot is `todz_fax`, not `website`; it has the password-manager opt-outs.
+- siteverify runs before the honeypot and the stamp age: a post with a refused token answers 403 `check-failed` whatever those hold; a filled honeypot or a young stamp with an accepted token answers `joined`, one siteverify call, nothing kept.
+- Accept matching is per media range, case-insensitive; `application/json;q=0` and `*/*` get the HTML page.
+- Callbacks: `waitlistTokenReady`, `waitlistTokenExpired` (new) and `waitlistChallengeFailed`; each form recomputes its state from its own token.
+- The join fetch aborts after 15 s (`WAITLIST_JOIN_TIMEOUT_MS`); `join_waitlist` bounds its answer wait by hold plus that, restores the typed value on a timeout and answers `tryAgain` when the form is waiting out a Retry-After.
+- The E2E stub renders a 300 x 65 `.stub-turnstile-frame` so the fit test measures a real width; 320 px is out of scope.
+- Red texts of the follow-ups: c84dab9 `expected [] to have a length of 1 but got +0` and `expected 200 to be 403`; f1e385a `expected false to be true`, `expected true to be false` (Accept), `to contain 'name="todz_fax"'`, `to contain '.join-check{min-height:65px'`; 2e82230 the unreachable line expected but `Only to tell you when todz opens.` received, the typed value expected but `other.maria…` received, and the Retry-After tool answer array mismatch.
