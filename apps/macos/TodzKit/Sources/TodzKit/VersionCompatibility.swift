@@ -1,3 +1,16 @@
+public let minimumServerVersion = "2026.11.25"
+
+private let stampSeparator: Character = "+"
+
+private func dateOf(stamp: String) -> String {
+    String(stamp.prefix { $0 != stampSeparator })
+}
+
+private func isVersion(_ text: String, below limit: String) -> Bool {
+    guard let version = DottedVersion(text: text), let limitVersion = DottedVersion(text: limit) else { return false }
+    return version < limitVersion
+}
+
 public enum VersionCompatibility: Equatable, Sendable {
     case compatible(app: String, server: String)
     case updateNeeded(app: String, server: String?, minimum: String)
@@ -5,6 +18,11 @@ public enum VersionCompatibility: Equatable, Sendable {
     case serverUnknown(app: String)
 
     static func of(app: String, server: ServerVersions?, refusal: String?) -> VersionCompatibility {
-        fatalError("VersionCompatibility.of is not implemented")
+        if let refusal { return .updateNeeded(app: app, server: server?.server, minimum: refusal) }
+        guard let server else { return .serverUnknown(app: app) }
+        if let minimum = server.minimumApp, isVersion(app, below: minimum) { return .updateNeeded(app: app, server: server.server, minimum: minimum) }
+        guard let stamp = server.server, DottedVersion(text: dateOf(stamp: stamp)) != nil else { return .serverBehind(app: app, server: nil) }
+        guard !isVersion(dateOf(stamp: stamp), below: minimumServerVersion) else { return .serverBehind(app: app, server: stamp) }
+        return .compatible(app: app, server: stamp)
     }
 }
