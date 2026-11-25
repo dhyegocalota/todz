@@ -61,7 +61,7 @@ any other host                   ─▶ 404
 - `wrangler.jsonc`:
   - `routes` gains `todz.app` and `www.todz.app` as custom domains;
   - `assets.run_worker_first` keeps the API paths, and the site's pages go through the Worker by host.
-- `apps/api/src/site/`: `landing-page.ts`, `landing-copy.ts`, `self-host-page.ts`, `site-shell.ts` (the shared head, CSS, header and footer), `site-headers.ts`, `join-placeholder.ts`.
+- `apps/api/src/site/`: `landing-page.ts`, `landing-copy.ts`, `self-host-page.ts`, `site-shell.ts` (the shared head, CSS, header and footer), `site-headers.ts`, `site-endpoint.ts` (the method-and-path router that took the place of `join-placeholder.ts`).
 - `apps/api/scripts/site/`: the Markdown-to-HTML generator and its `check`.
 - `apps/api/public/landing/`: copies of the README's screenshots. `public/brand/` keeps the lockup.
 - The deploy runbook gains a DNS check that `todz.app` and `www.todz.app` have no A, AAAA or CNAME record before the custom domains attach.
@@ -99,7 +99,7 @@ The run-13 plan review answered NO with two CRITICAL findings. Run 14 answers ea
 - **R6 (`site:check` in the gate).** `test/site/generated-site.test.ts` joins `NODE_TESTS`, `tsconfig.scripts.json`'s include and `tsconfig.json`'s exclude, as `test/emails` does. `verify-gates.tsv` gains `docs/self-host.md	product	unit` above `docs/*.md`, with a `verify.test.sh` case. Owner: G2.
 - **R7 (relative links).** The generator turns every repository-relative link of `docs/self-host.md` into its plain text while the repository is private; anchors to `https://` and `#` fragments stay links. Test: no relative `href` in the generated HTML. Owner: G2.
 - **R8 (self-hosters).** `docs/self-host.md` says to replace the three `routes` and `SITE_ORIGIN` with their own domain; `self-host.test.ts` adds `SITE_ORIGIN` to its names; `site:generate` runs after. Owner: G2.
-- **R9 (the E2E in the gate).** An `e2e` gate runs `pnpm --filter @todz/api test:e2e` when `apps/api/src/site/*`, `apps/api/public/*`, `apps/api/e2e/*` or `apps/api/playwright.config.ts` change, recorded in HARNESS 0.7's gate table through `verify-gates.tsv`, with a `verify.test.sh` case and the `ci-workflow.test.ts` pin. The doctor already requires Chromium. `e2e/` and `playwright.config.ts` join `tsconfig.scripts.json`. Owner: G3.
+- **R9 (the E2E in the gate).** An `e2e` gate runs `pnpm --filter @todz/api test:e2e` when `apps/api/src/site/*`, `apps/api/public/*`, `apps/api/e2e/*` or `apps/api/playwright.config.ts` change, recorded in HARNESS 0.7's gate table through `verify-gates.tsv`, with a `verify.test.sh` case. ~~and the `ci-workflow.test.ts` pin~~: `verify.yml` runs its own steps rather than `pnpm verify`, with no browser job, as for the `macos` gate, and `ci-workflow.test.ts` enumerates no gates, so there is nothing to pin; the E2E runs in the local gate, which is the gate of record (ADR 0005). The doctor already requires Chromium. `e2e/` and `playwright.config.ts` join `tsconfig.scripts.json`. Owner: G3.
 - **R10 (methods and paths).** On the site host:
 
   | Request | Answer |
@@ -116,6 +116,8 @@ The run-13 plan review answered NO with two CRITICAL findings. Run 14 answers ea
 - **R14 (local predicates).** `src/site/` imports nothing from `local-origin.ts`, pinned in `site-pages.test.ts`. For `landing-waitlist`: its Turnstile local predicate keys on `SITE_ORIGIN`.
 - **R15 (assets test, README shot).** `site-assets.test.ts` compares each file in `public/landing/` with the file at the same relative path under `docs/screenshots/`. The README's landing shot, `docs/screenshots/landing/01-landing-light.png`, meets `product-screenshots.test.ts` (≤ 1600 px, ≤ 1 MB) and gets its own story cell.
 - **R16 (runbook).** Step 9 checks `workers/domains?hostname=` once per host; the deploy's expected output names three custom domains; the smoke checks `/`, `/self-host`, `www` → 301 and `todz.app/owner` → 404; the rollback names `DELETE …/workers/domains/{id}` per site host; step 11's apex MX and TXT comparison is re-run after the attach. `www` answers **301**: the forms post to the apex, so no form ever posts to `www`.
+- **R18 (no GitHub link yet).** The footer's GitHub link in the Goals is left out while the repository is private, because it would answer 404 to strangers (design.md, "Owner decisions"). `shell.githubLabel` and `shell.footerGithub` stay in `LANDING_COPY`, unused, until the change that makes the repository public.
+- **R19 (the `.env.example` row).** The package column of R6 also fixes the `.env.example` row, which named no package and ran an empty `--filter`; it now runs `apps/api`'s unit suite.
 - **R17 (E2E isolation).** The Playwright web server runs `wrangler dev` on its own port (8791) with `--persist-to` in a fresh temporary folder.
 
 ## Test strategy summary

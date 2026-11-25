@@ -3,7 +3,7 @@ import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
 import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
-import { CONTENT_ID, siteDocumentHtml } from './site-shell';
+import { CONTENT_ID, JOIN_PATH, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE, cropClassOf } from './site-style';
 
 export enum LandingNotice {
@@ -16,7 +16,6 @@ enum JoinForm {
   Final = 'final',
 }
 
-const JOIN_PATH = '/join';
 const JOIN_FORM_CLASS = 'join-form';
 const JOIN_BUTTON_CLASS = 'join-button';
 const JOIN_NOTICE_CLASS = 'join-notice';

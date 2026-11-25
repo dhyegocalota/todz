@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { chromium, defineConfig } from '@playwright/test';
+import { PERSIST_FOLDER_VARIABLE } from './e2e/persist-folder';
 import { ProjectName } from './e2e/project-name';
 
 const SITE_PORT = 8791;
@@ -9,7 +10,6 @@ const INSPECTOR_PORT = 9291;
 const SITE_ORIGIN = `http://localhost:${SITE_PORT}`;
 const API_ORIGIN = 'http://localhost:8787';
 const PERSIST_FOLDER_PREFIX = 'todz-e2e-';
-const PERSIST_FOLDER_VARIABLE = 'TODZ_E2E_PERSIST_FOLDER';
 const DATABASE_NAME = 'todz-directory';
 const SERVER_START_TIMEOUT_MS = 120_000;
 const TEST_TIMEOUT_MS = 30_000;
@@ -59,6 +59,7 @@ function browserLaunch(): { channel?: string } {
 }
 
 export default defineConfig({
+  globalTeardown: './e2e/global-teardown.ts',
   testDir: 'e2e',
   testMatch: '*.spec.ts',
   timeout: TEST_TIMEOUT_MS,

@@ -1,18 +1,11 @@
+import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { noRouteResponse } from '../owner-errors';
 import { LandingNotice, serveLandingPage } from './landing-page';
 import { serveSelfHostPage } from './self-host-page';
+import { JOIN_PATH, LANDING_PATH, SELF_HOST_PATH } from './site-shell';
 
-const LANDING_PATH = '/';
-const SELF_HOST_PATH = '/self-host';
-const JOIN_PATH = '/join';
 const LOCATION_HEADER = 'Location';
-
-enum RequestMethod {
-  Get = 'GET',
-  Head = 'HEAD',
-  Post = 'POST',
-}
 
 type SiteRoute = () => Promise<Response> | Response;
 
@@ -33,12 +26,12 @@ function redirectToLanding(): Response {
 }
 
 const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
-  [routeKey({ method: RequestMethod.Get, pathname: LANDING_PATH })]: serveLanding,
-  [routeKey({ method: RequestMethod.Head, pathname: LANDING_PATH })]: serveLanding,
-  [routeKey({ method: RequestMethod.Get, pathname: SELF_HOST_PATH })]: serveSelfHostPage,
-  [routeKey({ method: RequestMethod.Head, pathname: SELF_HOST_PATH })]: serveSelfHostPage,
-  [routeKey({ method: RequestMethod.Post, pathname: JOIN_PATH })]: serveJoin,
-  [routeKey({ method: RequestMethod.Get, pathname: JOIN_PATH })]: redirectToLanding,
+  [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: serveLanding,
+  [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: serveLanding,
+  [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: serveSelfHostPage,
+  [routeKey({ method: HttpMethod.Head, pathname: SELF_HOST_PATH })]: serveSelfHostPage,
+  [routeKey({ method: HttpMethod.Post, pathname: JOIN_PATH })]: serveJoin,
+  [routeKey({ method: HttpMethod.Get, pathname: JOIN_PATH })]: redirectToLanding,
 };
 
 export async function serveSite({ request }: { request: Request }): Promise<Response> {

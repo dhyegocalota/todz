@@ -5,6 +5,7 @@ import { SITE_STYLE } from './site-style';
 
 export const LANDING_PATH = '/';
 export const SELF_HOST_PATH = '/self-host';
+export const JOIN_PATH = '/join';
 export const CONTENT_ID = 'content';
 const LIGHT_THEME_COLOR = '#F2F4FA';
 const DARK_THEME_COLOR = '#070812';
