@@ -20,9 +20,9 @@ One developer, red tests first, then the constant, the footer and the README lin
 
 ### G1
 
-- [ ] **Step 1:** Failing tests: the `COMPANY` constants test, the footer credit unit test, the landing end-to-end credit and keyboard checks, the README line shape test.
-- [ ] **Step 2:** `COMPANY` in `libs/types`, the copy in `landing-copy.ts`, the footer line in `site-shell.ts`, its style, the README line.
-- [ ] **Step 3:** `pnpm verify` green; the tester briefing written.
+- [x] **Step 1:** Failing tests: the `COMPANY` constants test, the footer credit unit test, the landing end-to-end credit and keyboard checks, the README line shape test — evidence: 694efeb.
+- [x] **Step 2:** `COMPANY` in `libs/types`, the copy in `landing-copy.ts`, the footer line in `site-shell.ts`, its style, the README line — evidence: 49f0a2a.
+- [x] **Step 3:** `pnpm verify` green; the tester briefing written — evidence: verify 8 gates green on the working tree of 49f0a2a; briefing in `tester-briefing.md`.
 
 ## Failure modes
 
@@ -36,7 +36,7 @@ One developer, red tests first, then the constant, the footer and the README lin
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict; refutation of the three riskiest claims is recorded in `test-plan.md`.
 - [ ] **/check-ui:** screenshots of the footer, light and dark, recorded and uploaded.
