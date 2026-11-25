@@ -1,12 +1,13 @@
 import { bearerSecret, unauthorized } from './bearer-secret';
 import type { Env } from './env';
 import { ACCOUNT_HANDLERS } from './owner-account';
-import { noRouteResponse } from './owner-errors';
+import { OwnerErrorCode, errorResponse, noRouteResponse } from './owner-errors';
 import { KEY_HANDLERS } from './owner-keys';
 import type { OwnerContext, PublicHandler, PublicRoute, SessionHandler, SessionRoute } from './owner-request';
 import { OwnerRoute, RouteParam, matchOwnerRoute } from './owner-routes';
 import { signIn } from './owner-sign-in';
 import { signInLimitRefusal } from './sign-in-limiter';
+import { isSignedInRateLimited, withRetryAfter } from './signed-in-limiter';
 import { requestSignInLink } from './sign-in-links';
 import { readSignInMethod } from './sign-in-method';
 import { TASK_HANDLERS } from './owner-tasks';
@@ -55,5 +56,7 @@ export async function serveOwner({
   if (secret === null) return unauthorized();
   const owner = await resolveSessionOwner({ env, secret, now, projectId: match.params[RouteParam.ProjectId] });
   if (owner === null) return unauthorized();
+  const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.OWNER_LIMITER, key: owner.ownerId });
+  if (isRateLimited) return withRetryAfter(errorResponse(OwnerErrorCode.RateLimited));
   return SESSION_HANDLERS[match.route]({ ...context, owner, secret });
 }
