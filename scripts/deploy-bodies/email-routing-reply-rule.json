@@ -1,0 +1,6 @@
+{
+  "name": "todz day email replies",
+  "matchers": [{ "type": "literal", "field": "to", "value": "reply@todz.app" }],
+  "actions": [{ "type": "worker", "value": ["todz-api"] }],
+  "enabled": true
+}
