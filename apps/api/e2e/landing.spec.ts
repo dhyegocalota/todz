@@ -30,13 +30,24 @@ const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api
 const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
 const TURNSTILE_RESPONSE_FIELD = 'cf-turnstile-response';
 const JAVASCRIPT_CONTENT_TYPE = 'text/javascript';
-const TURNSTILE_STUB = `document.querySelectorAll('.cf-turnstile').forEach((widget) => {
+const SLOW_TOKEN_DELAY_MS = 1_000;
+const TURNSTILE_SOLVE = `const solve = () => document.querySelectorAll('.cf-turnstile').forEach((widget) => {
   const token = document.createElement('input');
   token.type = 'hidden';
   token.name = '${TURNSTILE_RESPONSE_FIELD}';
   token.value = '${TURNSTILE_DUMMY_TOKEN}';
   widget.append(token);
+  const solved = window[widget.dataset.callback];
+  if (typeof solved === 'function') solved(token.value);
 });`;
+const TURNSTILE_STUB = `{
+${TURNSTILE_SOLVE}
+solve();
+}`;
+const SLOW_TURNSTILE_STUB = `{
+${TURNSTILE_SOLVE}
+setTimeout(solve, ${SLOW_TOKEN_DELAY_MS});
+}`;
 const SELF_HOST_TITLE = 'Self-host todz';
 const SELF_HOST_GUIDE_FILE = path.join(import.meta.dirname, '..', '..', '..', 'docs', 'self-host.md');
 const SECOND_LEVEL_HEADING_PREFIX = '## ';
@@ -247,6 +258,31 @@ test.describe('join', () => {
     await expectJoined({ page, form: Fragment.Hero, address });
     await submitForm({ page, form: Fragment.Final, address });
     await expectJoined({ page, form: Fragment.Final, address });
+  });
+
+  test.describe('when the widget writes its token late', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: SLOW_TURNSTILE_STUB }));
+    });
+
+    test('a join submitted at once waits for the token and answers the same', async ({ page }) => {
+      const address = uniqueAddress();
+      await page.goto(SitePath.Landing);
+      await submitForm({ page, form: Fragment.Hero, address });
+      await expectJoined({ page, form: Fragment.Hero, address });
+    });
+
+    test('a second click while the token is pending posts the form once', async ({ page }) => {
+      const posts: string[] = [];
+      page.on('request', (request) => request.method() === 'POST' && posts.push(request.url()));
+      const address = uniqueAddress();
+      const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
+      await page.goto(SitePath.Landing);
+      await submitForm({ page, form: Fragment.Hero, address });
+      await button.click({ force: true });
+      await expectJoined({ page, form: Fragment.Hero, address });
+      expect(posts).toHaveLength(1);
+    });
   });
 
   test('a direct GET of /join lands on the landing page', async ({ page }) => {
