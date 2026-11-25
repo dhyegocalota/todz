@@ -31,6 +31,6 @@ Red test with the guide, then the README link.
 
 ## Z. Prove and ship
 
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md`.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict.
-- [ ] **/open-pr:** gates passed, PR opened.
+- [x] **Tester run:** pass 1 at 12622e9 found two defects: `verify all` fails on a renamed fork, and the owner's signing team. Pass 2 at 36f8ddf ticked 9 of 9 (7d4df16).
+- [x] **Reviewer:** WITH RESERVATIONS at 12622e9; YES at 36f8ddf. Security: FINDINGS at 12622e9 (the production settings and the `workers.dev` check), then CLEAR at 36f8ddf.
+- [x] **/open-pr:** gates passed, PR opened.

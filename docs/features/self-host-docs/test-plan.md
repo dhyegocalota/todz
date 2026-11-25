@@ -28,3 +28,4 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 ## Coverage honesty
 
 - The remote steps (create, deploy, sending, Turnstile) are not executed by the test; the deploy runbook's run proves the same commands against Cloudflare.
+- The guide's Release build is never run by the gate, which builds Debug; the test compares the commands with the configuration swapped. Signing with another team's Personal Team is unproven here.
