@@ -17,6 +17,7 @@ export default defineConfig(async () => {
             cloudflareTest({
               wrangler: { configPath: './wrangler.jsonc' },
               miniflare: {
+                d1Databases: ['MIGRATION_DIRECTORY'],
                 bindings: {
                   MIGRATIONS: migrations,
                   SIGN_IN_PROVIDER: 'fake',
