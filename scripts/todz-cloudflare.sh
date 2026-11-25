@@ -17,10 +17,10 @@ fail() {
 refuse_unlisted_path() {
   local path=$1
   case "$path" in
-    *..* | *%2[eE]*) fail "refused $path: not on the allowlist" ;;
+    *..* | *%2[eE]* | *\[* | *\]* | *\{* | *\}*) fail "refused $path: not on the allowlist" ;;
     /user/tokens/verify) ;;
     "/accounts/$account_id/tokens/verify") ;;
-    "/zones/$zone_id/"*) ;;
+    "/zones/$zone_id/"?*) ;;
     "/accounts/$account_id/d1/database/$database_id" | "/accounts/$account_id/d1/database/$database_id/"* | "/accounts/$account_id/d1/database/$database_id?"*) ;;
     "/accounts/$account_id/workers/domains" | "/accounts/$account_id/workers/domains/"* | "/accounts/$account_id/workers/domains?"*) ;;
     "/accounts/$account_id/workers/subdomain") ;;
@@ -40,7 +40,7 @@ if [[ "$1" == api ]]; then
   method=$2
   path=$3
   body_file=${4:-}
-  request_flags=(-sS -X "$method" -H @- -H "Content-Type: application/json")
+  request_flags=(-sS --globoff -X "$method" -H @- -H "Content-Type: application/json")
   if [[ -n "$body_file" ]]; then
     [[ -f "$body_file" ]] || fail "no such file: $body_file"
     request_flags+=(--data-binary "@$body_file")
