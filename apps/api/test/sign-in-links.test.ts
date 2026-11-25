@@ -298,7 +298,7 @@ describe('POST /owner/sign-in-links', () => {
 
 describe('POST /owner/sign-in-links through the cloudflare sender', () => {
   const PUBLIC_REQUEST_ORIGIN = 'https://api.todz.test';
-  const LINK_PATTERN = /https:\/\/todz\.app\/sign-in#token=[A-Za-z0-9_-]{43}/;
+  const LINK_PATTERN = /https:\/\/todz\.app\/sign-in#token=[A-Za-z0-9_-]{43}&app=todz/;
   const REQUEST_LINK_TOKEN = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.RequestLink];
 
   beforeEach(() => {
@@ -320,7 +320,7 @@ describe('POST /owner/sign-in-links through the cloudflare sender', () => {
     expect(mail.subject).toBe('Your todz sign-in link');
     const link = LINK_PATTERN.exec(mail.text)?.[0];
     expect(link).toBeDefined();
-    expect(mail.html).toContain(`href="${link}"`);
+    expect(mail.html).toContain(`href="${link?.replaceAll('&', '&amp;')}"`);
     expect(mail.html).toContain(`src="${PUBLIC_HTTPS_ORIGIN}/brand/todz-lockup.png"`);
     expect(mail.text).toContain("If you didn't ask for this, ignore this email.");
   });
