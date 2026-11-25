@@ -50,7 +50,7 @@ private final class RedirectRefusal: NSObject, URLSessionTaskDelegate {
 
 public protocol OwnerService: Sendable {
     func signInMethod() async throws -> SignInMethod
-    func requestSignInLink(email: String, challenge: String, turnstileToken: String) async throws
+    func requestSignInLink(email: String, challenge: String, turnstileToken: String, linkScheme: AppLinkScheme) async throws
     func signIn(identityToken: String, linkVerifier: String?, turnstileToken: String?, timeZone: String) async throws -> IssuedSession
     func signOut(session: String) async throws
     func readOwner(session: String) async throws -> Owner
@@ -125,8 +125,8 @@ public struct OwnerAPI: OwnerService {
         try await answer(SignInMethodAnswer.self, to: OwnerRequest(method: .get, path: signInMethodPath, session: nil)).method
     }
 
-    public func requestSignInLink(email: String, challenge: String, turnstileToken: String) async throws {
-        let body = SignInLinkRequestBody(email: email, linkChallenge: challenge, turnstileToken: turnstileToken)
+    public func requestSignInLink(email: String, challenge: String, turnstileToken: String, linkScheme: AppLinkScheme) async throws {
+        let body = SignInLinkRequestBody(email: email, linkChallenge: challenge, turnstileToken: turnstileToken, appLinkScheme: linkScheme)
         _ = try await send(OwnerRequest(method: .post, path: signInLinksPath, session: nil, body: body))
     }
 

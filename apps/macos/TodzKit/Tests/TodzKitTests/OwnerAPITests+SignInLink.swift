@@ -15,14 +15,15 @@ extension OwnerAPITests {
         #expect(method == expected)
     }
 
-    @Test func requestSignInLinkPostsTheAddressTheChallengeAndTheTurnstileTokenWithoutASession() async throws {
-        try await api(answering: .response(status: 202, body: "{}")).requestSignInLink(email: "maria@example.com", challenge: challenge, turnstileToken: turnstileToken)
+    @Test(arguments: [AppLinkScheme.release, .debug])
+    func requestSignInLinkPostsTheAddressTheChallengeTheTurnstileTokenAndTheAppsSchemeWithoutASession(linkScheme: AppLinkScheme) async throws {
+        try await api(answering: .response(status: 202, body: "{}")).requestSignInLink(email: "maria@example.com", challenge: challenge, turnstileToken: turnstileToken, linkScheme: linkScheme)
         try expectOnlyRequest(
             ExpectedRequest(
                 method: "POST",
                 path: "/owner/sign-in-links",
                 session: nil,
-                body: ["email": "maria@example.com", "link_challenge": challenge, "turnstile_token": turnstileToken]
+                body: ["email": "maria@example.com", "link_challenge": challenge, "turnstile_token": turnstileToken, "app_link_scheme": linkScheme.rawValue]
             )
         )
     }
@@ -43,7 +44,7 @@ extension OwnerAPITests {
     @Test func aRefusedLinkRequestIsRefusedAsSignInRefused() async throws {
         let answer = StubAnswer.response(status: 429, body: "{\"error\":\"sign_in_refused\"}")
         await #expect(throws: OwnerAPIError.signInRefused) {
-            try await api(answering: answer).requestSignInLink(email: "maria@example.com", challenge: challenge, turnstileToken: turnstileToken)
+            try await api(answering: answer).requestSignInLink(email: "maria@example.com", challenge: challenge, turnstileToken: turnstileToken, linkScheme: .release)
         }
     }
 

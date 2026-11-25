@@ -22,7 +22,7 @@ public enum WidgetLink: Equatable, Sendable {
     case today
     case task(TaskKey)
 
-    public init?(url: URL) {
+    public init?(url: URL, scheme: AppLinkScheme) {
         guard url.scheme == linkScheme, let host = url.host().flatMap(WidgetLinkHost.init(rawValue:)) else { return nil }
         let components = url.path(percentEncoded: true)
             .split(separator: pathSeparator, omittingEmptySubsequences: false)
@@ -39,7 +39,7 @@ public enum WidgetLink: Equatable, Sendable {
         }
     }
 
-    public var url: URL {
+    public func url(scheme: AppLinkScheme) -> URL {
         var components = URLComponents()
         components.scheme = linkScheme
         components.host = host.rawValue

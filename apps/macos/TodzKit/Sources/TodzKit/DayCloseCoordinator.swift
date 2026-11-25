@@ -18,6 +18,7 @@ import Observation
     @ObservationIgnored private let isScreenLocked: () -> Bool
     @ObservationIgnored private let isPopoverVisible: () -> Bool
     @ObservationIgnored private let openPopover: () async -> Bool
+    @ObservationIgnored private let closePopover: () -> Void
 
     public init(
         gate: ProactiveGate,
@@ -27,7 +28,8 @@ import Observation
         openCount: @escaping () -> Int?,
         isScreenLocked: @escaping () -> Bool,
         isPopoverVisible: @escaping () -> Bool,
-        openPopover: @escaping () async -> Bool
+        openPopover: @escaping () async -> Bool,
+        closePopover: @escaping () -> Void
     ) {
         self.gate = gate
         self.defaults = defaults
@@ -37,6 +39,7 @@ import Observation
         self.isScreenLocked = isScreenLocked
         self.isPopoverVisible = isPopoverVisible
         self.openPopover = openPopover
+        self.closePopover = closePopover
         observeReleases()
     }
 

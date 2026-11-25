@@ -13,7 +13,7 @@ private let secondVerifier = "verifier-2"
 
 private func incomingLink() throws -> SignInLink {
     let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)&origin=\(harnessDefaultServer)"))
-    return try #require(SignInLink(url: url))
+    return try #require(SignInLink(url: url, scheme: .release))
 }
 
 private func expectedChallenge(_ verifier: String) -> String {
@@ -51,7 +51,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         await harness.askForLink(email: emailAddress)
         let expected = PendingSignInLink(email: emailAddress, verifier: firstVerifier, expiresAt: fixedInstant.addingTimeInterval(pendingLifetime))
-        #expect(harness.service.calls == [.requestSignInLink(email: emailAddress, challenge: expectedChallenge(firstVerifier), turnstileToken: harnessChallengeToken)])
+        #expect(harness.service.calls == [.requestSignInLink(email: emailAddress, challenge: expectedChallenge(firstVerifier), turnstileToken: harnessChallengeToken, linkScheme: harnessLinkScheme)])
         #expect(harness.model.pendingLink == expected)
         #expect(harness.pendingLinks.link == expected)
         #expect(harness.model.signInError == nil)
@@ -80,7 +80,7 @@ extension AppModelTests {
         harness.clock.now = fixedInstant.addingTimeInterval(linkLifetime - 1)
         await harness.askForLink(email: emailAddress)
         let challenge = expectedChallenge(firstVerifier)
-        #expect(harness.service.calls == [.requestSignInLink(email: emailAddress, challenge: challenge, turnstileToken: harnessChallengeToken), .requestSignInLink(email: emailAddress, challenge: challenge, turnstileToken: harnessChallengeToken)])
+        #expect(harness.service.calls == [.requestSignInLink(email: emailAddress, challenge: challenge, turnstileToken: harnessChallengeToken, linkScheme: harnessLinkScheme), .requestSignInLink(email: emailAddress, challenge: challenge, turnstileToken: harnessChallengeToken, linkScheme: harnessLinkScheme)])
         #expect(harness.model.pendingLink?.expiresAt == harness.clock.now.addingTimeInterval(pendingLifetime))
         #expect(harness.verifiers.issued == [firstVerifier])
     }
@@ -90,7 +90,7 @@ extension AppModelTests {
         await harness.askForLink(email: emailAddress)
         harness.clock.now = fixedInstant.addingTimeInterval(linkLifetime)
         await harness.askForLink(email: emailAddress)
-        #expect(harness.service.calls.last == .requestSignInLink(email: emailAddress, challenge: expectedChallenge(secondVerifier), turnstileToken: harnessChallengeToken))
+        #expect(harness.service.calls.last == .requestSignInLink(email: emailAddress, challenge: expectedChallenge(secondVerifier), turnstileToken: harnessChallengeToken, linkScheme: harnessLinkScheme))
         #expect(harness.model.pendingLink?.verifier == secondVerifier)
     }
 
@@ -98,7 +98,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         await harness.askForLink(email: emailAddress)
         await harness.askForLink(email: otherAddress)
-        #expect(harness.service.calls.last == .requestSignInLink(email: otherAddress, challenge: expectedChallenge(secondVerifier), turnstileToken: harnessChallengeToken))
+        #expect(harness.service.calls.last == .requestSignInLink(email: otherAddress, challenge: expectedChallenge(secondVerifier), turnstileToken: harnessChallengeToken, linkScheme: harnessLinkScheme))
         #expect(harness.model.pendingLink == PendingSignInLink(email: otherAddress, verifier: secondVerifier, expiresAt: fixedInstant.addingTimeInterval(pendingLifetime)))
     }
 

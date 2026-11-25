@@ -12,7 +12,7 @@ private let malformedChallengeTokens = ["", "bad token", "bad!token", longestCha
 
 private func incomingLink() throws -> SignInLink {
     let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)&origin=\(harnessDefaultServer)"))
-    return try #require(SignInLink(url: url))
+    return try #require(SignInLink(url: url, scheme: .release))
 }
 
 @MainActor private func harnessWithAPendingLink() throws -> AppModelHarness {
@@ -76,7 +76,7 @@ extension AppModelTests {
         let roundBefore = harness.model.challengeRound
         await harness.model.requestSignInLink(email: emailAddress)
         let challenge = SignInLinkChallenge.challenge(for: firstVerifier)
-        #expect(harness.service.calls == [.requestSignInLink(email: emailAddress, challenge: challenge, turnstileToken: harnessChallengeToken)])
+        #expect(harness.service.calls == [.requestSignInLink(email: emailAddress, challenge: challenge, turnstileToken: harnessChallengeToken, linkScheme: harnessLinkScheme)])
         #expect(harness.model.signInChallengeToken == nil)
         #expect(harness.model.challengeRound == roundBefore + 1)
     }
