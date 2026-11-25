@@ -103,6 +103,16 @@ private func snapshot(_ tasks: [TaskRecord], pendingTasks: [PendingTask] = []) t
         #expect(try OwnerCoding.decoder().decode(WidgetSnapshot.self, from: data) == snapshot)
     }
 
+    @Test func missingKeyFailsToDecode() throws {
+        let data = try OwnerCoding.encoder().encode(try snapshot([open(1)]))
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "showsDayTemperature")
+        let withoutTheKey = try JSONSerialization.data(withJSONObject: object)
+        #expect(throws: DecodingError.self) {
+            try OwnerCoding.decoder().decode(WidgetSnapshot.self, from: withoutTheKey)
+        }
+    }
+
     @Test func aTaskWithACreatorLabelShowsNoProjectTag() throws {
         var agentTask = MutableTask(number: 1, title: "Task 1", dueDate: today)
         agentTask.createdBy = .agent(clientName: agentClientName)
