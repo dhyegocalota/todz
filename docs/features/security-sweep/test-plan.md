@@ -6,8 +6,10 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 
 Finding 1, quotas (`apps/api/test/owner-quotas.test.ts`):
 
-- [ ] `the next workspace over the cap is refused` — input: an owner with `OWNER_WORKSPACES_MAX` workspaces, then `POST /owner/workspaces`; expected: 409 `{"error":"limit_reached"}`, `GET /owner/workspaces` lists `OWNER_WORKSPACES_MAX`
-- [ ] `the next project over the cap is refused` — input: a workspace with `WORKSPACE_PROJECTS_MAX` projects, the Inbox included, then `POST /owner/workspaces/:id/projects`; expected: 409 `limit_reached`, the workspace keeps `WORKSPACE_PROJECTS_MAX` projects
+- [ ] `the next workspace over the cap is refused and the list keeps the cap` — input: an owner with `OWNER_WORKSPACES_MAX` workspaces, then `POST /owner/workspaces`; expected: 409 `{"error":"limit_reached"}`, `GET /owner/workspaces` lists `OWNER_WORKSPACES_MAX`
+- [ ] `concurrent creates stop at the cap` — input: `OWNER_WORKSPACES_MAX + 5` creates at once; expected: exactly `OWNER_WORKSPACES_MAX` answer 201 and as many rows exist
+- [ ] `the next project over the cap, the Inbox counted, is refused` — input: a workspace with `WORKSPACE_PROJECTS_MAX` projects, the Inbox included, then `POST /owner/workspaces/:id/projects`; expected: 409 `limit_reached`, the workspace keeps `WORKSPACE_PROJECTS_MAX` projects
+- [ ] `a full workspace leaves another workspace of the owner open` — input: one full workspace, a second one; expected: a project in the second answers 201
 - [ ] `the next live key over the cap is refused` — input: a project with `PROJECT_LIVE_KEYS_MAX` live keys, then `POST /owner/projects/:id/keys`; expected: 409 `limit_reached`, no new `project_keys` row
 - [ ] `a revoked key frees its place` — input: the cap of live keys, one revoked, then one issue; expected: 201
 - [ ] `another owner's workspaces do not count` — input: owner A at the cap, owner B creates a workspace; expected: 201
@@ -16,17 +18,21 @@ Finding 1, rate limits (`apps/api/test/owner-rate-limit.test.ts`, `tools/reposit
 
 - [ ] `a signed-in owner route takes the owner limiter by owner id` — input: `GET /owner/workspaces` on a public host with a recording `OWNER_LIMITER`; expected: 200 and the limiter saw one key, the owner id
 - [ ] `a refused owner route answers rate limited` — input: the same with a refusing limiter; expected: 429 `{"error":"rate_limited"}`, `Retry-After: 60`
-- [ ] `a missing or throwing owner limiter serves` — input: no `OWNER_LIMITER`, then one that throws; expected: 200 for each
+- [ ] `an owner limiter that is missing / down serves the route` — input: no `OWNER_LIMITER`, then one that throws; expected: 200 for each
 - [ ] `a local host skips the owner limiter` — input: the same call on `http://localhost:8787` with a refusing limiter; expected: 200, the limiter saw nothing
-- [ ] `/mcp takes the key limiter by key digest` — input: `POST /mcp` initialize on a public host with a recording `MCP_LIMITER`; expected: the limiter saw the key's digest, never the key
-- [ ] `a refused /mcp answers 429` — input: the same with a refusing limiter; expected: 429, `Retry-After: 60`
+- [ ] `an unknown session never reaches the owner limiter` — input: a bearer that is no session; expected: the limiter saw nothing
+- [ ] `/mcp takes the key limiter, keyed by the key digest and never the key` — input: `POST /mcp` initialize on a public host with a recording `MCP_LIMITER`; expected: 200, the limiter saw the key's digest, never the key
+- [ ] `a refused /mcp answers 429 with Retry-After` — input: the same with a refusing limiter; expected: 429, `Retry-After: 60`
+- [ ] `a key limiter that is down serves /mcp` — input: a limiter that throws; expected: 200
 - [ ] `the wrangler configuration limits signed-in owners and keys` — input: `apps/api/wrangler.jsonc`; expected: `OWNER_LIMITER` namespace 8611 and `MCP_LIMITER` namespace 8612, each with its shared limit and a 60 s period
 
 Finding 2 (`apps/api/test/owner-request.test.ts`):
 
-- [ ] `a signed-in body over the bound is refused` — input: `POST /owner/workspaces` with `Content-Length: 4097`; expected: 400 `invalid_request`, no workspace
-- [ ] `a signed-in body without a length is refused` — input: a streamed body with no `Content-Length`; expected: 400 `invalid_request`
-- [ ] `a public body over the bound is refused before Turnstile` — input: `POST /owner/sign-in-links` with `Content-Length: 4097`, then without one; expected: 400 `invalid_request` each, siteverify never called
+- [ ] `a signed-in body of exactly the bound is read (pin)` — input: `POST /owner/workspaces` with a 4096-byte body; expected: 201
+- [ ] `a signed-in body over the bound is refused and keeps nothing` — input: `POST /owner/workspaces` with a 4097-byte body; expected: 400 `invalid_request`, no workspace
+- [ ] `a signed-in body without a length is refused and keeps nothing` — input: a streamed body with no `Content-Length`; expected: 400, no workspace
+- [ ] `a public body over the bound is refused before Turnstile` — input: `POST /owner/sign-in-links` with a 4097-byte body; expected: 400 `invalid_request`, siteverify never called
+- [ ] `a public body without a length is refused before Turnstile` — input: the same streamed with no `Content-Length`; expected: 400, siteverify never called
 
 Finding 3 (`tools/repository-shape/src/api-source.test.ts`):
 
@@ -34,22 +40,25 @@ Finding 3 (`tools/repository-shape/src/api-source.test.ts`):
 
 Finding 4 (`apps/api/test/email-address.test.ts`):
 
-- [ ] `a domain with a query, a fragment or an escape is refused` — input: `a@b.c?x`, `a@b#c.de`, `a@b%2e.cd`; expected: `normalizedAddress` returns `null` for each
-- [ ] `a plain address still passes (pin)` — input: `Maria@Example.co.uk`; expected: `maria@example.co.uk`
+- [ ] `a query, a fragment, an escape, an underscore or an empty label in the domain is no address` — input: `a@b.c?x`, `a@b#c.de`, `a@b%2e.cd`, `a@b_c.de`, `a@b..cd`; expected: `normalizedAddress` returns `null` for each
+- [ ] The existing addresses still normalize (pin) — input: `  Maria@Example.COM `, `maria+todz@mail.example.com`; expected: `maria@example.com`, `maria+todz@mail.example.com`
 
-Finding 5 (`apps/api/test/worker.test.ts`):
+Finding 5 (`apps/api/test/security-headers.test.ts`):
 
-- [ ] `a crash answers an empty 500 with the four headers` — input: a request whose `DIRECTORY.prepare` throws; expected: 500, empty body, the four headers of `withSecurityHeaders`
+- [ ] `a crash answers an empty 500 with the four headers` — input: `POST /mcp` with a bearer, through the Worker's `fetch`, on a directory whose `prepare` throws; expected: 500, empty body, the four headers of `withSecurityHeaders`
 
 Finding 6 (`apps/api/test/waitlist-join.test.ts`, `waitlist-store.test.ts`):
 
-- [ ] `the join over the daily cap opens soon` — input: `WAITLIST_DAILY_JOINS_MAX` rows joined in the last 24 hours, then a solved join of a fresh address; expected: 503 opens soon, no row for the address, no mail
-- [ ] `rows older than a day do not count` — input: the cap of rows joined 25 hours ago, then a join; expected: the address is kept
+- [ ] `waitlist-join.test.ts::a join over the daily cap answers opens soon, keeps no row and sends no mail` — input: `WAITLIST_DAILY_JOINS_MAX` rows joined an hour ago, then a solved join of a fresh address; expected: 503 opens soon, no row for the address, no mail
+- [ ] `waitlist-store.test.ts::a join over the daily cap is full and keeps no row` — input: the cap of rows an hour before `now`; expected: `WaitlistJoin.Full`, no row
+- [ ] `waitlist-store.test.ts::joins older than a day do not count against the cap` — input: the cap of rows exactly a day before `now`; expected: `WaitlistJoin.Claimed`, the row kept
+- [ ] `waitlist-store.test.ts::a known address over the cap is known, not full, so the answer stays alike` — input: an address joined a day earlier, then the cap of rows, then the address again; expected: `WaitlistJoin.Known`
 
 Finding 10 (`apps/api/test/owner-changes.test.ts`):
 
-- [ ] `signing out closes the sockets of that session` — input: a socket opened on a project, then `DELETE /owner/sessions/current` with the same session; expected: the socket closes
-- [ ] `another session's socket stays open` — input: two sessions of one owner, each with a socket, one signs out, then a task is added; expected: the other socket receives `changed`
+- [ ] `signing out closes the sockets that session opened` — input: a socket opened on a project, then `DELETE /owner/sessions/current` with the same session, then an agent adds a task; expected: the socket's first event is its close, never `changed`
+- [ ] `another session's socket stays open and hears the next change (pin)` — input: two sessions of one owner, a socket on the second, the first signs out, then the second adds a task; expected: the socket's first event is `changed`
+- [ ] `project-changes.test.ts::an upgrade without its session is refused with 400` — input: the project store's `fetch` with `Upgrade: websocket` and no session digest; expected: 400 and no socket
 
 Finding 11:
 

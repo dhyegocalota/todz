@@ -23,30 +23,30 @@ G3 docs first. G1 and G2 run in parallel, each finding red then green on its own
 
 ### G3
 
-- [ ] **Step 1:** Spec, plan, test plan, ADR 0073 and both index rows; status `Building` at the first code commit.
+- [x] **Step 1:** Spec, plan, test plan, ADR 0073 and both index rows; status `Building` at the first code commit. Evidence: d86b0bf2; `Building` in a96e0948.
 
 ### G1
 
-- [ ] **Step 2:** Red, finding 1 quotas: `test/owner-quotas.test.ts` creates the cap of workspaces, projects and live keys; the next create answers 409 `limit_reached` and the count stays at the cap.
-- [ ] **Step 3:** Green: count-guarded `insertWorkspaceWithInbox`, `insertProject`, `insertProjectKey`; `OwnerErrorCode.LimitReached`; the caps in `libs/types`.
-- [ ] **Step 4:** Red, finding 1 rate limits: `test/owner-rate-limit.test.ts` (owner routes keyed by owner id, MCP keyed by key digest, 429 with `Retry-After`, a missing or throwing limiter serves) and the two bindings in `api-source.test.ts`.
-- [ ] **Step 5:** Green: `owner-rate-limit.ts`, `OWNER_LIMITER` 8611 and `MCP_LIMITER` 8612 in `wrangler.jsonc` and `env.ts`, the limits in `libs/types`.
-- [ ] **Step 6:** Red, finding 2: a signed-in and a public body of 4097 bytes, and one without `Content-Length`, answer 400 `invalid_request`; siteverify is never called.
-- [ ] **Step 7:** Green: `parsedBody` requires `isBoundedRequest`.
-- [ ] **Step 8:** Red, finding 3: `api-source.test.ts` expects the policy under `/*` and its detach under `/icon.svg`.
-- [ ] **Step 9:** Green: `public/_headers`.
-- [ ] **Step 10:** Red, finding 4: `a@b.c?x`, `a@b#c.de`, `a@b%2e.cd` are refused.
-- [ ] **Step 11:** Green: the domain pattern in `email-address.ts`.
-- [ ] **Step 12:** Red, finding 5: a directory that throws answers an empty 500 with the four headers.
-- [ ] **Step 13:** Green: the `try` in `index.ts`.
-- [ ] **Step 14:** Red, finding 6: with the daily cap of joins in the last 24 hours, a join answers 503 "opens soon", keeps no row and sends no mail.
-- [ ] **Step 15:** Green: the count-guarded `joinWaitlist`, its outcome mapped to opens soon.
-- [ ] **Step 16:** Red, finding 10: a socket opened with a session closes when that session signs out; a socket of another session stays open.
-- [ ] **Step 17:** Green: sockets tagged with the session digest; sign-out closes them in every owned project.
-- [ ] **Step 18:** Finding 11: `mint` bumped or an override scoped to its tree; `pnpm audit --audit-level=high` exits 0.
-- [ ] **Step 19:** Red, finding 12: `security-headers.test.ts` and `api-source.test.ts` expect `includeSubDomains`.
-- [ ] **Step 20:** Green: `STRICT_TRANSPORT_SECURITY` and `_headers`.
-- [ ] **Step 21:** The dated learning with the sweep's result; `tester-briefing.md`.
+- [x] **Step 2:** Red, finding 1 quotas: `test/owner-quotas.test.ts` creates the cap of workspaces, projects and live keys; the next create answers 409 `limit_reached` and the count stays at the cap. Evidence: a96e0948.
+- [x] **Step 3:** Green: count-guarded `insertWorkspaceWithInbox`, `insertProject`, `insertProjectKey`; `OwnerErrorCode.LimitReached`; the caps in `libs/types`. Evidence: 83af297f.
+- [x] **Step 4:** Red, finding 1 rate limits: `test/owner-rate-limit.test.ts` (owner routes keyed by owner id, MCP keyed by key digest, 429 with `Retry-After`, a missing or throwing limiter serves) and the two bindings in `api-source.test.ts`. Evidence: 31c37bb4.
+- [x] **Step 5:** Green: `owner-rate-limit.ts`, `OWNER_LIMITER` 8611 and `MCP_LIMITER` 8612 in `wrangler.jsonc` and `env.ts`, the limits in `libs/types`. Evidence: 01887f15.
+- [x] **Step 6:** Red, finding 2: a signed-in and a public body of 4097 bytes, and one without `Content-Length`, answer 400 `invalid_request`; siteverify is never called. Evidence: bd62f895 (`apps/api/test/owner-request.test.ts`; `owner-client.ts` now sends `Content-Length`, as real clients do).
+- [x] **Step 7:** Green: `parsedBody` requires `isBoundedRequest`. Evidence: 32426a00.
+- [x] **Step 8:** Red, finding 3: `api-source.test.ts` expects the policy under `/*` and its detach under `/icon.svg`. Evidence: 0ef0db2d.
+- [x] **Step 9:** Green: `public/_headers`. Evidence: a7741016.
+- [x] **Step 10:** Red, finding 4: `a@b.c?x`, `a@b#c.de`, `a@b%2e.cd` are refused. Evidence: 09b619c6.
+- [x] **Step 11:** Green: the domain pattern in `email-address.ts`. Evidence: f4d312be.
+- [x] **Step 12:** Red, finding 5: a directory that throws answers an empty 500 with the four headers. Evidence: 9373ac5c (in `security-headers.test.ts`, beside the other answers and their four headers).
+- [x] **Step 13:** Green: the `try` in `index.ts`. Evidence: ce057b70.
+- [x] **Step 14:** Red, finding 6: with the daily cap of joins in the last 24 hours, a join answers 503 "opens soon", keeps no row and sends no mail. Evidence: deb0c0ca.
+- [x] **Step 15:** Green: the count-guarded `joinWaitlist`, its outcome mapped to opens soon. Evidence: a81d0f8b (`joinWaitlist` became `joinWaitlistWithinLimit`, so a caller that still expects a boolean fails to compile).
+- [x] **Step 16:** Red, finding 10: a socket opened with a session closes when that session signs out; a socket of another session stays open. Evidence: 1b5307e7.
+- [x] **Step 17:** Green: sockets tagged with the session digest; sign-out closes them in every owned project. Evidence: 50de327c.
+- [x] **Step 18:** Finding 11: `mint` bumped or an override scoped to its tree; `pnpm audit --audit-level=high` exits 0. Evidence: a4c0c601 (mint 4.3.92 still pins sharp 0.33.5, so the override).
+- [x] **Step 19:** Red, finding 12: `security-headers.test.ts` and `api-source.test.ts` expect `includeSubDomains`. Evidence: 1ae82739.
+- [x] **Step 20:** Green: `STRICT_TRANSPORT_SECURITY` and `_headers`. Evidence: 3f466066.
+- [x] **Step 21:** The dated learning with the sweep's result; `tester-briefing.md`. Evidence: `docs/learnings/2026-11-25-a-signed-in-route-with-no-quota-lets-one-tenant-fill-the-shared-directory.md`, `tester-briefing.md` (server lane section).
 
 ### G2
 

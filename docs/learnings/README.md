@@ -33,6 +33,7 @@ Every learning touched by a change gets a `Revisited` line appended.
 | 2026-11-24 | A web view that is "non-persistent" still keeps its cookies across reloads | [2026-11-24-a-wkwebview-s-non-persistent-store-lives-as-long-as-the-view.md](2026-11-24-a-wkwebview-s-non-persistent-store-lives-as-long-as-the-view.md) | 2026-11-24 |
 | 2026-11-24 | A new sidebar row crashes the app in a view that only shows for the other rows | [2026-11-24-a-swiftui-subtree-that-reads-the-selection-itself-renders-once-more-with-the-new-item.md](2026-11-24-a-swiftui-subtree-that-reads-the-selection-itself-renders-once-more-with-the-new-item.md) | 2026-11-24 |
 | 2026-11-25 | A public owner route that answers differently for an account that exists tells so through `Server-Timing` | [2026-11-25-server-timing-wraps-the-public-owner-routes.md](2026-11-25-server-timing-wraps-the-public-owner-routes.md) | 2026-11-25 |
+| 2026-11-25 | A signed-in route with no quota lets one tenant fill the directory every tenant shares | [2026-11-25-a-signed-in-route-with-no-quota-lets-one-tenant-fill-the-shared-directory.md](2026-11-25-a-signed-in-route-with-no-quota-lets-one-tenant-fill-the-shared-directory.md) | 2026-11-25 |
 
 ### tooling
 
