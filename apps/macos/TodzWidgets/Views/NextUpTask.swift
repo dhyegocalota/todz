@@ -7,8 +7,14 @@ private let titleLineLimit = 3
 struct NextUpTask: View {
     let task: WidgetSnapshotTask
     let widgetDay: WidgetDay
+    let isWashShown: Bool
 
     var body: some View {
+        content
+            .overdueWash(task: task, widgetDay: widgetDay, isShown: isWashShown && task.key != nil)
+    }
+
+    private var content: some View {
         HStack(alignment: .firstTextBaseline) {
             marker
             VStack(alignment: .leading) {
