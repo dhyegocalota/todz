@@ -38,6 +38,14 @@ public struct CompletionLingers: Sendable, Equatable {
         return CompletionLingers(lingers: started)
     }
 
+    public func starting(_ outcome: LingerOutcome, task key: TaskKey, in item: SidebarItem, views: TaskViews) -> CompletionLingers {
+        fatalError("CompletionLingers.starting is not implemented")
+    }
+
+    public func outcome(of key: TaskKey) -> LingerOutcome? {
+        fatalError("CompletionLingers.outcome is not implemented")
+    }
+
     public func ending(task key: TaskKey) -> CompletionLingers {
         var ended = lingers
         ended[key] = nil

@@ -48,4 +48,35 @@ extension AppModelTests {
         #expect(dropped?.task.dueDate == nil)
         #expect(harness.model.todayHeadingCount == 1)
     }
+
+    @Test func theDayCloseListShowsTodaysOpenTasksWithoutDoneToday() async throws {
+        let harness = try await dayCloseHarness()
+        #expect(harness.model.dayCloseTasks(lingers: CompletionLingers())?.map(\.task.title) == ["Send the invoice", "Review the copy"])
+        #expect(!harness.model.isDayClosed(lingers: CompletionLingers()))
+    }
+
+    @Test func aTaskMovedToTomorrowStaysInTheDayCloseListWhileItLingers() async throws {
+        let harness = try await dayCloseHarness()
+        let taskViews = try #require(harness.model.taskViews)
+        let lingers = CompletionLingers().starting(.dueTomorrow, task: firstTask, in: .today, views: taskViews)
+        await harness.model.updateDueDate(task: firstTask, dueDate: harness.model.today.adding(days: tomorrowOffset))
+        #expect(harness.model.dayCloseTasks(lingers: lingers)?.map(\.task.title) == ["Send the invoice", "Review the copy"])
+        #expect(harness.model.dayCloseTasks(lingers: lingers.ending(task: firstTask))?.map(\.task.title) == ["Review the copy"])
+    }
+
+    @Test func theDayIsClosedWhenNothingIsLeftAndNothingLingers() async throws {
+        let harness = try await dayCloseHarness()
+        let taskViews = try #require(harness.model.taskViews)
+        let lingers = CompletionLingers().toggling(task: firstTask, in: .today, views: taskViews)
+        await harness.model.complete(task: firstTask)
+        await harness.model.updateDueDate(task: TaskKey(projectIdentifier: inboxIdentifier, number: 2), dueDate: nil)
+        #expect(!harness.model.isDayClosed(lingers: lingers))
+        #expect(harness.model.isDayClosed(lingers: lingers.ending(task: firstTask)))
+    }
+
+    @Test func theDayIsNotClosedBeforeTodayIsKnown() throws {
+        let harness = try AppModelHarness()
+        #expect(harness.model.dayCloseTasks(lingers: CompletionLingers()) == nil)
+        #expect(!harness.model.isDayClosed(lingers: CompletionLingers()))
+    }
 }
