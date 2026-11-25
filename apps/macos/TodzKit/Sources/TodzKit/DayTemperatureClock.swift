@@ -3,10 +3,13 @@ import Observation
 
 @MainActor @Observable public final class DayTemperatureClock {
     public private(set) var step = DayTemperatureStep.plain
+    public var isOn: Bool {
+        fatalError("DayTemperatureClock.isOn is not implemented")
+    }
     @ObservationIgnored var waiting: Task<Void, Never>?
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let timeZone: () -> TimeZone
-    @ObservationIgnored private let isOn: () -> Bool
+    @ObservationIgnored private let readsIsOn: () -> Bool
     @ObservationIgnored private let pause: (Duration) async throws -> Void
 
     public init(
@@ -17,14 +20,14 @@ import Observation
     ) {
         self.now = now
         self.timeZone = timeZone
-        self.isOn = isOn
+        self.readsIsOn = isOn
         self.pause = pause
     }
 
     // NB ADR 0065: one wait to the next boundary, at most four a day, restarted on wake, unlock, zone, clock and defaults changes.
     public func refresh() {
         waiting?.cancel()
-        guard isOn() else {
+        guard readsIsOn() else {
             step = .plain
             waiting = nil
             return

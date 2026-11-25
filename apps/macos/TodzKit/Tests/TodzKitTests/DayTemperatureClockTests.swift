@@ -106,6 +106,15 @@ private final class ClockSwitch {
         #expect(bench.pause.heldCount == 1)
     }
 
+    @Test func theClockReportsTheSettingItLastReadAtARefresh() async throws {
+        let bench = try ClockBench(hour: 13)
+        bench.clock.refresh()
+        #expect(bench.clock.isOn)
+        bench.setting.isOn = false
+        bench.clock.refresh()
+        #expect(!bench.clock.isOn)
+    }
+
     @Test func aSwitchedOffSettingIsPlainAndWaitsForNothing() async throws {
         let bench = try ClockBench(hour: 13)
         bench.setting.isOn = false
