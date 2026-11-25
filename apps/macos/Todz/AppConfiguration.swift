@@ -2,6 +2,7 @@ import Foundation
 import TodzKit
 
 private let baseURLKey = "TodzAPIBaseURL"
+private let linkSchemeKey = "TodzLinkScheme"
 
 enum AppConfiguration {
     static var defaultURL: ServerAddress {
@@ -12,6 +13,13 @@ enum AppConfiguration {
         case let .success(address): return address
         case let .failure(issue): fatalError("\(baseURLKey) in the app's Info.plist is not a server address (\(issue)): \(text)")
         }
+    }
+
+    static var linkScheme: AppLinkScheme {
+        guard let scheme = AppLinkScheme.of(bundle: .main) else {
+            fatalError("\(linkSchemeKey) is missing from the app's Info.plist or names no link scheme of ours")
+        }
+        return scheme
     }
 
     static var defaultsDomain: String {

@@ -8,7 +8,7 @@ struct TodayListWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: TodayTimelineProvider()) { entry in
             TodayListView(entry: entry)
-                .widgetURL(WidgetLink.today.url)
+                .widgetURL(WidgetLink.today.url(scheme: WidgetLinkConfiguration.linkScheme))
                 .containerBackground(.background, for: .widget)
         }
         .configurationDisplayName(MainWindowCopy.today)

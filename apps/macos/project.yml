@@ -9,11 +9,13 @@ settings:
       TODZ_APP_BUNDLE_IDENTIFIER: dev.todz.Todz.debug
       TODZ_WIDGETS_BUNDLE_IDENTIFIER: dev.todz.Todz.debug.widgets
       TODZ_APP_GROUP: dev.todz.debug
+      TODZ_URL_SCHEME: todz-dev
       TODZ_ALLOWS_LOCAL_NETWORKING: "YES"
     Release:
       TODZ_APP_BUNDLE_IDENTIFIER: dev.todz.Todz
       TODZ_WIDGETS_BUNDLE_IDENTIFIER: dev.todz.Todz.widgets
       TODZ_APP_GROUP: dev.todz
+      TODZ_URL_SCHEME: todz
       TODZ_ALLOWS_LOCAL_NETWORKING: "YES"
 packages:
   TodzKit:
@@ -60,9 +62,10 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         TodzAPIBaseURL: $(TODZ_API_BASE_URL)
         TodzAppGroup: $(TeamIdentifierPrefix)$(TODZ_APP_GROUP)
+        TodzLinkScheme: $(TODZ_URL_SCHEME)
         CFBundleURLTypes:
           - CFBundleURLName: dev.todz.Todz
-            CFBundleURLSchemes: [todz]
+            CFBundleURLSchemes: [$(TODZ_URL_SCHEME)]
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: $(TODZ_ALLOWS_LOCAL_NETWORKING)
   TodzWidgets:
@@ -97,6 +100,7 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         TodzAppGroup: $(TeamIdentifierPrefix)$(TODZ_APP_GROUP)
+        TodzLinkScheme: $(TODZ_URL_SCHEME)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 schemes:
