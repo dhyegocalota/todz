@@ -131,7 +131,7 @@ ${CROP_RULES}
 .terminal{border-radius:20px;background:var(--color-terminal);box-shadow:inset 0 0 0 1px rgb(255 255 255 / 0.06), var(--shadow-glass);overflow:hidden}
 .terminal-bar{display:flex;gap:var(--space-2);padding:var(--space-4) var(--space-5) 0}
 .terminal-dot{width:12px;height:12px;border-radius:50%;background:rgb(255 255 255 / 0.16)}
-.terminal-body{margin:0;padding:var(--space-4) var(--space-5) var(--space-5);font-family:var(--font-mono);font-size:var(--text-code);line-height:1.6;color:var(--color-terminal-text);white-space:pre-wrap;overflow-wrap:break-word}
+.terminal-body{margin:0;padding:var(--space-4) var(--space-5) var(--space-5);font-family:var(--font-mono);font-variant-ligatures:none;font-size:var(--text-code);line-height:1.6;color:var(--color-terminal-text);white-space:pre-wrap;overflow-wrap:break-word}
 .terminal-line{display:block;padding-left:2ch;text-indent:-2ch}
 .terminal-line + .terminal-line{margin-top:var(--space-3)}
 .terminal-prompt{color:var(--color-terminal-prompt);font-weight:700}
@@ -158,7 +158,7 @@ ${CROP_RULES}
 .prose p,.prose ul,.prose pre{margin-top:var(--space-4)}
 .prose ul{padding-left:1.5rem}
 .prose li + li{margin-top:var(--space-1)}
-.prose code{font-family:var(--font-mono);font-size:0.9em;padding:0.1em 0.35em;border-radius:6px;background:var(--color-chip);overflow-wrap:anywhere}
+.prose code{font-family:var(--font-mono);font-variant-ligatures:none;font-size:0.9em;padding:0.1em 0.35em;border-radius:6px;background:var(--color-chip);overflow-wrap:anywhere}
 .prose .code{padding:var(--space-4) var(--space-5);border-radius:var(--radius-control);background:var(--color-terminal);color:var(--color-terminal-text);font-size:var(--text-code);line-height:1.6;overflow-x:auto;box-shadow:inset 0 0 0 1px var(--color-hairline)}
 .prose .code code{padding:0;background:none;font-size:inherit;overflow-wrap:normal}
 .back-to-top{margin-top:var(--space-7);text-align:center;font-size:var(--text-small)}
