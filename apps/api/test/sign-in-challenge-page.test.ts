@@ -56,6 +56,13 @@ describe('GET /sign-in/challenge', () => {
     );
   });
 
+  test('hides the overflow of the page, keeps it transparent and centers the widget', async () => {
+    const { html } = await pageSource();
+    const style = onlyInlineSource({ html, pattern: STYLE_PATTERN });
+    expect(style).toContain('html,body{margin:0;overflow:hidden;background:transparent}');
+    expect(style).toContain('body{display:flex;justify-content:center');
+  });
+
   test('renders one widget with the site key, the request_link action and the four callbacks', async () => {
     const { html } = await pageSource();
     const widgets = [...html.matchAll(WIDGET_PATTERN)].map(([widget]) => widget);

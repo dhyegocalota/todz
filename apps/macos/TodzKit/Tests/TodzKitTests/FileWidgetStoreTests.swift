@@ -54,7 +54,8 @@ private let snapshot = WidgetSnapshot(
         )
     ],
     pending: [],
-    doneToday: []
+    doneToday: [],
+    showsDayTemperature: false
 )
 
 @Suite final class FileWidgetStoreTests {

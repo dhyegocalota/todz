@@ -19,14 +19,20 @@ private func task(_ number: Int?, project: String = alpha, state: TaskState = .o
     )
 }
 
-private func snapshot(open: [WidgetSnapshotTask], pending: [WidgetSnapshotTask] = [], doneToday: [WidgetSnapshotTask]) -> WidgetSnapshot {
+private func snapshot(
+    open: [WidgetSnapshotTask],
+    pending: [WidgetSnapshotTask] = [],
+    doneToday: [WidgetSnapshotTask],
+    showsDayTemperature: Bool = false
+) -> WidgetSnapshot {
     WidgetSnapshot(
         workspaceName: "Acme",
         day: today,
         timeZoneIdentifier: harnessTimeZoneIdentifier,
         open: open,
         pending: pending,
-        doneToday: doneToday
+        doneToday: doneToday,
+        showsDayTemperature: showsDayTemperature
     )
 }
 
@@ -43,6 +49,12 @@ private let mixed = snapshot(open: [task(1), task(2)], pending: [task(nil)], don
         let toggled = try #require(WidgetToggle.setting(mixed, projectIdentifier: alpha, number: 3, to: .open, at: fixedInstant))
         #expect(toggled.snapshot == snapshot(open: [task(1), task(2)], pending: [task(nil)], doneToday: [task(3)]))
         #expect(toggled.request == WidgetRequest(projectIdentifier: alpha, number: 3, state: .open, at: fixedInstant))
+    }
+
+    @Test func togglingARowOfASnapshotThatShowsTheDayTemperatureKeepsItShown() throws {
+        let shown = snapshot(open: [task(1)], doneToday: [], showsDayTemperature: true)
+        let toggled = try #require(WidgetToggle.setting(shown, projectIdentifier: alpha, number: 1, to: .done, at: fixedInstant))
+        #expect(toggled.snapshot.showsDayTemperature)
     }
 
     @Test func aTaskAlreadyInTheTargetStateAsksNothing() {

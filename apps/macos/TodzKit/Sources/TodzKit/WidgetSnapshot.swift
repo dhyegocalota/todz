@@ -7,6 +7,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public let open: [WidgetSnapshotTask]
     public let pending: [WidgetSnapshotTask]
     public let doneToday: [WidgetSnapshotTask]
+    public let showsDayTemperature: Bool
 
     public init(
         workspaceName: String,
@@ -14,7 +15,8 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         timeZoneIdentifier: String,
         open: [WidgetSnapshotTask],
         pending: [WidgetSnapshotTask],
-        doneToday: [WidgetSnapshotTask]
+        doneToday: [WidgetSnapshotTask],
+        showsDayTemperature: Bool
     ) {
         self.workspaceName = workspaceName
         self.day = day
@@ -22,9 +24,16 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         self.open = open
         self.pending = pending
         self.doneToday = doneToday
+        self.showsDayTemperature = showsDayTemperature
     }
 
-    public static func of(views: TaskViews, workspace: Workspace, day: CalendarDate, timeZone: TimeZone) -> WidgetSnapshot {
+    public static func of(
+        views: TaskViews,
+        workspace: Workspace,
+        day: CalendarDate,
+        timeZone: TimeZone,
+        showsDayTemperature: Bool
+    ) -> WidgetSnapshot {
         let today = views.today
         let pending = views.pendingTasks(for: .today).compactMap { pendingTask in
             workspace.projects
@@ -37,7 +46,8 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             timeZoneIdentifier: timeZone.identifier,
             open: today.open.map { WidgetSnapshotTask.of($0, day: day) },
             pending: pending,
-            doneToday: today.doneToday.map { WidgetSnapshotTask.of($0, day: day) }
+            doneToday: today.doneToday.map { WidgetSnapshotTask.of($0, day: day) },
+            showsDayTemperature: showsDayTemperature
         )
     }
 
