@@ -18,7 +18,7 @@ const STRICT_TRANSPORT_SECURITY = 'Strict-Transport-Security';
 const CONTENT_TYPE_OPTIONS = 'X-Content-Type-Options';
 const REFERRER_POLICY = 'Referrer-Policy';
 const DEFAULT_POLICY = "default-src 'none'; frame-ancestors 'none'";
-const DEFAULT_TRANSPORT_SECURITY = 'max-age=31536000';
+const DEFAULT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
 const SCRIPT_DIRECTIVE = 'script-src';
 const UPGRADE_HEADER = 'Upgrade';
 const NOSNIFF = 'nosniff';

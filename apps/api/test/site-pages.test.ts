@@ -31,7 +31,7 @@ const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
 const TOKEN_FIELD = 'cf-turnstile-response';
 const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
-const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
+const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
 const SCRIPT_PATTERN = /<script>([\s\S]*?)<\/script>/g;
 const STYLE_PATTERN = /<style>([\s\S]*?)<\/style>/g;
 const SVG_PATTERN = /<svg[\s\S]*?<\/svg>/g;

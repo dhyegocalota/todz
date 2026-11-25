@@ -36,7 +36,7 @@ enum Css {
 
 const BRAND_ASSET_PATH = '/brand/todz-lockup.png';
 const OK_STATUS = 200;
-const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
+const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
 const JOINED_NOTICE = "You're on the list. Check your inbox.";
 const SLOW_SCRIPT_DELAY_MS = 1_500;
 const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
