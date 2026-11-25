@@ -51,3 +51,4 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 | [`landing-waitlist`](landing-waitlist/) | The todz.app form keeps the address and mails a confirmation once, behind three limits and Turnstile, failing closed | Shipped 2026-11-25 ([PR #27](https://github.com/dhyegocalota/todz/pull/27)) |
 | [`landing-waitlist-deploy`](landing-waitlist-deploy/) | The run of the deploy runbook that applied the waitlist migration and put the join route live, recorded | Shipped 2026-11-25 ([PR #28](https://github.com/dhyegocalota/todz/pull/28)) |
 | [`landing-admin`](landing-admin/) | The owner signs in to todz.app/admin by a mail link bound to his browser, and reads and exports the waitlist | Building |
+| [`landing-digest`](landing-digest/) | A daily mail to the admin address with the waitlist's last day: new joins, the total, failed confirmations and the new addresses | Approved |
