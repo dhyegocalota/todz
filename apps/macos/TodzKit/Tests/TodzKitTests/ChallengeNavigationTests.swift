@@ -30,23 +30,23 @@ private let refusedAddresses = [
     @Test(arguments: allowedAddresses)
     func theApiChallengePageAndCloudflareAreAllowed(address: String) throws {
         let url = try #require(URL(string: address))
-        #expect(ChallengeNavigation.isAllowed(url: url, apiBaseURL: apiBaseURL))
+        #expect(ChallengeNavigation.isAllowed(url: url, apiBaseURL: apiBaseURL, isMainFrame: true))
     }
 
     @Test(arguments: refusedAddresses)
     func everywhereElseIsRefused(address: String) throws {
         let url = try #require(URL(string: address))
-        #expect(ChallengeNavigation.isAllowed(url: url, apiBaseURL: apiBaseURL) == false)
+        #expect(ChallengeNavigation.isAllowed(url: url, apiBaseURL: apiBaseURL, isMainFrame: true) == false)
     }
 
     @Test func aLocalApiOriginIsAllowedWhenItIsTheConfiguredOne() throws {
         let url = try #require(URL(string: "http://localhost:8787/sign-in/challenge"))
-        #expect(ChallengeNavigation.isAllowed(url: url, apiBaseURL: localBaseURL))
-        #expect(ChallengeNavigation.isAllowed(url: url, apiBaseURL: apiBaseURL) == false)
+        #expect(ChallengeNavigation.isAllowed(url: url, apiBaseURL: localBaseURL, isMainFrame: true))
+        #expect(ChallengeNavigation.isAllowed(url: url, apiBaseURL: apiBaseURL, isMainFrame: true) == false)
     }
 
     @Test func anotherPortOfTheLocalApiIsRefused() throws {
         let url = try #require(URL(string: "http://localhost:9999/sign-in/challenge"))
-        #expect(ChallengeNavigation.isAllowed(url: url, apiBaseURL: localBaseURL) == false)
+        #expect(ChallengeNavigation.isAllowed(url: url, apiBaseURL: localBaseURL, isMainFrame: true) == false)
     }
 }

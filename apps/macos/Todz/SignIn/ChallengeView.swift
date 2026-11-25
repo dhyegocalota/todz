@@ -70,7 +70,7 @@ private struct ChallengeWebView: NSViewRepresentable {
             decisionHandler(.cancel)
             return
         }
-        let isAllowed = ChallengeNavigation.isAllowed(url: url, apiBaseURL: AppConfiguration.baseURL)
+        let isAllowed = ChallengeNavigation.isAllowed(url: url, apiBaseURL: AppConfiguration.baseURL, isMainFrame: navigationAction.targetFrame?.isMainFrame == true)
         decisionHandler(isAllowed ? .allow : .cancel)
     }
 }
