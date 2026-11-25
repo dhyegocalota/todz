@@ -1,9 +1,18 @@
 const HASH_ALGORITHM = 'SHA-256';
 const MESSAGE_HANDLER_HOST = 'webkit';
+const OPEN_BUTTON_ID = 'open';
+const UNDEFINED_TYPE = 'undefined';
 
 export const TEST_SITE_KEY = '1x00000000000000000000AA';
+export const WIDGET_ID = 'widget-1';
 
 type PageCallback = (argument?: string) => void;
+
+type PageElement = { dataset: Record<string, string> };
+
+type LoadedScript = { src: string; loadListeners: (() => void)[] };
+
+export type WidgetRender = { container: PageElement; options: Record<string, unknown> };
 
 export type PageScriptRun = {
   steps: string[];
@@ -12,7 +21,12 @@ export type PageScriptRun = {
   pressButton: () => void;
   callback: ({ name, argument }: { name: string; argument?: string }) => void;
   callbackNames: () => string[];
-  resets: () => number;
+  resets: () => string[];
+  loadedScripts: () => string[];
+  loadScripts: () => void;
+  renders: () => WidgetRender[];
+  widgetCallback: ({ name, argument }: { name: string; argument?: string }) => void;
+  leakedNames: () => string[];
 };
 
 export async function sourceHash(source: string): Promise<string> {
@@ -34,12 +48,31 @@ export function onlyInlineSource({ html, pattern }: { html: string; pattern: Reg
   return source;
 }
 
-export function runPageScript({ script, hash, pathname }: { script: string; hash: string; pathname: string }): PageScriptRun {
+function onlyRender(renders: WidgetRender[]): WidgetRender {
+  const [render, ...others] = renders;
+  if (render === undefined || others.length > 0) throw new Error('the page rendered exactly one widget');
+  return render;
+}
+
+export function runPageScript({
+  script,
+  hash,
+  pathname,
+  probedNames = [],
+}: {
+  script: string;
+  hash: string;
+  pathname: string;
+  probedNames?: string[];
+}): PageScriptRun {
   const steps: string[] = [];
   const posted: string[] = [];
   const pressListeners: (() => void)[] = [];
-  const resetCalls: string[] = [];
+  const resetIds: string[] = [];
+  const scripts: LoadedScript[] = [];
+  const widgetRenders: WidgetRender[] = [];
   const button = {
+    dataset: {},
     focus() {
       steps.push('focus');
     },
@@ -47,6 +80,7 @@ export function runPageScript({ script, hash, pathname }: { script: string; hash
       pressListeners.push(listener);
     },
   };
+  const check: PageElement = { dataset: { sitekey: TEST_SITE_KEY } };
   const body = { dataset: {} as Record<string, string> };
   const location = {
     hash,
@@ -60,12 +94,37 @@ export function runPageScript({ script, hash, pathname }: { script: string; hash
       steps.push(`replace ${address}`);
     },
   };
-  const document = { body, getElementById: () => button };
+  const document = {
+    body,
+    head: { appendChild: (element: LoadedScript) => scripts.push(element) },
+    getElementById: (id: string) => (id === OPEN_BUTTON_ID ? button : check),
+    createElement: () => {
+      const element: LoadedScript & { addEventListener: (type: string, listener: () => void) => void } = {
+        src: '',
+        loadListeners: [],
+        addEventListener: (_type, listener) => element.loadListeners.push(listener),
+      };
+      return element;
+    },
+  };
   const pageWindow: Record<string, unknown> = {
     [MESSAGE_HANDLER_HOST]: { messageHandlers: { turnstile: { postMessage: (message: string) => posted.push(message) } } },
   };
-  const turnstile = { reset: () => resetCalls.push('reset') };
-  new Function('location', 'history', 'document', 'window', 'turnstile', script)(location, history, document, pageWindow, turnstile);
+  const turnstile = {
+    render: (container: PageElement, options: Record<string, unknown>) => {
+      widgetRenders.push({ container, options });
+      return WIDGET_ID;
+    },
+    reset: (id: string) => resetIds.push(id),
+  };
+  const probe = `\nreturn [${probedNames.map((name) => `typeof ${name}`).join(', ')}];`;
+  const probedTypes = new Function('location', 'history', 'document', 'window', 'turnstile', `${script}${probe}`)(
+    location,
+    history,
+    document,
+    pageWindow,
+    turnstile,
+  ) as string[];
   return {
     steps,
     posted,
@@ -77,6 +136,15 @@ export function runPageScript({ script, hash, pathname }: { script: string; hash
       (callback as PageCallback)(argument);
     },
     callbackNames: () => Object.keys(pageWindow).filter((name) => name !== MESSAGE_HANDLER_HOST),
-    resets: () => resetCalls.length,
+    resets: () => resetIds,
+    loadedScripts: () => scripts.map((loaded) => loaded.src),
+    loadScripts: () => scripts.forEach((loaded) => loaded.loadListeners.forEach((listener) => listener())),
+    renders: () => widgetRenders,
+    widgetCallback: ({ name, argument }) => {
+      const callback = onlyRender(widgetRenders).options[name];
+      if (typeof callback !== 'function') throw new Error(`the widget has no ${name} callback`);
+      (callback as PageCallback)(argument);
+    },
+    leakedNames: () => probedNames.filter((_name, index) => probedTypes[index] !== UNDEFINED_TYPE),
   };
 }
