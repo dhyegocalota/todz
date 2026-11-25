@@ -144,7 +144,7 @@ import Observation
 
     private func play(_ frames: [RibbonFrame], content: RibbonContent, textWidth: Double) async {
         for frame in frames {
-            presentation = RibbonPresentation(content: content, frame: frame, textWidth: textWidth)
+            presentation = RibbonPresentation(content: content, frame: frame, textWidth: textWidth, isMotionReduced: false)
             do {
                 try await pause(frame.duration)
                 try Task.checkCancellation()
