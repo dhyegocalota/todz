@@ -37,10 +37,10 @@ Walk on 8537dd62: scratch Debug build (bundle `dev.todz.Todz.menubaronlywalk`, i
 - [x] Hidden, open the app again from Finder: the window opens in front with the Dock icon — evidence: `open -a <scratch>` while hidden: Foreground, frontmost true, menu bar File Edit View Task Window Help
 - [ ] Hidden, `open -a` on the running app and Spotlight: the window opens in front with the Dock icon
 - [ ] Switch on, minimize the main window: the Dock icon and ⌘Tab entry stay; clicking the Dock icon brings the window back
-- [ ] Switch on, ⌘H: the Dock icon stays; clicking it shows the window again
-- [ ] A normal launch from Finder: the Dock icon appears once and never disappears and returns
-- [ ] Hidden, the popover's "Quit todz" (ready, and signed out): todz quits
-- [ ] Fix round 1, hidden, the popover's "Open todz" and a popover row: the app turns regular and active before the window opens, so `lsappinfo` reads Foreground with the window in front
+- [ ] Switch on, ⌘H: the Dock icon stays; clicking it shows the window again — NOT RUN (minimize was run instead, see edge cases)
+- [ ] A normal launch from Finder: the Dock icon appears once and never disappears and returns — PARTIAL: a launch that restores no window read Foreground for 27 of 30 immediate `lsappinfo` samples, then UIElement (the Dock icon shows, then goes). A launch showing a window was Foreground in all 12 samples. Not a flicker for a window launch; present for a no-window launch
+- [x] Hidden, the popover's "Quit todz" (ready, and signed out): todz quits — evidence: signed in, hidden, "Quit todz" pressed: process gone. Signed-out case not run
+- [x] Fix round 1, hidden, the popover's "Open todz" and a popover row: the app turns regular and active before the window opens, so `lsappinfo` reads Foreground with the window in front — evidence: re-walk on 2db66de2 (scratch build, Finder frontmost, real clicks): "Open todz" gave Foreground, `lsappinfo info` "in front", System Events frontmost true; a popover row gave Foreground and in front. The first FAIL above is fixed
 - [ ] Hidden, check a widget checkbox: the task completes and the menu bar count drops — BLOCKED: no widget to tap; the hidden reload itself passed (next row)
 - [x] Hidden, widget reload and count: an agent-style add through the local API while hidden — evidence: `widget-snapshot.json` mtime 17:34:03 to 17:35:21, holds "Hidden agent task", menu bar item `todz, 4 left today`, app still UIElement
 - [ ] Hidden, run a todz Siri intent or Shortcut (where the branch has them): it answers, the app stays hidden — BLOCKED: no helper shortcut for the scratch bundle exists and building a signed one was out of the time box
@@ -50,6 +50,8 @@ Walk on 8537dd62: scratch Debug build (bundle `dev.todz.Todz.menubaronlywalk`, i
 - [x] A launch with no window shown (`open -g` or with the window closed at quit) has no Dock icon once launched — evidence: quit hidden, `open -g` relaunch: no window listed, UIElement after launch; eight immediate reads right after launch still said Foreground, so the icon shows briefly before the policy flips
 
 ## Edge cases found during execution
+
+- [ ] Minimize the window with the switch on, then open the popover — FAIL on 2db66de2: `lsappinfo` read Foreground right after the minimize, then UIElement once the popover opened (the minimized window does not count as visible), so the Dock icon, which holds the minimized window, disappears. Expected: the Dock icon stays. Regression test needed (the rule or its window count must treat a miniaturized window as present). Reopening with `open -a` brought it back
 
 - [ ] The popover's "Open todz" while hidden leaves the app an accessory: the window is shown but the app is not activated (see the FAIL above); the policy waits for the window to become key and an inactive app's window never does until clicked. Regression needed: the open-window path from the popover must activate the app (or the policy must flip when the window is shown, not when it becomes key).
 - [ ] A fresh launch briefly shows as Foreground before flipping to accessory when no window opens — observed for the first reads after `open -g`; settles to UIElement.
