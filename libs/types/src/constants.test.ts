@@ -21,6 +21,11 @@ import {
   MILLISECONDS_PER_MINUTE,
   MILLISECONDS_PER_SECOND,
   PROJECT_KEY_PREFIX,
+  REPLY_ADDRESS_LOCAL_PART,
+  REPLY_DAILY_MAX,
+  REPLY_RATE_LIMIT_MAX,
+  REPLY_RATE_LIMIT_PERIOD_SECONDS,
+  REPLY_SIZE_MAX_BYTES,
 } from './index';
 
 const MILLISECONDS_IN_A_DAY = 86_400_000;
@@ -109,5 +114,13 @@ describe('day email constants', () => {
   test('records are kept thirty days and a reply address lives seven (pin)', () => {
     expect(DAY_EMAIL_RETENTION_MS).toBe(30 * MILLISECONDS_IN_A_DAY);
     expect(DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS).toBe(7 * MILLISECONDS_IN_A_DAY);
+  });
+
+  test('a reply comes to the reply local part, is at most a mebibyte, and an owner adds at most five a minute and twenty a day (pin)', () => {
+    expect(REPLY_ADDRESS_LOCAL_PART).toBe('reply');
+    expect(REPLY_SIZE_MAX_BYTES).toBe(1_048_576);
+    expect(REPLY_RATE_LIMIT_MAX).toBe(5);
+    expect(REPLY_RATE_LIMIT_PERIOD_SECONDS).toBe(60);
+    expect(REPLY_DAILY_MAX).toBe(20);
   });
 });
