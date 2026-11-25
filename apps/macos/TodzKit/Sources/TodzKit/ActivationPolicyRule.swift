@@ -1,5 +1,8 @@
 public enum ActivationPolicyRule {
+    // NB ADR 0074: with the switch on, todz is an accessory app while no ordinary window is visible.
     public static func policy(isSettingOn: Bool, visibleWindowCount: Int) -> AppActivation {
-        fatalError("ActivationPolicyRule.policy is not implemented")
+        let isMenuBarOnly = isSettingOn && visibleWindowCount == 0
+        guard isMenuBarOnly else { return .regular }
+        return .accessory
     }
 }
