@@ -17,6 +17,24 @@
 
 G1 calls G2's `serveLandingPage({ notice, form, siteKey })` and `waitlistMail({ to, origin })` through stubs with those exact signatures until the merge.
 
+**Amended by the plan review answers (spec R1–R18), which win over the lines above and the steps below:**
+
+- The page's signature is `serveLandingPage({ notice, siteKey })`, with no `form` (R7).
+- G1 also owns:
+  - `src/index.ts` (R2);
+  - `src/local-origin.ts` (`isLocalSiteHost`, R4);
+  - a new `src/email-address.ts`, with `sign-in-links.ts` importing it (R6);
+  - `src/turnstile-page.ts` (the two exports);
+  - `libs/types/src/constants.ts` (the three limit constants);
+  - the "through the Worker" block of `site-pages.test.ts` (R3).
+- On a conflict, the lead keeps G2's `landing-page.ts`, `waitlist-mail.ts` and the generated email module. Nobody edits `package.json`.
+- G2 also owns `apps/api/e2e/` with the Turnstile stub (R1).
+- The lead also owns:
+  - the `e2e` rows for `wrangler.jsonc` and `migrations/*` in `scripts/verify-gates.tsv`, with their `verify.test.sh` case (R16);
+  - the ADR 0049 amendment (R9);
+  - the AGENTS.md helper line (R6);
+  - the runbook and guide changes (R17).
+
 ## Sequencing
 
 G1 and G2 run in parallel; the lead merges G2 into G1's result, then runs the E2E once more.
