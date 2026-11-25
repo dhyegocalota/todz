@@ -98,17 +98,23 @@ const WIDGET_LANDING_PAGES: NamedPage[] = NOTICES.map((notice) => [
 ]);
 const SELF_HOST_PAGE: NamedPage = ['the self-host guide', selfHostPage];
 
+function pageScriptOf(html: string): string {
+  const [pageScript] = inlineSources({ html, pattern: SCRIPT_PATTERN });
+  if (pageScript === undefined) throw new Error('the page has a page script');
+  return pageScript;
+}
+
 function formsOf(html: string): string[] {
   return [...html.matchAll(FORM_PATTERN)].map(([form]) => form);
 }
 
 async function landingPolicy({ html, widgetOrigins }: { html: string; widgetOrigins: string[] }): Promise<string> {
   const structuredDataHash = await sourceHash(onlyInlineSource({ html, pattern: STRUCTURED_DATA_PATTERN }));
-  const scriptHash = await sourceHash(onlyInlineSource({ html, pattern: SCRIPT_PATTERN }));
+  const scriptHashes = await Promise.all(inlineSources({ html, pattern: SCRIPT_PATTERN }).map((script) => sourceHash(script)));
   const styleHash = await sourceHash(onlyInlineSource({ html, pattern: STYLE_PATTERN }));
   return [
     "default-src 'none'",
-    ['script-src', structuredDataHash, scriptHash, ...widgetOrigins].join(' '),
+    ['script-src', structuredDataHash, ...scriptHashes, ...widgetOrigins].join(' '),
     `style-src ${styleHash}`,
     "img-src 'self'",
     "manifest-src 'self'",
@@ -213,7 +219,7 @@ describe('the site pages', () => {
 
 describe('the landing', () => {
   test.each(NOTICES)(
-    'with the %s notice, the content security policy allows its one script and one style by hash, its own images and its own forms',
+    'with the %s notice, the content security policy allows its scripts and one style by hash, its own images and its own forms',
     async (notice) => {
       const { response, html } = await landingPage(notice);
       const policy = response.headers.get('Content-Security-Policy');
@@ -233,11 +239,12 @@ describe('the landing', () => {
     },
   );
 
-  test('the widget keeps the one page script of the landing without it', async () => {
+  test('the widget keeps the page script and the WebMCP script of the landing without it', async () => {
     const withoutWidget = await landingPage(LandingNotice.None);
     const withWidget = await widgetLandingPage(LandingNotice.None);
-    expect(onlyInlineSource({ html: withWidget.html, pattern: SCRIPT_PATTERN })).toBe(
-      onlyInlineSource({ html: withoutWidget.html, pattern: SCRIPT_PATTERN }),
+    expect(inlineSources({ html: withWidget.html, pattern: SCRIPT_PATTERN })).toHaveLength(2);
+    expect(inlineSources({ html: withWidget.html, pattern: SCRIPT_PATTERN })).toEqual(
+      inlineSources({ html: withoutWidget.html, pattern: SCRIPT_PATTERN }),
     );
   });
 
@@ -319,7 +326,7 @@ describe('the landing', () => {
     if (widget === undefined) throw new Error('the page has no widget');
     const named = FAILURE_CALLBACK_ATTRIBUTES.map((attribute) => new RegExp(`${attribute}="([^"]*)"`).exec(widget)?.[1]);
     expect(named).toEqual(FAILURE_CALLBACK_ATTRIBUTES.map(() => FAILURE_CALLBACK));
-    expect(onlyInlineSource({ html, pattern: SCRIPT_PATTERN })).toContain(`window.${FAILURE_CALLBACK} =`);
+    expect(pageScriptOf(html)).toContain(`window.${FAILURE_CALLBACK} =`);
   });
 
   test.each([
@@ -449,7 +456,7 @@ describe('the structured data and the policy of the public pages', () => {
 
   test('the landing allows its page script by hash beside the JSON-LD block', async () => {
     const { response, html } = await landingPage(LandingNotice.None);
-    const pageScript = onlyInlineSource({ html, pattern: SCRIPT_PATTERN });
+    const pageScript = pageScriptOf(html);
     expect(scriptSources(response.headers.get('Content-Security-Policy'))).toContain(await sourceHash(pageScript));
   });
 

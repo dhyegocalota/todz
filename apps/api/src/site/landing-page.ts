@@ -1,6 +1,7 @@
 import { escapedHtml } from '../escaped-html';
 import { TurnstileAction } from '../turnstile';
 import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
+import { ARIA_DISABLED, EMAIL_FIELD_NAME, JOIN_BUTTON_CLASS, JOIN_FORM_CLASS } from './join-form-markup';
 import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
@@ -8,6 +9,7 @@ import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
 import { LANDING_STRUCTURED_DATA } from './site-json-ld';
 import { CONTENT_ID, JOIN_PATH, LANDING_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE, cropClassOf } from './site-style';
+import { WEBMCP_SCRIPT } from './webmcp-script';
 
 export enum LandingNotice {
   None = 'none',
@@ -21,10 +23,7 @@ enum JoinForm {
   Final = 'final',
 }
 
-const JOIN_FORM_CLASS = 'join-form';
-const JOIN_BUTTON_CLASS = 'join-button';
 const JOIN_NOTICE_CLASS = 'join-notice';
-const ARIA_DISABLED = 'aria-disabled';
 const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const CLASS_SEPARATOR = ' ';
 const WORD_SEPARATOR = ' ';
@@ -103,15 +102,17 @@ const PAGE_SCRIPT = `{
   }));
 }`;
 
+const PAGE_SCRIPTS = [PAGE_SCRIPT, WEBMCP_SCRIPT];
+
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  scripts: [LANDING_STRUCTURED_DATA, PAGE_SCRIPT],
+  scripts: [LANDING_STRUCTURED_DATA, ...PAGE_SCRIPTS],
   widgetOrigin: null,
   connectsToSelf: false,
 });
 const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  scripts: [LANDING_STRUCTURED_DATA, PAGE_SCRIPT],
+  scripts: [LANDING_STRUCTURED_DATA, ...PAGE_SCRIPTS],
   widgetOrigin: TURNSTILE_ORIGIN,
   connectsToSelf: false,
 });
@@ -155,7 +156,7 @@ function joinFormHtml({
   return `<form id="${form}" class="${[JOIN_FORM_CLASS, ...classNames].join(CLASS_SEPARATOR)}" method="post" action="${JOIN_PATH}#${form}">
 <div class="join-capsule">
 <label class="visually-hidden" for="${inputId}">${escapedHtml(LANDING_COPY.join.emailLabel)}</label>
-<input id="${inputId}" class="join-input" name="email" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(LANDING_COPY.join.emailPlaceholder)}" required>
+<input id="${inputId}" class="join-input" name="${EMAIL_FIELD_NAME}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(LANDING_COPY.join.emailPlaceholder)}" required>
 <button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(LANDING_COPY.join.submitting)}">${escapedHtml(LANDING_COPY.join.submit)}</button>
 </div>
 ${widget}${joinStatusHtml({ form, notice })}
@@ -249,7 +250,7 @@ ${benefitsHtml()}
 ${howItWorksHtml()}
 ${finalCallHtml({ notice, widget })}
 ${scriptTag}</main>`,
-    scripts: [PAGE_SCRIPT],
+    scripts: PAGE_SCRIPTS,
   });
 }
 
