@@ -5,6 +5,7 @@ import Testing
 private let inboxIdentifier = "acme-inbox"
 private let firstTask = TaskKey(projectIdentifier: inboxIdentifier, number: 1)
 private let tomorrowOffset = 1
+private let manyOpenTaskCount = 12
 
 extension AppModelTests {
     @MainActor private func dayCloseHarness() async throws -> AppModelHarness {
@@ -77,6 +78,20 @@ extension AppModelTests {
     @Test func theDayIsNotClosedBeforeTodayIsKnown() throws {
         let harness = try AppModelHarness()
         #expect(harness.model.dayCloseTasks(lingers: CompletionLingers()) == nil)
+        #expect(!harness.model.isDayClosed(lingers: CompletionLingers()))
+    }
+
+    @Test func twelveOpenTasksFillTheDayCloseListInOrderAndTheHeadingReadsTwelve() async throws {
+        let harness = try AppModelHarness()
+        let today = harness.model.today
+        harness.seedWorkspace(name: "acme")
+        harness.service.tasksOfProject[inboxIdentifier] = (1...manyOpenTaskCount).map {
+            MutableTask(number: $0, title: "Task \($0)", dueDate: today, orderKey: String(format: "a%02d", $0)).record
+        }
+        await harness.signedIn()
+        let expectedTitles = (1...manyOpenTaskCount).map { "Task \($0)" }
+        #expect(harness.model.dayCloseTasks(lingers: CompletionLingers())?.map(\.task.title) == expectedTitles)
+        #expect(harness.model.todayHeadingCount == manyOpenTaskCount)
         #expect(!harness.model.isDayClosed(lingers: CompletionLingers()))
     }
 }

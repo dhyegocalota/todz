@@ -6,6 +6,7 @@ import Testing
 private let today = CalendarDate(year: 2026, month: 11, day: 25)
 private let tomorrow = today.adding(days: 1)
 private let minutesPerHour = 60
+private let cachedInboxIdentifier = "acme-inbox"
 private let minutesOutsideADay = [-2880, 1440]
 
 @MainActor @Observable private final class FakeTodayCount {
@@ -144,6 +145,37 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(harness.popover.openings == 0)
         #expect(!harness.coordinator.isClosingDay)
         #expect(harness.lastClosedDay == nil)
+    }
+
+    @Test func dueWhileOfflineOpensOnTheCachedRowsAndAnActionIsQueuedAndShown() async throws {
+        let appHarness = try AppModelHarness()
+        let acme = appHarness.seedWorkspace(name: "acme")
+        let cachedTasks = (1...2).map {
+            MutableTask(number: $0, title: "Cached \($0)", dueDate: appHarness.model.today, orderKey: "a\($0)").record
+        }
+        appHarness.service.tasksOfProject[cachedInboxIdentifier] = cachedTasks
+        appHarness.cache([acme], active: acme)
+        appHarness.store.projects[cachedInboxIdentifier] = ProjectCache(projectIdentifier: cachedInboxIdentifier, cursor: 2, tasks: cachedTasks)
+        appHarness.service.failures[.updateOwner] = .unreachable
+        appHarness.service.failures[.readChanges] = .unreachable
+        appHarness.service.failures[.completeTasks] = .unreachable
+        appHarness.vault.secret = appHarness.session
+        await appHarness.model.launch()
+        let model = appHarness.model
+        let harness = try DayCloseHarness { model.todayHeadingCount }
+        harness.at(today, hour: 18)
+        harness.coordinator.check()
+        #expect(harness.popover.openings == 1)
+        #expect(harness.coordinator.isClosingDay)
+        #expect(model.dayCloseTasks(lingers: CompletionLingers())?.map(\.task.title) == ["Cached 1", "Cached 2"])
+        let taskViews = try #require(model.taskViews)
+        let firstTask = TaskKey(projectIdentifier: cachedInboxIdentifier, number: 1)
+        let lingers = CompletionLingers().toggling(task: firstTask, in: .today, views: taskViews)
+        await model.complete(task: firstTask)
+        #expect(model.waitingChangeCount == 1)
+        #expect(model.todayHeadingCount == 1)
+        #expect(model.dayCloseTasks(lingers: lingers)?.map(\.task.title) == ["Cached 1", "Cached 2"])
+        #expect(model.dayCloseTasks(lingers: lingers.ending(task: firstTask))?.map(\.task.title) == ["Cached 2"])
     }
 
     @Test func dueWithNothingOpenMarksTheDayAndAsksNothing() throws {
