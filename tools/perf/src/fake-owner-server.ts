@@ -49,7 +49,14 @@ export function fakeOwnerServer(): RecordingFetch {
         return Response.json({ project: projectOf(`project-${state.projectCount}`) }, { status: CREATED });
       },
     },
-    { method: 'GET', pattern: /^\/owner\/workspaces$/, answer: () => Response.json({ workspaces: [] }, { status: OK }) },
+    {
+      method: 'GET',
+      pattern: /^\/owner\/workspaces$/,
+      answer: () => {
+        const inbox = { ...projectOf('inbox-1'), is_inbox: true };
+        return Response.json({ workspaces: [{ id: 'workspace-1', name: 'Perf 1', created_at: 0, projects: [inbox] }] }, { status: OK });
+      },
+    },
     {
       method: 'POST',
       pattern: /^\/owner\/projects\/([^/]+)\/tasks$/,
