@@ -65,6 +65,8 @@ private final class HealthStubProtocol: URLProtocol {
         guard let target = URL(string: location) else { return }
         guard let response = HTTPURLResponse(url: url, statusCode: 301, httpVersion: nil, headerFields: ["Location": location]) else { return }
         client?.urlProtocol(self, wasRedirectedTo: URLRequest(url: target), redirectResponse: response)
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocolDidFinishLoading(self)
     }
 }
 

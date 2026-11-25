@@ -20,35 +20,70 @@ public struct ServerSwitchFlow: Equatable, Sendable {
 
     public init() {}
 
+    private var isBusy: Bool {
+        switch state {
+        case .checking, .confirming, .switching: true
+        default: false
+        }
+    }
+
     public mutating func submit(text: String, serverURL: ServerAddress) -> ServerAddress? {
-        preconditionFailure("ServerSwitchFlow.submit is not implemented")
+        guard !isBusy else { return nil }
+        switch ServerAddress.checked(text: text) {
+        case let .failure(issue):
+            state = .refused(issue)
+            return nil
+        case let .success(address):
+            guard address != serverURL else {
+                state = .alreadyInUse
+                return nil
+            }
+            state = .checking
+            return address
+        }
     }
 
     public mutating func receive(outcome: ServerProbeOutcome, isSignedIn: Bool, waitingChanges: Int) {
-        preconditionFailure("ServerSwitchFlow.receive is not implemented")
+        guard state == .checking else { return }
+        switch outcome {
+        case .matches: proceed(isSignedIn: isSignedIn, waitingChanges: waitingChanges)
+        case let .answersAs(origin): state = .answersAs(origin: origin)
+        case .notTodz, .unreachable: state = .notTodz
+        }
     }
 
     public mutating func useDefault(isSignedIn: Bool, waitingChanges: Int) {
-        preconditionFailure("ServerSwitchFlow.useDefault is not implemented")
+        guard !isBusy else { return }
+        proceed(isSignedIn: isSignedIn, waitingChanges: waitingChanges)
     }
 
     public mutating func confirm() {
-        preconditionFailure("ServerSwitchFlow.confirm is not implemented")
+        guard case .confirming = state else { return }
+        state = .switching
     }
 
     public mutating func decline() {
-        preconditionFailure("ServerSwitchFlow.decline is not implemented")
+        guard case .confirming = state else { return }
+        state = .idle
     }
 
     public mutating func cancel() {
-        preconditionFailure("ServerSwitchFlow.cancel is not implemented")
+        guard state == .checking else { return }
+        state = .idle
     }
 
     public mutating func reset() {
-        preconditionFailure("ServerSwitchFlow.reset is not implemented")
+        guard !isBusy else { return }
+        state = .idle
     }
 
     public mutating func finish(isSwitched: Bool, server: ServerAddress) {
-        preconditionFailure("ServerSwitchFlow.finish is not implemented")
+        guard state == .switching else { return }
+        state = isSwitched ? .switched(server: ServerName.of(address: server)) : .failed(.eraseFailed)
+    }
+
+    private mutating func proceed(isSignedIn: Bool, waitingChanges: Int) {
+        let isLosingSomething = isSignedIn || waitingChanges > 0
+        state = isLosingSomething ? .confirming(losing: waitingChanges, signedIn: isSignedIn) : .switching
     }
 }

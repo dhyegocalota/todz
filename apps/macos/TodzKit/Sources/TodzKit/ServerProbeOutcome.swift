@@ -7,12 +7,18 @@ public enum ServerProbeOutcome: Equatable, Sendable {
     case unreachable
 
     public static func of(answer: ServerHealthAnswer, typedAddress: ServerAddress) -> ServerProbeOutcome {
-        preconditionFailure("ServerProbeOutcome.of is not implemented")
+        guard case let .todz(origin) = answer else { return .notTodz }
+        guard origin == typedAddress.origin else { return .answersAs(origin: origin) }
+        return .matches
     }
 }
 
 extension OwnerAPI {
     public func probe(typedAddress: ServerAddress) async -> ServerProbeOutcome {
-        preconditionFailure("OwnerAPI.probe is not implemented")
+        do {
+            return try await .of(answer: health(), typedAddress: typedAddress)
+        } catch {
+            return .unreachable
+        }
     }
 }
