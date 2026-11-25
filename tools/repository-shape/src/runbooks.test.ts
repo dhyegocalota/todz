@@ -44,7 +44,17 @@ const CLOUDFLARE_API_HOST = 'api.cloudflare.com';
 const SMOKE_CHECK_STEP = 13;
 const HEALTH_CURL = 'curl -sS https://api.todz.app/health';
 const HEALTH_ANSWER = '{"service":"todz","origin":"https://api.todz.app"}';
-const ALL_PASS_SENTENCE = 'When all fourteen pass';
+const ALL_PASS_SENTENCE = 'When all sixteen pass';
+const HEADER_CURLS = [
+  'curl -sS -D - -o /dev/null https://api.todz.app/owner',
+  'curl -sS -D - -o /dev/null https://todz.app/brand/todz-lockup.png',
+];
+const HEADER_ANSWERS = [
+  'strict-transport-security: max-age=31536000',
+  'x-content-type-options: nosniff',
+  'referrer-policy: no-referrer',
+  "content-security-policy: default-src 'none'; frame-ancestors 'none'",
+];
 const WRONG_SESSION_BODY = 'scripts/deploy-bodies/wrong-session.json';
 const JUNK_LINK_BODY = 'scripts/deploy-bodies/junk-turnstile-link.json';
 const JUNK_WAITLIST_BODY = 'scripts/deploy-bodies/junk-turnstile-waitlist.txt';
@@ -232,11 +242,17 @@ describe('runbooks', () => {
     expect(readRepositoryFile(WRAPPER_PATH)).toContain(`"${accountId}"`);
   });
 
-  test('the smoke check curls the health route of the API host and counts it among the fourteen answers', () => {
+  test('the smoke check curls the health route of the API host and counts it among the sixteen answers', () => {
     const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
     expect(smokeCheck?.body).toContain(HEALTH_CURL);
     expect(smokeCheck?.body).toContain(HEALTH_ANSWER);
     expect(smokeCheck?.body).toContain(ALL_PASS_SENTENCE);
+  });
+
+  test('the smoke check curls an API answer and a static asset and expects the four security headers', () => {
+    const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
+    HEADER_CURLS.forEach((curl) => expect(smokeCheck?.body).toContain(curl));
+    HEADER_ANSWERS.forEach((answer) => expect(smokeCheck?.body).toContain(answer));
   });
 
   test('the wrong session body is refused before siteverify, by a malformed verifier, and carries an unsolved token', () => {
