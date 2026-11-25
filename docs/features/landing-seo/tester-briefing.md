@@ -79,4 +79,5 @@ Every "it works" is a hypothesis the tester tries to break.
 - The renderer needs the pinned Chromium (`@playwright/test` 1.61.0) installed; it does not install it.
 - `site-assets.ts` holds the lock, the SVG builders and the renderers in one file, because the file map names no other module.
 - The 192 and 512 `any` icons have transparent corners (the squircle); only the touch icon and the maskable pair are full-bleed.
+- `pnpm verify` stops red at `tools/repository-shape/src/site-assets.test.ts` (no lane owns it): it expects every file under `apps/api/public/landing` to be a byte copy of a README screenshot, so the 12 WebP files fail its first and third rows. Left unedited per the ownership list; the fix is to filter `SERVED` to the `.png` files. `apps/api` typecheck, the full `apps/api` unit run (1740 tests) and `site:assets:check` are green.
 - The runbook index row (`docs/runbooks/README.md`) still describes only the app icon and menu bar glyph; the file belongs to no lane.
