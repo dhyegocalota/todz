@@ -3,7 +3,6 @@ import Observation
 
 @MainActor @Observable public final class AppModel {
     public internal(set) var serverURL: ServerAddress
-    public internal(set) var isSwitchingServer = false
     public internal(set) var phase: AppPhase = .loading
     public internal(set) var signInError: SignInError?
     public internal(set) var isSigningIn = false

@@ -119,7 +119,7 @@ Connect an Agent exists only signed in, and a switch signs out, so the screen ne
 
 | Component | Folder | Change |
 |---|---|---|
-| `ServerAddressForm` (new) | `apps/macos/Todz/Server/` | the field, Switch…, Use todz cloud, the status line and the dialog of § 1.3; one view used by both surfaces, a `layout` value (`.row` for Settings, `.column` for sign-in) choosing an `HStack` or a centred `VStack`. Its own state: the text, the check stage (idle, checking, refused with its reason, switched); the switch in flight is `model.isSwitchingServer` so Settings and the sign-in screen disable together |
+| `ServerAddressForm` (new) | `apps/macos/Todz/Server/` | the field, Switch…, Use todz cloud, the status line and the dialog of § 1.3; one view used by both surfaces, a `layout` value (`.row` for Settings, `.column` for sign-in) choosing an `HStack` or a centred `VStack`. Its own state: the text, the check stage (idle, checking, refused with its reason, switched); ~~the switch in flight is `model.isSwitchingServer` so Settings and the sign-in screen disable together~~ (fix round 1: dropped, never observable) |
 | `ServerDisclosure` (new) | `apps/macos/Todz/SignIn/` | the collapsed line and the expanded `ServerAddressForm` |
 | `ServerName` (new, pure) | `TodzKit` | URL to its display name (host, `:port` when present), unit-tested beside `ServerAddress` |
 | `SettingsView` | `apps/macos/Todz/Settings/` | the second `Section` of § 1.1 |
@@ -258,7 +258,7 @@ Captures for the `recorder`, from the built Debug app with Orca, into `.pr-media
 
 ## 7. Notes for the plan
 
-1. The check state is the form's; the switch in flight is the model's (`isSwitchingServer`), so a switch from one surface disables the other.
+1. The check state is the form's; ~~the switch in flight is the model's (`isSwitchingServer`), so a switch from one surface disables the other~~ (fix round 1: the switch runs with no await, so no surface can see it in flight; a surface that confirms after the other switched gets `alreadyInUse` or switches again).
 2. The sign-out at the old server is best effort (spec) and the old server is often the unreachable one; a short timeout on that request keeps `Switching…` from lasting a minute. The probe's timeout is the same question. Both are plan decisions, not copy.
 3. `SignInScreen` loads the sign-in method once in `.task`; a switch on that screen erases the method while the phase stays signed out, so the load must follow `model.serverURL` (`.task(id:)`), or the slot sticks on `Getting ready…`.
 4. `KeyScreen`'s file-level `serverURL` constant becomes a computed value from the model; `ClientCommands` and the block both take it.

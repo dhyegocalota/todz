@@ -143,7 +143,7 @@ struct ServerAddressForm: View {
     }
 
     private var isBusyElsewhere: Bool {
-        model.isSigningIn || model.isRequestingLink || model.isSwitchingServer
+        model.isSigningIn || model.isRequestingLink
     }
 
     private var busyReason: String? {
