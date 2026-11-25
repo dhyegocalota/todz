@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { SIGN_IN_PAGE_COPY } from '../src/sign-in-page-copy';
 import { serveSignInPage } from '../src/sign-in-page';
 import { workerEnvWith } from './owner-client';
-import { type PageScriptRun, TEST_SITE_KEY, inlineSources, onlyInlineSource, runPageScript, sourceHash } from './page-script';
+import { type PageScriptRun, TEST_SITE_KEY, WIDGET_ID, inlineSources, onlyInlineSource, runPageScript, sourceHash } from './page-script';
 
 const PAGE_URL = 'https://api.todz.test/sign-in';
 const PAGE_PATH = '/sign-in';
@@ -16,14 +16,18 @@ const OTHER_TURNSTILE_TOKEN = 'solved.turnstile_token-2';
 const TOKEN_SHAPED_RUN_PATTERN = /[A-Za-z0-9_-]{43}/;
 const SCRIPT_PATTERN = /<script>([\s\S]*?)<\/script>/g;
 const STYLE_PATTERN = /<style>([\s\S]*?)<\/style>/g;
-const WIDGET_PATTERN = /<div class="checking cf-turnstile"[^>]*><\/div>/g;
-const TURNSTILE_SCRIPT_TAG = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
+const WIDGET_PATTERN = /<div id="check"[^>]*><\/div>/g;
+const TURNSTILE_HOST = 'challenges.cloudflare.com';
+const EXPLICIT_TURNSTILE_SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+const IMPLICIT_WIDGET_CLASS = 'cf-turnstile';
+const SCRIPT_BINDINGS = ['token', 'button', 'check', 'appLink', 'widget', 'fail', 'checked', 'expired', 'loader'];
 const READY_STATE = 'ready';
 const CHECKING_STATE = 'checking';
 const FAILED_STATE = 'failed';
-const CHECKED_CALLBACK = 'signInChecked';
-const EXPIRED_CALLBACK = 'signInCheckExpired';
-const FAILED_CALLBACK = 'signInCheckFailed';
+const CHECKED_CALLBACK = 'callback';
+const EXPIRED_CALLBACK = 'expired-callback';
+const ERROR_CALLBACK = 'error-callback';
+const TIMEOUT_CALLBACK = 'timeout-callback';
 
 async function pageSource(path = PAGE_PATH): Promise<{ response: Response; html: string }> {
   const response = await exports.default.fetch(`https://api.todz.test${path}`);
@@ -36,7 +40,13 @@ async function onlyScript(): Promise<string> {
 }
 
 async function signInPageRun(hash: string): Promise<PageScriptRun> {
-  return runPageScript({ script: await onlyScript(), hash, pathname: PAGE_PATH });
+  return runPageScript({ script: await onlyScript(), hash, pathname: PAGE_PATH, probedNames: SCRIPT_BINDINGS });
+}
+
+async function checkingRun(): Promise<PageScriptRun> {
+  const run = await signInPageRun(`#token=${TOKEN}`);
+  run.loadScripts();
+  return run;
 }
 
 describe('GET /sign-in', () => {
@@ -115,38 +125,63 @@ describe('GET /sign-in', () => {
 });
 
 describe('the widget of the page', () => {
-  test('is one widget with the site key, the sign_in action and the four callbacks', async () => {
+  test('is one empty container with the site key, and no widget Turnstile would render by itself', async () => {
     const { html } = await pageSource();
     const widgets = [...html.matchAll(WIDGET_PATTERN)].map(([widget]) => widget);
-    expect(widgets).toEqual([
-      `<div class="checking cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="sign_in" data-refresh-expired="manual" data-callback="${CHECKED_CALLBACK}" data-expired-callback="${EXPIRED_CALLBACK}" data-error-callback="${FAILED_CALLBACK}" data-timeout-callback="${FAILED_CALLBACK}"></div>`,
-    ]);
+    expect(widgets).toEqual([`<div id="check" class="checking" data-sitekey="${TEST_SITE_KEY}"></div>`]);
+    expect(html).not.toContain(IMPLICIT_WIDGET_CLASS);
   });
 
-  test('loads the Turnstile script once, after the inline script, async and deferred', async () => {
+  test('the markup loads no Turnstile script of its own', async () => {
     const { html } = await pageSource();
-    expect(html.split(TURNSTILE_SCRIPT_TAG)).toHaveLength(2);
-    expect(html.indexOf('<script>')).toBeLessThan(html.indexOf(TURNSTILE_SCRIPT_TAG));
+    expect(html.replace(SCRIPT_PATTERN, '')).not.toContain(TURNSTILE_HOST);
+  });
+
+  test('a valid link token loads the explicit Turnstile script once and renders nothing before it loads', async () => {
+    const { loadedScripts, renders } = await signInPageRun(`#token=${TOKEN}`);
+    expect(loadedScripts()).toEqual([EXPLICIT_TURNSTILE_SCRIPT]);
+    expect(renders()).toEqual([]);
+  });
+
+  test('once the script loads, it renders one widget in the container with the site key, the sign_in action and its four callbacks', async () => {
+    const { renders } = await checkingRun();
+    const [render, ...others] = renders();
+    expect(others).toEqual([]);
+    expect(render?.container.dataset.sitekey).toBe(TEST_SITE_KEY);
+    expect(render?.options).toMatchObject({ sitekey: TEST_SITE_KEY, action: 'sign_in', 'refresh-expired': 'manual' });
+    [CHECKED_CALLBACK, EXPIRED_CALLBACK, ERROR_CALLBACK, TIMEOUT_CALLBACK].forEach((name) =>
+      expect(typeof render?.options[name]).toBe('function'),
+    );
   });
 });
 
 describe('the script of the page', () => {
+  test('binds nothing at the top level, so no other script can read the link token by name', async () => {
+    const { leakedNames } = await checkingRun();
+    expect(leakedNames()).toEqual([]);
+  });
+
+  test('puts nothing on window', async () => {
+    const { callbackNames } = await checkingRun();
+    expect(callbackNames()).toEqual([]);
+  });
+
   test('drops the fragment and waits in the checking state, opening nothing before the check', async () => {
-    const { steps, state } = await signInPageRun(`#token=${TOKEN}`);
+    const { steps, state } = await checkingRun();
     expect(steps).toEqual([`replace ${PAGE_PATH}`]);
     expect(state()).toBe(CHECKING_STATE);
   });
 
   test('a solved check shows the opening state, focuses the button and opens the app with both tokens', async () => {
-    const { steps, state, callback } = await signInPageRun(`#token=${TOKEN}`);
-    callback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
+    const { steps, state, widgetCallback } = await checkingRun();
+    widgetCallback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
     expect(steps).toEqual([`replace ${PAGE_PATH}`, 'focus', `navigate todz://sign-in?token=${TOKEN}&turnstile=${TURNSTILE_TOKEN}`]);
     expect(state()).toBe(READY_STATE);
   });
 
   test('the button opens the app again with the same tokens', async () => {
-    const { steps, callback, pressButton } = await signInPageRun(`#token=${TOKEN}`);
-    callback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
+    const { steps, widgetCallback, pressButton } = await checkingRun();
+    widgetCallback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
     pressButton();
     expect(steps.slice(-1)).toEqual([`navigate todz://sign-in?token=${TOKEN}&turnstile=${TURNSTILE_TOKEN}`]);
     expect(steps).toHaveLength(4);
@@ -158,35 +193,35 @@ describe('the script of the page', () => {
     ['a 2049-character', 'a'.repeat(2049)],
     ['a parameter-smuggling', 'x&token=other'],
   ])('%s Turnstile token opens nothing and shows the failed state', async (_name, turnstileToken) => {
-    const { steps, state, callback } = await signInPageRun(`#token=${TOKEN}`);
-    callback({ name: CHECKED_CALLBACK, argument: turnstileToken });
+    const { steps, state, widgetCallback } = await checkingRun();
+    widgetCallback({ name: CHECKED_CALLBACK, argument: turnstileToken });
     expect(steps).toEqual([`replace ${PAGE_PATH}`]);
     expect(state()).toBe(FAILED_STATE);
   });
 
-  test('an expired check goes back to checking and resets the widget', async () => {
-    const { steps, state, callback, resets } = await signInPageRun(`#token=${TOKEN}`);
-    callback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
-    callback({ name: EXPIRED_CALLBACK });
+  test('an expired check goes back to checking and resets its widget', async () => {
+    const { steps, state, widgetCallback, resets } = await checkingRun();
+    widgetCallback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
+    widgetCallback({ name: EXPIRED_CALLBACK });
     expect(state()).toBe(CHECKING_STATE);
-    expect(resets()).toBe(1);
+    expect(resets()).toEqual([WIDGET_ID]);
     expect(steps).toHaveLength(3);
   });
 
   test('a check solved again after it expired updates the button without opening the app by itself', async () => {
-    const { steps, state, callback, pressButton } = await signInPageRun(`#token=${TOKEN}`);
-    callback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
-    callback({ name: EXPIRED_CALLBACK });
-    callback({ name: CHECKED_CALLBACK, argument: OTHER_TURNSTILE_TOKEN });
+    const { steps, state, widgetCallback, pressButton } = await checkingRun();
+    widgetCallback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
+    widgetCallback({ name: EXPIRED_CALLBACK });
+    widgetCallback({ name: CHECKED_CALLBACK, argument: OTHER_TURNSTILE_TOKEN });
     expect(state()).toBe(READY_STATE);
     expect(steps).toHaveLength(3);
     pressButton();
     expect(steps.slice(-1)).toEqual([`navigate todz://sign-in?token=${TOKEN}&turnstile=${OTHER_TURNSTILE_TOKEN}`]);
   });
 
-  test('an error or a timeout of the widget shows the failed state', async () => {
-    const { state, callback } = await signInPageRun(`#token=${TOKEN}`);
-    callback({ name: FAILED_CALLBACK });
+  test.each([[ERROR_CALLBACK], [TIMEOUT_CALLBACK]])('the widget %s shows the failed state', async (name) => {
+    const { state, widgetCallback } = await checkingRun();
+    widgetCallback({ name });
     expect(state()).toBe(FAILED_STATE);
   });
 
@@ -200,11 +235,14 @@ describe('the script of the page', () => {
     [`#token=${TOKEN}%0A`],
     [`#other=${TOKEN}`],
     [`#token=${TOKEN}/../../x`],
-  ])('the fragment %j opens nothing, is dropped, wires no callback and leaves the missing-token state', async (hash) => {
-    const { steps, state, callbackNames } = await signInPageRun(hash);
+  ])('the fragment %j opens nothing, is dropped, runs no challenge and leaves the missing-token state', async (hash) => {
+    const { steps, state, callbackNames, loadedScripts, loadScripts, renders } = await signInPageRun(hash);
+    loadScripts();
     expect(steps).toEqual([`replace ${PAGE_PATH}`]);
     expect(state()).toBeUndefined();
     expect(callbackNames()).toEqual([]);
+    expect(loadedScripts()).toEqual([]);
+    expect(renders()).toEqual([]);
   });
 });
 
