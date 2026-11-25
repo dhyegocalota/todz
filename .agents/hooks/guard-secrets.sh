@@ -22,6 +22,14 @@ readonly KEYCHAIN_TOOL='security'
 readonly KEYCHAIN_VALUE_FLAG_PATTERN='[[:space:]]-[[:alpha:]]*[wg][[:alpha:]]*([[:space:]]|$)'
 readonly SPARKLE_KEYCHAIN_PATTERN='sparkle-project\.org'
 readonly SPARKLE_EXPORT_PATTERN='generate_keys[^|;&]*[[:space:]]-x'
+readonly KEYCHAIN_DUMP_PATTERN='dump-keychain'
+readonly KEYCHAIN_INTERACTIVE_PATTERN='security[[:space:]]+-i([[:space:]]|$)'
+readonly KEYCHAIN_PASSWORD_READ_PATTERN='find-(generic|internet)-password'
+readonly KEYCHAIN_PASSWORD_CHANGE_PATTERN='(add|delete)-generic-password'
+readonly DOCUMENTED_PASSWORD_READ_PATTERN='[[:space:]]-s[[:space:]]+todz-turnstile([[:space:]]|$)'
+readonly SERVICE_FLAG_PATTERN='[[:space:]]-[[:alpha:]]*s[[:space:]]'
+readonly SPARKLE_TOOL_PATTERN='(^|[^[:alnum:]_-])(sign_update|generate_keys)([^[:alnum:]_-]|$)'
+readonly RELEASE_OVERRIDE_PATTERN='TODZ_(RELEASE|DEPLOY)_'
 readonly RELEASE_COMMAND_PATTERN='^(pnpm release:mac|scripts/release-mac\.sh)( --[a-z-]+( [0-9]+\.[0-9]+\.[0-9]+)?)*$'
 readonly PROSE_PATTERN='^(echo|printf)[[:space:]]+([^>]*[^>[:space:]])[[:space:]]*(>>?[[:space:]]*([^[:space:]>]+))?$'
 
@@ -39,9 +47,28 @@ block() {
   exit 2
 }
 
+names_release_tool_or_override() {
+  [[ "$scanned_text" =~ $SPARKLE_TOOL_PATTERN || "$scanned_text" =~ $RELEASE_OVERRIDE_PATTERN ]]
+}
+
+is_documented_password_read() {
+  [[ "$scanned_text" =~ $DOCUMENTED_PASSWORD_READ_PATTERN ]] || return 1
+  local remainder=${scanned_text/"${BASH_REMATCH[0]}"/ }
+  [[ ! "$remainder" =~ $SERVICE_FLAG_PATTERN ]]
+}
+
+reads_keychain_value() {
+  [[ "$scanned_text" == *"$KEYCHAIN_TOOL"* ]] || return 1
+  [[ "$scanned_text" =~ $KEYCHAIN_DUMP_PATTERN || "$scanned_text" =~ $KEYCHAIN_INTERACTIVE_PATTERN ]] && return 0
+  [[ "$scanned_text" == *"$RELEASE_KEY_ITEM"* && "$scanned_text" =~ $KEYCHAIN_PASSWORD_CHANGE_PATTERN ]] && return 0
+  [[ "$scanned_text" =~ $KEYCHAIN_PASSWORD_READ_PATTERN && "$scanned_text" =~ $KEYCHAIN_VALUE_FLAG_PATTERN ]] && ! is_documented_password_read && return 0
+  [[ "$scanned_text" == *"$RELEASE_KEY_ITEM"* && "$scanned_text" =~ $KEYCHAIN_VALUE_FLAG_PATTERN ]]
+}
+
 reads_release_secret() {
   [[ "$scanned_text" =~ $SPARKLE_KEYCHAIN_PATTERN || "$scanned_text" =~ $SPARKLE_EXPORT_PATTERN ]] && return 0
-  [[ "$scanned_text" == *"$KEYCHAIN_TOOL"* && "$scanned_text" == *"$RELEASE_KEY_ITEM"* && "$scanned_text" =~ $KEYCHAIN_VALUE_FLAG_PATTERN ]]
+  reads_keychain_value && return 0
+  names_release_tool_or_override && ! is_plain_read
 }
 
 is_release_command() {
