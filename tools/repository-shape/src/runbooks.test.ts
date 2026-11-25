@@ -13,6 +13,8 @@ const AGENT_EXCEPTION_SENTENCE = 'agents never run them, except `deploy-the-api`
 const REMOTE_FLAG = '--remote';
 const DEPLOY_WITH_VARIABLE_PATTERN = /wrangler deploy[^\n]*--var/;
 const RUN_LOG_HEADER = '| Date | Commit | Step | Actual result |\n|------|--------|------|---------------|';
+const RUN_LOG_HEADING = '## Run log\n\n';
+const RUN_LOG_ROW_PATTERN = /^\| \d{4}-\d{2}-\d{2} \| [0-9a-f]{7,40} \| \d+ \| .+ \|$/;
 const DATABASE_COMMAND_PATTERN = /(wrangler d1 (?:migrations (?:list|apply)|export) [^\n]*)/g;
 const FIRST_STEP_NUMBER = 1;
 const ANCHOR_SEPARATOR = '#';
@@ -234,7 +236,15 @@ describe('runbooks', () => {
     expect(body.turnstile_token).not.toBe(TURNSTILE_DUMMY_TOKEN);
   });
 
-  test('the deploy runbook ends with a run log table for the lead', () => {
-    expect(readRunbook(DEPLOY_RUNBOOK).text.trimEnd().endsWith(RUN_LOG_HEADER)).toBe(true);
+  test('the deploy runbook ends with a run log table whose rows name a date, a commit and a step', () => {
+    const text = readRunbook(DEPLOY_RUNBOOK).text.trimEnd();
+    const logStart = text.indexOf(`${RUN_LOG_HEADING}${RUN_LOG_HEADER}`);
+    const rows = text
+      .slice(logStart + RUN_LOG_HEADING.length + RUN_LOG_HEADER.length)
+      .split(LINE_SEPARATOR)
+      .filter(Boolean);
+    expect(logStart).toBeGreaterThan(0);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.filter((row) => !RUN_LOG_ROW_PATTERN.test(row))).toEqual([]);
   });
 });
