@@ -235,4 +235,33 @@ Launch hidden (`open -g -j`) with the day close due, and look at one opening:
 ### Known gaps
 
 - A, the visibility signal, B's race, D and E are app-target code; only the coordinator, the gate and their pins are unit-tested.
-- The scheduler does not re-arm after a late `popoverShown()` mark; the next trigger (midnight, wake, a Settings change) re-checks.
+
+## Fix round 7: a click in flight, a due day only, a workspace change closes
+
+`swift test --package-path apps/macos/TodzKit` gives `Test run with 754 tests in 51 suites passed` (748 before, plus six round 7 coordinator tests); `xcodegen generate` and the Debug `xcodebuild` give `BUILD SUCCEEDED`, no warnings.
+
+| Item | What changed | Red commit and printed text | Green commit |
+|------|--------------|-----------------------------|--------------|
+| R1. click in flight | `isOpening` is replaced by `clickedAt`; a check refuses to click while `now() < clickedAt + popoverShowWait` (5 s); `popoverShown()` and `end()` clear it | `a14d2f0` `aCheckBetweenTheClickAndTheShowClicksNothingAndOneAfterTheWaitClicksAgain`: `Expectation failed: harness.popover.openings == 1`, `Expectation failed: harness.popover.openings == 2` | `ff474e5` |
+| R2. due day only | `popoverShown()` marks only when the decision is `.due`, leaves a marked day alone and ends a stale mode | `bb059af` `aShownPopoverOfAModeLeftFromYesterdayEndsItMarksNothingAndTomorrowIsDue`: `Expectation failed: harness.lastClosedDay == nil`, `Expectation failed: !harness.coordinator.isClosingDay`, `Expectation failed: harness.popover.openings == 2`. Pin: `aPopoverShownAgainAfterTheDayWasMarkedKeepsTheMode` | `ff474e5` |
+| S1. workspace change | `DayCloseCoordinator.workspaceChanged()` answers whether to close the popover: an unengaged mode answers yes and stays on (the hide ends it), an engaged mode ends in place; the view closes the panel on yes; `⌘1-9` returns early unless `acceptsKeyActions` | `902e8b6` `aWorkspaceChangeDuringAnUnengagedModeAsksToCloseThePopoverAndKeepsTheMode`: `Expectation failed: harness.coordinator.workspaceChanged()`; `aWorkspaceChangeDuringAnEngagedModeEndsItInPlace`: `Expectation failed: !harness.coordinator.isClosingDay`. Pin: `aWorkspaceChangeOutsideTheModeAsksNothing` | `ff474e5` for the coordinator, the app commit after it for the views |
+| R3. Focus read throws | a throwing read counts as not quiet: applied before the timeout, releasing the held quiet after it | none (app target, no seam) | the app commit |
+| R4. tap | back to `.simultaneousGesture(TapGesture())` with `.contentShape(Rectangle())`; `engage(_:)` returns unless the mode is on and unengaged, so a normal tap never activates the app | none (view and AppKit) | the app commit |
+| S2. focus return | `engage(_:)` remembers the frontmost application when it is not todz; the timed close and Escape in the mode reactivate it when no other todz window is visible | none (AppKit) | the app commit |
+| R5, R6. docs | NB comment, ADR 0055 decision 5, spec data flow and failure table rows, the false gap deleted | none (docs) | the docs commit |
+
+### The ONE-opening walk to re-check
+
+Launch hidden (`open -g -j`) with the day close due and a second workspace seeded:
+
+- the day close is the first popover; it shows with no second click and no crash; `lastClosedDay` is written once the popover is seen;
+- before any click, press ⌘2: the popover closes and no add field ever appears; no relaunch is needed beyond that.
+
+### Hypotheses to attack
+
+24. Hypothesis: a status button click queued by the click's own defaults change lands inside the 5 s wait and is refused, so the popover is never toggled closed (E1).
+25. Hypothesis: engaging from another app and then pressing Escape or waiting out the timed close returns the front to that app, and a normal popover tap never activates todz.
+
+### Known gaps
+
+- R3, R4 and S2 are app-target code covered only by the walk.
