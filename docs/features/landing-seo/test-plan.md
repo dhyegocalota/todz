@@ -20,7 +20,7 @@ Lane H (`apps/api`, `tools/repository-shape`):
 - [ ] `site-json-ld.test.ts::the publisher is Logic Bit` — input: the `Organization` node; expected: `name` `Logic Bit`, `legalName` `Logic Bit AI Software Boutique Ltda`, `url` `https://logicbit.com.br`, `logo` `https://www.logicbit.com.br/favicon/apple-touch-icon.png`, all read from `COMPANY`
 - [ ] `libs/types/src/constants.test.ts::the company facts` — input: `COMPANY`; expected: exactly `tradeName`, `legalName`, `website` and `logo` with the values above
 - [ ] `site-json-ld.test.ts::the app and its offer` — input: the `SoftwareApplication` node; expected: `operatingSystem` `macOS 14 or later`, `applicationCategory` `BusinessApplication`, `applicationSubCategory` `Productivity`, `offers` `{ "@type": "Offer", "price": "0", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder", "url": "https://todz.app/#join" }`
-- [ ] `site-json-ld.test.ts::a closing tag in the copy cannot end the block` — input: the serializer given a string holding `</script>`; expected: the output holds `</script>` and parses back to the same string
+- [ ] `site-json-ld.test.ts::a closing tag in the copy cannot end the block` — input: the serializer given a string holding `</script>`; expected: the output holds no literal `</script>`, holds `\u003c/script>`, and `JSON.parse` of the block returns the original string
 - [ ] `apps/api/test/site-pages.test.ts::the policy names every inline script` — input: `GET /` with and without a site key, `GET /self-host`; expected: `script-src` holds `sourceHash` of the exact JSON-LD text on both pages, of `PAGE_SCRIPT` and of the WebMCP script on the landing only, and `https://challenges.cloudflare.com` only with a site key; `manifest-src 'self'`; `default-src 'none'`; no `'unsafe-inline'`
 - [ ] `site-pages.test.ts::site pages are not transformed` — input: both pages; expected: `Cache-Control: no-cache, no-transform`
 - [ ] `site-pages.test.ts::no inline handler` — input: the HTML of `/`, `/self-host`, `/admin` and every landing notice; expected: no match for `/\son[a-z]+\s*=/i`
@@ -41,6 +41,7 @@ Lane H (`apps/api`, `tools/repository-shape`):
 - [ ] `mcp-server-card.test.ts::served on both hosts alike` — input: `GET <PUBLIC_ORIGIN>/mcp/server-card` and `GET <SITE_ORIGIN>/.well-known/mcp/server-card.json`; expected: both 200 with identical bodies, `Content-Type: application/mcp-server-card+json`, `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods: GET`, `Cache-Control: public, max-age=3600`
 - [ ] `mcp-server-card.test.ts::the catalog lists it` — input: `GET <SITE_ORIGIN>/.well-known/ard.json`; expected: 200, `application/json`, `entries` of length 1 with `identifier` `urn:air:todz.app:mcp:todz`, `displayName` `todz`, `type` `application/mcp-server-card+json`, `url` `https://api.todz.app/mcp/server-card`, no `data`, three `representativeQueries`
 - [ ] `mcp-server-card.test.ts::the MCP endpoint is unchanged` — input: `POST <PUBLIC_ORIGIN>/mcp` without a bearer; expected: 401 as before
+- [ ] `mcp-server-card.test.ts::the card is read-only` — input: `POST` and `OPTIONS` on `<PUBLIC_ORIGIN>/mcp/server-card` and on `<SITE_ORIGIN>/.well-known/mcp/server-card.json`; expected: each 404 with an empty body (`noRouteResponse`), no `Access-Control-Allow-Origin` header
 - [ ] `apps/api/test/webmcp-tools.test.ts::four tools from the copy` — input: `WEBMCP_TOOLS`; expected: names `get_todz_overview`, `get_mcp_setup`, `open_docs`, `join_waitlist`; each description equal to `webmcp-copy.ts`
 - [ ] `webmcp-tools.test.ts::schemas are closed objects` — input: each `inputSchema`; expected: `type` `object`, `additionalProperties` false, every `required` name declared; `get_todz_overview` has no properties; `get_mcp_setup.client` enum `["claude-code", "codex", "cursor"]` equal to `AgentClient`'s values; `open_docs.page` enum equal to the slugs of the docs page list, today `["introduction", "quickstart", "connect-an-agent", "mcp-tools", "self-host"]`; `join_waitlist.email` `type` `string`, `format` `email`
 - [ ] `webmcp-tools.test.ts::annotations` — input: each tool; expected: `readOnlyHint` true on the first three; `consequentialHint` true and `readOnlyHint` absent on `join_waitlist`
@@ -58,7 +59,7 @@ Lane I (`apps/api` node project):
 - [ ] `site-assets.test.ts::the share image` — input: `og/todz.png`; expected: 1200×630, under 600 KB
 - [ ] `site-assets.test.ts::the WebP copies` — input: each WebP entry of `landing-shots.ts`; expected: the file exists, starts with `RIFF` and `WEBP`, and its width equals the entry's
 - [ ] `site-assets.test.ts::nothing stale` — input: `site:assets:check` on the tree; expected: exit 0, no browser launched (the check imports no Playwright module)
-- [ ] `site-assets.test.ts::a changed input is caught` — input: a temporary copy of the inputs with one byte changed in `docs/brand/todz-icon.svg`, then in a landing shot, then in `site-assets.ts`; expected: each run exits 1 and prints the changed input's path and `pnpm --filter @todz/api site:assets`
+- [ ] `site-assets.test.ts::a changed input is caught` — input: a temporary copy of the inputs with one byte changed in `docs/brand/todz-icon.svg`, then in a landing shot, then in `apps/api/src/site/site-icons.ts`, then in `apps/api/src/site/landing-shots.ts`, then in `apps/api/scripts/site-assets/site-assets.ts`; expected: each run exits 1 and prints the changed input's path and `pnpm --filter @todz/api site:assets`
 - [ ] Confirmed each red test fails for the right reason — evidence: the `## Lane I` briefing section
 
 ## Unit
@@ -75,8 +76,8 @@ Lane I (`apps/api` node project):
 
 `apps/api/e2e/landing-seo.spec.ts`, projects `desktop` (1280×800) and `mobile` (375×812):
 
-- [ ] `the files a browser asks for answer` — steps: request each icon path, `/site.webmanifest`, `/og/todz.png`; expected: 200, `image/png`, `image/x-icon` or `image/vnd.microsoft.icon`, `image/svg+xml`, `application/manifest+json`; the PNG's IHDR 1200×630
-- [ ] `no console error and no policy violation` — steps: open `/` and `/self-host` in light, then dark; expected: zero console errors, zero `securitypolicyviolation` events, zero failed requests other than the stubbed Turnstile frame
+- [ ] `the files a browser asks for answer` (pin: green when it lands, Lane I merged in) — steps: request each icon path, `/site.webmanifest`, `/og/todz.png`; expected: 200, `image/png`, `image/x-icon` or `image/vnd.microsoft.icon`, `image/svg+xml`, `application/manifest+json`; the PNG's IHDR 1200×630
+- [ ] `no console error and no policy violation` (pin: green when it lands, after steps 3–13) — steps: open `/` and `/self-host` in light, then dark; expected: zero console errors, zero `securitypolicyviolation` events, zero failed requests other than the stubbed Turnstile frame
 - [ ] `every image at its natural ratio` — steps: open `/` in light and dark, scroll to the end; expected: each `img` with a non-zero box has `|width/height − naturalWidth/naturalHeight| ≤ 1 %` of the natural ratio
 - [ ] `tools register on document.modelContext` — steps: the recording stub on `document`; expected: four `registerTool` calls with the names of `WEBMCP_TOOLS`, each with its `inputSchema` and annotations
 - [ ] `tools register on navigator.modelContext when document has none` — steps: the stub on `navigator` only; expected: the same four calls
