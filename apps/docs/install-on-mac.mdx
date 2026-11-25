@@ -1,0 +1,61 @@
+---
+title: Install on Mac
+description: Build todz for Mac from source, open it, and check what you run.
+---
+
+todz is not in the App Store and has no download yet. Until it does, you build the app from source and check the result.
+
+<Warning>
+  The build is not notarized yet. Apple has not scanned it, so macOS asks you to allow it the first time you open it on a Mac that did not build it. Notarized downloads arrive with the `mac-distribution` feature.
+</Warning>
+
+## 1. Build it
+
+You need a Mac with Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen). From the root of the repository:
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+The app lands at `apps/macos/build/Build/Products/Release/Todz.app`. It talks to the todz cloud.
+
+<Note>
+  `project.yml` signs with the owner's team. To build with your own, replace `DEVELOPMENT_TEAM` and the bundle identifiers first, as in [the self-host guide](/self-host#7-build-the-macos-app-and-point-it-at-your-server). The team in the next section is then yours.
+</Note>
+
+## 2. Open it on another Mac you own
+
+Zip the app so its signature survives the copy, and move the zip with AirDrop, a drive or `scp`:
+
+```bash
+ditto -c -k --keepParent apps/macos/build/Build/Products/Release/Todz.app Todz.zip
+```
+
+On the other Mac, unzip it, drag `Todz.app` into Applications and open it. macOS refuses the first time. Then:
+
+1. Open **System Settings** › **Privacy & Security**.
+2. Scroll to **Security**, find the line about `Todz` and click **Open Anyway**.
+3. Confirm with your password and open the app again.
+
+macOS asks once; later launches open normally.
+
+## 3. Verify it
+
+Check who signed the app:
+
+```bash
+codesign -dv --verbose=4 /Applications/Todz.app
+```
+
+The output holds `TeamIdentifier=XFWR794VS8` for a build of this repository as it is. A build with your own team shows your own identifier.
+
+Check that the zip is the one that was built. On the Mac that built it:
+
+```bash
+shasum -a 256 Todz.zip
+```
+
+Run the same command on the copy and compare the two sums. They must be identical.
+
+Releases will publish a sum next to each download once `mac-distribution` ships. Until then, the only sum to compare is the one of the build you made yourself.
