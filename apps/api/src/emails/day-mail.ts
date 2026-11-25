@@ -1,4 +1,5 @@
 import { DAY_EMAIL_LINES_MAX, MINUTES_PER_HOUR, TASK_SHORT_ID_PREFIX } from '@todz/types';
+import { stopUrlOf } from '../day-email/day-email-stop-url';
 import type { EmailMessage } from '../email-sender';
 import { DAY_MAIL_COPY } from './day-mail-copy';
 import { EmailSlot, type EmailSlotValues, filledTextOf } from './email-slot';
@@ -12,6 +13,7 @@ type DayMailInput = {
   to: string;
   replyTo: string;
   origin: string;
+  stopToken: string;
   tasks: DayMailTask[];
   count: number;
   workspaceName: string;
@@ -21,9 +23,12 @@ type DayMailInput = {
 
 enum MailHeader {
   AutoSubmitted = 'Auto-Submitted',
+  ListUnsubscribe = 'List-Unsubscribe',
+  ListUnsubscribePost = 'List-Unsubscribe-Post',
 }
 
 const AUTO_GENERATED = 'auto-generated';
+const ONE_CLICK_UNSUBSCRIBE = 'List-Unsubscribe=One-Click';
 const LINE_SEPARATOR = '\n';
 const NO_MORE_TASKS = '';
 const TIME_SEPARATOR = ':';
@@ -59,6 +64,7 @@ function valuesOf(input: DayMailInput): EmailSlotValues {
     [EmailSlot.Workspace]: input.workspaceName,
     [EmailSlot.Time]: timeOf(input.minutes),
     [EmailSlot.Origin]: input.origin,
+    [EmailSlot.StopUrl]: stopUrlOf({ origin: input.origin, token: input.stopToken }),
   };
 }
 
@@ -70,5 +76,13 @@ export function dayMail(input: DayMailInput): EmailMessage {
   const email = input.count === 0 ? DAY_EMAIL_EMPTY : DAY_EMAIL;
   const values = valuesOf(input);
   const message = filledEmailOf({ email, values, to: input.to, subject: subjectOf({ email, values }), replyTo: input.replyTo });
-  return { ...message, text: message.text.replace(BLANK_LINE_RUN, BLANK_LINE), headers: { [MailHeader.AutoSubmitted]: AUTO_GENERATED } };
+  return {
+    ...message,
+    text: message.text.replace(BLANK_LINE_RUN, BLANK_LINE),
+    headers: {
+      [MailHeader.AutoSubmitted]: AUTO_GENERATED,
+      [MailHeader.ListUnsubscribe]: `<${values[EmailSlot.StopUrl]}>`,
+      [MailHeader.ListUnsubscribePost]: ONE_CLICK_UNSUBSCRIBE,
+    },
+  };
 }

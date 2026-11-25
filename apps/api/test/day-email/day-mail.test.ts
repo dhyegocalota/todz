@@ -8,7 +8,15 @@ const INBOX_WORKSPACE = 'Personal';
 const OPEN_SLOT = '{{';
 const LINES_MAX = 20;
 const CHOSEN_MINUTES = 420;
-const AUTO_SUBMITTED_HEADERS = { 'Auto-Submitted': 'auto-generated' };
+const STOP_TOKEN = 'ab'.repeat(32);
+const STOP_URL = `${ORIGIN}/day-email/stop?token=${STOP_TOKEN}`;
+const MAIL_HEADERS = {
+  'Auto-Submitted': 'auto-generated',
+  'List-Unsubscribe': `<${STOP_URL}>`,
+  'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+};
+const FOOTER_SENTENCE = 'because Email me my day is on in todz Settings, where it starts on.';
+const STOP_LABEL = 'Stop these emails';
 
 function taskOf(overrides: Partial<DayMailTask> = {}): DayMailTask {
   return { number: 12, title: 'Review the release notes', workspaceName: 'Personal', projectName: 'Inbox', isOverdue: false, ...overrides };
@@ -24,6 +32,7 @@ function mailOf({
     to: OWNER_ADDRESS,
     replyTo: REPLY_ADDRESS,
     origin: ORIGIN,
+    stopToken: STOP_TOKEN,
     tasks,
     count,
     workspaceName: INBOX_WORKSPACE,
@@ -37,11 +46,19 @@ function numberedTasks(total: number): DayMailTask[] {
 }
 
 describe('the day mail with tasks', () => {
-  test('goes to the owner with the reply address as its reply-to and the auto-submitted header', () => {
+  test('goes to the owner with the reply address as its reply-to, the auto-submitted header and the one-click unsubscribe headers', () => {
     const message = mailOf();
     expect(message.to).toBe(OWNER_ADDRESS);
     expect(message.replyTo).toBe(REPLY_ADDRESS);
-    expect(message.headers).toEqual(AUTO_SUBMITTED_HEADERS);
+    expect(message.headers).toEqual(MAIL_HEADERS);
+  });
+
+  test('carries the stop link in the html footer as a link and in the text footer as a url, and nowhere else', () => {
+    const message = mailOf();
+    expect(message.html).toContain(`href="${STOP_URL}"`);
+    expect(message.html).toContain(STOP_LABEL);
+    expect(message.text.trimEnd().endsWith(`${STOP_LABEL}: ${STOP_URL}`)).toBe(true);
+    expect(message.text.split(STOP_TOKEN)).toHaveLength(2);
   });
 
   test('counts every due task in its subject, its heading and its preview', () => {
@@ -126,7 +143,8 @@ describe('the day mail with tasks', () => {
     [1439, '23:59'],
   ])('says in its footer that it was sent at the minute %i as %s', (minutes, time) => {
     const message = mailOf({ minutes });
-    expect(message.text).toContain(`Sent at ${time} because Email me my day is on in todz Settings. Turn it off there.`);
+    expect(message.text).toContain(`Sent at ${time} ${FOOTER_SENTENCE}`);
+    expect(message.html).toContain(`Sent at ${time} ${FOOTER_SENTENCE}`);
   });
 
   test('leaves no slot unfilled in either part', () => {
@@ -149,8 +167,9 @@ describe('the day mail on an empty day', () => {
   test('keeps the reply-to, the header and the footer', () => {
     const message = mailOf({ tasks: [], count: 0 });
     expect(message.replyTo).toBe(REPLY_ADDRESS);
-    expect(message.headers).toEqual(AUTO_SUBMITTED_HEADERS);
-    expect(message.text).toContain('Sent at 07:00 because Email me my day is on in todz Settings. Turn it off there.');
+    expect(message.headers).toEqual(MAIL_HEADERS);
+    expect(message.text).toContain(`Sent at 07:00 ${FOOTER_SENTENCE}`);
+    expect(message.html).toContain(`href="${STOP_URL}"`);
     expect(message.html).not.toContain(OPEN_SLOT);
   });
 });

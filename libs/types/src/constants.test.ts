@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import {
   ABSENT_INDEX,
+  AGENT_NUDGE_BY_DEFAULT,
+  API_VERSION_HEADER,
+  APP_VERSION_HEADER,
   COMPANY,
+  DAY_EMAIL_BY_DEFAULT,
   DAY_EMAIL_CATCH_UP_MINUTES,
   DAY_EMAIL_LINES_MAX,
   DAY_EMAIL_MINUTES_DEFAULT,
@@ -10,6 +14,10 @@ import {
   DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS,
   DAY_EMAIL_RETENTION_MS,
   DAY_EMAIL_SENDS_PER_TICK_MAX,
+  DAY_EMAIL_STOP_LINK_LIFETIME_MS,
+  DAY_EMAIL_STOP_RATE_LIMIT_MAX,
+  DAY_EMAIL_STOP_RATE_LIMIT_PERIOD_SECONDS,
+  DAY_EMAIL_STOP_TOKEN_LENGTH,
   FORMATTER_LOCALE,
   HEALTH_SERVICE_NAME,
   HOURS_PER_DAY,
@@ -20,6 +28,7 @@ import {
   MILLISECONDS_PER_HOUR,
   MILLISECONDS_PER_MINUTE,
   MILLISECONDS_PER_SECOND,
+  MINIMUM_APP_VERSION,
   PROJECT_KEY_PREFIX,
   REPLY_ADDRESS_LOCAL_PART,
   REPLY_DAILY_MAX,
@@ -84,6 +93,17 @@ describe('health constants', () => {
   });
 });
 
+describe('version constants', () => {
+  test('the oldest app the server accepts is 0.2.0 (pin)', () => {
+    expect(MINIMUM_APP_VERSION).toBe('0.2.0');
+  });
+
+  test('the server and the app name their versions in these headers (pin)', () => {
+    expect(API_VERSION_HEADER).toBe('Todz-Api-Version');
+    expect(APP_VERSION_HEADER).toBe('Todz-App-Version');
+  });
+});
+
 describe('mcp constants', () => {
   test('a project key starts with todz_ (pin)', () => {
     expect(PROJECT_KEY_PREFIX).toBe('todz_');
@@ -96,6 +116,11 @@ describe('mcp constants', () => {
 });
 
 describe('day email constants', () => {
+  test('a new owner starts with the agent nudge and the day email on (pin)', () => {
+    expect(AGENT_NUDGE_BY_DEFAULT).toBe(true);
+    expect(DAY_EMAIL_BY_DEFAULT).toBe(true);
+  });
+
   test('the mail defaults to 07:00 and the minute of the day ends at 23:59 (pin)', () => {
     expect(DAY_EMAIL_MINUTES_DEFAULT).toBe(420);
     expect(DAY_EMAIL_MINUTES_MAX).toBe(1439);
@@ -114,6 +139,16 @@ describe('day email constants', () => {
   test('records are kept thirty days and a reply address lives seven (pin)', () => {
     expect(DAY_EMAIL_RETENTION_MS).toBe(30 * MILLISECONDS_IN_A_DAY);
     expect(DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS).toBe(7 * MILLISECONDS_IN_A_DAY);
+  });
+
+  test('a stop link lives thirty days and its token is sixty-four hexadecimal characters (pin)', () => {
+    expect(DAY_EMAIL_STOP_LINK_LIFETIME_MS).toBe(30 * MILLISECONDS_IN_A_DAY);
+    expect(DAY_EMAIL_STOP_TOKEN_LENGTH).toBe(64);
+  });
+
+  test('the stop link answers ten requests a minute to one client (pin)', () => {
+    expect(DAY_EMAIL_STOP_RATE_LIMIT_MAX).toBe(10);
+    expect(DAY_EMAIL_STOP_RATE_LIMIT_PERIOD_SECONDS).toBe(60);
   });
 
   test('a reply comes to the reply local part, is at most a mebibyte, and an owner adds at most five a minute and twenty a day (pin)', () => {

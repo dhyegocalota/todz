@@ -93,7 +93,27 @@ export async function pruneDayEmails({ directory, now }: { directory: D1Database
     directory.prepare('DELETE FROM day_emails WHERE claimed_at < ?').bind(retainedSince),
     directory.prepare('DELETE FROM day_email_replies WHERE accepted_at < ?').bind(retainedSince),
     directory.prepare('DELETE FROM day_email_reply_addresses WHERE expires_at < ?').bind(now),
+    directory.prepare('DELETE FROM day_email_stop_links WHERE expires_at < ?').bind(now),
   ]);
+}
+
+export async function insertStopLink({
+  directory,
+  digest,
+  ownerId,
+  now,
+  expiresAt,
+}: {
+  directory: D1Database;
+  digest: string;
+  ownerId: string;
+  now: number;
+  expiresAt: number;
+}): Promise<void> {
+  await directory
+    .prepare('INSERT INTO day_email_stop_links (digest, owner_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
+    .bind(digest, ownerId, now, expiresAt)
+    .run();
 }
 
 export async function insertReplyAddress({
@@ -113,6 +133,23 @@ export async function insertReplyAddress({
     .prepare('INSERT INTO day_email_reply_addresses (digest, owner_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
     .bind(digest, ownerId, now, expiresAt)
     .run();
+}
+
+const LIVE_STOP_LINK_OWNER = 'SELECT owner_id FROM day_email_stop_links WHERE digest = ?1 AND expires_at > ?2';
+
+export async function isStopLinkLive({ directory, digest, now }: { directory: D1Database; digest: string; now: number }): Promise<boolean> {
+  const row = await directory.prepare(LIVE_STOP_LINK_OWNER).bind(digest, now).first<{ owner_id: string }>();
+  return row !== null;
+}
+
+export async function stopDayEmail({ directory, digest, now }: { directory: D1Database; digest: string; now: number }): Promise<boolean> {
+  const [turnedOff] = await directory.batch([
+    directory.prepare(`UPDATE owners SET day_email = 0, day_email_chosen_at = ?2 WHERE id = (${LIVE_STOP_LINK_OWNER})`).bind(digest, now),
+    directory.prepare(`DELETE FROM day_email_reply_addresses WHERE owner_id = (${LIVE_STOP_LINK_OWNER})`).bind(digest, now),
+    directory.prepare(`DELETE FROM day_email_stop_links WHERE owner_id = (${LIVE_STOP_LINK_OWNER})`).bind(digest, now),
+  ]);
+  if (turnedOff === undefined) throw new Error('a batch answers one result per statement');
+  return turnedOff.meta.changes > 0;
 }
 
 export async function findReplyAddressOwner({

@@ -61,6 +61,7 @@ export async function insertProjectKey({
   hint,
   projectId,
   now,
+  liveKeysPerProjectMax,
 }: {
   directory: D1Database;
   digest: string;
@@ -68,11 +69,15 @@ export async function insertProjectKey({
   hint: string;
   projectId: string;
   now: number;
-}): Promise<void> {
-  await directory
-    .prepare('INSERT INTO project_keys (digest, id, hint, project_id, created_at, revoked_at) VALUES (?, ?, ?, ?, ?, NULL)')
-    .bind(digest, id, hint, projectId, now)
+  liveKeysPerProjectMax: number;
+}): Promise<boolean> {
+  const insertion = await directory
+    .prepare(
+      'INSERT INTO project_keys (digest, id, hint, project_id, created_at, revoked_at) SELECT ?, ?, ?, ?, ?, NULL WHERE (SELECT count(*) FROM project_keys WHERE project_id = ? AND revoked_at IS NULL) < ?',
+    )
+    .bind(digest, id, hint, projectId, now, projectId, liveKeysPerProjectMax)
     .run();
+  return insertion.meta.changes > 0;
 }
 
 export async function insertMcpSession({

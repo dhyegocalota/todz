@@ -23,7 +23,7 @@ const TEXT_TYPE = 'text/plain; charset=utf-8';
 const XML_TYPE = 'application/xml; charset=utf-8';
 const MANIFEST_TYPE = 'application/manifest+json';
 const PUBLIC_CACHE_CONTROL = 'public, max-age=3600';
-const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
+const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
 const KEY_PLACEHOLDER = '<key>';
 const BACKGROUND_COLOR = '#070812';
 const SITEMAP_NAMESPACE = 'http://www.sitemaps.org/schemas/sitemap/0.9';

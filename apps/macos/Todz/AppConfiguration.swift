@@ -14,6 +14,10 @@ enum AppConfiguration {
         }
     }
 
+    static var appVersion: String {
+        AppVersion.required(bundle: .main)
+    }
+
     static var linkScheme: AppLinkScheme {
         AppLinkScheme.required(bundle: .main)
     }

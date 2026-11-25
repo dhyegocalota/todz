@@ -2,6 +2,7 @@ import {
   DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS,
   DAY_EMAIL_RETENTION_MS,
   DAY_EMAIL_SENDS_PER_TICK_MAX,
+  DAY_EMAIL_STOP_LINK_LIFETIME_MS,
   MILLISECONDS_PER_DAY,
 } from '@todz/types';
 import { env } from 'cloudflare:workers';
@@ -9,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../../src/credential-digest';
 import { DayEmailMissingPiece } from '../../src/day-email/day-email-run';
 import { calendarDateInTimeZone } from '../../src/owner-today';
-import { consoleOutput, recordingBinding } from '../email-sign-in-client';
+import { PUBLIC_HTTPS_ORIGIN, consoleOutput, recordingBinding } from '../email-sign-in-client';
 import { recordingEnv } from '../owner-client';
 import { CLOCK_NOW } from '../task-fixtures';
 import {
@@ -23,6 +24,7 @@ import {
   observedProjectStore,
   resetDayEmails,
   secretOfReplyTo,
+  tokenOfListUnsubscribe,
   seedDayOwner,
   seedProjectOf,
   seedWorkspaceOf,
@@ -39,6 +41,7 @@ const PAST_THE_RETENTION_MS = DAY_EMAIL_RETENTION_MS + MILLISECONDS_PER_DAY;
 const INSIDE_THE_RETENTION_MS = DAY_EMAIL_RETENTION_MS - MILLISECONDS_PER_DAY;
 const MESSAGE_DIGEST = 'f'.repeat(64);
 const OLD_MESSAGE_DIGEST = 'e'.repeat(64);
+const LIST_UNSUBSCRIBE_PATTERN = /^<https:\/\/[^>]+\/day-email\/stop\?token=[0-9a-f]{64}>$/;
 
 type WindowCase = { name: string; timeZone: string; minutes: number; ticks: string[]; expectedMails: number };
 
@@ -339,7 +342,79 @@ describe('the reply address', () => {
   });
 });
 
+describe('the stop link', () => {
+  test('is a token whose digest is stored for thirty days, whose token is stored nowhere and which both parts of the mail carry', async () => {
+    const recording = recordingBinding();
+    const owner = await seedDayOwner();
+    await tick({ recording });
+    const message = mailTo({ recording, address: owner.address });
+    const token = tokenOfListUnsubscribe(message.headers);
+    const stopUrl = `${PUBLIC_HTTPS_ORIGIN}/day-email/stop?token=${token}`;
+    expect(message.html).toContain(`href="${stopUrl}"`);
+    expect(message.text).toContain(stopUrl);
+    const rows = await env.DIRECTORY.prepare('SELECT digest, owner_id, created_at, expires_at FROM day_email_stop_links').all();
+    expect(rows.results).toEqual([
+      {
+        digest: await digestCredential(token),
+        owner_id: owner.ownerId,
+        created_at: UTC_SEVEN_O_CLOCK,
+        expires_at: UTC_SEVEN_O_CLOCK + DAY_EMAIL_STOP_LINK_LIFETIME_MS,
+      },
+    ]);
+    const stored = await Promise.all(
+      ['day_emails', 'day_email_reply_addresses', 'day_email_stop_links'].map((table) =>
+        env.DIRECTORY.prepare(`SELECT * FROM ${table}`).all(),
+      ),
+    );
+    expect(JSON.stringify(stored)).not.toContain(token);
+  });
+
+  test("is another token in each owner's mail", async () => {
+    const recording = recordingBinding();
+    const first = await seedDayOwner();
+    const second = await seedDayOwner();
+    await tick({ recording });
+    const firstToken = tokenOfListUnsubscribe(mailTo({ recording, address: first.address }).headers);
+    const secondToken = tokenOfListUnsubscribe(mailTo({ recording, address: second.address }).headers);
+    expect(firstToken).not.toBe(secondToken);
+  });
+
+  test('never reaches a log line of the run', async () => {
+    const recording = recordingBinding();
+    const output = consoleOutput();
+    const owner = await seedDayOwner();
+    await tick({ recording });
+    const token = tokenOfListUnsubscribe(mailTo({ recording, address: owner.address }).headers);
+    const logged = JSON.stringify(output.mock.calls);
+    expect(logged).not.toContain('token=');
+    expect(logged).not.toContain(token);
+  });
+});
+
 describe('the pruning on each tick', () => {
+  test('deletes expired stop links and keeps live ones', async () => {
+    const recording = recordingBinding();
+    const owner = await seedDayOwner({ isEnabled: false });
+    const digest = (character: string): string => character.repeat(64);
+    await env.DIRECTORY.batch([
+      env.DIRECTORY.prepare('INSERT INTO day_email_stop_links (digest, owner_id, created_at, expires_at) VALUES (?, ?, ?, ?)').bind(
+        digest('a'),
+        owner.ownerId,
+        UTC_SEVEN_O_CLOCK - MILLISECONDS_PER_DAY,
+        UTC_SEVEN_O_CLOCK - 1,
+      ),
+      env.DIRECTORY.prepare('INSERT INTO day_email_stop_links (digest, owner_id, created_at, expires_at) VALUES (?, ?, ?, ?)').bind(
+        digest('b'),
+        owner.ownerId,
+        UTC_SEVEN_O_CLOCK - MILLISECONDS_PER_DAY,
+        UTC_SEVEN_O_CLOCK + MILLISECONDS_PER_DAY,
+      ),
+    ]);
+    await tick({ recording });
+    const links = await env.DIRECTORY.prepare('SELECT digest FROM day_email_stop_links WHERE owner_id = ?').bind(owner.ownerId).all();
+    expect(links.results).toEqual([{ digest: digest('b') }]);
+  });
+
   test('deletes day emails and replies past thirty days and expired reply addresses and keeps newer ones', async () => {
     const recording = recordingBinding();
     const owner = await seedDayOwner({ isEnabled: false });
@@ -421,7 +496,11 @@ describe("the mail's Today", () => {
     expect(message.text).not.toContain('Someday');
     expect(message.text).toContain('in the Inbox of Personal.');
     expect(message.replyTo).toMatch(/^reply\+[0-9a-f]{32}@todz\.app$/);
-    expect(message.headers).toEqual({ 'Auto-Submitted': 'auto-generated' });
+    expect(message.headers).toEqual({
+      'Auto-Submitted': 'auto-generated',
+      'List-Unsubscribe': expect.stringMatching(LIST_UNSUBSCRIBE_PATTERN),
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    });
   });
 
   test('mails an empty Today as nothing due, with the reply hint', async () => {

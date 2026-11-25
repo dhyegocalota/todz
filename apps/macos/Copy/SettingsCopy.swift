@@ -3,12 +3,15 @@ import TodzKit
 enum SettingsCopy {
     static let showPendingCount = "Show pending count in the menu bar"
     static let showPendingCountDetail = "Today's open tasks in the active workspace. Hidden when none are left."
+    static let keepInMenuBar = "Keep todz in the menu bar when closed"
+    static let keepInMenuBarDetail = "With no window open, todz leaves the Dock and ⌘Tab. The menu bar, widgets and Siri keep working."
     static let agentNudge = "Let agents mention today's tasks"
     static let agentNudgeDetail = "When an agent asks what's next, it hears what's due today in its project."
     static let ownerSettingOffline = "Can't reach todz. You can change this when it's back."
     static let ownerSettingSignedOut = "Sign in to change this."
-    static let focusQuiet = "Quiet during Focus"
-    static let focusQuietDetail = "todz stays quiet in any Focus with the todz filter on."
+    static let respectFocus = "Respect Focus"
+    static let respectFocusDetail = "Hold what todz shows on this Mac in a Focus that has the todz filter."
+    static let respectFocusHelper = "Add the todz filter to a Focus."
     static let focusQuietNow = "Quiet now, until this Focus ends."
     static let openFocusSettings = "Open Focus Settings"
     static let closeTheDay = "Close the day"
@@ -17,7 +20,7 @@ enum SettingsCopy {
     static let morningGlance = "Morning glance"
     static let morningGlanceDetail = "On the first wake or unlock of each day, todz shows Today for a few seconds."
     static let dayTemperature = "Day temperature"
-    static let dayTemperatureDetail = "Dims the menu bar count through the afternoon and tints overdue widget rows. Quiet in a Focus."
+    static let dayTemperatureDetail = "Dims the menu bar count through the afternoon and tints overdue widget rows."
     static let dayEmail = "Email me my day"
     static let dayEmailDetail = "At this time each day, todz mails Today to your sign-in address. Reply to add a task."
     static let dayEmailTime = "Time to email my day"
@@ -94,7 +97,7 @@ enum SettingsCopy {
 
     static func focusQuietSubtitle(notice: FocusQuietNotice) -> String {
         switch notice {
-        case .notQuiet: focusQuietDetail
+        case .notQuiet: respectFocusDetail
         case .quietNow: focusQuietNow
         }
     }

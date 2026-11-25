@@ -30,6 +30,7 @@ export enum EmailClassName {
   Muted = 'email-muted',
   Rule = 'email-rule',
   Link = 'email-link',
+  StopLink = 'email-stop-link',
   Button = 'email-button',
 }
 
@@ -86,4 +87,5 @@ export const BUTTON_STYLE: CSSProperties = {
 export const LINK_STYLE: CSSProperties = { color: BRAND_COLOR, fontSize: '14px', wordBreak: 'break-all' };
 export const RULE_STYLE: CSSProperties = { borderColor: RULE_COLOR, margin: '24px 0' };
 export const FOOTER_STYLE: CSSProperties = { color: MUTED_TEXT_COLOR, fontSize: '13px', lineHeight: '20px', margin: 0 };
+export const FOOTER_LINK_STYLE: CSSProperties = { color: BRAND_COLOR, fontSize: '13px' };
 export const MUTED_STYLE: CSSProperties = { color: MUTED_TEXT_COLOR, fontSize: '14px', lineHeight: '22px', margin: '0 0 4px' };

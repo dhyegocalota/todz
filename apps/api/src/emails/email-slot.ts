@@ -13,6 +13,7 @@ export enum EmailSlot {
   Tasks = '{{tasks}}',
   Workspace = '{{workspace}}',
   Time = '{{time}}',
+  StopUrl = '{{stopUrl}}',
 }
 
 export type EmailSlotValues = Partial<Record<EmailSlot, string>>;

@@ -20,6 +20,9 @@ export type Env = {
   ADMIN_ADDRESS_LIMITER?: RateLimit;
   ADMIN_GLOBAL_LIMITER?: RateLimit;
   DAY_EMAIL_REPLY_LIMITER?: RateLimit;
+  DAY_EMAIL_STOP_LIMITER?: RateLimit;
+  OWNER_LIMITER?: RateLimit;
+  MCP_LIMITER?: RateLimit;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
 };

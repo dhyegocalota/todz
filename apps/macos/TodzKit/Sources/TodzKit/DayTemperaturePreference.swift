@@ -2,7 +2,7 @@ import Foundation
 
 public struct DayTemperaturePreference {
     public static let isOnStorageKey = "showsDayTemperature"
-    public static let isOnByDefault = false
+    public static let isOnByDefault = true
 
     private let domain: PersistentDomain
 
@@ -15,6 +15,7 @@ public struct DayTemperaturePreference {
     }
 
     public var isOn: Bool {
-        domain.value(forKey: Self.isOnStorageKey) as? Bool == true
+        guard let stored = domain.value(forKey: Self.isOnStorageKey) as? Bool else { return Self.isOnByDefault }
+        return stored
     }
 }

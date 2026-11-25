@@ -7,6 +7,7 @@ import { ownerJson } from './owner-json';
 import { type SessionContext, type SessionHandler, parsedBody } from './owner-request';
 import { OwnerRoute } from './owner-routes';
 import { closeOwnerSession } from './owner-sessions';
+import { closeSessionSockets } from './project-routing';
 import { canonicalTimeZone } from './time-zone';
 
 const UpdateOwnerBodySchema = z
@@ -25,8 +26,9 @@ function absentAsNull<Value>(value: Value | undefined): Value | null {
 
 type AccountRoute = OwnerRoute.SignOut | OwnerRoute.ReadOwner | OwnerRoute.UpdateOwner;
 
-async function signOut({ env, secret }: SessionContext): Promise<Response> {
+async function signOut({ env, secret, owner, executionContext }: SessionContext): Promise<Response> {
   await closeOwnerSession({ directory: env.DIRECTORY, secret });
+  executionContext.waitUntil(closeSessionSockets({ env, owner, secret }));
   return new Response(null, { status: HttpStatus.NoContent });
 }
 
@@ -36,7 +38,7 @@ async function readOwner({ env, owner }: SessionContext): Promise<Response> {
   return Response.json({ owner: ownerJson(ownerRecord) });
 }
 
-async function updateOwner({ request, env, owner }: SessionContext): Promise<Response> {
+async function updateOwner({ request, env, owner, now }: SessionContext): Promise<Response> {
   const body = await parsedBody({ request, schema: UpdateOwnerBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const timeZone = body.time_zone === undefined ? null : canonicalTimeZone(body.time_zone);
@@ -49,6 +51,7 @@ async function updateOwner({ request, env, owner }: SessionContext): Promise<Res
     agentNudge: absentAsNull(body.agent_nudge),
     dayEmail: absentAsNull(body.day_email),
     dayEmailMinutes: absentAsNull(body.day_email_minutes),
+    now,
   });
   if (ownerRecord === null) throw new Error('a live session names an owner with no row');
   return Response.json({ owner: ownerJson(ownerRecord) });

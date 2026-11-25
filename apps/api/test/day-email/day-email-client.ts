@@ -14,8 +14,9 @@ export const DAY_EMAIL_MINUTES = 420;
 export const UTC_SEVEN_O_CLOCK = Date.parse('2026-11-24T07:00:00Z');
 export const FAILED_RUN_MESSAGE = 'the day email failed for 1 owner';
 
-const DAY_EMAIL_TABLES = ['day_emails', 'day_email_reply_addresses', 'day_email_replies'];
+const DAY_EMAIL_TABLES = ['day_emails', 'day_email_reply_addresses', 'day_email_replies', 'day_email_stop_links'];
 const REPLY_ADDRESS_PATTERN = /^reply\+([0-9a-f]{32})@todz\.app$/;
+const STOP_TOKEN_PATTERN = /token=([0-9a-f]{64})>$/;
 const SECRET_GROUP = 1;
 
 export type DayEmailRow = {
@@ -128,6 +129,12 @@ export function secretOfReplyTo(replyTo: string): string {
   const secret = REPLY_ADDRESS_PATTERN.exec(replyTo)?.[SECRET_GROUP];
   if (secret === undefined) throw new Error('the reply-to should be reply+<32 hex>@todz.app');
   return secret;
+}
+
+export function tokenOfListUnsubscribe(headers: Record<string, string> | undefined): string {
+  const token = headers?.['List-Unsubscribe']?.match(STOP_TOKEN_PATTERN)?.[SECRET_GROUP];
+  if (token === undefined) throw new Error('the mail should carry a List-Unsubscribe header with a stop token');
+  return token;
 }
 
 export async function dayEmailRows(ownerId: string): Promise<DayEmailRow[]> {

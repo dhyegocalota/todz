@@ -1,6 +1,15 @@
+import { AGENT_NUDGE_BY_DEFAULT, DAY_EMAIL_BY_DEFAULT } from '@todz/types';
 import type { OwnerRecord } from './owner-records';
 
 const OWNER_COLUMNS = 'id, time_zone, agent_nudge, day_email, day_email_minutes';
+
+const UPDATE_OWNER_STATEMENT = `UPDATE owners SET time_zone = COALESCE(?1, time_zone),
+  agent_nudge = COALESCE(?2, agent_nudge),
+  day_email = COALESCE(?3, day_email),
+  day_email_minutes = COALESCE(?4, day_email_minutes),
+  agent_nudge_chosen_at = CASE WHEN ?2 IS NULL THEN agent_nudge_chosen_at ELSE ?5 END,
+  day_email_chosen_at = CASE WHEN ?3 IS NULL THEN day_email_chosen_at ELSE ?5 END
+WHERE id = ?6 RETURNING ${OWNER_COLUMNS}`;
 
 type IdentityRow = { owner_id: string };
 type OwnerRow = { id: string; time_zone: string; agent_nudge: number; day_email: number; day_email_minutes: number };
@@ -38,7 +47,9 @@ export async function insertOwnerWithIdentity({
   now: number;
 }): Promise<void> {
   await directory.batch([
-    directory.prepare('INSERT INTO owners (id, time_zone, created_at) VALUES (?, ?, ?)').bind(ownerId, timeZone, now),
+    directory
+      .prepare('INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(ownerId, timeZone, Number(AGENT_NUDGE_BY_DEFAULT), Number(DAY_EMAIL_BY_DEFAULT), now),
     directory
       .prepare('INSERT INTO owner_identities (provider, subject, owner_id, created_at) VALUES (?, ?, ?, ?)')
       .bind(provider, subject, ownerId, now),
@@ -67,6 +78,7 @@ export async function storeOwnerChanges({
   agentNudge,
   dayEmail,
   dayEmailMinutes,
+  now,
 }: {
   directory: D1Database;
   ownerId: string;
@@ -74,14 +86,14 @@ export async function storeOwnerChanges({
   agentNudge: boolean | null;
   dayEmail: boolean | null;
   dayEmailMinutes: number | null;
+  now: number;
 }): Promise<OwnerRecord | null> {
   const update = directory
-    .prepare(
-      `UPDATE owners SET time_zone = COALESCE(?, time_zone), agent_nudge = COALESCE(?, agent_nudge), day_email = COALESCE(?, day_email), day_email_minutes = COALESCE(?, day_email_minutes) WHERE id = ? RETURNING ${OWNER_COLUMNS}`,
-    )
-    .bind(timeZone, flagOf(agentNudge), flagOf(dayEmail), dayEmailMinutes, ownerId);
+    .prepare(UPDATE_OWNER_STATEMENT)
+    .bind(timeZone, flagOf(agentNudge), flagOf(dayEmail), dayEmailMinutes, now, ownerId);
   const deleteReplyAddresses = directory.prepare('DELETE FROM day_email_reply_addresses WHERE owner_id = ?').bind(ownerId);
-  const statements = dayEmail === false ? [update, deleteReplyAddresses] : [update];
+  const deleteStopLinks = directory.prepare('DELETE FROM day_email_stop_links WHERE owner_id = ?').bind(ownerId);
+  const statements = dayEmail === false ? [update, deleteReplyAddresses, deleteStopLinks] : [update];
   const [updated] = await directory.batch<OwnerRow>(statements);
   if (updated === undefined) throw new Error('a batch answers one result per statement');
   const [row] = updated.results;

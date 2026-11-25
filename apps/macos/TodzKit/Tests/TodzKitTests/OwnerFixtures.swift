@@ -2,6 +2,7 @@ import Foundation
 @testable import TodzKit
 
 enum OwnerFixtures {
+    static let appVersion = "0.2.0"
     static let createdAtMilliseconds: Int64 = 1_795_000_000_123
     static let updatedAtMilliseconds: Int64 = 1_795_000_360_456
     static let completedAtMilliseconds: Int64 = 1_795_000_720_789

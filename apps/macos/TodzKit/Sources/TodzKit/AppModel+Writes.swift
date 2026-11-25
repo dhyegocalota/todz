@@ -41,7 +41,7 @@ extension AppModel {
             return
         }
         switch failure {
-        case .unauthorized:
+        case .unauthorized, .appTooOld:
             return
         case .unreachable:
             raise(.network, retry: retry)
@@ -58,7 +58,7 @@ extension AppModel {
             return
         }
         switch failure {
-        case .unauthorized:
+        case .unauthorized, .appTooOld:
             return
         case let .ruleViolated(issue, _):
             ruleIssues[target] = issue

@@ -201,7 +201,7 @@ stage_releases() {
 deploy_stage() {
   local head_sha output version_id
   head_sha=$(git rev-parse HEAD)
-  output=$(bounded "$wrangler_seconds" "wrangler deploy" "$cloudflare_binary" pnpm --filter @todz/api exec wrangler deploy --assets "$stage" --message "$head_sha") || fail "wrangler deploy failed"
+  output=$(bounded "$wrangler_seconds" "wrangler deploy" "$cloudflare_binary" pnpm --filter @todz/api server:deploy --assets "$stage" --message "$head_sha") || fail "wrangler deploy failed"
   echo "$output"
   version_id=$(sed -n 's/^Current Version ID: \(.*\)$/\1/p' <<< "$output")
   [[ -n "$version_id" ]] || fail "wrangler printed no version id"

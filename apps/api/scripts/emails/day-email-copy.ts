@@ -2,7 +2,8 @@ import { EmailSlot } from '../../src/emails/email-slot';
 
 const SHARED_COPY = {
   replyHint: `Reply from the address you sign in with, in one line, to add it to Today in the Inbox of ${EmailSlot.Workspace}.`,
-  footer: `Sent at ${EmailSlot.Time} because Email me my day is on in todz Settings. Turn it off there.`,
+  footer: `Sent at ${EmailSlot.Time} because Email me my day is on in todz Settings, where it starts on.`,
+  stopLabel: 'Stop these emails',
 };
 
 export const DAY_EMAIL_COPY = {

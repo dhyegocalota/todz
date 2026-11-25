@@ -43,6 +43,11 @@ struct MenuBarLabel: View {
                 if model.showsIncomingSignInLink { openWindow.mainWindow() }
                 Task { await model.redeem(signInLink: link) }
             }
+            .onChange(of: windowState.isMainWindowRequested) { _, isRequested in
+                guard isRequested else { return }
+                windowState.isMainWindowRequested = false
+                openWindow.mainWindow()
+            }
             .onChange(of: model.linkRevealCount) {
                 windowState.isInspectorPresented = true
             }

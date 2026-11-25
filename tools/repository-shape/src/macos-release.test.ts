@@ -22,6 +22,11 @@ const PUBLIC_KEY_SETTING = /\n\s+SUPublicEDKey: "?([^"\n]+)"?\n/;
 const MACH_LOOKUP_KEY = 'com.apple.security.temporary-exception.mach-lookup.global-name';
 const MACH_LOOKUP_SUFFIXES = ['-spks', '-spki'];
 const FIRST_CAPTURE = 1;
+const RELEASE_SCRIPT = 'scripts/release-mac.sh';
+const TYPES_CONSTANTS = 'libs/types/src/constants.ts';
+const FIRST_VERSION_PATTERN = /^first_version="([^"]+)"$/m;
+const MINIMUM_APP_VERSION_PATTERN = /MINIMUM_APP_VERSION = '([^']+)'/;
+const MARKETING_VERSION_PATTERN = /MARKETING_VERSION: "([^"]+)"/g;
 const ONE_DAY_SECONDS = '86400';
 
 function section({ text, from, until }: { text: string; from: string; until: string }): string {
@@ -48,6 +53,25 @@ function configurationSets({ target, configuration, setting }: { target: string;
 function machLookupEntry(suffix: string): string {
   return `$(PRODUCT_BUNDLE_IDENTIFIER)${suffix}`;
 }
+
+describe('the version the app sends and the version Sparkle updates from', () => {
+  test('the first release, the project version and the oldest app the server accepts are one version', () => {
+    const firstRelease = FIRST_VERSION_PATTERN.exec(readRepositoryFile(RELEASE_SCRIPT))?.[FIRST_CAPTURE];
+    const oldestAccepted = MINIMUM_APP_VERSION_PATTERN.exec(readRepositoryFile(TYPES_CONSTANTS))?.[FIRST_CAPTURE];
+    const marketingVersions = [...project().matchAll(MARKETING_VERSION_PATTERN)].map((match) => match[FIRST_CAPTURE]);
+    expect(firstRelease).toBeDefined();
+    expect(marketingVersions).toEqual([firstRelease, firstRelease]);
+    expect(oldestAccepted).toBe(firstRelease);
+  });
+
+  test('the release command gives xcodebuild the version and the build number the appcast names', () => {
+    const script = readRepositoryFile(RELEASE_SCRIPT);
+    expect(script).toContain('MARKETING_VERSION="$version"');
+    expect(script).toContain('CURRENT_PROJECT_VERSION="$build"');
+    expect(script).toContain('<sparkle:version>$build</sparkle:version>');
+    expect(script).toContain('<sparkle:shortVersionString>$version</sparkle:shortVersionString>');
+  });
+});
 
 describe('the macOS release settings', () => {
   test('both targets run with the hardened runtime in Release only', () => {

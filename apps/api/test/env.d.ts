@@ -5,6 +5,8 @@ declare global {
   namespace Cloudflare {
     interface Env extends ApiEnv {
       MIGRATIONS: D1Migration[];
+      MIGRATION_DIRECTORY: D1Database;
+      SETTING_DEFAULT_STATEMENTS: Record<string, string>;
     }
     interface GlobalProps {
       mainModule: typeof import('../src/index');

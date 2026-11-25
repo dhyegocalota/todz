@@ -66,7 +66,7 @@ private func glanceContent(openCount: Int, workspaceIdentifier: String = "acme")
 }
 
 @MainActor private struct GlanceHarness {
-    let gate = ProactiveGate()
+    let gate = ProactiveGate(respectsFocus: true)
     let clock = HarnessClock()
     let fakeContent: FakeGlanceContent
     let screen = FakeScreen()

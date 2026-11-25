@@ -16,6 +16,7 @@ describe('the email slots', () => {
       '{{tasks}}',
       '{{workspace}}',
       '{{time}}',
+      '{{stopUrl}}',
     ]);
   });
 

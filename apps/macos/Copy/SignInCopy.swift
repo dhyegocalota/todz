@@ -29,6 +29,7 @@ enum SignInCopy {
     static let useDifferentEmail = "Use a Different Email"
     static let signInRefused = "Too many tries. Wait a minute, then try again."
     static let linkRefused = "Couldn't sign in with that link. Wait a minute, then open it from the email again."
+    static let appTooOld = "Update todz to sign in."
     static let challengeRequired = "Complete the check first."
     static let challengeLabel = "Security check"
     static let linkRejected = "That link has expired or was already used. Send a new one."

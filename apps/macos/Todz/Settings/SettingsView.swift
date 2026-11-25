@@ -11,11 +11,13 @@ struct SettingsView: View {
     @Environment(ProactiveGate.self) private var gate
     @Environment(\.openURL) private var openURL
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
+    @AppStorage(MenuBarOnlyPreference.isOnStorageKey) private var isMenuBarOnlyOn = MenuBarOnlyPreference.isOnByDefault
     @AppStorage(DayClosePreference.isOnStorageKey) private var isDayCloseOn = DayClosePreference.isOnByDefault
     @AppStorage(DayClosePreference.timeStorageKey) private var dayCloseMinutes = DayClosePreference.minutesAfterMidnightByDefault
     @AppStorage(MorningGlancePreference.isOnStorageKey) private var isMorningGlanceOn = MorningGlancePreference.isOnByDefault
     @AppStorage(DayTemperaturePreference.isOnStorageKey) private var isDayTemperatureOn = DayTemperaturePreference.isOnByDefault
     @AppStorage(RibbonPreference.isOnStorageKey) private var isRibbonOn = RibbonPreference.isOnByDefault
+    @AppStorage(RespectFocusPreference.isOnStorageKey) private var isRespectFocusOn = RespectFocusPreference.isOnByDefault
     @AppStorage(RibbonPreference.cadenceStorageKey) private var ribbonCadenceName = RibbonPreference.cadenceByDefault.rawValue
 
     var body: some View {
@@ -25,6 +27,12 @@ struct SettingsView: View {
                 Text(SettingsCopy.showPendingCountDetail)
             }
             .toggleStyle(.switch)
+            Toggle(isOn: $isMenuBarOnlyOn) {
+                Text(SettingsCopy.keepInMenuBar)
+                Text(SettingsCopy.keepInMenuBarDetail)
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            .toggleStyle(.switch)
             Toggle(isOn: agentNudge) {
                 Text(SettingsCopy.agentNudge)
                 Text(SettingsCopy.ownerSettingSubtitle(notice: model.agentNudgeNotice, detail: SettingsCopy.agentNudgeDetail))
@@ -32,13 +40,6 @@ struct SettingsView: View {
             }
             .toggleStyle(.switch)
             .disabled(!model.canChangeAgentNudge)
-            LabeledContent {
-                Button(SettingsCopy.openFocusSettings, action: openFocusSettings)
-            } label: {
-                Text(SettingsCopy.focusQuiet)
-                Text(SettingsCopy.focusQuietSubtitle(notice: FocusQuietNotice(isQuiet: gate.isQuiet)))
-                    .lineLimit(subtitleLines, reservesSpace: true)
-            }
             LabeledContent {
                 HStack {
                     DatePicker(SettingsCopy.closeTheDayTime, selection: dayCloseTime, displayedComponents: .hourAndMinute)
@@ -101,8 +102,23 @@ struct SettingsView: View {
                 Text(ribbonDetail)
                     .lineLimit(subtitleLines, reservesSpace: true)
             }
+            Toggle(isOn: $isRespectFocusOn) {
+                Text(SettingsCopy.respectFocus)
+                Text(SettingsCopy.focusQuietSubtitle(notice: FocusQuietNotice(isQuiet: gate.isQuiet)))
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            .toggleStyle(.switch)
+            if isRespectFocusOn {
+                LabeledContent {
+                    Button(SettingsCopy.openFocusSettings, action: openFocusSettings)
+                } label: {
+                    Text(SettingsCopy.respectFocusHelper)
+                }
+            }
             Section {
                 ServerAddressForm(layout: .row, exit: {})
+            } footer: {
+                VersionLine()
             }
         }
         .formStyle(.grouped)

@@ -285,7 +285,7 @@ make_release 0.2.0
 run_deploy
 expect_equal "a deploy exits 0" "$status" "0"
 deploy_call=$(grep '^cloudflare' "$CALLS")
-expect_contains "wrangler deploys the staged directory under ~/.todz-deploy" "$deploy_call" "wrangler deploy --assets $home/.todz-deploy/"
+expect_contains "the stamping deploy takes the staged directory under ~/.todz-deploy" "$deploy_call" "pnpm --filter @todz/api server:deploy --assets $home/.todz-deploy/"
 expect_contains "the deployment message is HEAD's sha" "$deploy_call" "--message $head_sha"
 expect_equal "the new version id is recorded under HEAD's sha" "$(cat "$home/.todz-deploy/deployments/$head_sha")" "$version_id"
 expect_contains "the output names the staged files" "$output" "staged"

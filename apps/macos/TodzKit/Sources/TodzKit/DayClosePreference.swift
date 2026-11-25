@@ -7,7 +7,7 @@ public struct DayClosePreference {
     public static let isOnStorageKey = "closesTheDay"
     public static let timeStorageKey = "dayCloseMinutes"
     public static let lastClosedDayStorageKey = "lastClosedDay"
-    public static let isOnByDefault = false
+    public static let isOnByDefault = true
     // NB ADR 0055: the day closes at 18:00 in the Mac's time zone until the owner picks another time.
     public static let minutesAfterMidnightByDefault = defaultHour * DayCloseSchedule.minutesPerHour
 
@@ -27,7 +27,8 @@ public struct DayClosePreference {
     }
 
     public var isOn: Bool {
-        domain.value(forKey: Self.isOnStorageKey) as? Bool == true
+        guard let stored = domain.value(forKey: Self.isOnStorageKey) as? Bool else { return Self.isOnByDefault }
+        return stored
     }
 
     var minutesAfterMidnight: Int? {

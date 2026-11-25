@@ -23,7 +23,7 @@ import {
   waitlistGlobalRefusal,
 } from './waitlist-limiter';
 import { StampVerdict, stampVerdictOf } from './waitlist-stamp';
-import { joinWaitlist, recordConfirmationFailure } from './waitlist-store';
+import { WaitlistJoin, joinWaitlistWithinLimit, recordConfirmationFailure } from './waitlist-store';
 
 const ACCEPT_SEPARATOR = ',';
 const PARAMETER_SEPARATOR = ';';
@@ -153,9 +153,10 @@ async function joinOutcomeOf({ request, env, executionContext }: SiteContext): P
   if (isHoneypotFilled) return JoinOutcome.Joined;
   if (stampVerdict !== StampVerdict.Patient) return JoinOutcome.Joined;
   if (isOwnDomainAddress(address)) return JoinOutcome.Joined;
-  const isClaimed = await joinWaitlist({ database: env.DIRECTORY, address, now }).catch(() => null);
-  if (isClaimed === null) return JoinOutcome.TryAgain;
-  if (!isClaimed) return JoinOutcome.Joined;
+  const joined = await joinWaitlistWithinLimit({ database: env.DIRECTORY, address, now }).catch(() => null);
+  if (joined === null) return JoinOutcome.TryAgain;
+  if (joined === WaitlistJoin.Full) return JoinOutcome.OpensSoon;
+  if (joined === WaitlistJoin.Known) return JoinOutcome.Joined;
   const confirmation = sendConfirmation({ sender: guard.sender, database: env.DIRECTORY, address, siteOrigin: guard.siteOrigin });
   executionContext.waitUntil(confirmation.catch(() => undefined));
   return JoinOutcome.Joined;

@@ -61,6 +61,7 @@ final class HarnessClock {
     let model: AppModel
 
     init(
+        defaultServer: String = harnessDefaultServer,
         storedServer: String? = nil,
         isLocalDataKept: Bool = false,
         sessionOrigin: String? = harnessDefaultServer,
@@ -68,7 +69,7 @@ final class HarnessClock {
         cacheScheduler: CacheScheduler = .immediate
     ) throws {
         let timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
-        let defaultURL = try ServerAddress.checked(text: harnessDefaultServer).get()
+        let defaultURL = try ServerAddress.checked(text: defaultServer).get()
         let defaultsName = UUID().uuidString
         let defaults = try #require(UserDefaults(suiteName: defaultsName))
         defaults.removePersistentDomain(forName: defaultsName)
@@ -97,6 +98,7 @@ final class HarnessClock {
             preference: preference,
             connect: { servers.connect($0) },
             probe: { await probes.probe($0) },
+            appVersion: OwnerFixtures.appVersion,
             linkScheme: harnessLinkScheme,
             vault: vault,
             pendingLinks: pendingLinks,
@@ -140,6 +142,10 @@ final class HarnessClock {
 
     func flushed() async {
         await model.sendLoop?.value
+    }
+
+    func versionsRead() async {
+        await model.compatibilityRefresh?.value
     }
 
     func signedOutAtTheOldServer() async {

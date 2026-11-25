@@ -9,6 +9,7 @@ struct FakeServer {
     private(set) var addresses: [ServerAddress] = []
     private(set) var created: [FakeServer] = []
     var onConnect: ((ServerAddress) -> Void)?
+    var healthAnswerOfNext = FakeOwnerService.compatibleHealth
     private let first: ServerConnection
 
     init(service: FakeOwnerService, signals: FakeChangeSignals) {
@@ -20,6 +21,7 @@ struct FakeServer {
         onConnect?(address)
         guard addresses.count > 1 else { return first }
         let server = FakeServer(service: FakeOwnerService(), signals: FakeChangeSignals())
+        server.service.healthAnswer = healthAnswerOfNext
         created.append(server)
         return ServerConnection(service: server.service, signals: server.signals)
     }

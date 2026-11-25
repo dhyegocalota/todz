@@ -25,6 +25,11 @@ describe('the normalized address', () => {
     ['a trailing dot on the domain', 'hello+x@todz.app.'],
     ['a slash', 'a@b/c.d'],
     ['a colon', 'a:b@c.de'],
+    ['a query in the domain', 'a@b.c?x'],
+    ['a fragment in the domain', 'a@b#c.de'],
+    ['an escape in the domain', 'a@b%2e.cd'],
+    ['an underscore in the domain', 'a@b_c.de'],
+    ['an empty label in the domain', 'a@b..cd'],
     ['nothing', ''],
   ])('%s is no address', (_name, email) => {
     expect(normalizedAddress(email)).toBeNull();
