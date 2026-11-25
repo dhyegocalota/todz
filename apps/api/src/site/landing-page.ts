@@ -171,6 +171,6 @@ const LANDING_HTML: Record<LandingNotice, string> = {
   [LandingNotice.TryAgain]: landingHtml(LandingNotice.TryAgain),
 };
 
-export async function serveLandingPage({ notice }: { notice: LandingNotice }): Promise<Response> {
+export async function serveLandingPage({ notice }: { notice: LandingNotice; siteKey: string | null }): Promise<Response> {
   return sitePageResponse({ html: LANDING_HTML[notice], contentSecurityPolicy: CONTENT_SECURITY_POLICY });
 }

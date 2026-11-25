@@ -1,3 +1,4 @@
+import type { Env } from '../env';
 import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { noRouteResponse } from '../owner-errors';
@@ -7,6 +8,8 @@ import { JOIN_PATH, LANDING_PATH, SELF_HOST_PATH } from './site-shell';
 
 const LOCATION_HEADER = 'Location';
 
+export type SiteContext = { request: Request; env: Env; executionContext: ExecutionContext };
+
 type SiteRoute = () => Promise<Response> | Response;
 
 function routeKey({ method, pathname }: { method: string; pathname: string }): string {
@@ -14,11 +17,11 @@ function routeKey({ method, pathname }: { method: string; pathname: string }): s
 }
 
 function serveLanding(): Promise<Response> {
-  return serveLandingPage({ notice: LandingNotice.None });
+  return serveLandingPage({ notice: LandingNotice.None, siteKey: null });
 }
 
 function serveJoin(): Promise<Response> {
-  return serveLandingPage({ notice: LandingNotice.OpensSoon });
+  return serveLandingPage({ notice: LandingNotice.OpensSoon, siteKey: null });
 }
 
 function redirectToLanding(): Response {

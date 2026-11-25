@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest';
 import { joinWaitlist, recordConfirmationFailure } from '../src/site/waitlist-store';
 import { freshAddress } from './email-sign-in-client';
 import { CLOCK_NOW } from './task-fixtures';
-import { waitlistRows } from './waitlist-rows';
+import { waitlistRows } from './waitlist-client';
 
 const LATER = CLOCK_NOW + MILLISECONDS_PER_SECOND;
 const FAILED_AT = LATER + MILLISECONDS_PER_SECOND;

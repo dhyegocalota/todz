@@ -59,7 +59,7 @@ async function pageOf(response: Promise<Response>): Promise<SitePage> {
 }
 
 function landingPage(notice: LandingNotice): Promise<SitePage> {
-  return pageOf(serveLandingPage({ notice }));
+  return pageOf(serveLandingPage({ notice, siteKey: null }));
 }
 
 function selfHostPage(): Promise<SitePage> {

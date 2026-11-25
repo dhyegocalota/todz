@@ -3,8 +3,9 @@ import { digestCredential } from '../src/credential-digest';
 import type { Env } from '../src/env';
 import { LandingNotice } from '../src/site/landing-page';
 import { isWaitlistUnguarded, waitlistAddressRefusal, waitlistClientRefusal, waitlistGlobalRefusal } from '../src/site/waitlist-limiter';
-import { CLIENT_ADDRESS_HEADER, recordingLimiter } from './email-sign-in-client';
+import { CLIENT_ADDRESS_HEADER } from './email-sign-in-client';
 import { workerEnvWith } from './owner-client';
+import { LimiterBinding, type Limiters, recordedLimiters, throwingLimiter } from './waitlist-client';
 
 const PUBLIC_SITE_ORIGIN = 'https://todz.app';
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
@@ -15,16 +16,6 @@ const FIRST_PREFIX_ADDRESS = '2001:db8:1:2:3:4:5:6';
 const SECOND_PREFIX_ADDRESS = '2001:db8:1:2:ffff:eeee:dddd:cccc';
 const ADDRESS = 'maria@example.com';
 
-enum LimiterBinding {
-  Client = 'WAITLIST_LIMITER',
-  Address = 'WAITLIST_ADDRESS_LIMITER',
-  Global = 'WAITLIST_GLOBAL_LIMITER',
-}
-
-type Limiters = Partial<Record<LimiterBinding, RateLimit | undefined>>;
-
-type RecordedLimiters = { limiters: Limiters; keys: Record<LimiterBinding, string[]> };
-
 type Refusal = (input: { request: Request; env: Env }) => Promise<LandingNotice | null>;
 
 const REFUSAL_OF_BINDING: Record<LimiterBinding, Refusal> = {
@@ -32,25 +23,6 @@ const REFUSAL_OF_BINDING: Record<LimiterBinding, Refusal> = {
   [LimiterBinding.Address]: ({ request, env }) => waitlistAddressRefusal({ request, env, address: ADDRESS }),
   [LimiterBinding.Global]: waitlistGlobalRefusal,
 };
-
-function recordedLimiters({ refusing = [] }: { refusing?: LimiterBinding[] } = {}): RecordedLimiters {
-  const recorded = Object.values(LimiterBinding).map((binding) => ({
-    binding,
-    ...recordingLimiter({ isAllowed: !refusing.includes(binding) }),
-  }));
-  return {
-    limiters: Object.fromEntries(recorded.map(({ binding, limiter }) => [binding, limiter])),
-    keys: Object.fromEntries(recorded.map(({ binding, keys }) => [binding, keys])) as Record<LimiterBinding, string[]>,
-  };
-}
-
-function throwingLimiter(): RateLimit {
-  return {
-    async limit() {
-      throw new Error('the limiter is down');
-    },
-  };
-}
 
 function siteEnv({ limiters = {}, siteOrigin = PUBLIC_SITE_ORIGIN }: { limiters?: Limiters; siteOrigin?: string } = {}): Env {
   return workerEnvWith({ SITE_ORIGIN: siteOrigin, PUBLIC_ORIGIN: LOCAL_API_ORIGIN, ...limiters });
