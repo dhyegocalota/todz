@@ -11,6 +11,7 @@ export const REPOSITORY_ROOT = fileURLToPath(new URL('../../../../', import.meta
 export const REGENERATE_COMMAND = 'pnpm --filter @todz/api site:assets';
 
 const BRAND_DIRECTORY = 'docs/brand';
+const BRAND_SOURCE_PATTERN = /\.(svg|png)$/;
 const BRAND_ICON_FILE = 'todz-icon.svg';
 const BRAND_LOCKUP_FILE = 'todz-lockup.png';
 const PUBLIC_DIRECTORY = 'apps/api/public';
@@ -53,7 +54,7 @@ function relativeFilesOf({ root, directory, pattern }: { root: string; directory
 }
 
 function inputPathsOf({ root }: { root: string }): string[] {
-  const brandPaths = relativeFilesOf({ root, directory: BRAND_DIRECTORY, pattern: /./ });
+  const brandPaths = relativeFilesOf({ root, directory: BRAND_DIRECTORY, pattern: BRAND_SOURCE_PATTERN });
   const generatorPaths = relativeFilesOf({ root, directory: GENERATOR_DIRECTORY, pattern: GENERATOR_SOURCE_PATTERN });
   const shotPaths = Object.values(LANDING_SHOTS).map(({ path }) => `${PUBLIC_DIRECTORY}${path}`);
   return [...brandPaths, ...shotPaths, ...CONSTANT_MODULE_PATHS, ...generatorPaths].sort();

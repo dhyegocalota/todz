@@ -51,7 +51,7 @@ export const WEBMCP_TOOLS: WebMcpTool[] = [
     name: WebMcpToolName.Join,
     description: WEBMCP_COPY.descriptions[WebMcpToolName.Join],
     inputSchema: schemaOf({
-      properties: { email: { type: 'string', description: WEBMCP_COPY.fields.email } },
+      properties: { email: { type: 'string', format: 'email', description: WEBMCP_COPY.fields.email } },
       required: ['email'],
     }),
     annotations: { consequentialHint: true },
@@ -91,8 +91,12 @@ export const WEBMCP_SCRIPT = `{
     const button = form.querySelector('.${JOIN_BUTTON_CLASS}');
     const field = form.querySelector('[name="${EMAIL_FIELD_NAME}"]');
     if (button.getAttribute('${ARIA_DISABLED}') === 'true') return textOf(answers.alreadySubmitting);
+    const typedValue = field.value;
     field.value = email;
-    if (!field.checkValidity()) return textOf(answers.invalid);
+    if (!field.checkValidity()) {
+      field.value = typedValue;
+      return textOf(answers.invalid);
+    }
     form.requestSubmit();
     return textOf(answers.sent);
   };

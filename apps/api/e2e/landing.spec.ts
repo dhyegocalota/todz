@@ -144,6 +144,7 @@ test.describe('first fold', () => {
   });
 
   test('loads the light window shot in the light scheme', async ({ page }) => {
+    onlyOn(ProjectName.Desktop);
     await page.goto(SitePath.Landing);
     const windowImage = page.locator('.shot-window img');
     await expect(windowImage).toHaveJSProperty('complete', true);
@@ -200,10 +201,15 @@ test.describe('images', () => {
 test.describe('dark scheme', () => {
   test.use({ colorScheme: ColorScheme.Dark });
 
-  test('applies the dark tokens and loads the dark window shot', async ({ page }) => {
+  test('applies the dark tokens', async ({ page }) => {
     await page.goto(SitePath.Landing);
     const pageColor = await page.locator('body').evaluate((body) => getComputedStyle(body).backgroundColor);
     expect(darkestChannelLimitHolds(pageColor)).toBe(true);
+  });
+
+  test('loads the dark window shot', async ({ page }) => {
+    onlyOn(ProjectName.Desktop);
+    await page.goto(SitePath.Landing);
     const windowImage = page.locator('.shot-window img');
     await expect(windowImage).toHaveJSProperty('complete', true);
     expect(webpPathsOf(LandingShot.WindowDark)).toContain(

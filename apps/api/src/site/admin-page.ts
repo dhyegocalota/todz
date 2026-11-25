@@ -82,18 +82,21 @@ const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   scripts: [PAGE_SCRIPT],
   widgetOrigin: null,
   connectsToSelf: false,
+  declaresManifest: false,
 });
 const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
   scripts: [PAGE_SCRIPT],
   widgetOrigin: TURNSTILE_ORIGIN,
   connectsToSelf: false,
+  declaresManifest: false,
 });
 const PANEL_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
   scripts: [],
   widgetOrigin: null,
   connectsToSelf: false,
+  declaresManifest: false,
 });
 
 export function adminCardMainHtml(content: string): string {

@@ -55,6 +55,7 @@ const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   scripts: [PAGE_SCRIPT],
   widgetOrigin: null,
   connectsToSelf: true,
+  declaresManifest: false,
 });
 
 const LINK_PAGE_HTML = siteDocumentHtml({

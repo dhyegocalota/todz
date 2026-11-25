@@ -7,20 +7,24 @@ const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
 // NB ADR 0060: no-transform stops Cloudflare injecting its analytics beacon, which the policy would refuse.
 const CACHE_CONTROL = 'no-cache, no-transform';
 const CONNECT_SELF = "connect-src 'self'";
+const MANIFEST_SELF = "manifest-src 'self'";
 
 export async function siteContentSecurityPolicy({
   style,
   scripts,
   widgetOrigin,
   connectsToSelf,
+  declaresManifest,
 }: {
   style: string;
   scripts: string[];
   widgetOrigin: string | null;
   connectsToSelf: boolean;
+  declaresManifest: boolean;
 }): Promise<string> {
   const widgetOrigins = widgetOrigin === null ? [] : [widgetOrigin];
   const connectDirectives = connectsToSelf ? [CONNECT_SELF] : [];
+  const manifestDirectives = declaresManifest ? [MANIFEST_SELF] : [];
   const scriptHashes = await Promise.all(scripts.map(sourceHash));
   const scriptDirectives = scripts.length === 0 ? [] : [['script-src', ...scriptHashes, ...widgetOrigins].join(' ')];
   return [
@@ -28,7 +32,7 @@ export async function siteContentSecurityPolicy({
     ...scriptDirectives,
     `style-src ${await sourceHash(style)}`,
     "img-src 'self'",
-    "manifest-src 'self'",
+    ...manifestDirectives,
     ...connectDirectives,
     ...widgetOrigins.map((origin) => `frame-src ${origin}`),
     "form-action 'self'",

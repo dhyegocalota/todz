@@ -110,12 +110,14 @@ const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   scripts: [LANDING_STRUCTURED_DATA, ...PAGE_SCRIPTS],
   widgetOrigin: null,
   connectsToSelf: true,
+  declaresManifest: true,
 });
 const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
   scripts: [LANDING_STRUCTURED_DATA, ...PAGE_SCRIPTS],
   widgetOrigin: TURNSTILE_ORIGIN,
   connectsToSelf: true,
+  declaresManifest: true,
 });
 
 function webpSourceAttributes(shot: LandingShot): string {
@@ -124,15 +126,14 @@ function webpSourceAttributes(shot: LandingShot): string {
   return `srcset="${srcset}" sizes="${Math.min(...webp.map(({ width }) => width))}px"`;
 }
 
-function shotImage({ shot, alt, isEager }: { shot: LandingShot; alt: string; isEager: boolean }): string {
+function shotImage({ shot, alt }: { shot: LandingShot; alt: string }): string {
   const { path, width, height } = LANDING_SHOTS[shot];
-  const loading = isEager ? 'fetchpriority="high"' : 'loading="lazy" decoding="async"';
-  return `<img src="${path}" ${webpSourceAttributes(shot)} width="${width}" height="${height}" alt="${escapedHtml(alt)}" ${loading}>`;
+  return `<img src="${path}" ${webpSourceAttributes(shot)} width="${width}" height="${height}" alt="${escapedHtml(alt)}" loading="lazy" decoding="async">`;
 }
 
 function windowPicture(): string {
   const { width, height } = LANDING_SHOTS[LandingShot.WindowDark];
-  return `<picture><source media="${DARK_SCHEME_MEDIA}" ${webpSourceAttributes(LandingShot.WindowDark)} width="${width}" height="${height}">${shotImage({ shot: LandingShot.Window, alt: LANDING_COPY.alt.window, isEager: true })}</picture>`;
+  return `<picture><source media="${DARK_SCHEME_MEDIA}" ${webpSourceAttributes(LandingShot.WindowDark)} width="${width}" height="${height}">${shotImage({ shot: LandingShot.Window, alt: LANDING_COPY.alt.window })}</picture>`;
 }
 
 function joinStatusHtml({ form, notice }: { form: JoinForm; notice: LandingNotice }): string {
@@ -182,8 +183,8 @@ ${joinFormHtml({ form: JoinForm.Hero, notice, widget, classNames: ['rise', 'dela
 <figcaption class="visually-hidden">${escapedHtml(LANDING_COPY.stage.label)}</figcaption>
 <div class="menu-strip" aria-hidden="true"><span class="menu-strip-item">${MENU_BAR_GLYPH}<span>${escapedHtml(LANDING_COPY.stage.menuCount)}</span></span></div>
 <div class="shot shot-window arrive delay-4">${windowPicture()}</div>
-<div class="shot shot-popover settle delay-5">${shotImage({ shot: LandingShot.Popover, alt: LANDING_COPY.alt.popover, isEager: false })}</div>
-<div class="shot shot-widget settle delay-6"><div class="${cropClassOf(LandingShot.WidgetMedium)}">${shotImage({ shot: LandingShot.WidgetMedium, alt: LANDING_COPY.alt.widgetMedium, isEager: false })}</div></div>
+<div class="shot shot-popover settle delay-5">${shotImage({ shot: LandingShot.Popover, alt: LANDING_COPY.alt.popover })}</div>
+<div class="shot shot-widget settle delay-6"><div class="${cropClassOf(LandingShot.WidgetMedium)}">${shotImage({ shot: LandingShot.WidgetMedium, alt: LANDING_COPY.alt.widgetMedium })}</div></div>
 </figure>
 </section>`;
 }
@@ -201,8 +202,8 @@ function benefitsHtml(): string {
   return `<section class="benefits page-width" aria-labelledby="benefits-title">
 <h2 id="benefits-title" class="visually-hidden">${escapedHtml(LANDING_COPY.benefits.heading)}</h2>
 <ul class="benefit-list">
-${benefitHtml({ well: `<div class="benefit-well benefit-well-agents"><div class="benefit-shot-agents ${cropClassOf(LandingShot.AgentTasks)}">${shotImage({ shot: LandingShot.AgentTasks, alt: LANDING_COPY.alt.agentTasks, isEager: false })}</div></div>`, ...agents })}
-${benefitHtml({ well: `<div class="benefit-well"><div class="benefit-shot-ring ${cropClassOf(LandingShot.WidgetRing)}">${shotImage({ shot: LandingShot.WidgetRing, alt: LANDING_COPY.alt.widgetRing, isEager: false })}</div></div>`, ...glance })}
+${benefitHtml({ well: `<div class="benefit-well benefit-well-agents"><div class="benefit-shot-agents ${cropClassOf(LandingShot.AgentTasks)}">${shotImage({ shot: LandingShot.AgentTasks, alt: LANDING_COPY.alt.agentTasks })}</div></div>`, ...agents })}
+${benefitHtml({ well: `<div class="benefit-well"><div class="benefit-shot-ring ${cropClassOf(LandingShot.WidgetRing)}">${shotImage({ shot: LandingShot.WidgetRing, alt: LANDING_COPY.alt.widgetRing })}</div></div>`, ...glance })}
 ${benefitHtml({ well: `<div class="benefit-well">${glyphHtml({ glyph: SiteGlyph.Offline, className: 'offline-glyph' })}</div>`, ...offline })}
 </ul>
 </section>`;

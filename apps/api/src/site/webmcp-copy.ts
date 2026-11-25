@@ -23,7 +23,7 @@ export const WEBMCP_COPY = {
   answers: {
     alreadySubmitting: 'The waitlist form is already submitting.',
     invalid: 'That is not a valid email address.',
-    sent: 'The form was sent. The page shows the result.',
+    sent: 'The form was submitted. The page may ask the person for a quick human check before it finishes, and then shows the result.',
     unknownClient: 'That agent is not supported.',
     unknownPage: 'That docs page does not exist.',
   },
