@@ -35,6 +35,7 @@ const JOINED_NOTICE = "You're on the list. Check your inbox.";
 const SLOW_SCRIPT_DELAY_MS = 1_500;
 const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
 const MOVED_PERMANENTLY_STATUS = 301;
+const DOCS_REDIRECT_CACHE_CONTROL = 'max-age=3600';
 const HEADER_GUIDE_LINK = '.site-header .nav-link';
 const FOOTER_GUIDE_LINK = '.site-footer .footer-link';
 const MAXIMUM_DARK_CHANNEL = 40;
@@ -307,6 +308,7 @@ test.describe('self-host guide', () => {
     const response = await request.get(SitePath.SelfHost, { maxRedirects: 0 });
     expect(response.status()).toBe(MOVED_PERMANENTLY_STATUS);
     expect(response.headers().location).toBe(DOCS_SELF_HOST_URL);
+    expect(response.headers()['cache-control']).toBe(DOCS_REDIRECT_CACHE_CONTROL);
   });
 });
 

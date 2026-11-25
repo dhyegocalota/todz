@@ -22,6 +22,15 @@ const PREVIEW_SETTING = '`preview: false`';
 const APP_SCOPE_CHECK = 'Only select repositories';
 const READ_ONLY_CLAIM = 'read-only';
 const DOCS_CONFIGURATION = 'apps/docs/docs.json';
+const DOCS_DECISION =
+  'docs/adr/0059-the-docs-are-a-mintlify-site-on-docs-todz-app-built-from-apps-docs-and-the-self-host-guide-moves-into-it.md';
+const BRANCH_PROTECTION_CLAIM = 'requires a pull request';
+const PROTECTION_UNAVAILABLE = 'cannot be enforced';
+const OWNER_PROTECTION_OPTIONS = ['web editor', 'GitHub Pro', 'ruleset', 'bypass list', 'public repository'];
+const DOCS_AUTHORS_COMMAND = "git log --format='%h %an %cn' <previous>..origin/main -- apps/docs";
+const DOCS_DEPLOY_WAIT_STEP = 2;
+const OWNER_NAME = 'Dhyego Calota';
+const TELL_THE_OWNER = 'tell the owner';
 const DOCS_HOST_CHECK_STEP = 3;
 const FULL_CREDIT_TAIL = 'made in Brazil';
 const DOCS_GATE_COMMANDS = ['pnpm --filter @todz/docs broken-links', 'pnpm --filter @todz/docs validate'];
@@ -235,6 +244,21 @@ describe('runbooks', () => {
     expect(setup).toContain(PREVIEW_SETTING);
     expect(setup).toContain(APP_SCOPE_CHECK);
     expect(setup).not.toContain(READ_ONLY_CLAIM);
+  });
+
+  test('the Mintlify setup says branch protection cannot be enforced on this plan and names the owner options, and neither it nor ADR 0059 claims a required pull request', () => {
+    const setup = mintlifySetup();
+    expect(setup).toContain(PROTECTION_UNAVAILABLE);
+    expect(OWNER_PROTECTION_OPTIONS.filter((option) => !setup.includes(option))).toEqual([]);
+    expect([setup, readRepositoryFile(DOCS_DECISION)].filter((text) => text.includes(BRANCH_PROTECTION_CLAIM))).toEqual([]);
+  });
+
+  test('after each docs deploy, a step lists the commits under apps/docs since the previous deploy and expects the owner alone', () => {
+    const steps = stepSections(readRunbook(MINTLIFY_RUNBOOK).text);
+    const authorsCheck = steps.find((step) => step.body.includes(DOCS_AUTHORS_COMMAND));
+    expect(authorsCheck?.number).toBeGreaterThan(DOCS_DEPLOY_WAIT_STEP);
+    expect(authorsCheck?.body).toContain(OWNER_NAME);
+    expect(authorsCheck?.body).toContain(TELL_THE_OWNER);
   });
 
   test('the Mintlify check of the host expects the credit the docs footer holds', () => {
