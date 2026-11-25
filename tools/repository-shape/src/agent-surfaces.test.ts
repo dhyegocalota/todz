@@ -1,6 +1,7 @@
-import { readdirSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
+import { posix } from 'node:path';
 import { describe, expect, test } from 'vitest';
-import { readRepositoryFile, repositoryPath } from './repository-files';
+import { capturedNames, readRepositoryFile, repositoryPath } from './repository-files';
 
 const ROLES_DIRECTORY = '.agents/roles';
 const CLAUDE_AGENTS_DIRECTORY = '.claude/agents';
@@ -14,6 +15,24 @@ const OPEN_PR_SKILL_FILE = '.agents/skills/open-pr/SKILL.md';
 const VERIFY_SCRIPT_FILE = 'scripts/verify.sh';
 const DOCTOR_SCRIPT_CALL = '"$root/.agents/hooks/doctor.sh"';
 const GATE_COMMAND = '`pnpm verify';
+const DEPLOY_SKILL_FILE = '.agents/skills/deploy/SKILL.md';
+const CLAUDE_DEPLOY_SKILL_FILE = '.claude/skills/deploy/SKILL.md';
+const DEPLOY_SKILL_NAME_LINE = 'name: deploy';
+const DEPLOY_SKILL_LINK_PATTERN = /\]\((\.\.\/\.\.\/\.\.\/[^)\s]+)\)/g;
+const DEPLOY_SKILL_DIRECTORY = '.agents/skills/deploy';
+const DEPLOY_SKILL_MENTIONS = [
+  'docs/runbooks/deploy-the-api.md',
+  'docs/runbooks/release-the-mac-app.md',
+  'git diff --quiet <tag> HEAD -- apps/macos',
+  'pnpm release:mac',
+  '/download/latest',
+  'appcast.xml',
+  'shasum -a 256 -c',
+  'ssh-keygen -Y verify',
+  'apps/macos/release/allowed-signers',
+  'Stop at the first failure',
+  'leaves the previous release live',
+];
 const GATE_STEPS = ['pnpm typecheck', 'pnpm security:audit', 'pnpm test:unit', 'pnpm test:e2e', 'gitleaks git'];
 
 function roleNames(): string[] {
@@ -60,6 +79,23 @@ describe('agent surfaces', () => {
   test('the verify skill runs the one gate, which calls the doctor script, not the pnpm built-in of the same name', () => {
     expect(readRepositoryFile(VERIFY_SKILL_FILE)).toContain(GATE_COMMAND);
     expect(readRepositoryFile(VERIFY_SCRIPT_FILE)).toContain(DOCTOR_SCRIPT_CALL);
+  });
+
+  test('the deploy skill is one source that Claude Code reads through the skills link, and it names its name', () => {
+    expect(readRepositoryFile(DEPLOY_SKILL_FILE)).toContain(DEPLOY_SKILL_NAME_LINE);
+    expect(readRepositoryFile(CLAUDE_DEPLOY_SKILL_FILE)).toBe(readRepositoryFile(DEPLOY_SKILL_FILE));
+  });
+
+  test('the deploy skill orders the two runbooks, releases only when the app changed, checks production and stops at the first failure', () => {
+    const skill = readRepositoryFile(DEPLOY_SKILL_FILE);
+    expect(DEPLOY_SKILL_MENTIONS.filter((mention) => !skill.includes(mention))).toEqual([]);
+  });
+
+  test('every link of the deploy skill resolves to a file', () => {
+    const skill = readRepositoryFile(DEPLOY_SKILL_FILE);
+    const targets = capturedNames({ text: skill, pattern: DEPLOY_SKILL_LINK_PATTERN });
+    expect(targets.length).toBeGreaterThan(0);
+    expect(targets.filter((target) => !existsSync(repositoryPath(posix.join(DEPLOY_SKILL_DIRECTORY, target))))).toEqual([]);
   });
 
   test('the verify and open-pr skills never repeat the steps of the gate', () => {
