@@ -127,7 +127,8 @@ Computed styles (R17): in Chrome, Mintlify colours a content link's underline (`
 ## Known gaps
 
 - Step L1 (the `Building` status in `spec.md` and the `docs/features/README.md` row) is the lead's and was not done; the status is still `Approved`.
-- `pnpm verify` for an `apps/docs` path needs `apps/docs` and Lane G's gate together; both are on this branch now, so the developer ran it here. It has not run on a branch merged with `feat/server-url` (not on `main` yet, not merged).
+- `pnpm verify` ran green at `f66667d` on this branch: doctor, format, secrets, typecheck, audit, shape (inside unit), unit (181 s, including the Asia/Kolkata run), e2e, macos and docs (18 s), "9 gates green". It has not run on a branch merged with `feat/server-url` (not on `main` yet, not merged); the lead's L2 does that.
+- Also green, run by hand: `@todz/api` typecheck, `test:unit` (1687 tests) and `site:check`; `@todz/repository-shape` 302 tests; `@todz/docs` typecheck, `broken-links`, `validate`, `test:walk` (32 passed, 6 skipped); `pnpm test:verify`.
 - The guide still describes the app as it stands on this branch, which already includes `server-url`'s Settings › Server and `server:deploy`.
 - The shared-helpers line of `AGENTS.md` does not list `swiftCopyValue`, `frontMatterOf` and `bodyOf` (the plan gave `AGENTS.md` to Lane D for the layout line only); the lead decides.
 - The plan's D1 listed the walk-config pins in `docs-site.test.ts`; they landed with D3 (above), so D2's "the three D1 suites are green" held without them.
