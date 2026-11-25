@@ -1,4 +1,7 @@
+import { MILLISECONDS_PER_SECOND } from '@todz/types';
+import { PRODUCTION_ADD_CUTOFF_MS, PRODUCTION_DURATION_MAX_MS, PRODUCTION_RATE_MAX } from './budgets';
 import { ScenarioKind } from './scenario-kind';
+import { slotScenario } from './schedule';
 
 export enum PerfTarget {
   Local = 'local',
@@ -17,14 +20,30 @@ export const ORIGIN_OF_TARGET: Record<PerfTarget, string> = {
   [PerfTarget.Production]: 'https://api.todz.app',
 };
 
-export function perfTargetOf(_: string): PerfTarget {
-  throw new Error('perfTargetOf is not implemented');
+const PRODUCTION_SCENARIOS = [ScenarioKind.List, ScenarioKind.Add, ScenarioKind.Done];
+
+export function perfTargetOf(value: string): PerfTarget {
+  const target = Object.values(PerfTarget).find((candidate) => candidate === value);
+  if (target === undefined) throw new Error(`unknown target ${value}`);
+  return target;
 }
 
-export function validatedPlan(_: RunPlan): RunPlan {
-  throw new Error('validatedPlan is not implemented');
+export function validatedPlan(plan: RunPlan): RunPlan {
+  if (plan.target === PerfTarget.Local) return plan;
+  const isOutsideMcp = plan.scenarios.some((scenario) => !PRODUCTION_SCENARIOS.includes(scenario));
+  if (plan.kind === RunKind.Stress) throw new Error('stress runs on local only');
+  if (plan.ratePerSecond > PRODUCTION_RATE_MAX) throw new Error(`production is capped at ${PRODUCTION_RATE_MAX} requests a second`);
+  if (plan.durationMs > PRODUCTION_DURATION_MAX_MS) {
+    throw new Error(`production is capped at ${PRODUCTION_DURATION_MAX_MS / MILLISECONDS_PER_SECOND} seconds`);
+  }
+  if (isOutsideMcp) throw new Error('production runs MCP only');
+  return plan;
 }
 
-export function scenarioAt(_: { plan: RunPlan; index: number; offsetMs: number }): ScenarioKind {
-  throw new Error('scenarioAt is not implemented');
+export function scenarioAt({ plan, index, offsetMs }: { plan: RunPlan; index: number; offsetMs: number }): ScenarioKind {
+  const scenario = slotScenario(index);
+  if (plan.target === PerfTarget.Local) return scenario;
+  if (offsetMs >= PRODUCTION_ADD_CUTOFF_MS) return ScenarioKind.Done;
+  if (scenario === ScenarioKind.Owner) return ScenarioKind.List;
+  return scenario;
 }
