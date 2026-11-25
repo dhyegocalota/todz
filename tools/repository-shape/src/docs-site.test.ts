@@ -36,6 +36,10 @@ const WEBSITE_PATTERN = /website: '([^']+)'/;
 const SITE_ORIGIN_PATTERN = /"SITE_ORIGIN": "([^"]+)"/;
 const FENCED_BLOCK_PATTERN = /```[\s\S]*?```/g;
 const TITLE_HEADING_PATTERN = /^# /m;
+const MINT_IGNORE = 'apps/docs/.mintignore';
+const MINT_IGNORED_ENTRIES = ['README.md', 'e2e', 'test-results', 'node_modules'];
+const MARKDOWN_PATTERN = /\.mdx?$/;
+const LINE_SEPARATOR = '\n';
 const EXACT_VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
 const MINT_PACKAGE = 'mint';
 const MINT_SCRIPT_NAMES = ['dev', 'broken-links', 'validate'];
@@ -170,6 +174,20 @@ describe('docs.json', () => {
 describe('the pages', () => {
   test('every page on disk is in the navigation, and every page of the navigation is on disk', () => {
     expect(pagePaths().map(pageName).sort()).toEqual([...navigationPages()].sort());
+  });
+
+  test('every Markdown file under apps/docs is a page of the navigation or ignored by .mintignore', () => {
+    const ignored = readRepositoryFile(MINT_IGNORE).split(LINE_SEPARATOR).filter(Boolean);
+    const isIgnored = (path: string): boolean => ignored.some((entry) => path === entry || path.startsWith(`${entry}/`));
+    const pages = navigationPages().map((name) => `${name}${PAGE_EXTENSION}`);
+    const unreachable = repositoryFiles(DOCS_DIRECTORY)
+      .map((path) => posix.relative(DOCS_DIRECTORY, path))
+      .filter((path) => MARKDOWN_PATTERN.test(path) && !pages.includes(path) && !isIgnored(path));
+    expect(unreachable).toEqual([]);
+  });
+
+  test('.mintignore lists the files Mintlify must not publish', () => {
+    expect(readRepositoryFile(MINT_IGNORE).split(LINE_SEPARATOR).filter(Boolean)).toEqual(MINT_IGNORED_ENTRIES);
   });
 
   test('every page has a front matter title and no heading of its own', () => {
