@@ -22,3 +22,8 @@ export const ADMIN_RATE_LIMIT_MAX = 10;
 export const ADMIN_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;
 export const ADMIN_ADDRESS_RATE_LIMIT_MAX = 3;
 export const ADMIN_GLOBAL_RATE_LIMIT_MAX = 30;
+export const COMPANY = {
+  tradeName: 'Logic Bit',
+  legalName: 'Logic Bit AI Software Boutique Ltda',
+  website: 'https://logicbit.com.br',
+} as const;
