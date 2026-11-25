@@ -68,3 +68,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0045](0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md) | The public sign-in routes are limited three ways and Turnstile-guarded, failing closed | Proposed | 2026-11-24 |
 | [0046](0046-the-app-solves-the-challenge-in-a-web-view-and-the-link-page-solves-it-for-the-sign-in.md) | The app solves the challenge in a web view, and the link page solves it for the sign-in | Proposed | 2026-11-24 |
 | [0047](0047-the-readme-walk-shows-only-the-shots-that-tell-the-product-s-story.md) | The README walk shows only the shots that tell the product's story | Proposed | 2026-11-24 |
+| [0048](0048-the-self-host-guide-is-one-markdown-file-that-the-landing-serves.md) | The self-host guide is one Markdown file that the landing serves | Proposed | 2026-11-24 |

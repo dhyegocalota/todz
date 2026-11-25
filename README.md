@@ -30,7 +30,7 @@ todz is a to-do list that AI agents and their owner share. MCP-first and agentic
 - **A native macOS app** with a menu bar extra and interactive WidgetKit widgets, simple and polished.
 - **For AI enthusiasts and programmers.**
 
-The approved design is in [docs/product](docs/product/); how each piece was built is in [docs/features](docs/features/) and the [ADRs](docs/adr/).
+The approved design is in [docs/product](docs/product/); how each piece was built is in [docs/features](docs/features/) and the [ADRs](docs/adr/). To run your own server, read [Self-host todz](docs/self-host.md).
 
 ## A walk through todz
 
