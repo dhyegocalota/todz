@@ -1,6 +1,8 @@
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
+import type { Env } from '../src/env';
 import worker from '../src/index';
+import { CLIENT_ADDRESS, CLIENT_ADDRESS_HEADER, TURNSTILE_TEST_SECRET } from './email-sign-in-client';
 import { workerEnvWith } from './owner-client';
 
 const API_ORIGIN = 'https://api.todz.app';
@@ -14,15 +16,20 @@ const UNAVAILABLE_STATUS = 503;
 const SCRIPT_PAYLOAD = '<script>alert(1)</script>';
 const FORM_BODY = `email=${SCRIPT_PAYLOAD}`;
 const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
+const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
 const PRODUCTION_SETTINGS = { PUBLIC_ORIGIN: API_ORIGIN, SITE_ORIGIN, SIGN_IN_PROVIDER: 'fake' };
 
 type EdgeRequest = Request<unknown, IncomingRequestCfProperties>;
 
-async function serve(request: Request): Promise<Response> {
+async function serveWith({ request, settings }: { request: Request; settings: Partial<Env> }): Promise<Response> {
   const executionContext = createExecutionContext();
-  const response = await worker.fetch(request as EdgeRequest, workerEnvWith(PRODUCTION_SETTINGS), executionContext);
+  const response = await worker.fetch(request as EdgeRequest, workerEnvWith({ ...PRODUCTION_SETTINGS, ...settings }), executionContext);
   await waitOnExecutionContext(executionContext);
   return response;
+}
+
+function serve(request: Request): Promise<Response> {
+  return serveWith({ request, settings: {} });
 }
 
 function requestOf({ url, method = 'GET' }: { url: string; method?: string }): Request {
@@ -69,14 +76,20 @@ describe('the site host', () => {
     expect(response.headers.get('Location')).toBe('/');
   });
 
-  test('POST /join answers 200, never echoes the body and never reads it', async () => {
+  test.each([
+    ['no Turnstile keys', {}],
+    [
+      'the Turnstile keys but no waitlist limiter',
+      { TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY, TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET },
+    ],
+  ])('POST /join with %s answers 503, never echoes the body and never reads it', async (_name, settings) => {
     const request = new Request(`${SITE_ORIGIN}/join`, {
       method: 'POST',
-      headers: { 'Content-Type': FORM_CONTENT_TYPE },
+      headers: { 'Content-Type': FORM_CONTENT_TYPE, 'Content-Length': String(FORM_BODY.length), [CLIENT_ADDRESS_HEADER]: CLIENT_ADDRESS },
       body: FORM_BODY,
     });
-    const response = await serve(request);
-    expect(response.status).toBe(OK_STATUS);
+    const response = await serveWith({ request, settings });
+    expect(response.status).toBe(UNAVAILABLE_STATUS);
     expect(await response.text()).not.toContain(SCRIPT_PAYLOAD);
     expect(request.bodyUsed).toBe(false);
   });

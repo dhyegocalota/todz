@@ -1,15 +1,19 @@
 import { exports } from 'cloudflare:workers';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import guide from '../../../docs/self-host.md?raw';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { LandingNotice, serveLandingPage } from '../src/site/landing-page';
 import { serveSelfHostPage } from '../src/site/self-host-page';
+import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
 import { inlineSources, onlyInlineSource, sourceHash } from './page-script';
 
 const OK_STATUS = 200;
+const TOO_MANY_STATUS = 429;
+const RETRY_AFTER_SECONDS = '60';
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
-const JOIN_FORM_BODY = 'email=maria%40example.com';
+const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
+const TOKEN_FIELD = 'cf-turnstile-response';
 const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
 const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
@@ -212,29 +216,49 @@ describe('the landing', () => {
 });
 
 describe('the site host through the Worker', () => {
-  test.each([
-    { method: 'GET', path: '/', page: () => landingPage(LandingNotice.None) },
-    { method: 'GET', path: '/self-host', page: selfHostPage },
-  ])('$method $path answers the page this module renders, with its headers', async ({ method, path, page }) => {
-    const response = await exports.default.fetch(`${LOCAL_SITE_ORIGIN}${path}`, { method });
-    const expected = await page();
-    expect(response.status).toBe(OK_STATUS);
+  function keyedLandingPage(notice: LandingNotice): Promise<SitePage> {
+    return pageOf(serveLandingPage({ notice, siteKey: TURNSTILE_TEST_SITE_KEY }));
+  }
+
+  function postJoin(token: string | null): Promise<Response> {
+    const fields = new URLSearchParams({ email: `${crypto.randomUUID()}@example.com` });
+    if (token !== null) fields.set(TOKEN_FIELD, token);
+    const body = fields.toString();
+    return exports.default.fetch(`${LOCAL_SITE_ORIGIN}/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': FORM_CONTENT_TYPE, 'Content-Length': String(body.length) },
+      body,
+    });
+  }
+
+  async function expectPage({ response, expected, status }: { response: Response; expected: SitePage; status: number }): Promise<void> {
+    expect(response.status).toBe(status);
     expect(await response.text()).toBe(expected.html);
     expect(response.headers.get('Content-Security-Policy')).toBe(expected.response.headers.get('Content-Security-Policy'));
     expect(response.headers.get('Strict-Transport-Security')).toBe(STRICT_TRANSPORT_SECURITY);
+  }
+
+  test.each([
+    { method: 'GET', path: '/', page: () => keyedLandingPage(LandingNotice.None) },
+    { method: 'HEAD', path: '/', page: async () => ({ ...(await keyedLandingPage(LandingNotice.None)), html: '' }) },
+    { method: 'GET', path: '/self-host', page: selfHostPage },
+  ])('$method $path answers the page this module renders, with the configured site key and its headers', async ({ method, path, page }) => {
+    const response = await exports.default.fetch(`${LOCAL_SITE_ORIGIN}${path}`, { method });
+    await expectPage({ response, expected: await page(), status: OK_STATUS });
   });
 
-  test('POST /join answers the landing with the opens-soon notices and its headers', async () => {
-    const response = await exports.default.fetch(`${LOCAL_SITE_ORIGIN}/join`, {
-      method: 'POST',
-      headers: { 'Content-Type': FORM_CONTENT_TYPE },
-      body: JOIN_FORM_BODY,
-    });
-    const expected = await landingPage(LandingNotice.OpensSoon);
-    expect(response.status).toBe(OK_STATUS);
-    expect(await response.text()).toBe(expected.html);
-    expect(response.headers.get('Content-Security-Policy')).toBe(expected.response.headers.get('Content-Security-Policy'));
-    expect(response.headers.get('Strict-Transport-Security')).toBe(STRICT_TRANSPORT_SECURITY);
+  test('POST /join with the dummy token answers the joined landing and mails the address through the console', async () => {
+    const output = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const response = await postJoin(TURNSTILE_DUMMY_TOKEN);
+    await expectPage({ response, expected: await keyedLandingPage(LandingNotice.Joined), status: OK_STATUS });
+    expect(output).toHaveBeenCalledTimes(1);
+    output.mockRestore();
+  });
+
+  test('POST /join without a token answers the try-again landing, 429 with Retry-After 60', async () => {
+    const response = await postJoin(null);
+    expect(response.headers.get('Retry-After')).toBe(RETRY_AFTER_SECONDS);
+    await expectPage({ response, expected: await keyedLandingPage(LandingNotice.TryAgain), status: TOO_MANY_STATUS });
   });
 });
 
