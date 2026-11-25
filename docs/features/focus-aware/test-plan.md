@@ -2,36 +2,35 @@
 
 Every checkbox states the input and the exact expected outcome. A ticked box carries evidence after ` — evidence: ` (commit hash, log path, counts, screenshot path).
 
+Pinned strings (`design.md` § 8): Settings row title `Quiet during Focus`; detail `todz stays quiet in any Focus with the todz filter on.`; while quiet `Quiet now, until this Focus ends.`; button `Open Focus Settings`. Filter: title `Quiet todz`; description `Keeps todz from showing anything on its own while this Focus is on.`; parameter `Keep todz quiet`; tile title `todz`, subtitle `Stays quiet` (on) or `Shows as usual` (off).
+
 ## The failing test first
 
-- [ ] `<path>::<name>` — input: <input>; expected: <exact outcome>
-- [ ] Confirmed it fails for the right reason: <the failure message that proves the feature is missing, not the test broken>
+- [ ] `ProactiveGateTests` at the red commit, each test run alone with `--filter` — expected: each stops on `<name> is not implemented`
+- [ ] Confirmed each fails for the right reason: the texts printed match `tester-briefing.md`
 
 ## Unit
 
-- [ ] `<path>::<name>` — input: <input>; expected: <exact outcome>
-- [ ] Edge: empty / null / boundary — input: <value>; expected: <exact outcome>
-- [ ] Edge: the error path, with the specific error — input: <value>; expected: <error type and message>
+- [ ] A new gate — expected: not quiet; `admit(.dayClose)` is `.show`
+- [ ] Quiet — expected: `admit(.dayClose)` is `.held`; nothing released
+- [ ] Quiet, `.dayClose` twice and `.ribbon` once, then not quiet — expected: released `[.dayClose, .ribbon]`
+- [ ] Not quiet twice in a row — expected: the second releases `[]`
+- [ ] Quiet twice, then not quiet — expected: each held surface released once
+- [ ] After a release — expected: `admit` is `.show`; a later quiet period that held nothing releases `[]`
+- [ ] The filter seam: `isQuiet == true` — expected: the gate is quiet; `false` — expected: not quiet and the held surfaces released
+- [ ] `swift test --package-path apps/macos/TodzKit` green, count recorded; the Debug `xcodebuild` succeeds
+- [ ] The built app's App Intents metadata names `TodzFocusFilter` with the parameter "Keep todz quiet"
 
-## E2E (Playwright specs)
+## Prove it for real
 
-- [ ] `<path>::<name>` — steps: <steps>; expected: <what the user sees>
+The app is walked with Orca (ADR 0026), launched with `open -g -j`. The owner may be at the Mac: no Focus is turned on by the tester, and System Settings is opened only for the reads below and closed after.
 
-## Prove it for real — Playwright MCP
-
-- [ ] Happy path, entry to exit: <steps>; expected: <what the user sees at each step>
-- [ ] Empty: <input state>; expected: <exact outcome>
-- [ ] Single: <input state>; expected: <exact outcome>
-- [ ] Many: <input state>; expected: <exact outcome>
-- [ ] Rejected input: <input>; expected: <exact message and state unchanged>
-- [ ] Browser Back mid-flow: <step at which Back is pressed>; expected: <exact outcome>
-- [ ] Reload mid-flow: <step at which the page reloads>; expected: <exact outcome>
-- [ ] Two authors in two browser contexts at once: <what each does>; expected: <what each sees>
-- [ ] Latency / disconnect (where relevant): <throttle or cut>; expected: <exact outcome after recovery>
-- [ ] Console and network clean: zero console errors, zero failed requests, other than <expected exceptions>
-- [ ] Desktop width: <viewport>; expected: <layout outcome>
-- [ ] Narrow width: <viewport>; expected: <layout outcome>
-- [ ] Screenshots at `<path>`; video at `<path>`
+- [ ] Settings shows the Focus row under the two switches: `Quiet during Focus`, `todz stays quiet in any Focus with the todz filter on.` and the `Open Focus Settings` button, light and dark; the window height equals the two-switch window plus one row and does not change — screenshots
+- [ ] The button — expected: System Settings opens on Focus
+- [ ] System Settings → Focus → any mode → Add Filter — expected: todz is listed; its sheet titled `Quiet todz` shows `Keep todz quiet`, off — screenshot (do not save the filter)
+- [ ] Unit: the Settings detail reads `Quiet now, until this Focus ends.` when the gate is quiet and the detail otherwise (through a testable copy function)
+- [ ] Accessibility tree: the row's text and the button read with their labels
+- [ ] Screenshots at `docs/screenshots/focus-aware/`; extra media at `.pr-media/focus-aware/`
 
 ## Edge cases found during execution
 
@@ -47,6 +46,5 @@ The reviewer picks the three claims most likely to be wrong and tries to refute 
 
 ## Coverage honesty
 
-What is not tested and why.
-
-- <untested area> — <reason and the risk accepted>
+- A real Focus turning on and off with the filter saved is not walked: it changes the owner's Focus. The intent's `perform()` path is covered by the seam's unit test and the metadata check; the owner's Human checklist runs it once.
+- No proactive surface exists yet; the gate is proven by its unit tests, and each later surface adds its own walk through it.
