@@ -19,4 +19,4 @@ git -C "$work/repo" init -q
 git -C "$work/repo" add -A
 git -C "$work/repo" -c user.name=fixture -c user.email=fixture@todz.test commit -q -m fixture
 
-HOME="$work/home" TODZ_DEPLOY_CURL_BINARY="$work/production-not-found" bash "$work/repo/scripts/deploy-worker.sh" --stage-only "$stage"
+HOME="$work/home" TODZ_RELEASE_TEST_MODE=1 TODZ_DEPLOY_CURL_BINARY="$work/production-not-found" bash "$work/repo/scripts/deploy-worker.sh" --stage-only "$stage"
