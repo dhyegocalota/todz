@@ -2,9 +2,7 @@ import { DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS } from '@todz/types';
 import { digestCredential } from '../credential-digest';
 import { generateReplySecret } from '../credential-secret';
 import { insertReplyAddress } from './day-email-store';
-
-const REPLY_LOCAL_PART = 'reply';
-const REPLY_DOMAIN = 'todz.app';
+import { replyAddressOf } from './reply-recipient';
 
 export async function issueReplyAddress({
   directory,
@@ -18,5 +16,5 @@ export async function issueReplyAddress({
   const secret = generateReplySecret();
   const digest = await digestCredential(secret);
   await insertReplyAddress({ directory, digest, ownerId, now, expiresAt: now + DAY_EMAIL_REPLY_ADDRESS_LIFETIME_MS });
-  return `${REPLY_LOCAL_PART}+${secret}@${REPLY_DOMAIN}`;
+  return replyAddressOf(secret);
 }
