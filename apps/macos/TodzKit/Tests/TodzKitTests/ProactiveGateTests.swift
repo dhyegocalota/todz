@@ -119,4 +119,21 @@ import Testing
         #expect(!gate.isQuiet)
         #expect(gate.admit(.morningGlance) == .show)
     }
+
+    @Test func aLateLaunchReadAfterTheTimeoutQuietedTheGateReleasesWhatItHeld() {
+        let gate = ProactiveGate()
+        gate.applyLaunchRead(isQuiet: true)
+        #expect(gate.admit(.dayClose) == .held)
+        gate.applyLaunchRead(isQuiet: false)
+        #expect(!gate.isQuiet)
+        #expect(gate.released == [.dayClose])
+    }
+
+    @Test func aPerformThatArrivesAfterTheTimeoutWinsOverTheLateLaunchRead() {
+        let gate = ProactiveGate()
+        gate.applyLaunchRead(isQuiet: true)
+        gate.setQuiet(true)
+        gate.applyLaunchRead(isQuiet: false)
+        #expect(gate.isQuiet)
+    }
 }
