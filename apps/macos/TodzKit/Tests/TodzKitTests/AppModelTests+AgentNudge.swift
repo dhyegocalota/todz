@@ -128,6 +128,21 @@ extension AppModelTests {
         #expect(harness.model.agentNudgeNotice == .detail)
     }
 
+    @Test(arguments: failedSaves)
+    func aFailedSaveLeavesTheAgentNudgeChangeableSoTheNextChangeTriesAgain(failure: OwnerAPIError) async throws {
+        let harness = try harnessOfOwner(agentNudge: false)
+        await harness.signedIn()
+        harness.service.failures[.updateAgentNudge] = failure
+        await harness.model.changeAgentNudge(isEnabled: true)
+        #expect(harness.model.canChangeAgentNudge)
+        harness.service.failures = [:]
+        harness.service.calls = []
+        await harness.model.changeAgentNudge(isEnabled: true)
+        #expect(harness.service.routes() == [.updateAgentNudge])
+        #expect(harness.model.agentNudge == true)
+        #expect(harness.model.agentNudgeNotice == .detail)
+    }
+
     @Test func forgettingTheFailedSaveShowsTheDetailAgain() async throws {
         let harness = try harnessOfOwner(agentNudge: false)
         await harness.signedIn()
