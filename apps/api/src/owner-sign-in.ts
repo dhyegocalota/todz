@@ -7,7 +7,9 @@ import { HttpStatus } from './http-status';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
 import { ownerJson } from './owner-json';
 import { type OwnerContext, parsedPublicBody } from './owner-request';
+import { OwnerRoute } from './owner-routes';
 import { openOwnerSession } from './owner-sessions';
+import { globalLimitRefusal } from './sign-in-limiter';
 import { publicOriginOf } from './sign-in-links';
 import { SIGN_IN_PROVIDER_OF_KIND, SignInProviderKind, signInKindForRequest } from './sign-in-provider';
 import { canonicalTimeZone } from './time-zone';
@@ -70,6 +72,8 @@ export async function signIn({ request, env, now, executionContext }: OwnerConte
   if (timeZone === null) return errorResponse(OwnerErrorCode.TimeZoneInvalid);
   const isMalformedVerifier = body.link_verifier !== undefined && !LINK_VERIFIER_PATTERN.test(body.link_verifier);
   if (isMalformedVerifier) return errorResponse(OwnerErrorCode.IdentityRejected);
+  const globalRefusal = await globalLimitRefusal({ request, env, route: OwnerRoute.SignIn });
+  if (globalRefusal !== null) return globalRefusal;
   const subject = await SIGN_IN_PROVIDER_OF_KIND[kind].verify({
     identityToken: body.identity_token,
     linkVerifier: body.link_verifier,

@@ -22,9 +22,13 @@ const PRODUCTION_DATABASE_ID = 'dc22b1c3-1869-44a0-b805-91bf92017f19';
 const PRODUCTION_HOST = 'api.todz.app';
 const PRODUCTION_ORIGIN = `https://${PRODUCTION_HOST}`;
 const RATE_LIMIT_NAMESPACE_ID = '8601';
+const ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8602';
+const GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8603';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
 const RATE_LIMIT_MAX = 10;
+const ADDRESS_RATE_LIMIT_MAX = 3;
+const GLOBAL_RATE_LIMIT_MAX = 100;
 const RATE_LIMIT_PERIOD_SECONDS = 60;
 const RESOURCE_NAME_PREFIX = 'todz';
 const TRAILING_COMMA_PATTERN = /,(\s*[}\]])/g;
@@ -137,12 +141,22 @@ describe('the api source', () => {
     expect(configuration.preview_urls).toBe(false);
   });
 
-  test('the wrangler configuration limits the sign-in posts per client with the shared limits', () => {
+  test('the wrangler configuration limits sign-in per client, per address and globally with the shared limits', () => {
     expect(wranglerConfiguration().ratelimits).toEqual([
       {
         name: 'SIGN_IN_LIMITER',
         namespace_id: RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: RATE_LIMIT_MAX, period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'SIGN_IN_ADDRESS_LIMITER',
+        namespace_id: ADDRESS_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: ADDRESS_RATE_LIMIT_MAX, period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'SIGN_IN_GLOBAL_LIMITER',
+        namespace_id: GLOBAL_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: GLOBAL_RATE_LIMIT_MAX, period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
   });

@@ -33,6 +33,7 @@ export const CLOUDFLARE_SETTINGS: Partial<Env> = {
 };
 export const CLIENT_ADDRESS_HEADER = 'CF-Connecting-IP';
 export const CLIENT_ADDRESS = '203.0.113.50';
+const CLIENT_HEADERS = { [CLIENT_ADDRESS_HEADER]: CLIENT_ADDRESS };
 const SITEVERIFY_RESPONSE_FIELD = 'response';
 
 export const TURNSTILE_TOKEN_OF_ACTION: Record<TurnstileAction, string> = {
@@ -166,7 +167,7 @@ export function requestLink({
   origin?: string;
 } = {}): Promise<Response> {
   return serveOwnerCall({
-    call: { method: 'POST', path: LINKS_PATH, body: { email, link_challenge: challenge }, origin },
+    call: { method: 'POST', path: LINKS_PATH, body: { email, link_challenge: challenge }, headers: CLIENT_HEADERS, origin },
     now,
     workerEnv,
   });
@@ -201,7 +202,12 @@ export function redeemLink({
   executionContext?: ExecutionContext;
 }): Promise<Response> {
   return serveOwnerCall({
-    call: { method: 'POST', path: SESSIONS_PATH, body: { identity_token: token, link_verifier: verifier, time_zone: timeZone } },
+    call: {
+      method: 'POST',
+      path: SESSIONS_PATH,
+      body: { identity_token: token, link_verifier: verifier, time_zone: timeZone },
+      headers: CLIENT_HEADERS,
+    },
     now,
     workerEnv,
     executionContext,

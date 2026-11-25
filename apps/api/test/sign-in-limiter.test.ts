@@ -79,8 +79,8 @@ function guardedEnv({ limiters = {}, binding = recordingBinding().binding }: { l
   return emailEnv({ ...guardedSettings(), EMAIL: binding, ...limiters });
 }
 
-function clientHeaders(address: string | undefined): Record<string, string> | undefined {
-  if (address === undefined) return undefined;
+function clientHeaders(address: string | null): Record<string, string> | undefined {
+  if (address === null) return undefined;
   return { [CLIENT_ADDRESS_HEADER]: address };
 }
 
@@ -89,7 +89,7 @@ function linkCall({
   origin = PUBLIC_HTTPS_ORIGIN,
   email = freshAddress(),
   turnstileToken = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.RequestLink],
-}: { clientAddress?: string; origin?: string; email?: string; turnstileToken?: string } = {}): RouteCall {
+}: { clientAddress?: string | null; origin?: string; email?: string; turnstileToken?: string } = {}): RouteCall {
   const body = { email, link_challenge: LINK_CHALLENGE, turnstile_token: turnstileToken };
   return { email, call: { method: 'POST', path: LINKS_PATH, body, headers: clientHeaders(clientAddress), origin } };
 }
@@ -98,7 +98,7 @@ function sessionCall({
   clientAddress = FIRST_CLIENT_ADDRESS,
   origin = PUBLIC_HTTPS_ORIGIN,
   turnstileToken = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.SignIn],
-}: { clientAddress?: string; origin?: string; turnstileToken?: string } = {}): OwnerCall {
+}: { clientAddress?: string | null; origin?: string; turnstileToken?: string } = {}): OwnerCall {
   const body = { identity_token: 'not-a-link-token', time_zone: 'UTC', turnstile_token: turnstileToken };
   return { method: 'POST', path: SESSIONS_PATH, body, headers: clientHeaders(clientAddress), origin };
 }
@@ -106,7 +106,7 @@ function sessionCall({
 function methodCall({
   clientAddress = FIRST_CLIENT_ADDRESS,
   origin = PUBLIC_HTTPS_ORIGIN,
-}: { clientAddress?: string; origin?: string } = {}): OwnerCall {
+}: { clientAddress?: string | null; origin?: string } = {}): OwnerCall {
   return { method: 'GET', path: METHOD_PATH, headers: clientHeaders(clientAddress), origin };
 }
 
@@ -289,9 +289,9 @@ describe('the sign-in limits failing closed on a public host', () => {
   });
 
   test.each([
-    { name: 'the method read', call: () => methodCall({ clientAddress: undefined }) },
-    { name: 'the link request', call: () => linkCall({ clientAddress: undefined }).call },
-    { name: 'the session post', call: () => sessionCall({ clientAddress: undefined }) },
+    { name: 'the method read', call: () => methodCall({ clientAddress: null }) },
+    { name: 'the link request', call: () => linkCall({ clientAddress: null }).call },
+    { name: 'the session post', call: () => sessionCall({ clientAddress: null }) },
   ])('$name without the client address header answers 503 sign_in_unavailable and consults no limiter', async ({ call }) => {
     const { limiters, keys } = recordedLimiters();
     await expectUnavailable(await serve({ call: call(), workerEnv: guardedEnv({ limiters }) }));
@@ -347,7 +347,7 @@ describe('the sign-in limits on a local host', () => {
 
   test('a local host needs neither the bindings nor the client address', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    const call = linkCall({ origin: PUBLIC_ORIGIN, clientAddress: undefined, turnstileToken: TURNSTILE_DUMMY_TOKEN }).call;
+    const call = linkCall({ origin: PUBLIC_ORIGIN, clientAddress: null, turnstileToken: TURNSTILE_DUMMY_TOKEN }).call;
     expect((await serve({ call, workerEnv: localEnv({}) })).status).toBe(ACCEPTED_STATUS);
   });
 

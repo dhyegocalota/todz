@@ -3,7 +3,7 @@ import type { Env } from './env';
 import { ACCOUNT_HANDLERS } from './owner-account';
 import { noRouteResponse } from './owner-errors';
 import { KEY_HANDLERS } from './owner-keys';
-import type { PublicHandler, PublicRoute, SessionHandler, SessionRoute } from './owner-request';
+import type { OwnerContext, PublicHandler, PublicRoute, SessionHandler, SessionRoute } from './owner-request';
 import { OwnerRoute, matchOwnerRoute } from './owner-routes';
 import { signIn } from './owner-sign-in';
 import { signInLimitRefusal } from './sign-in-limiter';
@@ -30,6 +30,12 @@ function isPublicRoute(route: OwnerRoute): route is PublicRoute {
   return route in PUBLIC_HANDLERS;
 }
 
+async function servePublic({ context, route }: { context: OwnerContext; route: PublicRoute }): Promise<Response> {
+  const limitRefusal = await signInLimitRefusal({ request: context.request, env: context.env, route });
+  if (limitRefusal !== null) return limitRefusal;
+  return PUBLIC_HANDLERS[route](context);
+}
+
 export async function serveOwner({
   request,
   env,
@@ -44,9 +50,7 @@ export async function serveOwner({
   const match = matchOwnerRoute(request);
   if (match === null) return noRouteResponse();
   const context = { request, env, now, executionContext, params: match.params };
-  const limitRefusal = await signInLimitRefusal({ request, env, route: match.route });
-  if (limitRefusal !== null) return limitRefusal;
-  if (isPublicRoute(match.route)) return PUBLIC_HANDLERS[match.route](context);
+  if (isPublicRoute(match.route)) return servePublic({ context, route: match.route });
   const secret = bearerSecret(request);
   if (secret === null) return unauthorized();
   const owner = await resolveSessionOwner({ env, secret, now });

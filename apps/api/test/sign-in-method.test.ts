@@ -6,13 +6,14 @@ const OK_STATUS = 200;
 const UNAVAILABLE_STATUS = 503;
 const SIGN_IN_UNAVAILABLE = { error: 'sign_in_unavailable' };
 const METHOD_PATH = '/owner/sign-in-method';
+const LOCAL_ORIGIN = 'http://localhost:8787';
 
 describe('GET /owner/sign-in-method', () => {
   test('answers link for the email provider', async () => {
     const response = await serveOwnerCall({
       call: { method: 'GET', path: METHOD_PATH },
       now: CLOCK_NOW,
-      workerEnv: workerEnvWith({ SIGN_IN_PROVIDER: 'email' }),
+      workerEnv: workerEnvWith({ SIGN_IN_PROVIDER: 'email', PUBLIC_ORIGIN: LOCAL_ORIGIN }),
     });
     expect(response.status).toBe(OK_STATUS);
     expect(await response.json()).toEqual({ method: 'link' });

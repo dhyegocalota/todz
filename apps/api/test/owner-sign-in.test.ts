@@ -10,12 +10,12 @@ import { calendarDateInTimeZone } from '../src/owner-today';
 import { issueProjectKey } from '../src/project-keys';
 import { seedIssuedKey, seedProject } from './directory-seed';
 import {
-  CLOUDFLARE_SETTINGS,
   PUBLIC_HTTPS_ORIGIN,
   PUBLIC_ORIGIN,
   askedLink,
   emailEnv,
   freshAddress,
+  guardedSettings,
   linkRows,
   messageSent,
   recordingBinding,
@@ -645,7 +645,7 @@ describe('the welcome mail', () => {
   const WELCOME_SUBJECT = 'Welcome to todz';
 
   function welcomeEnv({ binding, settings = {} }: { binding: SendEmail; settings?: Partial<Env> }): Env {
-    return emailEnv({ ...CLOUDFLARE_SETTINGS, EMAIL: binding, ...settings });
+    return emailEnv({ ...guardedSettings(), EMAIL: binding, ...settings });
   }
 
   test('a new owner by link gets exactly one welcome to the address, with the lockup of the public origin', async () => {
@@ -688,7 +688,7 @@ describe('the welcome mail', () => {
     const link = await askedLink();
     const rivalOwnerId = crypto.randomUUID();
     const racingEnv = directoryRunning({
-      settings: { ...CLOUDFLARE_SETTINGS, EMAIL: binding },
+      settings: { ...guardedSettings(), EMAIL: binding },
       beforeIdentityRead: async () => {
         await env.DIRECTORY.batch([
           env.DIRECTORY.prepare('INSERT INTO owners (id, time_zone, created_at) VALUES (?, ?, ?)').bind(rivalOwnerId, 'UTC', CLOCK_NOW),
@@ -732,7 +732,7 @@ describe('the welcome mail', () => {
 
   test('the cloudflare kind without the binding skips the welcome and still answers 201', async () => {
     const link = await askedLink();
-    const response = await redeemLink({ ...link, workerEnv: emailEnv(CLOUDFLARE_SETTINGS) });
+    const response = await redeemLink({ ...link, workerEnv: emailEnv({ ...guardedSettings(), EMAIL: undefined }) });
     expect(response.status).toBe(CREATED_STATUS);
   });
 
