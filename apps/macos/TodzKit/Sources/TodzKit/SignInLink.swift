@@ -10,6 +10,10 @@ public struct SignInLink: Equatable, Sendable {
     public let token: String
     public let turnstileToken: String
 
+    public var origin: String {
+        fatalError("SignInLink.origin is not implemented")
+    }
+
     public init?(url: URL) {
         guard url.scheme == linkScheme, url.host() == linkHost, url.path().isEmpty else { return nil }
         let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems

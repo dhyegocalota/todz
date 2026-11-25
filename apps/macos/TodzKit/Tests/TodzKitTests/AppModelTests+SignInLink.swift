@@ -12,7 +12,7 @@ private let firstVerifier = "verifier-1"
 private let secondVerifier = "verifier-2"
 
 private func incomingLink() throws -> SignInLink {
-    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)"))
+    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)&origin=\(harnessDefaultServer)"))
     return try #require(SignInLink(url: url))
 }
 

@@ -11,7 +11,7 @@ private let longestChallengeToken = String(repeating: "a", count: 2048)
 private let malformedChallengeTokens = ["", "bad token", "bad!token", longestChallengeToken + "a"]
 
 private func incomingLink() throws -> SignInLink {
-    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)"))
+    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)&origin=\(harnessDefaultServer)"))
     return try #require(SignInLink(url: url))
 }
 

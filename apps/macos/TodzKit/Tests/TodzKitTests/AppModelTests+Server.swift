@@ -16,8 +16,8 @@ private func address(_ text: String) throws -> ServerAddress {
     try ServerAddress.checked(text: text).get()
 }
 
-private func incomingLink() throws -> SignInLink {
-    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)"))
+private func incomingLink(origin: String = harnessDefaultServer) throws -> SignInLink {
+    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)&origin=\(origin)"))
     return try #require(SignInLink(url: url))
 }
 
@@ -161,6 +161,15 @@ extension AppModelTests {
         #expect(harness.model.signInError == .linkNotRequested)
         #expect(harness.service.routes().contains(.signIn) == false)
         #expect(harness.servers.created.map(\.service.calls) == [[]])
+    }
+
+    @Test func aLinkHandedOverByAnotherServersPageIsNotRequestedAndSendsNothing() async throws {
+        let harness = try await harnessWithAPendingLink()
+        await harness.model.redeem(signInLink: try incomingLink(origin: storedText))
+        #expect(harness.model.signInError == .linkNotRequested)
+        #expect(harness.service.calls == [])
+        #expect(harness.model.pendingLink != nil)
+        #expect(harness.model.phase == .signedOut(notice: nil))
     }
 
     @Test func aSwitchWhileSigningInIsRefusedAndCallsNothing() async throws {
