@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { type ConsoleMessage, type Locator, type Page, expect, test } from '@playwright/test';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { ProjectName } from './project-name';
@@ -35,10 +33,10 @@ enum Css {
 
 const JOINED_NOTICE = "You're on the list. Check your inbox.";
 const SLOW_SCRIPT_DELAY_MS = 1_500;
-const SELF_HOST_TITLE = 'Self-host todz';
-const SELF_HOST_GUIDE_FILE = path.join(import.meta.dirname, '..', '..', '..', 'apps', 'docs', 'self-host.mdx');
-const SECOND_LEVEL_HEADING_PREFIX = '## ';
-const CODE_FENCE = '```';
+const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
+const MOVED_PERMANENTLY_STATUS = 301;
+const HEADER_GUIDE_LINK = '.site-header .nav-link';
+const FOOTER_GUIDE_LINK = '.site-footer .footer-link';
 const MAXIMUM_DARK_CHANNEL = 40;
 const SUBPIXEL_TOLERANCE = 0.5;
 const KEYBOARD_ORDER = ['.skip-link', '.site-header .brand', '.site-header .nav-link', '#join-email', '#join .join-button'];
@@ -47,7 +45,7 @@ const CREDIT_TEXT = 'todz is a product of Logic Bit, made in Brazil';
 const CREDIT_WEBSITE = 'https://logicbit.com.br';
 const SCRIPT_OWNED_TRANSITION_PROPERTIES = ['color', 'background-color', 'opacity'];
 const JOIN_FORMS = [Fragment.Hero, Fragment.Final];
-const SITE_PAGES = [SitePath.Landing, SitePath.Join, SitePath.SelfHost];
+const SITE_PAGES = [SitePath.Landing, SitePath.Join];
 
 test.beforeEach(async ({ page }) => {
   await page.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: TURNSTILE_STUB }));
@@ -299,31 +297,25 @@ test.describe('join', () => {
 });
 
 test.describe('self-host guide', () => {
-  test('the footer link reaches the guide with its title, headings and code blocks', async ({ page }) => {
-    const guide = fs.readFileSync(SELF_HOST_GUIDE_FILE, 'utf8');
-    const guideLines = guide.split('\n');
-    const expectedHeadings = guideLines
-      .filter((line) => line.startsWith(SECOND_LEVEL_HEADING_PREFIX))
-      .map((line) => line.slice(SECOND_LEVEL_HEADING_PREFIX.length).replaceAll('`', ''));
-    const expectedCodeBlocks = guideLines.filter((line) => line.startsWith(CODE_FENCE)).length / 2;
+  test('the header and footer links open the guide on the docs', async ({ page }) => {
     await page.goto(SitePath.Landing);
-    await page.locator('.site-footer .footer-link').click();
-    await expect(page).toHaveURL(new RegExp(`${SitePath.SelfHost}$`));
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(SELF_HOST_TITLE);
-    const headings = await page.locator('main h2').allTextContents();
-    expect(headings.map((heading) => heading.trim())).toEqual(expectedHeadings);
-    await expect(page.locator('main pre')).toHaveCount(expectedCodeBlocks);
+    await expect(page.locator(HEADER_GUIDE_LINK)).toHaveAttribute('href', DOCS_SELF_HOST_URL);
+    await expect(page.locator(FOOTER_GUIDE_LINK)).toHaveAttribute('href', DOCS_SELF_HOST_URL);
+  });
+
+  test(`${SitePath.SelfHost} answers 301 to the guide on the docs`, async ({ request }) => {
+    const response = await request.get(SitePath.SelfHost, { maxRedirects: 0 });
+    expect(response.status()).toBe(MOVED_PERMANENTLY_STATUS);
+    expect(response.headers().location).toBe(DOCS_SELF_HOST_URL);
   });
 });
 
 test.describe('credit', () => {
-  [SitePath.Landing, SitePath.SelfHost].forEach((sitePath) => {
-    test(`${sitePath} credits Logic Bit in the footer with a link to its website`, async ({ page }) => {
-      await page.goto(sitePath);
-      await expect(page.locator('.site-footer .footer-credit')).toHaveText(CREDIT_TEXT);
-      await expect(page.locator(CREDIT_LINK)).toHaveAttribute('href', CREDIT_WEBSITE);
-      await expect(page.locator(CREDIT_LINK)).toBeVisible();
-    });
+  test(`${SitePath.Landing} credits Logic Bit in the footer with a link to its website`, async ({ page }) => {
+    await page.goto(SitePath.Landing);
+    await expect(page.locator('.site-footer .footer-credit')).toHaveText(CREDIT_TEXT);
+    await expect(page.locator(CREDIT_LINK)).toHaveAttribute('href', CREDIT_WEBSITE);
+    await expect(page.locator(CREDIT_LINK)).toBeVisible();
   });
 });
 
@@ -344,7 +336,7 @@ test.describe('keyboard', () => {
 test.describe('keyboard in the footer', () => {
   test('shift-tab from the guide link reaches the credit link with a visible focus ring', async ({ page }) => {
     await page.goto(SitePath.Landing);
-    await page.locator('.site-footer .footer-link').focus();
+    await page.locator(FOOTER_GUIDE_LINK).focus();
     await page.keyboard.press('Shift+Tab');
     await expect(page.locator(CREDIT_LINK)).toBeFocused();
     expect(await hasFocusRing(page.locator(CREDIT_LINK))).toBe(true);

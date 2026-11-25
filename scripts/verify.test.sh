@@ -145,8 +145,8 @@ expect_line "a scenario" "$output" class tooling
 
 classify apps/docs/self-host.mdx
 expect_line "the self-host guide" "$output" class product
-expect_line "the self-host guide" "$output" gates "doctor format secrets audit shape unit docs"
-expect_line "the self-host guide" "$output" packages "@todz/api"
+expect_line "the self-host guide" "$output" gates "$DOCS_SITE_GATES"
+expect_line "the self-host guide" "$output" packages -
 
 classify .env.example
 expect_line "the environment template" "$output" gates "doctor format secrets audit shape unit"

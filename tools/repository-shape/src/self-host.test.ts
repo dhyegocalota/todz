@@ -8,6 +8,7 @@ import { swiftCopyValue } from './swift-copy';
 const GUIDE = 'apps/docs/self-host.mdx';
 const LEGACY_GUIDE = 'docs/self-host.md';
 const GUIDE_TITLE = 'Self-host todz';
+const DOCS_GUIDE_URL = 'https://docs.todz.app/self-host';
 const KEY_SCREEN_COPY = 'apps/macos/Copy/KeyScreenCopy.swift';
 const KEY_SCREEN_TITLE_NAME = 'title';
 const KEPT_LINK_TARGET_PATTERN = /^(?:https:\/\/|#)/;
@@ -111,8 +112,10 @@ function captured(pattern: RegExp, text = guide): string[] {
 }
 
 describe('the self-host guide', () => {
-  test('the root README links it', () => {
-    expect(readRepositoryFile(ROOT_README)).toContain(`](${GUIDE})`);
+  test('the root README links it on the docs site, not its file', () => {
+    const readme = readRepositoryFile(ROOT_README);
+    expect(readme).toContain(`](${DOCS_GUIDE_URL})`);
+    expect(readme).not.toContain(`](${GUIDE})`);
   });
 
   test('is the docs site page, not a file of docs/', () => {

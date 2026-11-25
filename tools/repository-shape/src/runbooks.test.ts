@@ -18,6 +18,12 @@ const OWNER_SETUP_DATE = '2026-11-25';
 const OWNER_SETUP_FACTS = ['`todz`', 'Hobby', '`dhyegocalota/todz`', '`main`', '`apps/docs`', '`docs.todz.app`', 'SSL'];
 const DOCS_ORIGIN = 'https://docs.todz.app';
 const DOCS_CHECKED_ADDRESSES = [`${DOCS_ORIGIN}/`, `${DOCS_ORIGIN}/self-host`, `${DOCS_ORIGIN}/no-such-page`];
+const PREVIEW_SETTING = '`preview: false`';
+const APP_SCOPE_CHECK = 'Only select repositories';
+const READ_ONLY_CLAIM = 'read-only';
+const DOCS_CONFIGURATION = 'apps/docs/docs.json';
+const DOCS_HOST_CHECK_STEP = 3;
+const FULL_CREDIT_TAIL = 'made in Brazil';
 const DOCS_GATE_COMMANDS = ['pnpm --filter @todz/docs broken-links', 'pnpm --filter @todz/docs validate'];
 const DOMAIN_RECORD_PATTERN = /dns_records|CNAME|scripts\/todz-cloudflare\.sh/;
 const REMOTE_FLAG = '--remote';
@@ -55,6 +61,12 @@ const SMOKE_CHECK_STEP = 13;
 const HEALTH_CURL = 'curl -sS https://api.todz.app/health';
 const HEALTH_ANSWER = '{"service":"todz","origin":"https://api.todz.app"}';
 const ALL_PASS_SENTENCE = 'When all fourteen pass';
+const SELF_HOST_PROBES = [
+  'curl -sS -D - -o /dev/null https://todz.app/self-host',
+  'curl -sS -D - -o /dev/null "https://www.todz.app/self-host?from=runbook"',
+];
+const DOCS_REDIRECT_ANSWER = '`HTTP/2 301` with `location: https://docs.todz.app/self-host`';
+const SITE_REDIRECT_OF_GUIDE = 'location: https://todz.app/self-host';
 const WRONG_SESSION_BODY = 'scripts/deploy-bodies/wrong-session.json';
 const JUNK_LINK_BODY = 'scripts/deploy-bodies/junk-turnstile-link.json';
 const JUNK_WAITLIST_BODY = 'scripts/deploy-bodies/junk-turnstile-waitlist.txt';
@@ -68,6 +80,8 @@ const TURNSTILE_TOKEN_PATTERN = /^[A-Za-z0-9._-]{1,2048}$/;
 const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
 
 type DeployBody = { email?: string; link_challenge?: string; link_verifier?: string; turnstile_token?: string };
+
+type DocsFooter = { footer: { links: { header: string; items: { label: string }[] }[] } };
 
 function deployBody(path: string): DeployBody {
   return JSON.parse(readRepositoryFile(path)) as DeployBody;
@@ -136,6 +150,15 @@ function isBlockedByGuard(command: string): boolean {
   return spawnSync(repositoryPath(GUARD_HOOK), { input }).status === BLOCKED_EXIT_CODE;
 }
 
+function mintlifySetup(): string {
+  const text = readRunbook(MINTLIFY_RUNBOOK).text;
+  const setupStart = text.indexOf(SETUP_HEADING);
+  if (setupStart === NOT_FOUND) throw new Error(`${MINTLIFY_RUNBOOK} has no ${SETUP_HEADING} section`);
+  const rest = text.slice(setupStart + SETUP_HEADING.length);
+  const setupEnd = rest.search(NEXT_SECTION_PATTERN);
+  return rest.slice(0, setupEnd === NOT_FOUND ? undefined : setupEnd);
+}
+
 function rootScripts(): string[] {
   return Object.keys(JSON.parse(readRepositoryFile(ROOT_PACKAGE_FILE)).scripts);
 }
@@ -202,14 +225,24 @@ describe('runbooks', () => {
   });
 
   test('the Mintlify runbook records the owner setup as done on 2026-11-25, each fact in its Setup section', () => {
-    const text = readRunbook(MINTLIFY_RUNBOOK).text;
-    const setupStart = text.indexOf(SETUP_HEADING);
-    const rest = text.slice(setupStart + SETUP_HEADING.length);
-    const setupEnd = rest.search(NEXT_SECTION_PATTERN);
-    const setup = rest.slice(0, setupEnd === NOT_FOUND ? undefined : setupEnd);
-    expect(setupStart).not.toBe(NOT_FOUND);
+    const setup = mintlifySetup();
     expect(setup).toContain(OWNER_SETUP_DATE);
     expect(OWNER_SETUP_FACTS.filter((fact) => !setup.includes(fact))).toEqual([]);
+  });
+
+  test('the Mintlify setup says previews are off on the plan and leaves the app scope to the owner, never calling the app read-only', () => {
+    const setup = mintlifySetup();
+    expect(setup).toContain(PREVIEW_SETTING);
+    expect(setup).toContain(APP_SCOPE_CHECK);
+    expect(setup).not.toContain(READ_ONLY_CLAIM);
+  });
+
+  test('the Mintlify check of the host expects the credit the docs footer holds', () => {
+    const [credit] = (JSON.parse(readRepositoryFile(DOCS_CONFIGURATION)) as DocsFooter).footer.links;
+    const hostCheck = stepSections(readRunbook(MINTLIFY_RUNBOOK).text).find((step) => step.number === DOCS_HOST_CHECK_STEP);
+    expect(hostCheck?.body).toContain(`\`${credit?.header}\``);
+    expect(hostCheck?.body).toContain(`\`${credit?.items[0]?.label}\``);
+    expect(hostCheck?.body).not.toContain(FULL_CREDIT_TAIL);
   });
 
   test('the Mintlify runbook runs the docs checks before any step that asks the docs host', () => {
@@ -291,6 +324,13 @@ describe('runbooks', () => {
     expect(smokeCheck?.body).toContain(HEALTH_CURL);
     expect(smokeCheck?.body).toContain(HEALTH_ANSWER);
     expect(smokeCheck?.body).toContain(ALL_PASS_SENTENCE);
+  });
+
+  test('the smoke check expects both self-host probes to answer 301 to the guide on the docs', () => {
+    const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
+    expect(SELF_HOST_PROBES.filter((probe) => !smokeCheck?.body.includes(probe))).toEqual([]);
+    expect(smokeCheck?.body).toContain(DOCS_REDIRECT_ANSWER);
+    expect(smokeCheck?.body).not.toContain(SITE_REDIRECT_OF_GUIDE);
   });
 
   test('the wrong session body is refused before siteverify, by a malformed verifier, and carries an unsolved token', () => {

@@ -51,6 +51,8 @@ const LOCAL_ORIGIN_MODULE = 'local-origin';
 const LOCAL_ORIGIN_IMPORT_PATTERN = /import ([^;]+?) from '[^']*local-origin'/g;
 const SITE_HOST_PREDICATE_IMPORT = '{ isLocalSiteHost }';
 const LANDING_ASSET_PREFIX = '/landing/';
+const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
+const GUIDE_LINK_PATTERN = /<a class="(?:nav-link|footer-link)" href="([^"]*)"/g;
 const FOOTER_CREDIT =
   '<p class="footer-credit">todz is a product of <a class="footer-credit-link" href="https://logicbit.com.br" rel="noopener noreferrer">Logic Bit</a>, made in Brazil</p>';
 const FOOTER_CREDIT_LINK_STYLE = '.footer-credit-link{color:var(--color-text);text-decoration:underline;text-underline-offset:0.2em}';
@@ -261,6 +263,11 @@ describe('the landing', () => {
     expect(SITE_SOURCES['../src/site/landing-copy.ts']).toContain('MCP_COPY.added');
   });
 
+  test.each(NOTICES)('with the %s notice, the header and footer guide links open the guide on the docs', async (notice) => {
+    const { html } = await landingPage(notice);
+    expect(captures({ html, pattern: GUIDE_LINK_PATTERN })).toEqual([DOCS_SELF_HOST_URL, DOCS_SELF_HOST_URL]);
+  });
+
   test('every image is served from /landing/ on this host', async () => {
     const { html } = await landingPage(LandingNotice.None);
     const sources = captures({ html, pattern: IMAGE_SOURCE_PATTERN });
@@ -346,7 +353,6 @@ describe('the site host through the Worker', () => {
   test.each([
     { method: 'GET', path: '/', page: () => keyedLandingPage(LandingNotice.None) },
     { method: 'HEAD', path: '/', page: async () => ({ ...(await keyedLandingPage(LandingNotice.None)), html: '' }) },
-    { method: 'GET', path: '/self-host', page: selfHostPage },
   ])('$method $path answers the page this module renders, with the configured site key and its headers', async ({ method, path, page }) => {
     const response = await exports.default.fetch(`${LOCAL_SITE_ORIGIN}${path}`, { method });
     await expectPage({ response, expected: await page(), status: OK_STATUS });
