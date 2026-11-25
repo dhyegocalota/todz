@@ -36,7 +36,9 @@ private func isFocusFilterQuiet() async -> Bool {
     var dayChangeObservation: (any NSObjectProtocol)?
     var dayTemperatureObservation: (any NSObjectProtocol)?
     var quietGateReaction: Task<Void, Never>?
+    var windowObservations: [any NSObjectProtocol] = []
     let dayTemperaturePreference = DayTemperaturePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
+    let menuBarOnlyPreference = MenuBarOnlyPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     private(set) lazy var dayClose = DayCloseCoordinator(
         gate: gate,
         preference: DayClosePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
@@ -76,6 +78,7 @@ private func isFocusFilterQuiet() async -> Bool {
         PerfProbe.shared?.start(model: model)
         observeWidgetRequests()
         observeDayChanges()
+        observeWindows()
         Task {
             await readFocusFilter()
             startDayTemperature()

@@ -3,6 +3,8 @@ import TodzKit
 enum SettingsCopy {
     static let showPendingCount = "Show pending count in the menu bar"
     static let showPendingCountDetail = "Today's open tasks in the active workspace. Hidden when none are left."
+    static let keepInMenuBar = "Keep todz in the menu bar when closed"
+    static let keepInMenuBarDetail = "With no window open, todz leaves the Dock and ⌘Tab. The menu bar, widgets and Siri keep working."
     static let agentNudge = "Let agents mention today's tasks"
     static let agentNudgeDetail = "When an agent asks what's next, it hears what's due today in its project."
     static let ownerSettingOffline = "Can't reach todz. You can change this when it's back."

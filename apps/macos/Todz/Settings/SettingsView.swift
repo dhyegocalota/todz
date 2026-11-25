@@ -11,6 +11,7 @@ struct SettingsView: View {
     @Environment(ProactiveGate.self) private var gate
     @Environment(\.openURL) private var openURL
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
+    @AppStorage(MenuBarOnlyPreference.isOnStorageKey) private var isMenuBarOnlyOn = MenuBarOnlyPreference.isOnByDefault
     @AppStorage(DayClosePreference.isOnStorageKey) private var isDayCloseOn = DayClosePreference.isOnByDefault
     @AppStorage(DayClosePreference.timeStorageKey) private var dayCloseMinutes = DayClosePreference.minutesAfterMidnightByDefault
     @AppStorage(MorningGlancePreference.isOnStorageKey) private var isMorningGlanceOn = MorningGlancePreference.isOnByDefault
@@ -21,6 +22,12 @@ struct SettingsView: View {
             Toggle(isOn: $isCountEnabled) {
                 Text(SettingsCopy.showPendingCount)
                 Text(SettingsCopy.showPendingCountDetail)
+            }
+            .toggleStyle(.switch)
+            Toggle(isOn: $isMenuBarOnlyOn) {
+                Text(SettingsCopy.keepInMenuBar)
+                Text(SettingsCopy.keepInMenuBarDetail)
+                    .lineLimit(subtitleLines, reservesSpace: true)
             }
             .toggleStyle(.switch)
             Toggle(isOn: agentNudge) {

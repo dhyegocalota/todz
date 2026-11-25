@@ -15,6 +15,7 @@ struct TodzApp: App {
         DayClosePreference.registerDefaults(in: .standard)
         MorningGlancePreference.registerDefaults(in: .standard)
         DayTemperaturePreference.registerDefaults(in: .standard)
+        MenuBarOnlyPreference.registerDefaults(in: .standard)
     }
 
     var body: some Scene {
