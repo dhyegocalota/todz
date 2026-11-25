@@ -279,7 +279,7 @@ test.describe('join', () => {
       const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
       await page.goto(SitePath.Landing);
       await submitForm({ page, form: Fragment.Hero, address });
-      await button.click();
+      await button.click({ force: true });
       await expectJoined({ page, form: Fragment.Hero, address });
       expect(posts).toHaveLength(1);
     });
