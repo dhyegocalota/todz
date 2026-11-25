@@ -48,4 +48,14 @@ private func milliseconds(_ duration: Duration) -> Double {
         report("widget snapshot after a change", await median { _ = model.widgetSnapshot })
         report("menu bar count after a change", await median { _ = model.todayHeadingCount })
     }
+
+    @Test func printsTheMediansOfTheProjectFileOfFiveThousandTasks() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "todz-benchmark-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = FileSyncStore(folder: folder)
+        let tasks = (1...bigProjectTaskCount).map { OwnerFixtures.openTask(number: $0) }
+        let cache = ProjectCache(projectIdentifier: bigProjectInboxIdentifier, cursor: bigProjectTaskCount, tasks: tasks)
+        report("project file write of \(bigProjectTaskCount) tasks", await median { try? store.writeProject(cache) })
+        report("project file read and decode of \(bigProjectTaskCount) tasks", await median { _ = try? store.readProject(identifier: bigProjectInboxIdentifier) })
+    }
 }
