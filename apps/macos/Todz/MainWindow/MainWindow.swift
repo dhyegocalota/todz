@@ -37,7 +37,7 @@ struct MainWindow: View {
                 }
             }
         }
-        .task { windowState.focusRequest = MainWindowFocus(windowState.openingFocus) }
+        .defaultFocus($focus, MainWindowFocus(windowState.openingFocus))
         .onDisappear { windowState.openingFocus = .addField }
         .sheet(item: $windowState.sheet) { kind in
             NameSheet(kind: kind)

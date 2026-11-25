@@ -92,24 +92,24 @@ private let occlusionWait: Duration = .seconds(1)
         dwellTask = Task {
             try? await Task.sleep(for: .seconds(wait))
             guard !Task.isCancelled else { return }
-            fade(glancePanel)
+            await fade(glancePanel)
         }
     }
 
-    private func fade(_ glancePanel: MorningGlancePanel) {
+    private func fade(_ glancePanel: MorningGlancePanel) async {
         glancePanel.hostingView.isPointerAllowed = false
         glancePanel.ignoresMouseEvents = true
         let reducesMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = MorningGlanceDwell.fadeDuration(reducesMotion: reducesMotion)
-            glancePanel.animator().alphaValue = 0
-        } completionHandler: { [weak self, weak glancePanel] in
-            MainActor.assumeIsolated {
-                guard let self, let glancePanel, self.panel === glancePanel else { return }
-                self.dismissWithoutSignal(glancePanel)
-                self.coordinator?.dismissed()
-            }
+        let alphas = MorningGlanceDwell.fadeAlphas(reducesMotion: reducesMotion)
+        let stepDuration = MorningGlanceDwell.fadeDuration(reducesMotion: reducesMotion) / Double(alphas.count)
+        for alpha in alphas {
+            try? await Task.sleep(for: .seconds(stepDuration))
+            guard !Task.isCancelled else { return }
+            glancePanel.alphaValue = alpha
         }
+        guard panel === glancePanel else { return }
+        dismissWithoutSignal(glancePanel)
+        coordinator?.dismissed()
     }
 
     private func isVisible(_ glancePanel: MorningGlancePanel) async -> Bool {

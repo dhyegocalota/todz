@@ -30,6 +30,10 @@ struct TaskRows: View {
             }
             .scrollContentBackground(.hidden)
             .focused(focus, equals: .list)
+            .task {
+                guard windowState.openingFocus == .list else { return }
+                focus.wrappedValue = .list
+            }
             .onKeyPress(.space) {
                 toggleSelectedTask()
                 return .handled
