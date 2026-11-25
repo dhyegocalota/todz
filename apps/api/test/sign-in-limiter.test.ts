@@ -173,6 +173,13 @@ describe('the three sign-in limits on a public host', () => {
     },
   );
 
+  test('a link request over the global cap never spends the slot of its address', async () => {
+    const { limiters, keys } = recordedLimiters({ refusing: [LimiterBinding.Global] });
+    await expectRefused(await serve({ call: linkCall().call, workerEnv: guardedEnv({ limiters }) }));
+    expect(keys[LimiterBinding.Global]).toEqual([OwnerRoute.RequestSignInLink]);
+    expect(keys[LimiterBinding.Address]).toEqual([]);
+  });
+
   test('the link request keys the client by route and address, the address by its digest and the cap by route', async () => {
     const { limiters, keys } = recordedLimiters();
     const { call } = linkCall({ email: '  Maria.Limit@Example.COM ' });
