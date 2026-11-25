@@ -100,6 +100,7 @@ expect_equal "the production curl is absolute" "$(grep -c ':-/usr/bin/curl}' "$h
 : > "$calls"
 "$here/todz-cloudflare.sh" api GET /user/tokens/verify > /dev/null
 expect_contains "curl ignores any curlrc" "$(cat "$calls")" "curl -q "
+expect_contains "curl never expands globs" "$(cat "$calls")" "--globoff"
 
 zone="06490974636c535e2cbfd7c5b09925a5"
 database="dc22b1c3-1869-44a0-b805-91bf92017f19"
@@ -108,6 +109,7 @@ allowed_paths=(
   "/accounts/$account/tokens/verify"
   "/zones/$zone/dns_records?name=api.todz.app"
   "/zones/$zone/settings/pseudo_ipv4"
+  "/zones/$zone/x"
   "/accounts/$account/d1/database/$database"
   "/accounts/$account/workers/domains"
   "/accounts/$account/workers/domains?hostname=api.todz.app&service=todz-api"
@@ -136,6 +138,9 @@ refused_paths=(
   "/accounts/$account/workers/domains/../scripts"
   "https://example.com/zones/$zone/dns_records"
   "zones/$zone/dns_records"
+  "/zones/$zone/"
+  "/zones/$zone/[a-b]"
+  "/zones/$zone/{a,b}"
 )
 for refused_path in "${refused_paths[@]}"; do
   : > "$calls"
