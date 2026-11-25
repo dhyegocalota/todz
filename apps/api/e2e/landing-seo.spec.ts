@@ -1,7 +1,8 @@
 import { type Page, expect, test } from '@playwright/test';
 import { AgentClient, agentSetupOf } from '../src/site/agent-setup';
 import { DISCOVERY_COPY } from '../src/site/discovery-copy';
-import { DOCS_URL, MCP_URL } from '../src/site/site-urls';
+import { OPEN_GRAPH_IMAGE, SITE_ICONS } from '../src/site/site-icons';
+import { DOCS_URL, DiscoveryPath, MCP_URL } from '../src/site/site-urls';
 import { WEBMCP_COPY, WebMcpToolName } from '../src/site/webmcp-copy';
 import {
   BOTH_MODEL_CONTEXT_STUB,
@@ -35,6 +36,7 @@ declare global {
     registeredTools: { owner: ModelContextOwner; tool: { name: string } }[];
     callTool: (name: string, input: Record<string, string>) => Promise<string>;
     reportToolAnswer: (text: string) => void;
+    policyViolations: string[];
   }
 }
 
@@ -162,6 +164,93 @@ test.describe('WebMCP tools', () => {
       expect(answers).toEqual([WEBMCP_COPY.answers.sent, WEBMCP_COPY.answers.alreadySubmitting]);
       await expect(page.locator('#join-notice')).toHaveText(JOINED_NOTICE);
       expect(posts).toHaveLength(1);
+    });
+  });
+});
+
+enum ColorScheme {
+  Light = 'light',
+  Dark = 'dark',
+}
+
+const OK_STATUS = 200;
+const ICON_MEDIA_TYPE = 'image/x-icon';
+const ALTERNATE_ICON_MEDIA_TYPE = 'image/vnd.microsoft.icon';
+const MANIFEST_MEDIA_TYPE = 'application/manifest+json';
+const PNG_WIDTH_OFFSET = 16;
+const PNG_HEIGHT_OFFSET = 20;
+const RATIO_TOLERANCE = 0.01;
+const PERCENT_MULTIPLIER = 100;
+const COLOR_SCHEMES = [ColorScheme.Light, ColorScheme.Dark];
+const ASSET_FILES = [
+  ...Object.values(SITE_ICONS).map(({ path, mediaType }) => ({
+    path,
+    mediaTypes: mediaType === ICON_MEDIA_TYPE ? [ICON_MEDIA_TYPE, ALTERNATE_ICON_MEDIA_TYPE] : [mediaType],
+  })),
+  { path: DiscoveryPath.Manifest, mediaTypes: [MANIFEST_MEDIA_TYPE] },
+  { path: OPEN_GRAPH_IMAGE.path, mediaTypes: [OPEN_GRAPH_IMAGE.mediaType] },
+];
+
+test.describe('the files a browser asks for', () => {
+  ASSET_FILES.forEach(({ path, mediaTypes }) => {
+    test(`${path} answers 200 with its type`, async ({ request }) => {
+      const response = await request.get(path);
+      expect(response.status()).toBe(OK_STATUS);
+      expect(mediaTypes).toContain(response.headers()['content-type']?.split(';')[0]);
+    });
+  });
+
+  test('the share image is 1200 by 630', async ({ request }) => {
+    const body = await (await request.get(OPEN_GRAPH_IMAGE.path)).body();
+    expect([body.readUInt32BE(PNG_WIDTH_OFFSET), body.readUInt32BE(PNG_HEIGHT_OFFSET)]).toEqual([
+      OPEN_GRAPH_IMAGE.width,
+      OPEN_GRAPH_IMAGE.height,
+    ]);
+  });
+});
+
+COLOR_SCHEMES.forEach((colorScheme) => {
+  test.describe(`the landing in the ${colorScheme} scheme`, () => {
+    test.use({ colorScheme });
+
+    test('logs no console error and no policy violation', async ({ page }) => {
+      const errors = watchConsoleErrors(page);
+      await page.addInitScript(() => {
+        window.policyViolations = [];
+        document.addEventListener('securitypolicyviolation', (event) => window.policyViolations.push(event.violatedDirective));
+      });
+      await page.goto(LANDING_PATH);
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.waitForLoadState('networkidle');
+      expect(errors).toEqual([]);
+      expect(await page.evaluate(() => window.policyViolations)).toEqual([]);
+    });
+
+    test('gives every image the ratio of its file, from its box or, when hidden, from its width and height attributes', async ({
+      page,
+    }) => {
+      await page.goto(LANDING_PATH);
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.waitForLoadState('networkidle');
+      const distorted = await page.locator('img').evaluateAll(
+        (images: HTMLImageElement[], tolerance) =>
+          images
+            .filter((image) => image.naturalWidth > 0)
+            .map((image) => {
+              const box = image.getBoundingClientRect();
+              const hasBox = box.width > 0 && box.height > 0;
+              const displayedWidth = hasBox ? box.width : Number(image.getAttribute('width'));
+              const displayedHeight = hasBox ? box.height : Number(image.getAttribute('height'));
+              return {
+                source: image.currentSrc,
+                displayed: displayedWidth / displayedHeight,
+                expected: image.naturalWidth / image.naturalHeight,
+              };
+            })
+            .filter(({ displayed, expected }) => Math.abs(displayed - expected) / expected > tolerance),
+        RATIO_TOLERANCE,
+      );
+      expect(distorted, `images off by more than ${RATIO_TOLERANCE * PERCENT_MULTIPLIER} %`).toEqual([]);
     });
   });
 });
