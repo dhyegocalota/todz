@@ -9,7 +9,7 @@ function withoutLineComments(text: string): string {
   return text.replace(STRING_OR_LINE_COMMENT_PATTERN, (match) => (match.startsWith(STRING_QUOTE) ? match : ''));
 }
 
-export function readyLine({ publicOrigin }: { publicOrigin: string }): string {
+export function readyLine({ publicOrigin }: { publicOrigin: string; serverVersion: string; minimumAppVersion: string }): string {
   return `todz server ready: ${publicOrigin}  →  paste it in todz › Settings › Server`;
 }
 
