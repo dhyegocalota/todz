@@ -33,7 +33,7 @@ work_directory=""
 staged=""
 
 fail() {
-  echo "deploy-worker: $1" >&2
+  echo "deploy-worker: $1" >&9
   exit 1
 }
 

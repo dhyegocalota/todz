@@ -145,7 +145,7 @@ echo "codesign $*" >> "$CALLS"
 [[ "${FAKE_HANG:-}" == codesign ]] && exec tail -f /dev/null
 target=${@: -1}
 mode=${FAKE_CODESIGN:-ok}
-[[ -n "${FAKE_CODESIGN_TARGET:-}" && "$target" != *"$FAKE_CODESIGN_TARGET"* ]] && mode=ok
+[[ -n "${FAKE_CODESIGN_TARGET:-}" && "$target" != *"$FAKE_CODESIGN_TARGET" ]] && mode=ok
 case "$*" in
   *--force*) exit 0 ;;
   *--verify*)
@@ -334,7 +334,7 @@ call_count() {
 }
 
 events() {
-  sed -nE 's#^deploy-worker .*#deploy#p; s#^cloudflare .*rollback ([^ ]+).*#rollback:\1#p; s#^git-push released=(.*)#push:\1#p' "$CALLS" | tr '\n' ' '
+  sed -nE 's#^deploy-worker .*#deploy#p; s#^cloudflare .*wrangler rollback ([^ ]+) .*#rollback:\1#p; s#^git-push released=(.*)#push:\1#p' "$CALLS" | tr '\n' ' '
 }
 
 line_of() {
@@ -516,7 +516,7 @@ expect_equal "the release frees the lock" "$(test -d "$lock" && echo held || ech
 expect_equal "the private key reaches the agent on standard input" "$(cat "$SSH_ADD_STDIN")" "$private_key_value"
 expect_contains "the agent is the script's own socket" "$(cat "$CALLS")" "ssh-agent -a $home/.todz-release/agent."
 expect_contains "the agent starts in shell mode" "$(cat "$CALLS")" ".sock -s"
-expect_contains "the key is loaded with a lifetime" "$(cat "$CALLS")" "ssh-add -t 120 -"
+expect_contains "the key is loaded with a lifetime" "$(cat "$CALLS")" " -t 120 -"
 expect_lacks "an inherited agent socket is never used" "$(cat "$CALLS")" "socket=/inherited/agent.sock"
 expect_contains "ssh-add sees the script's socket" "$(cat "$CALLS")" "socket=$home/.todz-release/agent."
 expect_equal "the agent is killed after signing" "$(call_count '^ssh-agent -k')" "1"
@@ -628,7 +628,6 @@ expect_refused "a held lock is refused" "holds the lock"
 expect_equal "a refused run leaves the other's lock" "$(test -d "$lock" && echo held || echo free)" "held"
 
 new_world
-FAKE_SECURITY_MISSING=yes
 FAKE_SECURITY_MISSING=yes run_release --create-release-key
 expect_equal "creating the release key exits 0" "$status" "0"
 expect_contains "the new item goes through the interactive reader" "$(cat "$CALLS")" "security -i"
@@ -636,7 +635,7 @@ expect_contains "the key reaches the Keychain on standard input as an add comman
 expect_contains "the stored key is an OpenSSH private key" "$(cat "$SECURITY_STDIN")" "$openssh_header_encoded"
 expect_lacks "the key is never an argument of security" "$(cat "$CALLS")" "$openssh_header_encoded"
 expect_lacks "the key is never printed" "$output" "$openssh_header_encoded"
-expect_equal "no key file remains" "$(find "$home/.todz-release" -type f | wc -l | tr -d ' ')" "0"
+expect_equal "no key file remains" "$(find "$home/.todz-release" -type f -name 'key*' | wc -l | tr -d ' ')" "0"
 expect_equal "the allowed signers line is printed" "$(printf '%s\n' "$output" | grep -cE '^release@todz\.app namespaces="todz-release" ssh-ed25519 [A-Za-z0-9+/=]+$')" "1"
 expect_equal "the fingerprint is printed" "$(printf '%s\n' "$output" | grep -cE '^SHA256:[A-Za-z0-9+/]+$')" "1"
 

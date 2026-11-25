@@ -5,6 +5,8 @@ readonly INTERRUPT_EXIT_STATUS=130
 readonly TERMINATE_EXIT_STATUS=143
 readonly HANGUP_EXIT_STATUS=129
 
+exec 9>&2
+
 release_home="$HOME/.todz-release"
 lock_directory="$release_home/lock"
 lock_held_here=false
