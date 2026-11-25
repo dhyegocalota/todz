@@ -12,11 +12,11 @@ ADR 0031 keeps the app running in the menu bar after its window closes, with its
 ## Decision
 
 1. A Settings switch, "Keep todz in the menu bar when closed", on by default, stored under `keepsInMenuBarWhenClosed` in the app's own defaults domain and read by `MenuBarOnlyPreference`, like `DayClosePreference`: a value only in another searched domain is ignored, and nothing stored reads as on.
-2. The decision is `ActivationPolicyRule.policy(isSettingOn:visibleWindowCount:)` in TodzKit: `.accessory` when the switch is on and no ordinary window is visible, `.regular` otherwise. An ordinary window is a visible window that can become main: the main window and Settings. The popover and the morning glance panel cannot become main, so they never count.
-3. The app applies it with `NSApp.setActivationPolicy` when a window becomes key, when a window closes (counting every other visible window) and once right after launch, after SwiftUI shows its first windows. A launch that shows no window therefore ends as an accessory: a login item, a `todz://` link handled in the background. A launch for an App Intent starts with the prohibited policy, which ADR 0066 reads as "the owner has not engaged yet"; the app never changes a prohibited policy, so it stays out of the Dock and the deferred start of the pushed surfaces still waits for the owner's own engagement.
-4. Every entry point that opens the window already goes through `openWindow.mainWindow()` or SwiftUI's own reopen; the window becoming key switches the app to regular, and the switch to regular activates the app again so its menu bar and the window come to the front.
+2. The decision is `ActivationPolicyRule.policy(isSettingOn:visibleWindowCount:)` in TodzKit: `.accessory` when the switch is on and no ordinary window is open, `.regular` otherwise. An ordinary window can become main and is visible or minimized (`OpenAppWindow.counts`, behind `NSWindow.isOpenAppWindow`, which the popover's return to the earlier app and the morning glance's "Today in front" also read): the main window and Settings. A minimized window keeps the Dock icon, which is how it comes back. The popover and the morning glance panel cannot become main, so they never count. While the app is hidden (⌘H) its windows read as not visible, so the policy is left alone.
+3. The app applies it with `NSApp.setActivationPolicy` when a window becomes key and when a window closes (counting every other open window). `LaunchActivation.of(isDefaultLaunch:)` decides the launch: a default launch opens the window, so it leaves the policy to the first window event and the Dock icon never flickers; any other launch (a `todz://` link, a background launch) applies it once right after launch, so it ends as an accessory when no window shows. A launch for an App Intent starts with the prohibited policy, which ADR 0066 reads as "the owner has not engaged yet"; the app never changes a prohibited policy, so it stays out of the Dock and the deferred start of the pushed surfaces still waits for the owner's own engagement.
+4. Every entry point that opens the window goes through `openWindow.mainWindow()`. A reopen of the running app (Finder, `open -a`, Spotlight) reaches `applicationShouldHandleReopen`, which asks the menu bar label to open the main window the same way. The window becoming key switches the app to regular, and the switch to regular activates the app again so its menu bar and the window come to the front.
 5. No observer on the switch: it is flipped in Settings, whose window keeps the app regular until it closes, and the close applies the new value.
-6. ⌘Q and `applicationShouldTerminateAfterLastWindowClosed` are unchanged.
+6. ⌘Q and `applicationShouldTerminateAfterLastWindowClosed` are unchanged. The popover gains "Quit todz", in its foot and under the sign-in and naming prompts, so the app can be quit with no window and no Dock icon.
 
 ## Alternatives considered
 
@@ -28,7 +28,8 @@ ADR 0031 keeps the app running in the menu bar after its window closes, with its
 
 ## Consequences
 
-- With the switch on and no window, the app's own menu bar is not shown; quitting is ⌘Q while the popover or a window is key.
+- With the switch on and no window, the app's own menu bar is not shown; the popover's "Quit todz" quits.
+- A default launch whose window is not shown (closed when the app last quit) keeps the Dock icon until the first window event, the popover opening included.
 - A Debug build and the Release app keep separate switches, as they keep separate defaults domains.
 - Supersedes the "keeps its Dock icon" half of ADR 0031's decision 2 while the switch is on; ADR 0031 stays in force with the switch off.
 
@@ -39,4 +40,4 @@ The rule's unit tests in `ActivationPolicyRuleTests` and `MenuBarOnlyPreferenceT
 ## Revisit when
 
 - todz gets a login item, which would launch it straight into the menu bar.
-- The owner wants a Quit item or Settings in the popover.
+- The owner wants Settings in the popover.

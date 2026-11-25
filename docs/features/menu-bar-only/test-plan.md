@@ -20,6 +20,9 @@ The surface is native macOS: there is no browser surface, so there is no Playwri
 - [ ] `MenuBarOnlyPreferenceTests::registeringNeverOverwritesTheOwnersChoice` — input: `false` stored, then register; expected: `isOn == false`
 - [ ] `MenuBarOnlyPreferenceTests::aValueOnlyInAnotherSearchedDomainIsIgnored` — input: `false` only in another suite; expected: `isOn == true`
 
+- [ ] `OpenAppWindowTests` (5 tests) — input: visible, minimized, closed, and a panel that cannot become main; expected: visible or minimized main-capable windows count, nothing else
+- [ ] `LaunchActivationTests` (3 tests) — input: `isDefaultLaunch` true, false, nil; expected: `.afterTheFirstWindowEvent`, `.atLaunch`, `.afterTheFirstWindowEvent`
+
 ## Prove it for real — the app
 
 - [ ] Settings shows "Keep todz in the menu bar when closed" with its detail line, on for a fresh defaults domain; screenshot in light and dark
@@ -30,6 +33,11 @@ The surface is native macOS: there is no browser surface, so there is no Playwri
 - [ ] Hidden, a widget tap: the window opens in front with the Dock icon
 - [ ] Hidden, a `todz://` link (`open todz-debug://…`): the window opens in front with the Dock icon
 - [ ] Hidden, open the app again from Finder: the window opens in front with the Dock icon
+- [ ] Hidden, `open -a` on the running app and Spotlight: the window opens in front with the Dock icon
+- [ ] Switch on, minimize the main window: the Dock icon and ⌘Tab entry stay; clicking the Dock icon brings the window back
+- [ ] Switch on, ⌘H: the Dock icon stays; clicking it shows the window again
+- [ ] A normal launch from Finder: the Dock icon appears once and never disappears and returns
+- [ ] Hidden, the popover's "Quit todz" (ready, and signed out): todz quits
 - [ ] Hidden, check a widget checkbox: the task completes and the menu bar count drops
 - [ ] Hidden, run a todz Siri intent or Shortcut (where the branch has them): it answers, the app stays hidden
 - [ ] Hidden, ⌘Q with the popover open quits; with a window open, ⌘Q quits

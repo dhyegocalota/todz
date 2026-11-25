@@ -28,6 +28,9 @@ Walk a scratch copy of `apps/macos/build/Build/Products/Debug/Todz.app` (bundle 
 | `ActivationPolicyRuleTests` (3 tests, 6 cases) | on 7f5bf454 the run stops on `TodzKit/ActivationPolicyRule.swift:3: Fatal error: ActivationPolicyRule.policy is not implemented` | c24252d7: the rule |
 | `MenuBarOnlyPreferenceTests` (6 tests) | on 01cf3fbc the run stops on `TodzKit/MenuBarOnlyPreference.swift:18: Fatal error: MenuBarOnlyPreference.isOn is not implemented` (`theStorageKeyIsKeepsInMenuBarWhenClosed` passed before the stop: it reads only the key constant) | 7048cec6: the reading |
 
+| `OpenAppWindowTests` (5 tests) | on d5c28d6e the run stops on `TodzKit/OpenAppWindow.swift:3: Fatal error: OpenAppWindow.counts is not implemented` | 51c56258 |
+| `LaunchActivationTests` (3 tests) | on d5c28d6e the run stops on `TodzKit/LaunchActivation.swift:6: Fatal error: LaunchActivation.of is not implemented` | 51c56258 |
+
 Full suite on 99879ede: 1063 tests in 83 suites passed.
 
 ## Developer's scratch check (not a test-plan run)
@@ -43,11 +46,16 @@ One short run of a scratch copy on 99879ede, launched with `open -g`: with its w
 5. Hypothesis: a launch that shows no window ends as an accessory. Break it by: quit with the window closed and relaunch, or launch for an intent.
 6. Hypothesis: the popover and the morning glance never make the app regular. Break it by: opening the popover while hidden; `lsappinfo` stays `UIElement`.
 7. Hypothesis: ⌘Q quits with a window open, and with only the popover key.
+8. Hypothesis (fix round 1): a minimized main window keeps the Dock icon and the ⌘Tab entry, and clicking the Dock icon brings it back. Break it by: minimize with the switch on, then `lsappinfo` (expect `Foreground`).
+9. Hypothesis (fix round 1): ⌘H keeps the Dock icon, and clicking it unhides the window. Break it by: ⌘H with the switch on, then `lsappinfo` (expect `Foreground`).
+10. Hypothesis (fix round 1): a normal launch never flickers the Dock icon. Break it by: watching the Dock through a launch from Finder.
+11. Hypothesis (fix round 1): with no window open, opening the running app from Finder, `open -a` or Spotlight brings the main window to the front with the Dock icon. Break it by: each one while another app is frontmost.
+12. Hypothesis (fix round 1): the popover's "Quit todz" quits, in the ready foot and under the sign-in prompt. Break it by: quit with no window open, then `pgrep` finds no todz.
 
 ## Known gaps
 
-- No Quit item in the popover; while hidden, quitting is ⌘Q with the popover key or opening the window first. The ADR records it.
-- The AppKit wiring has no unit test; only the rule and the preference do.
-- A normal launch with a window may briefly apply accessory if SwiftUI shows its window after the launch hop; the window becoming key switches back. Not observed in the scratch check.
+- The AppKit wiring has no unit test; the rule, the preference, `OpenAppWindow` and `LaunchActivation` do.
+- A default launch whose window is not shown (closed at the last quit) keeps the Dock icon until the first window event, the popover opening included.
+- `applicationShouldHandleReopen` also returns true, so AppKit's own reopen runs after the app's request; for the single `Window` scene both land on the same window. Not exercised by the developer.
+- Fix round 1 was not run in the app by the developer: the tester holds the Debug bundle.
 - Since the merge of `origin/main` with siri-shortcuts: an intent launch starts with the `.prohibited` policy (ADR 0066 reads it as "not engaged yet"), and `applyActivationPolicy` returns early while the policy is prohibited, so the app never flips it and the deferred start of the day close and the morning glance still waits for the owner. Break it by: a Siri or Shortcuts intent with todz not running, then `lsappinfo` (expect not `Foreground`) and no day close or glance until the owner clicks the menu bar item.
-- `applicationShouldHandleReopen` is not implemented; SwiftUI's default reopen is relied on and was not exercised.
