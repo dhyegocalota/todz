@@ -12,3 +12,7 @@ export function isLocalHost({ env, request }: { env: Env; request: Request }): b
   if (publicOrigin === undefined) return false;
   return isLocalOrigin(publicOrigin) && isLocalOrigin(request.url);
 }
+
+export function isLocalSiteHost(_input: { env: Env; request: Request }): boolean {
+  throw new Error('isLocalSiteHost is not implemented');
+}

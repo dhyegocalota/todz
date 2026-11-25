@@ -9,6 +9,8 @@ import { SITE_STYLE, cropClassOf } from './site-style';
 export enum LandingNotice {
   None = 'none',
   OpensSoon = 'opens-soon',
+  Joined = 'joined',
+  TryAgain = 'try-again',
 }
 
 enum JoinForm {
@@ -165,6 +167,8 @@ ${finalCallHtml(notice)}
 const LANDING_HTML: Record<LandingNotice, string> = {
   [LandingNotice.None]: landingHtml(LandingNotice.None),
   [LandingNotice.OpensSoon]: landingHtml(LandingNotice.OpensSoon),
+  [LandingNotice.Joined]: landingHtml(LandingNotice.Joined),
+  [LandingNotice.TryAgain]: landingHtml(LandingNotice.TryAgain),
 };
 
 export async function serveLandingPage({ notice }: { notice: LandingNotice }): Promise<Response> {
