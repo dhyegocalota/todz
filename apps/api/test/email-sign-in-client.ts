@@ -39,6 +39,7 @@ const SITEVERIFY_RESPONSE_FIELD = 'response';
 export const TURNSTILE_TOKEN_OF_ACTION: Record<TurnstileAction, string> = {
   [TurnstileAction.RequestLink]: 'solved.request-link.token',
   [TurnstileAction.SignIn]: 'solved.sign-in.token',
+  [TurnstileAction.Waitlist]: 'solved.waitlist.token',
 };
 
 export type RecordingLimiter = { limiter: RateLimit; keys: string[] };

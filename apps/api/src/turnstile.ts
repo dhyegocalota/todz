@@ -11,6 +11,7 @@ export const TURNSTILE_TOKEN_PATTERN = new RegExp(TURNSTILE_TOKEN_PATTERN_SOURCE
 export enum TurnstileAction {
   RequestLink = 'request_link',
   SignIn = 'sign_in',
+  Waitlist = 'waitlist',
 }
 
 export enum TurnstileVerdict {

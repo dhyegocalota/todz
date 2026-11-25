@@ -4,8 +4,8 @@ import { noRouteResponse } from './owner-errors';
 
 const PAGE_METHOD = 'GET';
 const HASH_ALGORITHM = 'SHA-256';
-const SITE_KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
-const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
+export const SITE_KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
+export const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const TURNSTILE_SCRIPT_URL = `${TURNSTILE_ORIGIN}/turnstile/v0/api.js`;
 export const TURNSTILE_SCRIPT_TAG = `<script src="${TURNSTILE_SCRIPT_URL}" async defer></script>`;
 export const TURNSTILE_EXPLICIT_SCRIPT_URL = `${TURNSTILE_SCRIPT_URL}?render=explicit`;

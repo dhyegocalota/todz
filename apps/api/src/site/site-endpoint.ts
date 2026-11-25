@@ -14,11 +14,11 @@ function routeKey({ method, pathname }: { method: string; pathname: string }): s
 }
 
 function serveLanding(): Promise<Response> {
-  return serveLandingPage({ notice: LandingNotice.None });
+  return serveLandingPage({ notice: LandingNotice.None, siteKey: null });
 }
 
 function serveJoin(): Promise<Response> {
-  return serveLandingPage({ notice: LandingNotice.OpensSoon });
+  return serveLandingPage({ notice: LandingNotice.OpensSoon, siteKey: null });
 }
 
 function redirectToLanding(): Response {

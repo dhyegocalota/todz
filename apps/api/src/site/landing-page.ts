@@ -9,6 +9,8 @@ import { SITE_STYLE, cropClassOf } from './site-style';
 export enum LandingNotice {
   None = 'none',
   OpensSoon = 'opens-soon',
+  Joined = 'joined',
+  TryAgain = 'try-again',
 }
 
 enum JoinForm {
@@ -162,11 +164,13 @@ ${finalCallHtml(notice)}
   });
 }
 
-const LANDING_HTML: Record<LandingNotice, string> = {
+const LANDING_HTML: Partial<Record<LandingNotice, string>> = {
   [LandingNotice.None]: landingHtml(LandingNotice.None),
   [LandingNotice.OpensSoon]: landingHtml(LandingNotice.OpensSoon),
 };
 
-export async function serveLandingPage({ notice }: { notice: LandingNotice }): Promise<Response> {
-  return sitePageResponse({ html: LANDING_HTML[notice], contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+export async function serveLandingPage({ notice }: { notice: LandingNotice; siteKey: string | null }): Promise<Response> {
+  const html = LANDING_HTML[notice];
+  if (html === undefined) throw new Error('serveLandingPage is not implemented');
+  return sitePageResponse({ html, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
 }
