@@ -2,7 +2,7 @@
 
 Publish a release of the Mac app at `https://todz.app/download`: a development-signed DMG built from a tagged commit on `main`, its SHA-256 sum, its SSH signature and the Sparkle appcast, in the R2 bucket `todz-releases` ([ADR 0072](../adr/0072-the-mac-app-downloads-from-todz-app-as-a-development-signed-dmg-with-an-ssh-signature-and-updates-through-sparkle.md)). Steps 2, 3, 4 and 6 run once; the others run for every release. Once `mac-distribution` ships, the build loop runs it after any batch that merged a change under `apps/macos`, and every run adds a row to the releases table at the end.
 
-Every command runs from the repository root, one command per call. Cloudflare calls go through `scripts/todz-cloudflare.sh`, which gives the token to that one command. The two private keys live only in the login Keychain: Sparkle's EdDSA key, which Sparkle's own tools read, and the release key, the item `todz-release-key`. No step prints, exports or copies either one to a file in the repository. The run's files live in `~/.todz-release/`, outside the repository, in folders only the owner can open. `<version>` is the version step 5 or 7 prints.
+Every command runs from the repository root, one command per call. Cloudflare calls go through `scripts/todz-cloudflare.sh`, which gives the token to that one command. The two private keys live only in the login Keychain: Sparkle's EdDSA key, which Sparkle's own tools read, and the release key, the item `todz-release-key`. No step prints, exports or copies either one to a file in the repository. The run's files live in `~/.todz-release/`, outside the repository, in folders only the owner can open. `<version>` is the version step 5 or 8 prints. Agents run the per-release steps through the `deploy` skill, which stops at the first failure.
 
 1. **Start from a clean `main`.** Check the tree, the branch and that nothing differs from `origin/main`, then run the gate:
 
@@ -62,19 +62,19 @@ Every command runs from the repository root, one command per call. Cloudflare ca
    Expected: the app opens after Open Anyway; no "would like to access data from other apps" prompt appears; the widget shows Today. The result, with the macOS version of that Mac, goes into ADR 0072's Evidence.
    If it fails: the app killed at launch, "damaged", or the App Group prompt means decision 1 of ADR 0072 does not hold; stop, publish nothing, and write the superseding ADR for the ad hoc fallback.
 
-7. **Release.** The same build, uploaded:
+7. **Deploy the Worker first.** The first release, or any release after a merge under `apps/api`, follows [Deploy the API](deploy-the-api.md) so the `/download` routes are live before the release checks itself through them. The `deploy` skill runs this step and the next in this order.
+
+   Expected: that runbook's smoke check passes. Before the first release, `/download` answers `404` until step 8 ends.
+   If it fails: follow that runbook's own lines and do not release; the previous release stays live.
+
+8. **Release.** The same build, uploaded:
 
    ```bash
    scripts/release-mac.sh
    ```
 
-   Expected: it uploads the DMG, the sum and the signature under `<version>/`, then `appcast.xml`, then `latest.json`, pushes the tag `mac-v<version>`, and prints `https://todz.app/download/<version>/Todz-<version>.dmg` and the sum. A second run of the same version prints "already published" and uploads nothing.
-   If it fails: a stop after some uploads is safe to re-run; the script skips what is published and puts the pointers last. "differs from the published file" means a versioned object already exists with other bytes; never delete it to make room, release the next version instead.
-
-8. **Deploy the Worker when it changed.** The first release, or any release after a merge under `apps/api`, follows [Deploy the API](deploy-the-api.md) so the `/download` routes and the landing's button are live.
-
-   Expected: that runbook's smoke check passes.
-   If it fails: follow that runbook's own lines; the release itself stays published in the bucket.
+   Expected: it uploads the DMG, the sum and the signature under `<version>/`, checks them through `https://todz.app/download/<version>/` (the answer, the sum, the signature), saves the current pointers, writes `appcast.xml` then `latest.json`, reads them back, pushes the tag `mac-v<version>`, and prints `https://todz.app/download/<version>/Todz-<version>.dmg` and the sum. A second run of the same version prints "already published" and uploads nothing.
+   If it fails: a stop before the pointers leaves the previous release live, and a re-run skips what is published. A failed read-back puts the saved pointers back itself. "differs from the published file" means a versioned object already exists with other bytes; never delete it to make room, release the next version instead.
 
 9. **Check the live download.** From any folder outside the repository:
 
@@ -86,7 +86,7 @@ Every command runs from the repository root, one command per call. Cloudflare ca
    ```
 
    Expected: the first two answer `HTTP/2 302` with `location: /download/<version>/Todz-<version>.dmg`; the third `HTTP/2 200` with `content-type: application/x-apple-diskimage`, `content-disposition: attachment; filename="Todz-<version>.dmg"` and `cache-control: public, max-age=31536000, immutable`; the appcast names `<version>` and carries `sparkle:edSignature`. A DMG downloaded from the third URL passes the two checks of step 5.
-   If it fails: a `404` on `/download` means `latest.json` is missing; re-run step 7. A `404` on every path means the Worker is older than the routes; run step 8.
+   If it fails: a `404` on `/download` means `latest.json` is missing; re-run step 8. A `404` on every path means the Worker is older than the routes; run step 7.
 
 10. **Check the update, from the second release on.** On a Mac with the previous version installed, choose Todz › Check for Updates….
 

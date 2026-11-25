@@ -11,7 +11,19 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] `UpdateFeedTests` red at its own commit — expected: `UpdateFeed is not implemented`; record the text.
 - [ ] `scripts/release-mac.test.sh` red at its own commit — expected: every case fails on `release-mac is not implemented`; record the text.
 - [ ] `tools/repository-shape/src/runbooks.test.ts` (the exception sentence) red at its own commit — expected: the index lacks `release-the-mac-app` in the sentence.
+- [ ] `tools/repository-shape/src/deploy-skill.test.ts` red at its own commit — expected: no `.agents/skills/deploy/SKILL.md`; record the text.
 - [ ] `git log --oneline` shows each red commit before its green one.
+
+## Unit — the deploy skill (`deploy-skill.test.ts`)
+
+- [ ] The skill's front matter has `name: deploy` and a description that calls it the one way an agent deploys.
+- [ ] Its body names `docs/runbooks/deploy-the-api.md`, which exists, and `pnpm release:mac`.
+- [ ] Its release condition is `git diff --quiet <tag> HEAD -- apps/macos` against the highest `mac-v*` tag, and "no tag" means the first release.
+- [ ] It holds the four checks: the `302` of `https://todz.app/download/latest` to the new version, `shasum -a 256 -c`, `ssh-keygen -Y verify -f apps/macos/release/allowed-signers -I release@todz.app -n todz-release`, and `sparkle:shortVersionString="<version>"` in the appcast.
+- [ ] It says it stops at the first failure and leaves the previous release live.
+- [ ] It says that while `release:mac` is not a root script it deploys the API alone and reports "the Mac release is not live yet".
+- [ ] `.agents/skills/README.md` and `.claude/HARNESS.md` (layout line and §10 table) name `deploy`; `.claude/skills/deploy/SKILL.md` resolves through the symlink.
+- [ ] Mutation: delete the stop-at-first-failure sentence from the skill → the test goes red; restore.
 
 ## Unit — the Worker
 
@@ -68,6 +80,10 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] Only the `.sig` missing → one `put` for it, then `appcast.xml`, then `latest.json`, then `git push origin mac-v0.2.0`, in that order in the fakes' log.
 - [ ] `--dry-run` → exit 0, no `put`, no push, prints the local DMG path and the sum.
 - [ ] `notarytool` and `stapler` never appear in the fakes' log, in any case.
+- [ ] The fake production `curl` answers `404` for the uploaded DMG → exit 1, no pointer `put`, no push.
+- [ ] The production DMG's bytes differ from the local sum → exit 1, no pointer `put`.
+- [ ] The production signature fails `ssh-keygen -Y verify` → exit 1, no pointer `put`.
+- [ ] The read-back of `latest.json` differs from what was written → the saved previous `latest.json` and `appcast.xml` are `put` back, exit 1, no push.
 - [ ] Signing fails → the fake agent's kill is in the log.
 - [ ] `--create-release-key` with `todz-release-key` present → exit 1, "already exists", no `ssh-keygen` call.
 - [ ] `--create-release-key` without it → the fake `security` gets the key on standard input and not in its arguments; no file under the fake `~/.todz-release` holds a private key afterwards; stdout is one line starting `release@todz.app namespaces="todz-release" ssh-ed25519 `.

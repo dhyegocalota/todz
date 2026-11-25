@@ -19,7 +19,8 @@ There is no App Store listing and no download. The only way to run todz is to bu
 5. The landing's hero shows a "Download for Mac" button and one honest line, "Not notarized by Apple yet: the first time, open it from System Settings › Privacy & Security.", linking the "Install on Mac" page. The eyebrow stops saying "Coming soon".
 6. One command, `pnpm release:mac`, does a release end to end, refuses anything but a clean `main`, is idempotent per version, never overwrites a published file, has `--dry-run`, and a test of its refusals.
 7. Notarization (Developer ID, `notarytool`, stapling) is scripted and documented, switched off.
-8. The release key and Sparkle's EdDSA key live only in the login Keychain, never in the repository, a file on disk or a log.
+8. A repository skill `deploy` (owner: "já gera e atualiza o site de forma segura; pode ser comando e skill automático do agent na hora do deploy") is the one way any agent deploys: it runs `docs/runbooks/deploy-the-api.md`, then `pnpm release:mac` when `apps/macos` changed since the highest `mac-v*` tag, then checks production (the download answers, the sum matches, the signature verifies with the public key, the appcast lists the new version), stops at the first failure and leaves the previous release live.
+9. The release key and Sparkle's EdDSA key live only in the login Keychain, never in the repository, a file on disk or a log.
 
 ## Non-goals
 
@@ -77,7 +78,7 @@ R2 keys: `<version>/Todz-<version>.dmg`, `<version>/Todz-<version>.dmg.sha256`, 
 2. The version is the next patch after the highest `mac-v*` tag, or `--version` when it is greater. The build number is `git rev-list --count HEAD`, refused unless greater than `latest.json`'s. Both reach `xcodebuild` as `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`; nothing is committed. The tag `mac-v<version>` is created on `HEAD` (refused when it exists on another commit).
 3. `xcodegen`, then `xcodebuild` Release into `~/.todz-release/<version>/` (mode `700`). Refuses unless `codesign --verify --deep --strict` passes, `TeamIdentifier=XFWR794VS8`, the flags include `runtime` and no `get-task-allow` remains.
 4. The DMG (`hdiutil`, the app plus an `Applications` link), signed with the same identity; the sum file (`shasum -a 256` format); the signature (`ssh-keygen -Y sign -n todz-release`, key loaded from the Keychain item `todz-release-key` into a throwaway agent on a private socket); Sparkle's `sign_update` for the appcast item.
-5. Unless `--dry-run`: for each versioned object, absent → upload; present with the same SHA-256 → skip; present and different → refuse. Then `appcast.xml` and `latest.json`. Then `git push origin mac-v<version>`.
+5. Unless `--dry-run`: for each versioned object, absent → upload; present with the same SHA-256 → skip; present and different → refuse. Then it checks them through `https://todz.app/download/<version>/…` (the answer, the sum, the signature), saves the current pointers, writes `appcast.xml` and `latest.json`, and reads them back; a mismatch puts the saved pointers back. Then `git push origin mac-v<version>`.
 6. Prints the download URL and the sum. Notarization (`notarytool submit --keychain-profile todz-notary --wait`, `stapler staple`) is a function behind a constant that is `false`.
 
 ### Failure handling
