@@ -296,7 +296,7 @@ Empty when written; the lead records each answer here before the plan.
 - serverDisclosureHint "Change the server todz signs in to."
 
 **ErrorCopy** (`apps/macos/Copy/ErrorCopy.swift`):
-- serverAddressIssue(issue:), one case per issue: "Enter an address like https://todz.example.com." · "Start the address with https://." · "Use https://. Plain http:// works only for localhost." · "Add the server's name after https://." · "Remove the part from ? on." · "Remove the part from # on." · "Remove the name and password before @."
+- serverAddressIssue(issue:), one case per issue: "Enter an address like https://todz.example.com." · "Start the address with https://." · "Use https://. Plain http:// works only for localhost." · "Add the server's name after https://." · "The address has no path. Enter the server's root address." · "Remove the part from ? on." · "Remove the part from # on." · "Remove the name and password before @."
 - notTodzServer "No todz server answered at that address."
 - serverNamedOther(origin:) "That server answers as {origin}. Enter that address instead." (O5, B)
 - serverSwitchFailed(server:) "todz couldn't erase this Mac's copy of your tasks, so it's still on {server}. Try again."

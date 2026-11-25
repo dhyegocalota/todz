@@ -16,7 +16,7 @@ A self-hoster has to edit `apps/macos/project.yml` and rebuild the app to point 
 - The default is the build's `TODZ_API_BASE_URL`: `https://api.todz.app` in Release, `http://localhost:8787` in Debug.
 - A new URL is checked (https, or http only for loopback), probed at `/health`, then the app signs out, erases its local data and reconnects. Persisted across launches.
 - Connect an Agent shows the MCP URL of the server in use.
-- `GET /health` on the API host answers `{"service":"todz","origin":PUBLIC_ORIGIN}`.
+- `GET /health` on every host answers `{"service":"todz","origin":PUBLIC_ORIGIN}` with `cache-control: no-store`.
 - A deploy script ends its log with `todz server ready: <PUBLIC_ORIGIN>  →  paste it in todz › Settings › Server`, and `docs/self-host.md` uses it and drops the rebuild.
 
 ## Non-goals
@@ -31,10 +31,10 @@ A self-hoster has to edit `apps/macos/project.yml` and rebuild the app to point 
 Settings / sign-in disclosure: text → ServerAddress.check → issue? show it, stop
    → probe GET <url>/health → not {"service":"todz","origin":url}? show "No todz server answered at that address.", stop
    → confirm (signed in, or changes waiting: "Switching signs you out and clears N unsynced changes")
-   → model.switchServer(to:): sign out at the old server (if signed in, best effort)
-        → erase session, cache + outbox, widget snapshot, pending link, sign-in method
-        → erase failed? stay on the old server, show the error
-        → store the URL, rebuild the owner API and the change socket, phase = signed out
+   → model.switchServer(to:): capture the old session
+        → erase session, cache + outbox, pending link, sign-in method (each throws → stop, the old server stays, show the error)
+        → widget snapshot, in-memory state, phase = signed out, rebuild the owner API and the change socket, serverURL, store the URL (no await from the erase to the store)
+        → sign out at the old server with the captured session, detached, best effort
 Connect an Agent, the sign-in check: read model.serverURL
 deploy: pnpm --filter @todz/api <script> → wrangler deploy → "todz server ready: <PUBLIC_ORIGIN>  →  …"
 ```
@@ -50,14 +50,16 @@ deploy: pnpm --filter @todz/api <script> → wrangler deploy → "todz server re
 
 | Case | Effect |
 |---|---|
-| not https, or http to a non-loopback host, or a query, fragment or credentials | refused before any request, with the reason |
-| the probe times out, errors, or answers anything else | "No todz server answered at that address.", nothing changes |
-| the probe's origin differs from the URL typed | refused with "That server answers as <origin>. Enter that address instead." (design.md O5 B) |
-| sign-out at the old server fails (offline) | the switch goes on; the old session is erased locally |
-| erasing the cache or the session fails | no switch, the error shows, the old server stays |
-| the same URL as in use | nothing happens |
+| not https, or http to a non-loopback host, or a path, query, fragment or credentials | refused before any request, with the reason; a path reads "The address has no path. Enter the server's root address." |
+| the scheme's default port (`:443` on https, `:80` on http) | dropped from the origin; the origin is compared without it |
+| the probe times out (10 seconds), errors, redirects, or answers anything else | "No todz server answered at that address.", nothing changes |
+| the probe's origin differs from the origin typed | refused with "That server answers as <origin>. Enter that address instead." (design.md O5 B) |
+| sign-out at the old server fails or hangs (offline) | the switch has already happened; the sign-out is detached and its failure is ignored |
+| erasing the session, the cache, the outbox or the pending link fails | no switch, the error shows, the old server stays |
+| the same URL as in use | nothing happens, no probe |
+| "Use todz cloud" | switches without a probe: the default comes from the build |
 | the stored URL is unreadable at launch | the default is used |
-| the app quits mid-switch | the stored URL is written last, so the next launch is on the old server, signed out with the erased data |
+| the app quits mid-switch | the erase runs before the address is stored, so the next launch is on the old server, signed out with the erased data |
 
 ### Rollback
 
@@ -73,4 +75,4 @@ Revert the app change: the stored key stays unread and the build's default appli
 
 ## Test strategy summary
 
-Swift tests for `ServerAddress` (https, loopback http, refused schemes and hosts, query, fragment, credentials, trailing slash), `ServerPreference`, `switchServer` on the model (signed in, signed out, an erase failure, the same URL, sign-out failing offline, the new service in use after), the probe's decoding. Worker tests for `/health` on the API host and 404 on the site host. Repository-shape tests for the self-host guide's new commands. An Orca walk: Settings shows the URL, a bad address is refused, a switch to a second local Worker signs out and the sign-in screen's disclosure shows the new host; Connect an Agent shows the new MCP URL; screenshots of the Server row and the disclosure.
+Swift tests for `ServerAddress` (https, loopback http, refused schemes and hosts, query, fragment, credentials, trailing slash), `ServerPreference`, `switchServer` on the model (signed in, signed out, an erase failure, the same URL, sign-out failing offline, the new service in use after), the probe's decoding. Worker tests for `/health` on every host (the origin of the API, a 404 for other methods and paths). Repository-shape tests for the self-host guide's new commands. An Orca walk: Settings shows the URL, a bad address is refused, a switch to a second local Worker signs out and the sign-in screen's disclosure shows the new host; Connect an Agent shows the new MCP URL; screenshots of the Server row and the disclosure.
