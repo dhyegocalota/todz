@@ -45,14 +45,13 @@ import Observation
 
     @discardableResult
     public func check() async -> DayCloseDecision {
-        let isDueAndIdle = decision == .due && !isClickInFlight
         guard isDueAndIdle else { return decision }
         await closeTheDay()
         return decision
     }
 
     public var isDueAndIdle: Bool {
-        fatalError("DayCloseCoordinator.isDueAndIdle is not implemented")
+        decision == .due && !isClickInFlight
     }
 
     public func end() {
