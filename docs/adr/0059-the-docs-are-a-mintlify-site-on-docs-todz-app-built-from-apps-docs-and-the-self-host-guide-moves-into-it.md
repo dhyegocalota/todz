@@ -49,6 +49,8 @@ Run 17's spike, in a throwaway folder: `mint@4.3.91` runs on Node v24.7.0; `mint
 
 Before the pages are written, the build checks the pin inside `apps/docs` under pnpm 8.15.9: `pnpm run dev --port <n> --no-open` passes its flags to `mint dev`, one page opens with no `__dirname` console error, and `broken-links` and `validate` exit 0. Its result is added here before the merge.
 
+After the merge, on 2026-11-25: Mintlify's deploy of 87e643f went live at 12:44 UTC and the five pages answer 200 with todz's titles; pull request previews were not observed on the Hobby plan (`preview: false`). Mintlify's GitHub app holds write access to contents for its web editor, so it does more than read this repository; its scope to this one repository is the owner's check in `docs/runbooks/mintlify-publish.md`, and branch protection on `main` requires a pull request. `docs-cutover` then made `/self-host` a 301 to `https://docs.todz.app/self-host` and removed the landing's copy of the guide with its generator, which ends § 4's landing rendering and § 6's mapping of the guide to the `@todz/api` unit suite, as § 8 foresaw.
+
 ## Revisit when
 
 The repository becomes public (the guide can then link the records it names), Mintlify's plan terms change, or the pinned client stops rendering.
