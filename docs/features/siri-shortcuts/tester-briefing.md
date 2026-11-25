@@ -169,6 +169,10 @@ Without the `AppModel.swift` line, Step 4's code hangs exactly two tests, `anUnl
 - A URL or restored-state launch starts both at once.
 - Add and Complete run through readiness first, so a cold run waits instead of answering signed out; the system asks to unlock before either runs (`requiresAuthentication`, unmeasured on this Mac).
 
+### Fix round 3
+
+Hypotheses: a text with several open matches (`review` with `Review PR` and `Code review notes`) exits non-zero printing the ambiguous refusal with the titles, and nothing completes; a text with no match (`zzz`) exits non-zero printing `No open task in <workspace> matches “zzz”.` within the readiness bound and never hangs; a text with exactly one match completes it. The editor's picker search lists matches through the same query, so a search with several matches may now show the refusal instead of the list (unmeasured). Whether the unexplained completion of `Review PR` (#3) during the first `zzz` run recurs is for the tester to retry.
+
 ### Known gaps
 
 - Siri hearing "todz" is unproven (the Human checklist).

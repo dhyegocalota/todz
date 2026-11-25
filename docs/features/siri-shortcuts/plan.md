@@ -102,6 +102,15 @@ G1 first through Step 3: its red commits carry a stub for every public symbol, s
 | 6 | Status | `Building` in the spec and the index | the docs commit of this round |
 | S1 | A shortcut can write without the owner present | `authenticationPolicy` `.requiresAuthentication` on Add and Complete; ADR 0066 §3 records it and Shortcuts' consent model | 55d3d13 |
 
+## Fix round 3 (tester FAILs: a wrong task completed, a run that hung)
+
+| # | Finding | Fix | Evidence |
+|---|---------|-----|----------|
+| 1 | Completing `review` with two matches completed one without asking | `AppModel.shortcutResolution(matching:)` returns `.one`, `.many` or `.none`; the query's `entities(matching:)` returns only the `.one` task and throws the ambiguous refusal (up to three titles) for `.many` | 4d8173a2 (red, seven tests, each `Fatal error: AppModel.shortcutResolution(matching:) is not implemented`), 862236ce, the app commit of this round |
+| 2 | A no-match run completed #3 and later hung | `.none` throws "No open task in <workspace> matches ..." instead of returning `[]`, so the system never asks again; the perform path is bounded: readiness waits at most `ShortcutLimits.readinessWait` and `complete(task:)` only enqueues | the app commit of this round |
+
+The tester's first sentence in finding 2 (a completion while the run showed no match) is not explained by this fix; the walk row stays open for the tester.
+
 ## Z. Prove and ship
 
 - [ ] **Tester briefing:** G1 and G2 wrote their sections of `tester-briefing.md`.
