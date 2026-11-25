@@ -224,3 +224,18 @@ The owner rotates the Keychain token after a run that went wrong, when it may ha
 | 2026-11-24 | 2bde053 | 13 | `{"method":"link"}`; `/sign-in` and `/sign-in/challenge` `HTTP/2 503` text/html (no site key yet); `/mcp` `HTTP/2 401`; the account subdomain read, and the Worker's `workers.dev` address gave no answer in 120 s. A wrong session on `/owner` answered 401, so D1 serves. The export was deleted |
 | 2026-11-24 | 2bde053 | 14 | `HTTP/2 503` `{"error":"sign_in_unavailable"}`, as expected before the secret; no mail |
 | 2026-11-24 | 2bde053 | 15 | First run: 503s, then `429` with `retry-after: 60` (three visible through the old `^HTTP` grep, which this run corrected). The second run within the window: fourteen `429` `sign_in_refused`. A minute later, one request answered `503` again |
+| 2026-11-25 | fe34431 | 1 | Clean tree on `main`, 0 ahead and 0 behind `origin/main`; `pnpm verify all` 8 gates green at fe34431 (with `e2e` and `macos`) |
+| 2026-11-25 | fe34431 | 2 | `whoami`: an API Token, one account `e2035d8e0b7173d520ccf643f6f4661c`; verify `"status":"active"` |
+| 2026-11-25 | fe34431 | 3 | `api.todz.app`: only the Worker's `AAAA 100::`. `todz.app`: no `A`, `AAAA` or `CNAME`; apex `MX` route1, route2, route3 `.mx.cloudflare.net` and `TXT "v=spf1 include:_spf.mx.cloudflare.net ~all"`, as on 2026-11-24. `www.todz.app`: no record |
+| 2026-11-25 | fe34431 | 4 | `todz-directory`, uuid `dc22b1c3-1869-44a0-b805-91bf92017f19` |
+| 2026-11-25 | fe34431 | 5 | Bookmark `00000002-00000000-0000512e-450133f5c742e8e9cbe6e61cf59fcdd1` |
+| 2026-11-25 | fe34431 | 6 | Exported `before-fe34431.sql` (3031 bytes) into the private folder |
+| 2026-11-25 | fe34431 | 7 | No migrations to apply |
+| 2026-11-25 | fe34431 | 8 | Deployed, Current Version ID `bafcf42c-9857-4ada-9ff1-6d1d068711dc`; `api.todz.app`, `todz.app` and `www.todz.app (custom domain)`; the three limiters and the four variables with `SITE_ORIGIN ("https://todz.app")`; six `/landing/` assets uploaded |
+| 2026-11-25 | fe34431 | 9 | One domain entry per host, each `todz-api`; the version at 100 percent; `versions view` binds `DIRECTORY` to `dc22b1c3-1869-44a0-b805-91bf92017f19` |
+| 2026-11-25 | fe34431 | 10 | Not run: the owner's `todz` widget still does not exist (the account lists none for `todz.app`). Sign-in stays closed by design |
+| 2026-11-25 | fe34431 | 11 | `enable` answered `Subdomain already exists [code: 2040]`, which is the already-onboarded case; the list shows `todz.app` enabled yes. The apex `MX` and `TXT` are unchanged; `todz.app` and `www.todz.app` each gained only the Worker's `AAAA 100::` |
+| 2026-11-25 | fe34431 | 12 | pseudo IPv4 `off`; Always Use HTTPS `on`; `http://api.todz.app/owner/sign-in-method`, `http://todz.app/` and `http://www.todz.app/` each `HTTP/1.1 301` to `https://` on the same host |
+| 2026-11-25 | fe34431 | 13 | `{"method":"link"}`; `/sign-in` and `/sign-in/challenge` `HTTP/2 503` text/html; `/mcp` `HTTP/2 401`; `todz.app/` and `/self-host` `HTTP/2 200` with `strict-transport-security: max-age=31536000` and a CSP starting `default-src 'none'`; `www.todz.app/self-host?from=runbook` `HTTP/2 301` to `https://todz.app/self-host?from=runbook`; `todz.app/owner/sign-in-method` and `api.todz.app/` `HTTP/2 404`; the `workers.dev` address timed out with no answer. The export was deleted |
+| 2026-11-25 | fe34431 | 14 | `HTTP/2 503` `{"error":"sign_in_unavailable"}`, as expected before the secret; no mail |
+| 2026-11-25 | fe34431 | 15 | Not run: the limiters and the sign-in code are unchanged since 2bde053, and step 14 shows the routes still closed |

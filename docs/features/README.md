@@ -47,3 +47,4 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 | [`self-host-docs`](self-host-docs/) | A short, tested guide to running your own todz server on Cloudflare and pointing the app and an agent at it | Shipped 2026-11-24 ([PR #23](https://github.com/dhyegocalota/todz/pull/23)) |
 | [`deploy-run`](deploy-run/) | The first production run of the deploy runbook, recorded, with the three corrections it taught | Shipped 2026-11-24 ([PR #24](https://github.com/dhyegocalota/todz/pull/24)) |
 | [`landing`](landing/) | todz.app: one short, polished page with the waitlist form, real screenshots and the self-host guide, served by the same Worker by host | Shipped 2026-11-25 ([PR #25](https://github.com/dhyegocalota/todz/pull/25)) |
+| [`landing-deploy`](landing-deploy/) | The run of the deploy runbook that put todz.app live, recorded | Building |
