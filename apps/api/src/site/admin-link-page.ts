@@ -17,13 +17,10 @@ const JSON_CONTENT_TYPE = 'application/json';
 const SAME_ORIGIN_CREDENTIALS = 'same-origin';
 
 const PAGE_SCRIPT = `{
-  const token = new URLSearchParams(location.hash.slice(1)).get('${AdminField.Token}');
-  history.replaceState(null, '', location.pathname);
   const status = document.getElementById('${STATUS_ID}');
   const title = document.getElementById('${TITLE_ID}');
   const body = document.getElementById('${BODY_ID}');
   const retry = document.getElementById('${RETRY_ID}');
-  status.hidden = false;
   const fail = () => {
     status.dataset.state = '${FAILED_STATE}';
     title.textContent = ${JSON.stringify(ADMIN_COPY.link.failedTitle)};
@@ -31,15 +28,26 @@ const PAGE_SCRIPT = `{
     retry.hidden = false;
   };
   const spent = (response) => response.status === ${HttpStatus.Created} ? location.replace('${AdminPath.Panel}') : fail();
-  const answer = token === null
-    ? Promise.reject(new Error('the link carries no token'))
-    : fetch('${AdminPath.Sessions}', {
-        method: 'POST',
-        credentials: '${SAME_ORIGIN_CREDENTIALS}',
-        headers: { 'Content-Type': '${JSON_CONTENT_TYPE}' },
-        body: JSON.stringify({ ${AdminField.Token}: token }),
-      });
-  answer.then(spent).catch(fail);
+  const spend = () => {
+    const token = new URLSearchParams(location.hash.slice(1)).get('${AdminField.Token}');
+    history.replaceState(null, '', location.pathname);
+    status.dataset.state = '${WORKING_STATE}';
+    title.textContent = ${JSON.stringify(ADMIN_COPY.link.working)};
+    body.textContent = '';
+    retry.hidden = true;
+    status.hidden = false;
+    const answer = token === null
+      ? Promise.reject(new Error('the link carries no token'))
+      : fetch('${AdminPath.Sessions}', {
+          method: 'POST',
+          credentials: '${SAME_ORIGIN_CREDENTIALS}',
+          headers: { 'Content-Type': '${JSON_CONTENT_TYPE}' },
+          body: JSON.stringify({ ${AdminField.Token}: token }),
+        });
+    answer.then(spent).catch(fail);
+  };
+  spend();
+  addEventListener('hashchange', spend);
 }`;
 
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
