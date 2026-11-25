@@ -59,7 +59,7 @@ struct MenuBarRow: View {
     private func hover(isInside: Bool) {
         isHovered = isInside
         guard isInside else { return }
-        dayClose.engage()
+        dayClose.engage(by: .hover)
     }
 
     private func act(_ outcome: LingerOutcome) {

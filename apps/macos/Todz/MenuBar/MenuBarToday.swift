@@ -50,9 +50,9 @@ struct MenuBarToday: View {
                 .disabled(isClosingDay)
                 .hidden()
         }
-        .simultaneousGesture(TapGesture().onEnded { dayClose.engage() })
+        .simultaneousGesture(TapGesture().onEnded { dayClose.engage(by: .click) })
         .onKeyPress(keys: [.tab]) { _ in
-            dayClose.engage()
+            dayClose.engage(by: .tab)
             return .ignored
         }
         .onExitCommand(perform: escapeAction)

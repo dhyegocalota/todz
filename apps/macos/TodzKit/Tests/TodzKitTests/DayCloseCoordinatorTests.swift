@@ -258,7 +258,7 @@ private let minutesOutsideADay = [-2880, 1440]
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
         harness.coordinator.check()
-        harness.coordinator.engage()
+        harness.coordinator.engage(by: .click)
         #expect(harness.coordinator.isEngaged)
         #expect(harness.coordinator.acceptsKeyActions)
     }
@@ -267,7 +267,7 @@ private let minutesOutsideADay = [-2880, 1440]
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
         harness.coordinator.check()
-        harness.coordinator.engage()
+        harness.coordinator.engage(by: .click)
         harness.coordinator.end()
         harness.at(tomorrow, hour: 18)
         harness.coordinator.check()
@@ -276,9 +276,31 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(!harness.coordinator.acceptsKeyActions)
     }
 
+    @Test(arguments: [DayCloseEngagementInput.tab, .hover])
+    func onlyAClickEngagesTheMode(input: DayCloseEngagementInput) throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.at(today, hour: 18)
+        harness.coordinator.check()
+        harness.coordinator.engage(by: input)
+        #expect(!harness.coordinator.isEngaged)
+        #expect(!harness.coordinator.acceptsKeyActions)
+    }
+
+    @Test func aModeLeftOnByAnOpenerThatNeverShowedDoesNotBlockTheNextDay() throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.at(today, hour: 18)
+        harness.coordinator.check()
+        harness.coordinator.engage(by: .click)
+        harness.at(tomorrow, hour: 18)
+        harness.coordinator.check()
+        #expect(harness.popover.openings == 2)
+        #expect(harness.lastClosedDay == tomorrow)
+        #expect(!harness.coordinator.isEngaged)
+    }
+
     @Test func aModeStartingInPlaceAfterTheOwnerEngagedIsNotEngaged() throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
-        harness.coordinator.engage()
+        harness.coordinator.engage(by: .click)
         harness.at(today, hour: 18)
         harness.coordinator.check()
         #expect(harness.coordinator.isClosingDay)

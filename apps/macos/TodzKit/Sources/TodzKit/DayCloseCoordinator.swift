@@ -47,7 +47,7 @@ import Observation
         !isClosingDay || isEngaged
     }
 
-    public func engage() {
+    public func engage(by input: DayCloseEngagementInput) {
         isEngaged = true
     }
 
