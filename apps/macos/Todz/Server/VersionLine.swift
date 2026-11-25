@@ -20,9 +20,11 @@ struct VersionLine: View {
             if model.isUpdateNeeded {
                 DownloadButton()
                     .buttonStyle(.link)
+                    .foregroundStyle(.tint)
             }
         }
         .font(.footnote)
+        .multilineTextAlignment(.center)
         .foregroundStyle(.secondary)
         .accessibilityElement(children: .contain)
         .onAppear { model.refreshCompatibility() }
