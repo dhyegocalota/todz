@@ -13,8 +13,14 @@ import Observation
     public internal(set) var pendingLink: PendingSignInLink?
     public internal(set) var signInChallengeToken: String?
     public internal(set) var challengeRound = 0
-    public internal(set) var workspaces: [Workspace] = []
-    public internal(set) var activeWorkspaceIdentifier: String?
+    public internal(set) var workspaces: [Workspace] = [] {
+        didSet { storedTaskViews = nil }
+    }
+
+    public internal(set) var activeWorkspaceIdentifier: String? {
+        didSet { storedTaskViews = nil }
+    }
+
     public var selectedItem: SidebarItem = .inbox {
         didSet {
             waitingLink = nil
@@ -26,7 +32,10 @@ import Observation
         didSet { waitingLink = nil }
     }
 
-    public internal(set) var board = TaskBoard()
+    public internal(set) var board = TaskBoard() {
+        didSet { storedTaskViews = nil }
+    }
+
     public internal(set) var projectLoads: [String: ProjectLoad] = [:]
     public internal(set) var writesInFlight: Set<WriteTarget> = []
     public internal(set) var ruleIssues: [WriteTarget: RuleIssue] = [:]
@@ -44,7 +53,10 @@ import Observation
     public internal(set) var failedRevokeIdentifiers: Set<String> = []
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
-    var outbox = Outbox()
+    var outbox = Outbox() {
+        didSet { storedTaskViews = nil }
+    }
+
     var refreshesInFlight = 0
     public internal(set) var isOffline = false
     var isOwnerConfirmed = false
@@ -102,6 +114,7 @@ import Observation
     @ObservationIgnored let store: any SyncStore
     @ObservationIgnored let cacheScheduler: CacheScheduler
     @ObservationIgnored var taskViewsBuildCount = 0
+    @ObservationIgnored private var storedTaskViews: (day: CalendarDate, views: TaskViews)?
     @ObservationIgnored let widgetStore: any WidgetStore
     @ObservationIgnored let reloadWidgets: @Sendable () -> Void
     @ObservationIgnored public let timeZone: TimeZone
@@ -166,14 +179,18 @@ import Observation
 
     public var taskViews: TaskViews? {
         guard let activeWorkspace else { return nil }
+        let (currentBoard, currentOutbox, day) = (board, outbox, today)
+        if let storedTaskViews, storedTaskViews.day == day { return storedTaskViews.views }
         taskViewsBuildCount += 1
-        return TaskViews(
+        let views = TaskViews(
             projects: activeWorkspace.projects,
-            board: board.applying(outbox),
-            pendingTasks: outbox.pendingTasks,
-            day: today,
+            board: currentBoard.applying(currentOutbox),
+            pendingTasks: currentOutbox.pendingTasks,
+            day: day,
             timeZone: timeZone
         )
+        storedTaskViews = (day: day, views: views)
+        return views
     }
 
     public func flushCache() {}
