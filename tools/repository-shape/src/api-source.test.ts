@@ -40,7 +40,6 @@ const WAITLIST_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8606';
 const ADMIN_RATE_LIMIT_NAMESPACE_ID = '8607';
 const ADMIN_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8608';
 const ADMIN_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8609';
-const ADMIN_EMAIL = 'hello@todz.app';
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -129,13 +128,12 @@ describe('the api source', () => {
     expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([CONSOLE_EMAIL_SENDER]);
   });
 
-  test('the wrangler configuration is production: the email provider, the cloudflare sender and the https origin on todz.app', () => {
+  test('the wrangler configuration is production: the email provider, the cloudflare sender and the https origin on todz.app, and no admin address, which is a secret', () => {
     expect(wranglerConfiguration().vars).toEqual({
       SIGN_IN_PROVIDER: 'email',
       EMAIL_SENDER: 'cloudflare',
       PUBLIC_ORIGIN: PRODUCTION_ORIGIN,
       SITE_ORIGIN,
-      ADMIN_EMAIL,
     });
   });
 
