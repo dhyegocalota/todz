@@ -44,6 +44,7 @@ describe('openKeyProject', () => {
     expect(await openKeyProject({ env, secret })).toMatchObject({
       keyDigest: await digestCredential(secret),
       timeZone: SAO_PAULO_TIME_ZONE,
+      agentNudge: false,
     });
   });
 

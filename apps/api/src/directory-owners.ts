@@ -58,7 +58,7 @@ export async function updateOwnerTimeZone({
 export async function findOwner({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<OwnerRecord | null> {
   const row = await directory.prepare('SELECT id, time_zone FROM owners WHERE id = ?').bind(ownerId).first<OwnerRow>();
   if (row === null) return null;
-  return { id: row.id, timeZone: row.time_zone };
+  return { id: row.id, timeZone: row.time_zone, agentNudge: false };
 }
 
 export async function insertOwnerSession({

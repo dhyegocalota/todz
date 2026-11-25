@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import { findKeyProject, findMcpSessionClient, findOwnedProject, findSessionOwner, insertMcpSession } from '../src/directory';
 import { MCP_SESSIONS_PER_KEY_MAX } from '../src/mcp-sessions';
-import { seedKey, seedOwner, seedProject, seedSession } from './directory-seed';
+import { enableAgentNudge, seedKey, seedOwner, seedProject, seedSession } from './directory-seed';
 import { CLOCK_NOW } from './task-fixtures';
 
 const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
@@ -24,6 +24,22 @@ describe('findKeyProject', () => {
     expect(await findKeyProject({ directory: env.DIRECTORY, digest: await digestCredential(secret) })).toEqual({
       projectId,
       timeZone: SAO_PAULO_TIME_ZONE,
+      agentNudge: false,
+    });
+  });
+
+  test('the flag is the one of the key owner', async () => {
+    const ownerId = await seedOwner();
+    const projectId = await seedProject({ ownerId });
+    const otherProjectId = await seedProject({ ownerId: await seedOwner() });
+    const secret = newSecret();
+    const otherSecret = newSecret();
+    await seedKey({ projectId, secret });
+    await seedKey({ projectId: otherProjectId, secret: otherSecret });
+    await enableAgentNudge({ directory: env.DIRECTORY, ownerId });
+    expect(await findKeyProject({ directory: env.DIRECTORY, digest: await digestCredential(secret) })).toMatchObject({ agentNudge: true });
+    expect(await findKeyProject({ directory: env.DIRECTORY, digest: await digestCredential(otherSecret) })).toMatchObject({
+      agentNudge: false,
     });
   });
 
@@ -117,6 +133,20 @@ describe('the directory digests', () => {
       .bind(RAW_SECRET, await seedOwner(), CLOCK_NOW, CLOCK_NOW + 1)
       .run();
     await expect(insertion).rejects.toThrow();
+  });
+});
+
+describe('the owner agent nudge', () => {
+  test('an owner seeded without it reads false', async () => {
+    const ownerId = await seedOwner();
+    const row = await env.DIRECTORY.prepare('SELECT agent_nudge FROM owners WHERE id = ?').bind(ownerId).first<{ agent_nudge: number }>();
+    expect(row).toEqual({ agent_nudge: 0 });
+  });
+
+  test('a value other than 0 and 1 is refused', async () => {
+    const ownerId = await seedOwner();
+    const update = env.DIRECTORY.prepare('UPDATE owners SET agent_nudge = 2 WHERE id = ?').bind(ownerId).run();
+    await expect(update).rejects.toThrow(CHECK_FAILURE);
   });
 });
 

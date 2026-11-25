@@ -107,5 +107,8 @@ export async function signIn({ request, env, now, executionContext }: OwnerConte
   const sessionToken = await openOwnerSession({ directory: env.DIRECTORY, ownerId, now });
   const isWelcomedOwner = isNewOwner && kind === SignInProviderKind.Email;
   if (isWelcomedOwner) executionContext.waitUntil(sendWelcome({ request, env, address: subject }).catch(() => undefined));
-  return Response.json({ session_token: sessionToken, owner: ownerJson({ id: ownerId, timeZone }) }, { status: HttpStatus.Created });
+  return Response.json(
+    { session_token: sessionToken, owner: ownerJson({ id: ownerId, timeZone, agentNudge: false }) },
+    { status: HttpStatus.Created },
+  );
 }

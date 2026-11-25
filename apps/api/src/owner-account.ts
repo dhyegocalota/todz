@@ -29,7 +29,7 @@ async function updateOwner({ request, env, owner }: SessionContext): Promise<Res
   const timeZone = canonicalTimeZone(body.time_zone);
   if (timeZone === null) return errorResponse(OwnerErrorCode.TimeZoneInvalid);
   await updateOwnerTimeZone({ directory: env.DIRECTORY, ownerId: owner.ownerId, timeZone });
-  return Response.json({ owner: ownerJson({ id: owner.ownerId, timeZone }) });
+  return Response.json({ owner: ownerJson({ id: owner.ownerId, timeZone, agentNudge: false }) });
 }
 
 export const ACCOUNT_HANDLERS: Record<AccountRoute, SessionHandler> = {
