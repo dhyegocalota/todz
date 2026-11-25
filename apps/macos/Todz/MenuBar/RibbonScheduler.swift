@@ -18,14 +18,12 @@ private let endingWorkspaceNotifications: [Notification.Name] = [
 @MainActor final class RibbonScheduler {
     private let coordinator: RibbonCoordinator
     private let model: AppModel
-    private let panel: MenuBarPanel
     private var observations: [any NSObjectProtocol] = []
     private var agentChangeReaction: Task<Void, Never>?
 
-    init(coordinator: RibbonCoordinator, model: AppModel, panel: MenuBarPanel) {
+    init(coordinator: RibbonCoordinator, model: AppModel) {
         self.coordinator = coordinator
         self.model = model
-        self.panel = panel
     }
 
     func start() {
@@ -40,10 +38,6 @@ private let endingWorkspaceNotifications: [Notification.Name] = [
                 observe(NSWorkspace.didWakeNotification, in: workspaceCenter, perform: refresh),
                 observe(.screenIsUnlocked, in: distributedCenter, perform: refresh),
                 observe(.screenIsLocked, in: distributedCenter, perform: end),
-                observe(NSWindow.didBecomeKeyNotification, in: .default) { [panel] coordinator in
-                    guard panel.isShown else { return }
-                    coordinator.end()
-                },
             ]
         observeAgentChanges()
         coordinator.refresh()

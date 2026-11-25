@@ -19,7 +19,7 @@ enum SettingsCopy {
     static let dayTemperature = "Day temperature"
     static let dayTemperatureDetail = "Dims the menu bar count through the afternoon and tints overdue widget rows. Quiet in a Focus."
     static let menuBarRibbon = "Menu bar ribbon"
-    static let menuBarRibbonDetail = "Now and then, the menu bar unfolds what's next for a few seconds, then folds back."
+    static let menuBarRibbonDetail = "Now and then, shows what's next beside the menu bar icon for a few seconds."
     static let menuBarRibbonCadence = "When the ribbon shows"
     static let menuBarRibbonHourly = "Every hour"
     static let menuBarRibbonDayClose = "At the close of the day"

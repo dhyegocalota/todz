@@ -77,7 +77,7 @@ Ready for the Swift copy modules in `apps/macos/Copy/` (the app's equivalent of 
 | `AccessibilityCopy` | `menuBarRibbonRemaining(left:next:)` | `"todz, \(left) left today. Next: \(next)"` (inflected like `menuBarCount`) |
 | `AccessibilityCopy` | `menuBarRibbonLast(next:)` | `"todz, last one today: \(next)"` |
 | `SettingsCopy` | `menuBarRibbon` | "Menu bar ribbon" |
-| `SettingsCopy` | `menuBarRibbonDetail` | "Now and then, the menu bar unfolds what's next for a few seconds, then folds back." |
+| `SettingsCopy` | `menuBarRibbonDetail` | "Now and then, shows what's next beside the menu bar icon for a few seconds." |
 | `SettingsCopy` | `menuBarRibbonCadence` | "When the ribbon shows" (the picker's hidden label, read by VoiceOver) |
 | `SettingsCopy` | `menuBarRibbonHourly` | "Every hour" |
 | `SettingsCopy` | `menuBarRibbonDayClose` | "At the close of the day" |
