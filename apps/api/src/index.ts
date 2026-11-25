@@ -43,7 +43,7 @@ async function redirectToSite({ request }: { request: Request }): Promise<Respon
 
 const HANDLER_OF_HOST_KIND: Record<HostKind, HostHandler> = {
   [HostKind.Api]: serveApi,
-  [HostKind.Site]: ({ request }) => serveSite({ request }),
+  [HostKind.Site]: serveSite,
   [HostKind.WwwRedirect]: redirectToSite,
 };
 

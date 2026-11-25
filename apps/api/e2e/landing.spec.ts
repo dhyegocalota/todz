@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { type Locator, type Page, expect, test } from '@playwright/test';
+import { type ConsoleMessage, type Locator, type Page, expect, test } from '@playwright/test';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { ProjectName } from './project-name';
 
@@ -25,8 +25,30 @@ enum Css {
   ZeroSeconds = '0s',
 }
 
-const JOIN_ADDRESS = 'maria.private@example.com';
-const OPENS_SOON_NOTICE = 'The waitlist opens soon.';
+const JOINED_NOTICE = "You're on the list. Check your inbox.";
+const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
+const TURNSTILE_RESPONSE_FIELD = 'cf-turnstile-response';
+const JAVASCRIPT_CONTENT_TYPE = 'text/javascript';
+const SLOW_TOKEN_DELAY_MS = 1_000;
+const SLOW_SCRIPT_DELAY_MS = 1_500;
+const TURNSTILE_SOLVE = `const solve = () => document.querySelectorAll('.cf-turnstile').forEach((widget) => {
+  const token = document.createElement('input');
+  token.type = 'hidden';
+  token.name = '${TURNSTILE_RESPONSE_FIELD}';
+  token.value = '${TURNSTILE_DUMMY_TOKEN}';
+  widget.append(token);
+  const solved = window[widget.dataset.callback];
+  if (typeof solved === 'function') solved(token.value);
+});`;
+const TURNSTILE_STUB = `{
+${TURNSTILE_SOLVE}
+solve();
+}`;
+const SLOW_TURNSTILE_STUB = `{
+${TURNSTILE_SOLVE}
+setTimeout(solve, ${SLOW_TOKEN_DELAY_MS});
+}`;
 const SELF_HOST_TITLE = 'Self-host todz';
 const SELF_HOST_GUIDE_FILE = path.join(import.meta.dirname, '..', '..', '..', 'docs', 'self-host.md');
 const SECOND_LEVEL_HEADING_PREFIX = '## ';
@@ -37,6 +59,50 @@ const KEYBOARD_ORDER = ['.skip-link', '.site-header .brand', '.site-header .nav-
 const SCRIPT_OWNED_TRANSITION_PROPERTIES = ['color', 'background-color', 'opacity'];
 const JOIN_FORMS = [Fragment.Hero, Fragment.Final];
 const SITE_PAGES = [SitePath.Landing, SitePath.Join, SitePath.SelfHost];
+
+test.beforeEach(async ({ page }) => {
+  await page.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: TURNSTILE_STUB }));
+});
+
+function uniqueAddress(): string {
+  const { project, testId } = test.info();
+  return `maria.${project.name}.${testId}@example.com`;
+}
+
+function isForeignRequest({ url, baseURL }: { url: string; baseURL: string | undefined }): boolean {
+  const isOwnOrigin = new URL(url).origin === baseURL;
+  return !isOwnOrigin && url !== TURNSTILE_SCRIPT_URL;
+}
+
+function isMainFrameMessage({ message, baseURL }: { message: ConsoleMessage; baseURL: string | undefined }): boolean {
+  const { url } = message.location();
+  const isOwnOrigin = url.length === 0 || new URL(url).origin === baseURL;
+  return isOwnOrigin || url === TURNSTILE_SCRIPT_URL;
+}
+
+function watchConsoleAndNetwork({ page, baseURL }: { page: Page; baseURL: string | undefined }): {
+  errors: string[];
+  foreignRequests: string[];
+} {
+  const errors: string[] = [];
+  const foreignRequests: string[] = [];
+  page.on('console', (message) => message.type() === 'error' && isMainFrameMessage({ message, baseURL }) && errors.push(message.text()));
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('request', (request) => isForeignRequest({ url: request.url(), baseURL }) && foreignRequests.push(request.url()));
+  return { errors, foreignRequests };
+}
+
+async function expectJoined({ page, form, address }: { page: Page; form: Fragment; address: string }): Promise<void> {
+  await expect(page).toHaveURL(new RegExp(`${SitePath.Join}#${form}$`));
+  const notice = page.locator(`#${form}-notice`);
+  await expect(notice).toHaveText(JOINED_NOTICE);
+  await expect(notice).toBeFocused();
+  expect(await page.content()).not.toContain(address);
+  const inputValues = await page
+    .locator('input[name="email"]')
+    .evaluateAll((inputs: HTMLInputElement[]) => inputs.map((input) => input.value));
+  expect(inputValues).toEqual(['', '']);
+}
 
 function onlyOn(projectName: ProjectName): void {
   test.skip(test.info().project.name !== projectName, `runs on ${projectName} only`);
@@ -169,25 +235,70 @@ test.describe('reduced motion', () => {
 });
 
 test.describe('join', () => {
+  test('each form carries the token the Turnstile widget writes', async ({ page }) => {
+    await page.goto(SitePath.Landing);
+    const tokens = JOIN_FORMS.map((form) => page.locator(`form#${form} input[name="${TURNSTILE_RESPONSE_FIELD}"]`));
+    await Promise.all(tokens.map((token) => expect(token).toHaveValue(TURNSTILE_DUMMY_TOKEN)));
+  });
+
   JOIN_FORMS.forEach((form) => {
-    test(`the ${form} form answers the notice on ${SitePath.Join}#${form} without echoing the address`, async ({ page }) => {
+    test(`the ${form} form answers "${JOINED_NOTICE}" focused on ${SitePath.Join}#${form} without echoing the address`, async ({
+      page,
+    }) => {
+      const address = uniqueAddress();
       await page.goto(SitePath.Landing);
-      await submitForm({ page, form, address: JOIN_ADDRESS });
-      await expect(page).toHaveURL(new RegExp(`${SitePath.Join}#${form}$`));
-      const notice = page.locator(`#${form}-notice`);
-      await expect(notice).toBeVisible();
-      await expect(notice).toHaveText(OPENS_SOON_NOTICE);
-      expect(await page.content()).not.toContain(JOIN_ADDRESS);
-      const inputValues = await page
-        .locator('input[name="email"]')
-        .evaluateAll((inputs: HTMLInputElement[]) => inputs.map((input) => input.value));
-      expect(inputValues).toEqual(['', '']);
+      await submitForm({ page, form, address });
+      await expectJoined({ page, form, address });
+    });
+  });
+
+  test('a second join of the same address from the final form answers the same', async ({ page }) => {
+    const address = uniqueAddress();
+    await page.goto(SitePath.Landing);
+    await submitForm({ page, form: Fragment.Hero, address });
+    await expectJoined({ page, form: Fragment.Hero, address });
+    await submitForm({ page, form: Fragment.Final, address });
+    await expectJoined({ page, form: Fragment.Final, address });
+  });
+
+  test.describe('when the Turnstile script loads after the visitor submits', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route(TURNSTILE_SCRIPT_URL, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, SLOW_SCRIPT_DELAY_MS));
+        await route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: SLOW_TURNSTILE_STUB });
+      });
     });
 
-    test(`the ${form} form's notice is focused after the answer`, async ({ page }) => {
+    test('a join submitted before the page loads waits for the token and answers the same', async ({ page }) => {
+      const address = uniqueAddress();
+      await page.goto(SitePath.Landing, { waitUntil: 'domcontentloaded' });
+      await submitForm({ page, form: Fragment.Hero, address });
+      await expectJoined({ page, form: Fragment.Hero, address });
+    });
+  });
+
+  test.describe('when the widget writes its token late', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: SLOW_TURNSTILE_STUB }));
+    });
+
+    test('a join submitted at once waits for the token and answers the same', async ({ page }) => {
+      const address = uniqueAddress();
       await page.goto(SitePath.Landing);
-      await submitForm({ page, form, address: JOIN_ADDRESS });
-      await expect(page.locator(`#${form}-notice`)).toBeFocused();
+      await submitForm({ page, form: Fragment.Hero, address });
+      await expectJoined({ page, form: Fragment.Hero, address });
+    });
+
+    test('a second click while the token is pending posts the form once', async ({ page }) => {
+      const posts: string[] = [];
+      page.on('request', (request) => request.method() === 'POST' && posts.push(request.url()));
+      const address = uniqueAddress();
+      const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
+      await page.goto(SitePath.Landing);
+      await submitForm({ page, form: Fragment.Hero, address });
+      await button.click({ force: true });
+      await expectJoined({ page, form: Fragment.Hero, address });
+      expect(posts).toHaveLength(1);
     });
   });
 
@@ -232,12 +343,8 @@ test.describe('keyboard', () => {
 
 test.describe('console and network', () => {
   SITE_PAGES.forEach((sitePath) => {
-    test(`${sitePath} logs no error and calls only its own origin`, async ({ page, baseURL }) => {
-      const errors: string[] = [];
-      const foreignRequests: string[] = [];
-      page.on('console', (message) => message.type() === 'error' && errors.push(message.text()));
-      page.on('pageerror', (error) => errors.push(error.message));
-      page.on('request', (request) => new URL(request.url()).origin !== baseURL && foreignRequests.push(request.url()));
+    test(`${sitePath} logs no error and calls only its own origin and the Turnstile script`, async ({ page, baseURL }) => {
+      const { errors, foreignRequests } = watchConsoleAndNetwork({ page, baseURL });
       await page.goto(sitePath);
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       await page.waitForLoadState('networkidle');
@@ -245,14 +352,10 @@ test.describe('console and network', () => {
     });
   });
 
-  test('the join answer logs no error and calls only its own origin', async ({ page, baseURL }) => {
-    const errors: string[] = [];
-    const foreignRequests: string[] = [];
-    page.on('console', (message) => message.type() === 'error' && errors.push(message.text()));
-    page.on('pageerror', (error) => errors.push(error.message));
-    page.on('request', (request) => new URL(request.url()).origin !== baseURL && foreignRequests.push(request.url()));
+  test('the join answer logs no error and calls only its own origin and the Turnstile script', async ({ page, baseURL }) => {
+    const { errors, foreignRequests } = watchConsoleAndNetwork({ page, baseURL });
     await page.goto(SitePath.Landing);
-    await submitForm({ page, form: Fragment.Hero, address: JOIN_ADDRESS });
+    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
     await expect(page.locator(`#${Fragment.Hero}-notice`)).toBeVisible();
     expect({ errors, foreignRequests }).toEqual({ errors: [], foreignRequests: [] });
   });

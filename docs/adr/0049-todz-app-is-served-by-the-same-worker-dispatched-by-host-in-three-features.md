@@ -35,7 +35,7 @@ The owner wants a landing on `https://todz.app`: short, polished, with a waitlis
       - a D1 table;
       - the join route, with Turnstile (action `waitlist`, host `todz.app`) and three limits (per client, per address digest, global) on their own namespaces, failing closed as in ADR 0045.
 
-      No referral codes and no welcome mail in v1.
+      No referral codes and no welcome mail in v1. Amended by [0050](0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md): a short confirmation mail, once per address.
    3. `landing-admin`:
       - the admin signs in as the owner: the magic link opens a browser session, an HttpOnly, Secure, SameSite=Strict cookie on `todz.app/admin`, and only for the address in `ADMIN_EMAIL`, failing closed when it is unset. A spike proves how the link binds to a browser first;
       - the waitlist list and `export.csv`;

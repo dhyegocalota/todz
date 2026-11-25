@@ -42,6 +42,10 @@ const ACCOUNT_ID_CAPTURE = 1;
 const CLOUDFLARE_API_HOST = 'api.cloudflare.com';
 const WRONG_SESSION_BODY = 'scripts/deploy-bodies/wrong-session.json';
 const JUNK_LINK_BODY = 'scripts/deploy-bodies/junk-turnstile-link.json';
+const JUNK_WAITLIST_BODY = 'scripts/deploy-bodies/junk-turnstile-waitlist.txt';
+const WAITLIST_ADDRESS_FIELD = 'email';
+const WAITLIST_TOKEN_FIELD = 'cf-turnstile-response';
+const PROBE_ADDRESS = 'nobody@example.com';
 const LINK_VERIFIER_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
 const TURNSTILE_TOKEN_PATTERN = /^[A-Za-z0-9._-]{1,2048}$/;
@@ -234,6 +238,13 @@ describe('runbooks', () => {
     expect(body.email).toMatch(/^[^@\s]+@example\.com$/);
     expect(body.turnstile_token).toMatch(TURNSTILE_TOKEN_PATTERN);
     expect(body.turnstile_token).not.toBe(TURNSTILE_DUMMY_TOKEN);
+  });
+
+  test('the junk waitlist body reaches siteverify byte for byte, so only Turnstile refuses it', () => {
+    const fields = new URLSearchParams(readRepositoryFile(JUNK_WAITLIST_BODY));
+    expect(fields.get(WAITLIST_ADDRESS_FIELD)).toBe(PROBE_ADDRESS);
+    expect(fields.get(WAITLIST_TOKEN_FIELD)).toMatch(TURNSTILE_TOKEN_PATTERN);
+    expect(fields.get(WAITLIST_TOKEN_FIELD)).not.toBe(TURNSTILE_DUMMY_TOKEN);
   });
 
   test('the deploy runbook ends with a run log table whose rows name a date, a commit and a step', () => {

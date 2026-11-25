@@ -8,6 +8,8 @@ The owner signs in with a link sent to their email address: the link works once,
 
 The owner API lets the person behind the agents sign in, keep their workspaces and projects, do everything to a task that an agent can, read a task's history, and issue and revoke the keys that agents use. Each project tells its owner what changed since their last pull and, while the app is open, says only that something changed. Another owner's workspace, project or key is indistinguishable from one that never existed.
 
-The same Worker serves the todz website on its own host: one short page that says what todz is, with real screenshots of the app and a waitlist form that opens soon, and the self-host guide rendered ahead of time from the repository's own Markdown. Each host answers only its own pages, the www host sends visitors to the site, and any other host finds nothing.
+The same Worker serves the todz website on its own host: one short page that says what todz is, with real screenshots of the app and a waitlist form, and the self-host guide rendered ahead of time from the repository's own Markdown. Each host answers only its own pages, the www host sends visitors to the site, and any other host finds nothing.
+
+The waitlist keeps each address once and mails it a short confirmation once, ever, and answers the same whether the address is new or already there. It is guarded like sign-in, by limits per client, per address and overall and by a Turnstile check, and it stays closed instead of open when any of those pieces is missing.
 
 The deployed Worker is production on its own domain, with its own database and the mail sender of todz; a development Worker overrides that configuration and keeps its state on this machine. The development database has a new name since the Worker was first deployed, so state from earlier local runs stays behind and can be deleted.

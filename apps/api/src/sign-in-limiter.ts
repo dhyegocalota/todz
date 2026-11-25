@@ -2,13 +2,11 @@ import { SIGN_IN_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
 import { clientRateKey } from './client-rate-key';
 import { digestCredential } from './credential-digest';
 import type { Env } from './env';
+import { HttpHeader } from './http-header';
 import { isLocalHost } from './local-origin';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
 import type { PublicRoute } from './owner-request';
 import { OwnerRoute } from './owner-routes';
-
-const CLIENT_ADDRESS_HEADER = 'CF-Connecting-IP';
-const RETRY_AFTER_HEADER = 'Retry-After';
 
 enum SignInLimit {
   Client = 'client',
@@ -30,7 +28,7 @@ const LIMITS_OF_ROUTE: Record<PublicRoute, SignInLimit[]> = {
 
 export function signInRefusal(): Response {
   const refusal = errorResponse(OwnerErrorCode.SignInRefused);
-  refusal.headers.set(RETRY_AFTER_HEADER, String(SIGN_IN_RATE_LIMIT_PERIOD_SECONDS));
+  refusal.headers.set(HttpHeader.RetryAfter, String(SIGN_IN_RATE_LIMIT_PERIOD_SECONDS));
   return refusal;
 }
 
@@ -53,7 +51,7 @@ export async function signInLimitRefusal({
   route: PublicRoute;
 }): Promise<Response | null> {
   if (isLocalHost({ env, request })) return null;
-  const clientAddress = request.headers.get(CLIENT_ADDRESS_HEADER);
+  const clientAddress = request.headers.get(HttpHeader.ClientAddress);
   const hasEveryLimiter = LIMITS_OF_ROUTE[route].every((limit) => LIMITER_OF_LIMIT[limit](env) !== undefined);
   const isUnguarded = clientAddress === null || !hasEveryLimiter;
   if (isUnguarded) return errorResponse(OwnerErrorCode.SignInUnavailable);

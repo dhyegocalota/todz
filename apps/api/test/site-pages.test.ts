@@ -1,15 +1,32 @@
 import { exports } from 'cloudflare:workers';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import guide from '../../../docs/self-host.md?raw';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { LandingNotice, serveLandingPage } from '../src/site/landing-page';
 import { serveSelfHostPage } from '../src/site/self-host-page';
-import { inlineSources, onlyInlineSource, sourceHash } from './page-script';
+import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
+import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
 
 const OK_STATUS = 200;
+const TOO_MANY_STATUS = 429;
+const RETRY_AFTER_SECONDS = '60';
+const UNUSABLE_SITE_KEY = 'key"><script>';
+const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
+const TURNSTILE_SCRIPT_TAG = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
+const WIDGET_HTML = `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="interaction-only" data-theme="auto" data-callback="waitlistTokenReady"></div>`;
+const WIDGET_PATTERN = /<div class="cf-turnstile"[^>]*><\/div>/g;
+const CAPSULE_END = '</button>\n</div>';
+const NOTICE_PATTERN = /<p id="([a-z]+)-notice" [^>]*role="status"[^>]*tabindex="-1"[^>]*>[\s\S]*?<\/span>([^<]*)<\/p>/;
+const NOTICES = [LandingNotice.None, LandingNotice.OpensSoon, LandingNotice.Joined, LandingNotice.TryAgain];
+const SHOWN_NOTICES = [
+  { notice: LandingNotice.OpensSoon, text: 'The waitlist opens soon.' },
+  { notice: LandingNotice.Joined, text: "You're on the list. Check your inbox." },
+  { notice: LandingNotice.TryAgain, text: "Couldn't add you right now. Try again in a minute." },
+];
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
-const JOIN_FORM_BODY = 'email=maria%40example.com';
+const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
+const TOKEN_FIELD = 'cf-turnstile-response';
 const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
 const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
@@ -30,6 +47,8 @@ const HREF_PATTERN = /\shref="([^"]*)"/g;
 const SITE_HREF_PATTERN = /^(?:\/|#|https:\/\/)/;
 const IMPORT_PATTERN = /from '([^']+)'/g;
 const LOCAL_ORIGIN_MODULE = 'local-origin';
+const LOCAL_ORIGIN_IMPORT_PATTERN = /import ([^;]+?) from '[^']*local-origin'/g;
+const SITE_HOST_PREDICATE_IMPORT = '{ isLocalSiteHost }';
 const LANDING_ASSET_PREFIX = '/landing/';
 const SECTION_MARKERS = [
   '<section class="hero',
@@ -51,13 +70,45 @@ const SITE_SOURCES = import.meta.glob('../src/site/**/*.ts', { query: '?raw', im
 
 type SitePage = { response: Response; html: string };
 
+type NamedPage = [string, () => Promise<SitePage>];
+
 async function pageOf(response: Promise<Response>): Promise<SitePage> {
   const answer = await response;
   return { response: answer, html: await answer.text() };
 }
 
 function landingPage(notice: LandingNotice): Promise<SitePage> {
-  return pageOf(serveLandingPage({ notice }));
+  return pageOf(serveLandingPage({ notice, siteKey: null }));
+}
+
+function widgetLandingPage(notice: LandingNotice): Promise<SitePage> {
+  return pageOf(serveLandingPage({ notice, siteKey: TEST_SITE_KEY }));
+}
+
+const LANDING_PAGES: NamedPage[] = NOTICES.map((notice) => [`the landing with the ${notice} notice`, () => landingPage(notice)]);
+const WIDGET_LANDING_PAGES: NamedPage[] = NOTICES.map((notice) => [
+  `the landing with the ${notice} notice and the widget`,
+  () => widgetLandingPage(notice),
+]);
+const SELF_HOST_PAGE: NamedPage = ['the self-host guide', selfHostPage];
+
+function formsOf(html: string): string[] {
+  return [...html.matchAll(FORM_PATTERN)].map(([form]) => form);
+}
+
+async function landingPolicy({ html, widgetOrigins }: { html: string; widgetOrigins: string[] }): Promise<string> {
+  const scriptHash = await sourceHash(onlyInlineSource({ html, pattern: SCRIPT_PATTERN }));
+  const styleHash = await sourceHash(onlyInlineSource({ html, pattern: STYLE_PATTERN }));
+  return [
+    "default-src 'none'",
+    ['script-src', scriptHash, ...widgetOrigins].join(' '),
+    `style-src ${styleHash}`,
+    "img-src 'self'",
+    ...widgetOrigins.map((origin) => `frame-src ${origin}`),
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'none'",
+  ].join('; ');
 }
 
 function selfHostPage(): Promise<SitePage> {
@@ -92,59 +143,83 @@ function guideHeadingText(markdown: string): string {
 }
 
 describe('the site pages', () => {
-  test.each([
-    ['the landing', () => landingPage(LandingNotice.None)],
-    ['the landing with the notice', () => landingPage(LandingNotice.OpensSoon)],
-    ['the self-host guide', selfHostPage],
-  ])('%s answers HTML with HSTS for this host only, nosniff and a referrer policy', async (_name, page) => {
-    const { response } = await page();
-    expect(response.status).toBe(OK_STATUS);
-    expect(response.headers.get('Content-Type')).toBe(HTML_CONTENT_TYPE);
-    expect(response.headers.get('Strict-Transport-Security')).toBe(STRICT_TRANSPORT_SECURITY);
-    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
-    expect(response.headers.get('Referrer-Policy')).toBeTruthy();
-  });
+  test.each([...LANDING_PAGES, ...WIDGET_LANDING_PAGES, SELF_HOST_PAGE])(
+    '%s answers HTML with HSTS for this host only, nosniff and a referrer policy',
+    async (_name, page) => {
+      const { response } = await page();
+      expect(response.status).toBe(OK_STATUS);
+      expect(response.headers.get('Content-Type')).toBe(HTML_CONTENT_TYPE);
+      expect(response.headers.get('Strict-Transport-Security')).toBe(STRICT_TRANSPORT_SECURITY);
+      expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+      expect(response.headers.get('Referrer-Policy')).toBeTruthy();
+    },
+  );
 
-  test.each([
-    ['the landing', () => landingPage(LandingNotice.None)],
-    ['the self-host guide', selfHostPage],
-  ])('%s has no style attribute, no style inside an SVG, no event handler and no remote asset', async (_name, page) => {
-    const { html } = await page();
-    const svgs = [...html.matchAll(SVG_PATTERN)].map(([svg]) => svg);
-    expect(html).not.toMatch(STYLE_ATTRIBUTE_PATTERN);
-    expect(html).not.toMatch(EVENT_HANDLER_PATTERN);
-    expect(svgs.filter((svg) => svg.includes('<style'))).toEqual([]);
-    expect(REMOTE_ASSET_PATTERNS.filter((pattern) => pattern.test(html))).toEqual([]);
-  });
+  test.each([...LANDING_PAGES, SELF_HOST_PAGE])(
+    '%s has no style attribute, no style inside an SVG, no event handler and no remote asset',
+    async (_name, page) => {
+      const { html } = await page();
+      const svgs = [...html.matchAll(SVG_PATTERN)].map(([svg]) => svg);
+      expect(html).not.toMatch(STYLE_ATTRIBUTE_PATTERN);
+      expect(html).not.toMatch(EVENT_HANDLER_PATTERN);
+      expect(svgs.filter((svg) => svg.includes('<style'))).toEqual([]);
+      expect(REMOTE_ASSET_PATTERNS.filter((pattern) => pattern.test(html))).toEqual([]);
+    },
+  );
 
-  test('no file of the site imports the local-origin predicates', () => {
-    const sources = Object.entries(SITE_SOURCES);
-    const importers = sources.filter(([, source]) =>
-      captures({ html: source, pattern: IMPORT_PATTERN }).some((path) => path.endsWith(LOCAL_ORIGIN_MODULE)),
-    );
+  test.each(NOTICES)(
+    'the landing with the %s notice and the widget has no style attribute and loads only the Turnstile script, once',
+    async (notice) => {
+      const { html } = await widgetLandingPage(notice);
+      const [beforeScript, ...afterScripts] = html.split(TURNSTILE_SCRIPT_TAG);
+      const withoutScript = [beforeScript, ...afterScripts].join('');
+      expect(afterScripts).toHaveLength(1);
+      expect(html).not.toMatch(STYLE_ATTRIBUTE_PATTERN);
+      expect(html).not.toMatch(EVENT_HANDLER_PATTERN);
+      expect(REMOTE_ASSET_PATTERNS.filter((pattern) => pattern.test(withoutScript))).toEqual([]);
+    },
+  );
+
+  test('the site imports only the site host predicate from local-origin', () => {
+    const sources = Object.values(SITE_SOURCES);
+    const localOriginPaths = sources
+      .flatMap((source) => captures({ html: source, pattern: IMPORT_PATTERN }))
+      .filter((path) => path.endsWith(LOCAL_ORIGIN_MODULE));
+    const clauses = sources.flatMap((source) => captures({ html: source, pattern: LOCAL_ORIGIN_IMPORT_PATTERN }));
     expect(sources.length).toBeGreaterThan(0);
-    expect(importers.map(([path]) => path)).toEqual([]);
+    expect(clauses).toHaveLength(localOriginPaths.length);
+    expect(clauses.filter((clause) => clause !== SITE_HOST_PREDICATE_IMPORT)).toEqual([]);
   });
 });
 
 describe('the landing', () => {
-  test('the content security policy allows its one script and one style by hash, its own images and its own forms', async () => {
-    const { response, html } = await landingPage(LandingNotice.None);
-    const script = onlyInlineSource({ html, pattern: SCRIPT_PATTERN });
-    const style = onlyInlineSource({ html, pattern: STYLE_PATTERN });
-    const policy = response.headers.get('Content-Security-Policy');
-    expect(policy).toBe(
-      [
-        "default-src 'none'",
-        `script-src ${await sourceHash(script)}`,
-        `style-src ${await sourceHash(style)}`,
-        "img-src 'self'",
-        "form-action 'self'",
-        "frame-ancestors 'none'",
-        "base-uri 'none'",
-      ].join('; '),
+  test.each(NOTICES)(
+    'with the %s notice, the content security policy allows its one script and one style by hash, its own images and its own forms',
+    async (notice) => {
+      const { response, html } = await landingPage(notice);
+      const policy = response.headers.get('Content-Security-Policy');
+      expect(policy).toBe(await landingPolicy({ html, widgetOrigins: [] }));
+      expect(policy).not.toContain('unsafe-inline');
+      expect(policy).not.toContain(TURNSTILE_ORIGIN);
+    },
+  );
+
+  test.each(NOTICES)(
+    'with the %s notice and the widget, the content security policy also allows the Turnstile script and frame',
+    async (notice) => {
+      const { response, html } = await widgetLandingPage(notice);
+      const policy = response.headers.get('Content-Security-Policy');
+      expect(policy).toBe(await landingPolicy({ html, widgetOrigins: [TURNSTILE_ORIGIN] }));
+      expect(policy).not.toContain('unsafe-inline');
+    },
+  );
+
+  test('the widget keeps the one page script of the landing without it', async () => {
+    const withoutWidget = await landingPage(LandingNotice.None);
+    const withWidget = await widgetLandingPage(LandingNotice.None);
+    expect(onlyInlineSource({ html: withWidget.html, pattern: SCRIPT_PATTERN })).toBe(
+      onlyInlineSource({ html: withoutWidget.html, pattern: SCRIPT_PATTERN }),
     );
-    expect(policy).not.toContain('unsafe-inline');
   });
 
   test('shows the hero, the benefits, how it works, the final call and the footer, in that order', async () => {
@@ -155,8 +230,8 @@ describe('the landing', () => {
     expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
   });
 
-  test('every word it shows or reads aloud comes from the copy module', async () => {
-    const { html } = await landingPage(LandingNotice.OpensSoon);
+  test.each(NOTICES)('with the %s notice and the widget, every word it shows or reads aloud comes from the copy module', async (notice) => {
+    const { html } = await widgetLandingPage(notice);
     const copy = copyStrings(LANDING_COPY);
     const readable = [
       ...textNodes(html),
@@ -196,41 +271,85 @@ describe('the landing', () => {
     expect(forms.filter((form) => !form.includes(LANDING_COPY.join.note))).toEqual([]);
   });
 
-  test('with the opens-soon notice, each form shows the notice as a focusable status instead of its note', async () => {
-    const { html } = await landingPage(LandingNotice.OpensSoon);
-    const forms = [...html.matchAll(FORM_PATTERN)].map(([form]) => form);
-    expect(forms).toHaveLength(JOIN_FORMS.length);
-    forms.forEach((form) => {
-      expect(form).toMatch(new RegExp(`<p [^>]*role="status"[^>]*tabindex="-1"[^>]*>[\\s\\S]*${LANDING_COPY.join.opensSoon}`));
-      expect(form).not.toContain(LANDING_COPY.join.note);
-    });
+  test.each(SHOWN_NOTICES)(
+    'with the $notice notice, each form shows "$text" as its own focusable status instead of its note',
+    async ({ notice, text }) => {
+      const { html } = await landingPage(notice);
+      const forms = formsOf(html).map(decoded);
+      expect(forms.map((form) => NOTICE_PATTERN.exec(form)?.slice(1))).toEqual(JOIN_FORMS.map(({ id }) => [id, text]));
+      expect(forms.filter((form) => form.includes(LANDING_COPY.join.note))).toEqual([]);
+    },
+  );
+
+  test.each(NOTICES)(
+    'with the %s notice and a site key, each form holds one waitlist widget between its capsule and its status',
+    async (notice) => {
+      const { html } = await widgetLandingPage(notice);
+      const forms = formsOf(html);
+      expect(forms).toHaveLength(JOIN_FORMS.length);
+      expect(html.match(WIDGET_PATTERN)).toHaveLength(JOIN_FORMS.length);
+      forms.forEach((form) => {
+        expect(form).toContain(`${CAPSULE_END}\n${WIDGET_HTML}\n<p `);
+      });
+    },
+  );
+
+  test.each([
+    ['no site key', null],
+    ['an unusable site key', UNUSABLE_SITE_KEY],
+  ])('with %s, the landing renders no widget, no Turnstile script and no Turnstile origin', async (_name, siteKey) => {
+    const { response, html } = await pageOf(serveLandingPage({ notice: LandingNotice.Joined, siteKey }));
+    expect(html).not.toMatch(WIDGET_PATTERN);
+    expect(html).not.toContain(TURNSTILE_SCRIPT_TAG);
+    expect(html).not.toContain(UNUSABLE_SITE_KEY);
+    expect(response.headers.get('Content-Security-Policy')).not.toContain(TURNSTILE_ORIGIN);
   });
 });
 
 describe('the site host through the Worker', () => {
-  test.each([
-    { method: 'GET', path: '/', page: () => landingPage(LandingNotice.None) },
-    { method: 'GET', path: '/self-host', page: selfHostPage },
-  ])('$method $path answers the page this module renders, with its headers', async ({ method, path, page }) => {
-    const response = await exports.default.fetch(`${LOCAL_SITE_ORIGIN}${path}`, { method });
-    const expected = await page();
-    expect(response.status).toBe(OK_STATUS);
+  function keyedLandingPage(notice: LandingNotice): Promise<SitePage> {
+    return pageOf(serveLandingPage({ notice, siteKey: TURNSTILE_TEST_SITE_KEY }));
+  }
+
+  function postJoin(token: string | null): Promise<Response> {
+    const fields = new URLSearchParams({ email: `${crypto.randomUUID()}@example.com` });
+    if (token !== null) fields.set(TOKEN_FIELD, token);
+    const body = fields.toString();
+    return exports.default.fetch(`${LOCAL_SITE_ORIGIN}/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': FORM_CONTENT_TYPE, 'Content-Length': String(body.length) },
+      body,
+    });
+  }
+
+  async function expectPage({ response, expected, status }: { response: Response; expected: SitePage; status: number }): Promise<void> {
+    expect(response.status).toBe(status);
     expect(await response.text()).toBe(expected.html);
     expect(response.headers.get('Content-Security-Policy')).toBe(expected.response.headers.get('Content-Security-Policy'));
     expect(response.headers.get('Strict-Transport-Security')).toBe(STRICT_TRANSPORT_SECURITY);
+  }
+
+  test.each([
+    { method: 'GET', path: '/', page: () => keyedLandingPage(LandingNotice.None) },
+    { method: 'HEAD', path: '/', page: async () => ({ ...(await keyedLandingPage(LandingNotice.None)), html: '' }) },
+    { method: 'GET', path: '/self-host', page: selfHostPage },
+  ])('$method $path answers the page this module renders, with the configured site key and its headers', async ({ method, path, page }) => {
+    const response = await exports.default.fetch(`${LOCAL_SITE_ORIGIN}${path}`, { method });
+    await expectPage({ response, expected: await page(), status: OK_STATUS });
   });
 
-  test('POST /join answers the landing with the opens-soon notices and its headers', async () => {
-    const response = await exports.default.fetch(`${LOCAL_SITE_ORIGIN}/join`, {
-      method: 'POST',
-      headers: { 'Content-Type': FORM_CONTENT_TYPE },
-      body: JOIN_FORM_BODY,
-    });
-    const expected = await landingPage(LandingNotice.OpensSoon);
-    expect(response.status).toBe(OK_STATUS);
-    expect(await response.text()).toBe(expected.html);
-    expect(response.headers.get('Content-Security-Policy')).toBe(expected.response.headers.get('Content-Security-Policy'));
-    expect(response.headers.get('Strict-Transport-Security')).toBe(STRICT_TRANSPORT_SECURITY);
+  test('POST /join with the dummy token answers the joined landing and mails the address through the console', async () => {
+    const output = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const response = await postJoin(TURNSTILE_DUMMY_TOKEN);
+    await expectPage({ response, expected: await keyedLandingPage(LandingNotice.Joined), status: OK_STATUS });
+    expect(output).toHaveBeenCalledTimes(1);
+    output.mockRestore();
+  });
+
+  test('POST /join without a token answers the try-again landing, 429 with Retry-After 60', async () => {
+    const response = await postJoin(null);
+    expect(response.headers.get('Retry-After')).toBe(RETRY_AFTER_SECONDS);
+    await expectPage({ response, expected: await keyedLandingPage(LandingNotice.TryAgain), status: TOO_MANY_STATUS });
   });
 });
 

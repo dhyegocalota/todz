@@ -37,6 +37,8 @@ export const LANDING_COPY = {
     submitting: 'Joining…',
     note: 'Only to tell you when todz opens.',
     opensSoon: 'The waitlist opens soon.',
+    joined: "You're on the list. Check your inbox.",
+    tryAgain: "Couldn't add you right now. Try again in a minute.",
   },
   benefits: {
     heading: 'Why todz',
