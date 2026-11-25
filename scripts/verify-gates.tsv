@@ -22,6 +22,8 @@ apps/api/src/site/*	product	typecheck unit e2e
 apps/api/public/*	product	typecheck unit e2e
 apps/api/e2e/*	product	typecheck unit e2e
 apps/api/playwright.config.ts	product	typecheck unit e2e
+apps/api/wrangler.jsonc	product	typecheck unit e2e
+apps/api/migrations/*	product	typecheck unit e2e
 apps/*	product	typecheck unit
 libs/*	product	typecheck unit
 .agents/hooks/*	tooling	hooks

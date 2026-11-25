@@ -150,7 +150,7 @@ classify .env.example
 expect_line "the environment template" "$output" gates "doctor format secrets audit shape unit"
 expect_line "the environment template" "$output" packages "@todz/api"
 
-for site_path in apps/api/src/site/landing-page.ts apps/api/public/landing/x.png apps/api/e2e/landing.spec.ts apps/api/playwright.config.ts; do
+for site_path in apps/api/src/site/landing-page.ts apps/api/public/landing/x.png apps/api/e2e/landing.spec.ts apps/api/playwright.config.ts apps/api/wrangler.jsonc apps/api/migrations/0005_waitlist.sql; do
   classify "$site_path"
   expect_line "$site_path" "$output" class product
   expect_line "$site_path" "$output" gates "doctor format secrets typecheck audit shape unit e2e"
