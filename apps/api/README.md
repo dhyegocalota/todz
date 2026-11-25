@@ -12,7 +12,7 @@ The same Worker serves the todz website on its own host: one short page that say
 
 The site describes itself to what reads it other than a person: a search engine, a chat preview, an answer engine or a browser agent. Every public page carries its own title, canonical address, share card, icons and structured data; the site serves its robots rules, sitemap, plain-text guides for language models, web manifest and catalog of agent resources from the same copy as the landing; the MCP server publishes a card describing itself without a key; and the landing offers a browser agent four tools, one of which joins the waitlist through the page's own form and its Turnstile check.
 
-The waitlist keeps each address once and mails it a short confirmation once, ever, and answers the same whether the address is new or already there. It is guarded like sign-in, by limits per client, per address and overall and by a Turnstile check, and it stays closed instead of open when any of those pieces is missing.
+The waitlist keeps each address once and mails it a short confirmation once, ever, and answers the same whether the address is new or already there. It is guarded like sign-in, by limits per client, per address and overall and by a Turnstile check, takes a bounded number of new addresses a day, and it stays closed instead of open when any of those pieces is missing.
 
 The site also holds a small admin for the one owner address: a link mailed to it works only in the browser that asked for it, once and briefly, and opens a short session that shows the waitlist and exports it. Every other address gets the same answer and no mail, and the admin is guarded and closes the same way.
 

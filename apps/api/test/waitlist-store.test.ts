@@ -1,7 +1,7 @@
 import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_SECOND, WAITLIST_DAILY_JOINS_MAX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, onTestFinished, test } from 'vitest';
-import { WaitlistJoin, joinWaitlist, joinWaitlistWithinLimit, recordConfirmationFailure } from '../src/site/waitlist-store';
+import { WaitlistJoin, joinWaitlistWithinLimit, recordConfirmationFailure } from '../src/site/waitlist-store';
 import { freshAddress } from './email-sign-in-client';
 import { CLOCK_NOW } from './task-fixtures';
 import { deleteSeededJoins, seedJoins, waitlistRows } from './waitlist-client';
@@ -15,7 +15,7 @@ const FAILED_AT = LATER + MILLISECONDS_PER_SECOND;
 describe('the waitlist store', () => {
   test('a first join keeps the address with its join time and claims the confirmation', async () => {
     const address = freshAddress();
-    expect(await joinWaitlist({ database: env.DIRECTORY, address, now: CLOCK_NOW })).toBe(true);
+    expect(await joinWaitlistWithinLimit({ database: env.DIRECTORY, address, now: CLOCK_NOW })).toBe(WaitlistJoin.Claimed);
     expect(await waitlistRows(address)).toEqual([
       { address, joined_at: CLOCK_NOW, confirmation_claimed_at: CLOCK_NOW, confirmation_failed_at: null },
     ]);
@@ -23,8 +23,8 @@ describe('the waitlist store', () => {
 
   test('a second join of the address keeps one row, its first times, and claims nothing', async () => {
     const address = freshAddress();
-    await joinWaitlist({ database: env.DIRECTORY, address, now: CLOCK_NOW });
-    expect(await joinWaitlist({ database: env.DIRECTORY, address, now: LATER })).toBe(false);
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address, now: CLOCK_NOW });
+    expect(await joinWaitlistWithinLimit({ database: env.DIRECTORY, address, now: LATER })).toBe(WaitlistJoin.Known);
     expect(await waitlistRows(address)).toEqual([
       { address, joined_at: CLOCK_NOW, confirmation_claimed_at: CLOCK_NOW, confirmation_failed_at: null },
     ]);
@@ -33,22 +33,22 @@ describe('the waitlist store', () => {
   test('two concurrent joins of the address keep one row and only one claims the confirmation', async () => {
     const address = freshAddress();
     const claims = await Promise.all([
-      joinWaitlist({ database: env.DIRECTORY, address, now: CLOCK_NOW }),
-      joinWaitlist({ database: env.DIRECTORY, address, now: CLOCK_NOW }),
+      joinWaitlistWithinLimit({ database: env.DIRECTORY, address, now: CLOCK_NOW }),
+      joinWaitlistWithinLimit({ database: env.DIRECTORY, address, now: CLOCK_NOW }),
     ]);
-    expect(claims.filter((isClaimed) => isClaimed)).toHaveLength(1);
+    expect(claims.filter((joined) => joined === WaitlistJoin.Claimed)).toHaveLength(1);
     expect(await waitlistRows(address)).toHaveLength(1);
   });
 
   test('two addresses each claim their own confirmation', async () => {
     const [first, second] = [freshAddress(), freshAddress()];
-    expect(await joinWaitlist({ database: env.DIRECTORY, address: first, now: CLOCK_NOW })).toBe(true);
-    expect(await joinWaitlist({ database: env.DIRECTORY, address: second, now: CLOCK_NOW })).toBe(true);
+    expect(await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: first, now: CLOCK_NOW })).toBe(WaitlistJoin.Claimed);
+    expect(await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: second, now: CLOCK_NOW })).toBe(WaitlistJoin.Claimed);
   });
 
   test('a failed confirmation is recorded on the row and keeps its claim', async () => {
     const address = freshAddress();
-    await joinWaitlist({ database: env.DIRECTORY, address, now: CLOCK_NOW });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address, now: CLOCK_NOW });
     await recordConfirmationFailure({ database: env.DIRECTORY, address, now: FAILED_AT });
     expect(await waitlistRows(address)).toEqual([
       { address, joined_at: CLOCK_NOW, confirmation_claimed_at: CLOCK_NOW, confirmation_failed_at: FAILED_AT },

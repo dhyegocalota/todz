@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Env } from '../src/env';
 import worker from '../src/index';
 import { DigestCron, DigestMissingPiece } from '../src/site/waitlist-digest';
-import { joinWaitlist } from '../src/site/waitlist-store';
+import { joinWaitlistWithinLimit } from '../src/site/waitlist-store';
 import { CLOUDFLARE_SETTINGS, bindingFailingWith, recordingBinding } from './email-sign-in-client';
 import { workerEnvWith } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
@@ -56,10 +56,10 @@ afterEach(() => {
 describe('the scheduled waitlist digest', () => {
   test('mails the admin address one digest of the last 24 hours, the window closed at the run and open at its start', async () => {
     const recording = recordingBinding();
-    await joinWaitlist({ database: env.DIRECTORY, address: 'old@example.com', now: SINCE });
-    await joinWaitlist({ database: env.DIRECTORY, address: 'first@example.com', now: SINCE + MILLISECONDS_PER_HOUR });
-    await joinWaitlist({ database: env.DIRECTORY, address: 'last@example.com', now: CLOCK_NOW });
-    await joinWaitlist({ database: env.DIRECTORY, address: 'later@example.com', now: CLOCK_NOW + 1 });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: 'old@example.com', now: SINCE });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: 'first@example.com', now: SINCE + MILLISECONDS_PER_HOUR });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: 'last@example.com', now: CLOCK_NOW });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: 'later@example.com', now: CLOCK_NOW + 1 });
     await digestSentBy({ recording });
     const [message, ...others] = recording.sent;
     expect(others).toEqual([]);
@@ -74,7 +74,7 @@ describe('the scheduled waitlist digest', () => {
 
   test('still mails on an empty day, with the total', async () => {
     const recording = recordingBinding();
-    await joinWaitlist({ database: env.DIRECTORY, address: 'old@example.com', now: SINCE - MILLISECONDS_PER_HOUR });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: 'old@example.com', now: SINCE - MILLISECONDS_PER_HOUR });
     await digestSentBy({ recording });
     const [message, ...others] = recording.sent;
     expect(others).toEqual([]);
@@ -84,7 +84,7 @@ describe('the scheduled waitlist digest', () => {
 
   test('escapes an address in the html and keeps it as it is in the text', async () => {
     const recording = recordingBinding();
-    await joinWaitlist({ database: env.DIRECTORY, address: ESCAPING_ADDRESS, now: CLOCK_NOW });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: ESCAPING_ADDRESS, now: CLOCK_NOW });
     await digestSentBy({ recording });
     const [message] = recording.sent;
     expect(message?.html).toContain(ESCAPED_ESCAPING_ADDRESS);

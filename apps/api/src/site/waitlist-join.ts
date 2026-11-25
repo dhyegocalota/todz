@@ -20,7 +20,7 @@ import {
   waitlistClientRefusal,
   waitlistGlobalRefusal,
 } from './waitlist-limiter';
-import { joinWaitlist, recordConfirmationFailure } from './waitlist-store';
+import { WaitlistJoin, joinWaitlistWithinLimit, recordConfirmationFailure } from './waitlist-store';
 
 const JoinFormSchema = z.object({ email: z.string(), [TURNSTILE_RESPONSE_FIELD]: z.string() });
 
@@ -106,9 +106,10 @@ async function joinNoticeOf({ request, env, executionContext }: SiteContext): Pr
   if (globalRefusal !== null) return globalRefusal;
   const addressRefusal = await waitlistAddressRefusal({ request, env, address });
   if (addressRefusal !== null) return addressRefusal;
-  const isClaimed = await joinWaitlist({ database: env.DIRECTORY, address, now: Date.now() }).catch(() => null);
-  if (isClaimed === null) return LandingNotice.TryAgain;
-  if (!isClaimed) return LandingNotice.Joined;
+  const joined = await joinWaitlistWithinLimit({ database: env.DIRECTORY, address, now: Date.now() }).catch(() => null);
+  if (joined === null) return LandingNotice.TryAgain;
+  if (joined === WaitlistJoin.Full) return LandingNotice.OpensSoon;
+  if (joined === WaitlistJoin.Known) return LandingNotice.Joined;
   const confirmation = sendConfirmation({ sender: guard.sender, database: env.DIRECTORY, address, siteOrigin: guard.siteOrigin });
   executionContext.waitUntil(confirmation.catch(() => undefined));
   return LandingNotice.Joined;
