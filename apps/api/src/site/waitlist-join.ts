@@ -1,6 +1,6 @@
 import { WAITLIST_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
 import { z } from 'zod';
-import { normalizedAddress } from '../email-address';
+import { isOwnDomainAddress, normalizedAddress } from '../email-address';
 import { type EmailSender, emailSenderOf } from '../email-sender';
 import { waitlistMail } from '../emails/waitlist-mail';
 import type { Env } from '../env';
@@ -151,6 +151,7 @@ async function joinOutcomeOf({ request, env, executionContext }: SiteContext): P
   const isHoneypotFilled = honeypot !== undefined && honeypot !== '';
   if (isHoneypotFilled) return JoinOutcome.Joined;
   if (stampVerdict !== StampVerdict.Patient) return JoinOutcome.Joined;
+  if (isOwnDomainAddress(address)) return JoinOutcome.Joined;
   const isClaimed = await joinWaitlist({ database: env.DIRECTORY, address, now }).catch(() => null);
   if (isClaimed === null) return JoinOutcome.TryAgain;
   if (!isClaimed) return JoinOutcome.Joined;

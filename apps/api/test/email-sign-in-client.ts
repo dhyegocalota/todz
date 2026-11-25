@@ -83,6 +83,7 @@ export function acceptingSiteverify(): MockInstance<typeof fetch> {
 const SentMessageSchema = z.object({
   from: z.object({ name: z.string(), email: z.string() }),
   replyTo: z.string(),
+  headers: z.record(z.string(), z.string()).optional(),
   to: z.string(),
   subject: z.string(),
   html: z.string(),
@@ -118,7 +119,7 @@ export function bindingFailingWith(failure: Error): SendEmail {
   };
 }
 
-export type SentMail = { to: string; text: string };
+export type SentMail = { to: string; replyTo: string; text: string };
 
 export type LinkRow = {
   digest: string;

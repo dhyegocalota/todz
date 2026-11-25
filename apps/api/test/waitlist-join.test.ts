@@ -454,6 +454,20 @@ describe('a refused join answers try again, 429 with Retry-After 60, and keeps n
     expect(await waitlistRows(email.toLowerCase())).toEqual([]);
   });
 
+  test.each([['x@todz.app'], ['X@TODZ.APP'], ['reply+abc@todz.app'], ['hello+1@todz.app']])('the own domain address %j', async (email) => {
+    const run = await join({ email });
+    await expectJoined(run);
+    expect(run.sent).toEqual([]);
+    expect(await waitlistRows(email.toLowerCase())).toEqual([]);
+  });
+
+  test('an address on a domain that only starts with the own domain joins as before', async () => {
+    const address = `${crypto.randomUUID()}@todz.app.example`;
+    const run = await join({ email: address });
+    await expectJoined(run);
+    expect(await waitlistRows(address)).toHaveLength(1);
+  });
+
   test('a directory that fails sends nothing', async () => {
     const address = freshAddress();
     const run = await join({ email: address, settings: { DIRECTORY: failingDirectory() } });

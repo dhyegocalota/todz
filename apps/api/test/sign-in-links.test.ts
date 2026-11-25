@@ -188,6 +188,26 @@ describe('POST /owner/sign-in-links', () => {
     expect(await totalLinks()).toBe(before);
   });
 
+  test.each([['x@todz.app'], ['X@TODZ.APP'], ['reply+abc@todz.app'], ['hello+1@todz.app']])(
+    'the own domain address %j answers 202 like any address, stores no link and sends nothing',
+    async (email) => {
+      const output = consoleOutput();
+      const before = await totalLinks();
+      const response = await requestLink({ email });
+      expect(response.status).toBe(ACCEPTED_STATUS);
+      expect(await response.json()).toEqual({});
+      expect(output).not.toHaveBeenCalled();
+      expect(await totalLinks()).toBe(before);
+    },
+  );
+
+  test('an address on a domain that only starts with the own domain is handled as before', async () => {
+    const output = consoleOutput();
+    const response = await requestLink({ email: 'x@todz.app.example' });
+    expect(response.status).toBe(ACCEPTED_STATUS);
+    expect(mailSent(output).to).toBe('x@todz.app.example');
+  });
+
   test.each([
     [''],
     ['ab'.repeat(32).toUpperCase()],
