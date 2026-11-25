@@ -3,6 +3,7 @@ import Observation
 
 @MainActor @Observable public final class DayCloseCoordinator {
     public private(set) var isClosingDay = false
+    public private(set) var isEngaged = false
     @ObservationIgnored var releaseTaking: Task<Void, Never>?
     @ObservationIgnored var countWaiting: Task<Void, Never>?
     @ObservationIgnored private var isWaitingForCount = false
@@ -41,10 +42,19 @@ import Observation
         isClosingDay = false
     }
 
+    public var acceptsKeyActions: Bool {
+        !isClosingDay || isEngaged
+    }
+
+    public func engage() {
+        isEngaged = true
+    }
+
     private var decision: DayCloseDecision {
-        DayCloseSchedule.decision(
+        guard let minutesAfterMidnight = DayClosePreference.minutesAfterMidnight(in: defaults) else { return .off }
+        return DayCloseSchedule.decision(
             at: now(),
-            minutesAfterMidnight: DayClosePreference.minutesAfterMidnight(in: defaults),
+            minutesAfterMidnight: minutesAfterMidnight,
             lastClosedDay: DayClosePreference.lastClosedDay(in: defaults),
             isOn: DayClosePreference.isOn(in: defaults),
             timeZone: timeZone
@@ -66,6 +76,7 @@ import Observation
     }
 
     private func open() {
+        isEngaged = false
         isClosingDay = true
         guard openPopover() else {
             isClosingDay = false

@@ -4,6 +4,8 @@ import Testing
 
 private let storedMinutes = 7 * 60
 private let closedDay = CalendarDate(year: 2026, month: 11, day: 25)
+private let minutesOutsideADay = [-2880, 1440, Int.max]
+private let minutesInsideADay = [0, 1439]
 
 @Suite struct DayClosePreferenceTests {
     @Test func theRegisteredDefaultsReadOffAtSixInTheEvening() throws {
@@ -34,5 +36,29 @@ private let closedDay = CalendarDate(year: 2026, month: 11, day: 25)
         let defaults = try emptyDefaults()
         defaults.set("yesterday", forKey: DayClosePreference.lastClosedDayStorageKey)
         #expect(DayClosePreference.lastClosedDay(in: defaults) == nil)
+    }
+
+    @Test(arguments: minutesOutsideADay)
+    func aStoredTimeOutsideADayReadsAsOff(minutes: Int) throws {
+        let defaults = try emptyDefaults()
+        defaults.set(minutes, forKey: DayClosePreference.timeStorageKey)
+        #expect(DayClosePreference.minutesAfterMidnight(in: defaults) == nil)
+    }
+
+    @Test(arguments: minutesInsideADay)
+    func aStoredTimeInsideADayReadsAsSet(minutes: Int) throws {
+        let defaults = try emptyDefaults()
+        defaults.set(minutes, forKey: DayClosePreference.timeStorageKey)
+        #expect(DayClosePreference.minutesAfterMidnight(in: defaults) == minutes)
+    }
+
+    @Test(arguments: minutesOutsideADay)
+    func thePickerShowsTheDefaultTimeForAStoredTimeOutsideADay(minutes: Int) {
+        #expect(DayClosePreference.pickerMinutes(stored: minutes) == DayClosePreference.minutesAfterMidnightByDefault)
+    }
+
+    @Test(arguments: minutesInsideADay)
+    func thePickerShowsAStoredTimeInsideADay(minutes: Int) {
+        #expect(DayClosePreference.pickerMinutes(stored: minutes) == minutes)
     }
 }

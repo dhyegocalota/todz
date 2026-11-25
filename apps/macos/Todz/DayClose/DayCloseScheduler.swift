@@ -7,6 +7,7 @@ private let recheckedNotifications: [Notification.Name] = [
     .NSCalendarDayChanged,
     UserDefaults.didChangeNotification,
 ]
+private let shortestCheckDelay: Duration = .seconds(1)
 
 @MainActor final class DayCloseScheduler {
     private let coordinator: DayCloseCoordinator
@@ -40,7 +41,7 @@ private let recheckedNotifications: [Notification.Name] = [
     private func checkAgain(at next: Date) {
         nextCheck = Task { [weak self] in
             do {
-                try await Task.sleep(for: .seconds(next.timeIntervalSinceNow))
+                try await Task.sleep(for: max(.seconds(next.timeIntervalSinceNow), shortestCheckDelay))
             } catch {
                 return
             }

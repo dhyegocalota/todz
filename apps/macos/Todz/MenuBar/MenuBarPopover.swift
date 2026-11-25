@@ -18,11 +18,17 @@ struct MenuBarPopover: View {
                 )
             )
             .task { await model.launch() }
+            .onChange(of: dayClose.isClosingDay, initial: true) { _, isClosingDay in clearFocus(isClosingDay: isClosingDay) }
     }
 
     private func focusAddField() {
         guard !dayClose.isClosingDay else { return }
         Task { focus = .addField }
+    }
+
+    private func clearFocus(isClosingDay: Bool) {
+        guard isClosingDay else { return }
+        focus = nil
     }
 
     @ViewBuilder private var screen: some View {
