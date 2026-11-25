@@ -45,7 +45,7 @@ Orca (ADR 0026), the Debug build launched with `open -g -j` against a local `wra
 - [ ] Opening 2: click the status item — expected: the usual Today, no action buttons
 - [ ] The launch in the walk is hidden (`open -g -j`) — expected: the popover still becomes visible at the time (`unhideWithoutActivation`)
 - [ ] Keys in the mode, during opening 1: D on a focused row — expected: done; Escape — expected: the popover closes; ⌘N — expected: nothing
-- [ ] Accessibility tree: each row's buttons read `Done`, `Move <title> to tomorrow`, `Remove the due date from <title>`; the opening announcement is not readable from the tree: BLOCKED unless VoiceOver runs, and recorded as such
+- [ ] Accessibility tree: each row's buttons read `Mark <title> as done` (the design's label for Done), `Move <title> to tomorrow`, `Remove the due date from <title>`; the opening announcement is not readable from the tree: BLOCKED unless VoiceOver runs, and recorded as such
 - [ ] Screenshots at `docs/screenshots/day-close/`; extra media at `.pr-media/day-close/`
 
 ## Edge cases found during execution

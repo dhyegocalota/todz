@@ -4,12 +4,6 @@ private let minutesPerHour = 60
 private let tomorrowOffset = 1
 private let instantFailure = "a Gregorian calendar date always has a time of day"
 
-private func gregorianCalendar(in timeZone: TimeZone) -> Calendar {
-    var calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = timeZone
-    return calendar
-}
-
 public enum DayCloseSchedule {
     // NB ADR 0055: the day closes at the owner's time or at the first chance after it the same day, never twice a day.
     public static func decision(
