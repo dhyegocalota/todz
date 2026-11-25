@@ -4,16 +4,23 @@ import Testing
 
 @MainActor private final class FilterReads {
     private(set) var count = 0
-    private var answer: CheckedContinuation<Bool, Never>?
+    private var waiting: CheckedContinuation<Bool, Never>?
+    private var queued: Bool?
 
     func read() async -> Bool {
         count += 1
-        return await withCheckedContinuation { answer = $0 }
+        guard let queued else { return await withCheckedContinuation { waiting = $0 } }
+        self.queued = nil
+        return queued
     }
 
     func answer(isQuiet: Bool) {
-        answer?.resume(returning: isQuiet)
-        answer = nil
+        guard let waiting else {
+            queued = isQuiet
+            return
+        }
+        waiting.resume(returning: isQuiet)
+        self.waiting = nil
     }
 }
 
@@ -44,10 +51,8 @@ import Testing
     }
 
     func startAnswering(isQuiet: Bool) async {
-        let starting = Task { await coordinator.start() }
-        await Task.yield()
         reads.answer(isQuiet: isQuiet)
-        await starting.value
+        await coordinator.start()
     }
 }
 
@@ -83,10 +88,8 @@ import Testing
         let bench = try FocusSwitchBench(isOn: false)
         await bench.coordinator.start()
         bench.setSwitch(true)
-        let changing = Task { await bench.coordinator.preferencesChanged() }
-        await Task.yield()
         bench.reads.answer(isQuiet: true)
-        await changing.value
+        await bench.coordinator.preferencesChanged()
         #expect(bench.reads.count == 1)
         #expect(bench.gate.isQuiet)
     }
@@ -104,11 +107,9 @@ import Testing
 
     @Test func aPerformBeforeTheReadWinsOverIt() async throws {
         let bench = try FocusSwitchBench(isOn: true)
-        let starting = Task { await bench.coordinator.start() }
-        await Task.yield()
         bench.gate.setQuiet(true)
         bench.reads.answer(isQuiet: false)
-        await starting.value
+        await bench.coordinator.start()
         #expect(bench.gate.isQuiet)
     }
 

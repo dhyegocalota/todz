@@ -1,7 +1,10 @@
 import Foundation
 
+private let readTimeout: Duration = .seconds(3)
+
 @MainActor public final class FocusSwitchCoordinator {
     var reading: Task<Void, Never>?
+    private var isRespectingFocus = false
     private let gate: ProactiveGate
     private let preference: RespectFocusPreference
     private let readFilter: () async -> Bool
@@ -28,6 +31,29 @@ import Foundation
     }
 
     private func synchronize() async {
-        fatalError("FocusSwitchCoordinator.start is not implemented")
+        let isOn = preference.isOn
+        guard isOn != isRespectingFocus else { return }
+        isRespectingFocus = isOn
+        gate.setRespectsFocus(isOn)
+        guard isOn else { return }
+        await readFocus()
+    }
+
+    // NB ADR 0054: a filter read that outlasts the timeout quiets the gate, and its later answer releases it.
+    private func readFocus() async {
+        let (settlements, settle) = AsyncStream.makeStream(of: Void.self)
+        let timeout = Task { [gate, pause] in
+            try? await pause(readTimeout)
+            guard !Task.isCancelled else { return }
+            gate.applyLaunchRead(isQuiet: true)
+            settle.yield()
+        }
+        reading = Task { [gate, readFilter] in
+            let isQuiet = await readFilter()
+            timeout.cancel()
+            gate.applyLaunchRead(isQuiet: isQuiet)
+            settle.yield()
+        }
+        for await _ in settlements { return }
     }
 }
