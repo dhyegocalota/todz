@@ -16,13 +16,21 @@
 | G2 (pages, mail, E2E) | `apps/api/src/site/admin-page.ts`, `admin-link-page.ts`, `admin-copy.ts`; `site-style.ts`; `site-headers.ts` (the admin response helper); `src/emails/admin-sign-in-mail.ts`, `src/emails/email-slot.ts` if a slot is needed; `apps/api/scripts/emails/admin-sign-in-*.ts`, `generated-emails.ts`; `src/emails/generated/`; `apps/api/test/site/admin-pages.test.ts`; `apps/api/test/emails/` (the new template's tests); `apps/api/e2e/admin.spec.ts`; `apps/api/playwright.config.ts` | `developer` (worktree `../todz-admin-page`) |
 | Lead (after the lanes) | `docs/runbooks/deploy-the-api.md` (migration 0006, nine limiters, the `ADMIN_EMAIL` var, an admin smoke check), `docs/self-host.md` if it names the limiters, `apps/api/README.md`, `AGENTS.md` if a helper joins the list, `tester-briefing.md`, `docs/adr/README.md` | the lead |
 
+**Amended by the plan review answers (spec R1–R21), which win over the lines above and the steps below:**
+
+- Every G1 test file is `apps/api/test/admin-*.test.ts`, not `test/site/` (R1); G2's rendering tests may stay in `test/site/admin-pages.test.ts`.
+- Step 0 also writes `site/admin-paths.ts`, `TurnstileAction.AdminSignIn`, `HttpStatus.Forbidden` and the `HttpHeader` members (R7), and the stubs return real minimal values (R5).
+- G1 also owns `libs/types/src/constants.ts`'s four admin constants (R16) and the `email` column of `admin_sessions` and the `waitlist_joined_at` index in 0006 (R8, R19).
+- G2 also owns `site-headers.ts`'s `connectsToSelf` (R2), `apps/api/e2e/turnstile-stub.ts` and `landing.spec.ts` (R15), and `playwright.config.ts`'s `ADMIN_EMAIL` and log file (R4).
+- The lead also owns `scripts/deploy-bodies/junk-turnstile-admin.txt`, `docs/self-host.md` with `pnpm site:generate` and its generated module (R13).
+
 The shared types in `admin-waitlist.ts` (step 0):
 
 ```ts
 export enum ConfirmationState { Sent = 'sent', Failed = 'failed' }
 export type WaitlistRow = { address: string; joinedAt: number; confirmation: ConfirmationState };
 export type WaitlistSummary = { total: number; joinedLastDay: number; failedConfirmations: number; rows: WaitlistRow[] };
-export enum AdminNotice { None = 'none', CheckInbox = 'check_inbox', TryAgain = 'try_again', Closed = 'closed', Forbidden = 'forbidden' }
+export enum AdminNotice { None = 'none', CheckInbox = 'check-inbox', TryAgain = 'try-again', Closed = 'closed', Forbidden = 'forbidden' }
 ```
 
 The stubs' signatures, which G2 fills and G1 calls:
@@ -44,7 +52,7 @@ Step 0 by the lead on `feat/landing-admin`; then G1 and G2 branch from it and ru
 
 ### Lead
 
-- [ ] **Step 0:** `admin-waitlist.ts` and the three stubs, typecheck green.
+- [x] **Step 0:** `admin-waitlist.ts`, `admin-paths.ts`, the enum members and the three stubs returning real minimal values (R5, R7), typecheck green — evidence: the step 0 commit.
 
 ### G1
 
