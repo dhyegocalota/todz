@@ -142,7 +142,7 @@ Without the `AppModel.swift` line, Step 4's code hangs exactly two tests, `anUnl
 
 - `apps/macos/Todz/Shortcuts/`: `LeftTodayIntent`, `AddTaskIntent`, `CompleteTaskIntent`, `TodzTaskEntity`, `TodzTaskQuery` (an `EntityStringQuery` whose methods throw the refusal), `TodzShortcuts` (three App Shortcuts, six phrases), `ShortcutRefusal`, `LeftTodaySnippet`. Glue only: every rule is G1's `AppModel` extension.
 - `Copy/ShortcutsCopy.swift`: the dialogs; `Todz/Shared/TodayDigest.swift`: the heading, rows and rest line the glance and the snippet both draw (the glance is unchanged, a pin, no red test: the app target has none).
-- `AppDelegate`: `AppDependencyManager.shared.add(dependency: self.model)` after `super.init()`; on a launch whose `NSApplication.launchIsDefaultUserInfoKey` is false (an intent launch) the day-close scheduler and the morning glance trigger start the first time the owner activates the app (ADR 0066 §11, measured in its Evidence). The Debug config of `project.yml` sets `INFOPLIST_KEY_CFBundleDisplayName: Todz Dev`.
+- `AppDelegate`: `AppDependencyManager.shared.add(dependency: self.model)` after `super.init()`; on a launch whose `NSApplication.launchIsDefaultUserInfoKey` is false and whose activation policy is `.prohibited` (an intent launch; `LaunchSurfaceStart`, unit tested) the day-close scheduler and the morning glance trigger start when the policy leaves `.prohibited`, on the first popover opening or when the app becomes active (ADR 0066 §11); any other launch starts them at once. Add and Complete wait for readiness and require authentication. The Debug config of `project.yml` sets `INFOPLIST_KEY_CFBundleDisplayName: Todz Dev`.
 
 ### How to build and register
 
@@ -152,7 +152,7 @@ Without the `AppModel.swift` line, Step 4's code hangs exactly two tests, `anUnl
 
 - Debug `CFBundleDisplayName` `Todz Dev`; Release has no `CFBundleDisplayName` and `CFBundleName` `Todz` (the plan expected `CFBundleDisplayName` `Todz`; nothing reads it, so Release shows `Todz` through its name).
 - `extract.actionsdata`, both products: actions `AddTaskIntent`, `CompleteTaskIntent`, `LeftTodayIntent`, `TodzFocusFilter`; entity `TodzTaskEntity`; 3 `autoShortcuts`, 6 phrases (`What's left today in ${applicationName}`, `What do I have today in ${applicationName}`, `Add a task to ${applicationName}`, `New task in ${applicationName}`, `Complete a task in ${applicationName}`, `Check off a task in ${applicationName}`).
-- Entitlements, Debug and Release alike: `app-sandbox`, `application-groups`, `get-task-allow`, `network.client`. No Siri key. The Release product printed `get-task-allow` too, which the plan expected absent: this lane edits no entitlement and signs with the same Personal Team, so the key comes from the local signing of the Release configuration; the tester should compare with a Release build of `main`.
+- Entitlements, Debug and Release alike: `app-sandbox`, `application-groups`, `get-task-allow`, `network.client`. No Siri key. The Release product prints `get-task-allow` too: Release is development-signed and carries it on `origin/main` as well (plan and test plan corrected).
 - `requestValueDialog` is not part of `extract.actionsdata`; the parameter dialogs come from `ShortcutsCopy` at run time, so the walk must hear `What's the task?` and `Which task?`.
 
 ### Tests
@@ -165,7 +165,9 @@ Without the `AppModel.swift` line, Step 4's code hangs exactly two tests, `anUnl
 - The result shows the dialog and, in the Shortcuts app, the snippet; whether macOS shows the snippet is design O1's open point.
 - Add queues in the outbox and shows in `What's Left Today` once saved; Complete takes the entity chosen by the system's list or typed text.
 - The refusals read as the copy says when signed out, with no workspace and still loading.
-- After an intent launch, the first time the owner opens the app from the menu bar the glance and the day-close scheduler start.
+- After an intent launch, the first time the owner opens the menu bar popover (or the activation policy leaves `.prohibited`) the glance and the day-close scheduler start, and a lock and unlock then shows the glance (the new walk row). Hypothesis only: whether the status item click of an intent-launched app activates it was not measured.
+- A URL or restored-state launch starts both at once.
+- Add and Complete run through readiness first, so a cold run waits instead of answering signed out; the system asks to unlock before either runs (`requiresAuthentication`, unmeasured on this Mac).
 
 ### Known gaps
 

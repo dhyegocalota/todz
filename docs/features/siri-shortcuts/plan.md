@@ -64,7 +64,7 @@ G1 first through Step 3: its red commits carry a stub for every public symbol, s
   - Anything but `.ready`, `.added` or `.completed`/`.alreadyDone` throws its `ShortcutRefusal`. No title is logged anywhere.
 - [x] **Step 10** (7bf8861, abe7d64)**:** `TodzShortcuts: AppShortcutsProvider` with the three shortcuts, their phrases, short titles and symbols of § 4 and § 1.5, no tile colour; `AppDelegate.init` adds `AppDependencyManager.shared.add(dependency: model)` after `super.init()` (`model` is an instance property that cannot be read before it returns). `project.yml`: the Debug config of the `Todz` target gains `INFOPLIST_KEY_CFBundleDisplayName: Todz Dev` (ADR 0066 §10).
 - [x] **Step 10a** (decce52, abe7d64)**:** (G2, right after Step 10, before the walk) Cold-run spike: quit the Debug app, run the `What's Left Today` tile once from the Shortcuts app (Orca, inside the single session) with the frontmost and window samplers; record whether the main window opens, whether a Dock icon appears, whether the morning glance or the day-close popover shows, and the value of `launchIsDefaultUserInfoKey`; write the measurement into ADR 0066 Evidence. Then apply ADR 0066 §11: when the launch is not the default launch, `applicationDidFinishLaunching` starts neither `morningGlanceTrigger` nor `dayCloseScheduler` and closes the main window if one opened (`TodzApp.swift` only if the window cannot be closed from the delegate). Its own walk box. Named to day-temperature's lane before it is committed.
-- [x] **Step 11** (8f7d70d gate, swift test 1099 passed)**:** `xcodegen generate`, Debug and Release `xcodebuild` print `BUILD SUCCEEDED` with no `error:` and no `warning:` other than the metadata processor's known noise (quoted in the briefing); the Debug product's `CFBundleDisplayName` is `Todz Dev` and the Release product's is `Todz`; `Metadata.appintents/extract.actionsdata` of the Debug product lists `LeftTodayIntent`, `AddTaskIntent`, `CompleteTaskIntent` and `TodzFocusFilter`, the entity, and three `autoShortcuts` with the six phrases; `codesign -dv --entitlements -` on the Debug product shows the same keys as before (no Siri key) and on the Release product the same without `get-task-allow`; `swift test --package-path apps/macos/TodzKit` green with its count. The `## G2` section of `tester-briefing.md`: what changed, the printed metadata and entitlements, each action's identifier as Shortcuts will name it, and every "it works" as a hypothesis.
+- [x] **Step 11** (8f7d70d gate, swift test 1099 passed)**:** `xcodegen generate`, Debug and Release `xcodebuild` print `BUILD SUCCEEDED` with no `error:` and no `warning:` other than the metadata processor's known noise (quoted in the briefing); the Debug product's `CFBundleDisplayName` is `Todz Dev` and the Release product's is `Todz`; `Metadata.appintents/extract.actionsdata` of the Debug product lists `LeftTodayIntent`, `AddTaskIntent`, `CompleteTaskIntent` and `TodzFocusFilter`, the entity, and three `autoShortcuts` with the six phrases; `codesign -dv --entitlements -` on the Debug product shows the same keys as before (no Siri key) and on the Release product the same four keys (development-signed, so `get-task-allow` is there on `origin/main` too); `swift test --package-path apps/macos/TodzKit` green with its count. The `## G2` section of `tester-briefing.md`: what changed, the printed metadata and entitlements, each action's identifier as Shortcuts will name it, and every "it works" as a hypothesis.
 
 ### Lead
 
@@ -89,6 +89,18 @@ G1 first through Step 3: its red commits carry a stub for every public symbol, s
 | walk | `shortcuts run` cannot reach the intents | the Preflight box fails: sign needs iCloud, the import fails, or a run prints that the action is missing | BLOCKED, the lead decides before the session (building them in the editor needs typing the Mac does not take); the headless rows are not attempted and are never moved to the Human checklist unasked |
 
 **Steps with no backout:** none.
+
+## Fix round 1 (review NO, security MINOR)
+
+| # | Finding | Fix | Evidence |
+|---|---------|-----|----------|
+| 1 | Add and Complete skipped readiness, so a cold run answered `.signedOut` or `.noWorkspace` | `requireShortcutReadiness()` first in both `perform()`; two pins of a cold add through readiness | a3aff2b, 55d3d13 |
+| 2 | The detector took any launch whose key is false; the surfaces waited only for `didBecomeActive` | `LaunchSurfaceStart.of(isDefaultLaunch:isActivationProhibited:)` defers only key false and `.prohibited`; the deferred surfaces start when the policy leaves `.prohibited`, on the first popover opening or on activation; a test-plan walk row | 37f0292 (red), f5541ee |
+| 3 | Release `get-task-allow` expected absent | `origin/main` carries it too (development-signed); Step 11 and test-plan corrected | the docs commit of this round |
+| 4 | "The first three" hard-coded | spelled out from `ShortcutLimits.spokenTitleLimit` | 55d3d13 |
+| 5 | `requireShortcutReadiness` in the refusal's file | `Todz/Shortcuts/AppModel+ShortcutRefusal.swift` | 55d3d13 |
+| 6 | Status | `Building` in the spec and the index | the docs commit of this round |
+| S1 | A shortcut can write without the owner present | `authenticationPolicy` `.requiresAuthentication` on Add and Complete; ADR 0066 §3 records it and Shortcuts' consent model | 55d3d13 |
 
 ## Z. Prove and ship
 
