@@ -21,11 +21,11 @@ One lane: the rule, then the preference, then the wiring.
 
 ### G1
 
-- [ ] **Step 1:** red: `ActivationPolicyRuleTests` for every case, against a stub that stops on `ActivationPolicyRule.policy is not implemented`.
-- [ ] **Step 2:** green: the rule.
-- [ ] **Step 3:** red: `MenuBarOnlyPreferenceTests` (on by default, the storage key, registering keeps the owner's choice, another searched domain is ignored), against a stub that stops on `MenuBarOnlyPreference.isOn is not implemented`.
-- [ ] **Step 4:** green: the preference, registered at launch.
-- [ ] **Step 5:** the app: observe windows becoming key and closing, apply the rule after launch, the Settings row and its copy.
+- [x] **Step 1:** red: `ActivationPolicyRuleTests` for every case, against a stub that stops on `ActivationPolicyRule.policy is not implemented`. — 7f5bf454
+- [x] **Step 2:** green: the rule. — c24252d7
+- [x] **Step 3:** red: `MenuBarOnlyPreferenceTests` (on by default, the storage key, registering keeps the owner's choice, another searched domain is ignored), against a stub that stops on `MenuBarOnlyPreference.isOn is not implemented`. — 01cf3fbc
+- [x] **Step 4:** green: the preference, registered at launch. — 7048cec6, registered in `TodzApp` in 99879ede
+- [x] **Step 5:** the app: observe windows becoming key and closing, apply the rule after launch, the Settings row and its copy. — 99879ede
 - [ ] **Step 6:** xcodegen, Debug build, `swift test`, `pnpm verify`.
 
 ## Failure modes
