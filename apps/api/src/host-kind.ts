@@ -1,6 +1,6 @@
 import type { Env } from './env';
 
-const WWW_PREFIX = 'www.';
+export const WWW_PREFIX = 'www.';
 
 export enum HostKind {
   Api = 'api',

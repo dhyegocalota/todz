@@ -4,7 +4,7 @@ import { HttpStatus } from '../src/http-status';
 import { countingEnv } from './counting-namespace';
 import { type OwnerCall, ownerCall, serveOwnerCall, signInOwner } from './owner-client';
 
-const MCP_URL = 'https://api.todz.test/mcp';
+const MCP_URL = 'http://localhost:8787/mcp';
 const NOT_FOUND_BODY = JSON.stringify({ error: 'not_found' });
 const FAR_AHEAD_CURSOR = 999;
 const ATTACKED_TITLE = 'Attacked';

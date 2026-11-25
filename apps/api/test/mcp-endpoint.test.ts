@@ -13,8 +13,8 @@ import { countingEnv } from './counting-namespace';
 import { revokeKey, seedIssuedKey } from './directory-seed';
 import { CLOCK_NOW } from './task-fixtures';
 
-const MCP_URL = 'https://api.todz.test/mcp';
-const WORKER_ORIGIN = 'https://api.todz.test';
+const MCP_URL = 'http://localhost:8787/mcp';
+const WORKER_ORIGIN = 'http://localhost:8787';
 const SESSION_HEADER = 'Mcp-Session-Id';
 const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const SESSION_REQUIRED_CODE = -32000;
