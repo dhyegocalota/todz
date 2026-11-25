@@ -50,8 +50,8 @@ private func encodedText(_ value: some Encodable) throws -> String {
     }
 
     @Test func signInLinkRequestBodyPinsItsJson() throws {
-        let body = SignInLinkRequestBody(email: "maria@example.com", linkChallenge: "challenge", turnstileToken: "token")
-        #expect(try encodedText(body) == #"{"email":"maria@example.com","link_challenge":"challenge","turnstile_token":"token"}"#)
+        let body = SignInLinkRequestBody(email: "maria@example.com", linkChallenge: "challenge", turnstileToken: "token", appLinkScheme: .debug)
+        #expect(try encodedText(body) == #"{"app_link_scheme":"todz-dev","email":"maria@example.com","link_challenge":"challenge","turnstile_token":"token"}"#)
     }
 
     @Test func nameBodyPinsItsJson() throws {

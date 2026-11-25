@@ -22,7 +22,8 @@ const LOCAL_SITE_ORIGIN_VARIABLE = `--var SITE_ORIGIN:${LOCAL_SITE_ORIGIN}`;
 const LOCAL_SITE_PORT_FLAG = '--port 8788';
 const LOCAL_SITE_UPSTREAM_FLAG = '--local-upstream localhost:8788';
 const ASSET_HEADERS_FILE = 'apps/api/public/_headers';
-const NOSNIFF_HEADERS_PATTERN = /^\/\*\n {2}X-Content-Type-Options: nosniff\n$/;
+const ASSET_HEADERS_PATTERN =
+  /^\/\*\n {2}X-Content-Type-Options: nosniff\n {2}Strict-Transport-Security: max-age=31536000\n {2}Referrer-Policy: no-referrer\n$/;
 const SITE_HOST = 'todz.app';
 const SITE_ORIGIN = `https://${SITE_HOST}`;
 const TURNSTILE_SITE_KEY = '0x4AAAAAAGSI2K7Qe9Vad2nL';
@@ -298,8 +299,8 @@ describe('the api source', () => {
     expect(command.indexOf(MIGRATIONS_COMMAND)).toBeLessThan(command.indexOf(DEV_COMMAND));
   });
 
-  test('every static file answers with X-Content-Type-Options nosniff', () => {
-    expect(readRepositoryFile(ASSET_HEADERS_FILE)).toMatch(NOSNIFF_HEADERS_PATTERN);
+  test('every static file answers with nosniff, strict transport security and no referrer', () => {
+    expect(readRepositoryFile(ASSET_HEADERS_FILE)).toMatch(ASSET_HEADERS_PATTERN);
   });
 
   test('only the routing module and the env type name the project store namespace', () => {

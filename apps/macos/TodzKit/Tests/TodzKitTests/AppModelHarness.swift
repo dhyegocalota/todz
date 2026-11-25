@@ -5,6 +5,7 @@ import Testing
 let harnessTimeZoneIdentifier = "America/Sao_Paulo"
 let harnessChallengeToken = "challenge-token"
 let harnessLinkTurnstileToken = "link-turnstile-token"
+let harnessLinkScheme = AppLinkScheme.debug
 let harnessDefaultServer = "http://localhost:8787"
 let harnessServerKey = "serverURL"
 let harnessPendingLifetime: TimeInterval = 20 * 60
@@ -90,6 +91,7 @@ final class HarnessClock {
             preference: preference,
             connect: { servers.connect($0) },
             probe: { await probes.probe($0) },
+            linkScheme: harnessLinkScheme,
             vault: vault,
             pendingLinks: pendingLinks,
             store: store,

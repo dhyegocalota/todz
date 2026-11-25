@@ -7,7 +7,7 @@ struct NextUpView: View {
 
     var body: some View {
         content
-            .widgetURL(link.url)
+            .widgetURL(link.url(scheme: AppLinkScheme.required(bundle: .main)))
     }
 
     @ViewBuilder private var content: some View {
