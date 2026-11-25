@@ -98,6 +98,8 @@ xcodegen generate --spec apps/macos/project.yml
 xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
 ```
 
+Your Release app opens sign-in links on `todz`, and the server needs no setting for it, because the app names its scheme when it asks for a link ([ADR 0058](adr/0058-the-app-tells-the-server-its-own-link-scheme-and-the-sign-in-link-carries-it-back.md)).
+
 Then open todz › Settings › Server and paste the URL the deploy printed. The app checks it, signs out of the server it was on and starts clean on yours. Sign in with your email, then open **Connect an agent** in the sidebar.
 
 ## 8. Point an MCP client at your server
