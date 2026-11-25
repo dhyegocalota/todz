@@ -3,7 +3,16 @@ import { EmailSlot, filledHtmlOf, filledTextOf } from '../../src/emails/email-sl
 
 describe('the email slots', () => {
   test('are written between double braces', () => {
-    expect(Object.values(EmailSlot)).toEqual(['{{link}}', '{{email}}', '{{origin}}']);
+    expect(Object.values(EmailSlot)).toEqual([
+      '{{link}}',
+      '{{email}}',
+      '{{origin}}',
+      '{{joined}}',
+      '{{total}}',
+      '{{failed}}',
+      '{{addresses}}',
+      '{{more}}',
+    ]);
   });
 
   test('fill every occurrence of a slot in text as it is', () => {
