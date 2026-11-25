@@ -91,6 +91,6 @@ All against the instance on port 8795 unless said otherwise. Inputs and outcomes
 
 - The real `todz.app` custom domain is proven only at deploy, through the runbook.
 - Turnstile, storage and limits for the waitlist are `landing-waitlist`'s.
-- Under `wrangler dev` a `Host` header does not reach the Worker; host dispatch was run live by one instance per host (`--local-upstream`), not by header.
+- Under `wrangler dev` a `Host` header does not reach the Worker; host dispatch was also run live, one instance per host (`--local-upstream`), as R1 allows. `--local-upstream` drops `https`, so the www redirect pointed at `http://todz.app` there: `https` is covered only by `site-dispatch.test.ts` and the runbook's checks after the deploy.
 - The Playwright MCP walk was scripted (MCP browsers not installed); no video was recorded, no side-by-side with a pre-change screenshot (the landing is new).
 - Unticked: two notes above that are requests, not test results.
