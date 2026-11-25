@@ -5,7 +5,7 @@ import { MCP_COPY, McpToolName } from '../src/mcp-copy';
 import worker from '../src/index';
 import { AgentClient, agentSetupOf } from '../src/site/agent-setup';
 import { LANDING_COPY } from '../src/site/landing-copy';
-import { IconPurpose, SITE_ICONS, SiteIcon } from '../src/site/site-icons';
+import { SITE_ICONS, SiteIcon } from '../src/site/site-icons';
 import { DOCS_URL, DiscoveryPath, MCP_URL, SITE_URL } from '../src/site/site-urls';
 import { workerEnvWith } from './owner-client';
 
@@ -73,7 +73,7 @@ const DISCOVERY_FILES = [
 ];
 const MANIFEST_ICONS = [SiteIcon.Icon192, SiteIcon.Icon512, SiteIcon.Maskable192, SiteIcon.Maskable512].map((icon) => {
   const { path, size, mediaType, purpose } = SITE_ICONS[icon];
-  return { src: path, sizes: `${size}x${size}`, type: mediaType, purpose: purpose satisfies IconPurpose };
+  return { src: path, sizes: `${size}x${size}`, type: mediaType, purpose };
 });
 
 function request({ origin, path, method }: { origin: string; path: string; method: string }): Promise<Response> {

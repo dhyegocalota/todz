@@ -5,8 +5,10 @@ import { HttpStatus } from '../http-status';
 import { noRouteResponse } from '../owner-errors';
 import { siteKeyOf } from '../turnstile-page';
 import { ADMIN_ROUTES } from './admin-routes';
+import { discoveryResponse } from './discovery-response';
 import { LandingNotice, serveLandingPage } from './landing-page';
 import { serveSelfHostPage } from './self-host-page';
+import { DISCOVERY_FILES } from './site-discovery';
 import { JOIN_PATH, LANDING_PATH, SELF_HOST_PATH } from './site-shell';
 import { serveWaitlistJoin } from './waitlist-join';
 
@@ -30,8 +32,18 @@ const ADMIN_ROUTE_OF_REQUEST: Record<string, SiteRoute> = Object.fromEntries(
   ADMIN_ROUTES.map(({ method, path, route }) => [routeKey({ method, pathname: path }), route]),
 );
 
+const DISCOVERY_ROUTE_OF_REQUEST: Record<string, SiteRoute> = Object.fromEntries(
+  DISCOVERY_FILES.flatMap(({ path, ...file }) =>
+    [HttpMethod.Get, HttpMethod.Head].map((method): [string, SiteRoute] => [
+      routeKey({ method, pathname: path }),
+      () => discoveryResponse(file),
+    ]),
+  ),
+);
+
 const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
   ...ADMIN_ROUTE_OF_REQUEST,
+  ...DISCOVERY_ROUTE_OF_REQUEST,
   [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: serveLanding,
   [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: serveLanding,
   [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: serveSelfHostPage,
