@@ -33,6 +33,10 @@ struct TaskListView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onChange(of: windowState.addFieldArming.isArmed) { _, isArmed in
+            guard isArmed else { return }
+            Task { focus.wrappedValue = .addField }
+        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 SyncStatusItem(announcesChanges: true)
@@ -44,6 +48,5 @@ struct TaskListView: View {
 
     private func arm() {
         windowState.addFieldArming.apply(.addFieldClicked)
-        Task { focus.wrappedValue = .addField }
     }
 }
