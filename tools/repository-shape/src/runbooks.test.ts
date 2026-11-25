@@ -76,6 +76,8 @@ const SELF_HOST_PROBES = [
 ];
 const DOCS_REDIRECT_ANSWER = '`HTTP/2 301` with `location: https://docs.todz.app/self-host`';
 const SITE_REDIRECT_OF_GUIDE = 'location: https://todz.app/self-host';
+const OWNER_ROUTE_ANSWER = '`HTTP/2 401` for `api.todz.app/owner`';
+const STALE_OWNER_ROUTE_ANSWER = '`HTTP/2 404` for `api.todz.app/owner`';
 const HEADER_CURLS = [
   'curl -sS -D - -o /dev/null https://api.todz.app/owner',
   'curl -sS -D - -o /dev/null https://todz.app/brand/todz-lockup.png',
@@ -371,6 +373,12 @@ describe('runbooks', () => {
     const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
     HEADER_CURLS.forEach((curl) => expect(smokeCheck?.body).toContain(curl));
     HEADER_ANSWERS.forEach((answer) => expect(smokeCheck?.body).toContain(answer));
+  });
+
+  test('the smoke check expects the bare owner route of the API host to answer 401, as an owner route without a bearer does', () => {
+    const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
+    expect(smokeCheck?.body).toContain(OWNER_ROUTE_ANSWER);
+    expect(smokeCheck?.body).not.toContain(STALE_OWNER_ROUTE_ANSWER);
   });
 
   test('the wrong session body is refused before siteverify, by a malformed verifier, and carries an unsolved token', () => {
