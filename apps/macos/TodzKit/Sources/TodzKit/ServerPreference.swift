@@ -4,9 +4,11 @@ private let storedKey = "serverURL"
 
 public struct ServerPreference {
     private let defaults: UserDefaults
+    private let domainName: String
 
-    public init(defaults: UserDefaults) {
+    public init(defaults: UserDefaults, domainName: String) {
         self.defaults = defaults
+        self.domainName = domainName
     }
 
     public var hasUnreadableValue: Bool {

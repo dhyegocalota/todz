@@ -14,6 +14,13 @@ enum AppConfiguration {
         }
     }
 
+    static var defaultsDomain: String {
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier else {
+            fatalError("The app's bundle has no identifier, so its defaults domain is unknown")
+        }
+        return bundleIdentifier
+    }
+
     static var sessionFolder: URL {
         do {
             return try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)

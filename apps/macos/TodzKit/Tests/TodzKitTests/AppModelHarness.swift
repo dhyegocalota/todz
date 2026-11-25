@@ -66,7 +66,7 @@ final class HarnessClock {
         let defaults = try #require(UserDefaults(suiteName: defaultsName))
         defaults.removePersistentDomain(forName: defaultsName)
         if let storedServer { defaults.set(storedServer, forKey: harnessServerKey) }
-        let preference = ServerPreference(defaults: defaults)
+        let preference = ServerPreference(defaults: defaults, domainName: defaultsName)
         let servers = FakeServers(service: service, signals: signals)
         let probes = probes
         let keys = keys

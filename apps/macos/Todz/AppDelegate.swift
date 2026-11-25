@@ -17,7 +17,7 @@ private func isFocusFilterQuiet() async -> Bool {
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel(
         defaultURL: AppConfiguration.defaultURL,
-        preference: ServerPreference(defaults: .standard),
+        preference: ServerPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
         connect: { ServerConnection(service: OwnerAPI(baseURL: $0.url), signals: SocketChangeSignals(baseURL: $0.url)) },
         probe: { await OwnerAPI(baseURL: $0.url).probe(typedAddress: $0) },
         vault: FileSessionVault(folder: AppConfiguration.sessionFolder),
