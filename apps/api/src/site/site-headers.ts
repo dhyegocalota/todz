@@ -9,18 +9,19 @@ const CONNECT_SELF = "connect-src 'self'";
 
 export async function siteContentSecurityPolicy({
   style,
-  script,
+  scripts,
   widgetOrigin,
   connectsToSelf,
 }: {
   style: string;
-  script: string | null;
+  scripts: string[];
   widgetOrigin: string | null;
   connectsToSelf: boolean;
 }): Promise<string> {
   const widgetOrigins = widgetOrigin === null ? [] : [widgetOrigin];
   const connectDirectives = connectsToSelf ? [CONNECT_SELF] : [];
-  const scriptDirectives = script === null ? [] : [['script-src', await sourceHash(script), ...widgetOrigins].join(' ')];
+  const scriptHashes = await Promise.all(scripts.map(sourceHash));
+  const scriptDirectives = scripts.length === 0 ? [] : [['script-src', ...scriptHashes, ...widgetOrigins].join(' ')];
   return [
     "default-src 'none'",
     ...scriptDirectives,

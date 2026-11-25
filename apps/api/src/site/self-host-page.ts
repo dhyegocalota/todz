@@ -2,17 +2,19 @@ import { escapedHtml } from '../escaped-html';
 import { SELF_HOST_HTML } from './generated/self-host-html';
 import { LANDING_COPY } from './landing-copy';
 import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
-import { CONTENT_ID, siteDocumentHtml } from './site-shell';
+import { CONTENT_ID, SELF_HOST_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE } from './site-style';
 
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  script: null,
+  scripts: [],
   widgetOrigin: null,
   connectsToSelf: false,
 });
 
 const SELF_HOST_PAGE_HTML = siteDocumentHtml({
+  kind: SitePageKind.Public,
+  path: SELF_HOST_PATH,
   title: LANDING_COPY.selfHost.title,
   description: LANDING_COPY.selfHost.description,
   main: `<main id="${CONTENT_ID}" class="guide">
@@ -22,7 +24,7 @@ ${SELF_HOST_HTML}
 <p class="back-to-top"><a href="#${CONTENT_ID}">${escapedHtml(LANDING_COPY.selfHost.backToTop)}</a></p>
 </article>
 </main>`,
-  script: null,
+  scripts: [],
 });
 
 export async function serveSelfHostPage(): Promise<Response> {

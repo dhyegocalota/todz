@@ -10,6 +10,7 @@ const EXAMPLE_TASK_TITLE = 'Review PR';
 
 export const LANDING_COPY = {
   meta: {
+    siteName: 'todz',
     title: 'todz: your tasks, shared with your agents',
     description: 'A native Mac to-do list that Claude Code, Codex and Cursor work over MCP. Menu bar, widgets, offline sync.',
   },

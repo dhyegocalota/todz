@@ -5,7 +5,7 @@ import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
 import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
-import { CONTENT_ID, JOIN_PATH, siteDocumentHtml } from './site-shell';
+import { CONTENT_ID, JOIN_PATH, LANDING_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE, cropClassOf } from './site-style';
 
 export enum LandingNotice {
@@ -104,13 +104,13 @@ const PAGE_SCRIPT = `{
 
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  script: PAGE_SCRIPT,
+  scripts: [PAGE_SCRIPT],
   widgetOrigin: null,
   connectsToSelf: false,
 });
 const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  script: PAGE_SCRIPT,
+  scripts: [PAGE_SCRIPT],
   widgetOrigin: TURNSTILE_ORIGIN,
   connectsToSelf: false,
 });
@@ -237,6 +237,8 @@ ${joinFormHtml({ form: JoinForm.Final, notice, widget, classNames: [] })}
 function landingHtml({ notice, challenge }: { notice: LandingNotice; challenge: LandingChallenge }): string {
   const { widget, scriptTag } = challenge;
   return siteDocumentHtml({
+    kind: SitePageKind.Public,
+    path: LANDING_PATH,
     title: LANDING_COPY.meta.title,
     description: LANDING_COPY.meta.description,
     main: `<main id="${CONTENT_ID}">
@@ -245,7 +247,7 @@ ${benefitsHtml()}
 ${howItWorksHtml()}
 ${finalCallHtml({ notice, widget })}
 ${scriptTag}</main>`,
-    script: PAGE_SCRIPT,
+    scripts: [PAGE_SCRIPT],
   });
 }
 

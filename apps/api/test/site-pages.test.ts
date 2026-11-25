@@ -45,7 +45,7 @@ const EVENT_HANDLER_PATTERN = /<[^>]*\son[a-z]+=/;
 const READABLE_ATTRIBUTE_PATTERN = /\s(?:alt|aria-label|placeholder|data-submitting)="([^"]*)"/g;
 const DESCRIPTION_PATTERN = /<meta name="description" content="([^"]*)">/g;
 const IMAGE_SOURCE_PATTERN = /\s(?:src|srcset)="([^"]*)"/g;
-const REMOTE_ASSET_PATTERNS = [/\s(?:src|srcset)="https?:/, /<link[^>]*\shref="https?:/, /url\(\s*['"]?https?:/];
+const REMOTE_ASSET_PATTERNS = [/\s(?:src|srcset)="https?:/, /<link(?![^>]*rel="canonical")[^>]*\shref="https?:/, /url\(\s*['"]?https?:/];
 const HREF_PATTERN = /\shref="([^"]*)"/g;
 const SITE_HREF_PATTERN = /^(?:\/|#|https:\/\/)/;
 const IMPORT_PATTERN = /from '([^']+)'/g;

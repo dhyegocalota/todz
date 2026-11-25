@@ -94,10 +94,7 @@ const APPLICATION: Node = {
   },
 };
 
-const PAGES = [
-  { path: '/', graph: [ORGANIZATION, WEBSITE, APPLICATION] },
-  { path: '/self-host', graph: [ORGANIZATION, WEBSITE] },
-];
+const PAGES = [{ path: '/', graph: [ORGANIZATION, WEBSITE, APPLICATION] }];
 
 function isNode(value: unknown): value is Node {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

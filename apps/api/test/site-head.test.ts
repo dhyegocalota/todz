@@ -36,12 +36,6 @@ type PublicPage = { path: string; title: string; description: string; canonical:
 
 const PUBLIC_PAGES: PublicPage[] = [
   { path: '/', title: LANDING_COPY.meta.title, description: LANDING_COPY.meta.description, canonical: `${SITE_URL}/` },
-  {
-    path: '/self-host',
-    title: LANDING_COPY.selfHost.title,
-    description: LANDING_COPY.selfHost.description,
-    canonical: `${SITE_URL}/self-host`,
-  },
 ];
 
 function decoded(text: string): string {
