@@ -39,6 +39,7 @@ struct TodzApp: App {
         Settings {
             SettingsView()
                 .frame(width: settingsWidth)
+                .environment(model)
         }
         .windowResizability(.contentSize)
     }
