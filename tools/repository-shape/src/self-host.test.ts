@@ -38,9 +38,32 @@ const PROJECT_KEYS = [
   'TODZ_WIDGETS_BUNDLE_IDENTIFIER',
   'TODZ_APP_GROUP',
 ];
+const WRANGLER_KEYS = [
+  'account_id',
+  'routes',
+  'custom_domain',
+  'PUBLIC_ORIGIN',
+  'send_email',
+  'allowed_sender_addresses',
+  'd1_databases',
+  'database_id',
+  'ratelimits',
+  'namespace_id',
+];
+const DEPLOY_SURFACES_PHRASE = '`workers_dev` and `preview_urls` stay `false`';
+const PRODUCTION_SETTINGS = [
+  { key: 'SIGN_IN_PROVIDER', configured: '"email"', phrase: '`vars.SIGN_IN_PROVIDER` stays `email`' },
+  { key: 'EMAIL_SENDER', configured: '"cloudflare"', phrase: '`vars.EMAIL_SENDER` stays `cloudflare`' },
+  { key: 'workers_dev', configured: 'false', phrase: DEPLOY_SURFACES_PHRASE },
+  { key: 'preview_urls', configured: 'false', phrase: DEPLOY_SURFACES_PHRASE },
+];
+const SENDER_NAMES = ['SENDER_ADDRESS', 'REPLY_TO_ADDRESS'];
+const NAMESPACE_ID_PATTERN = /"namespace_id": "(\d+)"/g;
+const NAMESPACE_RANGE_PATTERN = /`(\d+)` to `(\d+)`/;
 const SERVER_NAME_PATTERN = /private let serverName = "([\w-]+)"/;
-const ANCHOR_SEPARATOR = '#';
+const ANCHOR_PATTERN = /#.*$/;
 const FIRST_CAPTURE = 1;
+const LAST_CAPTURE = 2;
 
 const guide = readRepositoryFile(GUIDE);
 
@@ -49,8 +72,7 @@ function scriptsOf(manifest: string): string[] {
 }
 
 function isBrokenLink(target: string): boolean {
-  const [path] = target.split(ANCHOR_SEPARATOR);
-  return !existsSync(repositoryPath(posix.join(posix.dirname(GUIDE), path!)));
+  return !existsSync(repositoryPath(posix.join(posix.dirname(GUIDE), target.replace(ANCHOR_PATTERN, ''))));
 }
 
 function captured(pattern: RegExp, text = guide): string[] {
@@ -90,7 +112,28 @@ describe('the self-host guide', () => {
     const environment = readRepositoryFile(WORKER_ENVIRONMENT);
     const names = [...captured(ENVIRONMENT_NAME_PATTERN), ...captured(SECRET_COMMAND_PATTERN)];
     expect(names.length).toBeGreaterThan(0);
-    expect(names.filter((name) => !environment.includes(`${name}?:`) && !environment.includes(`${name}:`))).toEqual([]);
+    expect(names.filter((name) => !new RegExp(`^\\s+${name}\\??:`, 'm').test(environment))).toEqual([]);
+  });
+
+  test('every Wrangler key it asks a fork to edit is in the configuration, and the guide names each', () => {
+    const configuration = readRepositoryFile(WRANGLER_CONFIGURATION);
+    expect(WRANGLER_KEYS.filter((key) => !configuration.includes(`"${key}"`))).toEqual([]);
+    expect(WRANGLER_KEYS.filter((key) => !guide.includes(key))).toEqual([]);
+  });
+
+  test('the rate-limit namespaces it names are the configured ones', () => {
+    const configured = captured(NAMESPACE_ID_PATTERN, readRepositoryFile(WRANGLER_CONFIGURATION)).map(Number);
+    const range = NAMESPACE_RANGE_PATTERN.exec(guide);
+    expect(range).not.toBeNull();
+    const named = { first: Number(range?.[FIRST_CAPTURE]), last: Number(range?.[LAST_CAPTURE]) };
+    expect(configured).toEqual(Array.from({ length: named.last - named.first + 1 }, (_, offset) => named.first + offset));
+  });
+
+  test('the production settings it says to keep are the configured ones', () => {
+    const configuration = readRepositoryFile(WRANGLER_CONFIGURATION);
+    const unconfigured = PRODUCTION_SETTINGS.filter(({ key, configured }) => !configuration.includes(`"${key}": ${configured}`));
+    const unnamed = PRODUCTION_SETTINGS.filter(({ phrase }) => !guide.includes(phrase));
+    expect([...unconfigured, ...unnamed]).toEqual([]);
   });
 
   test('the app build setting and the build commands are the repository own', () => {
@@ -121,7 +164,8 @@ describe('the self-host guide', () => {
   });
 
   test('the sender it asks to change lives where it says', () => {
+    const source = readRepositoryFile(SENDER_SOURCE);
     expect(guide).toContain(`\`${SENDER_SOURCE}\``);
-    expect(existsSync(repositoryPath(SENDER_SOURCE))).toBe(true);
+    expect(SENDER_NAMES.filter((name) => !source.includes(`const ${name}`) || !guide.includes(`\`${name}\``))).toEqual([]);
   });
 });

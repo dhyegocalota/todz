@@ -24,12 +24,14 @@ The gate also needs gitleaks; its doctor names anything missing. Run it now, bec
 Edit `apps/api/wrangler.jsonc`:
 
 - `account_id`: your account's id.
-- `routes`: `api.example.com` as a custom domain.
+- `routes`: `api.example.com`, keeping `custom_domain` `true`.
 - `vars.PUBLIC_ORIGIN`: `https://api.example.com`.
 - `send_email[0].allowed_sender_addresses`: your sender, for example `noreply@example.com`.
 - `ratelimits`: keep the three bindings; change each `namespace_id` if your account already uses `8601` to `8603`.
 
-Edit `apps/api/src/email-sender.ts` so the sender and the reply-to address are yours.
+Keep the rest as it is. In particular, `vars.SIGN_IN_PROVIDER` stays `email`, `vars.EMAIL_SENDER` stays `cloudflare`, and `workers_dev` and `preview_urls` stay `false`. Never pass `--var` to `wrangler deploy`, and never set variables in the dashboard: a fake provider or a console sender opens sign-in to anyone.
+
+In `apps/api/src/email-sender.ts`, set `SENDER_ADDRESS` and `REPLY_TO_ADDRESS` to your own addresses.
 
 ## 3. Create the database and apply the migrations
 
@@ -49,11 +51,14 @@ pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remot
 pnpm --filter @todz/api exec wrangler deploy
 ```
 
-Cloudflare creates the DNS record and the certificate for `api.example.com`. Check it with `curl -sS https://api.example.com/owner/sign-in-method`, which answers `{"method":"link"}`.
+Cloudflare creates the DNS record and the certificate for `api.example.com`. Check three things:
+- `curl -sS https://api.example.com/owner/sign-in-method` answers `{"method":"link"}`;
+- the account's `todz-api.<subdomain>.workers.dev` address does not answer;
+- until step 6 is done, sending a link answers 503 `sign_in_unavailable`, which is the safe state.
 
 ## 5. Email sending
 
-Enable sending for your domain and add the records Cloudflare lists:
+Enable sending for your domain and add the records Cloudflare lists. The zone id is on the domain's Overview page in the dashboard.
 
 ```bash
 pnpm --filter @todz/api exec wrangler email sending enable example.com --zone-id <your zone id>
@@ -67,6 +72,8 @@ Sign-in stays closed (`sign_in_unavailable`) until Turnstile is set up ([ADR 004
 ```bash
 pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
 ```
+
+Wrangler asks for the value, which keeps it out of your shell history. Never pipe it in, never export it, and never write it into `wrangler.jsonc`.
 
 ## 7. Point the macOS app at your server
 
@@ -92,7 +99,7 @@ Sign in with your email, then open **Connect an agent** in the sidebar.
 claude mcp add --transport http todz 'https://api.example.com/mcp' --header 'Authorization: Bearer <key>'
 ```
 
-A key belongs to one project, and the server reads the project from it ([`docs/product`](product/README.md)).
+A key belongs to one project, and the server reads the project from it ([`docs/product`](product/README.md)). The command puts the key in your shell history. Run it with a leading space if your shell skips those, or use the Cursor form, which keeps the key in its JSON configuration.
 
 ## Updating
 
@@ -103,7 +110,7 @@ pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remot
 pnpm --filter @todz/api exec wrangler deploy
 ```
 
-Migrations only move forward. Never roll back to a version from before the sign-in guard. To close sign-in, delete the secret ([the runbook](runbooks/deploy-the-api.md)):
+Migrations only move forward. Never roll back to a version from before the sign-in guard, whether with `wrangler rollback` or the dashboard's Deployments page. To close sign-in, delete the secret ([the runbook](runbooks/deploy-the-api.md)):
 
 ```bash
 pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
