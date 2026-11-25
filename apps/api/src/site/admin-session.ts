@@ -10,7 +10,7 @@ import { adminSessionEmail } from './admin-store';
 export const ADMIN_SIGN_IN_LINK_LIFETIME_MS = ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES * MILLISECONDS_PER_MINUTE;
 export const ADMIN_SESSION_LIFETIME_MS = 12 * MILLISECONDS_PER_HOUR;
 
-const COOKIE_ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=Strict';
+const COOKIE_ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=Lax';
 const COOKIE_SEPARATOR = ';';
 const COOKIE_VALUE_SEPARATOR = '=';
 const SAME_ORIGIN_FETCH_SITE = 'same-origin';
