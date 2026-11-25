@@ -21,8 +21,8 @@ G1 then G2; the feature folder's docs land first, the runbook edits after the co
 
 ### G1
 
-- [ ] **Step 1:** Red: the HEAD tests in `health.test.ts`, committed alone.
-- [ ] **Step 2:** Green: `serveHealth` answers HEAD with the GET headers and no body.
+- [x] **Step 1:** Red: the HEAD tests in `health.test.ts`, committed alone (fb758f8).
+- [x] **Step 2:** Green: `serveHealth` answers HEAD with the GET headers and no body (`health.test.ts` green).
 
 ### G2
 

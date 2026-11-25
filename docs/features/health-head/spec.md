@@ -1,6 +1,6 @@
 # Health HEAD
 
-**Status:** Approved
+**Status:** Building
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-25 as the loop's call under the owner's 2026-11-24 instruction to decide every call (todz-loop/PROMPT.md), from todz-6f's production spot-check after PR #47
 **ADRs:** none
