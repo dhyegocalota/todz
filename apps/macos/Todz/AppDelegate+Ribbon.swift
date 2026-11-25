@@ -17,7 +17,9 @@ extension AppDelegate {
             isScreenLocked: { ScreenLock.isLocked },
             isPopoverVisible: { [panel] in panel.isShown },
             isMotionReduced: { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion },
-            textWidth: { [ribbonStrips] in ribbonStrips.strip(content: $0).textWidth }
+            textWidth: { [ribbonStrips] in
+                ribbonStrips.strip(content: $0, isMotionReduced: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion).textWidth
+            }
         )
     }
 }

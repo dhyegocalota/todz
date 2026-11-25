@@ -20,12 +20,13 @@ struct MenuBarRibbonStrip {
 
 @MainActor enum MenuBarRibbonImage {
     // NB ADR 0071: the line is rendered once into a template strip and every frame is a crop of it.
-    static func strip(content: RibbonContent) -> MenuBarRibbonStrip {
+    static func strip(content: RibbonContent, isMotionReduced: Bool) -> MenuBarRibbonStrip {
+        let maxTextWidth = isMotionReduced ? RibbonMotion.windowWidth : RibbonMotion.stripMaxWidth
         guard let glyph = NSImage(named: menuBarGlyphName) else { preconditionFailure(glyphFailure) }
         let line = Text(MenuBarCopy.ribbon(content))
             .lineLimit(1)
             .truncationMode(.tail)
-            .frame(maxWidth: RibbonMotion.stripMaxWidth, alignment: .leading)
+            .frame(maxWidth: maxTextWidth, alignment: .leading)
         let drawing = HStack(spacing: menuBarLabelSpacing) {
             Image(menuBarGlyphName)
             line

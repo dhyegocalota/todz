@@ -52,7 +52,7 @@ struct MenuBarLabel: View {
     private func content(badgeText: String?, countOpacity: Double) -> some View {
         switch ribbon.presentation {
         case let presentation?:
-            MenuBarRibbonLabel(content: presentation.content, frame: presentation.frame, displayScale: displayScale, strips: ribbonStrips)
+            MenuBarRibbonLabel(presentation: presentation, displayScale: displayScale, strips: ribbonStrips)
                 .equatable()
         case nil:
             countContent(badgeText: badgeText, countOpacity: countOpacity)
