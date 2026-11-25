@@ -128,7 +128,7 @@ describe('the MCP answers', () => {
   });
 
   test('a tool error throws its text', async () => {
-    const server = fakeMcpServer({ toolAnswers: { done: () => 'T-5 not found.' } });
+    const server = fakeMcpServer({ toolAnswers: { done: () => 'T-5 not found.' }, failingTools: ['done'] });
     const { client } = await connectedClient({ era: McpEra.Modern, samples: [] }, server);
     await expect(completeTasks({ client, numbers: [5] })).rejects.toThrow('T-5 not found.');
   });

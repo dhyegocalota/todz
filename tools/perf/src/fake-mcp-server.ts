@@ -6,6 +6,7 @@ export const FIRST_FAKE_TASK_NUMBER = 100;
 
 export type FakeMcpOptions = {
   toolAnswers?: Record<string, (argumentsOfCall: Record<string, unknown>) => string>;
+  failingTools?: string[];
   isUnauthorized?: boolean;
 };
 
@@ -47,7 +48,7 @@ function toolCallOf(request: RecordedRequest): { name: string; arguments: Record
   return { name: textOf(fieldOf({ value: params, name: 'name' })), arguments: recordOf(fieldOf({ value: params, name: 'arguments' })) };
 }
 
-export function fakeMcpServer({ toolAnswers = {}, isUnauthorized = false }: FakeMcpOptions = {}): FakeMcpServer {
+export function fakeMcpServer({ toolAnswers = {}, failingTools = [], isUnauthorized = false }: FakeMcpOptions = {}): FakeMcpServer {
   const counter = { nextTaskNumber: FIRST_FAKE_TASK_NUMBER };
   const defaultAnswers: Record<string, (argumentsOfCall: Record<string, unknown>) => string> = {
     list: () => 'Open tasks: 2 of 7\nT-1 first\nT-2 second',
@@ -79,7 +80,11 @@ export function fakeMcpServer({ toolAnswers = {}, isUnauthorized = false }: Fake
     const call = toolCallOf(request);
     const answer = { ...defaultAnswers, ...toolAnswers }[call.name];
     if (answer === undefined) throw new Error(`the fake server has no tool ${call.name}`);
-    return resultResponse({ request, result: { resultType: 'complete', content: [{ type: 'text', text: answer(call.arguments) }] } });
+    const isError = failingTools.includes(call.name);
+    return resultResponse({
+      request,
+      result: { resultType: 'complete', isError, content: [{ type: 'text', text: answer(call.arguments) }] },
+    });
   });
   const rpcMethods = () => server.requests.map(labelOf);
   const toolCalls = () => server.requests.filter((request) => rpcMethodOf(request) === 'tools/call').map(toolCallOf);
