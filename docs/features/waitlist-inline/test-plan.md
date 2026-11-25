@@ -6,170 +6,193 @@ Copy referenced below, from `LANDING_COPY.join`: JOINED "You're on the list. Che
 
 ## The failing test first
 
-- [ ] `apps/api/test/waitlist-stamp.test.ts` — committed red alone; expected failure `renderStampOf is not implemented`.
-- [ ] `apps/api/test/waitlist-join.test.ts` (JSON describe) — committed red alone; expected failure `expected 'text/html; charset=utf-8' to be 'application/json'`.
-- [ ] `apps/api/test/waitlist-join.test.ts` (bot describe) — committed red alone; expected failure `expected 1 to be 0` on the row count.
-- [ ] `apps/api/test/site-pages.test.ts` (markup) — committed red alone; expected failure `expected null not to be null` on the stamp input.
-- [ ] `apps/api/e2e/landing.spec.ts` (join) — committed red alone; expected failure on `page.url()` being `…/join#hero`.
-- [ ] `apps/api/e2e/landing-seo.spec.ts` (WebMCP join) — committed red alone; expected failure on the old "sent" answer.
-- [ ] Confirmed each red run printed the failure above for the missing feature, not a broken test: the tester checks out each red commit in a throwaway worktree, runs the named test and records the printed text.
+- [x] `apps/api/test/waitlist-stamp.test.ts` — committed red alone; expected failure `renderStampOf is not implemented`. — evidence: red 64ac26f in a throwaway worktree, 14 failed 1 passed, printed `renderStampOf is not implemented` (9x) and `stampVerdictOf is not implemented` (2x), the pin passed
+- [x] `apps/api/test/waitlist-join.test.ts` (JSON describe) — committed red alone; expected failure `expected 'text/html; charset=utf-8' to be 'application/json'`. — evidence: red cb34b19 in a throwaway worktree, 71 failed 5 passed, printed `expected 'text/html; charset=utf-8' to be 'application/json'` (7x) and `expected null to be 'Accept'` (27x)
+- [x] `apps/api/test/waitlist-join.test.ts` (bot describe) — committed red alone; expected failure `expected 1 to be 0` on the row count. — evidence: red e781b0d, 7 failed 79 passed; the printed text is `expected [ { …(4) } ] to deeply equal []` (5x), `expected 200 to be 403`, `expected 200 to be 429`, not `expected 1 to be 0` as this row says; follow-up red c84dab9 also run, 7 failed 82 passed
+- [x] `apps/api/test/site-pages.test.ts` (markup) — committed red alone; expected failure `expected null not to be null` on the stamp input. — evidence: red 5af9f0e in a throwaway worktree, printed `expected null not to be null`, `expected [ +0, +0 ] to deeply equal [ 1, 1 ]`, `to contain 'data-appearance="always"'`
+- [x] `apps/api/e2e/landing.spec.ts` (join) — committed red alone; expected failure on `page.url()` being `…/join#hero`. — evidence: red 94f701e, landing.spec.ts join on desktop failed, printed `Expected: "http://localhost:8791/"  Received: "http://localhost:8791/join#join"` and `/join#final`, the rest are `#join-notice` text and `aria-disabled` mismatches
+- [ ] `apps/api/e2e/landing-seo.spec.ts` (WebMCP join) — committed red alone; expected failure on the old "sent" answer. — evidence so far: the WebMCP copy unit red b1ef411 ran, 2 failed 9 passed, `expected [ 'alreadySubmitting', …(10) ] to deeply equal [ …(9) ]` and `to contain 'waits for'`; the landing-seo.spec.ts red itself was not run
+- [x] Confirmed each red run printed the failure above for the missing feature, not a broken test: the tester checks out each red commit in a throwaway worktree, runs the named test and records the printed text. — evidence: reds 64ac26f, cb34b19, e781b0d, 5af9f0e, 94f701e, b1ef411 (unit part) and c84dab9 run in throwaway worktrees (removed), each failed on the missing feature, not a broken test; not run: b1ef411 landing-seo.spec.ts and the 2e82230 and f1e385a follow-ups
 
 ## Unit
 
 ### The stamp (`waitlist-stamp.test.ts`)
 
-- [ ] Shape — input: `renderStampOf({ secret: "s", renderedAt: 1764000000000 })`; expected: matches `^\d{13}\.[A-Za-z0-9_-]{43}$`.
-- [ ] Deterministic — input: the same call twice; expected: equal strings.
-- [ ] Boundary accepted — input: `now = renderedAt + 2000`; expected: `Patient`.
-- [ ] Boundary refused — input: `now = renderedAt + 1999`; expected: `TooFast`.
-- [ ] Future — input: `now = renderedAt - 1`; expected: `Forged`.
-- [ ] Tampered signature — input: one signature character changed; expected: `Forged`.
-- [ ] Tampered time — input: the time part changed, signature kept; expected: `Forged`.
-- [ ] Other secret — input: signed with `"other"`, checked with `"s"`; expected: `Forged`.
-- [ ] Malformed — inputs `"1"`, `"abc.def"`, `"."`, a 5 000-character string; expected: `Forged` each.
-- [ ] Absent — inputs `""` and `undefined`; expected: `Missing` each.
-- [ ] Constants — expected: `WAITLIST_MINIMUM_FILL_MS` is 2 000, `WAITLIST_FILL_HOLD_MS` is 3 000, minimum < hold.
+- [x] Shape — input: `renderStampOf({ secret: "s", renderedAt: 1764000000000 })`; expected: matches `^\d{13}\.[A-Za-z0-9_-]{43}$`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Deterministic — input: the same call twice; expected: equal strings. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Boundary accepted — input: `now = renderedAt + 2000`; expected: `Patient`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Boundary refused — input: `now = renderedAt + 1999`; expected: `TooFast`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Future — input: `now = renderedAt - 1`; expected: `Forged`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Tampered signature — input: one signature character changed; expected: `Forged`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Tampered time — input: the time part changed, signature kept; expected: `Forged`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Other secret — input: signed with `"other"`, checked with `"s"`; expected: `Forged`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Malformed — inputs `"1"`, `"abc.def"`, `"."`, a 5 000-character string; expected: `Forged` each. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Absent — inputs `""` and `undefined`; expected: `Missing` each. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Constants — expected: `WAITLIST_MINIMUM_FILL_MS` is 2 000, `WAITLIST_FILL_HOLD_MS` is 3 000, minimum < hold. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
 
 ### The JSON answer (`waitlist-join.test.ts`)
 
-- [ ] New address, `Accept: application/json` — expected: 200, `Content-Type: application/json`, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `Vary: Accept`, body exactly `{"outcome":"joined"}`, one row, one mail.
-- [ ] Duplicate — input: the same address again; expected: 200 `{"outcome":"joined"}`, byte-identical body and headers to the first except `Date`, still one row, still one mail.
-- [ ] Case and spaces — input: `" Maria@Example.COM "` after `maria@example.com`; expected: 200 `joined`, one row, no second mail.
-- [ ] Wrong media type — input: `Content-Type: text/plain`; expected: 400 `{"outcome":"invalid"}`, no row.
-- [ ] Oversized body — input: 5 KB; expected: 400 `invalid`, no row.
-- [ ] Bad address — input: `email=not-an-address`; expected: 400 `invalid`, no row, no siteverify call.
-- [ ] Missing token — input: no `cf-turnstile-response`; expected: 403 `{"outcome":"check-failed"}`, no siteverify call, no row.
-- [ ] Malformed token — input: `cf-turnstile-response=bad token!`; expected: 403 `check-failed`, no siteverify call.
-- [ ] Refused token — input: siteverify answers `success: false`; expected: 403 `check-failed`, no row.
-- [ ] Wrong hostname — input: siteverify `success: true`, `hostname: evil.example`; expected: 403 `check-failed`.
-- [ ] Wrong action — input: siteverify `success: true`, `action: sign_in`; expected: 403 `check-failed`.
-- [ ] siteverify unreachable — input: the fetcher rejects; expected: 503 `{"outcome":"opens-soon"}`, no row.
-- [ ] siteverify own fault — input: `error-codes: ["invalid-input-secret"]`; expected: 503 `opens-soon`.
-- [ ] Per-client limit — input: `WAITLIST_LIMITER` refuses; expected: 429 `{"outcome":"try-again"}`, `Retry-After: 60`, body not read.
-- [ ] Per-address limit — input: `WAITLIST_ADDRESS_LIMITER` refuses; expected: 429 `try-again`, `Retry-After: 60`, no row.
-- [ ] Global limit — input: `WAITLIST_GLOBAL_LIMITER` refuses; expected: 429 `try-again`, `Retry-After: 60`, no row.
-- [ ] Missing limiter binding — expected: 503 `opens-soon`, body not read.
-- [ ] Missing client address header (public host) — expected: 503 `opens-soon`.
-- [ ] Missing site key or secret — expected: 503 `opens-soon`, body not read.
-- [ ] Store fails — input: D1 rejects; expected: 429 `try-again`.
-- [ ] No echo — for every case above: the body does not contain the posted address.
-- [ ] `Accept: text/html, application/json;q=0.9` — expected: JSON (any naming of `application/json` selects it).
-- [ ] No `Accept` — expected: the HTML page, as below.
+- [x] New address, `Accept: application/json` — expected: 200, `Content-Type: application/json`, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `Vary: Accept`, body exactly `{"outcome":"joined"}`, one row, one mail. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Duplicate — input: the same address again; expected: 200 `{"outcome":"joined"}`, byte-identical body and headers to the first except `Date`, still one row, still one mail. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Case and spaces — input: `" Maria@Example.COM "` after `maria@example.com`; expected: 200 `joined`, one row, no second mail. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Wrong media type — input: `Content-Type: text/plain`; expected: 400 `{"outcome":"invalid"}`, no row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Oversized body — input: 5 KB; expected: 400 `invalid`, no row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Bad address — input: `email=not-an-address`; expected: 400 `invalid`, no row, no siteverify call. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Missing token — input: no `cf-turnstile-response`; expected: 403 `{"outcome":"check-failed"}`, no siteverify call, no row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Malformed token — input: `cf-turnstile-response=bad token!`; expected: 403 `check-failed`, no siteverify call. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Refused token — input: siteverify answers `success: false`; expected: 403 `check-failed`, no row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Wrong hostname — input: siteverify `success: true`, `hostname: evil.example`; expected: 403 `check-failed`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Wrong action — input: siteverify `success: true`, `action: sign_in`; expected: 403 `check-failed`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] siteverify unreachable — input: the fetcher rejects; expected: 503 `{"outcome":"opens-soon"}`, no row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] siteverify own fault — input: `error-codes: ["invalid-input-secret"]`; expected: 503 `opens-soon`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Per-client limit — input: `WAITLIST_LIMITER` refuses; expected: 429 `{"outcome":"try-again"}`, `Retry-After: 60`, body not read. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Per-address limit — input: `WAITLIST_ADDRESS_LIMITER` refuses; expected: 429 `try-again`, `Retry-After: 60`, no row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Global limit — input: `WAITLIST_GLOBAL_LIMITER` refuses; expected: 429 `try-again`, `Retry-After: 60`, no row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Missing limiter binding — expected: 503 `opens-soon`, body not read. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Missing client address header (public host) — expected: 503 `opens-soon`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Missing site key or secret — expected: 503 `opens-soon`, body not read. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Store fails — input: D1 rejects; expected: 429 `try-again`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] No echo — for every case above: the body does not contain the posted address. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] `Accept: text/html, application/json;q=0.9` — expected: JSON (any naming of `application/json` selects it). — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] No `Accept` — expected: the HTML page, as below. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
 
 ### The HTML answer stays (`waitlist-join.test.ts`)
 
-- [ ] New address, no `Accept` — expected: 200 HTML with the JOINED notice in `#join-notice`, `Vary: Accept`.
-- [ ] Missing token — expected: 429 HTML with TRY_AGAIN, `Retry-After: 60`.
-- [ ] Bad address — expected: 429 HTML with TRY_AGAIN.
-- [ ] Unguarded — expected: 503 HTML with OPENS_SOON.
-- [ ] The answered page carries a fresh stamp in each form.
+- [x] New address, no `Accept` — expected: 200 HTML with the JOINED notice in `#join-notice`, `Vary: Accept`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Missing token — expected: 429 HTML with TRY_AGAIN, `Retry-After: 60`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Bad address — expected: 429 HTML with TRY_AGAIN. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Unguarded — expected: 503 HTML with OPENS_SOON. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] The answered page carries a fresh stamp in each form. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
 
 ### Bots (`waitlist-join.test.ts`)
 
-- [ ] Honeypot filled — input: `todz_fax=https://spam.example`, valid stamp, accepted token; expected: JSON 200 `joined`, HTML 200 JOINED, no row, no mail, one siteverify call, a client-limit slot spent.
-- [ ] Honeypot filled, token refused — expected: 403 `check-failed`, no row.
-- [ ] Honeypot empty — input: `todz_fax=`; expected: a normal join, one row.
-- [ ] Honeypot absent — input: no `todz_fax` field; expected: a normal join, one row.
-- [ ] Honeypot and no token — expected: 403 `check-failed` (the token check is first).
-- [ ] Stamp missing — expected: JSON 403 `check-failed`, HTML 429 TRY_AGAIN, no row.
-- [ ] Stamp forged — input: signed with another secret, accepted token; expected: 200 `joined`, no row, no mail, one siteverify call.
-- [ ] Stamp forged, token refused — expected: 403 `check-failed`, no row.
-- [ ] Too fast — input: rendered 1 000 ms before `now`; expected: 200 `joined`, no row, no mail. The 1 999 and 2 000 ms boundary is proven only in `waitlist-stamp.test.ts`.
-- [ ] Future stamp — input: rendered 1 000 ms after `now`; expected: 200 `joined`, no row, no mail.
-- [ ] Patient — input: rendered 2 500 ms before `now`; expected: 200 `joined`, one row, one mail.
+- [x] Honeypot filled — input: `todz_fax=https://spam.example`, valid stamp, accepted token; expected: JSON 200 `joined`, HTML 200 JOINED, no row, no mail, one siteverify call, a client-limit slot spent. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Honeypot filled, token refused — expected: 403 `check-failed`, no row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Honeypot empty — input: `todz_fax=`; expected: a normal join, one row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Honeypot absent — input: no `todz_fax` field; expected: a normal join, one row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Honeypot and no token — expected: 403 `check-failed` (the token check is first). — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Stamp missing — expected: JSON 403 `check-failed`, HTML 429 TRY_AGAIN, no row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Stamp forged — input: signed with another secret, accepted token; expected: 200 `joined`, no row, no mail, one siteverify call. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Stamp forged, token refused — expected: 403 `check-failed`, no row. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Too fast — input: rendered 1 000 ms before `now`; expected: 200 `joined`, no row, no mail. The 1 999 and 2 000 ms boundary is proven only in `waitlist-stamp.test.ts`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Future stamp — input: rendered 1 000 ms after `now`; expected: 200 `joined`, no row, no mail. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Patient — input: rendered 2 500 ms before `now`; expected: 200 `joined`, one row, one mail. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
 
 ### The page markup (`site-pages.test.ts`)
 
-- [ ] Stamp field — expected: each form has one `input[type=hidden][name=stamp]` that verifies `Patient` with the test secret at its render time plus 2 000 ms.
-- [ ] Honeypot — expected: each form has `.join-extra[aria-hidden="true"]` with a `label` for `input[name=website][type=text][tabindex="-1"][autocomplete=off]`, and no `display:none` on it.
-- [ ] Widget — expected: `data-appearance="always"`, `data-size="flexible"`, `data-theme="auto"`, `data-action="waitlist"`, `data-callback`, `data-error-callback`, `data-expired-callback`, `data-timeout-callback`.
-- [ ] Status region — expected: one `p[role=status]#join-notice` and one `#final-notice` holding NOTE.
-- [ ] No inline handlers — expected: no attribute name starting with `on` in the HTML.
-- [ ] Two renders — expected: different stamps, the same `Content-Security-Policy`.
-- [ ] Strict policy — expected: no `'unsafe-inline'`, no `'unsafe-eval'`; `script-src` is only `'sha256-…'` hashes and `https://challenges.cloudflare.com`; `frame-src https://challenges.cloudflare.com`; `connect-src 'self'`; `form-action 'self'`; `default-src 'none'`.
-- [ ] Without the secret — expected: no stamp, no widget, the policy without the Turnstile origin.
+- [x] Stamp field — expected: each form has one `input[type=hidden][name=stamp]` that verifies `Patient` with the test secret at its render time plus 2 000 ms. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Honeypot — expected: each form has `.join-extra[aria-hidden="true"]` with a `label` for `input[name=website][type=text][tabindex="-1"][autocomplete=off]`, and no `display:none` on it. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Widget — expected: `data-appearance="always"`, `data-size="flexible"`, `data-theme="auto"`, `data-action="waitlist"`, `data-callback`, `data-error-callback`, `data-expired-callback`, `data-timeout-callback`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Status region — expected: one `p[role=status]#join-notice` and one `#final-notice` holding NOTE. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] No inline handlers — expected: no attribute name starting with `on` in the HTML. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Two renders — expected: different stamps, the same `Content-Security-Policy`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Strict policy — expected: no `'unsafe-inline'`, no `'unsafe-eval'`; `script-src` is only `'sha256-…'` hashes and `https://challenges.cloudflare.com`; `frame-src https://challenges.cloudflare.com`; `connect-src 'self'`; `form-action 'self'`; `default-src 'none'`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Without the secret — expected: no stamp, no widget, the policy without the Turnstile origin. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
 
 ### WebMCP (`webmcp-tools.test.ts`)
 
-- [ ] Copy — expected: `WEBMCP_COPY.answers` has `joined`, `invalid`, `checkFailed`, `tryAgain`, `opensSoon`, `unreachable`, `checkTimedOut`, `alreadySubmitting`, and no `sent`.
-- [ ] Description — expected: the join tool's description says it waits for the page's human check and answers with the result.
-- [ ] Scripts — expected: `PAGE_SCRIPT` and `WEBMCP_SCRIPT` contain no `fetch(` in `WEBMCP_SCRIPT` and exactly one in `PAGE_SCRIPT`.
+- [x] Copy — expected: `WEBMCP_COPY.answers` has `joined`, `invalid`, `checkFailed`, `tryAgain`, `opensSoon`, `unreachable`, `checkTimedOut`, `alreadySubmitting`, and no `sent`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Description — expected: the join tool's description says it waits for the page's human check and answers with the result. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
+- [x] Scripts — expected: `PAGE_SCRIPT` and `WEBMCP_SCRIPT` contain no `fetch(` in `WEBMCP_SCRIPT` and exactly one in `PAGE_SCRIPT`. — evidence: vitest run of apps/api at c116a6b, 77 files, 1987 tests passed (scratchpad e2e logs: pnpm --filter @todz/api test:unit)
 
 ## E2E (Playwright specs)
 
 `apps/api/e2e/landing.spec.ts`, desktop (1280) and mobile (375) projects, the Turnstile stub unless stated.
 
-- [ ] No navigation, hero — steps: open `/`, type a fresh address, press Join; expected: JOINED in `#join-notice`, zero `load` and zero `framenavigated` events after the first load, `page.url()` unchanged, one `POST /join` with `Accept: application/json`, `cf-turnstile-response`, `stamp`, empty `todz_fax`, answered 200 `{"outcome":"joined"}`; the field empty; the address nowhere in the DOM; the server log holds one mail to it.
-- [ ] No navigation, final — the same from the final form, JOINED in `#final-notice`.
-- [ ] Disabled until token — steps: open `/` with the never-solving stub; expected: both buttons `aria-disabled="true"`, `data-join-state="waiting"`; a press posts nothing and shows WAITING.
-- [ ] Ready on token — steps: the stub solves; expected: no `aria-disabled`, `data-join-state="ready"`.
-- [ ] Reset after every answer — steps: one join; expected: `data-turnstile-resets` is `1` and the button waits for the new token before it is ready.
-- [ ] Hold — steps: press Join at once on load; expected: the label "Joining…" until at least 3 s after navigation start, then one post.
-- [ ] Duplicate — steps: join an address, then the same address again after the new token; expected: JOINED both times, one mail in the server log.
-- [ ] Honeypot — steps: fill `todz_fax` through `locator.evaluate`, join; expected: JOINED; after the reload and before the second press the mail count of the address is 0; then join it normally: exactly one mail.
-- [ ] Too fast — steps: `page.clock.install()`, load, `fastForward` past 3 s, join within 2 s of the render; expected: JOINED, no mail; then count mails (0) and join the same address in a new browser context without `page.clock`: exactly one mail.
-- [ ] Invalid answer — steps: `page.route` fulfils 400 `{"outcome":"invalid"}`; expected: INVALID, label restored, reset count 1.
-- [ ] Check failed — fulfils 403 `{"outcome":"check-failed"}`; expected: CHECK_FAILED, reset count 1.
-- [ ] Opens soon — fulfils 503 `{"outcome":"opens-soon"}`; expected: OPENS_SOON.
-- [ ] Try again with Retry-After — fulfils 429 `{"outcome":"try-again"}`, `Retry-After: 2`, under `page.clock`; expected: TRY_AGAIN, the button `aria-disabled` after the new token until the clock passes 2 s, then ready.
-- [ ] Network error — `route.abort()`; expected: UNREACHABLE, label restored.
-- [ ] Non-JSON answer — fulfils 200 `text/html`; expected: UNREACHABLE.
-- [ ] Script blocked — the Turnstile script aborted; expected: after `load`, buttons stay `aria-disabled`, CHECK_ERROR in each status.
-- [ ] Widget errors — the erroring stub; expected: the button back to `aria-disabled`, CHECK_ERROR, no post.
-- [ ] Token expires — the expired callback fired; expected: `aria-disabled` until the stub solves again; no post.
-- [ ] Back-forward cache — press Join, navigate to `/llms.txt` during the hold, go back; expected: no form stuck in `sending`, the button waits for or has its token.
-- [ ] Missing token, scripted — `request.post('/join')` with `Accept: application/json`, `email` only; expected: 403 `{"outcome":"check-failed"}`.
-- [ ] Bad token, scripted — the same with `cf-turnstile-response=bad token!`; expected: 403 `{"outcome":"check-failed"}`.
-- [ ] No-JavaScript fallback — a context with `javaScriptEnabled: false`, press Join with an address; expected: the browser lands on `/join#hero`, status 429, TRY_AGAIN in `#join-notice`, no mail.
-- [ ] Strict policy in the browser — through one join: zero `securitypolicyviolation` events, zero console errors, only the own origin and `challenges.cloudflare.com` requested.
-- [ ] Light 1280 — expected: the widget box inside its form box and the viewport, `data-theme="auto"`.
-- [ ] Dark 1280 (`colorScheme: dark`) — expected: the same; the dark tokens applied.
-- [ ] 375 — expected: no horizontal scroll, the widget box inside the viewport, the capsule, widget and status stacked.
-- [ ] Timeout — steps: `page.route` never fulfils `/join`, `page.clock` past 15 s; expected: UNREACHABLE, label restored, reset count 1.
-- [ ] One form's token expires — steps: remove one form's token and call `waitlistTokenExpired`; expected: that form waiting, the other ready, no CHECK_ERROR.
-- [ ] No widget — steps: the landing served without its widget; expected: the button ready at once, a press shows the server's answer.
-- [ ] Keyboard — Tab from the email reaches the button with a visible focus ring, including while `aria-disabled`; the honeypot is never focused.
-- [ ] Existing tests kept — the first fold, narrow screen, images, dark, reduced motion, assets, self-host, credit, keyboard and console groups pass unchanged.
+- [x] No navigation, hero — steps: open `/`, type a fresh address, press Join; expected: JOINED in `#join-notice`, zero `load` and zero `framenavigated` events after the first load, `page.url()` unchanged, one `POST /join` with `Accept: application/json`, `cf-turnstile-response`, `stamp`, empty `todz_fax`, answered 200 `{"outcome":"joined"}`; the field empty; the address nowhere in the DOM; the server log holds one mail to it. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] No navigation, final — the same from the final form, JOINED in `#final-notice`. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Disabled until token — steps: open `/` with the never-solving stub; expected: both buttons `aria-disabled="true"`, `data-join-state="waiting"`; a press posts nothing and shows WAITING. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Ready on token — steps: the stub solves; expected: no `aria-disabled`, `data-join-state="ready"`. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Reset after every answer — steps: one join; expected: `data-turnstile-resets` is `1` and the button waits for the new token before it is ready. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [ ] Hold — steps: press Join at once on load; expected: the label "Joining…" until at least 3 s after navigation start, then one post. — NOT TICKED: no E2E test holds the "Joining…" label for 3 s from navigation start (the walk showed "Joining…" while sending only)
+- [x] Duplicate — steps: join an address, then the same address again after the new token; expected: JOINED both times, one mail in the server log. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Honeypot — steps: fill `todz_fax` through `locator.evaluate`, join; expected: JOINED; after the reload and before the second press the mail count of the address is 0; then join it normally: exactly one mail. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Too fast — steps: `page.clock.install()`, load, `fastForward` past 3 s, join within 2 s of the render; expected: JOINED, no mail; then count mails (0) and join the same address in a new browser context without `page.clock`: exactly one mail. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Invalid answer — steps: `page.route` fulfils 400 `{"outcome":"invalid"}`; expected: INVALID, label restored, reset count 1. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Check failed — fulfils 403 `{"outcome":"check-failed"}`; expected: CHECK_FAILED, reset count 1. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Opens soon — fulfils 503 `{"outcome":"opens-soon"}`; expected: OPENS_SOON. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Try again with Retry-After — fulfils 429 `{"outcome":"try-again"}`, `Retry-After: 2`, under `page.clock`; expected: TRY_AGAIN, the button `aria-disabled` after the new token until the clock passes 2 s, then ready. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Network error — `route.abort()`; expected: UNREACHABLE, label restored. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Non-JSON answer — fulfils 200 `text/html`; expected: UNREACHABLE. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Script blocked — the Turnstile script aborted; expected: after `load`, buttons stay `aria-disabled`, CHECK_ERROR in each status. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Widget errors — the erroring stub; expected: the button back to `aria-disabled`, CHECK_ERROR, no post. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [ ] Token expires — the expired callback fired; expected: `aria-disabled` until the stub solves again; no post. — NOT TICKED: only one form's expiry is tested (landing.spec.ts line 460); the expired-before-solve versus after-solve lines are not
+- [ ] Back-forward cache — press Join, navigate to `/llms.txt` during the hold, go back; expected: no form stuck in `sending`, the button waits for or has its token. — NOT TICKED: no E2E test goes to /llms.txt and back during the hold (no pageshow or goBack in landing.spec.ts); the walk covered Back and Forward, see row 153
+- [x] Missing token, scripted — `request.post('/join')` with `Accept: application/json`, `email` only; expected: 403 `{"outcome":"check-failed"}`. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Bad token, scripted — the same with `cf-turnstile-response=bad token!`; expected: 403 `{"outcome":"check-failed"}`. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] No-JavaScript fallback — a context with `javaScriptEnabled: false`, press Join with an address; expected: the browser lands on `/join#hero`, status 429, TRY_AGAIN in `#join-notice`, no mail. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Strict policy in the browser — through one join: zero `securitypolicyviolation` events, zero console errors, only the own origin and `challenges.cloudflare.com` requested. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Light 1280 — expected: the widget box inside its form box and the viewport, `data-theme="auto"`. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Dark 1280 (`colorScheme: dark`) — expected: the same; the dark tokens applied. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] 375 — expected: no horizontal scroll, the widget box inside the viewport, the capsule, widget and status stacked. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Timeout — steps: `page.route` never fulfils `/join`, `page.clock` past 15 s; expected: UNREACHABLE, label restored, reset count 1. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] One form's token expires — steps: remove one form's token and call `waitlistTokenExpired`; expected: that form waiting, the other ready, no CHECK_ERROR. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] No widget — steps: the landing served without its widget; expected: the button ready at once, a press shows the server's answer. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] Keyboard — Tab from the email reaches the button with a visible focus ring, including while `aria-disabled`; the honeypot is never focused. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log; the walk TABORDER skip-link, brand, nav-link, email, button, then leaves the form: the honeypot was never focused; the button keeps a 3px focus ring while aria-disabled
+- [x] Existing tests kept — the first fold, narrow screen, images, dark, reduced motion, assets, self-host, credit, keyboard and console groups pass unchanged. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
 
 `apps/api/e2e/landing-seo.spec.ts`:
 
-- [ ] `join_waitlist` joins — input: `{ email: "maria.<unique>@example.com" }`; expected: the tool returns the joined answer, JOINED in `#join-notice`, no navigation, one `POST /join`.
-- [ ] `join_waitlist` waits for the check — with the never-solving stub and `page.clock` past 30 s; expected: `checkTimedOut`, no post, the person's typed value restored.
-- [ ] `join_waitlist` in a `try-again` wait — expected: `tryAgain`, not `checkTimedOut`.
-- [ ] `join_waitlist` invalid — input: `{ email: "not-an-address" }`; expected: `invalid`, no post, the field's previous value restored.
-- [ ] `join_waitlist` twice — the second call while the first is `sending`; expected: `alreadySubmitting`, one `POST /join`.
-- [ ] `join_waitlist` refused — `page.route` fulfils 403 `check-failed`; expected: the tool returns `checkFailed`.
-- [ ] The three other tools unchanged — the existing tests pass.
+- [x] `join_waitlist` joins — input: `{ email: "maria.<unique>@example.com" }`; expected: the tool returns the joined answer, JOINED in `#join-notice`, no navigation, one `POST /join`. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] `join_waitlist` waits for the check — with the never-solving stub and `page.clock` past 30 s; expected: `checkTimedOut`, no post, the person's typed value restored. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] `join_waitlist` in a `try-again` wait — expected: `tryAgain`, not `checkTimedOut`. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] `join_waitlist` invalid — input: `{ email: "not-an-address" }`; expected: `invalid`, no post, the field's previous value restored. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [x] `join_waitlist` twice — the second call while the first is `sending`; expected: `alreadySubmitting`, one `POST /join`. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
+- [ ] `join_waitlist` refused — `page.route` fulfils 403 `check-failed`; expected: the tool returns `checkFailed`. — NOT TICKED: no landing-seo.spec.ts test fulfils 403 check-failed for the tool
+- [x] The three other tools unchanged — the existing tests pass. — evidence: playwright run of apps/api at c116a6b, 145 passed, 6 skipped (viewport-conditional, unrelated), log scratchpad/e2e-list.log
 
 ## Prove it for real — Playwright MCP
 
 On `wrangler dev` (the E2E's site environment, Cloudflare's always-pass test keys):
 
-- [ ] Happy path: open `/`, see the visible widget under the capsule in both forms, wait for the button to brighten, type an address, press Join; expected: "Joining…", then JOINED inline, the page never reloads (the scroll position stays), the widget resets.
-- [ ] Empty: press Join with the field empty; expected: the browser's required-field bubble, no post.
-- [ ] Single: one join; expected: JOINED.
-- [ ] Many: join three different addresses in a row from the same tab; expected: JOINED each time, the widget reset between them.
-- [ ] Rejected input: `not-an-address`; expected: the browser's email bubble, no post.
-- [ ] Browser Back mid-flow: press Join, then Back during the hold; expected: the previous page, no error; Forward shows the form ready again.
-- [ ] Reload mid-flow: reload during the hold; expected: a fresh form, no post or one post at most, never two.
-- [ ] Two visitors in two browser contexts (`playwright`, `playwright-second`) joining the same address; expected: both see JOINED, one mail in the server log.
-- [ ] Latency: Slow 3G throttle; expected: "Joining…" stays until the answer, then JOINED; offline: UNREACHABLE.
-- [ ] Console and network clean: zero console errors, zero failed requests other than the deliberate abort.
-- [ ] Desktop width 1280 × 800, light and dark; expected: the widget framed in the glass card.
-- [ ] Narrow width 375 × 812, light and dark; expected: no horizontal scroll, stacked rows.
-- [ ] Screenshots at `.pr-media/waitlist-inline/`; video at `.pr-media/waitlist-inline/join.mp4`.
+- [x] Happy path: open `/`, see the visible widget under the capsule in both forms, wait for the button to brighten, type an address, press Join; expected: "Joining…", then JOINED inline, the page never reloads (the scroll position stays), the widget resets. — evidence: scripted walk against a local wrangler dev with Turnstile test keys (Playwright MCP browser was not installed): form ready, typed, pressed; label "Joining…", then JOINED inline, url unchanged, scroll 120 before and after, 1 navigation (the first load), 1 POST /join with Accept application/json, widget back to ready; .pr-media/waitlist-inline/joined-1280-dark.png, join.mp4
+- [x] Empty: press Join with the field empty; expected: the browser's required-field bubble, no post. — evidence: scripted walk against a local wrangler dev with Turnstile test keys (Playwright MCP browser was not installed): a blank (spaces) field pressed shows the browser bubble "Please fill out this field."; (a truly empty field and the post count were not read)
+- [x] Single: one join; expected: JOINED. — evidence: scripted walk against a local wrangler dev with Turnstile test keys (Playwright MCP browser was not installed): one join, JOINED, 1 row, 1 mail
+- [x] Many: join three different addresses in a row from the same tab; expected: JOINED each time, the widget reset between them. — evidence: scripted walk against a local wrangler dev with Turnstile test keys (Playwright MCP browser was not installed): three addresses by Enter in a row from one tab, JOINED each time, each ready again before the next, 3 rows, then a fourth from the final form, JOINED, 1 navigation, 4 posts; .pr-media/waitlist-inline/joined-final-1280-light.png
+- [ ] Rejected input: `not-an-address`; expected: the browser's email bubble, no post. — NOT TICKED: `not-an-address` was not typed in the walk
+- [x] Browser Back mid-flow: press Join, then Back during the hold; expected: the previous page, no error; Forward shows the form ready again. — evidence: scripted walk against a local wrangler dev with Turnstile test keys (Playwright MCP browser was not installed): press Join, Back to /llms.txt after 300 ms, no error, Forward showed state waiting then ready within 30 s; 0 posts left the page
+- [x] Reload mid-flow: reload during the hold; expected: a fresh form, no post or one post at most, never two. — evidence: scripted walk against a local wrangler dev with Turnstile test keys (Playwright MCP browser was not installed): reload 500 ms after the press, 0 posts, 0 rows, field empty
+- [x] Two visitors in two browser contexts (`playwright`, `playwright-second`) joining the same address; expected: both see JOINED, one mail in the server log. — evidence: scripted walk against a local wrangler dev with Turnstile test keys (Playwright MCP browser was not installed): two browser contexts of one Playwright server (not two MCP servers) joined the same address, both JOINED after about 1.3 s, both 200, identical content-type, cache-control, vary and nosniff, 1 row, 1 mail
+- [x] Latency: Slow 3G throttle; expected: "Joining…" stays until the answer, then JOINED; offline: UNREACHABLE. — evidence: scripted walk against a local wrangler dev with Turnstile test keys (Playwright MCP browser was not installed): CDP latency 2000 ms and 50 KB/s, "Joining…" and state sending held until JOINED, 1 row; offline, UNREACHABLE "Couldn't reach todz. Check your connection and try again." and the label restored (but see the edge case: the form did not recover)
+- [x] Console and network clean: zero console errors, zero failed requests other than the deliberate abort. — evidence: scripted walk against a local wrangler dev with Turnstile test keys (Playwright MCP browser was not installed): the happy path logged one error only, "Failed to load resource" for the deliberate 403 of a bad token, zero securitypolicyviolation, zero failed requests, one main-frame navigation; the 400 of the long address likewise
+- [ ] Desktop width 1280 × 800, light and dark; expected: the widget framed in the glass card. — FAIL, see the edge cases: the widget is a bare 300 px box under the capsule, not framed in a glass card; .pr-media/waitlist-inline/hero-1280-light.png, hero-1280-dark.png
+- [x] Narrow width 375 × 812, light and dark; expected: no horizontal scroll, stacked rows. — evidence: scripted walk against a local wrangler dev with Turnstile test keys (Playwright MCP browser was not installed): overflow 0 at 375, form 343 wide, widget 300 wide centred and inside both, status stacked below; .pr-media/waitlist-inline/hero-375-dark.png, hero-375-light.png, hero-form-375-*.png, final-375-*.png, try-again-375-dark.png
+- [x] Screenshots at `.pr-media/waitlist-inline/`; video at `.pr-media/waitlist-inline/join.mp4`. — evidence: .pr-media/waitlist-inline/ holds the shots; join.mp4 is a 1280 dark happy-path recording from the scripted walk
 
 ## Production check (after the deploy, lead)
 
-- [ ] Widget renders on `https://todz.app/` at 1280 light, 1280 dark and 375; expected: both widgets visible under the capsules; screenshots in `.pr-media/waitlist-inline/production/`.
-- [ ] Real join with `hello+waitlist-inline@todz.app`; expected: JOINED inline, no navigation; the remote D1 count for that address is `1`.
-- [ ] Scripted JSON post without a token; expected: `403` and `{"outcome":"check-failed"}`; the count of `nobody@example.com` stays `0`.
-- [ ] Scripted HTML post without a token; expected: `429`.
-- [ ] Policy header on production; expected: no `'unsafe-inline'`, `connect-src 'self'`.
+- [ ] Widget renders on `https://todz.app/` at 1280 light, 1280 dark and 375; expected: both widgets visible under the capsules; screenshots in `.pr-media/waitlist-inline/production/`. — BLOCKED (lead): production row
+- [ ] Real join with `hello+waitlist-inline@todz.app`; expected: JOINED inline, no navigation; the remote D1 count for that address is `1`. — BLOCKED (lead): production row
+- [ ] Scripted JSON post without a token; expected: `403` and `{"outcome":"check-failed"}`; the count of `nobody@example.com` stays `0`. — BLOCKED (lead): production row
+- [ ] Scripted HTML post without a token; expected: `429`. — BLOCKED (lead): production row
+- [ ] Policy header on production; expected: no `'unsafe-inline'`, `connect-src 'self'`. — BLOCKED (lead): production row
 
 ## Edge cases found during execution
 
-Empty on purpose. The tester adds one checkbox per new case (input, exact expected outcome) and a regression test for each.
+Found by the scripted walk (Playwright MCP's browser was not installed on the machine) against a local `wrangler dev` with the real Turnstile widget on Cloudflare's always-pass keys, screenshots in `.pr-media/waitlist-inline/`.
+
+- [ ] DEFECT, offline recovery — input: press Join while the connection is down, then restore it. Expected: the visitor can try again without a reload. Observed: UNREACHABLE shows, the Turnstile reset ran while offline and never produced a token; after the connection returned and 20 s passed the button stayed `aria-disabled`, `data-join-state="waiting"`, the line still said "Couldn't reach todz. Check your connection and try again."; only a reload recovers. Screenshot `.pr-media/waitlist-inline/offline-recovery-1280-light.png`. Regression test requested from the developer: an E2E where the stub's `reset` yields no token after an unreachable answer must show the check-error line, and a stub that solves later must make the button ready.
+- [ ] OBSERVATION, the error line wears the success dot — input: a bad token answered `check-failed`. Observed: "The check didn't pass. Try it again." sits beside the same green dot as the JOINED line (`check-failed-1280-dark.png`). Expected by the owner's design: to be confirmed in `design.md`; the tester did not read it.
+- [ ] OBSERVATION, the widget is not framed by the glass card (plan row 158) — `flexible` gives the 300 px minimum in a 448 px form, a bare dark or light box under the capsule (`hero-1280-light.png`, `hero-1280-dark.png`, `hero-375-dark.png`); it fits the form and the viewport, no horizontal scroll. Lead decides whether this is the design.
+- [ ] OBSERVATION, deliberate refusals log browser console errors — a 400 or 403 JSON answer makes Chrome print "Failed to load resource" at error level; the plan's "zero console errors" holds only for the happy path.
+- [x] Double click on Join — input: `dblclick` on the ready button. Expected: one POST. Observed: 1 POST, 1 row, 1 mail — evidence: walk, `DOUBLECLICK posts=1 rows=1 mails=1`.
+- [x] Enter in the field — input: Enter pressed in the email field three times in a row. Expected: a join each time without navigation. Observed: JOINED each time, 3 rows, 1 navigation overall — evidence: walk `MANY`.
+- [x] Join from the second form — input: address typed in the final card. Expected: JOINED in `#final-notice`. Observed: JOINED, 1 row — evidence: walk, `joined-final-1280-light.png`.
+- [x] Very long address — input: a 300-character local part. Expected: refused. Observed: the INVALID line "That address doesn't look right.", no browser bubble, 0 rows — evidence: walk `LONG300`.
+- [x] Unicode domain — input: `maria…@münchen.example`. Expected: joined. Observed: JOINED, stored as `maria…@xn--mnchen-3ya.example`, 1 mail — evidence: walk and the local D1.
+- [x] Padded and upper-case address — input: ` WALK.PASTE…@EXAMPLE.COM `. Expected: joined as lower case. Observed: JOINED, 1 row of the lower-cased address — evidence: walk `SPACES`.
+- [x] Whitespace only — input: three spaces. Expected: a browser bubble. Observed: "Please fill out this field." — evidence: walk `BLANK`.
+- [x] Honeypot with the real widget — input: `todz_fax=https://spam.example` set by `evaluate`. Expected: JOINED, nothing kept. Observed: JOINED, 0 rows, 0 mails — evidence: walk `HONEYPOT`.
+- [x] Too fast with a real token — input: a stamp fetched by a fresh `GET /` and the page's token posted at once with `Accept: application/json`. Expected: 200 joined, nothing kept. Observed: `{"outcome":"joined"}`, 0 rows, 0 mails — evidence: walk `TOOFAST`.
+- [x] Malformed token from the real widget field — input: `bad token!` written into `cf-turnstile-response`. Expected: the check-failed line, the widget resets. Observed: CHECK_FAILED, the button waited then was ready again — evidence: walk, `check-failed-1280-dark.png`.
+- [x] Scripted posts with no token — input: `POST /join` with `email` only. Expected: JSON 403 `{"outcome":"check-failed"}`, HTML 429, 0 rows. Observed: 403 `{"outcome":"check-failed"}`, 429, 0 rows; `GET /join` 200 — evidence: walk `NOTOKEN`.
+- [x] Policy on every render — input: two `GET /`. Expected: the same policy, no `'unsafe-inline'`. Observed: equal, three `sha256-` script hashes plus `https://challenges.cloudflare.com`, `connect-src 'self'`, `frame-src https://challenges.cloudflare.com`, `form-action 'self'`, `default-src 'none'` — evidence: walk `CSP-EQUAL`.
+- [x] `join_waitlist` through a `navigator.modelContext` shim — input: `{ email }`. Expected: joined without navigating. Observed: four tools registered (`get_todz_overview`, `get_mcp_setup`, `open_docs`, `join_waitlist`), the answer "The address is on the waitlist; a confirmation mail is on its way if it is new.", 1 row, 1 POST, 1 navigation — evidence: walk `WEBMCP`.
+- [x] Challenge host blocked — input: `challenges.cloudflare.com` aborted. Expected: the check-error line, the button waiting, a press shows WAITING. Observed: "The check couldn't load. Reload the page to try again.", `aria-disabled`, then "Finish the check below to join." — evidence: walk `BLOCKED`, `check-could-not-load-1280-light.png`.
+- [x] Retry-After 5 — input: `/join` fulfilled 429 `try-again` with `Retry-After: 5`. Expected: TRY_AGAIN, the button waiting past the new token, then ready. Observed: TRY_AGAIN, `aria-disabled` after the token, ready again within 30 s — evidence: walk `RETRYAFTER`, `try-again-375-dark.png`.
+- [x] No JavaScript — input: a context with JavaScript off, press Join. Expected: the HTML fallback. Observed: 429, `/join#join`, TRY_AGAIN in `#join-notice`, 0 rows — evidence: walk `NOJS`, `no-javascript-fallback.png`.
+- [x] Reload 500 ms after the press — expected: at most one post. Observed: 0 posts, 0 rows — evidence: walk `RELOAD`.
+- [ ] GAP, no E2E for the 3 s hold label, the back-forward cache, the keyboard honeypot, a token expiring before and after a solve, and the `join_waitlist` 403 answer (rows 107, 119, 120, 141 above): requested from the developer.
 
 ## Adversarial review
 
