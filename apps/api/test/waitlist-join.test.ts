@@ -47,6 +47,7 @@ const STAMP_FIELD = 'stamp';
 const HONEYPOT_FIELD = 'website';
 const HONEYPOT_VALUE = 'https://spam.example';
 const FIXED_NOW = 1_790_000_000_000;
+const STAMP_AGE_PATIENT_MS = 2_500;
 const OTHER_SECRET = '2x0000000000000000000000000000000BB';
 const ACCEPT_HEADER = 'Accept';
 const VARY_HEADER = 'Vary';
@@ -611,7 +612,7 @@ describe('a JSON join answers an outcome and never the address', () => {
 describe("a bot's join answers joined and keeps nothing", () => {
   async function expectSilentlyJoined({ run, address }: { run: JoinRun; address: string }): Promise<void> {
     await expectNothingKept({ run, address });
-    expect(run.siteverifyBodies).toEqual([]);
+    expect(run.siteverifyBodies).toHaveLength(1);
   }
 
   test.each([
@@ -655,7 +656,7 @@ describe("a bot's join answers joined and keeps nothing", () => {
   });
 
   test.each([
-    ['rendered 1 999 ms ago', WAITLIST_MINIMUM_FILL_MS - 1],
+    ['rendered 1 000 ms ago', MILLISECONDS_PER_SECOND],
     ['rendered one second in the future', -MILLISECONDS_PER_SECOND],
   ])('a stamp %s answers joined and keeps nothing', async (_name, ageMs) => {
     vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW);
@@ -665,13 +666,31 @@ describe("a bot's join answers joined and keeps nothing", () => {
     await expectSilentlyJoined({ run, address });
   });
 
-  test('a stamp rendered exactly 2 000 ms ago is stored and mailed once', async () => {
+  test('a stamp rendered 2 500 ms ago is stored and mailed once', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW);
     const address = freshAddress();
-    const run = await joinJson({ email: address, stamp: await joinStampOf({ renderedAt: FIXED_NOW - WAITLIST_MINIMUM_FILL_MS }) });
+    const run = await joinJson({ email: address, stamp: await joinStampOf({ renderedAt: FIXED_NOW - STAMP_AGE_PATIENT_MS }) });
     expectOutcome({ run, status: OK_STATUS, outcome: 'joined' });
     expect(await waitlistRows(address)).toHaveLength(1);
     expect(run.sent).toHaveLength(1);
+  });
+
+  test.each([
+    ['a filled honeypot', HONEYPOT_VALUE, TURNSTILE_TEST_SECRET],
+    ['a stamp signed with another secret', '', OTHER_SECRET],
+  ])('%s with a token siteverify refuses answers check-failed, 403', async (_name, website, secret) => {
+    siteverifyAnswering(async () => Response.json({ success: false, 'error-codes': ['invalid-input-response'] }));
+    const address = freshAddress();
+    const stamp = await joinStampOf({ secret });
+    const run = await joinJson({ email: address, website, stamp });
+    expectOutcome({ run, status: FORBIDDEN_STATUS, outcome: 'check-failed' });
+    expect(run.siteverifyBodies).toHaveLength(1);
+    await expectNothingKept({ run, address });
+  });
+
+  test('a filled honeypot still spends a slot of the client limit', async () => {
+    const run = await joinJson({ website: HONEYPOT_VALUE });
+    expect(run.keys[LimiterBinding.Client]).toEqual([`${JOIN_PATH}:${CLIENT_ADDRESS}`]);
   });
 
   test('a honeypot with no token answers check-failed, 403: the token check comes first', async () => {
