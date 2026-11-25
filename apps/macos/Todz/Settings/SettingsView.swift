@@ -2,9 +2,12 @@ import SwiftUI
 import TodzKit
 
 private let subtitleLines = 2
+private let focusSettingsAddress = "x-apple.systempreferences:com.apple.Focus-Settings.extension"
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
+    @Environment(ProactiveGate.self) private var gate
+    @Environment(\.openURL) private var openURL
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
 
     var body: some View {
@@ -21,6 +24,13 @@ struct SettingsView: View {
             }
             .toggleStyle(.switch)
             .disabled(!model.canChangeAgentNudge)
+            LabeledContent {
+                Button(SettingsCopy.openFocusSettings, action: openFocusSettings)
+            } label: {
+                Text(SettingsCopy.focusQuiet)
+                Text(SettingsCopy.focusQuietSubtitle(notice: FocusQuietNotice(isQuiet: gate.isQuiet)))
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
@@ -34,6 +44,11 @@ struct SettingsView: View {
         } set: { isEnabled in
             Task { await model.changeAgentNudge(isEnabled: isEnabled) }
         }
+    }
+
+    private func openFocusSettings() {
+        guard let focusSettings = URL(string: focusSettingsAddress) else { return }
+        openURL(focusSettings)
     }
 
     private func announce(_ notice: AgentNudgeNotice) {
