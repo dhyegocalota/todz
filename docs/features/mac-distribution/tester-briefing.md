@@ -111,3 +111,43 @@ The green commits of the two scripts also changed a few assertions of their red 
 - `release-mac.sh --dry-run` still reads production's appcast (read only) for the build-number rule, and a dry run needs the Sparkle checkout at the pinned revision.
 - A re-run on a Mac without `~/.todz-release/builds/<v>/` and without the release folder cannot reproduce a published version; it rebuilds a different DMG and production's sum refuses it ("differs from the published file").
 - The guard hook is a text match: an agent command that builds the key name at run time (`todz-release-$x`) is caught only by the existing expansion rule, and nothing stops a process that is not an agent command.
+
+## G1 — the Worker's downloads and the landing
+
+Sources: `apps/api/src/site/download-release.ts`, `landing-page.ts`, `landing-copy.ts`, `site-style.ts`, `site-urls.ts`, `discovery-copy.ts`, `site-endpoint.ts`, `waitlist-join.ts`, `apps/api/wrangler.jsonc` (the `ASSETS` binding), `apps/api/playwright.config.ts`, `apps/api/e2e/download.spec.ts`, `apps/api/e2e/stage-fixture-site.sh`, `apps/api/e2e/fixtures/release/`.
+
+No route code exists: `/download`, `/download/latest` and the versioned files are the assets and the `_redirects` and `_headers` that `scripts/deploy-worker.sh` stages (G3). G1 proves them and shows the button only when `ASSETS` answers `/download/latest` with a `302` to a versioned disk image; a `404` keeps "coming soon"; any other answer throws.
+
+How to run: `pnpm --filter @todz/api test:unit`, then `pnpm --filter @todz/api test:e2e` (the staged server is a second `wrangler dev --assets <staged folder>` on port 8792, built by `stage-fixture-site.sh` through the real `deploy-worker.sh --stage-only` in a throwaway repository and home, with a fake production that answers `404` and a throwaway key whose private half was never committed).
+
+### Red today, green after
+
+| Commit | Test | Red text |
+|---|---|---|
+| `50f01626` | `site-pages.test.ts` "the landing download" | 6 failed: `expected '<!doctype html>…' to contain '<a class="download-button" href="/dow…'` (four notices), `expected [ …(46) ] to include 'macOS 14 or later'`, `expected ':root{color-scheme:light dark;…' to contain '.download{'` |
+| `50f01626` | `site-discovery.test.ts` "starts with the name and a blockquote, then holds the facts" | `expected '# todz\n\n> todz is a native Mac to-d…' to contain 'a download, not yet notarized by Apple'` |
+| `50f01626` | `download-release.test.ts` | 2 failed (the `true` and `false` cases): `Error: isDownloadReleased is not implemented` |
+| `e3122056` | `download.spec.ts`, `landing.spec.ts` "without a released version" | pin: the e2e landed after the code, so it never ran red; its first run was 26 of 26 green |
+
+The green commit is `5928a230`.
+
+### A5 and A6 evidence
+
+- A5: `wrangler dev --assets <folder>` keeps the config's `run_worker_first`. Probe, not committed: a staged file named `health` and a `sign-in/index.html` beside the real files; `GET /health` still answered the Worker's JSON (`{"service":"todz",…}`), never the file. So the generated `--config` copy of review answer A5 is not needed and `deploy-worker.sh` stays as it is. Local only: the lead's first real `wrangler deploy --assets` confirms it with the smoke checks.
+- A6: the `302` of `/download` and `/download/latest` carries `location: /download/0.0.2/Todz-0.0.2.dmg` and, from the `/*` rule of `_headers`, `strict-transport-security: max-age=31536000`, `referrer-policy: no-referrer` and `x-content-type-options: nosniff` (plus the transport's `content-encoding` and `transfer-encoding`); no `cache-control` and no `content-disposition`. `download.spec.ts` asserts these.
+
+### Hypotheses for the tester
+
+1. With a released version staged the hero shows `Download for Mac` and the honest note with "Install steps" above the waitlist form, light and dark, at 1280 and 375, with no horizontal scroll; without one it shows `macOS · Coming soon` and no button.
+2. A click downloads `Todz-0.0.2.dmg` (the `Content-Disposition` filename of the `302`'s target).
+3. The previous version still downloads; `/download/0.2/x.dmg`, `/download/0.0.2/notes.txt`, `/download/9.9.9/Todz-9.9.9.dmg`, `/_headers` and `/_redirects` answer the site's `404`.
+4. The CSP of the landing is unchanged (the same page tests run on the released pages); `/llms.txt` says the app "is a download, not yet notarized by Apple".
+5. The staged server's `/health` and `/sign-in` still answer from the Worker.
+
+### Gaps I know about
+
+- Step 6 (the docs page: signature verification, the public key and its fingerprint, the trust statement, `docs-pages.test.ts`) is not done: it waits for the lead's step 9, because `apps/macos/release/allowed-signers` does not exist yet.
+- Files outside the plan's G1 list that I had to touch: `apps/api/wrangler.jsonc` (`assets.binding: "ASSETS"`), `apps/api/src/env.ts` (optional `ASSETS`), `apps/api/src/http-status.ts` (`Found`), `apps/api/src/site/site-endpoint.ts` and `waitlist-join.ts` (they pass `isReleased` to the landing), `apps/api/test/waitlist-join.test.ts`, `site-discovery.test.ts` and `owner-client.ts` (a helper's env gains `ASSETS`).
+- The landing asks `ASSETS` on every landing render and every no-JavaScript join answer; the answer is local to the Worker, not a network call, and the page is not cached.
+- `/llms.txt` says "a download" whether or not a release is staged: the file is static. The landing is the gated surface.
+- The staged-server fixture trusts the throwaway key of `fixtures/release/allowed-signers`, never the real one.
