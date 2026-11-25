@@ -5,6 +5,7 @@ import type { Env } from '../env';
 import { type DayEmailCandidate, listDayEmailCandidates, listScheduledWorkspaces } from '../project-routing';
 import { publicOriginOf } from '../sign-in-links';
 import { dueDayOf } from './day-email-due';
+import { DayEmailEvent, logDayEmailEvent } from './day-email-log';
 import { issueReplyAddress } from './day-email-reply-address';
 import { DayEmailFailure, claimDay, markFailed, markSent, pruneDayEmails } from './day-email-store';
 import { dueTodayOf } from './day-email-today';
@@ -159,8 +160,11 @@ export async function runDayEmails({ scheduledTime, env }: DayEmailRun): Promise
     mail: (dueOwner) => mailDueOwner({ scheduledTime, env, dueOwner, sender, publicOrigin }),
   });
   const failed = countOf({ outcomes, outcome: OwnerOutcome.Failed });
-  console.log(
-    JSON.stringify({ event: 'day_email_run', due: dueOwners.length, sent: countOf({ outcomes, outcome: OwnerOutcome.Sent }), failed }),
-  );
+  logDayEmailEvent({
+    event: DayEmailEvent.Run,
+    due: dueOwners.length,
+    sent: countOf({ outcomes, outcome: OwnerOutcome.Sent }),
+    failed,
+  });
   if (failed > 0) throw new Error(failureMessageOf(failed));
 }
