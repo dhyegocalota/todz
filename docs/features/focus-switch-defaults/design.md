@@ -17,7 +17,8 @@
 │ and tints overdue widget rows.                       │
 │ Email me my day                      [07:00 ⇅] [●━]  │
 │ Respect Focus                                  [━○]  │
-│ Stay quiet in a Focus that has the todz filter.      │
+│ Hold what todz shows on this Mac in a Focus that     │
+│ has the todz filter.                                 │
 │─────────────────────────────────────────────────────-│
 │ Server …                                             │
 └──────────────────────────────────────────────────────┘
@@ -41,7 +42,7 @@
 | Key | Text |
 |---|---|
 | `respectFocus` | Respect Focus |
-| `respectFocusDetail` | Stay quiet in a Focus that has the todz filter. |
+| `respectFocusDetail` | Hold what todz shows on this Mac in a Focus that has the todz filter. |
 | `respectFocusHelper` | Add the todz filter to a Focus. |
 | `openFocusSettings` | Open Focus Settings (kept) |
 | `focusQuietNow` | Quiet now, until this Focus ends. (kept) |
@@ -52,14 +53,15 @@ Removed: `focusQuiet` ("Quiet during Focus"), `focusQuietDetail`.
 
 ## 3. The day mail's stop link
 
-- The footer becomes: "Sent at 07:00 because Email me my day is on in todz Settings. [Stop these emails]" with the link in the existing `.email-link` style; the plain-text part ends "Stop these emails: <url>".
-- The stop page on the API host uses the same shell as the sign-in link page: the lockup, one card, one sentence, one button.
+- The footer becomes: "Sent at {{time}} because Email me my day is on in todz Settings, where it starts on. [Stop these emails]" with the link in the existing `.email-link` style; the plain-text part ends "Stop these emails: <url>".
+- The stop page on the API host uses the same shell as the sign-in link page: the lockup, one card, one sentence, one button. Its one style block is inline and hashed; every answer carries `Content-Security-Policy: default-src 'none'; style-src 'sha256-<hash of the page style>'; img-src data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`, `X-Robots-Tag: noindex` and `Cache-Control: no-store`. No Turnstile: a mail client's one-click `POST` cannot solve it. The lockup is a `data:` image so `img-src` stays `data:` only.
 
 | Page | Heading | Sentence | Control |
 |---|---|---|---|
 | `GET`, live token | Stop your day email? | todz will stop mailing your day to this address. | button "Stop my day email" (a `POST` form to the same URL) |
 | `POST`, done | Your day email is off | Turn it back on in todz Settings. | none |
-| Unknown or expired | This link no longer works | Turn the email off in todz Settings. | none |
+| Unknown, expired or used | This link no longer works | Your day email is set in todz Settings. | none |
+| Too many requests (429, after `limitRefusal`) | Try again in a minute | Too many tries from here. | none |
 
 ## 4. Accessibility
 
