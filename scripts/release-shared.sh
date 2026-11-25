@@ -56,10 +56,11 @@ acquire_lock() {
   local token
   is_lock_holder_token_inherited && return 0
   mkdir -p "$release_home"
+  chmod 700 "$release_home"
   mkdir "$lock_directory" 2> /dev/null || fail "another release or deploy holds the lock $lock_directory"
   lock_held_here=true
   token=$("$UUIDGEN_BINARY")
-  printf '%s' "$token" > "$lock_directory/$LOCK_TOKEN_FILE"
+  (umask 077 && printf '%s' "$token" > "$lock_directory/$LOCK_TOKEN_FILE")
   export TODZ_RELEASE_LOCK_HELD=$token
   rm -rf "$release_home"/work.*
 }
