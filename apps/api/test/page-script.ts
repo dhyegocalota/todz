@@ -4,6 +4,7 @@ const OPEN_BUTTON_ID = 'open';
 const UNDEFINED_TYPE = 'undefined';
 
 export const TEST_SITE_KEY = '1x00000000000000000000AA';
+export const TEST_PAGE_ORIGIN = 'http://localhost:8787';
 export const WIDGET_ID = 'widget-1';
 
 type PageCallback = (argument?: string) => void;
@@ -85,6 +86,7 @@ export function runPageScript({
   const location = {
     hash,
     pathname,
+    origin: TEST_PAGE_ORIGIN,
     set href(target: string) {
       steps.push(`navigate ${target}`);
     },
