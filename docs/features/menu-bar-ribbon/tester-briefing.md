@@ -52,6 +52,8 @@ Each red commit stands alone and each test ran alone (`--skip-build --no-paralle
 | 13 | `67a4e040` | the five that call `agentChanged()` first | `RibbonCoordinator.swift:34: Fatal error: RibbonCoordinator.agentChanged is not implemented` |
 | 13 | `67a4e040` | `endingWithNoRibbonShowingChangesNothing` | `RibbonCoordinator.swift:38: Fatal error: RibbonCoordinator.end is not implemented` |
 
+Pins added after the plan review, green when they landed (`2ade9729`): `AppModelTests/aTaskAlreadyOnTheBoardWithANewTitleCountsNothing`, `AppModelTests/aProjectPulledInTwoPagesCountsOnce`, `RibbonCoordinatorTests/anAgentChangeHeldByAQuietGateShowsOnceOnReleaseAndStartsTheCooldownThere`, and a `running == nil` check in the `end()` mid-ribbon test. `RibbonMotionTests` now take the window, strip cap, holds and frame rate from `RibbonMotion`. Count on `2ade9729`: 1112 tests passed.
+
 Green commits: step 2 `a4ed0571`, 4 `43919d10`, 6 `a804fef2`, 8 `65cee565`, 10 `3f323b6f`, 12 `a3b894cc`, 14 `c43b99ba`.
 
 ### Hypotheses for the tester
