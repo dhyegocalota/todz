@@ -41,7 +41,7 @@ Two surfaces change: the Settings window gains a third row; System Settings list
 System Settings → Focus → a mode → Focus filters → Add Filter lists todz with its app icon. Choosing it opens the intent's sheet: the title, the description, one switch for the parameter. Back in the mode, the filter tile shows the app icon and the display representation.
 
 ```
-┌──────────── Quiet todz ────────────┐      Focus filters
+┌─────────────── Todz ───────────────┐      Focus filters
 │ Keeps todz from showing anything   │      ┌──────────────┐
 │ on its own while this Focus is on. │      │ [todz] todz  │
 │                                    │      │ Stays quiet  │
