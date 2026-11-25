@@ -15,6 +15,7 @@ public struct MenuBarOnlyPreference {
     }
 
     public var isOn: Bool {
-        fatalError("MenuBarOnlyPreference.isOn is not implemented")
+        guard let stored = domain.value(forKey: Self.isOnStorageKey) else { return Self.isOnByDefault }
+        return stored as? Bool == true
     }
 }
