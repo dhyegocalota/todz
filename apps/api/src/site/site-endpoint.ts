@@ -6,8 +6,8 @@ import { noRouteResponse } from '../owner-errors';
 import { siteKeyOf } from '../turnstile-page';
 import { ADMIN_ROUTES } from './admin-routes';
 import { LandingNotice, serveLandingPage } from './landing-page';
-import { serveSelfHostPage } from './self-host-page';
-import { JOIN_PATH, LANDING_PATH, SELF_HOST_PATH } from './site-shell';
+import { SELF_HOST_PATH, redirectToDocs } from './self-host-redirect';
+import { JOIN_PATH, LANDING_PATH } from './site-shell';
 import { serveWaitlistJoin } from './waitlist-join';
 
 export type SiteContext = { request: Request; env: Env; executionContext: ExecutionContext };
@@ -34,8 +34,8 @@ const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
   ...ADMIN_ROUTE_OF_REQUEST,
   [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: serveLanding,
   [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: serveLanding,
-  [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: serveSelfHostPage,
-  [routeKey({ method: HttpMethod.Head, pathname: SELF_HOST_PATH })]: serveSelfHostPage,
+  [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: redirectToDocs,
+  [routeKey({ method: HttpMethod.Head, pathname: SELF_HOST_PATH })]: redirectToDocs,
   [routeKey({ method: HttpMethod.Post, pathname: JOIN_PATH })]: serveWaitlistJoin,
   [routeKey({ method: HttpMethod.Get, pathname: JOIN_PATH })]: redirectToLanding,
 };

@@ -79,13 +79,6 @@ export const LANDING_COPY = {
     title: 'Be first on the list.',
     body: 'Join the waitlist and get todz when it opens.',
   },
-  selfHost: {
-    title: 'Self-host todz · todz',
-    description: 'Run your own todz server on Cloudflare: fork, deploy, point the app and your agents at it.',
-    eyebrow: 'Guide',
-    backToTop: 'Back to top',
-    codeLabel: 'Code',
-  },
   alt: {
     window: "The todz main window: a project's tasks, one added via Claude Code, with its notes and history in the inspector",
     windowDark: 'The todz main window in dark mode: three tasks added via Claude Code',
