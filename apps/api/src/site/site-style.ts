@@ -180,7 +180,7 @@ a{color:var(--color-link);text-underline-offset:0.12em}
 .menu-glyph{width:16px;height:16px}
 .shot{position:absolute;border-radius:var(--radius-shot);overflow:hidden;box-shadow:var(--shadow-shot)}
 .shot img,.shot picture{display:block;width:100%}
-.shot-window{display:none;left:3%;top:10%;width:66%}
+.shot-window{visibility:hidden;left:3%;top:10%;width:66%}
 .shot-popover{left:50%;top:40px;width:min(280px, 82%);translate:-50% 0;border-radius:var(--radius-control)}
 .shot-widget{left:6%;bottom:24px;width:min(240px, 70%);border-radius:var(--radius-widget)}
 .crop{position:relative;aspect-ratio:var(--crop-width) / var(--crop-height);overflow:hidden}
@@ -251,7 +251,7 @@ ${CROP_RULES}
 .join-input:focus-visible{outline:none}
 .join-button{height:100%}
 .desk-stage{aspect-ratio:1152 / 600}
-.shot-window{display:block}
+.shot-window{visibility:visible}
 .shot-popover{left:auto;right:5%;top:12%;width:27%;translate:none}
 .shot-widget{left:auto;right:3%;bottom:6%;width:28%}
 .benefit-card{padding:var(--space-5)}
