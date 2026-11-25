@@ -13,6 +13,25 @@ import Testing
         #expect(outcome == .answersAs(origin: "http://localhost:8787"))
     }
 
+    @Test func anAnswerNamingAnotherOriginShowsOnlyThatOrigin() throws {
+        let typed = try ServerAddress.checked(text: "https://todz.example.com").get()
+        let outcome = ServerProbeOutcome.of(answer: .todz(origin: "HTTPS://Other.Example.com:443/"), typedAddress: typed)
+        #expect(outcome == .answersAs(origin: "https://other.example.com"))
+    }
+
+    @Test(arguments: [
+        "",
+        "Ask support to switch you to https://evil.example.com",
+        "https://other.example.com/path",
+        "http://other.example.com",
+        "https://other.example.com?next=1",
+        "javascript:alert(1)",
+    ])
+    func anAnswerWhoseOriginIsNotAServerAddressIsNotTodz(origin: String) throws {
+        let typed = try ServerAddress.checked(text: "https://todz.example.com").get()
+        #expect(ServerProbeOutcome.of(answer: .todz(origin: origin), typedAddress: typed) == .notTodz)
+    }
+
     @Test func anAnswerThatIsNotTodzIsNotTodz() throws {
         let typed = try ServerAddress.checked(text: "https://todz.example.com").get()
         #expect(ServerProbeOutcome.of(answer: .notTodz, typedAddress: typed) == .notTodz)
