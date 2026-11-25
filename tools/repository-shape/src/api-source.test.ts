@@ -42,6 +42,8 @@ const WAITLIST_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8606';
 const ADMIN_RATE_LIMIT_NAMESPACE_ID = '8607';
 const ADMIN_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8608';
 const ADMIN_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8609';
+const OWNER_RATE_LIMIT_NAMESPACE_ID = '8611';
+const MCP_RATE_LIMIT_NAMESPACE_ID = '8612';
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -184,7 +186,7 @@ describe('the api source', () => {
     expect(DIGEST_CRON_PATTERN.exec(readRepositoryFile(DIGEST_MODULE))?.[FIRST_CAPTURE]).toBe(digestCron);
   });
 
-  test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally with the shared limits', () => {
+  test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally, and signed-in owners and keys, with the shared limits', () => {
     expect(wranglerConfiguration().ratelimits).toEqual([
       {
         name: 'SIGN_IN_LIMITER',
@@ -230,6 +232,16 @@ describe('the api source', () => {
         name: 'ADMIN_GLOBAL_LIMITER',
         namespace_id: ADMIN_GLOBAL_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('ADMIN_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'OWNER_LIMITER',
+        namespace_id: OWNER_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('OWNER_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'MCP_LIMITER',
+        namespace_id: MCP_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('MCP_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
   });
