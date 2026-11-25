@@ -26,11 +26,14 @@ function openTask(overrides: Partial<Task> = {}): Task {
 }
 
 describe('ownerJson', () => {
-  test('names the id, the time zone and the agent nudge in snake case', () => {
-    expect(ownerJson({ id: 'owner-1', timeZone: 'America/Sao_Paulo', agentNudge: true })).toEqual({
+  test('names the id, the time zone, the agent nudge and the day email in snake case', () => {
+    const owner = { id: 'owner-1', timeZone: 'America/Sao_Paulo', agentNudge: true, dayEmail: true, dayEmailMinutes: 450 };
+    expect(ownerJson(owner)).toEqual({
       id: 'owner-1',
       time_zone: 'America/Sao_Paulo',
       agent_nudge: true,
+      day_email: true,
+      day_email_minutes: 450,
     });
   });
 });

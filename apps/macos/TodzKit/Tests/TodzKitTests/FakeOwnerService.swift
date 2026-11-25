@@ -77,12 +77,23 @@ struct StatusFailure: Sendable {
 
     func updateOwner(session: String, timeZone: String) async throws -> Owner {
         try await record(.updateOwner(session: session, timeZone: timeZone))
-        return Owner(identifier: issuedSession.owner.identifier, timeZone: timeZone, agentNudge: issuedSession.owner.agentNudge)
+        let issued = issuedSession.owner
+        return Owner(identifier: issued.identifier, timeZone: timeZone, agentNudge: issued.agentNudge, dayEmail: issued.dayEmail, dayEmailMinutes: issued.dayEmailMinutes)
     }
 
     func updateAgentNudge(session: String, isEnabled: Bool) async throws -> Owner {
         try await record(.updateAgentNudge(session: session, isEnabled: isEnabled))
-        return Owner(identifier: issuedSession.owner.identifier, timeZone: issuedSession.owner.timeZone, agentNudge: isEnabled)
+        return revisedOwner { $0.agentNudge = isEnabled }
+    }
+
+    func updateDayEmail(session: String, isEnabled: Bool) async throws -> Owner {
+        try await record(.updateDayEmail(session: session, isEnabled: isEnabled))
+        return revisedOwner { $0.dayEmail = isEnabled }
+    }
+
+    func updateDayEmailMinutes(session: String, minutes: Int) async throws -> Owner {
+        try await record(.updateDayEmailMinutes(session: session, minutes: minutes))
+        return revisedOwner { $0.dayEmailMinutes = minutes }
     }
 
     func listWorkspaces(session: String) async throws -> [Workspace] {
@@ -199,6 +210,12 @@ struct StatusFailure: Sendable {
 
     func nextKeyIdentifier() -> String {
         "project-key-\(issuedKeyCount + 1)"
+    }
+
+    private func revisedOwner(_ revision: (inout Owner) -> Void) -> Owner {
+        var owner = issuedSession.owner
+        revision(&owner)
+        return owner
     }
 
     private func page(projectIdentifier: String, cursor: Int) -> ChangePage {

@@ -46,6 +46,7 @@ targets:
       configs:
         Debug:
           TODZ_API_BASE_URL: http://localhost:8787
+          INFOPLIST_KEY_CFBundleDisplayName: Todz Dev
         Release:
           TODZ_API_BASE_URL: https://api.todz.app
     entitlements:

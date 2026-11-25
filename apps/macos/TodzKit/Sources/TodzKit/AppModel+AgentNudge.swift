@@ -5,7 +5,7 @@ extension AppModel {
         return isKnown && isOwnerConfirmed && isWorthTrying && !isSavingAgentNudge
     }
 
-    public var agentNudgeNotice: AgentNudgeNotice {
+    public var agentNudgeNotice: OwnerSettingNotice {
         if case .signedOut = phase { return .signedOut }
         guard !isAgentNudgeNotSaved else { return .notSaved }
         guard !isOffline else { return .offline }

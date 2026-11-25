@@ -17,6 +17,8 @@ export enum HttpHeader {
   ReferrerPolicy = 'Referrer-Policy',
   ServerTiming = 'Server-Timing',
   Upgrade = 'Upgrade',
+  Accept = 'Accept',
+  Vary = 'Vary',
 }
 
 export const NO_STORE = 'no-store';
