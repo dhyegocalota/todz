@@ -50,6 +50,8 @@ const LOCAL_ORIGIN_MODULE = 'local-origin';
 const LOCAL_ORIGIN_IMPORT_PATTERN = /import ([^;]+?) from '[^']*local-origin'/g;
 const SITE_HOST_PREDICATE_IMPORT = '{ isLocalSiteHost }';
 const LANDING_ASSET_PREFIX = '/landing/';
+const FOOTER_CREDIT =
+  '<p class="footer-credit">todz is a product of <a class="footer-credit-link" href="https://logicbit.com.br" rel="noopener">Logic Bit</a>, made in Brazil</p>';
 const SECTION_MARKERS = [
   '<section class="hero',
   '<section class="benefits',
@@ -179,6 +181,12 @@ describe('the site pages', () => {
       expect(REMOTE_ASSET_PATTERNS.filter((pattern) => pattern.test(withoutScript))).toEqual([]);
     },
   );
+
+  test.each([...LANDING_PAGES, SELF_HOST_PAGE])('%s credits Logic Bit in the footer with a link to its website', async (_name, page) => {
+    const { html } = await page();
+    const footer = html.slice(html.indexOf('<footer class="site-footer'));
+    expect(footer).toContain(FOOTER_CREDIT);
+  });
 
   test('the site imports only the site host predicate from local-origin', () => {
     const sources = Object.values(SITE_SOURCES);
