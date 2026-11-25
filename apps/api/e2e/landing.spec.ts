@@ -409,18 +409,24 @@ test.describe('join', () => {
     await expect.poll(() => mailCountTo(address)).toBe(1);
   });
 
-  test('a submit faster than the server minimum answers joined and keeps nothing, and a real join afterwards is kept', async ({ page }) => {
+  test('a submit faster than the server minimum answers joined and keeps nothing, and a real join afterwards is kept', async ({
+    page,
+    browser,
+    baseURL,
+  }) => {
     const address = uniqueAddress();
     await landingWithoutTheHold(page);
     await submitForm({ page, form: Fragment.Hero, address });
     await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
     expect(mailCountTo(address)).toBe(0);
-    const patientPage = await page.context().newPage();
+    const patientContext = await browser.newContext({ baseURL });
+    const patientPage = await patientContext.newPage();
     await patientPage.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: TURNSTILE_STUB }));
     await patientPage.goto(SitePath.Landing);
     await submitForm({ page: patientPage, form: Fragment.Hero, address });
     await expect(patientPage.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
     await expect.poll(() => mailCountTo(address)).toBe(1);
+    await patientContext.close();
   });
 
   test.describe('each answer the server can give shows its own line and gives the button back', () => {

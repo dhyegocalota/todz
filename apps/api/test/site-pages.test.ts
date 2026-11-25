@@ -315,7 +315,7 @@ describe('the landing', () => {
   test('without a notice, each form shows its note and no notice', async () => {
     const { html } = await landingPage(LandingNotice.None);
     const forms = [...html.matchAll(FORM_PATTERN)].map(([form]) => form);
-    expect(html).not.toContain(LANDING_COPY.join.opensSoon);
+    expect(textNodes(html)).not.toContain(LANDING_COPY.join.opensSoon);
     expect(forms.filter((form) => !form.includes(LANDING_COPY.join.note))).toEqual([]);
   });
 

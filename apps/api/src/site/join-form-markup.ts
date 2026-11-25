@@ -4,3 +4,20 @@ export const EMAIL_FIELD_NAME = 'email';
 export const ARIA_DISABLED = 'aria-disabled';
 export const STAMP_FIELD_NAME = 'stamp';
 export const HONEYPOT_FIELD_NAME = 'website';
+export const WAITLIST_ANSWERED_EVENT = 'waitlist-answered';
+export const UNREACHABLE_ANSWER = 'unreachable';
+export const JOIN_STATE_ATTRIBUTE = 'joinState';
+
+export enum JoinFormState {
+  Waiting = 'waiting',
+  Ready = 'ready',
+  Sending = 'sending',
+}
+
+export enum JoinOutcome {
+  Joined = 'joined',
+  Invalid = 'invalid',
+  CheckFailed = 'check-failed',
+  TryAgain = 'try-again',
+  OpensSoon = 'opens-soon',
+}

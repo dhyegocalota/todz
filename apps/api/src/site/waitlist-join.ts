@@ -11,6 +11,7 @@ import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import { publicOriginOf } from '../sign-in-links';
 import { TURNSTILE_TOKEN_PATTERN, TurnstileAction, TurnstileVerdict, verifyTurnstileToken } from '../turnstile';
 import { TURNSTILE_RESPONSE_FIELD, siteKeyOf } from '../turnstile-page';
+import { JoinOutcome } from './join-form-markup';
 import { LandingNotice, serveLandingPage } from './landing-page';
 import type { SiteContext } from './site-endpoint';
 import {
@@ -38,14 +39,6 @@ type JoinForm = z.output<typeof JoinFormSchema>;
 type JoinNotice = LandingNotice.Joined | WaitlistRefusal;
 
 type WaitlistGuard = { siteOrigin: string; secret: string; sender: EmailSender };
-
-export enum JoinOutcome {
-  Joined = 'joined',
-  Invalid = 'invalid',
-  CheckFailed = 'check-failed',
-  TryAgain = 'try-again',
-  OpensSoon = 'opens-soon',
-}
 
 const STATUS_OF_NOTICE: Record<JoinNotice, HttpStatus> = {
   [LandingNotice.Joined]: HttpStatus.Ok,

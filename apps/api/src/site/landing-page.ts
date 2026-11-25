@@ -1,4 +1,6 @@
+import { MILLISECONDS_PER_SECOND, WAITLIST_FILL_HOLD_MS } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
+import { MediaType } from '../request-body';
 import { TurnstileAction } from '../turnstile';
 import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
 import {
@@ -7,10 +9,16 @@ import {
   HONEYPOT_FIELD_NAME,
   JOIN_BUTTON_CLASS,
   JOIN_FORM_CLASS,
+  JOIN_STATE_ATTRIBUTE,
+  JoinFormState,
+  JoinOutcome,
   STAMP_FIELD_NAME,
+  UNREACHABLE_ANSWER,
+  WAITLIST_ANSWERED_EVENT,
 } from './join-form-markup';
 import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
+import { scriptJson } from './site-constants';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
 import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
 import { LANDING_STRUCTURED_DATA } from './site-json-ld';
@@ -57,61 +65,133 @@ const NOTICE_TEXT: Record<Exclude<LandingNotice, LandingNotice.None>, string> = 
   [LandingNotice.TryAgain]: LANDING_COPY.join.tryAgain,
 };
 
+const PAGE_SCRIPT_COPY = {
+  lines: {
+    [JoinOutcome.Joined]: LANDING_COPY.join.joined,
+    [JoinOutcome.Invalid]: LANDING_COPY.join.invalid,
+    [JoinOutcome.CheckFailed]: LANDING_COPY.join.checkFailed,
+    [JoinOutcome.TryAgain]: LANDING_COPY.join.tryAgain,
+    [JoinOutcome.OpensSoon]: LANDING_COPY.join.opensSoon,
+  } satisfies Record<JoinOutcome, string>,
+  waitingForCheck: LANDING_COPY.join.waitingForCheck,
+  unreachable: LANDING_COPY.join.unreachable,
+  checkError: LANDING_COPY.join.checkError,
+};
+
+// NB ADR 0067: a join never navigates; it holds until the fill time, posts JSON, shows the outcome in the status line and resets the widget.
 export const PAGE_SCRIPT = `{
-  const waitingForToken = new Map();
-  const hasToken = (form) => {
+  const copy = ${scriptJson(PAGE_SCRIPT_COPY)};
+  const state = ${scriptJson(JoinFormState)};
+  const forms = [...document.querySelectorAll('.${JOIN_FORM_CLASS}')];
+  const tokenOf = (form) => {
     const token = form.querySelector('[name="${TURNSTILE_RESPONSE_FIELD}"]');
-    return token !== null && token.value !== '';
+    return token === null ? '' : token.value;
   };
-  let hasFailedWidget = false;
+  const widgetOf = (form) => form.querySelector('.${WIDGET_CLASS}');
+  const buttonOf = (form) => form.querySelector('.${JOIN_BUTTON_CLASS}');
+  const labelOf = new Map(forms.map((form) => [form, buttonOf(form).textContent]));
+  const progressOf = new Map(forms.map((form) => [form, {
+    hasWidget: widgetOf(form) !== null,
+    hasToken: widgetOf(form) === null || tokenOf(form) !== '',
+    isBlocked: false,
+    isSending: false,
+  }]));
+  let hasSolved = false;
+  const stateOf = ({ hasToken, isBlocked, isSending }) => {
+    if (isSending) return state.Sending;
+    if (hasToken && !isBlocked) return state.Ready;
+    return state.Waiting;
+  };
+  const render = (form) => {
+    const progress = progressOf.get(form);
+    const current = stateOf(progress);
+    form.dataset.${JOIN_STATE_ATTRIBUTE} = current;
+    buttonOf(form).textContent = progress.isSending ? buttonOf(form).dataset.submitting : labelOf.get(form);
+    if (current === state.Ready) return buttonOf(form).removeAttribute('${ARIA_DISABLED}');
+    buttonOf(form).setAttribute('${ARIA_DISABLED}', 'true');
+  };
+  const showLine = ({ form, text }) => {
+    const status = form.querySelector('[role="status"]');
+    const dot = document.createElement('span');
+    dot.className = 'notice-dot';
+    dot.setAttribute('aria-hidden', 'true');
+    status.className = '${JOIN_NOTICE_CLASS}';
+    status.replaceChildren(dot, text);
+  };
+  const answerOf = async (body) => {
+    try {
+      const response = await fetch('${JOIN_PATH}', { method: 'POST', headers: { Accept: '${MediaType.Json}' }, body });
+      const { outcome } = await response.json();
+      if (!Object.hasOwn(copy.lines, outcome)) return { outcome: '${UNREACHABLE_ANSWER}', retryAfterSeconds: 0 };
+      return { outcome, retryAfterSeconds: Number(response.headers.get('Retry-After')) };
+    } catch (error) {
+      return { outcome: '${UNREACHABLE_ANSWER}', retryAfterSeconds: 0 };
+    }
+  };
+  const finish = ({ form, outcome, retryAfterSeconds }) => {
+    const progress = progressOf.get(form);
+    progress.isSending = false;
+    progress.hasToken = !progress.hasWidget;
+    showLine({ form, text: outcome === '${UNREACHABLE_ANSWER}' ? copy.unreachable : copy.lines[outcome] });
+    if (outcome === '${JoinOutcome.Joined}') form.querySelector('[name="${EMAIL_FIELD_NAME}"]').value = '';
+    if (retryAfterSeconds > 0) {
+      progress.isBlocked = true;
+      setTimeout(() => {
+        progress.isBlocked = false;
+        render(form);
+      }, retryAfterSeconds * ${MILLISECONDS_PER_SECOND});
+    }
+    if (progress.hasWidget && window.turnstile) window.turnstile.reset(widgetOf(form));
+    render(form);
+    form.dispatchEvent(new CustomEvent('${WAITLIST_ANSWERED_EVENT}', { detail: { outcome } }));
+  };
+  const sendFrom = async (form) => {
+    progressOf.get(form).isSending = true;
+    render(form);
+    const remainingHoldMs = ${WAITLIST_FILL_HOLD_MS} - performance.now();
+    if (remainingHoldMs > 0) await new Promise((resolve) => setTimeout(resolve, remainingHoldMs));
+    finish({ form, ...(await answerOf(new URLSearchParams(new FormData(form)))) });
+  };
   window.${TOKEN_CALLBACK} = () => {
-    hasFailedWidget = false;
-    waitingForToken.forEach((_restore, form) => {
-      if (!hasToken(form)) return;
-      waitingForToken.delete(form);
-      form.submit();
+    hasSolved = true;
+    forms.forEach((form) => {
+      const progress = progressOf.get(form);
+      progress.hasToken = !progress.hasWidget || tokenOf(form) !== '';
+      render(form);
     });
   };
   window.${FAILURE_CALLBACK} = () => {
-    hasFailedWidget = true;
-    waitingForToken.forEach((restore, form) => {
-      waitingForToken.delete(form);
-      restore();
+    forms.forEach((form) => {
+      progressOf.get(form).hasToken = false;
+      render(form);
+      if (!hasSolved) showLine({ form, text: copy.checkError });
     });
   };
-  const retryChallenge = ({ form, restore }) => {
-    hasFailedWidget = false;
-    restore();
-    if (window.turnstile) window.turnstile.reset(form.querySelector('.${WIDGET_CLASS}'));
-  };
-  document.querySelectorAll('.${JOIN_FORM_CLASS}').forEach((form) => {
-    const button = form.querySelector('.${JOIN_BUTTON_CLASS}');
-    const label = button.textContent;
-    const hasWidget = form.querySelector('.${WIDGET_CLASS}') !== null;
-    const restore = () => {
-      button.removeAttribute('${ARIA_DISABLED}');
-      button.textContent = label;
-    };
+  forms.forEach((form) => {
+    render(form);
     form.addEventListener('submit', (event) => {
-      if (button.getAttribute('${ARIA_DISABLED}') === 'true') return event.preventDefault();
-      button.setAttribute('${ARIA_DISABLED}', 'true');
-      button.textContent = button.dataset.submitting;
-      if (!hasWidget || hasToken(form)) return;
       event.preventDefault();
-      if (hasFailedWidget) return retryChallenge({ form, restore });
-      waitingForToken.set(form, restore);
-    });
-    addEventListener('pageshow', (event) => {
-      if (!event.persisted) return;
-      waitingForToken.delete(form);
-      restore();
+      const progress = progressOf.get(form);
+      if (form.dataset.${JOIN_STATE_ATTRIBUTE} === state.Ready) return sendFrom(form);
+      if (progress.isSending || progress.isBlocked) return;
+      showLine({ form, text: copy.waitingForCheck });
     });
   });
-  addEventListener('load', () => requestAnimationFrame(() => {
-    const answered = document.getElementById(location.hash.slice(1));
-    const notice = answered === null ? null : answered.querySelector('.${JOIN_NOTICE_CLASS}');
-    if (notice !== null) notice.focus({ preventScroll: true });
-  }));
+  addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+    forms.forEach((form) => {
+      progressOf.get(form).isSending = false;
+      render(form);
+    });
+  });
+  addEventListener('load', () => {
+    if (window.turnstile === undefined) forms.filter((form) => progressOf.get(form).hasWidget).forEach((form) => showLine({ form, text: copy.checkError }));
+    requestAnimationFrame(() => {
+      const answered = document.getElementById(location.hash.slice(1));
+      const notice = answered === null ? null : answered.querySelector('.${JOIN_NOTICE_CLASS}');
+      if (notice !== null) notice.focus({ preventScroll: true });
+    });
+  });
 }`;
 
 const PAGE_SCRIPTS = [PAGE_SCRIPT, WEBMCP_SCRIPT];
