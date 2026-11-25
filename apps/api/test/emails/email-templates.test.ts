@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
+import { EmailTemplateName, generatedEmailsOf } from '../../scripts/emails/generated-emails';
 import { EmailSlot } from '../../src/emails/email-slot';
+import type { GeneratedEmail } from '../../src/emails/generated-email';
 import { SIGN_IN_EMAIL, WELCOME_EMAIL } from '../../src/emails/generated/email-templates';
 
 const COLOR_SCHEME_META = '<meta name="color-scheme" content="light dark"';
@@ -10,6 +12,23 @@ const WELCOME_SUBJECT = 'Welcome to todz';
 const WELCOME_HEADING = "You're in. Welcome to todz.";
 const WELCOME_HEADING_ESCAPED = 'You&#x27;re in. Welcome to todz.';
 const IMAGE_TAG_PATTERN = /<img[^>]*>/;
+const WAITLIST_SUBJECT = "You're on the todz waitlist";
+const WAITLIST_HEADING = "You're on the list.";
+const WAITLIST_LINES = [
+  "Thanks for joining the todz waitlist. We'll write once, when todz opens for you.",
+  "Didn't sign up? Ignore this mail and you'll hear nothing more.",
+];
+const APOSTROPHE = "'";
+const ESCAPED_APOSTROPHE = '&#x27;';
+
+async function waitlistEmail(): Promise<GeneratedEmail> {
+  const emails = await generatedEmailsOf();
+  return emails[EmailTemplateName.Waitlist];
+}
+
+function htmlOf(text: string): string {
+  return text.replaceAll(APOSTROPHE, ESCAPED_APOSTROPHE);
+}
 
 function imageTagOf(html: string): string {
   const imageTag = html.match(IMAGE_TAG_PATTERN)?.[0];
@@ -67,6 +86,34 @@ describe('the welcome email', () => {
 
   test('declares light and dark', () => {
     expect(WELCOME_EMAIL.html).toContain(COLOR_SCHEME_META);
+  });
+});
+
+describe('the waitlist email', () => {
+  test('has its subject and its heading', async () => {
+    const email = await waitlistEmail();
+    expect(email.subject).toBe(WAITLIST_SUBJECT);
+    expect(email.html).toContain(htmlOf(WAITLIST_HEADING));
+    expect(email.text).toContain(WAITLIST_HEADING);
+  });
+
+  test.each(WAITLIST_LINES)('says "%s" in both parts', async (line) => {
+    const email = await waitlistEmail();
+    expect(email.html).toContain(htmlOf(line));
+    expect(email.text).toContain(line);
+  });
+
+  test('shows the lockup from the origin slot, only in its image, and holds no other slot', async () => {
+    const email = await waitlistEmail();
+    const imageTag = imageTagOf(email.html);
+    expect(imageTag).toContain(`src="${LOCKUP_URL}"`);
+    expect(imageTag).toContain('alt="todz"');
+    expect(email.html.replace(imageTag, '')).not.toContain(LOCKUP_URL);
+    expect([email.html, email.text].filter((part) => part.includes(EmailSlot.Email) || part.includes(EmailSlot.Link))).toEqual([]);
+  });
+
+  test('declares light and dark', async () => {
+    expect((await waitlistEmail()).html).toContain(COLOR_SCHEME_META);
   });
 });
 
