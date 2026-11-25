@@ -6,9 +6,9 @@ Pinned strings (`design.md` § 8 and § 4), with the seeded workspace `acme`: `N
 
 ## The failing test first
 
-- [ ] `TaskKeyShortcutTests` and `AppModelTests+ShortcutReads` at Step 1's red commit, each run alone with `--no-parallel --filter` — expected: each stops on a stub's `<Type>.<member> is not implemented` (`TaskKey.shortcutIdentifier`, `TaskKey.init(shortcutIdentifier:)`, `AppModel.shortcutToday`, `AppModel.shortcutSuggestedTasks`, `AppModel.shortcutTasks(matching:)`, `AppModel.shortcutTasks(for:)`), the texts `tester-briefing.md` records
-- [ ] `AppModelTests+ShortcutReadiness` and `AppModelTests+ShortcutWrites` at Step 3's red commit, run alone — expected: each stops on `AppModel.shortcutReadiness() is not implemented`, `AppModel.addFromShortcut(title:isDueToday:) is not implemented` or `AppModel.completeFromShortcut(key:) is not implemented`, as the briefing records
-- [ ] The printed texts match the briefing row for row, run serially, since a parallel run can hit a different stub first
+- [ ] `TaskKeyShortcutTests` and `AppModelTests+ShortcutReads` (the sentence tests included) at Step 1's red commit: `swift build --build-tests`, then `swift test --skip-build --no-parallel --filter <Suite>/<test>` for every test of each suite (a `fatalError` aborts the process, so a suite run whole proves only its first test red) — expected: each exits on `Fatal error: <Type>.<member> is not implemented` and stops on a stub's `<Type>.<member> is not implemented` (`TaskKey.shortcutIdentifier`, `TaskKey.init(shortcutIdentifier:)`, `AppModel.shortcutToday`, `AppModel.shortcutSuggestedTasks`, `AppModel.shortcutTasks(matching:)`, `AppModel.shortcutTasks(for:)`), the texts `tester-briefing.md` records
+- [ ] `AppModelTests+ShortcutReadiness` and `AppModelTests+ShortcutWrites` at Step 3's red commit, every test run alone as above — expected: each exits on `Fatal error: ` followed by `AppModel.shortcutReadiness() is not implemented`, `AppModel.addFromShortcut(title:isDueToday:) is not implemented` or `AppModel.completeFromShortcut(key:) is not implemented`, as the briefing records
+- [ ] The printed texts match the briefing test for test, each test run alone and serially, since a parallel run can hit a different stub first
 - [ ] Step 7's `TodayDigest` commit says `pin` and is not counted as red-first
 
 ## Unit
@@ -18,7 +18,15 @@ Pinned strings (`design.md` § 8 and § 4), with the seeded workspace `acme`: `N
 - [ ] Round trip — input: `TaskKey(projectIdentifier: "acme-inbox", number: 12)` — expected: `acme-inbox/12`, and `TaskKey(shortcutIdentifier: "acme-inbox/12")` equals the key
 - [ ] A UUID project — input: a `crypto.randomUUID()`-shaped project and number 3 — expected: round-trips
 - [ ] The last separator — input: `a/b/3` — expected: project `a/b`, number 3
-- [ ] Malformed — input: `abc`, `abc/`, `/3`, `abc/0`, `abc/-1`, `abc/x`, `abc/1.5`, `` — expected: nil for each
+- [ ] Malformed — input: `abc`, `abc/`, `/3`, `abc/0`, `abc/-1`, `abc/x`, `abc/1.5`, `abc/+3`, `abc/03`, `abc/ 3`, `` — expected: nil for each (`+3`, `03` and ` 3` parse to 3 but do not round-trip)
+
+### The spoken sentence
+
+- [ ] None — input: 0 open — expected: `.nothingLeft`, `spokenTitles` empty
+- [ ] One — input: 1 open — expected: `.withTitles`, one title
+- [ ] Three — input: 3 open — expected: `.withTitles`, three titles
+- [ ] Four — input: 4 open — expected: `.withFirstTitles`, three titles
+- [ ] Seven — input: 7 open — expected: `.withFirstTitles`, the first three in Today's order
 
 ### Today
 
@@ -42,17 +50,20 @@ Pinned strings (`design.md` § 8 and § 4), with the seeded workspace `acme`: `N
 - [ ] Capped — input: twelve open titles containing `task` — expected: ten
 - [ ] Blank — input: `` and three spaces — expected: none
 - [ ] Done never matches — input: `dentist` against a done `Book the dentist` — expected: none
+- [ ] Pending never matches — input: `dentist` while `Book the dentist` is a pending add (offline, no number) — expected: none
+- [ ] Upcoming after Today — input: `call` against a Today `Call Ana` and a `Call Bob` due tomorrow — expected: `Call Ana`, then `Call Bob`
 - [ ] Another workspace never matches — input: `beta` while `acme` is active and `Beta launch` lives in workspace `other` — expected: none
 - [ ] By identifier — input: the keys of an open task, a done task, an unknown number and a task of `other`, in that order — expected: the open and the done task, in that order; the other two dropped
 - [ ] By identifier while signed out — input: a known key after sign-out — expected: none
 
 ### Readiness
 
-- [ ] Ready at once — input: a launched model with Today loaded — expected: `.ready`; no pause asked for
-- [ ] Launches — input: a model never launched, a session and a cache — expected: `.ready`, and `launch()` has run (the phase left `.loading` from the cache)
+- [ ] Ready at once — input: a launched model with Today loaded — expected: `.ready`; no 5 s pause among `pause.durations`
+- [ ] Launches — input: a model never launched, a session and a cache, the pull answering — expected: `.ready`, `isOffline` false, the rows are the pulled ones (not the cached ones), and `launch()` has run (the phase left `.loading` from the cache)
+- [ ] Cold with a cache, the pull held — input: never launched, a cache, the project pull held — expected: the 5 s pause asked for; on its release `.ready` with `shortcutToday.isOffline` true
 - [ ] Signed out — expected: `.signedOut`
 - [ ] No workspace — input: signed in, the listing returns none — expected: `.noWorkspace`
-- [ ] Still loading — input: no cache, the workspace listing held — expected: the pause asked for is 5 s; on its release, `.loading`
+- [ ] Still loading — input: a model never launched, no cache, the workspace listing held — expected: the 5 s pause is the one released (waited for with `pause.started(count:)`); on its release, `.loading`; the listing is still held (`launch()` is not awaited)
 - [ ] Answered in time — input: the listing held, then answered before the pause is released — expected: `.ready`
 - [ ] Signed out while waiting — input: the listing held, then a sign-out — expected: `.signedOut`
 
@@ -87,20 +98,24 @@ Pinned strings (`design.md` § 8 and § 4), with the seeded workspace `acme`: `N
 
 ## Build
 
-- [ ] Debug and Release — `xcodegen generate`, `xcodebuild build` for each — expected: `BUILD SUCCEEDED`, no `error:`, no `warning:` other than the noise the briefing quotes
-- [ ] Metadata — read `Todz.app/Contents/Resources/Metadata.appintents/extract.actionsdata` of the Debug product — expected: actions `LeftTodayIntent`, `AddTaskIntent`, `CompleteTaskIntent`, `TodzFocusFilter`; entity `TodzTaskEntity`; three `autoShortcuts` with the six phrases as `${applicationName}` templates and the short titles and symbols of `design.md`
-- [ ] Entitlements — `codesign -dv --entitlements -` on the Debug app — expected: `TeamIdentifier=XFWR794VS8` and the keys `app-sandbox`, `application-groups`, `get-task-allow`, `network.client`, nothing else
+- [ ] Debug and Release — `xcodegen generate`, `xcodebuild build` for each — expected: `BUILD SUCCEEDED`, no `error:`, no `warning:` other than the noise the briefing quotes; `CFBundleDisplayName` is `Todz Dev` in the Debug product and `Todz` in the Release product
+- [ ] Metadata — read `Todz.app/Contents/Resources/Metadata.appintents/extract.actionsdata` of the Debug product and of the Release product — expected, in both: actions `LeftTodayIntent`, `AddTaskIntent`, `CompleteTaskIntent`, `TodzFocusFilter`; entity `TodzTaskEntity`; three `autoShortcuts` with the six phrases as `${applicationName}` templates and the short titles and symbols of `design.md`
+- [ ] Entitlements — `codesign -dv --entitlements -` on the Debug app — expected: `TeamIdentifier=XFWR794VS8` and the keys `app-sandbox`, `application-groups`, `get-task-allow`, `network.client`, nothing else; on the Release product the same without `get-task-allow`
 - [ ] No title in the source's logging — `rg -n "Logger|os_log|print\(" apps/macos/Todz/Shortcuts` — expected: no match
 
 ## Prove it for real
 
 Orca (ADR 0026) and the `shortcuts` command line, the Debug build against a local `wrangler dev` with a seeded workspace `acme` (and a second workspace `other`), the app folders backed up with `ditto` and `shasum` listings first and restored after. Writes are read back through the local API (an MCP key for `acme`'s Inbox, `list`) and the app's outbox file.
 
-The owner sees the Shortcuts app only once: a single session that registers the helpers and takes the captures, then quits. Everything else runs headless with `shortcuts run <name> [-i <file>] [-o <file>]`. `shortcuts list` shows only the library, never App Shortcuts (checked on this Mac), so the session adds four library shortcuts that call the actions of the Debug bundle: `todz left` (What's Left Today), `todz add` (Add a Task, Title from the shortcut's input), `todz add inbox` (the same with Due Today off), `todz complete` (Complete a Task, Task from the shortcut's input), plus `todz complete fixed` (Complete a Task with `Book the dentist` picked in the editor). The tester builds them as signed `.shortcut` files in the scratchpad (`shortcuts sign`) and opens each, clicking "Add Shortcut" with Orca; when an import fails, it builds them in the editor in the same session. A shortcut file is never committed.
+The owner sees the Shortcuts app only once: a single session that registers the helpers and takes the captures, then quits. Everything else runs headless with `shortcuts run <name> [-i <file>] [-o <file>]`. `shortcuts list` shows only the library, never App Shortcuts (checked on this Mac), so the session adds four library shortcuts that call the actions of the Debug bundle: `todz left` (What's Left Today), `todz add` (Add a Task, Title from the shortcut's input), `todz add inbox` (the same with Due Today off), `todz complete` (Complete a Task, Task from the shortcut's input), plus `todz complete fixed` (Complete a Task with `Book the dentist` picked in the editor). The tester builds them as signed `.shortcut` files in the scratchpad (`shortcuts sign`) and opens each, clicking "Add Shortcut" with Orca. That route rests on three unproven steps (hand-built files naming the Debug bundle's actions, `shortcuts sign` with the Mac signed in to iCloud, and a text input becoming a `TodzTaskEntity`), so the Preflight below runs first and a failure is BLOCKED for the lead, who decides before the session; the headless rows are then not attempted. A shortcut file is never committed. The Debug app is named `Todz Dev`, so its tiles and phrases carry that name (ADR 0066 §10); the helpers name the bundle identifier.
+
+### Preflight
+
+- [ ] One shortcut end to end — input: build `todz left` only, `shortcuts sign -m people-who-know-me`, import it with Orca, `shortcuts run "todz left"` against the running Debug app — expected: exit 0 and the titles. If sign or import fails: BLOCKED, the lead decides before the session, and the headless rows are not attempted
 
 ### The single Shortcuts session
 
-- [ ] Registration — input: the Debug app launched once hidden (`open -g -j`), then the Shortcuts app opened — expected: under todz, three tiles in this order: `What's Left Today` (checklist), `Add a Task` (plus), `Complete a Task` (checkmark); capture `.pr-media/siri-shortcuts/design/shortcuts-list.png`
+- [ ] Registration — input: the Debug app launched once hidden (`open -g -j`), then the Shortcuts app opened — expected: under `Todz Dev`, three tiles in this order: `What's Left Today` (checklist), `Add a Task` (plus), `Complete a Task` (checkmark); capture `.pr-media/siri-shortcuts/design/shortcuts-list.png`
 - [ ] A run in the app — input: the `What's Left Today` tile run with seven open, one overdue, one longer than the row — expected: the dialog `7 left today in acme.` and the snippet: heading `Today` with `7 left`, the subtitle `acme`, five rows, the overdue one ending `Overdue`, the long one truncated on one line, `+2 more`; capture `.pr-media/siri-shortcuts/design/left-today-result.png`
 - [ ] The complete list — input: the `Complete a Task` tile run — expected: `Which task?` with the seven open Today tasks, each with its project as subtitle; the tester cancels, nothing completes
 - [ ] Helpers added — expected: `shortcuts list` prints the five helper names; the Shortcuts app quit, the frontmost app restored to the one before the session and recorded
@@ -110,21 +125,23 @@ The owner sees the Shortcuts app only once: a single session that registers the 
 - [ ] Happy path, what's left — input: seven open, `shortcuts run "todz left" -o left.txt` — expected: exit 0; the output holds the seven titles in Today's order
 - [ ] Happy path, add — input: `-i` a file with `Book the dentist` — expected: exit 0; the output `Book the dentist`; within 30 s the MCP `list` shows it in the Inbox due today; the app's Today shows it (Orca read of the popover is not needed: `todz left` now lists eight)
 - [ ] Happy path, complete — input: `-i` a file with `dentist` — expected: exit 0; MCP `list` shows `Book the dentist` done; `todz left` lists seven again
-- [ ] Cold run — input: the Debug app quit, then `shortcuts run "todz left"` with a frontmost sampler (`lsappinfo front` every 100 ms) and a window sampler running — expected: the answer arrives within 10 s; the frontmost app never changes; no todz window with a title appears; the todz process is running afterwards in the menu bar; no crash report under `~/Library/Logs/DiagnosticReports` named `Todz`
+- [ ] Cold run (Step 10a's measure, then the proof) — input: the Debug app quit, then `shortcuts run "todz left"` with a frontmost sampler (`lsappinfo front` every 100 ms) and a window sampler running — expected: the answer arrives within 10 s; the frontmost app never changes; no todz window with a title appears and no Dock icon is recorded; the todz process is running afterwards; no crash report under `~/Library/Logs/DiagnosticReports` named `Todz`; the value of `launchIsDefaultLaunchKey` recorded in ADR 0066 Evidence
+- [ ] Cold run, glance on and not yet shown today — input: the morning glance on in Settings and not yet shown today, the Debug app quit, then `todz left` — expected: the glance panel does not appear (ADR 0066 §11); then with the day close on and its time passed, another cold run — expected: no popover opens; both come at the next wake, unlock or scheduled check
 - [ ] The main window untouched — input: the main window open on Inbox with task 3 selected (one Orca read before and after), then `todz add` — expected: the same window, Inbox still selected, task 3 still selected, todz not frontmost
 
 ### Edge cases, one each
 
-- [ ] Signed out — input: the session file moved to the scratchpad, the app relaunched hidden, each helper run — expected: each exits non-zero and prints `Sign in to todz first.`; MCP `list` unchanged; the session file restored after
+- [ ] Signed out — input: the session file moved to the scratchpad, the app relaunched hidden, each helper run, `todz complete` and `todz complete fixed` included (their refusal comes from the query, before `perform()`) — expected: each exits non-zero and prints `Sign in to todz first.`; MCP `list` unchanged; the session file restored after
 - [ ] No workspace — input: a fresh development identity signed in with no workspace (only if the sign-in can be driven without typing; else BLOCKED and covered by the unit test) — expected: `Name your first workspace in todz first.` from each helper
-- [ ] Still loading — input: the cache folder moved aside, wrangler stopped, the app quit, `todz left` — expected: about 5 s, then non-zero and `todz is still loading Today. Try again in a moment.`; folders restored after
+- [ ] Still loading — input: the cache folder moved aside, wrangler stopped, the app quit, `todz left` — expected: between 5 and 8 s after the run starts, then non-zero and `todz is still loading Today. Try again in a moment.`; folders restored after
+- [ ] Cold and offline — input: wrangler stopped, the app quit, a synced cache, `todz left` — expected: exit 0 with the cached titles within 10 s (the offline sentence is a dialog: the unit test and the Human checklist prove it)
 - [ ] Offline, what's left — input: wrangler stopped with the app running from a synced cache — expected: exit 0, the cached titles (the offline sentence is a dialog: the unit test and the Human checklist prove it)
 - [ ] Offline add — input: wrangler stopped, `todz add` with `Call the bank` — expected: exit 0; the outbox file in the app container holds one add; wrangler restarted → within 30 s MCP `list` shows `Call the bank` once (no duplicate)
 - [ ] Offline complete — input: wrangler stopped, `todz complete` with `bank` — expected: exit 0; wrangler restarted → MCP `list` shows it done
 - [ ] Empty Today — input: every Today task done — expected: `todz left` exit 0 with an empty output; `todz complete` with `anything` completes nothing (MCP `list` unchanged) and its exit and printed text are recorded
 - [ ] One task — input: one open — expected: `todz left` prints that one title
 - [ ] Many tasks — input: twelve open today — expected: `todz left` prints twelve titles in Today's order
-- [ ] Ambiguous complete — input: `Review PR` and `Code review` open, `todz complete` with `review` — expected: neither completes (MCP `list` shows both open); the exit status and printed text recorded (the system cannot ask on the command line)
+- [ ] Ambiguous complete — input: `Review PR` and `Code review` open, `todz complete` with `review` — expected: neither completes (MCP `list` shows both open); the exit status and printed text recorded (the system cannot ask on the command line). If one completes, that refutes the spec's "nothing completes until one is chosen": a finding for the lead, recorded with which task was completed
 - [ ] No match — input: `todz complete` with `zzz` — expected: nothing completes; the exit status and printed text recorded
 - [ ] A done task by name — input: `Book the dentist` done, `todz complete` with `dentist` — expected: nothing changes (done tasks never match); recorded
 - [ ] A done task by identifier — input: `Book the dentist` completed through MCP `done`, then `todz complete fixed` — expected: exit 0; MCP `list` unchanged; the dialog's `already done` is the unit test's (the command line prints no dialog), the history shows one completion only
@@ -141,7 +158,8 @@ The owner sees the Shortcuts app only once: a single session that registers the 
 
 ## Human checklist (the owner, on his own Mac, not walked by an agent)
 
-- [ ] Siri is on and set to English (System Settings → Apple Intelligence & Siri); the Release app has launched once from `/Applications`
+- [ ] Siri is on and set to English (System Settings → Apple Intelligence & Siri); the Release app has launched once from `/Applications`; the Debug build's phrases name `Todz Dev`, so Siri's "todz" reaches the Release app
+- [ ] If Siri does not match the phrase, record what it heard (it may transcribe "todz" as another word); an `INAlternativeAppNames` entry is the Revisit (ADR 0066)
 - [ ] "What's left today in todz" — expected: Siri speaks the count, the workspace and up to three titles, and shows the snippet
 - [ ] "Add a task to todz" — expected: "What's the task?"; the dictated title lands in Today; Siri says `Added “…” to Today in <workspace>.`
 - [ ] "Complete a task in todz" — expected: "Which task?" with Today's list; saying part of a title completes it; two matches are offered to choose from
@@ -161,12 +179,12 @@ The reviewer picks the three claims most likely to be wrong and tries to refute 
 
 - [ ] Claim 1: no Shortcut write bypasses the outbox — attack: read every path from `Todz/Shortcuts/` to the service and the App Group; result: <refuted | held>
 - [ ] Claim 2: an entity identifier can never act on a task outside the active workspace — attack: craft `<other's project>/<number>` and a malformed identifier through `todz complete fixed` and the unit reads; result: <refuted | held>
-- [ ] Claim 3: a cold run never brings todz to the front nor opens a window — attack: the cold-run samplers, also with the main window left open at the last quit; result: <refuted | held>
+- [ ] Claim 3: a cold run never brings todz to the front, opens a window, or raises the glance or the day-close popover — attack: the cold-run samplers, also with the main window left open at the last quit and the glance and day close due; result: <refuted | held>
 
 ## Coverage honesty
 
-- Siri's voice, its disambiguation, Spotlight, VoiceOver on the snippet and the Focus row — Siri cannot be driven by an agent on this Mac and key events do not reach apps here (morning-glance walk); the owner's Human checklist.
-- The dialogs' text is proven by the unit tests (the outcomes) and by one run in the Shortcuts app; the command line prints the returned value and the thrown refusal, not a dialog.
+- Siri's voice, whether it hears "todz", its disambiguation, Spotlight, VoiceOver on the snippet and the Focus row — Siri cannot be driven by an agent on this Mac and key events do not reach apps here (morning-glance walk); the owner's Human checklist.
+- The choice of sentence and of the titles to speak is unit-tested in G1; the wording is pinned by design § 8 and checked once in the Shortcuts session; the command line prints the returned value and the thrown refusal, not a dialog.
 - The intents, the entity and the provider are App Intents glue with no unit test target; their rules are G1's tests, their wiring is the build, the metadata read and the walk.
-- Two registered todz apps (Debug and Release) — Siri's choice between them is not tested; the owner's step keeps Release in `/Applications`.
+- Two registered todz apps (Debug and Release) — told apart by name (`Todz Dev`, ADR 0066 §10), checked by the display-name reads in Build; Siri's own choice is not tested.
 - Non-English Siri — not supported; ADR 0066 Revisit.

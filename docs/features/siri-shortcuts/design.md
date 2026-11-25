@@ -87,7 +87,7 @@ Thrown as errors, so Siri speaks them and a shortcut stops at that action: `sign
 
 ### 1.5 The Shortcuts app and Spotlight
 
-Three tiles under todz, in this order: What's Left Today (`checklist`), Add a Task (`plus.circle`), Complete a Task (`checkmark.circle`). The tile colour stays the system default (O7).
+In the Debug build the app is named `Todz Dev` (ADR 0066 §10), so its tiles sit under that name and its phrases end `in Todz Dev`. Three tiles under todz, in this order: What's Left Today (`checklist`), Add a Task (`plus.circle`), Complete a Task (`checkmark.circle`). The tile colour stays the system default (O7).
 
 ## 2. Components
 
@@ -179,14 +179,13 @@ Captures into `.pr-media/siri-shortcuts/design/` from the walk's single Shortcut
 
 ## 8. Every new copy string
 
-**ShortcutsCopy** (`apps/macos/Copy/ShortcutsCopy.swift`, new):
+**ShortcutsCopy** (`apps/macos/Copy/ShortcutsCopy.swift`, new): it only maps `ShortcutTodaySentence` (`nothingLeft`, `withTitles`, `withFirstTitles`, chosen and tested in `TodzKit` with the titles to speak) to the strings below, and names no type of `Todz/Shortcuts/`, because `Copy/` is compiled into the widget extension too.
 
 - askTitle "What's the task?" · askTask "Which task?"
 - nothingLeft(workspaceName:) "Nothing left today in \(workspaceName)."
 - left(count:workspaceName:) `InflectedCopy.text("\(count) left today in \(workspaceName).")`
 - leftWithTitles(count:workspaceName:titles:) `InflectedCopy.text("\(count) left today in \(workspaceName): \(titles).")`, for up to three
 - leftWithFirstTitles(count:workspaceName:titles:) `InflectedCopy.text("\(count) left today in \(workspaceName). The first three: \(titles).")`
-- spokenTitleLimit 3
 - offline "todz is offline, so this is the last synced list."
 - added(title:destination:workspaceName:) "Added “\(title)” to Today in \(workspaceName)." for `.today`; "Added “\(title)” to the Inbox in \(workspaceName)." for `.inbox`
 - syncsLater "It syncs when todz is back online."
