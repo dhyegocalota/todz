@@ -77,8 +77,9 @@ const ACCOUNT_ID_CAPTURE = 1;
 const CLOUDFLARE_API_HOST = 'api.cloudflare.com';
 const SMOKE_CHECK_STEP = 14;
 const HEALTH_CURL = 'curl -sS https://api.todz.app/health';
+const HEALTH_HEAD_CURL = 'curl -sSI https://api.todz.app/health';
 const HEALTH_ANSWER = '{"service":"todz","origin":"https://api.todz.app"}';
-const ALL_PASS_SENTENCE = 'When all sixteen pass';
+const ALL_PASS_SENTENCE = 'When all seventeen pass';
 const SELF_HOST_PROBES = [
   'curl -sS -D - -o /dev/null https://todz.app/self-host',
   'curl -sS -D - -o /dev/null "https://www.todz.app/self-host?from=runbook"',
@@ -364,9 +365,10 @@ describe('runbooks', () => {
     expect(readRepositoryFile(WRAPPER_PATH)).toContain(`"${accountId}"`);
   });
 
-  test('the smoke check curls the health route of the API host and counts it among the sixteen answers', () => {
+  test('the smoke check curls the health route of the API host and counts it among the seventeen answers', () => {
     const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
     expect(smokeCheck?.body).toContain(HEALTH_CURL);
+    expect(smokeCheck?.body).toContain(HEALTH_HEAD_CURL);
     expect(smokeCheck?.body).toContain(HEALTH_ANSWER);
     expect(smokeCheck?.body).toContain(ALL_PASS_SENTENCE);
   });

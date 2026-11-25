@@ -14,6 +14,7 @@ struct TodzApp: App {
         MenuBarBadge.registerDefault(in: .standard)
         DayClosePreference.registerDefaults(in: .standard)
         MorningGlancePreference.registerDefaults(in: .standard)
+        DayTemperaturePreference.registerDefaults(in: .standard)
     }
 
     var body: some Scene {
@@ -23,6 +24,7 @@ struct TodzApp: App {
         let panel = appDelegate.panel
         let dayClose = appDelegate.dayClose
         let morningGlance = appDelegate.morningGlance
+        let dayTemperatureClock = appDelegate.dayTemperatureClock
         Window(MainWindowCopy.windowTitle, id: MainWindowScene.identifier) {
             RootView()
                 .environment(model)
@@ -43,6 +45,8 @@ struct TodzApp: App {
             MenuBarLabel()
                 .environment(model)
                 .environment(windowState)
+                .environment(gate)
+                .environment(dayTemperatureClock)
         }
         .menuBarExtraStyle(.window)
         Settings {

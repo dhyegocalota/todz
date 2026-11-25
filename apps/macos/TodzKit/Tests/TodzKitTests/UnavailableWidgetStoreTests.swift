@@ -10,7 +10,8 @@ private let snapshot = WidgetSnapshot(
     timeZoneIdentifier: harnessTimeZoneIdentifier,
     open: [],
     pending: [],
-    doneToday: []
+    doneToday: [],
+    showsDayTemperature: false
 )
 
 @Suite struct UnavailableWidgetStoreTests {

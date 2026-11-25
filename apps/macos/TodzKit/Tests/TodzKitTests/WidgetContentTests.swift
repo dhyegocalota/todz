@@ -27,7 +27,8 @@ private func snapshot(open: [WidgetSnapshotTask] = [], pending: [WidgetSnapshotT
         timeZoneIdentifier: harnessTimeZoneIdentifier,
         open: open,
         pending: pending,
-        doneToday: doneToday
+        doneToday: doneToday,
+        showsDayTemperature: false
     )
 }
 

@@ -16,6 +16,8 @@ enum SettingsCopy {
     static let closeTheDayTime = "Time to close the day"
     static let morningGlance = "Morning glance"
     static let morningGlanceDetail = "On the first wake or unlock of each day, todz shows Today for a few seconds."
+    static let dayTemperature = "Day temperature"
+    static let dayTemperatureDetail = "Dims the menu bar count through the afternoon and tints overdue widget rows. Quiet in a Focus."
     static let dayEmail = "Email me my day"
     static let dayEmailDetail = "At this time each day, todz mails Today to your sign-in address. Reply to add a task."
     static let dayEmailTime = "Time to email my day"

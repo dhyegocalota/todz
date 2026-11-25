@@ -63,6 +63,7 @@ import Observation
     public internal(set) var agentNudge: Bool?
     var isSavingAgentNudge = false
     var isAgentNudgeNotSaved = false
+    public internal(set) var showsDayTemperature = false
     public internal(set) var dayEmail: Bool?
     public internal(set) var dayEmailMinutes: Int?
     var isSavingDayEmail = false

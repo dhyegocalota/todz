@@ -14,6 +14,7 @@ struct SettingsView: View {
     @AppStorage(DayClosePreference.isOnStorageKey) private var isDayCloseOn = DayClosePreference.isOnByDefault
     @AppStorage(DayClosePreference.timeStorageKey) private var dayCloseMinutes = DayClosePreference.minutesAfterMidnightByDefault
     @AppStorage(MorningGlancePreference.isOnStorageKey) private var isMorningGlanceOn = MorningGlancePreference.isOnByDefault
+    @AppStorage(DayTemperaturePreference.isOnStorageKey) private var isDayTemperatureOn = DayTemperaturePreference.isOnByDefault
 
     var body: some View {
         Form {
@@ -54,6 +55,12 @@ struct SettingsView: View {
             Toggle(isOn: $isMorningGlanceOn) {
                 Text(SettingsCopy.morningGlance)
                 Text(SettingsCopy.morningGlanceDetail)
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            .toggleStyle(.switch)
+            Toggle(isOn: $isDayTemperatureOn) {
+                Text(SettingsCopy.dayTemperature)
+                Text(SettingsCopy.dayTemperatureDetail)
                     .lineLimit(subtitleLines, reservesSpace: true)
             }
             .toggleStyle(.switch)
