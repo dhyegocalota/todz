@@ -4,6 +4,7 @@ import { posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const REPOSITORY_ROOT = resolve(fileURLToPath(new URL('../../../', import.meta.url)));
+export const REPOSITORY_URL = 'https://github.com/dhyegocalota/todz';
 const README_PATHSPEC = '*README.md';
 const WORKSPACE_PACKAGE_PARENTS = ['apps', 'libs', 'tools'];
 export const PACKAGE_MANIFEST = 'package.json';

@@ -1,9 +1,20 @@
 import { existsSync } from 'node:fs';
 import { posix } from 'node:path';
 import { describe, expect, test } from 'vitest';
-import { capturedNames, readRepositoryFile, repositoryPath } from './repository-files';
+import { frontMatterOf } from './front-matter';
+import { capturedNames, readRepositoryFile, REPOSITORY_URL, repositoryPath } from './repository-files';
+import { swiftCopyValue } from './swift-copy';
 
 const GUIDE = 'docs/self-host.md';
+const DOCS_GUIDE = 'apps/docs/self-host.mdx';
+const GUIDE_TITLE = 'Self-host todz';
+const KEY_SCREEN_COPY = 'apps/macos/Copy/KeyScreenCopy.swift';
+const KEY_SCREEN_TITLE_NAME = 'title';
+const KEPT_LINK_TARGET_PATTERN = /^(?:https:\/\/|#)/;
+const TITLE_HEADING_PATTERN = /^# /m;
+const CODE_SPAN_PATTERN = /`[^`\n]*`/g;
+const MDX_UNSAFE_PATTERN = /[<{]/;
+const KEY_SCREEN_LABEL_PATTERN = /\*\*connect an agent\*\*/gi;
 const ROOT_README = 'README.md';
 const ROOT_PACKAGE_FILE = 'package.json';
 const API_PACKAGE_FILE = 'apps/api/package.json';
@@ -100,6 +111,34 @@ function captured(pattern: RegExp, text = guide): string[] {
 describe('the self-host guide', () => {
   test('the root README links it', () => {
     expect(readRepositoryFile(ROOT_README)).toContain(`](${GUIDE})`);
+  });
+
+  test('is the docs site page, not a file of docs/', () => {
+    expect(existsSync(repositoryPath(DOCS_GUIDE))).toBe(true);
+    expect(existsSync(repositoryPath(GUIDE))).toBe(false);
+  });
+
+  test('opens with front matter that titles it, and has no heading of its own', () => {
+    expect(frontMatterOf(guide).title).toBe(GUIDE_TITLE);
+    expect(TITLE_HEADING_PATTERN.test(guide)).toBe(false);
+  });
+
+  test('links only outside pages and its own anchors, never the private repository', () => {
+    const targets = captured(LINK_PATTERN, guide.replace(FENCED_BLOCK_PATTERN, ''));
+    expect(targets.filter((target) => !KEPT_LINK_TARGET_PATTERN.test(target))).toEqual([]);
+    expect(targets.filter((target) => target.startsWith(REPOSITORY_URL))).toEqual([]);
+  });
+
+  test('names the key screen as the app titles it, and in no other casing', () => {
+    const title = swiftCopyValue({ text: readRepositoryFile(KEY_SCREEN_COPY), name: KEY_SCREEN_TITLE_NAME });
+    const labels = guide.match(KEY_SCREEN_LABEL_PATTERN);
+    expect(guide).toContain(`**${title}**`);
+    expect(labels?.filter((label) => label !== `**${title}**`)).toEqual([]);
+  });
+
+  test('holds no character MDX parses as markup outside code (pin)', () => {
+    const prose = guide.replace(FENCED_BLOCK_PATTERN, '').replace(CODE_SPAN_PATTERN, '');
+    expect(MDX_UNSAFE_PATTERN.test(prose)).toBe(false);
   });
 
   test('every relative link resolves', () => {
