@@ -9,7 +9,7 @@ import { routedFetch } from './routed-fetch';
 const yieldingClock: LoopClock = { now: () => 0, waitUntil: () => new Promise((resolve) => setImmediate(resolve)) };
 const PREFIX = '2026-11-25 10:00:00.123 Df Todz[1234:abcd] [dev.todz.Todz.debug:perf]';
 
-type Harness = { dependencies: CliDependencies; out: string[]; err: string[]; requests: () => number };
+type Harness = { dependencies: CliDependencies; out: string[]; err: string[]; requests: () => number; urls: () => string[] };
 
 function harness({
   now = () => 0,
@@ -37,7 +37,13 @@ function harness({
     out: (text) => out.push(text),
     err: (text) => err.push(text),
   };
-  return { dependencies, out, err, requests: () => mcp.requests.length + owner.requests.length };
+  return {
+    dependencies,
+    out,
+    err,
+    requests: () => mcp.requests.length + owner.requests.length,
+    urls: () => [...mcp.requests, ...owner.requests].map((request) => request.url),
+  };
 }
 
 function slowClock(): () => number {
@@ -68,6 +74,19 @@ describe('runCli usage', () => {
   test('load on production exits 2 before any request', async () => {
     const { dependencies, requests } = harness();
     expect(await runCli({ argv: ['load', '--target', 'production'], dependencies })).toBe(2);
+    expect(requests()).toBe(0);
+  });
+
+  test('a local port moves only the port of localhost', async () => {
+    const { dependencies, urls } = harness();
+    expect(await runCli({ argv: ['seed', '--tasks', '100', '--projects', '10', '--port', '8799'], dependencies })).toBe(0);
+    expect(urls().every((url) => url.startsWith('http://localhost:8799/'))).toBe(true);
+  });
+
+  test('a port that is not a port exits 2 before any request', async () => {
+    const { dependencies, requests } = harness();
+    expect(await runCli({ argv: ['seed', '--tasks', '100', '--projects', '10', '--port', '99999'], dependencies })).toBe(2);
+    expect(await runCli({ argv: ['load', '--port', 'eighty'], dependencies })).toBe(2);
     expect(requests()).toBe(0);
   });
 
