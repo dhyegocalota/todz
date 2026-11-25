@@ -6,7 +6,7 @@ import { ADMIN_COPY } from './admin-copy';
 import { adminCardMainHtml } from './admin-page';
 import { AdminField, AdminPath } from './admin-paths';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
-import { siteDocumentHtml } from './site-shell';
+import { SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE } from './site-style';
 
 const STATUS_ID = 'link-status';
@@ -52,12 +52,14 @@ const PAGE_SCRIPT = `{
 
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  script: PAGE_SCRIPT,
+  scripts: [PAGE_SCRIPT],
   widgetOrigin: null,
   connectsToSelf: true,
+  declaresManifest: false,
 });
 
 const LINK_PAGE_HTML = siteDocumentHtml({
+  kind: SitePageKind.Private,
   title: ADMIN_COPY.meta.linkTitle,
   description: ADMIN_COPY.meta.description,
   main: adminCardMainHtml(`<div id="${STATUS_ID}" class="link-status" role="status" aria-live="polite" data-answer>
@@ -69,7 +71,7 @@ const LINK_PAGE_HTML = siteDocumentHtml({
 <h1 class="admin-title">${escapedHtml(ADMIN_COPY.link.noScriptTitle)}</h1>
 <p class="admin-body">${escapedHtml(ADMIN_COPY.link.noScript)}</p>
 </noscript>`),
-  script: PAGE_SCRIPT,
+  scripts: [PAGE_SCRIPT],
 });
 
 export async function serveAdminLinkPage(): Promise<Response> {

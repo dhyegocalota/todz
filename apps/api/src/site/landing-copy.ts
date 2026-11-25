@@ -1,12 +1,16 @@
 import { formatShortId } from '@todz/core';
 import { COMPANY } from '@todz/types';
 import { MCP_COPY, McpToolName } from '../mcp-copy';
+import { AgentClient, agentSetupOf } from './agent-setup';
+import { KEY_PLACEHOLDER } from './site-constants';
+import { MCP_URL } from './site-urls';
 
 const EXAMPLE_TASK_NUMBER = 12;
 const EXAMPLE_TASK_TITLE = 'Review PR';
 
 export const LANDING_COPY = {
   meta: {
+    siteName: 'todz',
     title: 'todz: your tasks, shared with your agents',
     description: 'A native Mac to-do list that Claude Code, Codex and Cursor work over MCP. Menu bar, widgets, offline sync.',
   },
@@ -69,7 +73,7 @@ export const LANDING_COPY = {
   terminal: {
     label: 'Adding todz to Claude Code, then adding a task',
     shellPrompt: '$',
-    command: "claude mcp add --transport http todz 'https://api.todz.app/mcp' --header 'Authorization: Bearer <key>'",
+    command: agentSetupOf({ client: AgentClient.ClaudeCode, serverUrl: MCP_URL, key: KEY_PLACEHOLDER }),
     askPrompt: '>',
     ask: 'Add a todz task: review the PR',
     toolCall: `todz - ${McpToolName.Add} (MCP)(tasks: [{"title": "${EXAMPLE_TASK_TITLE}"}])`,

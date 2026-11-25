@@ -4,28 +4,35 @@ import { sourceHash } from '../turnstile-page';
 import { ADMIN_RESPONSE_HEADERS } from './admin-paths';
 
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
-const CACHE_CONTROL = 'no-cache';
+// NB ADR 0060: no-transform stops Cloudflare injecting its analytics beacon, which the policy would refuse.
+const CACHE_CONTROL = 'no-cache, no-transform';
 const CONNECT_SELF = "connect-src 'self'";
+const MANIFEST_SELF = "manifest-src 'self'";
 
 export async function siteContentSecurityPolicy({
   style,
-  script,
+  scripts,
   widgetOrigin,
   connectsToSelf,
+  declaresManifest,
 }: {
   style: string;
-  script: string | null;
+  scripts: string[];
   widgetOrigin: string | null;
   connectsToSelf: boolean;
+  declaresManifest: boolean;
 }): Promise<string> {
   const widgetOrigins = widgetOrigin === null ? [] : [widgetOrigin];
   const connectDirectives = connectsToSelf ? [CONNECT_SELF] : [];
-  const scriptDirectives = script === null ? [] : [['script-src', await sourceHash(script), ...widgetOrigins].join(' ')];
+  const manifestDirectives = declaresManifest ? [MANIFEST_SELF] : [];
+  const scriptHashes = await Promise.all(scripts.map(sourceHash));
+  const scriptDirectives = scripts.length === 0 ? [] : [['script-src', ...scriptHashes, ...widgetOrigins].join(' ')];
   return [
     "default-src 'none'",
     ...scriptDirectives,
     `style-src ${await sourceHash(style)}`,
     "img-src 'self'",
+    ...manifestDirectives,
     ...connectDirectives,
     ...widgetOrigins.map((origin) => `frame-src ${origin}`),
     "form-action 'self'",

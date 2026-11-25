@@ -228,7 +228,37 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     ```
     If it fails: no 429 means run the command once more; none in the second run either means the binding is not enforcing, or Cloudflare did not send `CF-Connecting-IP` or the request counted as local; tell the owner before the app ships. A 429 on the first request means another client on this address used the quota; wait a minute and run it again.
 
-16. **Record the run.** Add one row per step above to the run log, with the date, the commit, the step and the actual result, in a pull request on `docs/`.
+16. **Check the landing's discovery files, icons and scores.** Ask the live site for each discovery file, the card on both hosts, the icon and the share image, then for the landing as two crawlers, then for the analytics beacon:
+
+    ```bash
+    curl -sS -D - https://todz.app/robots.txt
+    curl -sS -D - -o /dev/null https://todz.app/sitemap.xml
+    curl -sS -D - -o /dev/null https://todz.app/llms.txt
+    curl -sS -D - -o /dev/null https://todz.app/llms-full.txt
+    curl -sS -D - -o /dev/null https://todz.app/site.webmanifest
+    curl -sS -D - -o /dev/null https://todz.app/.well-known/ard.json
+    curl -sS -D - -o /dev/null https://todz.app/.well-known/mcp/server-card.json
+    curl -sS -D - -o /dev/null https://api.todz.app/mcp/server-card
+    curl -sS -D - -o /dev/null https://todz.app/favicon.ico
+    curl -sS -D - -o /dev/null https://todz.app/og/todz.png
+    curl -sS -o /dev/null -w "%{http_code}\n" -A GPTBot https://todz.app/
+    curl -sS -o /dev/null -w "%{http_code}\n" -A ClaudeBot https://todz.app/
+    curl -sS https://todz.app/ | grep -c cloudflareinsights
+    ```
+
+    Expected: `HTTP/2 200` for every file with `text/plain; charset=utf-8` for `robots.txt`, `llms.txt` and `llms-full.txt`, `application/xml; charset=utf-8` for the sitemap, `application/manifest+json` for the manifest, `application/json` for the catalog and `application/mcp-server-card+json` for both cards, which carry `access-control-allow-origin: *` and `cache-control: public, max-age=3600`; `image/x-icon` or `image/vnd.microsoft.icon` for the favicon and `image/png` for the share image. `robots.txt` holds the Worker's groups and both `Sitemap:` lines, and above its first `User-agent: *` line nothing or comments only. Then `200` and `200` for the two crawlers, and `0` for the beacon.
+
+    Then run Lighthouse on the landing, three times, on the Chromium that `@playwright/test` installs, and keep the five scores of each run:
+
+    ```bash
+    CHROME_PATH=~/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/"Google Chrome for Testing.app"/Contents/MacOS/"Google Chrome for Testing" pnpm dlx lighthouse@13.6.0 https://todz.app/ --chrome-flags="--headless=new" --quiet --output=json --output-path=stdout > ~/.todz-deploy/lighthouse-1.json
+    jq -c '.categories | map_values(.score)' ~/.todz-deploy/lighthouse-1.json
+    ```
+
+    Expected: on the median of three runs SEO, Best Practices, Accessibility and Agentic browsing `1` and Performance `0.95` or more; the audits `robots-txt`, `llms-txt`, `ard-schema`, `errors-in-console` and `image-aspect-ratio` pass.
+    If it fails: a `User-agent`, `Disallow` or `Content-Signal` line above the Worker's groups, or a `cloudflareinsights` match, means Cloudflare's managed `robots.txt` or its analytics beacon is on: read `scripts/todz-cloudflare.sh api GET /zones/06490974636c535e2cbfd7c5b09925a5/bot_management` and, when it shows `is_robots_txt_managed` or content signals on, turn them off with a `PATCH` of the same path through the wrapper, then run this step again. Web Analytics' automatic setup lives under the account's RUM path, which the wrapper refuses, so turning it off is an owner step (dashboard, Web Analytics, the `todz.app` site, automatic setup off), as is any setting the token's permission refuses (an authentication error). A `403` to a crawler is the zone's bot rule, an owner step. A Performance median under `0.95` is recorded in the run log and opens the follow-up `fix/landing-performance`; it does not roll the deploy back.
+
+17. **Record the run.** Add one row per step above to the run log, with the date, the commit, the step and the actual result, in a pull request on `docs/`.
     Expected: no token, link, secret or challenge appears in the log; the Version ID, the database id and the Time Travel bookmark do.
     If it fails: a secret that reached the log is rotated first (see the end of this runbook), then removed from the commit with a new one, never by rewriting history.
 
@@ -391,3 +421,18 @@ The owner rotates the Keychain token after a run that went wrong, when it may ha
 | 2026-11-25 | 2cbca72 | 13 | `{"method":"link"}`; `api.todz.app/health` `HTTP/2 200` `{"service":"todz","origin":"https://api.todz.app"}`; `/sign-in` and `/sign-in/challenge` `HTTP/2 200` text/html with HSTS, nosniff, `referrer-policy: no-referrer` and a CSP starting `default-src 'none'`; `/mcp` `HTTP/2 401`; `todz.app/` and `/self-host` `HTTP/2 200` with HSTS `max-age=31536000`, nosniff, `no-referrer` and a CSP starting `default-src 'none'`; the `www` redirect `HTTP/2 301` with the three headers and `default-src 'none'; frame-ancestors 'none'`; `todz.app/owner/sign-in-method` and `api.todz.app/` `HTTP/2 404` with the three headers and the CSP; `todz.app/admin` `HTTP/2 200` with `cache-control: no-store` and `x-robots-tag: noindex`; `api.todz.app/admin` `HTTP/2 404` with the headers; `api.todz.app/owner` `HTTP/2 401` with the headers and the CSP (the runbook said 404; every earlier run saw 401 from the Worker on `/owner`, so its text was stale and `docs-cutover` corrects it); the lockup asset `HTTP/2 200` `image/png` with HSTS, nosniff and `no-referrer`; the `workers.dev` address timed out with no answer from the Worker; export deleted |
 | 2026-11-25 | 2cbca72 | 14 | Link post (now with `app_link_scheme`) `HTTP/2 429`, `retry-after: 60`, `{"error":"sign_in_refused"}`; waitlist probe counts `0`, post `429`, count `0`; admin probe unspent links `0`, post `429`, `0`; no mail |
 | 2026-11-25 | 2cbca72 | 15 | Eleven `HTTP/2 401`, then three `HTTP/2 429` each with `retry-after: 60`; one single request sent 80 seconds later answered `HTTP/2 401`, as the first did |
+| 2026-11-25 | 26842db | 1 | Deviation: `rev-parse` printed `HEAD`, not `main`: the run used a clean worktree detached at `origin/main` 26842db, because the main worktree is the owner's; 0 ahead and 0 behind, so its tree is `main`'s. `pnpm install --frozen-lockfile` clean; `sign-in-guard` has its `Shipped` row. `pnpm verify all`: 9 gates green at 26842db on the first run (no flake) |
+| 2026-11-25 | 26842db | 2 | `whoami`: a User API Token, one account `e2035d8e0b7173d520ccf643f6f4661c`; verify `"status":"active"` |
+| 2026-11-25 | 26842db | 3 | `api.todz.app`, `todz.app` and `www.todz.app`: only the Worker's `AAAA 100::` each; apex `MX` route1, route2, route3 `.mx.cloudflare.net` and `TXT "v=spf1 include:_spf.mx.cloudflare.net ~all"`, unchanged; the zone also holds `docs.todz.app` records (a `CNAME` to Mintlify and its two verification `TXT`) |
+| 2026-11-25 | 26842db | 4 | `todz-directory`, uuid `dc22b1c3-1869-44a0-b805-91bf92017f19`, 12 tables |
+| 2026-11-25 | 26842db | 5 | Bookmark `00000017-00000000-0000512e-465265273945b5af1e1e8bd9e337e10c` |
+| 2026-11-25 | 26842db | 6 | Exported `before-26842db.sql` (4313 bytes) into the private folder |
+| 2026-11-25 | 26842db | 7 | The first list says nothing to apply; apply says nothing to apply; the second list says nothing to apply |
+| 2026-11-25 | 26842db | 8 | Deployed, Current Version ID `07dd5cc1-6265-491e-ac71-54e9a654a4bf`; the three custom domains and `schedule: 0 11 * * *`; nine limiters (10, 3, 100, 10, 3, 60, 10, 3 and 30 requests/60s) and the five variables including `TURNSTILE_SITE_KEY`; no asset changed |
+| 2026-11-25 | 26842db | 9 | One domain entry per host, each `todz-api`; `07dd5cc1` at 100 percent (newest deployment); `DIRECTORY` bound to `dc22b1c3-1869-44a0-b805-91bf92017f19` |
+| 2026-11-25 | 26842db | 10 | No secret put; `secret list` names `ADMIN_EMAIL` and `TURNSTILE_SECRET_KEY` |
+| 2026-11-25 | 26842db | 11 | `enable` answered `Subdomain already exists [code: 2040]`; the list shows `todz.app` enabled yes, tag `e334383f152c44038f0216e0e35bcf85`; `dns get` prints the sending records; the apex and host records match step 3 |
+| 2026-11-25 | 26842db | 12 | pseudo IPv4 `off`; Always Use HTTPS `on`; plain HTTP on the three hosts each `HTTP/1.1 301` to `https://` on the same host |
+| 2026-11-25 | 26842db | 13 | `{"method":"link"}`; `api.todz.app/health` `HTTP/2 200` `{"service":"todz","origin":"https://api.todz.app"}`; `/sign-in` and `/sign-in/challenge` `HTTP/2 200` text/html with HSTS, nosniff, `no-referrer` and a CSP starting `default-src 'none'`; `/mcp` `HTTP/2 401`; `todz.app/` `HTTP/2 200` with HSTS `max-age=31536000`, nosniff, `no-referrer` and a CSP starting `default-src 'none'`; `todz.app/self-host` `HTTP/2 301` with `location: https://docs.todz.app/self-host` and `cache-control: max-age=3600`; `www.todz.app/self-host?from=runbook` `HTTP/2 301` with the same `location` (query dropped) and `cache-control: max-age=3600`; both redirects carry HSTS, nosniff, `no-referrer` and `default-src 'none'; frame-ancestors 'none'`; `todz.app/owner/sign-in-method` and `api.todz.app/` `HTTP/2 404` with the headers and the CSP; `todz.app/admin` `HTTP/2 200` with `cache-control: no-store` and `x-robots-tag: noindex`; `api.todz.app/admin` `HTTP/2 404` with the headers; `api.todz.app/owner` `HTTP/2 401` with the headers and the CSP; the lockup asset `HTTP/2 200` `image/png` with HSTS, nosniff and `no-referrer`; the `workers.dev` address timed out with no answer from the Worker; export deleted |
+| 2026-11-25 | 26842db | 14 | Link post `HTTP/2 429`, `retry-after: 60`, `{"error":"sign_in_refused"}`; waitlist probe counts `0`, post `429`, count `0`; admin probe unspent links `0`, post `429`, `0`; no mail |
+| 2026-11-25 | 26842db | 15 | Eleven `HTTP/2 401`, then three `HTTP/2 429` each with `retry-after: 60`; one single request sent 80 seconds later (a node timer) answered `HTTP/2 401`, as the first did |

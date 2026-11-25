@@ -3,9 +3,10 @@ import { describe, expect, test, vi } from 'vitest';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { LandingNotice, serveLandingPage } from '../src/site/landing-page';
+import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { SITE_STYLE } from '../src/site/site-style';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
-import { TEST_SITE_KEY, onlyInlineSource, sourceHash } from './page-script';
+import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
 
 const OK_STATUS = 200;
 const TOO_MANY_STATUS = 429;
@@ -42,7 +43,7 @@ const EVENT_HANDLER_PATTERN = /<[^>]*\son[a-z]+=/;
 const READABLE_ATTRIBUTE_PATTERN = /\s(?:alt|aria-label|placeholder|data-submitting)="([^"]*)"/g;
 const DESCRIPTION_PATTERN = /<meta name="description" content="([^"]*)">/g;
 const IMAGE_SOURCE_PATTERN = /\s(?:src|srcset)="([^"]*)"/g;
-const REMOTE_ASSET_PATTERNS = [/\s(?:src|srcset)="https?:/, /<link[^>]*\shref="https?:/, /url\(\s*['"]?https?:/];
+const REMOTE_ASSET_PATTERNS = [/\s(?:src|srcset)="https?:/, /<link(?![^>]*rel="canonical")[^>]*\shref="https?:/, /url\(\s*['"]?https?:/];
 const HREF_PATTERN = /\shref="([^"]*)"/g;
 const SITE_HREF_PATTERN = /^(?:\/|#|https:\/\/)/;
 const IMPORT_PATTERN = /from '([^']+)'/g;
@@ -91,18 +92,27 @@ const WIDGET_LANDING_PAGES: NamedPage[] = NOTICES.map((notice) => [
   () => widgetLandingPage(notice),
 ]);
 
+function pageScriptOf(html: string): string {
+  const [pageScript] = inlineSources({ html, pattern: SCRIPT_PATTERN });
+  if (pageScript === undefined) throw new Error('the page has a page script');
+  return pageScript;
+}
+
 function formsOf(html: string): string[] {
   return [...html.matchAll(FORM_PATTERN)].map(([form]) => form);
 }
 
 async function landingPolicy({ html, widgetOrigins }: { html: string; widgetOrigins: string[] }): Promise<string> {
-  const scriptHash = await sourceHash(onlyInlineSource({ html, pattern: SCRIPT_PATTERN }));
+  const structuredDataHash = await sourceHash(onlyInlineSource({ html, pattern: STRUCTURED_DATA_PATTERN }));
+  const scriptHashes = await Promise.all(inlineSources({ html, pattern: SCRIPT_PATTERN }).map((script) => sourceHash(script)));
   const styleHash = await sourceHash(onlyInlineSource({ html, pattern: STYLE_PATTERN }));
   return [
     "default-src 'none'",
-    ['script-src', scriptHash, ...widgetOrigins].join(' '),
+    ['script-src', structuredDataHash, ...scriptHashes, ...widgetOrigins].join(' '),
     `style-src ${styleHash}`,
     "img-src 'self'",
+    "manifest-src 'self'",
+    "connect-src 'self'",
     ...widgetOrigins.map((origin) => `frame-src ${origin}`),
     "form-action 'self'",
     "frame-ancestors 'none'",
@@ -122,6 +132,7 @@ function textNodes(html: string): string[] {
   return html
     .replace(TERMINAL_WORD_PATTERN, '$1')
     .replace(SCRIPT_PATTERN, '')
+    .replace(STRUCTURED_DATA_PATTERN, '')
     .replace(STYLE_PATTERN, '')
     .replace(SVG_PATTERN, '')
     .split(TAG_PATTERN)
@@ -195,7 +206,7 @@ describe('the site pages', () => {
 
 describe('the landing', () => {
   test.each(NOTICES)(
-    'with the %s notice, the content security policy allows its one script and one style by hash, its own images and its own forms',
+    'with the %s notice, the content security policy allows its scripts and one style by hash, its own images and its own forms',
     async (notice) => {
       const { response, html } = await landingPage(notice);
       const policy = response.headers.get('Content-Security-Policy');
@@ -215,11 +226,12 @@ describe('the landing', () => {
     },
   );
 
-  test('the widget keeps the one page script of the landing without it', async () => {
+  test('the widget keeps the page script and the WebMCP script of the landing without it', async () => {
     const withoutWidget = await landingPage(LandingNotice.None);
     const withWidget = await widgetLandingPage(LandingNotice.None);
-    expect(onlyInlineSource({ html: withWidget.html, pattern: SCRIPT_PATTERN })).toBe(
-      onlyInlineSource({ html: withoutWidget.html, pattern: SCRIPT_PATTERN }),
+    expect(inlineSources({ html: withWidget.html, pattern: SCRIPT_PATTERN })).toHaveLength(2);
+    expect(inlineSources({ html: withWidget.html, pattern: SCRIPT_PATTERN })).toEqual(
+      inlineSources({ html: withoutWidget.html, pattern: SCRIPT_PATTERN }),
     );
   });
 
@@ -263,6 +275,27 @@ describe('the landing', () => {
     const sources = captures({ html, pattern: IMAGE_SOURCE_PATTERN });
     expect(sources.length).toBeGreaterThan(0);
     expect(sources.filter((source) => !source.startsWith(LANDING_ASSET_PREFIX))).toEqual([]);
+  });
+
+  test('serves every shot as WebP copies with sizes, and keeps the PNG as the fallback source', async () => {
+    const { html } = await landingPage(LandingNotice.None);
+    const shots = Object.entries(LANDING_SHOTS);
+    shots.forEach(([, { webp }]) => {
+      const srcset = webp.map(({ path, width }) => `${path} ${width}w`).join(', ');
+      const sizes = `${Math.min(...webp.map(({ width }) => width))}px`;
+      expect(html).toContain(`srcset="${srcset}" sizes="${sizes}"`);
+    });
+    const fallbackShots = shots.filter(([shot]) => shot !== LandingShot.WindowDark);
+    fallbackShots.forEach(([, { path }]) => expect(html).toContain(`src="${path}" srcset="`));
+  });
+
+  test('keeps the window shot, which a phone never shows, from loading there: lazy and display none below the desktop breakpoint', async () => {
+    const { html } = await landingPage(LandingNotice.None);
+    const windowShot = html.match(/<div class="shot shot-window[^"]*">([\s\S]*?)<\/div>/)?.[1];
+    expect(windowShot).toContain('loading="lazy"');
+    expect(windowShot).not.toContain('fetchpriority');
+    expect(SITE_STYLE).toContain('.shot-window{display:none;');
+    expect(SITE_STYLE).not.toContain('.shot-window{visibility');
   });
 
   test('has the two waitlist forms, each posting to /join with the fragment that returns to it', async () => {
@@ -311,7 +344,7 @@ describe('the landing', () => {
     if (widget === undefined) throw new Error('the page has no widget');
     const named = FAILURE_CALLBACK_ATTRIBUTES.map((attribute) => new RegExp(`${attribute}="([^"]*)"`).exec(widget)?.[1]);
     expect(named).toEqual(FAILURE_CALLBACK_ATTRIBUTES.map(() => FAILURE_CALLBACK));
-    expect(onlyInlineSource({ html, pattern: SCRIPT_PATTERN })).toContain(`window.${FAILURE_CALLBACK} =`);
+    expect(pageScriptOf(html)).toContain(`window.${FAILURE_CALLBACK} =`);
   });
 
   test.each([
@@ -369,5 +402,63 @@ describe('the site host through the Worker', () => {
     const response = await postJoin(null);
     expect(response.headers.get('Retry-After')).toBe(RETRY_AFTER_SECONDS);
     await expectPage({ response, expected: await keyedLandingPage(LandingNotice.TryAgain), status: TOO_MANY_STATUS });
+  });
+});
+
+const STRUCTURED_DATA_PATTERN = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
+const ATTRIBUTE_HANDLER_PATTERN = /<[^>]*\son[a-z]+=/;
+const MANIFEST_DIRECTIVE = "manifest-src 'self'";
+const CONNECT_DIRECTIVE = "connect-src 'self'";
+const UNSAFE_INLINE = "'unsafe-inline'";
+const SITE_CACHE_CONTROL = 'no-cache, no-transform';
+const ADMIN_SIGN_IN_PATH = '/admin';
+const ADMIN_LINK_PATH = '/admin/sign-in';
+
+function scriptSources(policy: string | null): string[] {
+  const directive = policy?.split('; ').find((entry) => entry.startsWith('script-src '));
+  if (directive === undefined) return [];
+  return directive.split(' ').slice(1);
+}
+
+describe('the structured data and the policy of the public pages', () => {
+  const PUBLIC_PAGES: NamedPage[] = [['the landing', () => landingPage(LandingNotice.None)]];
+
+  test.each(PUBLIC_PAGES)('%s allows its JSON-LD block by hash', async (_name, page) => {
+    const { response, html } = await page();
+    const block = onlyInlineSource({ html, pattern: STRUCTURED_DATA_PATTERN });
+    expect(scriptSources(response.headers.get('Content-Security-Policy'))).toContain(await sourceHash(block));
+  });
+
+  test('the landing allows its page script by hash beside the JSON-LD block', async () => {
+    const { response, html } = await landingPage(LandingNotice.None);
+    const pageScript = pageScriptOf(html);
+    expect(scriptSources(response.headers.get('Content-Security-Policy'))).toContain(await sourceHash(pageScript));
+  });
+
+  test.each(PUBLIC_PAGES)('%s allows the manifest from this origin only and is cached without transforms', async (_name, page) => {
+    const { response } = await page();
+    expect(response.headers.get('Content-Security-Policy')?.split('; ')).toContain(MANIFEST_DIRECTIVE);
+    expect(response.headers.get('Cache-Control')).toBe(SITE_CACHE_CONTROL);
+  });
+
+  test.each(PUBLIC_PAGES)('%s lets Lighthouse read its discovery files: connections to this origin only', async (_name, page) => {
+    const { response } = await page();
+    const directives = response.headers.get('Content-Security-Policy')?.split('; ');
+    expect(directives).toContain(CONNECT_DIRECTIVE);
+    expect(directives?.filter((directive) => directive.startsWith('connect-src '))).toEqual([CONNECT_DIRECTIVE]);
+  });
+
+  test('no site page widens its policy with unsafe-inline or carries an inline handler attribute', async () => {
+    const adminPages = [ADMIN_SIGN_IN_PATH, ADMIN_LINK_PATH].map((path): NamedPage => [
+      path,
+      () => pageOf(exports.default.fetch(`${LOCAL_SITE_ORIGIN}${path}`)),
+    ]);
+    const pages = [...LANDING_PAGES, ...WIDGET_LANDING_PAGES, ...adminPages];
+    const answers = await Promise.all(pages.map(([, page]) => page()));
+    expect(answers).toHaveLength(pages.length);
+    answers.forEach(({ response, html }) => {
+      expect(response.headers.get('Content-Security-Policy')).not.toContain(UNSAFE_INLINE);
+      expect(html).not.toMatch(ATTRIBUTE_HANDLER_PATTERN);
+    });
   });
 });
