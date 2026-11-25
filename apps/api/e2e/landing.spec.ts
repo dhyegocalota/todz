@@ -31,6 +31,7 @@ const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
 const TURNSTILE_RESPONSE_FIELD = 'cf-turnstile-response';
 const JAVASCRIPT_CONTENT_TYPE = 'text/javascript';
 const SLOW_TOKEN_DELAY_MS = 1_000;
+const SLOW_SCRIPT_DELAY_MS = 1_500;
 const TURNSTILE_SOLVE = `const solve = () => document.querySelectorAll('.cf-turnstile').forEach((widget) => {
   const token = document.createElement('input');
   token.type = 'hidden';
@@ -258,6 +259,22 @@ test.describe('join', () => {
     await expectJoined({ page, form: Fragment.Hero, address });
     await submitForm({ page, form: Fragment.Final, address });
     await expectJoined({ page, form: Fragment.Final, address });
+  });
+
+  test.describe('when the Turnstile script loads after the visitor submits', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route(TURNSTILE_SCRIPT_URL, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, SLOW_SCRIPT_DELAY_MS));
+        await route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: SLOW_TURNSTILE_STUB });
+      });
+    });
+
+    test('a join submitted before the page loads waits for the token and answers the same', async ({ page }) => {
+      const address = uniqueAddress();
+      await page.goto(SitePath.Landing, { waitUntil: 'domcontentloaded' });
+      await submitForm({ page, form: Fragment.Hero, address });
+      await expectJoined({ page, form: Fragment.Hero, address });
+    });
   });
 
   test.describe('when the widget writes its token late', () => {
