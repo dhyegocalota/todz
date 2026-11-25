@@ -16,7 +16,7 @@ import Observation
     }
 
     public func claimRelease(_ surface: ProactiveSurface) -> Bool {
-        guard released.contains(surface) else { return false }
+        guard !isQuiet, released.contains(surface) else { return false }
         released.removeAll { $0 == surface }
         return true
     }
