@@ -64,6 +64,8 @@ struct SettingsView: View {
             .toggleStyle(.switch)
             Section {
                 ServerAddressForm(layout: .row, exit: {})
+            } footer: {
+                VersionLine()
             }
         }
         .formStyle(.grouped)

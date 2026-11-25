@@ -4,6 +4,7 @@ import Foundation
 private let errorOfStatus: [ResponseStatus: OwnerAPIError] = [
     .unauthorized: .unauthorized,
     .unavailable: .signInUnavailable,
+    .upgradeRequired: .appTooOld(minimum: nil),
 ]
 
 struct OwnerErrorBody: Decodable {
@@ -11,6 +12,7 @@ struct OwnerErrorBody: Decodable {
     let number: Int?
     let issue: RuleIssue?
     let index: Int?
+    let minimumAppVersion: String?
 
     static func failure(status: Int, body: Data) -> OwnerAPIError {
         let codedFailure = (try? OwnerCoding.decoder().decode(OwnerErrorBody.self, from: body))?.failure
@@ -32,6 +34,7 @@ struct OwnerErrorBody: Decodable {
         case .timeZoneInvalid: .timeZoneInvalid
         case .signInUnavailable: .signInUnavailable
         case .signInRefused: .signInRefused
+        case .appTooOld: .appTooOld(minimum: minimumAppVersion)
         }
     }
 }

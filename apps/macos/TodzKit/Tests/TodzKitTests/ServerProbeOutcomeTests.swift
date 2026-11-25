@@ -1,21 +1,23 @@
 import Testing
 @testable import TodzKit
 
+private let noVersions = ServerVersions(server: nil, minimumApp: nil)
+
 @Suite struct ServerProbeOutcomeTests {
     @Test func anAnswerNamingTheTypedOriginMatches() throws {
         let typed = try ServerAddress.checked(text: "https://todz.example.com/").get()
-        #expect(ServerProbeOutcome.of(answer: .todz(origin: "https://todz.example.com"), typedAddress: typed) == .matches)
+        #expect(ServerProbeOutcome.of(answer: .todz(origin: "https://todz.example.com", versions: noVersions), typedAddress: typed) == .matches)
     }
 
     @Test func anAnswerNamingAnotherOriginSaysWhichOne() throws {
         let typed = try ServerAddress.checked(text: "http://127.0.0.1:8787").get()
-        let outcome = ServerProbeOutcome.of(answer: .todz(origin: "http://localhost:8787"), typedAddress: typed)
+        let outcome = ServerProbeOutcome.of(answer: .todz(origin: "http://localhost:8787", versions: noVersions), typedAddress: typed)
         #expect(outcome == .answersAs(origin: "http://localhost:8787"))
     }
 
     @Test func anAnswerNamingAnotherOriginShowsOnlyThatOrigin() throws {
         let typed = try ServerAddress.checked(text: "https://todz.example.com").get()
-        let outcome = ServerProbeOutcome.of(answer: .todz(origin: "HTTPS://Other.Example.com:443/"), typedAddress: typed)
+        let outcome = ServerProbeOutcome.of(answer: .todz(origin: "HTTPS://Other.Example.com:443/", versions: noVersions), typedAddress: typed)
         #expect(outcome == .answersAs(origin: "https://other.example.com"))
     }
 
@@ -29,7 +31,7 @@ import Testing
     ])
     func anAnswerWhoseOriginIsNotAServerAddressIsNotTodz(origin: String) throws {
         let typed = try ServerAddress.checked(text: "https://todz.example.com").get()
-        #expect(ServerProbeOutcome.of(answer: .todz(origin: origin), typedAddress: typed) == .notTodz)
+        #expect(ServerProbeOutcome.of(answer: .todz(origin: origin, versions: noVersions), typedAddress: typed) == .notTodz)
     }
 
     @Test func anAnswerThatIsNotTodzIsNotTodz() throws {

@@ -7,7 +7,7 @@ public enum ServerProbeOutcome: Equatable, Sendable {
     case unreachable
 
     public static func of(answer: ServerHealthAnswer, typedAddress: ServerAddress) -> ServerProbeOutcome {
-        guard case let .todz(origin) = answer else { return .notTodz }
+        guard case let .todz(origin, _) = answer else { return .notTodz }
         guard case let .success(answered) = ServerAddress.checked(text: origin) else { return .notTodz }
         guard answered == typedAddress else { return .answersAs(origin: answered.origin) }
         return .matches
