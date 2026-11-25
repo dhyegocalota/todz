@@ -51,15 +51,27 @@ const PAGE_SCRIPT = `{
     const token = form.querySelector('[name="${TURNSTILE_RESPONSE_FIELD}"]');
     return token !== null && token.value !== '';
   };
-  window.${TOKEN_CALLBACK} = () => waitingForToken.forEach((_restore, form) => {
-    if (!hasToken(form)) return;
-    waitingForToken.delete(form);
-    form.submit();
-  });
-  window.${FAILURE_CALLBACK} = () => waitingForToken.forEach((restore, form) => {
-    waitingForToken.delete(form);
+  let hasFailedWidget = false;
+  window.${TOKEN_CALLBACK} = () => {
+    hasFailedWidget = false;
+    waitingForToken.forEach((_restore, form) => {
+      if (!hasToken(form)) return;
+      waitingForToken.delete(form);
+      form.submit();
+    });
+  };
+  window.${FAILURE_CALLBACK} = () => {
+    hasFailedWidget = true;
+    waitingForToken.forEach((restore, form) => {
+      waitingForToken.delete(form);
+      restore();
+    });
+  };
+  const retryChallenge = ({ form, restore }) => {
+    hasFailedWidget = false;
     restore();
-  });
+    if (window.turnstile) window.turnstile.reset(form.querySelector('.${WIDGET_CLASS}'));
+  };
   document.querySelectorAll('.${JOIN_FORM_CLASS}').forEach((form) => {
     const button = form.querySelector('.${JOIN_BUTTON_CLASS}');
     const label = button.textContent;
@@ -74,6 +86,7 @@ const PAGE_SCRIPT = `{
       button.textContent = button.dataset.submitting;
       if (!hasWidget || hasToken(form)) return;
       event.preventDefault();
+      if (hasFailedWidget) return retryChallenge({ form, restore });
       waitingForToken.set(form, restore);
     });
     addEventListener('pageshow', (event) => {
