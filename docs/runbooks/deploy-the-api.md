@@ -108,12 +108,15 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
    The digest's schedule has no read through the wrapper; step 8's `schedule: 0 11 * * *` line is its proof. After the next 11:00 UTC, check that the digest arrived at `ADMIN_EMAIL` (a mail "Your todz waitlist: …" from `noreply@todz.app`) and that the Worker's Cron Events in the dashboard show the run as a success, and add a row for it to the run log.
    If it fails: a failed run whose error says `the waitlist digest is missing admin_email` means step 10's `ADMIN_EMAIL` secret is missing; put it. Any other failure, or no run at all, means the schedule did not register; deploy again from the same commit and tell the owner if it repeats.
 
-10. **Create the Turnstile widget and put its secret.** The owner creates the widget in the dashboard, because the token lacks Turnstile Edit: Turnstile, Add widget, name `todz`, hostname `todz.app` (it covers `api.todz.app`), widget mode Managed. The dashboard then shows a site key and a secret key. The site key is public: a pull request puts it in the `vars` of `apps/api/wrangler.jsonc` as `TURNSTILE_SITE_KEY`, with its pin in `api-source.test.ts`, and this runbook runs again from step 1 once it is on `main`. The secret never touches a file or a command line: the owner runs the first command and pastes it at its prompt, then anyone lists the secrets:
+10. **Create the Turnstile widget and put its secret.** The owner creates the widget in the dashboard, because the token lacks Turnstile Edit: Turnstile, Add widget, name `todz`, hostname `todz.app` (it covers `api.todz.app`), widget mode Managed. The dashboard then shows a site key and a secret key. The site key is public: it sits in the `vars` of `apps/api/wrangler.jsonc` as `TURNSTILE_SITE_KEY`, with its pin in `api-source.test.ts`, so step 8 deploys it. The secret never touches a file or a command line: the owner runs the first command and pastes it at its prompt, or, when the owner saved it in the Keychain item `todz-turnstile`, pipes it from there without printing it (the wrapper hands its standard input to the command), then anyone lists the secrets:
 
     ```bash
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
+    security find-generic-password -s todz-turnstile -w | scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret list
     ```
+
+    Run one of the two puts, not both.
 
     Expected: the first asks for the value and says it uploaded the secret `TURNSTILE_SECRET_KEY` for `todz-api`; the list names `TURNSTILE_SECRET_KEY` and prints no value. Until both the secret and the site key exist, the two sign-in posts answer 503 `sign_in_unavailable` and both pages answer 503, which is the safe state; steps 13 to 15 say what each state answers.
     The admin's address is a secret too, though not a sensitive one: it keeps a fork that never sets it closed ([ADR 0051](../adr/0051-the-admin-signs-in-by-a-mail-link-bound-to-the-browser-that-asked-into-a-cookie-session.md)). Put it once, without waiting for the widget, by typing `hello@todz.app` at the prompt, then list the secrets again:
