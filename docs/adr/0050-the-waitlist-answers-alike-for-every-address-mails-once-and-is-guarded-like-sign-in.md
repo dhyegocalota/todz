@@ -11,9 +11,9 @@
 
 ## Decision
 
-1. **One table.** D1 migration `0005_waitlist.sql` adds a STRICT `waitlist` table: the normalised address as the primary key, `joined_at`, `confirmation_sent_at` and `confirmation_failed_at` (milliseconds, the last two nullable). No referral code, no name, no locale.
+1. **One table.** D1 migration `0005_waitlist.sql` adds a STRICT `waitlist` table: the normalised address as the primary key, `joined_at`, `confirmation_claimed_at` and `confirmation_failed_at` (milliseconds, the last two nullable). No referral code, no name, no locale.
 2. **The same answer for every address.** A joined address, a new one and one already on the list all answer the same "You're on the list." notice, so the form never says whether an address is known.
-3. **One mail per address, ever.** The first join claims the row (`UPDATE … SET confirmation_sent_at = ? WHERE address = ? AND confirmation_sent_at IS NULL`) and sends a short confirmation mail through `waitUntil`; a later join of the same address sends nothing. A failed send records `confirmation_failed_at` and is not retried in this feature. The mail says how the address got there and that ignoring it is fine. It is single opt-in: the address is on the list from the first join.
+3. **One mail per address, ever.** The first join claims the mail in the same statement that stores it (`INSERT … (address, joined_at, confirmation_claimed_at) VALUES (?1, ?2, ?2) ON CONFLICT (address) DO NOTHING`, claimed when one row changed; `confirmation_claimed_at` means claimed, not delivered) and sends a short confirmation mail through `waitUntil`; a later join of the same address sends nothing. A failed send records `confirmation_failed_at` and is not retried in this feature. The mail says how the address got there and that ignoring it is fine. It is single opt-in: the address is on the list from the first join.
 4. **Guarded like sign-in (ADR 0045), on its own namespaces.** Before anything is stored or sent:
    - a per-client limit (`WAITLIST_LIMITER`, namespace 8604) before Turnstile;
    - Turnstile siteverify with action `waitlist` and hostname the `SITE_ORIGIN` host, failing closed;
@@ -42,4 +42,4 @@
 
 ## Revisit when
 
-Abuse shows up in the digest (many addresses from one source), or the owner wants a double opt-in or referral codes.
+Abuse shows up in the digest (many addresses from one source, or many `+tag` and dotted variants of one inbox, which are distinct addresses here and each get one mail), or the owner wants a double opt-in or referral codes. The global limit counts per Cloudflare location, so a D1 ceiling on claims per hour is the next step if variants of one inbox appear.
