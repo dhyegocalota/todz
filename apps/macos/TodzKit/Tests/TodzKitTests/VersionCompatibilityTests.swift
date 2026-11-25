@@ -16,11 +16,15 @@ private let currentServer = ServerVersions(server: currentStamp, minimumApp: "0.
     }
 
     @Test func aRecordedRefusalWinsOverACompatibleAnswer() {
-        #expect(VersionCompatibility.of(app: app, server: currentServer, refusal: "0.3.0") == .updateNeeded(app: app, server: currentStamp, minimum: "0.3.0"))
+        #expect(VersionCompatibility.of(app: app, server: currentServer, refusal: AppRefusal(minimum: "0.3.0")) == .updateNeeded(app: app, server: currentStamp, minimum: "0.3.0"))
     }
 
     @Test func aRecordedRefusalWithoutAnAnswerNeedsAnUpdate() {
-        #expect(VersionCompatibility.of(app: app, server: nil, refusal: "0.3.0") == .updateNeeded(app: app, server: nil, minimum: "0.3.0"))
+        #expect(VersionCompatibility.of(app: app, server: nil, refusal: AppRefusal(minimum: "0.3.0")) == .updateNeeded(app: app, server: nil, minimum: "0.3.0"))
+    }
+
+    @Test func aRefusalThatNamesNoMinimumNeedsAnUpdate() {
+        #expect(VersionCompatibility.of(app: app, server: currentServer, refusal: AppRefusal(minimum: nil)) == .updateNeeded(app: app, server: currentStamp, minimum: nil))
     }
 
     @Test func aServerOlderThanTheOneTheAppExpectsIsBehind() {

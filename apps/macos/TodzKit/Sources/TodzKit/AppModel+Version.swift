@@ -12,14 +12,14 @@ extension AppModel {
     }
 
     func recordRefusal(of failure: any Error) {
-        guard let refusal = failure as? OwnerAPIError, case let .appTooOld(minimum) = refusal else { return }
-        refusedMinimum = minimum
+        guard let ownerFailure = failure as? OwnerAPIError, case let .appTooOld(minimum) = ownerFailure else { return }
+        refusal = AppRefusal(minimum: minimum)
         recompute()
     }
 
     func forgetVersions() {
         serverVersions = nil
-        refusedMinimum = nil
+        refusal = nil
         compatibility = .serverUnknown(app: appVersion)
     }
 
@@ -32,13 +32,13 @@ extension AppModel {
             return
         }
         serverVersions = versions
-        refusedMinimum = nil
+        refusal = nil
         recompute()
     }
 
     private func recompute() {
         let wasUpdateNeeded = isUpdateNeeded
-        compatibility = .of(app: appVersion, server: serverVersions, refusal: refusedMinimum)
+        compatibility = .of(app: appVersion, server: serverVersions, refusal: refusal)
         let isSignedInAndNeedsUpdate = isUpdateNeeded && session != nil
         if isSignedInAndNeedsUpdate { raise(.updateNeeded) }
         let isUpdated = wasUpdateNeeded && !isUpdateNeeded

@@ -88,6 +88,42 @@ extension AppModelTests {
         #expect(harness.service.tasksOfProject[inboxIdentifier]?.count == 4)
     }
 
+    @MainActor private func probedCompatibleAndFlushed(_ harness: AppModelHarness) async {
+        harness.service.healthAnswer = FakeOwnerService.compatibleHealth
+        harness.model.refreshCompatibility()
+        await harness.versionsRead()
+        await harness.flushed()
+    }
+
+    @Test func threeConsecutiveRefusalsKeepEveryQueuedChangeUncountedAndUnannounced() async throws {
+        let harness = try await signedInHarness()
+        harness.service.failures[.addTasks] = .appTooOld(minimum: nil)
+        await harness.model.addTask(title: "Call the bank", projectIdentifier: inboxIdentifier, dueDate: nil)
+        await harness.model.addTask(title: "Pay the rent", projectIdentifier: inboxIdentifier, dueDate: nil)
+        await harness.flushed()
+        let queued = harness.model.outbox
+        await probedCompatibleAndFlushed(harness)
+        await probedCompatibleAndFlushed(harness)
+        #expect(harness.service.routes().filter { $0 == .addTasks }.count == 3)
+        #expect(harness.model.outbox == queued)
+        #expect(harness.model.waitingChangeCount == 2)
+        #expect(harness.model.banner == .updateNeeded)
+        #expect(harness.model.compatibility == .updateNeeded(app: OwnerFixtures.appVersion, server: compatibleStamp, minimum: nil))
+    }
+
+    @Test func afterTheAnswerIsNoLongerARefusalTheQueueFlushesInOrder() async throws {
+        let harness = try await signedInHarness()
+        harness.service.failures[.addTasks] = .appTooOld(minimum: nil)
+        await harness.model.addTask(title: "Call the bank", projectIdentifier: inboxIdentifier, dueDate: nil)
+        await harness.model.addTask(title: "Pay the rent", projectIdentifier: inboxIdentifier, dueDate: nil)
+        await harness.flushed()
+        harness.service.failures[.addTasks] = nil
+        await probedCompatibleAndFlushed(harness)
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.model.banner == nil)
+        #expect(harness.service.tasksOfProject[inboxIdentifier]?.map(\.title) == ["Task 1", "Task 2", "Call the bank", "Pay the rent"])
+    }
+
     @Test func aSignInRefusedAsTooOldSaysSoAndNeedsAnUpdate() async throws {
         let harness = try AppModelHarness()
         await harness.model.launch()

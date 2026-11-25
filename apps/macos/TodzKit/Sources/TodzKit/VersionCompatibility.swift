@@ -5,14 +5,18 @@ private func isVersion(_ text: String, below limit: String) -> Bool {
     return version < limitVersion
 }
 
+public struct AppRefusal: Equatable, Sendable {
+    public let minimum: String?
+}
+
 public enum VersionCompatibility: Equatable, Sendable {
     case compatible(app: String, server: String)
-    case updateNeeded(app: String, server: String?, minimum: String)
+    case updateNeeded(app: String, server: String?, minimum: String?)
     case serverBehind(app: String, server: String?)
     case serverUnknown(app: String)
 
-    static func of(app: String, server: ServerVersions?, refusal: String?) -> VersionCompatibility {
-        if let refusal { return .updateNeeded(app: app, server: server?.server, minimum: refusal) }
+    static func of(app: String, server: ServerVersions?, refusal: AppRefusal?) -> VersionCompatibility {
+        if let refusal { return .updateNeeded(app: app, server: server?.server, minimum: refusal.minimum) }
         guard let server else { return .serverUnknown(app: app) }
         if let minimum = server.minimumApp, isVersion(app, below: minimum) { return .updateNeeded(app: app, server: server.server, minimum: minimum) }
         guard let stamp = server.server, DottedVersion(text: ServerStamp.date(of: stamp)) != nil else { return .serverBehind(app: app, server: nil) }

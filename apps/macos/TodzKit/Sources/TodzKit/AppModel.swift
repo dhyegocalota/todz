@@ -104,7 +104,7 @@ import Observation
     @ObservationIgnored var serverSignOut: Task<Void, Never>?
     @ObservationIgnored var compatibilityRefresh: Task<Void, Never>?
     @ObservationIgnored var serverVersions: ServerVersions?
-    @ObservationIgnored var refusedMinimum: String?
+    @ObservationIgnored var refusal: AppRefusal?
     @ObservationIgnored var isLocalDataUnerased = false
     @ObservationIgnored public var onTaskArrived: ((Int) -> Void)?
     @ObservationIgnored var service: any OwnerService

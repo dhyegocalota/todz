@@ -11,6 +11,7 @@ enum VersionCopy {
     private static let olderServer = "Server older"
     private static let behindTooltip = "This server is older than this app expects. Whoever runs it can update it."
     private static let noTooltip = ""
+    private static let updateNeededTooltipWithoutMinimum = "This server needs a newer todz."
 
     static func line(_ compatibility: VersionCompatibility) -> String {
         switch compatibility {
@@ -24,7 +25,7 @@ enum VersionCopy {
     static func tooltip(_ compatibility: VersionCompatibility) -> String {
         switch compatibility {
         case let .compatible(_, server): "Server build \(server)"
-        case let .updateNeeded(_, _, minimum): "This server needs todz \(minimum) or later."
+        case let .updateNeeded(_, _, minimum): updateNeededTooltip(minimum)
         case .serverBehind: behindTooltip
         case .serverUnknown: noTooltip
         }
@@ -37,6 +38,11 @@ enum VersionCopy {
         case let .serverBehind(app, _): "The server is older than todz \(app) expects. It needs an update."
         case let .serverUnknown(app): "todz \(app)."
         }
+    }
+
+    private static func updateNeededTooltip(_ minimum: String?) -> String {
+        guard let minimum else { return updateNeededTooltipWithoutMinimum }
+        return "This server needs todz \(minimum) or later."
     }
 
     private static func appPart(_ app: String) -> String {
