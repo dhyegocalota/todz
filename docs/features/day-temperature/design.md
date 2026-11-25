@@ -43,9 +43,9 @@ An overdue open row sits on a wash behind it. The title and the checkbox are unc
  ┌──────────────────────────────────────────┐
  │ ○ Send the invoice to Ana  Overdue · 24 November │  ← wash 0.06  (1 day overdue)
  ├──────────────────────────────────────────┤
- │ ○ Reply to the landlord    Overdue · 22 November │  ← wash 0.12  (2–6 days)
+ │ ○ Reply to the landlord    Overdue · 22 November │  ← wash 0.09  (2–6 days)
  ├──────────────────────────────────────────┤
- │ ○ Renew the passport       Overdue · 16 November │  ← wash 0.18  (7+ days)
+ │ ○ Renew the passport       Overdue · 16 November │  ← wash 0.12  (7+ days)
  ├──────────────────────────────────────────┤
  │ ○ Book the dentist              Today    │  ← no wash (not overdue)
  └──────────────────────────────────────────┘
@@ -55,8 +55,8 @@ An overdue open row sits on a wash behind it. The title and the checkbox are unc
 |---|---|---|---|
 | Not overdue | due today or later, or no due date | none | as today |
 | Overdue, 1 day | `daysOverdue == 1` | red 0.06 | the existing red words |
-| Overdue, 2 to 6 days | `2...6` | red 0.12 | the existing red words (`TaskRowCopy.overdue(date:)`) |
-| Overdue, 7 days or more | `>= 7` | red 0.18 | the existing red words (`TaskRowCopy.overdue(date:)`) |
+| Overdue, 2 to 6 days | `2...6` | red 0.09 | the existing red words (`TaskRowCopy.overdue(date:)`) |
+| Overdue, 7 days or more | `>= 7` | red 0.12 | the existing red words (`TaskRowCopy.overdue(date:)`) |
 | Done | the row is checked | none | as today |
 | Switch off, quiet, Increase Contrast | the snapshot flag is false | none | as today |
 | Empty Today | no rows | nothing to wash | the existing empty view |
@@ -88,8 +88,8 @@ Constants, not style values in views. They live at the top of their files in Tod
 | `DayTemperatureStep.eveningOpacity` | 0.65 | the count from 18:00 |
 | `DayTemperatureStep` boundaries | 12, 15, 18 (hours, Mac zone) | the steps |
 | `OverdueWash.singleDayOpacity` | 0.06 | one day overdue |
-| `OverdueWash.lateOpacity` | 0.12 | two to six days |
-| `OverdueWash.longOverdueOpacity` | 0.18 | seven days or more |
+| `OverdueWash.lateOpacity` | 0.09 | two to six days |
+| `OverdueWash.longOverdueOpacity` | 0.12 | seven days or more |
 | `OverdueWash.lateFromDays` | 2 | the band's first day |
 | `OverdueWash.longOverdueFromDays` | 7 | the band's first day |
 | wash colour | `Color.red` (system) in `.fullColor`; `Color.primary` in `.vibrant` and `.accented` | the existing overdue colour, dynamic in light and dark; a luminance step in the system's own modes |
@@ -132,7 +132,7 @@ Options for the detail:
 
 **O3. Where the wash goes.** Options: the Today list rows and the next-up card; the list rows only; every row including done rows. **Pick: list rows and the next-up card.** Done rows are not overdue by definition; the ring has no rows.
 
-**O4. The wash bands.** Options: three bands (1 day, 2 to 6, 7 and more); a single wash for any overdue row; a wash that grows every day. **Pick: three bands, capped at 0.18.** One band hides the age the owner asked for; a daily growth needs a ceiling anyway, and three bands are readable at a glance.
+**O4. The wash bands.** Options: three bands (1 day, 2 to 6, 7 and more); a single wash for any overdue row; a wash that grows every day. **Pick: three bands, capped at 0.12 (0.18 measured 2.78:1 for the red due words; ADR 0065 Evidence).** One band hides the age the owner asked for; a daily growth needs a ceiling anyway, and three bands are readable at a glance.
 
 **O5. Reduce Transparency.** Options: the same wash; no wash. **Pick: the same wash.** The wash is a tint the system keeps opaque, so it does not depend on transparency.
 
