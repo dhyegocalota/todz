@@ -73,6 +73,8 @@ public struct CalendarDate: Codable, Sendable, Hashable, Comparable {
     }
 
     public func days(since earlier: CalendarDate) -> Int {
-        fatalError("CalendarDate.days is not implemented")
+        let difference = gregorianCalendar(in: .gmt).dateComponents([.day], from: earlier.start(in: .gmt), to: start(in: .gmt))
+        guard let days = difference.day else { preconditionFailure(arithmeticFailure) }
+        return days
     }
 }
