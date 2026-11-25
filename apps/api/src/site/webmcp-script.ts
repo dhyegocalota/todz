@@ -1,13 +1,15 @@
-import { MILLISECONDS_PER_SECOND } from '@todz/types';
+import { MILLISECONDS_PER_SECOND, WAITLIST_FILL_HOLD_MS, WAITLIST_JOIN_TIMEOUT_MS } from '@todz/types';
 import { AgentClient, agentSetupOf } from './agent-setup';
 import { DISCOVERY_COPY, DOCS_PAGES } from './discovery-copy';
 import {
   EMAIL_FIELD_NAME,
   JOIN_FORM_CLASS,
+  JOIN_OUTCOME_ATTRIBUTE,
   JOIN_STATE_ATTRIBUTE,
   JoinFormState,
   JoinOutcome,
   UNREACHABLE_ANSWER,
+  WAITING_ANSWER,
   WAITLIST_ANSWERED_EVENT,
 } from './join-form-markup';
 import { KEY_PLACEHOLDER, scriptJson } from './site-constants';
@@ -16,6 +18,7 @@ import { WEBMCP_COPY, WebMcpToolName } from './webmcp-copy';
 
 const PARAGRAPH_SEPARATOR = '\n\n';
 export const WEBMCP_CHECK_WAIT_MS = 30 * MILLISECONDS_PER_SECOND;
+const WEBMCP_ANSWER_WAIT_MS = WAITLIST_FILL_HOLD_MS + WAITLIST_JOIN_TIMEOUT_MS;
 
 export type WebMcpProperty = { type: 'string'; description: string; enum?: string[]; format?: string };
 
@@ -73,6 +76,7 @@ const JOIN_ANSWER_OF_OUTCOME = {
   [JoinOutcome.TryAgain]: WEBMCP_COPY.answers.tryAgain,
   [JoinOutcome.OpensSoon]: WEBMCP_COPY.answers.opensSoon,
   [UNREACHABLE_ANSWER]: WEBMCP_COPY.answers.unreachable,
+  [WAITING_ANSWER]: WEBMCP_COPY.answers.checkTimedOut,
 };
 
 const OVERVIEW_TEXT = [
@@ -124,9 +128,15 @@ export const WEBMCP_SCRIPT = `{
       return textOf(answers.invalid);
     }
     const isReady = isForm(form, '${JoinFormState.Ready}') || await readyWithin({ form, waitMs: ${WEBMCP_CHECK_WAIT_MS} });
-    if (!isReady) return textOf(answers.checkTimedOut);
+    if (!isReady) {
+      field.value = typedValue;
+      return textOf(form.dataset.${JOIN_OUTCOME_ATTRIBUTE} === '${JoinOutcome.TryAgain}' ? answers.tryAgain : answers.checkTimedOut);
+    }
     if (isForm(form, '${JoinFormState.Sending}')) return textOf(answers.alreadySubmitting);
-    const answered = new Promise((resolve) => form.addEventListener('${WAITLIST_ANSWERED_EVENT}', (event) => resolve(event.detail.outcome), { once: true }));
+    const answered = new Promise((resolve) => {
+      form.addEventListener('${WAITLIST_ANSWERED_EVENT}', (event) => resolve(event.detail.outcome), { once: true });
+      setTimeout(() => resolve('${UNREACHABLE_ANSWER}'), ${WEBMCP_ANSWER_WAIT_MS});
+    });
     form.requestSubmit();
     return textOf(answerOfOutcome[await answered]);
   };

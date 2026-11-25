@@ -1,4 +1,4 @@
-import { MILLISECONDS_PER_SECOND, WAITLIST_FILL_HOLD_MS } from '@todz/types';
+import { MILLISECONDS_PER_SECOND, WAITLIST_FILL_HOLD_MS, WAITLIST_JOIN_TIMEOUT_MS } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
 import { MediaType } from '../request-body';
 import { TurnstileAction } from '../turnstile';
@@ -9,11 +9,13 @@ import {
   HONEYPOT_FIELD_NAME,
   JOIN_BUTTON_CLASS,
   JOIN_FORM_CLASS,
+  JOIN_OUTCOME_ATTRIBUTE,
   JOIN_STATE_ATTRIBUTE,
   JoinFormState,
   JoinOutcome,
   STAMP_FIELD_NAME,
   UNREACHABLE_ANSWER,
+  WAITING_ANSWER,
   WAITLIST_ANSWERED_EVENT,
 } from './join-form-markup';
 import { LANDING_COPY } from './landing-copy';
@@ -120,19 +122,24 @@ export const PAGE_SCRIPT = `{
     status.replaceChildren(dot, text);
   };
   const answerOf = async (body) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ${WAITLIST_JOIN_TIMEOUT_MS});
     try {
-      const response = await fetch('${JOIN_PATH}', { method: 'POST', headers: { Accept: '${MediaType.Json}' }, body });
+      const response = await fetch('${JOIN_PATH}', { method: 'POST', headers: { Accept: '${MediaType.Json}' }, body, signal: controller.signal });
       const { outcome } = await response.json();
       if (!Object.hasOwn(copy.lines, outcome)) return { outcome: '${UNREACHABLE_ANSWER}', retryAfterSeconds: 0 };
       return { outcome, retryAfterSeconds: Number(response.headers.get('Retry-After')) };
     } catch (error) {
       return { outcome: '${UNREACHABLE_ANSWER}', retryAfterSeconds: 0 };
+    } finally {
+      clearTimeout(timer);
     }
   };
   const finish = ({ form, outcome, retryAfterSeconds }) => {
     const progress = progressOf.get(form);
     progress.isSending = false;
     progress.hasToken = !progress.hasWidget;
+    form.dataset.${JOIN_OUTCOME_ATTRIBUTE} = outcome;
     showLine({ form, text: outcome === '${UNREACHABLE_ANSWER}' ? copy.unreachable : copy.lines[outcome] });
     if (outcome === '${JoinOutcome.Joined}') form.querySelector('[name="${EMAIL_FIELD_NAME}"]').value = '';
     if (retryAfterSeconds > 0) {
@@ -176,6 +183,7 @@ export const PAGE_SCRIPT = `{
       if (form.dataset.${JOIN_STATE_ATTRIBUTE} === state.Ready) return sendFrom(form);
       if (progress.isSending || progress.isBlocked) return;
       showLine({ form, text: copy.waitingForCheck });
+      form.dispatchEvent(new CustomEvent('${WAITLIST_ANSWERED_EVENT}', { detail: { outcome: '${WAITING_ANSWER}' } }));
     });
   });
   addEventListener('pageshow', (event) => {
