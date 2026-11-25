@@ -49,6 +49,14 @@ describe('the site host', () => {
     ['POST', '/'],
     ['POST', '/self-host'],
     ['GET', '/unknown'],
+    ['GET', '//owner/sign-in-method'],
+    ['GET', '/%2Fowner/sign-in-method'],
+    ['GET', '/owner%2Fsign-in-method'],
+    ['GET', '/self-host/../owner/sign-in-method'],
+    ['GET', '/landing/%2E%2E/mcp'],
+    ['PUT', '/'],
+    ['DELETE', '/self-host'],
+    ['OPTIONS', '/'],
   ])('%s %s answers 404', async (method, path) => {
     const response = await serve(requestOf({ url: `${SITE_ORIGIN}${path}`, method }));
     expect(response.status).toBe(NOT_FOUND_STATUS);
