@@ -49,6 +49,15 @@ private let otherServerText = "http://localhost:8791"
         #expect(harness.store.projects[inboxIdentifier]?.cursor == 2)
     }
 
+    @Test func loadingTheCacheOfAProjectFirstWritesWhatIsQueuedForIt() async throws {
+        let drains = HeldCacheDrains()
+        let harness = try await signedInHarness(drains: drains)
+        #expect(harness.store.projects[inboxIdentifier] == nil)
+        harness.model.board = TaskBoard()
+        harness.model.loadCachedProjects(of: harness.model.workspaces[0])
+        #expect(harness.model.board.tasks(projectIdentifier: inboxIdentifier).count == 2)
+    }
+
     @Test func aWriteThatFailsInTheBackgroundRaisesTheCacheBannerOnTheMainActor() async throws {
         let drains = HeldCacheDrains()
         let harness = try await signedInHarness(drains: drains)
