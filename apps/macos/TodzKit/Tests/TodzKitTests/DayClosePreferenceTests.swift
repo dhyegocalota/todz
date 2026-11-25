@@ -51,4 +51,14 @@ private let minutesInsideADay = [0, 1439]
         defaults.set(minutes, forKey: DayClosePreference.timeStorageKey)
         #expect(DayClosePreference.minutesAfterMidnight(in: defaults) == minutes)
     }
+
+    @Test(arguments: minutesOutsideADay)
+    func thePickerShowsTheDefaultTimeForAStoredTimeOutsideADay(minutes: Int) {
+        #expect(DayClosePreference.pickerMinutes(stored: minutes) == DayClosePreference.minutesAfterMidnightByDefault)
+    }
+
+    @Test(arguments: minutesInsideADay)
+    func thePickerShowsAStoredTimeInsideADay(minutes: Int) {
+        #expect(DayClosePreference.pickerMinutes(stored: minutes) == minutes)
+    }
 }
