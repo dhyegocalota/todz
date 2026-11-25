@@ -11,6 +11,10 @@ export enum HttpHeader {
   ContentType = 'Content-Type',
   ContentLength = 'Content-Length',
   Location = 'Location',
+  ContentSecurityPolicy = 'Content-Security-Policy',
+  StrictTransportSecurity = 'Strict-Transport-Security',
+  ContentTypeOptions = 'X-Content-Type-Options',
+  ReferrerPolicy = 'Referrer-Policy',
 }
 
 export const NO_STORE = 'no-store';

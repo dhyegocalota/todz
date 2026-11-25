@@ -44,7 +44,17 @@ const CLOUDFLARE_API_HOST = 'api.cloudflare.com';
 const SMOKE_CHECK_STEP = 13;
 const HEALTH_CURL = 'curl -sS https://api.todz.app/health';
 const HEALTH_ANSWER = '{"service":"todz","origin":"https://api.todz.app"}';
-const ALL_PASS_SENTENCE = 'When all fourteen pass';
+const ALL_PASS_SENTENCE = 'When all sixteen pass';
+const HEADER_CURLS = [
+  'curl -sS -D - -o /dev/null https://api.todz.app/owner',
+  'curl -sS -D - -o /dev/null https://todz.app/brand/todz-lockup.png',
+];
+const HEADER_ANSWERS = [
+  'strict-transport-security: max-age=31536000',
+  'x-content-type-options: nosniff',
+  'referrer-policy: no-referrer',
+  "content-security-policy: default-src 'none'; frame-ancestors 'none'",
+];
 const WRONG_SESSION_BODY = 'scripts/deploy-bodies/wrong-session.json';
 const JUNK_LINK_BODY = 'scripts/deploy-bodies/junk-turnstile-link.json';
 const JUNK_WAITLIST_BODY = 'scripts/deploy-bodies/junk-turnstile-waitlist.txt';
@@ -57,7 +67,7 @@ const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
 const TURNSTILE_TOKEN_PATTERN = /^[A-Za-z0-9._-]{1,2048}$/;
 const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
 
-type DeployBody = { email?: string; link_challenge?: string; link_verifier?: string; turnstile_token?: string };
+type DeployBody = { email?: string; link_challenge?: string; link_verifier?: string; turnstile_token?: string; app_link_scheme?: string };
 
 function deployBody(path: string): DeployBody {
   return JSON.parse(readRepositoryFile(path)) as DeployBody;
@@ -232,11 +242,17 @@ describe('runbooks', () => {
     expect(readRepositoryFile(WRAPPER_PATH)).toContain(`"${accountId}"`);
   });
 
-  test('the smoke check curls the health route of the API host and counts it among the fourteen answers', () => {
+  test('the smoke check curls the health route of the API host and counts it among the sixteen answers', () => {
     const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
     expect(smokeCheck?.body).toContain(HEALTH_CURL);
     expect(smokeCheck?.body).toContain(HEALTH_ANSWER);
     expect(smokeCheck?.body).toContain(ALL_PASS_SENTENCE);
+  });
+
+  test('the smoke check curls an API answer and a static asset and expects the four security headers', () => {
+    const smokeCheck = stepSections(readRunbook(DEPLOY_RUNBOOK).text).find((step) => step.number === SMOKE_CHECK_STEP);
+    HEADER_CURLS.forEach((curl) => expect(smokeCheck?.body).toContain(curl));
+    HEADER_ANSWERS.forEach((answer) => expect(smokeCheck?.body).toContain(answer));
   });
 
   test('the wrong session body is refused before siteverify, by a malformed verifier, and carries an unsolved token', () => {
@@ -250,6 +266,7 @@ describe('runbooks', () => {
   test('the junk link body is well formed but for its unsolved token, so only Turnstile refuses it', () => {
     const body = deployBody(JUNK_LINK_BODY);
     expect(body.link_challenge).toMatch(LINK_CHALLENGE_PATTERN);
+    expect(body.app_link_scheme).toBe('todz');
     expect(body.email).toMatch(/^[^@\s]+@example\.com$/);
     expect(body.turnstile_token).toMatch(TURNSTILE_TOKEN_PATTERN);
     expect(body.turnstile_token).not.toBe(TURNSTILE_DUMMY_TOKEN);

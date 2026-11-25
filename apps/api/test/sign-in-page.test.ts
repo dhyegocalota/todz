@@ -20,6 +20,8 @@ const OK_STATUS = 200;
 const NOT_FOUND_STATUS = 404;
 const UNAVAILABLE_STATUS = 503;
 const TOKEN = 'A'.repeat(43);
+const RELEASE_SCHEME = 'todz';
+const DEBUG_SCHEME = 'todz-dev';
 const TURNSTILE_TOKEN = 'solved.turnstile_token-1';
 const OTHER_TURNSTILE_TOKEN = 'solved.turnstile_token-2';
 const TOKEN_SHAPED_RUN_PATTERN = /[A-Za-z0-9_-]{43}/;
@@ -38,8 +40,8 @@ const EXPIRED_CALLBACK = 'expired-callback';
 const ERROR_CALLBACK = 'error-callback';
 const TIMEOUT_CALLBACK = 'timeout-callback';
 
-function appLink(turnstileToken: string): string {
-  return `todz://sign-in?token=${TOKEN}&turnstile=${turnstileToken}&origin=${encodeURIComponent(TEST_PAGE_ORIGIN)}`;
+function appLink({ turnstileToken, scheme = RELEASE_SCHEME }: { turnstileToken: string; scheme?: string }): string {
+  return `${scheme}://sign-in?token=${TOKEN}&turnstile=${turnstileToken}&origin=${encodeURIComponent(TEST_PAGE_ORIGIN)}`;
 }
 
 async function pageSource(path = PAGE_PATH): Promise<{ response: Response; html: string }> {
@@ -56,8 +58,8 @@ async function signInPageRun(hash: string): Promise<PageScriptRun> {
   return runPageScript({ script: await onlyScript(), hash, pathname: PAGE_PATH, probedNames: SCRIPT_BINDINGS });
 }
 
-async function checkingRun(): Promise<PageScriptRun> {
-  const run = await signInPageRun(`#token=${TOKEN}`);
+async function checkingRun(scheme = RELEASE_SCHEME): Promise<PageScriptRun> {
+  const run = await signInPageRun(`#token=${TOKEN}&app=${scheme}`);
   run.loadScripts();
   return run;
 }
@@ -151,7 +153,7 @@ describe('the widget of the page', () => {
   });
 
   test('a valid link token loads the explicit Turnstile script once and renders nothing before it loads', async () => {
-    const { loadedScripts, renders } = await signInPageRun(`#token=${TOKEN}`);
+    const { loadedScripts, renders } = await signInPageRun(`#token=${TOKEN}&app=${RELEASE_SCHEME}`);
     expect(loadedScripts()).toEqual([EXPLICIT_TURNSTILE_SCRIPT]);
     expect(renders()).toEqual([]);
   });
@@ -188,7 +190,7 @@ describe('the script of the page', () => {
   test('a solved check shows the opening state, focuses the button and opens the app with both tokens and the page origin', async () => {
     const { steps, state, widgetCallback } = await checkingRun();
     widgetCallback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
-    expect(steps).toEqual([`replace ${PAGE_PATH}`, 'focus', `navigate ${appLink(TURNSTILE_TOKEN)}`]);
+    expect(steps).toEqual([`replace ${PAGE_PATH}`, 'focus', `navigate ${appLink({ turnstileToken: TURNSTILE_TOKEN })}`]);
     expect(state()).toBe(READY_STATE);
   });
 
@@ -199,11 +201,17 @@ describe('the script of the page', () => {
     expect(await onlyScript()).not.toContain(TEST_PAGE_ORIGIN);
   });
 
+  test.each([[RELEASE_SCHEME], [DEBUG_SCHEME]])('a solved check opens the app on the %s scheme the link carried', async (scheme) => {
+    const { steps, widgetCallback } = await checkingRun(scheme);
+    widgetCallback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
+    expect(steps.at(-1)).toBe(`navigate ${appLink({ turnstileToken: TURNSTILE_TOKEN, scheme })}`);
+  });
+
   test('the button opens the app again with the same tokens', async () => {
     const { steps, widgetCallback, pressButton } = await checkingRun();
     widgetCallback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
     pressButton();
-    expect(steps.slice(-1)).toEqual([`navigate ${appLink(TURNSTILE_TOKEN)}`]);
+    expect(steps.slice(-1)).toEqual([`navigate ${appLink({ turnstileToken: TURNSTILE_TOKEN })}`]);
     expect(steps).toHaveLength(4);
   });
 
@@ -236,7 +244,7 @@ describe('the script of the page', () => {
     expect(state()).toBe(READY_STATE);
     expect(steps).toHaveLength(3);
     pressButton();
-    expect(steps.slice(-1)).toEqual([`navigate ${appLink(OTHER_TURNSTILE_TOKEN)}`]);
+    expect(steps.slice(-1)).toEqual([`navigate ${appLink({ turnstileToken: OTHER_TURNSTILE_TOKEN })}`]);
   });
 
   test.each([[ERROR_CALLBACK], [TIMEOUT_CALLBACK]])('the widget %s shows the failed state', async (name) => {
@@ -247,6 +255,13 @@ describe('the script of the page', () => {
 
   test.each([
     [''],
+    [`#token=${TOKEN}`],
+    [`#token=${TOKEN}&app=`],
+    [`#token=${TOKEN}&app=https`],
+    [`#token=${TOKEN}&app=javascript`],
+    [`#token=${TOKEN}&app=TODZ`],
+    [`#token=${TOKEN}&app=todz-dev-x`],
+    [`#app=${RELEASE_SCHEME}`],
     ['#'],
     ['#token='],
     [`#token=${'A'.repeat(42)}`],

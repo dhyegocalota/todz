@@ -13,6 +13,11 @@ const TURNSTILE_SOLVE = `const solve = () => document.querySelectorAll('.cf-turn
   if (typeof solved === 'function') solved(token.value);
 });`;
 
+const TURNSTILE_ERROR = `const fail = () => document.querySelectorAll('.cf-turnstile').forEach((widget) => {
+  const failed = window[widget.dataset.errorCallback];
+  if (typeof failed === 'function') failed();
+});`;
+
 export const TURNSTILE_STUB = `{
 ${TURNSTILE_SOLVE}
 solve();
@@ -21,4 +26,9 @@ solve();
 export const SLOW_TURNSTILE_STUB = `{
 ${TURNSTILE_SOLVE}
 setTimeout(solve, ${SLOW_TOKEN_DELAY_MS});
+}`;
+
+export const ERRORING_TURNSTILE_STUB = `{
+${TURNSTILE_ERROR}
+setTimeout(fail, ${SLOW_TOKEN_DELAY_MS});
 }`;

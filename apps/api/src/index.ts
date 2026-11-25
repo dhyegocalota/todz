@@ -5,6 +5,7 @@ import { HttpStatus } from './http-status';
 import { serveMcp } from './mcp-endpoint';
 import { serveOwner } from './owner-endpoint';
 import { noRouteResponse } from './owner-errors';
+import { withSecurityHeaders } from './security-headers';
 import { SIGN_IN_CHALLENGE_PAGE_PATH, serveSignInChallengePage } from './sign-in-challenge-page';
 import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
 import { serveSite } from './site/site-endpoint';
@@ -49,12 +50,16 @@ const HANDLER_OF_HOST_KIND: Record<HostKind, HostHandler> = {
   [HostKind.WwwRedirect]: redirectToSite,
 };
 
+async function serveHost({ request, env, executionContext }: HostContext): Promise<Response> {
+  if (new URL(request.url).pathname === HEALTH_PATH) return serveHealth({ request, env });
+  const hostKind = hostKindOf({ request, env });
+  if (hostKind === null) return noRouteResponse();
+  return HANDLER_OF_HOST_KIND[hostKind]({ request, env, executionContext });
+}
+
 export default {
   async fetch(request, env, executionContext): Promise<Response> {
-    if (new URL(request.url).pathname === HEALTH_PATH) return serveHealth({ request, env });
-    const hostKind = hostKindOf({ request, env });
-    if (hostKind === null) return noRouteResponse();
-    return HANDLER_OF_HOST_KIND[hostKind]({ request, env, executionContext });
+    return withSecurityHeaders(await serveHost({ request, env, executionContext }));
   },
   async scheduled(controller, env): Promise<void> {
     await runScheduled({ controller, env });
