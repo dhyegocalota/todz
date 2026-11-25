@@ -6,6 +6,7 @@ import TodzKit
 @MainActor @Observable final class MenuBarPanel {
     @ObservationIgnored weak var window: NSWindow?
     @ObservationIgnored private var applicationBeforeEngaging: NSRunningApplication?
+    @ObservationIgnored var onShown: (() -> Void)?
 
     // NB ADR 0031: a close from code clicks the status item's own button so the next click reopens.
     func close() {
