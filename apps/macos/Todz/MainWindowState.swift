@@ -3,6 +3,7 @@ import SwiftUI
 import TodzKit
 
 private let completionLinger: Duration = .seconds(1)
+private let tomorrowOffset = 1
 
 @MainActor @Observable final class MainWindowState {
     var isInspectorPresented = true
@@ -44,9 +45,32 @@ private let completionLinger: Duration = .seconds(1)
     }
 
     func toggleDone(task key: TaskKey, item: SidebarItem, model: AppModel) {
-        lingerTimers[key]?.cancel()
-        lingers = toggledLingers(task: key, item: item, model: model)
+        linger(task: key, with: toggledLingers(task: key, item: item, model: model))
         Task { await model.toggleDone(task: key) }
+    }
+
+    func closeDay(task key: TaskKey, outcome: LingerOutcome, model: AppModel) {
+        switch outcome {
+        case .done: toggleDone(task: key, item: .today, model: model)
+        case .dueTomorrow: moveToTomorrow(task: key, model: model)
+        case .noDueDate: clearDueDate(task: key, model: model)
+        }
+    }
+
+    private func moveToTomorrow(task key: TaskKey, model: AppModel) {
+        linger(task: key, with: startedLingers(.dueTomorrow, task: key, model: model))
+        let tomorrow = model.today.adding(days: tomorrowOffset)
+        Task { await model.updateDueDate(task: key, dueDate: tomorrow) }
+    }
+
+    private func clearDueDate(task key: TaskKey, model: AppModel) {
+        linger(task: key, with: startedLingers(.noDueDate, task: key, model: model))
+        Task { await model.updateDueDate(task: key, dueDate: nil) }
+    }
+
+    private func linger(task key: TaskKey, with started: CompletionLingers) {
+        lingerTimers[key]?.cancel()
+        lingers = started
         guard lingers.contains(task: key) else { return }
         lingerTimers[key] = Task { await endLinger(task: key) }
     }
@@ -54,6 +78,11 @@ private let completionLinger: Duration = .seconds(1)
     private func toggledLingers(task key: TaskKey, item: SidebarItem, model: AppModel) -> CompletionLingers {
         guard let taskViews = model.taskViews else { return lingers.ending(task: key) }
         return lingers.toggling(task: key, in: item, views: taskViews)
+    }
+
+    private func startedLingers(_ outcome: LingerOutcome, task key: TaskKey, model: AppModel) -> CompletionLingers {
+        guard let taskViews = model.taskViews else { return lingers.ending(task: key) }
+        return lingers.starting(outcome, task: key, in: .today, views: taskViews)
     }
 
     private func endLinger(task key: TaskKey) async {

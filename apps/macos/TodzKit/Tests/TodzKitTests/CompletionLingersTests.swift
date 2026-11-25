@@ -11,8 +11,14 @@ private func key(_ number: Int) -> TaskKey {
     TaskKey(projectIdentifier: inbox.identifier, number: number)
 }
 
-private func views(done doneNumbers: Set<Int>, dueDate: CalendarDate? = nil) throws -> TaskViews {
+private func views(of tasks: [TaskRecord]) throws -> TaskViews {
     let timeZone = try #require(TimeZone(identifier: "America/Sao_Paulo"))
+    var board = TaskBoard()
+    board.merge(projectIdentifier: inbox.identifier, tasks: tasks)
+    return TaskViews(projects: [inbox], board: board, day: today, timeZone: timeZone)
+}
+
+private func views(done doneNumbers: Set<Int>, dueDate: CalendarDate? = nil) throws -> TaskViews {
     let tasks = titles.indices.map { index in
         let number = index + 1
         let isDone = doneNumbers.contains(number)
@@ -25,9 +31,15 @@ private func views(done doneNumbers: Set<Int>, dueDate: CalendarDate? = nil) thr
             completedAt: isDone ? fixedInstant : nil
         ).record
     }
-    var board = TaskBoard()
-    board.merge(projectIdentifier: inbox.identifier, tasks: tasks)
-    return TaskViews(projects: [inbox], board: board, day: today, timeZone: timeZone)
+    return try views(of: tasks)
+}
+
+private func views(moving movedNumber: Int, to dueDate: CalendarDate?) throws -> TaskViews {
+    let tasks = titles.indices.map { index in
+        let number = index + 1
+        return MutableTask(number: number, title: titles[index], dueDate: number == movedNumber ? dueDate : today, orderKey: orderKeys[index]).record
+    }
+    return try views(of: tasks)
 }
 
 private func shown(_ states: [(number: Int, state: TaskState)]) -> [BoardTask] {
@@ -90,6 +102,36 @@ private func labels(_ tasks: [BoardTask]) -> [String] {
         let checked = try views(done: [1], dueDate: today)
         #expect(labels(lingers.placed(into: checked.today.open, item: .today, views: checked)) == ["A done", "B", "C"])
         #expect(lingers.lingeringKeys(item: .today, views: checked) == [key(1)])
+    }
+
+    @Test func aCheckedTaskLingersAsDone() throws {
+        let lingers = CompletionLingers().toggling(task: key(1), in: .today, views: try views(done: [], dueDate: today))
+        #expect(lingers.outcome(of: key(1)) == .done)
+        #expect(lingers.outcome(of: key(2)) == nil)
+    }
+
+    @Test(arguments: [(LingerOutcome.dueTomorrow, today.adding(days: 1)), (LingerOutcome.noDueDate, nil)])
+    func aTaskMovedOutOfTodayStaysAtItsPlaceWithItsOutcome(outcome: LingerOutcome, dueDate: CalendarDate?) throws {
+        let lingers = CompletionLingers().starting(outcome, task: key(2), in: .today, views: try views(done: [], dueDate: today))
+        let moved = try views(moving: 2, to: dueDate)
+        #expect(lingers.outcome(of: key(2)) == outcome)
+        #expect(labels(lingers.placed(into: moved.today.open, item: .today, views: moved)) == ["A", "B", "C"])
+        #expect(lingers.lingeringKeys(item: .today, views: moved) == [key(2)])
+    }
+
+    @Test func anEndedMoveLetsTheTaskLeaveToday() throws {
+        let lingers = CompletionLingers().starting(.dueTomorrow, task: key(2), in: .today, views: try views(done: [], dueDate: today))
+        let moved = try views(moving: 2, to: today.adding(days: 1))
+        let ended = lingers.ending(task: key(2))
+        #expect(ended.outcome(of: key(2)) == nil)
+        #expect(labels(ended.placed(into: moved.today.open, item: .today, views: moved)) == ["A", "C"])
+    }
+
+    @Test func aMovedTaskCompletedElsewhereLeavesToday() throws {
+        let lingers = CompletionLingers().starting(.noDueDate, task: key(2), in: .today, views: try views(done: [], dueDate: today))
+        let completed = try views(done: [2], dueDate: today)
+        #expect(labels(lingers.placed(into: completed.today.open, item: .today, views: completed)) == ["A", "C"])
+        #expect(lingers.lingeringKeys(item: .today, views: completed) == [])
     }
 
     @Test(arguments: [SidebarItem.upcoming, .done])

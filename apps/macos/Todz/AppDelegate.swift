@@ -4,6 +4,15 @@ import TodzKit
 import WidgetKit
 
 private let cacheFolderName = "Cache"
+private let focusFilterReadTimeout: Duration = .seconds(3)
+
+private func isFocusFilterQuiet() async -> Bool {
+    do {
+        return try await TodzFocusFilter.current.isQuiet
+    } catch {
+        return false
+    }
+}
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel(
@@ -14,12 +23,23 @@ private let cacheFolderName = "Cache"
         widgetStore: AppConfiguration.widgetStore,
         reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
         signals: SocketChangeSignals(baseURL: AppConfiguration.baseURL),
-        timeZone: .current,
+        timeZone: .autoupdatingCurrent,
         pause: { try await Task.sleep(for: $0) }
     )
     let windowState = MainWindowState()
+    let panel = MenuBarPanel()
     let gate: ProactiveGate
     var dayChangeObservation: (any NSObjectProtocol)?
+    private(set) lazy var dayClose = DayCloseCoordinator(
+        gate: gate,
+        defaults: .standard,
+        timeZone: model.timeZone,
+        openCount: { [model] in model.todayHeadingCount },
+        isScreenLocked: { ScreenLock.isLocked },
+        isPopoverVisible: { [panel] in panel.isShown },
+        openPopover: { [panel] in await panel.open() }
+    )
+    private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
 
     override init() {
         let gate = ProactiveGate()
@@ -31,7 +51,10 @@ private let cacheFolderName = "Cache"
     func applicationDidFinishLaunching(_ notification: Notification) {
         observeWidgetRequests()
         observeDayChanges()
-        Task { await readFocusFilter() }
+        Task {
+            await readFocusFilter()
+            dayCloseScheduler.start()
+        }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -52,12 +75,19 @@ private let cacheFolderName = "Cache"
     }
 
     private func readFocusFilter() async {
-        let filter: TodzFocusFilter
-        do {
-            filter = try await TodzFocusFilter.current
-        } catch {
-            return
+        let (settlements, settle) = AsyncStream.makeStream(of: Void.self)
+        let timeout = Task { [gate] in
+            try? await Task.sleep(for: focusFilterReadTimeout)
+            guard !Task.isCancelled else { return }
+            gate.applyLaunchRead(isQuiet: true)
+            settle.yield()
         }
-        gate.applyLaunchRead(isQuiet: filter.isQuiet)
+        Task { [gate] in
+            let isQuiet = await isFocusFilterQuiet()
+            timeout.cancel()
+            gate.applyLaunchRead(isQuiet: isQuiet)
+            settle.yield()
+        }
+        for await _ in settlements { return }
     }
 }
