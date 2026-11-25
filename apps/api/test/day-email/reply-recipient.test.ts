@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { replySecretOf } from '../../src/day-email/reply-recipient';
+import { replyAddressOf, replySecretOf } from '../../src/day-email/reply-recipient';
 
 const SECRET = 'ab'.repeat(16);
 
@@ -26,5 +26,12 @@ describe('replySecretOf', () => {
     [''],
   ])('%j gives none', (recipient) => {
     expect(replySecretOf(recipient)).toBeNull();
+  });
+});
+
+describe('replyAddressOf', () => {
+  test('the address issued for a secret is the recipient that gives the secret back', () => {
+    expect(replyAddressOf(SECRET)).toBe(`reply+${SECRET}@todz.app`);
+    expect(replySecretOf(replyAddressOf(SECRET))).toBe(SECRET);
   });
 });

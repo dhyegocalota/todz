@@ -7,7 +7,7 @@ import {
   findSessionOwner,
   findSessionProject,
 } from './directory';
-import { findCandidateRows } from './day-email/day-email-store';
+import { findCandidateRows, findFirstInboxId } from './day-email/day-email-store';
 import { findOwnedWorkspace, listOwnerWorkspaces } from './directory-workspaces';
 import type { Env } from './env';
 import type { ProjectRecord, WorkspaceRecord } from './owner-records';
@@ -206,4 +206,22 @@ export async function listScheduledWorkspaces({ env, owner }: { env: Env; owner:
     workspace,
     projects: projects.map((record) => ({ record, project: openProject({ env, projectId: record.id }) })),
   }));
+}
+
+export type ReplyOwner = { readonly ownerId: string } & { readonly replyOwner: unique symbol };
+
+const replyOwners = new WeakSet<ReplyOwner>();
+
+// NB ADR 0064: only the reply module makes a reply owner, after the recipient, authentication, sender and addressing checks, and only that owner's first Inbox is opened.
+export function replyOwnerOf(ownerId: string): ReplyOwner {
+  const owner = Object.freeze({ ownerId }) as ReplyOwner;
+  replyOwners.add(owner);
+  return owner;
+}
+
+export async function openReplyInbox({ env, owner }: { env: Env; owner: ReplyOwner }): Promise<DurableObjectStub<ProjectStore> | null> {
+  if (!replyOwners.has(owner)) return null;
+  const inboxId = await findFirstInboxId({ directory: env.DIRECTORY, ownerId: owner.ownerId });
+  if (inboxId === null) return null;
+  return openProject({ env, projectId: inboxId });
 }

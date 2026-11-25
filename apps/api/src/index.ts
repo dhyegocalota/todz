@@ -1,3 +1,4 @@
+import { handleReply } from './day-email/day-email-reply';
 import type { Env } from './env';
 import { HEALTH_PATH, serveHealth } from './health';
 import { HostKind, WWW_PREFIX, hostKindOf } from './host-kind';
@@ -71,5 +72,8 @@ export default {
   },
   async scheduled(controller, env): Promise<void> {
     await runScheduled({ controller, env });
+  },
+  async email(message, env): Promise<void> {
+    await handleReply({ message, env, now: Date.now() });
   },
 } satisfies ExportedHandler<Env>;
