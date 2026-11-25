@@ -2,7 +2,7 @@
 title: Self-host todz
 ---
 
-Run your own todz server on Cloudflare and point the macOS app and your agents at it. The server is one Worker with a D1 database and one Durable Object per project (ADR 0044).
+Run your own todz server on Cloudflare and point the macOS app and your agents at it. The server is one Worker with a D1 database and one Durable Object per project.
 
 ## What you need
 
@@ -19,7 +19,7 @@ pnpm install
 pnpm verify all
 ```
 
-The gate also needs gitleaks; its doctor names anything missing. Run it now, because some tests pin todz's own production names, for example `tools/repository-shape/src/api-source.test.ts` and `apps/api/test/email-sender.test.ts`. After step 2 those pins fail until you update them to your names.
+The gate also needs gitleaks; its doctor names anything missing. Run it now, because some tests pin todz's own production names, for example the checks of the API source and of the email sender. After step 2 those pins fail until you update them to your names.
 
 ## 2. Rename
 
@@ -71,7 +71,7 @@ pnpm --filter @todz/api exec wrangler email sending dns get example.com --zone-i
 
 ## 6. Turnstile
 
-Sign-in, the waitlist and the admin stay closed (`sign_in_unavailable`, "The waitlist opens soon." and "The admin is closed right now.") until Turnstile is set up (ADR 0045). In the Cloudflare dashboard, create a Turnstile widget for `example.com` in Managed mode. Put its site key in `vars.TURNSTILE_SITE_KEY` in `apps/api/wrangler.jsonc`, deploy again with `pnpm --filter @todz/api server:deploy`, and store its secret:
+Sign-in, the waitlist and the admin stay closed (`sign_in_unavailable`, "The waitlist opens soon." and "The admin is closed right now.") until Turnstile is set up. In the Cloudflare dashboard, create a Turnstile widget for `example.com` in Managed mode. Put its site key in `vars.TURNSTILE_SITE_KEY` in `apps/api/wrangler.jsonc`, deploy again with `pnpm --filter @todz/api server:deploy`, and store its secret:
 
 ```bash
 pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
@@ -110,7 +110,7 @@ Then open todz › Settings › Server and paste the URL the deploy printed. The
 claude mcp add --transport http todz 'https://api.example.com/mcp' --header 'Authorization: Bearer <key>'
 ```
 
-A key belongs to one project, and the server reads the project from it (`docs/product`). The command puts the key in your shell history. Run it with a leading space if your shell skips those, or use the Cursor form, which keeps the key in its JSON configuration.
+A key belongs to one project, and the server reads the project from it, so the agent never names a project. The command puts the key in your shell history. Run it with a leading space if your shell skips those, or use the Cursor form, which keeps the key in its JSON configuration.
 
 ## Updating
 
@@ -123,7 +123,7 @@ pnpm --filter @todz/api server:deploy
 
 Then build the app again as in step 7; it keeps the server you pasted.
 
-Migrations only move forward. Never roll back to a version from before the sign-in guard, whether with `wrangler rollback` or the dashboard's Deployments page. To close sign-in, delete the secret (the runbook):
+Migrations only move forward. Never roll back to a version from before the sign-in guard, whether with `wrangler rollback` or the dashboard's Deployments page. To close sign-in, delete the secret:
 
 ```bash
 pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
