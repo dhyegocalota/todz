@@ -30,6 +30,8 @@ const HREF_PATTERN = /\shref="([^"]*)"/g;
 const SITE_HREF_PATTERN = /^(?:\/|#|https:\/\/)/;
 const IMPORT_PATTERN = /from '([^']+)'/g;
 const LOCAL_ORIGIN_MODULE = 'local-origin';
+const LOCAL_ORIGIN_IMPORT_PATTERN = /import ([^;]+?) from '[^']*local-origin'/g;
+const SITE_HOST_PREDICATE_IMPORT = '{ isLocalSiteHost }';
 const LANDING_ASSET_PREFIX = '/landing/';
 const SECTION_MARKERS = [
   '<section class="hero',
@@ -117,13 +119,15 @@ describe('the site pages', () => {
     expect(REMOTE_ASSET_PATTERNS.filter((pattern) => pattern.test(html))).toEqual([]);
   });
 
-  test('no file of the site imports the local-origin predicates', () => {
-    const sources = Object.entries(SITE_SOURCES);
-    const importers = sources.filter(([, source]) =>
-      captures({ html: source, pattern: IMPORT_PATTERN }).some((path) => path.endsWith(LOCAL_ORIGIN_MODULE)),
-    );
+  test('the site imports only the site host predicate from local-origin', () => {
+    const sources = Object.values(SITE_SOURCES);
+    const localOriginPaths = sources
+      .flatMap((source) => captures({ html: source, pattern: IMPORT_PATTERN }))
+      .filter((path) => path.endsWith(LOCAL_ORIGIN_MODULE));
+    const clauses = sources.flatMap((source) => captures({ html: source, pattern: LOCAL_ORIGIN_IMPORT_PATTERN }));
     expect(sources.length).toBeGreaterThan(0);
-    expect(importers.map(([path]) => path)).toEqual([]);
+    expect(clauses).toHaveLength(localOriginPaths.length);
+    expect(clauses.filter((clause) => clause !== SITE_HOST_PREDICATE_IMPORT)).toEqual([]);
   });
 });
 
