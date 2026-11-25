@@ -12,7 +12,7 @@ TodzKit (`TodzKit/Sources/TodzKit/`):
 - `AppVersion.swift`: the bundle's `CFBundleShortVersionString`; a bundle without it is a launch-time `preconditionFailure` naming the key (`AppConfiguration.appVersion`).
 - `OwnerRequest.transportRequest(baseURL:appVersion:)` sets `Todz-App-Version`; `OwnerAPI` and `SocketChangeSignals` take `appVersion` in their initialisers (the health probe, every owner call and the socket upgrade go through it).
 - `OwnerAPI.health()` decodes both versions into `ServerHealthAnswer.todz(origin:versions:)`; `OwnerService` gained `health()`.
-- `OwnerErrorCode.appTooOld`, `OwnerErrorBody.minimumAppVersion`, `OwnerAPIError.appTooOld(minimum:)`. A `426` without a todz body, or `app_too_old` without a minimum, stays `unexpected(status: 426)`.
+- `OwnerErrorCode.appTooOld`, `OwnerErrorBody.minimumAppVersion`, `OwnerAPIError.appTooOld(minimum: String?)`. Any `426`, with a todz body, no body or an undecodable one, is `appTooOld` (the minimum is nil when the body names none); the lead's later requirement, commits `ca17ac0` (red) and the green after it. The socket's refused upgrade maps `426` the same way.
 - `AppModel`: `compatibility` (starts as `serverUnknown`), `isUpdateNeeded`, `refreshCompatibility()` (a stored task, read at launch, after a server switch and whenever a `VersionLine` appears), `recordRefusal(of:)` (an owner call, a sign-in or a sign-in-link request answered `app_too_old` flips the state at once). A signed-in `updateNeeded` raises `AppBanner.updateNeeded`; leaving it dismisses that banner and resumes the outbox.
 - Outbox: `SendOutcome.updateNeeded` keeps the change and ends the flush; `startSending` does nothing while `isUpdateNeeded`; it never counts as a refusal and the server counts as having answered.
 - `SignInError.appTooOld`.
@@ -54,7 +54,9 @@ cd apps/macos && xcodegen && xcodebuild -project Todz.xcodeproj -scheme Todz -co
 
 Pins (green when they landed):
 
-- `OwnerAPITests/mapsEachRowOfTheErrorTable` rows `426` with an empty body and `426` with `{"error":"app_too_old"}` and no minimum (both `.unexpected(status: 426)`).
+- `AppModelTests/threeConsecutiveRefusalsKeepEveryQueuedChangeUncountedAndUnannounced` (three `426` answers leave the outbox value identical, so no attempt is counted, no refusal banner) and `afterTheAnswerIsNoLongerARefusalTheQueueFlushesInOrder` pin the pause-and-keep rule, which `0a420d31` already implemented; `aRefusalThatNamesNoMinimumNeedsAnUpdate` too.
+- Red in `ca17ac0`, run alone: `OwnerAPITests/mapsEachRowOfTheErrorTable` rows `426` with an empty body, with `{"error":"app_too_old"}` and with an html body: `expected error ".appTooOld(minimum: nil)" of type OwnerAPIError, but ".unexpected(status: 426)" of type OwnerAPIError was thrown instead`. The model-level undecodable-426 case is not tested: before the fix it would wait on a held pause forever.
+- The earlier spec line "a `426` with no todz body stays `unexpected`" is superseded by the lead's requirement; the spec still says it.
 - `AppModelTests/aServerThatDoesNotAnswerLeavesTheAppAlone` (`serverUnknown` is the starting state).
 - `AppVersionTests` and `ServerStampTests` landed with their code, not red-first.
 
