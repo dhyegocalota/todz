@@ -166,3 +166,23 @@ Gate on the last code commit (`aef88d4`): `swift test --package-path apps/macos/
 - `sharingType = .none`, `canHide = false`, the mouse-up gate and the 280 width are untested assumptions until the walk.
 - The argument domain cannot be tested without leaking into other suites (a volatile argument domain is process wide), so the red tests prove the searched-domain case (the global domain's path) only.
 - The trigger's notification mapping (S5, S7) has no unit seam.
+
+## Fix round 2
+
+The re-walk (`f4b546b`) found two defects. Neither could be reproduced: the app was not launched, so the causes below are read from the code and are hypotheses for the tester to break.
+
+### 1. The click opened the window with the add field focused
+
+Why round 1 did not hold: `OpeningFocus.list` was only ever turned into `focusRequest = .list` by `MainWindow`'s `.task`, which runs when the new window's content is created. At that instant the task list does not exist yet (it draws after the cache and the list state resolve), so `focus = .list` had no view to land on. AppKit's first-responder resolution for a window becoming key then took the first text field, the add field. The unit test proved the mapping from a link to a value, not that the list existed when the value was applied.
+
+Change: no path sets the add field for the glance any more. `MainWindow` uses `.defaultFocus($focus, MainWindowFocus(windowState.openingFocus))` in place of the `.task`, so the window's initial focus is the opening focus (add field for the widget, list for the glance). `TaskRows` has a `.task` that, when the opening focus is the list, sets `focus = .list` as soon as the list exists, so a list drawn late still takes the focus. The other paths were traced and are unchanged: `requestNewTask` (menu and shortcut only), `openInspectorTitle`, the add field's own `.focused` (no default), no `initialFirstResponder`. App target, walk only; no seam for a view's focus.
+
+Walk rows to re-check: click the glance with the main window closed and the cache holding open Today tasks; AX focused element is the task list, never "Add a task"; type `x`: the add field stays empty. Repeat with the window closed and Today still loading (list late). Open from a widget link: the add field is still focused.
+
+### 2. The fade was not seen
+
+What was wrong (hypothesis): the animation was `NSAnimationContext` over `animator().alphaValue` on a non-key, non-activating panel whose completion handler dismissed it. The window list showed alpha 1 and then the window gone in one 50 ms step, which fits the completion handler firing at once with no animation. The dwell was not cut short: the 4.98 s the sampler saw is the five-second dwell less the occlusion wait before the sampler began. `kCGWindowAlpha` is the window's alpha as the window server holds it; a directly set `alphaValue` is visible in it, an animator proxy that does not run is not.
+
+Change: the fade is now ten explicit `alphaValue` steps (1.0 down to 0.0 at 0.9 ... 0.1, 0) spaced evenly over 0.5 s, and one step to 0 with Reduce Motion, driven by the dwell task so a cancel stops it. The schedule is `MorningGlanceDwell.fadeAlphas(reducesMotion:)`, pure and tested. Red `cdf75df`: `Expectation failed: alphas.count == 10`, `alphas.first == 0.9`, `alphas.last == 0`, and `fadeAlphas(reducesMotion: true) == [0]`. Green: the commit after it.
+
+Walk rows to re-check: sample `kCGWindowAlpha` every 50 ms from the first sighting: ten distinct values 0.9 ... 0 over about 0.5 s after about 5 s, then the window gone; no alpha above 0.9 after the fade starts. If `sharingType = .none` hides the alpha from the list, the tester says so and reads the fade from screenshots at 100 ms spacing instead.
