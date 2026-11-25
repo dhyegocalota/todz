@@ -15,6 +15,6 @@ public struct RespectFocusPreference {
     }
 
     public var isOn: Bool {
-        fatalError("RespectFocusPreference.isOn is not implemented")
+        domain.value(forKey: Self.isOnStorageKey) as? Bool == true
     }
 }
