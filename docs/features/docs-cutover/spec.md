@@ -1,6 +1,6 @@
 # Docs cutover
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🟡 (a public route changes from a page to a redirect to an outside host, and the landing's generated guide and its generator go)
 **Owner approval:** approved 2026-11-25 by the owner's request to the loop, PROMPT.md "Self-host, docs and credits" item 2 ("Afterwards it redirects (301) to the docs, and the landing, README and app link the docs"), taken as [ADR 0059](../../adr/0059-the-docs-are-a-mintlify-site-on-docs-todz-app-built-from-apps-docs-and-the-self-host-guide-moves-into-it.md) § 8 foresaw: once `https://docs.todz.app/self-host` answers 200 with the guide. It did on 2026-11-25: Mintlify's deploy of 87e643f went live at 12:44 UTC, and the five pages answer 200 with todz's titles (`Introduction - todz`, `Self-host todz - todz`), no starter kit left (relayed by todz-6f, re-asked by the loop at 12:47 UTC).
 **ADRs:** [0059](../../adr/0059-the-docs-are-a-mintlify-site-on-docs-todz-app-built-from-apps-docs-and-the-self-host-guide-moves-into-it.md) § 8, [0048](../../adr/0048-the-self-host-guide-is-one-markdown-file-that-the-landing-serves.md) § 3, [0049](../../adr/0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md)
