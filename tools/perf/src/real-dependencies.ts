@@ -19,6 +19,11 @@ export function realDependencies(): CliDependencies {
     execFile: realExecFile,
     readFile: (path) => readFile(path, TEXT_ENCODING),
     openSignals: openSocketSignals,
+    onInterrupt: (handler) => {
+      process.once('SIGINT', () => {
+        void handler().then((exitCode) => process.exit(exitCode));
+      });
+    },
     randomIdentifier: () => randomUUID().slice(0, IDENTIFIER_LENGTH),
     out: (text) => process.stdout.write(text),
     err: (text) => process.stderr.write(text),

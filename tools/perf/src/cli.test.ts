@@ -1,27 +1,57 @@
 import { describe, expect, test } from 'vitest';
 import { type CliDependencies, runCli } from './cli';
-import { fakeMcpServer } from './fake-mcp-server';
+import { type FakeMcpServer, fakeMcpServer } from './fake-mcp-server';
 import { fakeOwnerServer } from './fake-owner-server';
+import { fakeTaskServer } from './fake-task-server';
 import type { ExecFile } from './exec-file';
 import type { LoopClock } from './open-loop';
 import { routedFetch } from './routed-fetch';
 
 const yieldingClock: LoopClock = { now: () => 0, waitUntil: () => new Promise((resolve) => setImmediate(resolve)) };
+const INTERRUPT_AT_REQUEST = 40;
 const PREFIX = '2026-11-25 10:00:00.123 Df Todz[1234:abcd] [dev.todz.Todz.debug:perf]';
 
-type Harness = { dependencies: CliDependencies; out: string[]; err: string[]; requests: () => number; urls: () => string[] };
+type Logs = { out: string[]; err: string[] };
+
+type Harness = {
+  dependencies: CliDependencies;
+  out: string[];
+  err: string[];
+  requests: () => number;
+  urls: () => string[];
+  interrupt: () => Promise<number>;
+};
 
 function harness({
   now = () => 0,
   execFile = async () => ({ stdout: 'todz_perf_secret\n' }),
   files = {},
-}: { now?: () => number; execFile?: ExecFile; files?: Record<string, string> } = {}): Harness {
-  const mcp = fakeMcpServer();
+  mcp = fakeMcpServer(),
+  onRequest = () => undefined,
+}: {
+  now?: () => number;
+  execFile?: ExecFile;
+  files?: Record<string, string>;
+  mcp?: FakeMcpServer;
+  onRequest?: (context: { logs: Logs; interrupt: () => Promise<number>; input: Parameters<typeof fetch>[0] }) => void;
+} = {}): Harness {
   const owner = fakeOwnerServer();
   const out: string[] = [];
   const err: string[] = [];
+  const interruption: { handler: (() => Promise<number>) | null } = { handler: null };
+  const interrupt = () => {
+    if (interruption.handler === null) throw new Error('no interrupt handler was registered');
+    return interruption.handler();
+  };
+  const routed = routedFetch({ mcp: mcp.fetch, owner: owner.fetch });
   const dependencies: CliDependencies = {
-    fetch: routedFetch({ mcp: mcp.fetch, owner: owner.fetch }),
+    fetch: (input, init) => {
+      onRequest({ logs: { out, err }, interrupt, input });
+      return routed(input, init);
+    },
+    onInterrupt: (handler) => {
+      interruption.handler = handler;
+    },
     now,
     epochNow: () => 1_700_000_000_000,
     clock: yieldingClock,
@@ -43,6 +73,7 @@ function harness({
     err,
     requests: () => mcp.requests.length + owner.requests.length,
     urls: () => [...mcp.requests, ...owner.requests].map((request) => request.url),
+    interrupt,
   };
 }
 
@@ -116,6 +147,20 @@ describe('runCli load', () => {
   });
 });
 
+describe('runCli load seed line', () => {
+  test('the seed counts are printed before the first timed request', async () => {
+    const state = { outBeforeFirstMcpRequest: null as string | null };
+    const { dependencies } = harness({
+      onRequest: ({ logs, input }) => {
+        const isMcpRequest = new Request(input).url.endsWith('/mcp');
+        if (isMcpRequest && state.outBeforeFirstMcpRequest === null) state.outBeforeFirstMcpRequest = logs.out.join('');
+      },
+    });
+    await runCli({ argv: ['load'], dependencies });
+    expect(state.outBeforeFirstMcpRequest).toContain('seeded: 5000 tasks in the hot project (4900 done)');
+  });
+});
+
 describe('runCli seed', () => {
   test('it prints the identity to sign the app in with and the hot project', async () => {
     const { dependencies, out } = harness();
@@ -146,6 +191,52 @@ describe('runCli production', () => {
     const { dependencies, requests } = harness();
     expect(await runCli({ argv: ['production', '--cleanup'], dependencies })).toBe(2);
     expect(requests()).toBe(0);
+  });
+
+  test('the run identifier reaches the error output before the first request', async () => {
+    const state = { errBeforeFirstRequest: null as string | null };
+    const { dependencies } = harness({
+      onRequest: ({ logs }) => {
+        if (state.errBeforeFirstRequest === null) state.errBeforeFirstRequest = logs.err.join('');
+      },
+    });
+    await runCli({ argv: ['production'], dependencies });
+    expect(state.errBeforeFirstRequest).toBe('run: abcd1234\n');
+  });
+
+  test('an interrupt stops the traffic, completes the run own tasks, prints the open count and exits 1', async () => {
+    const mcp = fakeTaskServer();
+    const addsMade = () => mcp.toolCalls().filter((call) => call.name === 'add').length;
+    const state = { requests: 0, addsAtInterrupt: 0, exit: null as Promise<number> | null };
+    const { dependencies, err } = harness({
+      mcp,
+      onRequest: ({ interrupt }) => {
+        state.requests += 1;
+        if (state.requests !== INTERRUPT_AT_REQUEST) return;
+        state.addsAtInterrupt = addsMade();
+        state.exit = interrupt();
+      },
+    });
+    await runCli({ argv: ['production'], dependencies });
+    expect(await state.exit).toBe(1);
+    expect(state.addsAtInterrupt).toBeGreaterThan(0);
+    expect(addsMade()).toBeLessThanOrEqual(state.addsAtInterrupt + 1);
+    expect(err.join('')).toContain('open tasks left: 0');
+    expect(mcp.openTasks()).toEqual([]);
+  });
+
+  test('pin: a cleanup that leaves three open tasks of the prefix prints the count and exits 1', async () => {
+    const mcp = fakeTaskServer({ openTitles: ['a todz-perf r1 # b', 'c todz-perf r1 # d', 'e todz-perf r1 # f'] });
+    const { dependencies, err } = harness({ mcp });
+    expect(await runCli({ argv: ['production', '--cleanup', 'r1'], dependencies })).toBe(1);
+    expect(err.join('')).toContain('open tasks left: 3');
+  });
+
+  test('pin: a cleanup that completes everything prints zero and exits 0', async () => {
+    const mcp = fakeTaskServer({ openTitles: ['todz-perf r1 #1', 'todz-perf r1 #2'] });
+    const { dependencies, err } = harness({ mcp });
+    expect(await runCli({ argv: ['production', '--cleanup', 'r1'], dependencies })).toBe(0);
+    expect(err.join('')).toContain('open tasks left: 0');
   });
 });
 

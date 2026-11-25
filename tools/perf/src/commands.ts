@@ -176,6 +176,7 @@ function productionHandler(dependencies: CliDependencies): Handler {
       epochNow: dependencies.epochNow,
       clock: dependencies.clock,
       schedule: dependencies.schedule,
+      interruption: new AbortController().signal,
       writeSend: (line: string) => dependencies.out(`${line}\n`),
     };
     if (cleanupRun !== null) {

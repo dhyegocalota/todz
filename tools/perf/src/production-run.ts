@@ -3,11 +3,13 @@ import { LIST_LIMIT_MAX, MILLISECONDS_PER_SECOND, TASK_BATCH_MAX_SIZE } from '@t
 import {
   CLEANUP_DURATION_MAX_MS,
   CLEANUP_RATE_MAX,
+  CLEANUP_REQUEST_MAX,
   PRODUCTION_ADD_CUTOFF_MS,
   PRODUCTION_DURATION_MAX_MS,
   PRODUCTION_FINAL_LIST_RESERVE_MS,
   PRODUCTION_IN_FLIGHT_MAX,
   PRODUCTION_RATE_MAX,
+  PRODUCTION_REQUEST_MAX,
 } from './budgets';
 import { type ExecFile, readKeychainKey } from './keychain-key';
 import { McpEra, addTask, completeTasks, connectMeasuredMcp, listTasks } from './mcp-scenario';
@@ -26,6 +28,7 @@ export type ProductionDependencies = {
   epochNow: () => number;
   clock: LoopClock;
   schedule: Scheduler;
+  interruption: AbortSignal;
   runIdentifier: string;
   writeSend: (line: string) => void;
 };
@@ -71,14 +74,22 @@ async function connectedClients({
   dependencies,
   key,
   deadlineMs,
+  requestMax,
   record,
 }: {
   dependencies: Omit<ProductionDependencies, 'writeSend'>;
   key: string;
   deadlineMs: number;
+  requestMax: number;
   record: (sample: Sample) => void;
 }): Promise<Clients> {
-  const fetch = guardedFetch({ fetch: dependencies.fetch, deadlineMs, schedule: dependencies.schedule });
+  const fetch = guardedFetch({
+    fetch: dependencies.fetch,
+    deadlineMs,
+    schedule: dependencies.schedule,
+    requestMax,
+    interruption: dependencies.interruption,
+  });
   const connect = (scenario: ScenarioKind) =>
     connectMeasuredMcp({
       origin: ORIGIN_OF_TARGET[PerfTarget.Production],
@@ -167,6 +178,7 @@ export async function runProduction(dependencies: ProductionDependencies): Promi
     dependencies,
     key,
     deadlineMs: PRODUCTION_DURATION_MAX_MS,
+    requestMax: PRODUCTION_REQUEST_MAX,
     record: (sample) => samples.push(sample),
   });
   const session = {
@@ -200,6 +212,7 @@ export async function cleanupProduction(dependencies: Omit<ProductionDependencie
     dependencies,
     key,
     deadlineMs: CLEANUP_DURATION_MAX_MS,
+    requestMax: CLEANUP_REQUEST_MAX,
     record: (sample) => samples.push(sample),
   });
   const prefix = prefixOf(dependencies.runIdentifier);

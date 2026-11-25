@@ -18,6 +18,8 @@ export function guardedFetch({
   fetch: typeof fetch;
   deadlineMs: number;
   schedule: Scheduler;
+  requestMax: number;
+  interruption: AbortSignal;
 }): typeof fetch {
   const deadline = new AbortController();
   const deadlineMessage = `the ${deadlineMs / MILLISECONDS_PER_SECOND} seconds of the run are over`;

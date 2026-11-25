@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { PRODUCTION_REQUEST_MAX } from './budgets';
 import { fakeMcpServer } from './fake-mcp-server';
 import { McpEra, completeTasks, connectMeasuredMcp, listTasks } from './mcp-scenario';
 import { ScenarioKind } from './scenario-kind';
@@ -12,8 +13,18 @@ function neverFiring(): Scheduler {
   return () => undefined;
 }
 
-function guardOver({ fetch, schedule = neverFiring() }: { fetch: typeof globalThis.fetch; schedule?: Scheduler }) {
-  return guardedFetch({ fetch, deadlineMs: DEADLINE_MS, schedule });
+function guardOver({
+  fetch,
+  schedule = neverFiring(),
+  requestMax = PRODUCTION_REQUEST_MAX,
+  interruption = new AbortController().signal,
+}: {
+  fetch: typeof globalThis.fetch;
+  schedule?: Scheduler;
+  requestMax?: number;
+  interruption?: AbortSignal;
+}) {
+  return guardedFetch({ fetch, deadlineMs: DEADLINE_MS, schedule, requestMax, interruption });
 }
 
 function countingFetch(): { fetch: typeof globalThis.fetch; received: Request[] } {
@@ -118,5 +129,60 @@ describe('the MCP client behind the guard', () => {
     const client = await clientOver(server);
     await expect(completeTasks({ client, numbers: [1] })).rejects.toThrow();
     expect(server.rpcMethods()).toEqual(['server/discover', 'tools/call']);
+  });
+});
+
+describe('guardedFetch and the request ceiling', () => {
+  const CEILING = 3;
+  const POST_INIT = { method: 'POST', body: '{}' };
+
+  test('the request after the ceiling is refused before it leaves', async () => {
+    const { fetch, received } = countingFetch();
+    const guarded = guardOver({ fetch, requestMax: CEILING });
+    await Promise.all(Array.from({ length: CEILING }, () => guarded(PRODUCTION_MCP_URL, POST_INIT)));
+    await expect(guarded(PRODUCTION_MCP_URL, POST_INIT)).rejects.toThrow(`production sends at most ${CEILING} requests`);
+    expect(received).toHaveLength(CEILING);
+  });
+
+  test('a request the guard refuses for its method does not use the ceiling', async () => {
+    const { fetch, received } = countingFetch();
+    const guarded = guardOver({ fetch, requestMax: CEILING });
+    await expect(guarded(PRODUCTION_MCP_URL, { method: 'GET' })).rejects.toThrow(REFUSAL);
+    await Promise.all(Array.from({ length: CEILING }, () => guarded(PRODUCTION_MCP_URL, POST_INIT)));
+    expect(received).toHaveLength(CEILING);
+  });
+
+  test('the handshake requests a 2025-era client sends count, so a client that talks more than planned is stopped', async () => {
+    const server = fakeMcpServer();
+    const handshakeRequests = 2;
+    const client = await connectMeasuredMcp({
+      origin: 'https://api.todz.app',
+      key: 'todz_test',
+      era: McpEra.Legacy,
+      fetch: guardOver({ fetch: server.fetch, requestMax: handshakeRequests }),
+      now: () => 0,
+      scenario: ScenarioKind.List,
+      record: () => undefined,
+    });
+    await expect(listTasks({ client })).rejects.toThrow(`production sends at most ${handshakeRequests} requests`);
+    expect(server.rpcMethods()).toEqual(['initialize', 'notifications/initialized']);
+  });
+});
+
+describe('guardedFetch and an interruption', () => {
+  test('what is in flight is aborted and nothing leaves afterwards', async () => {
+    const received: Request[] = [];
+    const stalled: typeof globalThis.fetch = (input, init) => {
+      received.push(new Request(input, init));
+      return new Promise<Response>(() => undefined);
+    };
+    const interruption = new AbortController();
+    const guarded = guardOver({ fetch: stalled, interruption: interruption.signal });
+    const inFlight = guarded(PRODUCTION_MCP_URL, { method: 'POST', body: '{}' });
+    const settled = expect(inFlight).rejects.toThrow('the run was interrupted');
+    interruption.abort();
+    await settled;
+    await expect(guarded(PRODUCTION_MCP_URL, { method: 'POST', body: '{}' })).rejects.toThrow('the run was interrupted');
+    expect(received).toHaveLength(1);
   });
 });

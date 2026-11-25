@@ -17,6 +17,7 @@ export type CliDependencies = {
   execFile: ExecFile;
   readFile: (path: string) => Promise<string>;
   openSignals: (access: { origin: string; token: string; projectId: string }) => Promise<ChangeSignals>;
+  onInterrupt: (handler: () => Promise<number>) => void;
   randomIdentifier: () => string;
   out: (text: string) => void;
   err: (text: string) => void;
