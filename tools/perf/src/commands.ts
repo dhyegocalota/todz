@@ -76,14 +76,18 @@ function localPlan({ ratePerSecond, durationMs, kind }: { ratePerSecond: number;
   return { target: PerfTarget.Local, kind, ratePerSecond, durationMs, scenarios: Object.values(ScenarioKind) };
 }
 
-function seeded({ dependencies, origin, identity }: { dependencies: CliDependencies; origin: string; identity: string }) {
-  return seedFixture({
+async function seeded({ dependencies, origin, identity }: { dependencies: CliDependencies; origin: string; identity: string }) {
+  const fixture = await seedFixture({
     origin,
     fetch: dependencies.fetch,
     identity,
     taskCount: HOT_PROJECT_TASK_COUNT,
     projectCount: OWNER_PROJECT_COUNT,
   });
+  dependencies.out(
+    `seeded: ${HOT_PROJECT_TASK_COUNT} tasks in the hot project (${fixture.doneTasks} done), ${fixture.projectIds.length} projects\n`,
+  );
+  return fixture;
 }
 
 function loadHandler(dependencies: CliDependencies): Handler {
@@ -176,19 +180,30 @@ function productionHandler(dependencies: CliDependencies): Handler {
       epochNow: dependencies.epochNow,
       clock: dependencies.clock,
       schedule: dependencies.schedule,
-      interruption: new AbortController().signal,
       writeSend: (line: string) => dependencies.out(`${line}\n`),
     };
-    if (cleanupRun !== null) {
-      const { openTasksLeft } = await cleanupProduction({ ...productionDependencies, runIdentifier: cleanupRun });
+    async function cleanedUp(runIdentifier: string): Promise<number | null> {
+      const { openTasksLeft } = await cleanupProduction({
+        ...productionDependencies,
+        interruption: new AbortController().signal,
+        runIdentifier,
+      });
       dependencies.err(`open tasks left: ${openTasksLeft}\n`);
-      return exitCodeOf(openTasksLeft === 0);
+      return openTasksLeft;
     }
-    const result = await runProduction({ ...productionDependencies, runIdentifier: dependencies.randomIdentifier() });
+    if (cleanupRun !== null) return exitCodeOf((await cleanedUp(cleanupRun)) === 0);
+    const runIdentifier = dependencies.randomIdentifier();
+    const interruption = new AbortController();
+    dependencies.onInterrupt(async () => {
+      interruption.abort();
+      await cleanedUp(runIdentifier);
+      return ExitCode.Failed;
+    });
+    dependencies.err(`run: ${runIdentifier}\n`);
+    const result = await runProduction({ ...productionDependencies, interruption: interruption.signal, runIdentifier });
     const rows = reportRows({ samples: result.samples, durationMs: result.durationMs });
     dependencies.err(
       [
-        `run: ${result.runIdentifier}`,
         REPORT_HEADER,
         ...rows.map(rowText),
         `dropped: ${result.dropped}`,

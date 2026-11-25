@@ -6,7 +6,9 @@ import {
   CLEANUP_REQUEST_MAX,
   PRODUCTION_ADD_CUTOFF_MS,
   PRODUCTION_DURATION_MAX_MS,
+  PRODUCTION_FAILURES_CONSECUTIVE_MAX,
   PRODUCTION_FINAL_LIST_RESERVE_MS,
+  PRODUCTION_FOREIGN_OPEN_TASKS_MAX,
   PRODUCTION_IN_FLIGHT_MAX,
   PRODUCTION_RATE_MAX,
   PRODUCTION_REQUEST_MAX,
@@ -58,6 +60,7 @@ type Session = {
 type SlotContext = { session: Session; slot: LoopSlot; taskNumbers: number[] };
 
 const TITLE_PREFIX = 'todz-perf';
+const UNAUTHORIZED_STATUS = 401;
 const PRODUCTION_PLAN: RunPlan = validatedPlan({
   target: PerfTarget.Production,
   kind: RunKind.Load,
@@ -171,16 +174,31 @@ function openCountOf({ session }: { session: Session }): Promise<number | null> 
     .catch(() => null);
 }
 
+async function refuseForeignProject({ client }: { client: Client }): Promise<void> {
+  const everything = await listTasks({ client, limit: 1 });
+  const ours = await listTasks({ client, text: TITLE_PREFIX, limit: 1 });
+  const foreignCount = everything.totalMatched - ours.totalMatched;
+  if (foreignCount > PRODUCTION_FOREIGN_OPEN_TASKS_MAX) {
+    throw new Error(`the project holds ${foreignCount} open tasks that are not ${TITLE_PREFIX} tasks`);
+  }
+}
+
 export async function runProduction(dependencies: ProductionDependencies): Promise<ProductionResult> {
   const key = await readKeychainKey({ execFile: dependencies.execFile });
   const samples: Sample[] = [];
+  const stop = new AbortController();
   const clients = await connectedClients({
-    dependencies,
+    dependencies: { ...dependencies, interruption: AbortSignal.any([dependencies.interruption, stop.signal]) },
     key,
     deadlineMs: PRODUCTION_DURATION_MAX_MS,
     requestMax: PRODUCTION_REQUEST_MAX,
-    record: (sample) => samples.push(sample),
+    record: (sample) => {
+      samples.push(sample);
+      if (sample.status === UNAUTHORIZED_STATUS) stop.abort();
+    },
   });
+  await refuseForeignProject({ client: clients.list });
+  const streak = { failures: 0 };
   const session = {
     dependencies,
     clients,
@@ -191,7 +209,16 @@ export async function runProduction(dependencies: ProductionDependencies): Promi
   await runOpenLoop({
     starts: plannedStarts({ ratePerSecond: PRODUCTION_PLAN.ratePerSecond, durationMs: PRODUCTION_PLAN.durationMs }),
     clock: dependencies.clock,
-    execute: (slot) => executeSlot({ session, slot }),
+    execute: async (slot) => {
+      try {
+        await executeSlot({ session, slot });
+        streak.failures = 0;
+      } catch (failure) {
+        streak.failures += 1;
+        if (streak.failures >= PRODUCTION_FAILURES_CONSECUTIVE_MAX) stop.abort();
+        throw failure;
+      }
+    },
     onDropped: () => (counters.dropped += 1),
     onFailure: () => (counters.failures += 1),
     inFlightMax: PRODUCTION_IN_FLIGHT_MAX,

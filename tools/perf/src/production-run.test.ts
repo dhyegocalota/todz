@@ -112,7 +112,10 @@ describe('a full production run', () => {
   });
 
   test('from the first filtered list on, every list is filtered by the run prefix', () => {
-    const lists = state.server.toolCalls().filter((call) => call.name === 'list');
+    const lists = state.server
+      .toolCalls()
+      .filter((call) => call.name === 'list')
+      .slice(PREFLIGHT_LISTS);
     const firstFilteredIndex = lists.findIndex((call) => call.arguments.text !== undefined);
     expect(firstFilteredIndex).toBeGreaterThan(-1);
     expect(lists.slice(firstFilteredIndex).map((call) => call.arguments.text)).toEqual(lists.slice(firstFilteredIndex).map(() => PREFIX));
@@ -204,15 +207,12 @@ describe('a production run the server refuses', () => {
 
   test('consecutive failures stop the run after the named number of them', async () => {
     const calls = { count: 0 };
-    const server = fakeMcpServer({
-      toolAnswers: {
-        list: () => {
-          calls.count += 1;
-          if (calls.count > PREFLIGHT_LISTS) throw new Error('the server is down');
-          return 'Open tasks: 0 of 0';
-        },
-      },
-    });
+    const down = () => {
+      calls.count += 1;
+      if (calls.count > PREFLIGHT_LISTS) throw new Error('the server is down');
+      return 'Open tasks: 0 of 0';
+    };
+    const server = fakeMcpServer({ toolAnswers: { list: down, add: down, done: down } });
     const result = await runProduction(dependenciesOver({ fetch: server.fetch }));
     expect(server.toolCalls()).toHaveLength(PREFLIGHT_LISTS + PRODUCTION_FAILURES_CONSECUTIVE_MAX);
     expect(result.failures).toBeGreaterThanOrEqual(PRODUCTION_FAILURES_CONSECUTIVE_MAX);
