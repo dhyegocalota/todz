@@ -1,4 +1,5 @@
 import { formatShortId } from '@todz/core';
+import { COMPANY } from '@todz/types';
 import { MCP_COPY, McpToolName } from '../mcp-copy';
 
 const EXAMPLE_TASK_NUMBER = 12;
@@ -20,6 +21,9 @@ export const LANDING_COPY = {
     footerSelfHost: 'Self-host guide',
     footerGithub: 'GitHub',
     copyright: '© todz',
+    creditLead: 'todz is a product of',
+    creditName: COMPANY.tradeName,
+    creditTail: ', made in Brazil',
   },
   hero: {
     eyebrow: 'macOS · Coming soon',

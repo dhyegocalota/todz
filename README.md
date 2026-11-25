@@ -23,6 +23,8 @@
 
 ---
 
+todz is a product of Logic Bit, made in Brazil: [logicbit.com.br](https://logicbit.com.br)
+
 todz is a to-do list that AI agents and their owner share. MCP-first and agentic-first: every action a person takes in the app, an agent can take through the MCP server (Claude Code, Codex, Cursor, any MCP client).
 
 - **Multi-tenant.** Each workspace is isolated; projects live inside a workspace.
