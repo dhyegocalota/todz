@@ -63,10 +63,10 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   if (isMalformedAsk) return errorResponse(OwnerErrorCode.InvalidRequest);
   const challengeRefusal = await challenge.refusalOf(body.turnstile_token);
   if (challengeRefusal !== null) return challengeRefusal;
-  const addressRefusal = await addressLimitRefusal({ request, env, address });
-  if (addressRefusal !== null) return addressRefusal;
   const globalRefusal = await globalLimitRefusal({ request, env, route: OwnerRoute.RequestSignInLink });
   if (globalRefusal !== null) return globalRefusal;
+  const addressRefusal = await addressLimitRefusal({ request, env, address });
+  if (addressRefusal !== null) return addressRefusal;
   const token = generateCredentialSecret();
   const digest = await digestCredential(token);
   const isWithinLimit = await insertSignInLinkWithinLimit({

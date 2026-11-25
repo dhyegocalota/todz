@@ -75,7 +75,7 @@ Mail link ─▶ browser GET /sign-in#token=… ─▶ page: widget(action sign_
 
 These bind the build and win over any line above that disagrees.
 
-- **R1, order.** Sending: client limit → configuration (R2) → body → Turnstile → address limit → global cap → D1 count → mail. Email session: client limit → configuration → body → Turnstile → global cap → spend. `GET /owner/sign-in-method`: client limit only. Fake session: none of it (local only).
+- **R1, order.** Sending: client limit → configuration (R2) → body → Turnstile → global cap → address limit → D1 count → mail, so a global refusal never spends an address's slot. Email session: client limit → configuration → body → Turnstile → global cap → spend. `GET /owner/sign-in-method`: client limit only. Fake session: none of it (local only).
 - **R2, configuration before the body.** Every 503 check runs before the body is read: the route's bindings (R4), `CF-Connecting-IP` on a public host, `PUBLIC_ORIGIN` through `publicOriginOf`, `TURNSTILE_SECRET_KEY`, and today's provider and sender checks.
 - **R3, more fail-closed branches.** `PUBLIC_ORIGIN` absent or invalid, `limiter.limit()` throwing, and siteverify `success:false` whose `error-codes` include `missing-input-secret`, `invalid-input-secret` or `internal-error` answer 503 `sign_in_unavailable`, one test each. `success:true` with a missing `hostname` or `action` is refused.
 - **R4, what each route needs on a public host.**
