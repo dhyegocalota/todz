@@ -136,6 +136,7 @@ ${CROP_RULES}
 .terminal-line + .terminal-line{margin-top:var(--space-3)}
 .terminal-prompt{color:var(--color-terminal-prompt);font-weight:700}
 .terminal-command{color:var(--color-terminal-muted)}
+.terminal-word{white-space:nowrap}
 .terminal-ask{color:#FFFFFF}
 .terminal-call::before{content:'⏺ ';color:var(--color-terminal-prompt)}
 .terminal-result{padding-left:5ch;color:var(--color-terminal-muted)}
@@ -158,7 +159,7 @@ ${CROP_RULES}
 .prose ul{padding-left:1.5rem}
 .prose li + li{margin-top:var(--space-1)}
 .prose code{font-family:var(--font-mono);font-size:0.9em;padding:0.1em 0.35em;border-radius:6px;background:var(--color-chip);overflow-wrap:anywhere}
-.prose .code{padding:var(--space-4) var(--space-5);border-radius:var(--radius-control);background:var(--color-terminal);color:var(--color-terminal-text);font-size:var(--text-code);line-height:1.6;overflow-x:auto}
+.prose .code{padding:var(--space-4) var(--space-5);border-radius:var(--radius-control);background:var(--color-terminal);color:var(--color-terminal-text);font-size:var(--text-code);line-height:1.6;overflow-x:auto;box-shadow:inset 0 0 0 1px var(--color-hairline)}
 .prose .code code{padding:0;background:none;font-size:inherit;overflow-wrap:normal}
 .back-to-top{margin-top:var(--space-7);text-align:center;font-size:var(--text-small)}
 .back-to-top a{display:inline-flex;align-items:center;min-height:var(--size-tap);color:var(--color-text-muted)}

@@ -23,6 +23,7 @@ const JOIN_NOTICE_CLASS = 'join-notice';
 const ARIA_DISABLED = 'aria-disabled';
 const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const CLASS_SEPARATOR = ' ';
+const WORD_SEPARATOR = ' ';
 
 const PAGE_SCRIPT = `{
   document.querySelectorAll('.${JOIN_FORM_CLASS}').forEach((form) => {
@@ -111,6 +112,13 @@ ${benefitHtml({ well: `<div class="benefit-well">${glyphHtml({ glyph: SiteGlyph.
 </section>`;
 }
 
+function unbrokenWordsHtml(text: string): string {
+  return text
+    .split(WORD_SEPARATOR)
+    .map((word) => `<span class="terminal-word">${escapedHtml(word)}</span>`)
+    .join(WORD_SEPARATOR);
+}
+
 function howItWorksHtml(): string {
   const { howItWorks, terminal } = LANDING_COPY;
   const steps = [howItWorks.step1, howItWorks.step2, howItWorks.step3].map((step) => `<li>${escapedHtml(step)}</li>`).join('\n');
@@ -125,7 +133,7 @@ ${steps}
 <figure class="terminal reveal">
 <figcaption class="visually-hidden">${escapedHtml(terminal.label)}</figcaption>
 <div class="terminal-bar" aria-hidden="true"><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span></div>
-<pre class="terminal-body"><code><span class="terminal-line"><span class="terminal-prompt">${escapedHtml(terminal.shellPrompt)}</span> <span class="terminal-command">${escapedHtml(terminal.command)}</span></span><span class="terminal-line"><span class="terminal-prompt">${escapedHtml(terminal.askPrompt)}</span> <span class="terminal-ask">${escapedHtml(terminal.ask)}</span></span><span class="terminal-line terminal-call">${escapedHtml(terminal.toolCall)}</span><span class="terminal-line terminal-result">${escapedHtml(terminal.toolResult)}</span></code></pre>
+<pre class="terminal-body"><code><span class="terminal-line"><span class="terminal-prompt">${escapedHtml(terminal.shellPrompt)}</span> <span class="terminal-command">${unbrokenWordsHtml(terminal.command)}</span></span><span class="terminal-line"><span class="terminal-prompt">${escapedHtml(terminal.askPrompt)}</span> <span class="terminal-ask">${escapedHtml(terminal.ask)}</span></span><span class="terminal-line terminal-call">${escapedHtml(terminal.toolCall)}</span><span class="terminal-line terminal-result">${escapedHtml(terminal.toolResult)}</span></code></pre>
 </figure>
 </section>`;
 }

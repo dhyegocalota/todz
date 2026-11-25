@@ -13,6 +13,7 @@ const SCRIPT_PATTERN = /<script>([\s\S]*?)<\/script>/g;
 const STYLE_PATTERN = /<style>([\s\S]*?)<\/style>/g;
 const SVG_PATTERN = /<svg[\s\S]*?<\/svg>/g;
 const TAG_PATTERN = /<[^>]*>/g;
+const TERMINAL_WORD_PATTERN = /<span class="terminal-word">([^<]*)<\/span>/g;
 const FORM_PATTERN = /<form[\s\S]*?<\/form>/g;
 const MAIN_PATTERN = /<main id="content"[^>]*>([\s\S]*?)<\/main>/;
 const STYLE_ATTRIBUTE_PATTERN = /<[^>]*\sstyle=/;
@@ -69,6 +70,7 @@ function copyStrings(copy: object): string[] {
 
 function textNodes(html: string): string[] {
   return html
+    .replace(TERMINAL_WORD_PATTERN, '$1')
     .replace(SCRIPT_PATTERN, '')
     .replace(STYLE_PATTERN, '')
     .replace(SVG_PATTERN, '')
