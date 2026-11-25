@@ -10,3 +10,4 @@ Every runbook step has an expected result and an `If it fails` line, and agents 
 - [Deploy the API](deploy-the-api.md): the database, the Worker, the custom domain and mail sending on `api.todz.app`, with a smoke check.
 - [Publish the docs on Mintlify](mintlify-publish.md): the owner's Mintlify setup as done, the checks before a merge that touches `apps/docs` and the check of `docs.todz.app` after it.
 - [Measure performance](performance.md): the load, stress and bounded production runs, the app probe walks and the landing check against the budgets of ADR 0061, with the dated results table.
+- [Release the Mac app](release-the-mac-app.md): the keys and the bucket once, then each release from a tagged `main` to `todz.app/download`, its checks and the releases table.
