@@ -1,21 +1,24 @@
 import { DueWindow, MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env, exports } from 'cloudflare:workers';
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import { generateCredentialSecret } from '../src/credential-secret';
 import type { Env } from '../src/env';
 import { McpToolName } from '../src/mcp-copy';
 import { calendarDateInTimeZone } from '../src/owner-today';
+import { TurnstileAction } from '../src/turnstile';
 import { issueProjectKey } from '../src/project-keys';
 import { seedIssuedKey, seedProject } from './directory-seed';
 import {
-  CLOUDFLARE_SETTINGS,
   PUBLIC_HTTPS_ORIGIN,
   PUBLIC_ORIGIN,
+  TURNSTILE_TOKEN_OF_ACTION,
+  acceptingSiteverify,
   askedLink,
   emailEnv,
   freshAddress,
+  guardedSettings,
   linkRows,
   messageSent,
   recordingBinding,
@@ -643,15 +646,24 @@ describe('the owner time zone and the MCP today', () => {
 
 describe('the welcome mail', () => {
   const WELCOME_SUBJECT = 'Welcome to todz';
+  const SIGN_IN_TOKEN = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.SignIn];
+
+  beforeEach(() => {
+    acceptingSiteverify();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   function welcomeEnv({ binding, settings = {} }: { binding: SendEmail; settings?: Partial<Env> }): Env {
-    return emailEnv({ ...CLOUDFLARE_SETTINGS, EMAIL: binding, ...settings });
+    return emailEnv({ ...guardedSettings(), EMAIL: binding, ...settings });
   }
 
   test('a new owner by link gets exactly one welcome to the address, with the lockup of the public origin', async () => {
     const { binding, sent } = recordingBinding();
     const link = await askedLink({ email: `Maria.${crypto.randomUUID()}@Example.com` });
-    const response = await redeemLink({ ...link, workerEnv: welcomeEnv({ binding }) });
+    const response = await redeemLink({ ...link, turnstileToken: SIGN_IN_TOKEN, workerEnv: welcomeEnv({ binding }) });
     expect(response.status).toBe(CREATED_STATUS);
     const welcome = messageSent(sent);
     expect(welcome.to).toBe(link.email.toLowerCase());
@@ -667,8 +679,8 @@ describe('the welcome mail', () => {
     const email = freshAddress();
     const first = await askedLink({ email });
     const second = await askedLink({ email });
-    await redeemLink({ ...first, workerEnv: welcomeEnv({ binding }) });
-    await redeemLink({ ...second, workerEnv: welcomeEnv({ binding }) });
+    await redeemLink({ ...first, turnstileToken: SIGN_IN_TOKEN, workerEnv: welcomeEnv({ binding }) });
+    await redeemLink({ ...second, turnstileToken: SIGN_IN_TOKEN, workerEnv: welcomeEnv({ binding }) });
     expect(sent).toHaveLength(1);
   });
 
@@ -688,7 +700,7 @@ describe('the welcome mail', () => {
     const link = await askedLink();
     const rivalOwnerId = crypto.randomUUID();
     const racingEnv = directoryRunning({
-      settings: { ...CLOUDFLARE_SETTINGS, EMAIL: binding },
+      settings: { ...guardedSettings(), EMAIL: binding },
       beforeIdentityRead: async () => {
         await env.DIRECTORY.batch([
           env.DIRECTORY.prepare('INSERT INTO owners (id, time_zone, created_at) VALUES (?, ?, ?)').bind(rivalOwnerId, 'UTC', CLOCK_NOW),
@@ -701,7 +713,7 @@ describe('the welcome mail', () => {
         ]);
       },
     });
-    const response = await redeemLink({ ...link, workerEnv: racingEnv });
+    const response = await redeemLink({ ...link, turnstileToken: SIGN_IN_TOKEN, workerEnv: racingEnv });
     expect(response.status).toBe(CREATED_STATUS);
     expect(sent).toEqual([]);
   });
@@ -711,7 +723,7 @@ describe('the welcome mail', () => {
       throw new Error('the binding is down');
     });
     const link = await askedLink();
-    const response = await redeemLink({ ...link, workerEnv: welcomeEnv({ binding: { send } }) });
+    const response = await redeemLink({ ...link, turnstileToken: SIGN_IN_TOKEN, workerEnv: welcomeEnv({ binding: { send } }) });
     expect(response.status).toBe(CREATED_STATUS);
     expect(send).toHaveBeenCalledTimes(1);
     const body = await response.json<{ session_token: string }>();
@@ -720,19 +732,22 @@ describe('the welcome mail', () => {
 
   test.each([
     ['no sender kind', { EMAIL_SENDER: undefined }],
-    ['no public origin', { PUBLIC_ORIGIN: undefined }],
     ['an unknown sender kind', { EMAIL_SENDER: 'carrier-pigeon' }],
   ])('%s skips the welcome and still answers 201', async (_name, settings) => {
     const { binding, sent } = recordingBinding();
     const link = await askedLink();
-    const response = await redeemLink({ ...link, workerEnv: welcomeEnv({ binding, settings }) });
+    const response = await redeemLink({ ...link, turnstileToken: SIGN_IN_TOKEN, workerEnv: welcomeEnv({ binding, settings }) });
     expect(response.status).toBe(CREATED_STATUS);
     expect(sent).toEqual([]);
   });
 
   test('the cloudflare kind without the binding skips the welcome and still answers 201', async () => {
     const link = await askedLink();
-    const response = await redeemLink({ ...link, workerEnv: emailEnv(CLOUDFLARE_SETTINGS) });
+    const response = await redeemLink({
+      ...link,
+      turnstileToken: SIGN_IN_TOKEN,
+      workerEnv: emailEnv({ ...guardedSettings(), EMAIL: undefined }),
+    });
     expect(response.status).toBe(CREATED_STATUS);
   });
 
@@ -747,7 +762,12 @@ describe('the welcome mail', () => {
     });
     const link = await askedLink();
     const executionContext = createExecutionContext();
-    const response = await redeemLink({ ...link, workerEnv: welcomeEnv({ binding: { send } }), executionContext });
+    const response = await redeemLink({
+      ...link,
+      turnstileToken: SIGN_IN_TOKEN,
+      workerEnv: welcomeEnv({ binding: { send } }),
+      executionContext,
+    });
     expect(response.status).toBe(CREATED_STATUS);
     expect(send).toHaveBeenCalledTimes(1);
     release();

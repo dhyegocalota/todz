@@ -12,3 +12,5 @@ export const PROJECT_KEY_PREFIX = 'todz_';
 export const LIST_LIMIT_DEFAULT = 20;
 export const SIGN_IN_RATE_LIMIT_MAX = 10;
 export const SIGN_IN_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;
+export const SIGN_IN_ADDRESS_RATE_LIMIT_MAX = 3;
+export const SIGN_IN_GLOBAL_RATE_LIMIT_MAX = 100;

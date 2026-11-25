@@ -1,79 +1,42 @@
 import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { SIGN_IN_PAGE_COPY } from '../src/sign-in-page-copy';
+import { serveSignInPage } from '../src/sign-in-page';
+import { workerEnvWith } from './owner-client';
+import { type PageScriptRun, TEST_SITE_KEY, inlineSources, onlyInlineSource, runPageScript, sourceHash } from './page-script';
 
 const PAGE_URL = 'https://api.todz.test/sign-in';
 const PAGE_PATH = '/sign-in';
 const OK_STATUS = 200;
 const NOT_FOUND_STATUS = 404;
+const UNAVAILABLE_STATUS = 503;
 const TOKEN = 'A'.repeat(43);
+const TURNSTILE_TOKEN = 'solved.turnstile_token-1';
+const OTHER_TURNSTILE_TOKEN = 'solved.turnstile_token-2';
 const TOKEN_SHAPED_RUN_PATTERN = /[A-Za-z0-9_-]{43}/;
 const SCRIPT_PATTERN = /<script>([\s\S]*?)<\/script>/g;
 const STYLE_PATTERN = /<style>([\s\S]*?)<\/style>/g;
-const CONTENT_GROUP = 1;
+const WIDGET_PATTERN = /<div class="checking cf-turnstile"[^>]*><\/div>/g;
+const TURNSTILE_SCRIPT_TAG = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
 const READY_STATE = 'ready';
-const BASE64_ALGORITHM = 'SHA-256';
-
-async function sourceHash(source: string): Promise<string> {
-  const digest = await crypto.subtle.digest(BASE64_ALGORITHM, new TextEncoder().encode(source));
-  return `'sha256-${btoa(String.fromCharCode(...new Uint8Array(digest)))}'`;
-}
-
-function inlineSources({ html, pattern }: { html: string; pattern: RegExp }): string[] {
-  return [...html.matchAll(pattern)].map((match) => {
-    const [, source] = match;
-    if (source === undefined) throw new Error('an inline element always has content');
-    return source;
-  });
-}
-
-function onlyInlineSource({ html, pattern }: { html: string; pattern: RegExp }): string {
-  const [source, ...others] = inlineSources({ html, pattern });
-  if (source === undefined || others.length > 0) throw new Error('the page has exactly one inline element of that kind');
-  return source;
-}
+const CHECKING_STATE = 'checking';
+const FAILED_STATE = 'failed';
+const CHECKED_CALLBACK = 'signInChecked';
+const EXPIRED_CALLBACK = 'signInCheckExpired';
+const FAILED_CALLBACK = 'signInCheckFailed';
 
 async function pageSource(path = PAGE_PATH): Promise<{ response: Response; html: string }> {
   const response = await exports.default.fetch(`https://api.todz.test${path}`);
   return { response, html: await response.text() };
 }
 
-function runPageScript({ script, hash }: { script: string; hash: string }): {
-  steps: string[];
-  state: string | undefined;
-  pressButton: () => void;
-} {
-  const steps: string[] = [];
-  const pressListeners: (() => void)[] = [];
-  const button = {
-    focus() {
-      steps.push('focus');
-    },
-    addEventListener(_type: string, listener: () => void) {
-      pressListeners.push(listener);
-    },
-  };
-  const body = { dataset: {} as Record<string, string> };
-  const location = {
-    hash,
-    pathname: PAGE_PATH,
-    set href(target: string) {
-      steps.push(`navigate ${target}`);
-    },
-  };
-  const history = {
-    replaceState(_state: unknown, _title: string, address: string) {
-      steps.push(`replace ${address}`);
-    },
-  };
-  const document = { body, getElementById: () => button };
-  new Function('location', 'history', 'document', script)(location, history, document);
-  return { steps, state: body.dataset.state, pressButton: () => pressListeners.forEach((listener) => listener()) };
-}
-
 async function onlyScript(): Promise<string> {
   const { html } = await pageSource();
   return onlyInlineSource({ html, pattern: SCRIPT_PATTERN });
+}
+
+async function signInPageRun(hash: string): Promise<PageScriptRun> {
+  return runPageScript({ script: await onlyScript(), hash, pathname: PAGE_PATH });
 }
 
 describe('GET /sign-in', () => {
@@ -86,16 +49,17 @@ describe('GET /sign-in', () => {
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
   });
 
-  test('the content security policy allows only its own script and style, by hash', async () => {
+  test('the content security policy allows its own script and style by hash, and Turnstile only as a script and a frame', async () => {
     const { response, html } = await pageSource();
     const script = onlyInlineSource({ html, pattern: SCRIPT_PATTERN });
     const style = onlyInlineSource({ html, pattern: STYLE_PATTERN });
     expect(response.headers.get('Content-Security-Policy')).toBe(
       [
         "default-src 'none'",
-        `script-src ${await sourceHash(script)}`,
+        `script-src ${await sourceHash(script)} https://challenges.cloudflare.com`,
         `style-src ${await sourceHash(style)}`,
         'img-src data:',
+        'frame-src https://challenges.cloudflare.com',
         "base-uri 'none'",
         "form-action 'none'",
         "frame-ancestors 'none'",
@@ -106,6 +70,8 @@ describe('GET /sign-in', () => {
   test('says its words from the copy module and carries no token, link or handler of its own', async () => {
     const { html } = await pageSource();
     expect(html).toContain(SIGN_IN_PAGE_COPY.title);
+    expect(html).toContain(SIGN_IN_PAGE_COPY.checking);
+    expect(html).toContain(SIGN_IN_PAGE_COPY.checkFailed);
     expect(html).toContain(SIGN_IN_PAGE_COPY.opening);
     expect(html).toContain(SIGN_IN_PAGE_COPY.openButton);
     expect(html).toContain(SIGN_IN_PAGE_COPY.notOpened);
@@ -127,20 +93,101 @@ describe('GET /sign-in', () => {
     expect(response.status).toBe(NOT_FOUND_STATUS);
     expect(await response.text()).toBe('');
   });
+
+  test('without a site key it answers 503 with the unavailable words, no widget and no script', async () => {
+    const response = await serveSignInPage({ request: new Request(PAGE_URL), env: workerEnvWith({}) });
+    const html = await response.text();
+    expect(response.status).toBe(UNAVAILABLE_STATUS);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(html).toContain(SIGN_IN_PAGE_COPY.unavailable);
+    expect(html).not.toContain('cf-turnstile');
+    expect(html).not.toContain('<script');
+  });
+
+  test('a site key that is not a plain key is treated as absent', async () => {
+    const response = await serveSignInPage({
+      request: new Request(PAGE_URL),
+      env: workerEnvWith({ TURNSTILE_SITE_KEY: '"><script>' }),
+    });
+    expect(response.status).toBe(UNAVAILABLE_STATUS);
+    expect(await response.text()).not.toContain('"><script>');
+  });
+});
+
+describe('the widget of the page', () => {
+  test('is one widget with the site key, the sign_in action and the four callbacks', async () => {
+    const { html } = await pageSource();
+    const widgets = [...html.matchAll(WIDGET_PATTERN)].map(([widget]) => widget);
+    expect(widgets).toEqual([
+      `<div class="checking cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="sign_in" data-refresh-expired="manual" data-callback="${CHECKED_CALLBACK}" data-expired-callback="${EXPIRED_CALLBACK}" data-error-callback="${FAILED_CALLBACK}" data-timeout-callback="${FAILED_CALLBACK}"></div>`,
+    ]);
+  });
+
+  test('loads the Turnstile script once, after the inline script, async and deferred', async () => {
+    const { html } = await pageSource();
+    expect(html.split(TURNSTILE_SCRIPT_TAG)).toHaveLength(2);
+    expect(html.indexOf('<script>')).toBeLessThan(html.indexOf(TURNSTILE_SCRIPT_TAG));
+  });
 });
 
 describe('the script of the page', () => {
-  test('drops the fragment, shows the opening state, focuses the button and opens the app with the token it read', async () => {
-    const { steps, state } = runPageScript({ script: await onlyScript(), hash: `#token=${TOKEN}` });
-    expect(steps).toEqual([`replace ${PAGE_PATH}`, 'focus', `navigate todz://sign-in?token=${TOKEN}`]);
-    expect(state).toBe(READY_STATE);
+  test('drops the fragment and waits in the checking state, opening nothing before the check', async () => {
+    const { steps, state } = await signInPageRun(`#token=${TOKEN}`);
+    expect(steps).toEqual([`replace ${PAGE_PATH}`]);
+    expect(state()).toBe(CHECKING_STATE);
   });
 
-  test('the button opens the app again with the same token', async () => {
-    const { steps, pressButton } = runPageScript({ script: await onlyScript(), hash: `#token=${TOKEN}` });
+  test('a solved check shows the opening state, focuses the button and opens the app with both tokens', async () => {
+    const { steps, state, callback } = await signInPageRun(`#token=${TOKEN}`);
+    callback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
+    expect(steps).toEqual([`replace ${PAGE_PATH}`, 'focus', `navigate todz://sign-in?token=${TOKEN}&turnstile=${TURNSTILE_TOKEN}`]);
+    expect(state()).toBe(READY_STATE);
+  });
+
+  test('the button opens the app again with the same tokens', async () => {
+    const { steps, callback, pressButton } = await signInPageRun(`#token=${TOKEN}`);
+    callback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
     pressButton();
-    expect(steps.slice(-1)).toEqual([`navigate todz://sign-in?token=${TOKEN}`]);
+    expect(steps.slice(-1)).toEqual([`navigate todz://sign-in?token=${TOKEN}&turnstile=${TURNSTILE_TOKEN}`]);
     expect(steps).toHaveLength(4);
+  });
+
+  test.each([
+    ['an empty', ''],
+    ['a spaced', 'a b'],
+    ['a 2049-character', 'a'.repeat(2049)],
+    ['a parameter-smuggling', 'x&token=other'],
+  ])('%s Turnstile token opens nothing and shows the failed state', async (_name, turnstileToken) => {
+    const { steps, state, callback } = await signInPageRun(`#token=${TOKEN}`);
+    callback({ name: CHECKED_CALLBACK, argument: turnstileToken });
+    expect(steps).toEqual([`replace ${PAGE_PATH}`]);
+    expect(state()).toBe(FAILED_STATE);
+  });
+
+  test('an expired check goes back to checking and resets the widget', async () => {
+    const { steps, state, callback, resets } = await signInPageRun(`#token=${TOKEN}`);
+    callback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
+    callback({ name: EXPIRED_CALLBACK });
+    expect(state()).toBe(CHECKING_STATE);
+    expect(resets()).toBe(1);
+    expect(steps).toHaveLength(3);
+  });
+
+  test('a check solved again after it expired updates the button without opening the app by itself', async () => {
+    const { steps, state, callback, pressButton } = await signInPageRun(`#token=${TOKEN}`);
+    callback({ name: CHECKED_CALLBACK, argument: TURNSTILE_TOKEN });
+    callback({ name: EXPIRED_CALLBACK });
+    callback({ name: CHECKED_CALLBACK, argument: OTHER_TURNSTILE_TOKEN });
+    expect(state()).toBe(READY_STATE);
+    expect(steps).toHaveLength(3);
+    pressButton();
+    expect(steps.slice(-1)).toEqual([`navigate todz://sign-in?token=${TOKEN}&turnstile=${OTHER_TURNSTILE_TOKEN}`]);
+  });
+
+  test('an error or a timeout of the widget shows the failed state', async () => {
+    const { state, callback } = await signInPageRun(`#token=${TOKEN}`);
+    callback({ name: FAILED_CALLBACK });
+    expect(state()).toBe(FAILED_STATE);
   });
 
   test.each([
@@ -153,10 +200,11 @@ describe('the script of the page', () => {
     [`#token=${TOKEN}%0A`],
     [`#other=${TOKEN}`],
     [`#token=${TOKEN}/../../x`],
-  ])('the fragment %j opens nothing, is dropped and leaves the missing-token state', async (hash) => {
-    const { steps, state } = runPageScript({ script: await onlyScript(), hash });
+  ])('the fragment %j opens nothing, is dropped, wires no callback and leaves the missing-token state', async (hash) => {
+    const { steps, state, callbackNames } = await signInPageRun(hash);
     expect(steps).toEqual([`replace ${PAGE_PATH}`]);
-    expect(state).toBeUndefined();
+    expect(state()).toBeUndefined();
+    expect(callbackNames()).toEqual([]);
   });
 });
 
@@ -169,6 +217,8 @@ describe('the markup of the page', () => {
     expect(markup).not.toMatch(/<a\s/);
     expect(markup).toContain(`<p class="missing">${SIGN_IN_PAGE_COPY.missingToken}</p>`);
     expect(markup).toMatch(/\[data-state=ready\]/);
+    expect(markup).toMatch(/\[data-state=checking\]/);
+    expect(markup).toMatch(/\[data-state=failed\]/);
   });
 
   test('draws the app icon at 64 pixels and the system colours, with no hex value', async () => {
@@ -179,5 +229,11 @@ describe('the markup of the page', () => {
     expect(style).toContain('color-scheme:light dark');
     ['Canvas', 'CanvasText', 'GrayText', 'AccentColor', 'AccentColorText'].forEach((keyword) => expect(style).toContain(keyword));
     expect(style).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+  });
+
+  test('has exactly one inline script and one inline style', async () => {
+    const { html } = await pageSource();
+    expect(inlineSources({ html, pattern: SCRIPT_PATTERN })).toHaveLength(1);
+    expect(inlineSources({ html, pattern: STYLE_PATTERN })).toHaveLength(1);
   });
 });

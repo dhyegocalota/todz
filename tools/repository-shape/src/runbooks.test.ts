@@ -38,6 +38,18 @@ const REPOSITORY_SCRIPT_PATTERN = /(scripts\/[\w./-]+)/g;
 const LINE_SEPARATOR = '\n';
 const ACCOUNT_ID_CAPTURE = 1;
 const CLOUDFLARE_API_HOST = 'api.cloudflare.com';
+const WRONG_SESSION_BODY = 'scripts/deploy-bodies/wrong-session.json';
+const JUNK_LINK_BODY = 'scripts/deploy-bodies/junk-turnstile-link.json';
+const LINK_VERIFIER_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
+const TURNSTILE_TOKEN_PATTERN = /^[A-Za-z0-9._-]{1,2048}$/;
+const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
+
+type DeployBody = { email?: string; link_challenge?: string; link_verifier?: string; turnstile_token?: string };
+
+function deployBody(path: string): DeployBody {
+  return JSON.parse(readRepositoryFile(path)) as DeployBody;
+}
 
 type Runbook = { file: string; text: string };
 
@@ -204,6 +216,22 @@ describe('runbooks', () => {
     const accountId = ACCOUNT_ID_PATTERN.exec(readRepositoryFile(WRANGLER_CONFIGURATION))?.[ACCOUNT_ID_CAPTURE];
     expect(accountId).toBeDefined();
     expect(readRepositoryFile(WRAPPER_PATH)).toContain(`"${accountId}"`);
+  });
+
+  test('the wrong session body is refused before siteverify, by a malformed verifier, and carries an unsolved token', () => {
+    const body = deployBody(WRONG_SESSION_BODY);
+    expect(body.link_verifier).toBeDefined();
+    expect(body.link_verifier).not.toMatch(LINK_VERIFIER_PATTERN);
+    expect(body.turnstile_token).toMatch(TURNSTILE_TOKEN_PATTERN);
+    expect(body.turnstile_token).not.toBe(TURNSTILE_DUMMY_TOKEN);
+  });
+
+  test('the junk link body is well formed but for its unsolved token, so only Turnstile refuses it', () => {
+    const body = deployBody(JUNK_LINK_BODY);
+    expect(body.link_challenge).toMatch(LINK_CHALLENGE_PATTERN);
+    expect(body.email).toMatch(/^[^@\s]+@example\.com$/);
+    expect(body.turnstile_token).toMatch(TURNSTILE_TOKEN_PATTERN);
+    expect(body.turnstile_token).not.toBe(TURNSTILE_DUMMY_TOKEN);
   });
 
   test('the deploy runbook ends with a run log table for the lead', () => {

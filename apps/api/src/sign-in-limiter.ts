@@ -1,15 +1,48 @@
 import { SIGN_IN_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
 import { clientRateKey } from './client-rate-key';
-import { isLocalOrigin } from './local-origin';
+import { digestCredential } from './credential-digest';
 import type { Env } from './env';
+import { isLocalHost } from './local-origin';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
+import type { PublicRoute } from './owner-request';
 import { OwnerRoute } from './owner-routes';
 
 const CLIENT_ADDRESS_HEADER = 'CF-Connecting-IP';
 const RETRY_AFTER_HEADER = 'Retry-After';
-const LIMITED_ROUTES: OwnerRoute[] = [OwnerRoute.SignIn, OwnerRoute.RequestSignInLink];
 
-// NB ADR 0044: the local runtime sets the client address itself, so only a request that arrived on a public host is limited.
+enum SignInLimit {
+  Client = 'client',
+  Address = 'address',
+  Global = 'global',
+}
+
+const LIMITER_OF_LIMIT: Record<SignInLimit, (env: Env) => RateLimit | undefined> = {
+  [SignInLimit.Client]: (env) => env.SIGN_IN_LIMITER,
+  [SignInLimit.Address]: (env) => env.SIGN_IN_ADDRESS_LIMITER,
+  [SignInLimit.Global]: (env) => env.SIGN_IN_GLOBAL_LIMITER,
+};
+
+const LIMITS_OF_ROUTE: Record<PublicRoute, SignInLimit[]> = {
+  [OwnerRoute.ReadSignInMethod]: [SignInLimit.Client],
+  [OwnerRoute.RequestSignInLink]: [SignInLimit.Client, SignInLimit.Address, SignInLimit.Global],
+  [OwnerRoute.SignIn]: [SignInLimit.Client, SignInLimit.Global],
+};
+
+export function signInRefusal(): Response {
+  const refusal = errorResponse(OwnerErrorCode.SignInRefused);
+  refusal.headers.set(RETRY_AFTER_HEADER, String(SIGN_IN_RATE_LIMIT_PERIOD_SECONDS));
+  return refusal;
+}
+
+async function limitRefusal({ limiter, key }: { limiter: RateLimit | undefined; key: string }): Promise<Response | null> {
+  if (limiter === undefined) return errorResponse(OwnerErrorCode.SignInUnavailable);
+  const outcome = await limiter.limit({ key }).catch(() => null);
+  if (outcome === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
+  if (outcome.success) return null;
+  return signInRefusal();
+}
+
+// NB ADR 0045: on a public host a public sign-in route fails closed without its limiters or the client address, and only a local host skips them.
 export async function signInLimitRefusal({
   request,
   env,
@@ -17,17 +50,39 @@ export async function signInLimitRefusal({
 }: {
   request: Request;
   env: Env;
-  route: OwnerRoute;
+  route: PublicRoute;
 }): Promise<Response | null> {
+  if (isLocalHost({ env, request })) return null;
   const clientAddress = request.headers.get(CLIENT_ADDRESS_HEADER);
-  const { SIGN_IN_LIMITER: limiter } = env;
-  if (!LIMITED_ROUTES.includes(route)) return null;
-  if (isLocalOrigin(request.url)) return null;
-  if (clientAddress === null) return null;
-  if (limiter === undefined) return null;
-  const { success } = await limiter.limit({ key: `${route}:${clientRateKey({ address: clientAddress })}` });
-  if (success) return null;
-  const refusal = errorResponse(OwnerErrorCode.TooManyRequests);
-  refusal.headers.set(RETRY_AFTER_HEADER, String(SIGN_IN_RATE_LIMIT_PERIOD_SECONDS));
-  return refusal;
+  const hasEveryLimiter = LIMITS_OF_ROUTE[route].every((limit) => LIMITER_OF_LIMIT[limit](env) !== undefined);
+  const isUnguarded = clientAddress === null || !hasEveryLimiter;
+  if (isUnguarded) return errorResponse(OwnerErrorCode.SignInUnavailable);
+  return limitRefusal({ limiter: env.SIGN_IN_LIMITER, key: `${route}:${clientRateKey({ address: clientAddress })}` });
+}
+
+export async function addressLimitRefusal({
+  request,
+  env,
+  address,
+}: {
+  request: Request;
+  env: Env;
+  address: string;
+}): Promise<Response | null> {
+  if (isLocalHost({ env, request })) return null;
+  const key = `${OwnerRoute.RequestSignInLink}:${await digestCredential(address)}`;
+  return limitRefusal({ limiter: env.SIGN_IN_ADDRESS_LIMITER, key });
+}
+
+export async function globalLimitRefusal({
+  request,
+  env,
+  route,
+}: {
+  request: Request;
+  env: Env;
+  route: PublicRoute;
+}): Promise<Response | null> {
+  if (isLocalHost({ env, request })) return null;
+  return limitRefusal({ limiter: env.SIGN_IN_GLOBAL_LIMITER, key: route });
 }
