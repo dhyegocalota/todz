@@ -170,3 +170,36 @@ Opening 1; hidden launch (`open -g -j`); keys in the mode, including Tab twice t
 - The `.tab` and `.hover` cases exist so the rule is testable; no view reports them any more.
 - Whether `.focusable(false)` removes a borderless Button from the Full Keyboard Access loop is a walk item, not a unit.
 - Hypothesis 16 is not certain: a click on a button may act through the button without the popover tap gesture firing; if so, `engage(by: .click)` is not reached by that click and the row stays unengaged.
+
+## Fix round 5: the reviewer's findings
+
+At `3af98d9` (code) and `93137ec` (docs), `swift test --package-path apps/macos/TodzKit` gives `Test run with 743 tests in 51 suites passed` (742 before, plus the never-showed pin and the locked-screen test, minus the deleted `onlyAClickEngagesTheMode`); `xcodegen generate` and the Debug `xcodebuild` give `BUILD SUCCEEDED`, no warnings.
+
+| Finding | What changed | Red commit and printed text | Green commit |
+|---------|--------------|-----------------------------|--------------|
+| 1. time zone captured at launch | `AppDelegate` builds the model with `TimeZone.autoupdatingCurrent`; the coordinator reads `model.timeZone`, so `.NSSystemTimeZoneDidChange` re-checks compute the new instant. No unit seam: the zone is already injected and tests already pass fixed zones; the argument itself is a walk item | none (no seam) | `3af98d9` |
+| 2. keyboard contract | `design.md` § 1.1 and § 5 and the Keys row of `test-plan.md` say: a day close the app opens by itself acts only after a click inside the popover; Escape always closes | none (docs) | `93137ec` |
+| 3. opener true without a window | `MenuBarPanel.open()` is async: click, `Task.yield()`, answers `window?.isVisible == true`; the coordinator's `check()` and opener are async, `isOpening` is held across the await, a false answer calls `end()` and marks nothing. `DayCloseScheduler` runs the check in a task and skips rescheduling when cancelled | no honest red: the coordinator already handled a false answer and the visibility read lives in the app target (no test target). Pin `be65d67` (`anOpenerThatClicksButShowsNothingMarksNothingEndsTheModeAndALaterCheckOpens`, green when it landed) plus the existing re-entrancy tests, now across an await | `be65d67` (async plumbing), `1d9b6d7` (visibility confirmed) |
+| 4. screen locked | the coordinator takes `isScreenLocked` and returns before the gate and before marking while locked; `ScreenLock.isLocked` (app target) reads `CGSSessionScreenIsLocked`; the scheduler also re-checks on the distributed `com.apple.screenIsUnlocked` (name in a private `Notification.Name` constant) | `f0b57b3` `aLockedScreenOpensNothingMarksNothingAndTheNextCheckAfterTheUnlockOpens`: `Expectation failed: await harness.coordinator.check() == .due`, `harness.popover.openings == 0`, `!harness.coordinator.isClosingDay`, `harness.lastClosedDay == nil` (4 issues; `Test run with 744 tests in 51 suites failed after 0.158 seconds with 4 issues`) | `9a04738` |
+| 5. dead engagement inputs | `DayCloseEngagementInput` deleted, `engage()` takes nothing and the popover click is its only caller; `onlyAClickEngagesTheMode` deleted, `aModeStartedByTheCoordinatorIsNotEngagedAndRefusesKeyActions` and `engagingTheModeAcceptsKeyActions` assert the behaviour that exists | none (removal) | `9c31b5e` |
+| 6. conventions | `MenuBarRow` names `isActionable`; `MenuBarDayCloseActions` row extracted so no `if` nests; `DayCloseSchedule.minutesPerHour` and `hoursPerDay` are the one constant `DayClosePreference` reads (`defaultHour` replaces `18 * 60`) | none (refactor, suite green) | `5906acc` |
+| 7. unbounded focus read | `readFocusFilter` races the read against `focusFilterReadTimeoutMilliseconds` (3000) through an `AsyncStream`; the first answer wins and a timeout leaves the gate on its launch default; `dayCloseScheduler.start()` runs either way | none (app target, no seam) | `3af98d9` |
+
+### Walk rows to re-walk
+
+Opening 1, including a click before D; the hidden launch (`open -g -j`); Keys in the mode, including Tab twice then D does nothing before a click; E2; leaving the mode by an outside click and by Escape, then reopening the popover shows the add field; a time-zone change in System Settings while running re-decides in the new zone.
+
+### Human checklist (not walked)
+
+- [ ] A day close due while the screen is locked opens after the unlock: lock at 17:59, unlock after 18:00, the popover shows in day-close mode once.
+
+### Hypotheses to attack
+
+18. Hypothesis: one `Task.yield()` is enough for the popover window to report visible after the click, including on the first opening after launch when `panel.window` is set by the view's first appearance; if not, the day close does not open and stays unmarked until the next trigger (the scheduler does not retry on `.due`).
+19. Hypothesis: `com.apple.screenIsUnlocked` is delivered to the sandboxed app; registration was proven in a spike, delivery is not. If it is not, a wake, a clock or time-zone change or a Settings change re-checks instead.
+20. Hypothesis: with the Focus read stalled, the day close still opens within about 3 s of launch (the gate's launch default).
+
+### Known gaps
+
+- Finding 3 has no red test; the visibility confirmation is app-target code covered only by the walk.
+- Findings 1 and 7 have no unit seam; the first is one argument, the second a race inside the app delegate.
