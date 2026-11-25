@@ -40,8 +40,8 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
    scripts/todz-cloudflare.sh api GET "/zones/06490974636c535e2cbfd7c5b09925a5/dns_records?per_page=100" | jq -r '.result | map(.type + " " + .name + " " + .content) | join("\n")'
    ```
 
-   Expected: the first answers `"success":true` with `"result":[]`. The second prints one line per record; write the apex `MX` and `TXT` lines (name `todz.app`) in the run log, because step 11 compares them.
-   If it fails: `"success":false` with an authentication error names the missing permission, Zone Read or DNS Edit (read). One or more records named `api.todz.app` mean something else already answers there; stop and tell the owner, because the custom domain would refuse to attach over it.
+   Expected: the first answers `"success":true` with `"result":[]` on the first deploy, and only the Worker's own `AAAA api.todz.app 100::` record after it. The second prints one line per record; write the apex `MX` and `TXT` lines (name `todz.app`) in the run log, because step 11 compares them. Neither `todz.app` nor `www.todz.app` has an `A`, `AAAA` or `CNAME` line before the site's first deploy, and after it each has only the Worker's own `AAAA … 100::` record; the apex `MX` and `TXT` lines do not stop a custom domain.
+   If it fails: `"success":false` with an authentication error names the missing permission, Zone Read or DNS Edit (read). Any other `A`, `AAAA` or `CNAME` record named `api.todz.app`, `todz.app` or `www.todz.app` means something else already answers there; stop and tell the owner, because the custom domain would refuse to attach over it.
 
 4. **Check that the database exists, by id.** Read it by the id in `apps/api/wrangler.jsonc`:
 
@@ -89,18 +89,20 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler deploy
    ```
 
-   Expected: the bindings list `env.DIRECTORY`, shown with the nil `preview_database_id` (Wrangler 4.167.0 prints the preview id there; step 9 reads the version's real binding), `env.PROJECT_STORE (ProjectStore)`, `env.EMAIL`, `env.SIGN_IN_LIMITER (10 requests/60s)`, `env.SIGN_IN_ADDRESS_LIMITER (3 requests/60s)` and `env.SIGN_IN_GLOBAL_LIMITER (100 requests/60s)` (rate limit namespaces `8601`, `8602` and `8603`), the three variables `SIGN_IN_PROVIDER ("email")`, `EMAIL_SENDER ("cloudflare")` and `PUBLIC_ORIGIN ("https://api.todz.app")`, and `TURNSTILE_SITE_KEY` once a pull request has put the widget's site key in `wrangler.jsonc`; the output names `api.todz.app (custom domain)` and a Current Version ID, which goes in the run log. Wrangler creates the DNS record and the certificate for the custom domain.
+   Expected: the bindings list `env.DIRECTORY`, shown with the nil `preview_database_id` (Wrangler 4.167.0 prints the preview id there; step 9 reads the version's real binding), `env.PROJECT_STORE (ProjectStore)`, `env.EMAIL`, `env.SIGN_IN_LIMITER (10 requests/60s)`, `env.SIGN_IN_ADDRESS_LIMITER (3 requests/60s)` and `env.SIGN_IN_GLOBAL_LIMITER (100 requests/60s)` (rate limit namespaces `8601`, `8602` and `8603`), the four variables `SIGN_IN_PROVIDER ("email")`, `EMAIL_SENDER ("cloudflare")`, `PUBLIC_ORIGIN ("https://api.todz.app")` and `SITE_ORIGIN ("https://todz.app")`, and `TURNSTILE_SITE_KEY` once a pull request has put the widget's site key in `wrangler.jsonc`; the output names `api.todz.app (custom domain)`, `todz.app (custom domain)` and `www.todz.app (custom domain)`, and a Current Version ID, which goes in the run log. Wrangler creates the DNS record and the certificate for each custom domain.
    If it fails: an authentication error names Workers Scripts Edit; an error about the custom domain names Workers Routes Edit and DNS Edit on the zone. An error that names a plan, or refuses a Durable Object, the rate limit binding or the email binding, means Workers Paid lapsed (it was active on 2026-11-24); tell the owner. A deploy that fails changes nothing in production; the first deploy's backout and a later deploy's rollback are at the end of this runbook.
 
-9. **Confirm the Worker and its custom domain.** Read the account's domain entry for `api.todz.app`, then the deployments:
+9. **Confirm the Worker and its custom domains.** Read the account's domain entry for each host, then the deployments:
 
    ```bash
    scripts/todz-cloudflare.sh api GET "/accounts/e2035d8e0b7173d520ccf643f6f4661c/workers/domains?hostname=api.todz.app"
+   scripts/todz-cloudflare.sh api GET "/accounts/e2035d8e0b7173d520ccf643f6f4661c/workers/domains?hostname=todz.app"
+   scripts/todz-cloudflare.sh api GET "/accounts/e2035d8e0b7173d520ccf643f6f4661c/workers/domains?hostname=www.todz.app"
    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler deployments list
    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler versions view <version-id> --json
    ```
 
-   Expected: exactly one domain entry, with `"hostname":"api.todz.app"` and `"service":"todz-api"`; the newest deployment names the Version ID of step 8 at 100 percent; that version's `d1` binding `DIRECTORY` has the `id` `dc22b1c3-1869-44a0-b805-91bf92017f19`, never the nil uuid ([the learning](../learnings/2026-11-24-wrangler-deploy-lists-the-preview-database-id-in-its-bindings.md)).
+   Expected: exactly one domain entry per host, each with its own `"hostname"` and `"service":"todz-api"`; the newest deployment names the Version ID of step 8 at 100 percent; that version's `d1` binding `DIRECTORY` has the `id` `dc22b1c3-1869-44a0-b805-91bf92017f19`, never the nil uuid ([the learning](../learnings/2026-11-24-wrangler-deploy-lists-the-preview-database-id-in-its-bindings.md)).
    If it fails: no entry, or an entry for another service, means the custom domain is not attached to this Worker; run step 8 again once, and if it repeats, roll back as at the end. A permission error names Workers Scripts Read. Another version at 100 percent means the deploy did not finish.
 
 10. **Create the Turnstile widget and put its secret.** The owner creates the widget in the dashboard, because the token lacks Turnstile Edit: Turnstile, Add widget, name `todz`, hostname `todz.app` (it covers `api.todz.app`), widget mode Managed. The dashboard then shows a site key and a secret key. The site key is public: a pull request puts it in the `vars` of `apps/api/wrangler.jsonc` as `TURNSTILE_SITE_KEY`, with its pin in `api-source.test.ts`, and this runbook runs again from step 1 once it is on `main`. The secret never touches a file or a command line: the owner runs the first command and pastes it at its prompt, then anyone lists the secrets:
@@ -143,11 +145,16 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
     curl -sS -D - -o /dev/null https://api.todz.app/sign-in
     curl -sS -D - -o /dev/null https://api.todz.app/sign-in/challenge
     curl -sS -D - -o /dev/null https://api.todz.app/mcp
+    curl -sS -D - -o /dev/null https://todz.app/
+    curl -sS -D - -o /dev/null https://todz.app/self-host
+    curl -sS -D - -o /dev/null "https://www.todz.app/self-host?from=runbook"
+    curl -sS -D - -o /dev/null https://todz.app/owner/sign-in-method
+    curl -sS -D - -o /dev/null https://api.todz.app/
     scripts/todz-cloudflare.sh api GET /accounts/e2035d8e0b7173d520ccf643f6f4661c/workers/subdomain
     curl -sS -D - -o /dev/null https://todz-api.<subdomain>.workers.dev/owner/sign-in-method
     ```
 
-    Expected: `{"method":"link"}`, then for each page `HTTP/2 503` with `content-type: text/html; charset=utf-8` until the site key is in `wrangler.jsonc` and `HTTP/2 200` after, then `HTTP/2 401`, then the account's `workers.dev` subdomain, then for the last no answer from the Worker: a connection error, 404 or a Cloudflare error page, never `{"method":"link"}`. The first proves the production variables are the ones in `wrangler.jsonc`; any other body means a `--var` or a dashboard variable overrides them, so stop and read the Worker's settings. When all six pass, delete the export of step 6:
+    Expected: `{"method":"link"}`, then for each page `HTTP/2 503` with `content-type: text/html; charset=utf-8` until the site key is in `wrangler.jsonc` and `HTTP/2 200` after, then `HTTP/2 401`, then `HTTP/2 200` for the landing and for the self-host guide, each with `strict-transport-security: max-age=31536000` and a `content-security-policy` that starts with `default-src 'none'`, then `HTTP/2 301` with `location: https://todz.app/self-host?from=runbook`, then `HTTP/2 404` for the owner route on the site host and for the landing on the API host, then the account's `workers.dev` subdomain, then for the last no answer from the Worker: a connection error, 404 or a Cloudflare error page, never `{"method":"link"}`. The first proves the production variables are the ones in `wrangler.jsonc`; any other body means a `--var` or a dashboard variable overrides them, so stop and read the Worker's settings. When all eleven pass, delete the export of step 6:
 
     ```bash
     rm ~/.todz-deploy/backups/before-<commit>.sql
@@ -188,6 +195,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
 - Later deploys: run `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler rollback` to go back to the previous version, or the same with a version id for a named one, and note the reason with `-m`. The migrations stay applied: they only move forward and must keep working with the previous Worker, so write each one that way.
 - A bad migration: restore the bookmark of step 5, which needs the owner's word because it discards writes made since.
 - Never roll back to a version from before `sign-in-guard`: it reopens the unguarded sign-in routes. To close sign-in on the current version instead, delete the secret with `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY`; both posts then answer 503 `sign_in_unavailable` until it is put again.
+- The site alone: detach `todz.app` and `www.todz.app` the same way, each chosen by `?hostname=<host>&service=todz-api` with exactly one entry back, and delete each by its `id`; `api.todz.app` keeps answering. The site sends `Strict-Transport-Security: max-age=31536000` without `includeSubDomains` or `preload`, so browsers that saw it keep using HTTPS on `todz.app` for a year; to lift it, a version must first serve `max-age=0` to those browsers.
 - Durable Object classes are never deleted: a `migrations` entry in `wrangler.jsonc` never removes `ProjectStore`.
 
 ## Rotate the token
