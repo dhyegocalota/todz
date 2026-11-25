@@ -1,6 +1,9 @@
 import SwiftUI
 import TodzKit
 
+private let expandedSymbol = "chevron.down"
+private let collapsedSymbol = "chevron.right"
+
 struct ServerDisclosure: View {
     @Binding var isExpanded: Bool
     @Environment(AppModel.self) private var model
@@ -14,7 +17,7 @@ struct ServerDisclosure: View {
                     Text(SignInCopy.serverDisclosure(server: ServerName.of(address: model.serverURL)))
                         .lineLimit(1)
                         .truncationMode(.middle)
-                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                    Image(systemName: isExpanded ? expandedSymbol : collapsedSymbol)
                 }
                 .font(.footnote)
                 .foregroundStyle(.secondary)

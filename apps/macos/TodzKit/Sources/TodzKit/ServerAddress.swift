@@ -15,7 +15,7 @@ private func authorityText(host: String, port: Int?, defaultPort: Int) -> String
     return "\(hostLabel)\(portSeparator)\(port)"
 }
 
-public struct ServerAddress:Equatable, Sendable {
+public struct ServerAddress: Equatable, Sendable {
     public let origin: String
     public let authority: String
     public let url: URL
