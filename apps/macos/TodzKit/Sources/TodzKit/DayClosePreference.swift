@@ -25,7 +25,8 @@ public enum DayClosePreference {
     }
 
     public static func pickerMinutes(stored minutes: Int) -> Int {
-        fatalError("DayClosePreference.pickerMinutes is not implemented")
+        guard minutesOfADay.contains(minutes) else { return minutesAfterMidnightByDefault }
+        return minutes
     }
 
     static func lastClosedDay(in defaults: UserDefaults) -> CalendarDate? {

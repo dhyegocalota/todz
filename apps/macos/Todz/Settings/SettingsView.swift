@@ -65,7 +65,8 @@ struct SettingsView: View {
 
     private var dayCloseTime: Binding<Date> {
         Binding {
-            DayCloseSchedule.instant(day: model.today, minutesAfterMidnight: dayCloseMinutes, timeZone: model.timeZone)
+            let minutes = DayClosePreference.pickerMinutes(stored: dayCloseMinutes)
+            return DayCloseSchedule.instant(day: model.today, minutesAfterMidnight: minutes, timeZone: model.timeZone)
         } set: { time in
             dayCloseMinutes = DayCloseSchedule.minutesAfterMidnight(of: time, timeZone: model.timeZone)
         }
