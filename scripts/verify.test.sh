@@ -100,12 +100,13 @@ new_repository() {
   write_package apps/api @todz/api '{}'
   write_package apps/docs @todz/docs '{}'
   write_package libs/types @todz/types '{}'
+  write_package tools/perf @todz/perf '{}'
   write_package tools/repository-shape @todz/repository-shape '{}'
   printf '#!/usr/bin/env bash\n[[ "${1:-}" == --fix ]] && { echo "install $2"; exit 0; }\necho doctor >> "$STUB_LOG"\n' > "$repository/.agents/hooks/doctor.sh"
   printf '#!/usr/bin/env bash\necho "probe $*" >> "$STUB_LOG"\n' > "$repository/.github/scripts/secret-rules-probe.sh"
   chmod +x "$repository/.agents/hooks/doctor.sh" "$repository/.github/scripts/secret-rules-probe.sh" "$repository/scripts/verify.sh"
   local tracked
-  for tracked in README.md LICENSE AGENTS.md pnpm-lock.yaml docs/architecture.md .agents/skills/x/SKILL.md .github/workflows/verify.yml apps/example/README.md apps/example/vite.config.ts apps/example/src/a.ts tools/repository-shape/src/x.test.ts libs/types/src/x.ts; do
+  for tracked in README.md LICENSE AGENTS.md pnpm-lock.yaml docs/architecture.md .agents/skills/x/SKILL.md .github/workflows/verify.yml apps/example/README.md apps/example/vite.config.ts apps/example/src/a.ts tools/repository-shape/src/x.test.ts tools/perf/src/x.ts libs/types/src/x.ts; do
     change "$tracked"
   done
   in_repository add -- scripts apps libs tools .agents .github docs README.md LICENSE AGENTS.md pnpm-lock.yaml
@@ -275,6 +276,11 @@ expect_match "a change to the secret rules probe runs the probe" "$(calls)" 'pro
 
 classify tools/repository-shape/src/x.test.ts
 expect_line "a repository shape test" "$output" gates "doctor format secrets typecheck audit shape"
+
+classify tools/perf/src/x.ts
+expect_line "a perf harness file" "$output" class product
+expect_line "a perf harness file" "$output" gates "$PRODUCT_GATES"
+expect_line "a perf harness file" "$output" packages @todz/perf
 
 classify tools/repository-shape/package.json
 expect_line "a tools manifest" "$output" gates "$ALL_GATES"
