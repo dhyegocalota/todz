@@ -1,6 +1,8 @@
 import SwiftUI
 import TodzKit
 
+private let subtitleLines = 2
+
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
@@ -15,6 +17,7 @@ struct SettingsView: View {
             Toggle(isOn: agentNudge) {
                 Text(SettingsCopy.agentNudge)
                 Text(SettingsCopy.agentNudgeSubtitle(notice: model.agentNudgeNotice))
+                    .lineLimit(subtitleLines, reservesSpace: true)
             }
             .toggleStyle(.switch)
             .disabled(!model.canChangeAgentNudge)

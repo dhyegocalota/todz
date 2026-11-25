@@ -1,7 +1,8 @@
 extension AppModel {
     public var canChangeAgentNudge: Bool {
         let isKnown = agentNudge != nil
-        return isKnown && isOwnerConfirmed && !isOffline && !isSavingAgentNudge
+        let isWorthTrying = !isOffline || isAgentNudgeNotSaved
+        return isKnown && isOwnerConfirmed && isWorthTrying && !isSavingAgentNudge
     }
 
     public var agentNudgeNotice: AgentNudgeNotice {
