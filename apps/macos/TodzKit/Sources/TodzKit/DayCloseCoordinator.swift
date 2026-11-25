@@ -89,7 +89,7 @@ import Observation
         let didOpen = await openPopover()
         isOpening = false
         guard didOpen else {
-            isClosingDay = false
+            end()
             return
         }
         markClosed()
