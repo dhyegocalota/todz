@@ -135,16 +135,17 @@ import Observation
 
     private func start(_ content: RibbonContent) {
         let width = textWidth(content)
-        let frames = RibbonMotion.timeline(textWidth: width, isMotionReduced: isMotionReduced())
+        let isReduced = isMotionReduced()
+        let frames = RibbonMotion.timeline(textWidth: width, isMotionReduced: isReduced)
         if preference.cadence == .agentChange { lastAgentShownAt = now() }
         running = Task { [weak self] in
-            await self?.play(frames, content: content, textWidth: width)
+            await self?.play(frames, content: content, textWidth: width, isMotionReduced: isReduced)
         }
     }
 
-    private func play(_ frames: [RibbonFrame], content: RibbonContent, textWidth: Double) async {
+    private func play(_ frames: [RibbonFrame], content: RibbonContent, textWidth: Double, isMotionReduced: Bool) async {
         for frame in frames {
-            presentation = RibbonPresentation(content: content, frame: frame, textWidth: textWidth, isMotionReduced: false)
+            presentation = RibbonPresentation(content: content, frame: frame, textWidth: textWidth, isMotionReduced: isMotionReduced)
             do {
                 try await pause(frame.duration)
                 try Task.checkCancellation()
