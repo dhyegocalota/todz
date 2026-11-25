@@ -15,11 +15,16 @@ struct MenuBarPopover: View {
                     onBecomeKey: focusAddField,
                     onShow: { dayClose.popoverShown() },
                     onHide: { dayClose.end() },
-                    onWorkspaceNumber: { number in Task { await model.switchWorkspace(number: number) } }
+                    onWorkspaceNumber: switchWorkspace
                 )
             )
             .task { await model.launch() }
             .onChange(of: dayClose.isClosingDay, initial: true) { _, isClosingDay in clearFocus(isClosingDay: isClosingDay) }
+    }
+
+    private func switchWorkspace(number: Int) {
+        guard dayClose.acceptsKeyActions else { return }
+        Task { await model.switchWorkspace(number: number) }
     }
 
     private func focusAddField() {

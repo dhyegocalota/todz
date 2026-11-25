@@ -51,10 +51,10 @@ struct MenuBarToday: View {
                 .hidden()
         }
         .contentShape(Rectangle())
-        .onTapGesture(perform: engage)
+        .simultaneousGesture(TapGesture().onEnded { engage() })
         .onExitCommand(perform: escapeAction)
         .onChange(of: isClosingDay, initial: true) { _, isClosingDay in announceOpening(isClosingDay: isClosingDay) }
-        .onChange(of: model.activeWorkspaceIdentifier) { dayClose.end() }
+        .onChange(of: model.activeWorkspaceIdentifier) { closeWhenTheDayCloseAsks() }
         .task(id: isDayClosed) { await closeAfterTheDayClosed(isDayClosed: isDayClosed) }
     }
 
@@ -91,6 +91,11 @@ struct MenuBarToday: View {
     }
 
     private func closePanel() {
+        panel.closeReturningToTheApplicationBefore()
+    }
+
+    private func closeWhenTheDayCloseAsks() {
+        guard dayClose.workspaceChanged() else { return }
         panel.close()
     }
 
@@ -107,7 +112,7 @@ struct MenuBarToday: View {
         } catch {
             return
         }
-        panel.close()
+        panel.closeReturningToTheApplicationBefore()
     }
 
     private func doneCount(state: TaskListState) -> Int {

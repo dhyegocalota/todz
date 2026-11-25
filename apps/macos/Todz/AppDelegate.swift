@@ -6,6 +6,14 @@ import WidgetKit
 private let cacheFolderName = "Cache"
 private let focusFilterReadTimeout: Duration = .seconds(3)
 
+private func isFocusFilterQuiet() async -> Bool {
+    do {
+        return try await TodzFocusFilter.current.isQuiet
+    } catch {
+        return false
+    }
+}
+
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel(
         service: OwnerAPI(baseURL: AppConfiguration.baseURL),
@@ -75,9 +83,9 @@ private let focusFilterReadTimeout: Duration = .seconds(3)
             settle.yield()
         }
         Task { [gate] in
-            let answer = try? await TodzFocusFilter.current.isQuiet
+            let isQuiet = await isFocusFilterQuiet()
             timeout.cancel()
-            if let answer { gate.applyLaunchRead(isQuiet: answer) }
+            gate.applyLaunchRead(isQuiet: isQuiet)
             settle.yield()
         }
         for await _ in settlements { return }
