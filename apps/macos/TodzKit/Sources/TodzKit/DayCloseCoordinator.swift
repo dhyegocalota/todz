@@ -9,7 +9,7 @@ import Observation
     @ObservationIgnored var releaseTaking: Task<Void, Never>?
     @ObservationIgnored var countWaiting: Task<Void, Never>?
     @ObservationIgnored private var isWaitingForCount = false
-    @ObservationIgnored private var isOpening = false
+    @ObservationIgnored private var clickedAt: Date?
     @ObservationIgnored private let gate: ProactiveGate
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let timeZone: TimeZone
@@ -42,7 +42,7 @@ import Observation
 
     @discardableResult
     public func check() async -> DayCloseDecision {
-        let isDueAndIdle = decision == .due && !isOpening
+        let isDueAndIdle = decision == .due && !isClickInFlight
         guard isDueAndIdle else { return decision }
         await closeTheDay()
         return decision
@@ -50,6 +50,7 @@ import Observation
 
     public func end() {
         isClosingDay = false
+        clickedAt = nil
     }
 
     public var acceptsKeyActions: Bool {
@@ -61,12 +62,25 @@ import Observation
     }
 
     public func workspaceChanged() -> Bool {
-        false
+        guard isClosingDay else { return false }
+        guard isEngaged else { return true }
+        end()
+        return false
     }
 
     public func popoverShown() {
         guard isClosingDay else { return }
-        markClosed()
+        clickedAt = nil
+        switch decision {
+        case .due: markClosed()
+        case .doneToday: return
+        case .off, .notYet: end()
+        }
+    }
+
+    private var isClickInFlight: Bool {
+        guard let clickedAt else { return false }
+        return now() < clickedAt.addingTimeInterval(Self.popoverShowWait)
     }
 
     private var decision: DayCloseDecision {
@@ -80,7 +94,7 @@ import Observation
         )
     }
 
-    // NB ADR 0055: the day is marked only when the popover is seen; a held, failed or unseen opening leaves it unmarked.
+    // NB ADR 0055: the day is marked when the popover is seen or nothing is left; a held, failed or unseen opening leaves it unmarked.
     private func closeTheDay() async {
         guard let openCount = openCount() else {
             waitForCount()
@@ -98,15 +112,14 @@ import Observation
     private func open() async {
         isEngaged = false
         isClosingDay = true
-        isOpening = true
+        clickedAt = now()
         let didClick = await openPopover()
-        isOpening = false
         guard didClick else {
             end()
             return
         }
         guard isPopoverVisible() else { return }
-        markClosed()
+        popoverShown()
     }
 
     private func markClosed() {
