@@ -24,8 +24,9 @@ The gate also needs gitleaks; its doctor names anything missing. Run it now, bec
 Edit `apps/api/wrangler.jsonc`:
 
 - `account_id`: your account's id.
-- `routes`: `api.example.com`, keeping `custom_domain` `true`.
+- `routes`: replace `api.todz.app`, `todz.app` and `www.todz.app` with `api.example.com`, `example.com` and `www.example.com`, keeping `custom_domain` `true`.
 - `vars.PUBLIC_ORIGIN`: `https://api.example.com`.
+- `vars.SITE_ORIGIN`: `https://example.com`, where the landing page and this guide are served.
 - `send_email[0].allowed_sender_addresses`: your sender, for example `noreply@example.com`.
 - `ratelimits`: keep the three bindings; change each `namespace_id` if your account already uses `8601` to `8603`.
 
@@ -51,7 +52,7 @@ pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remot
 pnpm --filter @todz/api exec wrangler deploy
 ```
 
-Cloudflare creates the DNS record and the certificate for `api.example.com`. Check three things:
+Cloudflare creates the DNS records and the certificates for `api.example.com`, `example.com` and `www.example.com`; none of the three may already have an A, AAAA or CNAME record. Check three things:
 - `curl -sS https://api.example.com/owner/sign-in-method` answers `{"method":"link"}`;
 - the account's `todz-api.<subdomain>.workers.dev` address does not answer;
 - until step 6 is done, sending a link answers 503 `sign_in_unavailable`, which is the safe state.
