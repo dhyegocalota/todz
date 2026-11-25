@@ -122,6 +122,20 @@ describe('the answers of the worker on every host kind', () => {
     expectSecurityHeaders({ response, policy: DEFAULT_POLICY });
   });
 
+  test('a crash answers an empty 500 with the four headers', async () => {
+    const failingDirectory = new Proxy(env.DIRECTORY, {
+      get(target, property) {
+        if (property === 'prepare') throw new Error('the directory is down');
+        return Reflect.get(target, property);
+      },
+    });
+    const request = new Request(`${API_ORIGIN}/mcp`, { method: 'POST', headers: { Authorization: 'Bearer todz_any-key' } });
+    const response = await answerOf({ request, settings: { DIRECTORY: failingDirectory } });
+    expect(response.status).toBe(HttpStatus.InternalServerError);
+    expect(await response.text()).toBe('');
+    expectSecurityHeaders({ response, policy: DEFAULT_POLICY });
+  });
+
   test('the change feed without an upgrade answers 426 with the four headers', async () => {
     const project = await createOwnedProject();
     const response = await projectCall({ project, method: 'GET', path: '/socket' });
