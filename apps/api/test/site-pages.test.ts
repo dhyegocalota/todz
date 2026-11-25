@@ -454,7 +454,8 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
 
   test('the check frame reserves the height of the widget and the final card narrows its padding on a phone', () => {
     expect(SITE_STYLE).toContain('.join-check{min-height:65px');
-    expect(SITE_STYLE).toMatch(/@media \(max-width:[^)]*\)\{[^}]*\.final-call\{padding-inline:var\(--space-4\)/);
+    expect(SITE_STYLE).toContain('.final-call{margin-top:var(--space-section);padding:var(--space-8) var(--space-4);');
+    expect(SITE_STYLE).toContain('.final-call{padding-inline:var(--space-5)}');
   });
 
   test('the waiting button shows a blocked cursor and only the sending one a busy cursor', () => {

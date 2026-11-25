@@ -11,7 +11,7 @@ import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import { publicOriginOf } from '../sign-in-links';
 import { TURNSTILE_TOKEN_PATTERN, TurnstileAction, TurnstileVerdict, verifyTurnstileToken } from '../turnstile';
 import { TURNSTILE_RESPONSE_FIELD, siteKeyOf } from '../turnstile-page';
-import { JoinOutcome } from './join-form-markup';
+import { HONEYPOT_FIELD_NAME, JoinOutcome } from './join-form-markup';
 import { LandingNotice, serveLandingPage } from './landing-page';
 import type { SiteContext } from './site-endpoint';
 import {
@@ -26,12 +26,15 @@ import { joinWaitlist, recordConfirmationFailure } from './waitlist-store';
 
 const ACCEPT_HEADER = 'Accept';
 const VARY_HEADER = 'Vary';
+const ACCEPT_SEPARATOR = ',';
+const PARAMETER_SEPARATOR = ';';
+const REFUSED_QUALITY = 'q=0';
 
 const JoinFormSchema = z.object({
   email: z.string(),
   [TURNSTILE_RESPONSE_FIELD]: z.string().optional(),
   stamp: z.string().optional(),
-  website: z.string().optional(),
+  [HONEYPOT_FIELD_NAME]: z.string().optional(),
 });
 
 type JoinForm = z.output<typeof JoinFormSchema>;
@@ -142,7 +145,8 @@ async function joinOutcomeOf({ request, env, executionContext }: SiteContext): P
   });
   const challengeRefusal = REFUSAL_OF_VERDICT[verdict];
   if (challengeRefusal !== null) return challengeRefusal;
-  const isHoneypotFilled = form.website !== undefined && form.website !== '';
+  const honeypot = form[HONEYPOT_FIELD_NAME];
+  const isHoneypotFilled = honeypot !== undefined && honeypot !== '';
   if (isHoneypotFilled) return JoinOutcome.Joined;
   if (stampVerdict !== StampVerdict.Patient) return JoinOutcome.Joined;
   const globalRefusal = outcomeOfRefusal(await waitlistGlobalRefusal({ request, env }));
@@ -155,6 +159,15 @@ async function joinOutcomeOf({ request, env, executionContext }: SiteContext): P
   const confirmation = sendConfirmation({ sender: guard.sender, database: env.DIRECTORY, address, siteOrigin: guard.siteOrigin });
   executionContext.waitUntil(confirmation.catch(() => undefined));
   return JoinOutcome.Joined;
+}
+
+function isJsonAccepted(acceptedTypes: string | null): boolean {
+  if (acceptedTypes === null) return false;
+  return acceptedTypes.split(ACCEPT_SEPARATOR).some((range) => {
+    const [mediaType, ...parameters] = range.split(PARAMETER_SEPARATOR).map((part) => part.trim().toLowerCase());
+    const isRefused = parameters.includes(REFUSED_QUALITY);
+    return mediaType === MediaType.Json && !isRefused;
+  });
 }
 
 function jsonAnswer(outcome: JoinOutcome): Response {
@@ -170,8 +183,7 @@ async function pageAnswer({ outcome, env }: { outcome: JoinOutcome; env: Env }):
 
 export async function serveWaitlistJoin(context: SiteContext): Promise<Response> {
   const outcome = await joinOutcomeOf(context);
-  const acceptedTypes = context.request.headers.get(ACCEPT_HEADER);
-  const wantsJson = acceptedTypes !== null && acceptedTypes.includes(MediaType.Json);
+  const wantsJson = isJsonAccepted(context.request.headers.get(ACCEPT_HEADER));
   const answer = wantsJson ? jsonAnswer(outcome) : await pageAnswer({ outcome, env: context.env });
   answer.headers.set(VARY_HEADER, ACCEPT_HEADER);
   if (answer.status === HttpStatus.TooManyRequests) answer.headers.set(HttpHeader.RetryAfter, String(WAITLIST_RATE_LIMIT_PERIOD_SECONDS));

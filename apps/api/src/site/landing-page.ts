@@ -52,6 +52,7 @@ const WIDGET_THEME = 'auto';
 const WIDGET_CLASS = 'cf-turnstile';
 const TOKEN_CALLBACK = 'waitlistTokenReady';
 const FAILURE_CALLBACK = 'waitlistChallengeFailed';
+const EXPIRED_CALLBACK = 'waitlistTokenExpired';
 
 type LandingPage = { available: ({ siteKey, stamp }: { siteKey: string; stamp: string }) => string; unavailable: string };
 
@@ -95,8 +96,8 @@ export const PAGE_SCRIPT = `{
     hasToken: widgetOf(form) === null || tokenOf(form) !== '',
     isBlocked: false,
     isSending: false,
+    hasSolved: widgetOf(form) !== null && tokenOf(form) !== '',
   }]));
-  let hasSolved = false;
   const stateOf = ({ hasToken, isBlocked, isSending }) => {
     if (isSending) return state.Sending;
     if (hasToken && !isBlocked) return state.Ready;
@@ -152,19 +153,19 @@ export const PAGE_SCRIPT = `{
     if (remainingHoldMs > 0) await new Promise((resolve) => setTimeout(resolve, remainingHoldMs));
     finish({ form, ...(await answerOf(new URLSearchParams(new FormData(form)))) });
   };
-  window.${TOKEN_CALLBACK} = () => {
-    hasSolved = true;
+  const syncTokens = () => forms.forEach((form) => {
+    const progress = progressOf.get(form);
+    progress.hasToken = !progress.hasWidget || tokenOf(form) !== '';
+    progress.hasSolved = progress.hasSolved || (progress.hasWidget && progress.hasToken);
+    render(form);
+  });
+  window.${TOKEN_CALLBACK} = syncTokens;
+  window.${EXPIRED_CALLBACK} = syncTokens;
+  window.${FAILURE_CALLBACK} = () => {
+    syncTokens();
     forms.forEach((form) => {
       const progress = progressOf.get(form);
-      progress.hasToken = !progress.hasWidget || tokenOf(form) !== '';
-      render(form);
-    });
-  };
-  window.${FAILURE_CALLBACK} = () => {
-    forms.forEach((form) => {
-      progressOf.get(form).hasToken = false;
-      render(form);
-      if (!hasSolved) showLine({ form, text: copy.checkError });
+      if (progress.hasWidget && !progress.hasSolved) showLine({ form, text: copy.checkError });
     });
   };
   forms.forEach((form) => {
@@ -237,7 +238,7 @@ function honeypotAndStampHtml({ form, stamp }: { form: JoinForm; stamp: string }
   const honeypotId = `${form}-${HONEYPOT_FIELD_NAME}`;
   return `<div class="${JOIN_EXTRA_CLASS}" aria-hidden="true">
 <label for="${honeypotId}">${escapedHtml(LANDING_COPY.join.honeypotLabel)}</label>
-<input id="${honeypotId}" name="${HONEYPOT_FIELD_NAME}" type="text" tabindex="-1" autocomplete="off">
+<input id="${honeypotId}" name="${HONEYPOT_FIELD_NAME}" type="text" tabindex="-1" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
 </div>
 <input type="hidden" name="${STAMP_FIELD_NAME}" value="${stamp}">
 `;
@@ -246,7 +247,7 @@ function honeypotAndStampHtml({ form, stamp }: { form: JoinForm; stamp: string }
 // NB ADR 0046: the site key sits in a data attribute, so the page script stays one fixed source with one hash.
 function challengeOf({ siteKey, stamp }: { siteKey: string; stamp: string }): LandingChallenge {
   return {
-    widget: `<div class="${JOIN_CHECK_CLASS}"><div class="${WIDGET_CLASS}" data-sitekey="${siteKey}" data-action="${TurnstileAction.Waitlist}" data-appearance="${WIDGET_APPEARANCE}" data-size="${WIDGET_SIZE}" data-theme="${WIDGET_THEME}" data-callback="${TOKEN_CALLBACK}" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${FAILURE_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div></div>\n`,
+    widget: `<div class="${JOIN_CHECK_CLASS}"><div class="${WIDGET_CLASS}" data-sitekey="${siteKey}" data-action="${TurnstileAction.Waitlist}" data-appearance="${WIDGET_APPEARANCE}" data-size="${WIDGET_SIZE}" data-theme="${WIDGET_THEME}" data-callback="${TOKEN_CALLBACK}" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${EXPIRED_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div></div>\n`,
     scriptTag: `${TURNSTILE_SCRIPT_TAG}\n`,
     fieldsOf: (form) => honeypotAndStampHtml({ form, stamp }),
   };
