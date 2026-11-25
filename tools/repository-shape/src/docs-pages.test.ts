@@ -17,6 +17,8 @@ const SWIFT_STRING = '((?:[^"\\\\]|\\\\.)*)';
 const CLAUDE_CODE_LINE_PATTERN = new RegExp(`\\.claudeCode\\(line: "${SWIFT_STRING}"\\)`);
 const SHELL_LINE_PATTERN = new RegExp(`shellLine: "${SWIFT_STRING}"`);
 const FENCE_BODY_PATTERN = /```[^\n]*\n([\s\S]*?)\n```/g;
+const WARNING_PATTERN = /<Warning>([\s\S]*?)<\/Warning>/;
+const WARNING_PHRASES = ['password', 'never commit', '`.cursor/mcp.json`', '`--scope project`', 'revoke'];
 const BOLD_PATTERN = /\*\*([^*\n]+)\*\*/g;
 const GUIDE_LINK_PATTERN = /\]\(\/self-host#([\w-]+)\)/g;
 const GUIDE_HEADING_PATTERN = /^## (.+)$/gm;
@@ -96,6 +98,13 @@ describe('the connect-an-agent page', () => {
   test('holds the three commands of the key screen and nothing else in code blocks, with the cloud MCP URL and a key placeholder', () => {
     const blocks = capturedNames({ text: pageText(CONNECT_PAGE), pattern: FENCE_BODY_PATTERN });
     expect(blocks).toEqual(agentCommands());
+  });
+
+  test('warns that the key is a password: never committed, kept in the user-level configuration, revoked in the app when it leaks', () => {
+    const warning = singleCapture({ text: pageText(CONNECT_PAGE), pattern: WARNING_PATTERN });
+    const screenTitle = appLabel({ file: KEY_SCREEN_COPY, name: 'title' });
+    const missingPhrases = [...WARNING_PHRASES, `**${screenTitle}**`].filter((phrase) => !warning.includes(phrase));
+    expect(missingPhrases).toEqual([]);
   });
 });
 
