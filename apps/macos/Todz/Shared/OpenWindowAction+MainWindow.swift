@@ -2,7 +2,7 @@ import SwiftUI
 
 extension OpenWindowAction {
     func mainWindow() {
-        NSApp.activateAsRegularApp()
+        NSApp.activateForAnOpeningWindow()
         callAsFunction(id: MainWindowScene.identifier)
     }
 }

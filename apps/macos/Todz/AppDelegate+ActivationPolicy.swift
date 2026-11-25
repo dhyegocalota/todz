@@ -1,13 +1,6 @@
 import AppKit
 import TodzKit
 
-private func activationPolicy(_ activation: AppActivation) -> NSApplication.ActivationPolicy {
-    switch activation {
-    case .regular: .regular
-    case .accessory: .accessory
-    }
-}
-
 extension AppDelegate {
     func observeWindows(_ launchActivation: LaunchActivation) {
         let keyObservation = NotificationCenter.default.addObserver(
@@ -48,7 +41,7 @@ extension AppDelegate {
         guard !isLeftAlone else { return }
         let openWindowCount = NSApp.windows.filter { $0 !== closingWindow && $0.isOpenAppWindow }.count
         let activation = ActivationPolicyRule.policy(isSettingOn: menuBarOnlyPreference.isOn, visibleWindowCount: openWindowCount)
-        let policy = activationPolicy(activation)
+        let policy = NSApplication.ActivationPolicy(activation)
         guard NSApp.activationPolicy() != policy else { return }
         NSApp.setActivationPolicy(policy)
         guard policy == .regular else { return }
