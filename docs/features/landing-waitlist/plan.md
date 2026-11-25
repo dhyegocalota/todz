@@ -75,5 +75,5 @@ G1 and G2 run in parallel; the lead merges G2 into G1's result, then runs the E2
 - [x] **Tester briefing:** G1 and G2 sections written from the developers' reports.
 - [x] **Tester run:** 41/41 at adb0f53 (9ab5ed5), then the early-submit pass (64a5f16); one defect found and fixed (bd6ea11, 7238f7c) a fresh `tester` sub-agent executed `test-plan.md`.
 - [x] **Reviewer and security reviewer:** reviewer ship-ready after the IMPORTANT probe-body fix and five MINORs; security CLEAR, re-checked twice fresh sub-agents returned verdicts.
-- [ ] **/check-ui:** screenshots and video attached.
-- [ ] **/open-pr:** gates passed, PR opened.
+- [x] **/check-ui:** screenshots, the mail and the video attached to PR #27; the recorder also found the `pageshow` defect (ecb2e9d red, 4e304a5 fix)
+- [x] **/open-pr:** gates passed, PR #27 opened.
