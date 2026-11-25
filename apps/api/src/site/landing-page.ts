@@ -1,4 +1,4 @@
-import { MILLISECONDS_PER_SECOND, WAITLIST_FILL_HOLD_MS, WAITLIST_JOIN_TIMEOUT_MS } from '@todz/types';
+import { MILLISECONDS_PER_SECOND, WAITLIST_CHECK_RETRY_MAX, WAITLIST_FILL_HOLD_MS, WAITLIST_JOIN_TIMEOUT_MS } from '@todz/types';
 import type { Env } from '../env';
 import { escapedHtml } from '../escaped-html';
 import { HttpHeader } from '../http-header';
@@ -43,6 +43,7 @@ enum JoinForm {
 }
 
 const JOIN_NOTICE_CLASS = 'join-notice';
+const JOIN_NEUTRAL_CLASS = 'join-notice-neutral';
 const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const SRCSET_LIST_SEPARATOR = ', ';
 const CLASS_SEPARATOR = ' ';
@@ -101,6 +102,7 @@ export const PAGE_SCRIPT = `{
     hasToken: widgetOf(form) === null || tokenOf(form) !== '',
     isBlocked: false,
     isSending: false,
+    retries: 0,
     hasSolved: widgetOf(form) !== null && tokenOf(form) !== '',
   }]));
   const stateOf = ({ hasToken, isBlocked, isSending }) => {
@@ -116,12 +118,12 @@ export const PAGE_SCRIPT = `{
     if (current === state.Ready) return buttonOf(form).removeAttribute('${ARIA_DISABLED}');
     buttonOf(form).setAttribute('${ARIA_DISABLED}', 'true');
   };
-  const showLine = ({ form, text }) => {
+  const showLine = ({ form, text, isNeutral }) => {
     const status = form.querySelector('[role="status"]');
     const dot = document.createElement('span');
     dot.className = 'notice-dot';
     dot.setAttribute('aria-hidden', 'true');
-    status.className = '${JOIN_NOTICE_CLASS}';
+    status.className = isNeutral ? '${JOIN_NOTICE_CLASS} ${JOIN_NEUTRAL_CLASS}' : '${JOIN_NOTICE_CLASS}';
     status.replaceChildren(dot, text);
   };
   const answerOf = async (body) => {
@@ -143,7 +145,7 @@ export const PAGE_SCRIPT = `{
     progress.isSending = false;
     progress.hasToken = !progress.hasWidget;
     form.dataset.${JOIN_OUTCOME_ATTRIBUTE} = outcome;
-    showLine({ form, text: outcome === '${PageAnswer.Unreachable}' ? copy.unreachable : copy.lines[outcome] });
+    showLine({ form, text: outcome === '${PageAnswer.Unreachable}' ? copy.unreachable : copy.lines[outcome], isNeutral: outcome !== '${JoinOutcome.Joined}' });
     if (outcome === '${JoinOutcome.Joined}') form.querySelector('[name="${EMAIL_FIELD_NAME}"]').value = '';
     if (retryAfterSeconds > 0) {
       progress.isBlocked = true;
@@ -169,6 +171,7 @@ export const PAGE_SCRIPT = `{
     const progress = progressOf.get(form);
     progress.hasToken = !progress.hasWidget || tokenOf(form) !== '';
     progress.hasSolved = progress.hasSolved || (progress.hasWidget && progress.hasToken);
+    if (progress.hasToken) progress.retries = 0;
     render(form);
   });
   window.${TOKEN_CALLBACK} = syncTokens;
@@ -177,9 +180,19 @@ export const PAGE_SCRIPT = `{
     syncTokens();
     forms.forEach((form) => {
       const progress = progressOf.get(form);
-      if (progress.hasWidget && !progress.hasSolved) showLine({ form, text: copy.checkError });
+      if (!progress.hasWidget || progress.hasToken || !navigator.onLine) return;
+      const canRetry = window.turnstile && progress.hasSolved && progress.retries < ${WAITLIST_CHECK_RETRY_MAX};
+      if (canRetry) {
+        progress.retries += 1;
+        return window.turnstile.reset(widgetOf(form));
+      }
+      showLine({ form, text: copy.checkError, isNeutral: true });
     });
   };
+  addEventListener('online', () => forms.forEach((form) => {
+    const progress = progressOf.get(form);
+    if (progress.hasWidget && !progress.hasToken && !progress.isSending && window.turnstile) window.turnstile.reset(widgetOf(form));
+  }));
   forms.forEach((form) => {
     render(form);
     form.addEventListener('submit', (event) => {
@@ -187,7 +200,7 @@ export const PAGE_SCRIPT = `{
       const progress = progressOf.get(form);
       if (form.dataset.${JOIN_STATE_ATTRIBUTE} === state.Ready) return sendFrom(form);
       if (progress.isSending || progress.isBlocked) return;
-      showLine({ form, text: copy.waitingForCheck });
+      showLine({ form, text: copy.waitingForCheck, isNeutral: true });
       form.dispatchEvent(new CustomEvent('${WAITLIST_ANSWERED_EVENT}', { detail: { outcome: '${PageAnswer.Waiting}' } }));
     });
   });
@@ -199,7 +212,7 @@ export const PAGE_SCRIPT = `{
     });
   });
   addEventListener('load', () => {
-    if (window.turnstile === undefined) forms.filter((form) => progressOf.get(form).hasWidget).forEach((form) => showLine({ form, text: copy.checkError }));
+    if (window.turnstile === undefined) forms.filter((form) => progressOf.get(form).hasWidget).forEach((form) => showLine({ form, text: copy.checkError, isNeutral: true }));
     requestAnimationFrame(() => {
       const answered = document.getElementById(location.hash.slice(1));
       const notice = answered === null ? null : answered.querySelector('.${JOIN_NOTICE_CLASS}');
@@ -244,7 +257,8 @@ function windowPicture(): string {
 function joinStatusHtml({ form, notice }: { form: JoinForm; notice: LandingNotice }): string {
   if (notice === LandingNotice.None)
     return `<p id="${form}-notice" class="join-note" role="status">${escapedHtml(LANDING_COPY.join.note)}</p>`;
-  return `<p id="${form}-notice" class="${JOIN_NOTICE_CLASS}" role="status" tabindex="-1"><span class="notice-dot" aria-hidden="true"></span>${escapedHtml(NOTICE_TEXT[notice])}</p>`;
+  const noticeClass = notice === LandingNotice.Joined ? JOIN_NOTICE_CLASS : `${JOIN_NOTICE_CLASS} ${JOIN_NEUTRAL_CLASS}`;
+  return `<p id="${form}-notice" class="${noticeClass}" role="status" tabindex="-1"><span class="notice-dot" aria-hidden="true"></span>${escapedHtml(NOTICE_TEXT[notice])}</p>`;
 }
 
 function honeypotAndStampHtml({ form, stamp }: { form: JoinForm; stamp: string }): string {

@@ -133,7 +133,6 @@ export const WEBMCP_SCRIPT = `{
     }
     if (isForm(form, '${JoinFormState.Sending}')) return textOf(answers.alreadySubmitting);
     field.value = email;
-    if (!field.checkValidity()) return textOf(answers.invalid);
     const answered = new Promise((resolve) => {
       form.addEventListener('${WAITLIST_ANSWERED_EVENT}', (event) => resolve(event.detail.outcome), { once: true });
       setTimeout(() => resolve('${PageAnswer.Unreachable}'), ${WEBMCP_ANSWER_WAIT_MS});

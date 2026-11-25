@@ -176,6 +176,7 @@ a{color:var(--color-link);text-underline-offset:0.12em}
 .join-note,.join-notice{margin-top:var(--space-3);font-size:var(--text-small);color:var(--color-text-muted);text-align:center}
 .join-notice{display:flex;align-items:center;justify-content:center;gap:var(--space-2);color:var(--color-text);font-weight:500}
 .join-notice:focus{outline:none}
+.join-notice-neutral .notice-dot{background:var(--color-text-muted);box-shadow:none}
 .notice-dot{width:8px;height:8px;border-radius:50%;background:var(--color-mint);box-shadow:0 0 0 3px rgb(140 247 208 / 0.28)}
 .desk-stage{position:relative;margin-top:var(--space-7);aspect-ratio:343 / 400;border-radius:var(--radius-stage);background:var(--gradient-wallpaper);box-shadow:var(--glass-edge), var(--shadow-glass);overflow:hidden;isolation:isolate}
 .menu-strip{position:absolute;inset:0 0 auto;height:28px;display:flex;align-items:center;justify-content:flex-end;padding-inline:var(--space-4);background:var(--glass-sheen), var(--glass-fill);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);box-shadow:inset 0 -1px 0 var(--color-hairline);color:var(--color-text)}
