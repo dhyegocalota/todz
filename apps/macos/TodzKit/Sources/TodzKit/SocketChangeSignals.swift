@@ -6,6 +6,7 @@ private let socketSchemeOfScheme = ["http": "ws", "https": "wss"]
 private let failureOfStatus: [ResponseStatus: OwnerAPIError] = [
     .unauthorized: .unauthorized,
     .notFound: .notFound,
+    .upgradeRequired: .appTooOld(minimum: nil),
 ]
 
 private func socketPath(_ projectIdentifier: String) -> String {

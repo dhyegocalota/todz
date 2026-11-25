@@ -4,6 +4,7 @@ import Foundation
 private let errorOfStatus: [ResponseStatus: OwnerAPIError] = [
     .unauthorized: .unauthorized,
     .unavailable: .signInUnavailable,
+    .upgradeRequired: .appTooOld(minimum: nil),
 ]
 
 struct OwnerErrorBody: Decodable {
@@ -33,7 +34,7 @@ struct OwnerErrorBody: Decodable {
         case .timeZoneInvalid: .timeZoneInvalid
         case .signInUnavailable: .signInUnavailable
         case .signInRefused: .signInRefused
-        case .appTooOld: minimumAppVersion.map { .appTooOld(minimum: $0) }
+        case .appTooOld: .appTooOld(minimum: minimumAppVersion)
         }
     }
 }
