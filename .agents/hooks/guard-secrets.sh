@@ -16,6 +16,13 @@ readonly COMMIT_HEREDOC_PATTERN=$'^git commit( -[[:alpha:]]+)* (-m "\\$\\(cat|-F
 readonly COMMIT_MESSAGE_CLOSING='-m "$(cat'
 readonly COMMIT_MESSAGE_TAIL=')"'
 readonly PRINT_LINES_PATTERN="^sed -n ['\"]?[0-9]+(,[0-9]+)?p['\"]?( [^-][^ ]*)+\$"
+readonly RELEASE_SECRETS_MESSAGE="Blocked: the release key and Sparkle's key are read only by pnpm release:mac. No agent command reads, deletes or exports them."
+readonly RELEASE_KEY_ITEM='todz-release-key'
+readonly KEYCHAIN_TOOL='security'
+readonly KEYCHAIN_VALUE_FLAG_PATTERN='[[:space:]]-[[:alpha:]]*[wg][[:alpha:]]*([[:space:]]|$)'
+readonly SPARKLE_KEYCHAIN_PATTERN='sparkle-project\.org'
+readonly SPARKLE_EXPORT_PATTERN='generate_keys[^|;&]*[[:space:]]-x'
+readonly RELEASE_COMMAND_PATTERN='^(pnpm release:mac|scripts/release-mac\.sh)( --[a-z-]+( [0-9]+\.[0-9]+\.[0-9]+)?)*$'
 readonly PROSE_PATTERN='^(echo|printf)[[:space:]]+([^>]*[^>[:space:]])[[:space:]]*(>>?[[:space:]]*([^[:space:]>]+))?$'
 
 is_protected_env_file() {
@@ -28,8 +35,17 @@ is_protected_env_file() {
 }
 
 block() {
-  echo "$BLOCKED_MESSAGE" >&2
+  echo "${1:-$BLOCKED_MESSAGE}" >&2
   exit 2
+}
+
+reads_release_secret() {
+  [[ "$scanned_text" =~ $SPARKLE_KEYCHAIN_PATTERN || "$scanned_text" =~ $SPARKLE_EXPORT_PATTERN ]] && return 0
+  [[ "$scanned_text" == *"$KEYCHAIN_TOOL"* && "$scanned_text" == *"$RELEASE_KEY_ITEM"* && "$scanned_text" =~ $KEYCHAIN_VALUE_FLAG_PATTERN ]]
+}
+
+is_release_command() {
+  [[ "$trimmed_command" =~ $RELEASE_COMMAND_PATTERN ]]
 }
 
 has_metacharacter() {
@@ -132,6 +148,7 @@ done <<<"$touched"
 command=$(jq -r '.tool_input.command // ""' <<<"$hook_input")
 scanned_text=$(tr -d "\"'\\\\" <<<"$command")
 trimmed_command=${command#"${command%%[![:space:]]*}"}
+reads_release_secret && ! is_release_command && block "$RELEASE_SECRETS_MESSAGE"
 if names_protected_env_file "$scanned_text"; then
   is_plain_read && exit 0
   is_prose && exit 0
