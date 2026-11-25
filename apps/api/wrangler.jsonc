@@ -15,7 +15,6 @@
     "EMAIL_SENDER": "cloudflare",
     "PUBLIC_ORIGIN": "https://api.todz.app",
     "SITE_ORIGIN": "https://todz.app",
-    "ADMIN_EMAIL": "hello@todz.app",
   },
   "d1_databases": [
     {

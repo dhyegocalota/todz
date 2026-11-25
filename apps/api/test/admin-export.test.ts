@@ -4,11 +4,12 @@ import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import type { Env } from '../src/env';
+import { serveAdminSignInPage } from '../src/site/admin-page';
 import { ADMIN_RESPONSE_HEADERS, AdminPath } from '../src/site/admin-paths';
 import { serveAdminExport, waitlistCsvOf } from '../src/site/admin-export';
 import { ADMIN_SESSION_LIFETIME_MS, AdminCookie } from '../src/site/admin-session';
 import { openAdminSession } from '../src/site/admin-store';
-import { ConfirmationState, type WaitlistRow } from '../src/site/admin-waitlist';
+import { AdminNotice, ConfirmationState, type WaitlistRow } from '../src/site/admin-waitlist';
 import { joinWaitlist, recordConfirmationFailure } from '../src/site/waitlist-store';
 import { workerEnvWith } from './owner-client';
 
@@ -201,7 +202,7 @@ describe('the export route without a session redirects to the panel and exports 
 });
 
 describe('the export route when the directory fails', () => {
-  test('answers 503 with the admin headers and no rows', async () => {
+  test('answers the closed card, 503, with the admin headers and no rows', async () => {
     await openSession();
     const failingDirectory = new Proxy(env.DIRECTORY, {
       get(target, property) {
@@ -218,5 +219,6 @@ describe('the export route when the directory fails', () => {
     expect(response.status).toBe(UNAVAILABLE_STATUS);
     expectAdminHeaders(response);
     expect(response.headers.get('Content-Disposition')).toBeNull();
+    expect(await response.text()).toBe(await (await serveAdminSignInPage({ notice: AdminNotice.Closed, siteKey: null })).text());
   });
 });

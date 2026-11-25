@@ -56,9 +56,9 @@ const SET_COOKIE_HEADER = 'Set-Cookie';
 const LINK_PATTERN = /https:\/\/todz\.app\/admin\/sign-in#token=([A-Za-z0-9_-]{43})(?![A-Za-z0-9_-])/;
 const LOCAL_LINK_PATTERN = /http:\/\/localhost:8788\/admin\/sign-in#token=([A-Za-z0-9_-]{43})/;
 const COOKIE_VALUE_PATTERN = /^(__Host-[a-z_]+)=([A-Za-z0-9_-]*);/;
-const CHALLENGE_COOKIE_PATTERN = /^__Host-todz_admin_challenge=[A-Za-z0-9_-]{43}; Path=\/; Secure; HttpOnly; SameSite=Strict; Max-Age=900$/;
-const SESSION_COOKIE_PATTERN = /^__Host-todz_admin=[A-Za-z0-9_-]{43}; Path=\/; Secure; HttpOnly; SameSite=Strict; Max-Age=43200$/;
-const CLEARED_CHALLENGE_COOKIE = '__Host-todz_admin_challenge=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0';
+const CHALLENGE_COOKIE_PATTERN = /^__Host-todz_admin_challenge=[A-Za-z0-9_-]{43}; Path=\/; Secure; HttpOnly; SameSite=Lax; Max-Age=900$/;
+const SESSION_COOKIE_PATTERN = /^__Host-todz_admin=[A-Za-z0-9_-]{43}; Path=\/; Secure; HttpOnly; SameSite=Lax; Max-Age=43200$/;
+const CLEARED_CHALLENGE_COOKIE = '__Host-todz_admin_challenge=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0';
 const HEXADECIMAL_DIGEST_PATTERN = /^[0-9a-f]{64}$/;
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const CONSOLE_METHODS = ['log', 'error', 'warn', 'info', 'debug'] as const;
@@ -767,6 +767,24 @@ describe('opening a session', () => {
     expect(run.response.status).toBe(FORBIDDEN_STATUS);
     expect(await run.response.json()).toEqual({});
     expectAdminHeaders(run.response);
+    expect(run.request.bodyUsed).toBe(false);
+    expect(Object.values(run.keys).flat()).toEqual([]);
+    await expectNoSession(run);
+  });
+
+  test.each([
+    ['no SITE_ORIGIN', { SITE_ORIGIN: undefined }],
+    ['a plain http SITE_ORIGIN on a public host', { SITE_ORIGIN: 'http://todz.app' }],
+  ])('%s answers 503, not 403, before the body or the limit', async (_name, settings) => {
+    const { token, challenge } = await askedLink();
+    const run = await askForSession({
+      fetchSite: 'cross-site',
+      body: sessionBody(token),
+      cookie: cookieHeaderOf({ [AdminCookie.Challenge]: challenge }),
+      settings,
+    });
+    expect(run.response.status).toBe(UNAVAILABLE_STATUS);
+    expect(await run.response.json()).toEqual({});
     expect(run.request.bodyUsed).toBe(false);
     expect(Object.values(run.keys).flat()).toEqual([]);
     await expectNoSession(run);

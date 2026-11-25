@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { ADMIN_COPY } from '../src/site/admin-copy';
 import { serveAdminLinkPage } from '../src/site/admin-link-page';
@@ -28,6 +28,7 @@ const NOSCRIPT_PATTERN = /<noscript>([\s\S]*?)<\/noscript>/;
 const TITLE_PATTERN = /<title>([^<]*)<\/title>/;
 const SCRIPT_TAG_PATTERN = /<script[\s>]/g;
 const TOKEN = 'A'.repeat(43);
+const OTHER_TOKEN = 'B'.repeat(43);
 const FIRST_ADDRESS = 'ana@example.com';
 const HOSTILE_ADDRESS = '"><img src=x onerror=alert(1)>@example.com';
 const HOSTILE_ADDRESS_ESCAPED = '&quot;&gt;&lt;img src=x onerror=alert(1)&gt;@example.com';
@@ -134,6 +135,7 @@ type LinkRun = {
   steps: string[];
   elements: Record<string, FakeElement>;
   settled: () => Promise<void>;
+  changeHash: (hash: string) => void;
 };
 
 function runLinkScript({ html, hash, answer }: { html: string; hash: string; answer: () => Promise<{ status: number }> }): LinkRun {
@@ -144,6 +146,7 @@ function runLinkScript({ html, hash, answer }: { html: string; hash: string; ans
     [LINK_BODY_ID]: fakeElement({ hidden: false }),
     [LINK_RETRY_ID]: fakeElement({ hidden: true }),
   };
+  const listeners = new Map<string, () => void>();
   const location = {
     hash,
     pathname: AdminPath.LinkPage,
@@ -155,13 +158,21 @@ function runLinkScript({ html, hash, answer }: { html: string; hash: string; ans
     steps.push(`fetch ${init.method} ${address} ${init.credentials} ${init.body}`);
     return answer();
   };
-  new Function('location', 'history', 'document', 'fetch', onlyInlineSource({ html, pattern: SCRIPT_PATTERN }))(
+  const addEventListener = (type: string, listener: () => void) => listeners.set(type, listener);
+  new Function('location', 'history', 'document', 'fetch', 'addEventListener', onlyInlineSource({ html, pattern: SCRIPT_PATTERN }))(
     location,
     history,
     document,
     fetcher,
+    addEventListener,
   );
-  return { steps, elements, settled: () => new Promise((resolve) => setTimeout(resolve)) };
+  const changeHash = (changed: string) => {
+    const listener = listeners.get('hashchange');
+    if (listener === undefined) throw new Error('the page does not listen to hashchange');
+    location.hash = changed;
+    listener();
+  };
+  return { steps, elements, settled: () => new Promise((resolve) => setTimeout(resolve)), changeHash };
 }
 
 describe('every admin page', () => {
@@ -516,6 +527,27 @@ describe('the link page', () => {
     await run.settled();
     expect(run.elements[LINK_TITLE_ID]?.textContent).toBe(ADMIN_COPY.link.failedTitle);
     expect(run.elements[LINK_RETRY_ID]?.hidden).toBe(false);
+  });
+
+  test('spends a link pasted after a refusal: the fragment leaves the address first and the working state returns', async () => {
+    const { html } = await linkPage();
+    const answer = vi.fn().mockResolvedValueOnce({ status: UNAUTHORIZED_STATUS }).mockResolvedValueOnce({ status: CREATED_STATUS });
+    const run = runLinkScript({ html, hash: `#token=${TOKEN}`, answer });
+    await run.settled();
+    expect(run.elements[LINK_RETRY_ID]?.hidden).toBe(false);
+    run.changeHash(`#token=${OTHER_TOKEN}`);
+    expect(run.elements[LINK_STATUS_ID]?.dataset.state).toBe('working');
+    expect(run.elements[LINK_TITLE_ID]?.textContent).toBe(ADMIN_COPY.link.working);
+    expect(run.elements[LINK_BODY_ID]?.textContent).toBe('');
+    expect(run.elements[LINK_RETRY_ID]?.hidden).toBe(true);
+    await run.settled();
+    expect(run.steps).toEqual([
+      `replace state ${AdminPath.LinkPage}`,
+      `fetch POST ${AdminPath.Sessions} same-origin ${JSON.stringify({ token: TOKEN })}`,
+      `replace state ${AdminPath.LinkPage}`,
+      `fetch POST ${AdminPath.Sessions} same-origin ${JSON.stringify({ token: OTHER_TOKEN })}`,
+      `replace location ${AdminPath.Panel}`,
+    ]);
   });
 
   test('without a token in the fragment posts nothing, clears the address and shows the failed state', async () => {

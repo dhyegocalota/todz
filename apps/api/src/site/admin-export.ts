@@ -1,13 +1,11 @@
 import { HttpHeader } from '../http-header';
-import { HttpStatus } from '../http-status';
-import { adminJsonAnswerOf, adminRedirectAnswerOf } from './admin-answer';
+import { adminClosedAnswerOf, adminRedirectAnswerOf } from './admin-answer';
 import { ADMIN_RESPONSE_HEADERS } from './admin-paths';
 import { hasAdminSession } from './admin-session';
 import { waitlistRowsOf } from './admin-store';
 import type { WaitlistRow } from './admin-waitlist';
 import type { SiteContext } from './site-endpoint';
 
-const CONTENT_TYPE_HEADER = 'Content-Type';
 const CSV_CONTENT_TYPE = 'text/csv; charset=utf-8';
 const CSV_DISPOSITION = 'attachment; filename="todz-waitlist.csv"';
 const CSV_HEADER_FIELDS = ['address', 'joined_at', 'confirmation'];
@@ -35,11 +33,11 @@ export function waitlistCsvOf(rows: WaitlistRow[]): string {
 
 export async function serveAdminExport({ request, env }: SiteContext): Promise<Response> {
   const isSignedIn = await hasAdminSession({ request, env, now: Date.now() }).catch(() => null);
-  if (isSignedIn === null) return adminJsonAnswerOf({ status: HttpStatus.Unavailable });
+  if (isSignedIn === null) return adminClosedAnswerOf({ env });
   if (!isSignedIn) return adminRedirectAnswerOf();
   const rows = await waitlistRowsOf({ database: env.DIRECTORY }).catch(() => null);
-  if (rows === null) return adminJsonAnswerOf({ status: HttpStatus.Unavailable });
+  if (rows === null) return adminClosedAnswerOf({ env });
   return new Response(waitlistCsvOf(rows), {
-    headers: { ...ADMIN_RESPONSE_HEADERS, [CONTENT_TYPE_HEADER]: CSV_CONTENT_TYPE, [HttpHeader.ContentDisposition]: CSV_DISPOSITION },
+    headers: { ...ADMIN_RESPONSE_HEADERS, [HttpHeader.ContentType]: CSV_CONTENT_TYPE, [HttpHeader.ContentDisposition]: CSV_DISPOSITION },
   });
 }

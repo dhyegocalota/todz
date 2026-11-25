@@ -63,6 +63,19 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] Keyboard only: the field, the widget, the button, then the panel's actions and table — expected: a visible focus ring each time, the link page's result announced — NOT TICKED: PARTIAL, left open: Tab order on the panel is skip link, logo, Self-host guide, Download CSV, Sign out, each with a 3px solid focus ring, and on the sign-in card field then button (the widget never shows with the dummy keys); the live-region announcement of the link page was not checked with a screen reader, and its region is sent hidden then revealed, which some readers do not announce
 - [x] Reduced motion — expected: no transition on the cards — evidence: scripted walk: under reduce the cards have animation none and only a 0.12 s colour, background and opacity transition (the site rule); without it the cards run the rise animation 0.64 s
 
+## Fix round (spec "Review answers" V1–V7; these rows win over the ones above where they differ)
+
+- [ ] Both cookies (V2) — expected: `Path=/; Secure; HttpOnly; SameSite=Lax`, the challenge `Max-Age=900`, the session `Max-Age=43200`, the clearing `Max-Age=0`
+- [ ] `api-source.test.ts` (V1) — expected: `vars` has no `ADMIN_EMAIL`; every dev script and the E2E still pass `ADMIN_EMAIL`
+- [ ] A deploy-shaped configuration without the `ADMIN_EMAIL` secret (V1) — expected: `GET /admin` 503 "The admin is closed right now.", the link request 503, no mail
+- [ ] `POST /admin/sign-out` with a session while D1 throws (V5) — expected: the cookie cleared with `Max-Age=0`
+- [ ] `GET /admin/export.csv` with a session while D1 throws (V5) — expected: the 503 Closed card as HTML, not JSON
+- [ ] `POST /admin/sessions` with `SITE_ORIGIN` unset or not https (V5) — expected: 503, before the same-origin check
+- [ ] The tester's defect (V7): a refused link page, then a valid link pasted into the same tab — expected: the panel, and no token left in the address bar or history entry
+- [ ] The E2E's mail-click success and fresh-context refusal — expected: both pass, three link requests in the run
+- [ ] `/join` and the owner routes after the shared body helper (V3) — expected: their existing suites green; `/join` with a JSON body and with a 5 KB form still "try again"; an owner post with `text/plain` still refused
+- [ ] The walk's two open boxes, re-run on this head — expected: as above
+
 ## Edge cases found during execution
 
 Found by the tester at c9b2168, scripted against a local wrangler dev (2026-11-25). Defects need a regression test from the developer.

@@ -7,8 +7,10 @@ import { adminSignInMail } from '../emails/admin-sign-in-mail';
 import type { Env } from '../env';
 import { HttpStatus } from '../http-status';
 import { isLocalSiteHost } from '../local-origin';
+import { parsedJson } from '../parsed-json';
 import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import { publicOriginOf } from '../sign-in-links';
+import { TURNSTILE_RESPONSE_FIELD, siteKeyOf } from '../turnstile-page';
 import { TURNSTILE_TOKEN_PATTERN, TurnstileAction, TurnstileVerdict, verifyTurnstileToken } from '../turnstile';
 import { STATUS_OF_NOTICE, adminCardAnswerOf, adminJsonAnswerOf } from './admin-answer';
 import {
@@ -33,13 +35,11 @@ import {
 import { deleteAdminLink, insertAdminLinkWithinLimit, openAdminSession, spendAdminLink } from './admin-store';
 import { AdminNotice } from './admin-waitlist';
 import type { SiteContext } from './site-endpoint';
-import { waitlistSiteKeyOf } from './waitlist-join';
 
 const ADMIN_LINKS_PER_WINDOW_MAX = 5;
-const TURNSTILE_FIELD = 'cf-turnstile-response';
 const LINK_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
-const LinkFormSchema = z.object({ [AdminField.Email]: z.string(), [TURNSTILE_FIELD]: z.string() });
+const LinkFormSchema = z.object({ [AdminField.Email]: z.string(), [TURNSTILE_RESPONSE_FIELD]: z.string() });
 
 const SessionBodySchema = z.object({ [AdminField.Token]: z.string() });
 
@@ -61,7 +61,7 @@ function adminLinkGuardOf({ request, env }: { request: Request; env: Env }): Adm
   if (adminEmail === null) return null;
   if (siteOrigin === null) return null;
   if (secret === undefined) return null;
-  if (waitlistSiteKeyOf(env) === null) return null;
+  if (siteKeyOf(env) === null) return null;
   if (isAdminUnguarded({ request, env, limits: Object.values(AdminLimit) })) return null;
   const sender = emailSenderOf({ configured: env.EMAIL_SENDER, publicOrigin: siteOrigin, requestUrl: request.url, binding: env.EMAIL });
   if (sender === null) return null;
@@ -86,7 +86,7 @@ async function linkAskOf({ request, env }: { request: Request; env: Env }): Prom
   if (form === null) return AdminNotice.TryAgain;
   const address = normalizedAddress(form[AdminField.Email]);
   if (address === null) return AdminNotice.TryAgain;
-  const token = form[TURNSTILE_FIELD];
+  const token = form[TURNSTILE_RESPONSE_FIELD];
   if (!TURNSTILE_TOKEN_PATTERN.test(token)) return AdminNotice.TryAgain;
   const verdict = await verifyTurnstileToken({
     token,
@@ -139,7 +139,7 @@ async function issueAdminLink({
 // NB ADR 0051: the answer, its cookie and its status are built before D1 or the sender is touched, so neither the time nor a failure tells the admin's address apart.
 export async function serveAdminSignInLink({ request, env, executionContext }: SiteContext): Promise<Response> {
   const ask = await linkAskOf({ request, env });
-  const siteKey = waitlistSiteKeyOf(env);
+  const siteKey = siteKeyOf(env);
   const isRefused = typeof ask === 'string';
   if (isRefused) return adminCardAnswerOf({ notice: ask, siteKey });
   const challenge = generateCredentialSecret();
@@ -159,7 +159,7 @@ export async function serveAdminSignInLink({ request, env, executionContext }: S
 async function sessionTokenOf(request: Request): Promise<string | null> {
   const isReadableJson = isBoundedRequest(request) && hasMediaType({ request, mediaType: MediaType.Json });
   if (!isReadableJson) return null;
-  const parsed = SessionBodySchema.safeParse(await request.json().catch(() => null));
+  const parsed = SessionBodySchema.safeParse(parsedJson(await request.text()));
   if (!parsed.success) return null;
   const token = parsed.data[AdminField.Token];
   if (!LINK_TOKEN_PATTERN.test(token)) return null;
@@ -170,6 +170,7 @@ async function sessionTokenOf(request: Request): Promise<string | null> {
 export async function serveAdminSession({ request, env }: SiteContext): Promise<Response> {
   const adminEmail = adminEmailOf(env);
   if (adminEmail === null) return adminJsonAnswerOf({ status: HttpStatus.Unavailable });
+  if (publicOriginOf(env.SITE_ORIGIN) === null) return adminJsonAnswerOf({ status: HttpStatus.Unavailable });
   if (isAdminUnguarded({ request, env, limits: [AdminLimit.Client] })) return adminJsonAnswerOf({ status: HttpStatus.Unavailable });
   if (!isSameOriginPost({ request, env })) return adminJsonAnswerOf({ status: HttpStatus.Forbidden });
   const clientRefusal = await adminClientRefusal({ request, env, path: AdminPath.Sessions });

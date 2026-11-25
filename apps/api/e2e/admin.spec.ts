@@ -7,6 +7,7 @@ import { JAVASCRIPT_CONTENT_TYPE, TURNSTILE_SCRIPT_URL, TURNSTILE_STUB } from '.
 
 enum AdminPath {
   Panel = '/admin',
+  LinkPage = '/admin/sign-in',
   Export = '/admin/export.csv',
 }
 
@@ -25,6 +26,7 @@ const SIGN_OUT_LABEL = 'Sign out';
 const GET_NEW_LINK_LABEL = 'Get a new link';
 const CSV_FILE_NAME = 'todz-waitlist.csv';
 const CSV_HEADER = '"address","joined_at","confirmation"';
+const UNKNOWN_LINK_TOKEN = 'A'.repeat(43);
 const LINK_POLL_TIMEOUT_MS = 15_000;
 
 type MailedMessage = { to: string; text: string };
@@ -52,7 +54,7 @@ function messagesTo(address: string): MailedMessage[] {
 }
 
 function mailedLinkTo(address: string): string {
-  const [message] = messagesTo(address);
+  const message = messagesTo(address).at(-1);
   if (message === undefined) throw new Error(`no mail was logged for ${address}`);
   const link = MAILED_LINK_PATTERN.exec(message.text)?.[0];
   if (link === undefined) throw new Error('the mail holds no sign-in link');
@@ -114,12 +116,15 @@ test.describe('the admin walk', () => {
     await freshContext.close();
   });
 
-  test('the same link opened in the browser that asked lands on the panel', async () => {
-    const mailPage = await openFromMailPage({ context: adminContext, link: mailedLink });
-    await expect(mailPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
-    await expect(mailPage.getByRole('heading', { level: 1, name: PANEL_TITLE })).toBeVisible();
-    expect(mailPage.url()).not.toContain('token=');
-    adminPage = mailPage;
+  test('the same link pasted into a tab that shows a refusal lands on the panel', async () => {
+    const linkPage = await adminContext.newPage();
+    await linkPage.goto(`${AdminPath.LinkPage}#token=${UNKNOWN_LINK_TOKEN}`);
+    await expect(linkPage.getByRole('heading', { level: 1, name: REFUSED_TITLE })).toBeVisible();
+    await linkPage.goto(mailedLink);
+    await expect(linkPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
+    await expect(linkPage.getByRole('heading', { level: 1, name: PANEL_TITLE })).toBeVisible();
+    expect(linkPage.url()).not.toContain('token=');
+    adminPage = linkPage;
   });
 
   test('the panel shows the three counts and the two actions', async () => {
@@ -144,5 +149,14 @@ test.describe('the admin walk', () => {
     await adminPage.goto(AdminPath.Export);
     await expect(adminPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
     await expect(adminPage.getByRole('heading', { level: 1, name: SIGN_IN_TITLE })).toBeVisible();
+  });
+
+  test('a new link clicked from a mail page in the browser that asked lands on the panel', async () => {
+    await askForLink({ page: adminPage, address: ADMIN_ADDRESS });
+    await expect.poll(() => messagesTo(ADMIN_ADDRESS).length, { timeout: LINK_POLL_TIMEOUT_MS }).toBe(2);
+    const mailPage = await openFromMailPage({ context: adminContext, link: mailedLinkTo(ADMIN_ADDRESS) });
+    await expect(mailPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
+    await expect(mailPage.getByRole('heading', { level: 1, name: PANEL_TITLE })).toBeVisible();
+    expect(mailPage.url()).not.toContain('token=');
   });
 });

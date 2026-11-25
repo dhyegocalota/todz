@@ -8,4 +8,6 @@ export enum HttpHeader {
   XRobotsTag = 'X-Robots-Tag',
   ContentDisposition = 'Content-Disposition',
   CacheControl = 'Cache-Control',
+  ContentType = 'Content-Type',
+  ContentLength = 'Content-Length',
 }

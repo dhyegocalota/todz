@@ -16,6 +16,8 @@ export enum AdminField {
 
 export const ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES = 15;
 
+export const ADMIN_SESSION_LIFETIME_HOURS = 12;
+
 export const ADMIN_RESPONSE_HEADERS: Record<string, string> = {
   [HttpHeader.CacheControl]: 'no-store',
   [HttpHeader.XRobotsTag]: 'noindex',

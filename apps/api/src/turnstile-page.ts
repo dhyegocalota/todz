@@ -5,6 +5,7 @@ import { noRouteResponse } from './owner-errors';
 const PAGE_METHOD = 'GET';
 const HASH_ALGORITHM = 'SHA-256';
 const SITE_KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
+export const TURNSTILE_RESPONSE_FIELD = 'cf-turnstile-response';
 export const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const TURNSTILE_SCRIPT_URL = `${TURNSTILE_ORIGIN}/turnstile/v0/api.js`;
 export const TURNSTILE_SCRIPT_TAG = `<script src="${TURNSTILE_SCRIPT_URL}" async defer></script>`;
@@ -16,6 +17,11 @@ export function usableSiteKeyOf(configured: string | null | undefined): string |
   if (configured === undefined || configured === null) return null;
   if (!SITE_KEY_PATTERN.test(configured)) return null;
   return configured;
+}
+
+export function siteKeyOf(env: Env): string | null {
+  if (env.TURNSTILE_SECRET_KEY === undefined) return null;
+  return usableSiteKeyOf(env.TURNSTILE_SITE_KEY);
 }
 
 export async function sourceHash(source: string): Promise<string> {

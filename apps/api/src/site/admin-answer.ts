@@ -1,6 +1,8 @@
 import { ADMIN_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
+import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
+import { siteKeyOf } from '../turnstile-page';
 import { serveAdminSignInPage } from './admin-page';
 import { ADMIN_RESPONSE_HEADERS, AdminPath } from './admin-paths';
 import { AdminNotice } from './admin-waitlist';
@@ -39,6 +41,10 @@ export async function adminCardAnswerOf({
 }): Promise<Response> {
   const page = await serveAdminSignInPage({ notice, siteKey });
   return adminPageAnswerOf({ page, status: STATUS_OF_NOTICE[notice], cookies });
+}
+
+export function adminClosedAnswerOf({ env, cookies }: { env: Env; cookies?: string[] }): Promise<Response> {
+  return adminCardAnswerOf({ notice: AdminNotice.Closed, siteKey: siteKeyOf(env), cookies });
 }
 
 export function adminJsonAnswerOf({ status, cookies }: AdminAnswerParts): Response {

@@ -349,7 +349,7 @@ describe('the admin routes on the site host', () => {
 
   describe('POST /admin/sign-out', () => {
     const SAME_ORIGIN = { 'Sec-Fetch-Site': 'same-origin' };
-    const CLEARED_SESSION_COOKIE = '__Host-todz_admin=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0';
+    const CLEARED_SESSION_COOKIE = '__Host-todz_admin=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0';
 
     function signOutRequest(headers: Record<string, string>): Request {
       return adminRequest({ path: AdminPath.SignOut, method: 'POST', headers });
@@ -387,6 +387,26 @@ describe('the admin routes on the site host', () => {
       expect(response.status).toBe(SEE_OTHER_STATUS);
       expect(response.headers.getSetCookie()).toEqual([CLEARED_SESSION_COOKIE]);
       expect(await adminSessionRows()).toEqual([]);
+    });
+
+    test('a directory that throws answers the closed card and still clears the cookie', async () => {
+      const failingDirectory = new Proxy(env.DIRECTORY, {
+        get(target, property) {
+          if (property === 'prepare') {
+            return () => {
+              throw new Error('the directory is down');
+            };
+          }
+          return Reflect.get(target, property);
+        },
+      });
+      const response = await serveWith({
+        request: signOutRequest({ ...SAME_ORIGIN, Cookie: SIGNED_IN_COOKIE }),
+        settings: { ...ADMIN_SETTINGS, DIRECTORY: failingDirectory },
+      });
+      expect(response.status).toBe(UNAVAILABLE_STATUS);
+      expect(await response.text()).toBe(await cardOf({ notice: AdminNotice.Closed }));
+      expect(response.headers.getSetCookie()).toEqual([CLEARED_SESSION_COOKIE]);
     });
 
     test.each([

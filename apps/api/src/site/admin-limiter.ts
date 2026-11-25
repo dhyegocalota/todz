@@ -5,6 +5,7 @@ import { HttpHeader } from '../http-header';
 import { isLocalSiteHost } from '../local-origin';
 import { AdminPath } from './admin-paths';
 import { AdminNotice } from './admin-waitlist';
+import { SiteLimitRefusal, isSiteUnguarded, limitRefusal } from './site-limiter';
 
 export enum AdminLimit {
   Client = 'client',
@@ -20,19 +21,20 @@ const LIMITER_OF_LIMIT: Record<AdminLimit, (env: Env) => RateLimit | undefined> 
   [AdminLimit.Global]: (env) => env.ADMIN_GLOBAL_LIMITER,
 };
 
-async function limitRefusal({ env, limit, key }: { env: Env; limit: AdminLimit; key: string }): Promise<AdminRefusal | null> {
-  const limiter = LIMITER_OF_LIMIT[limit](env);
-  if (limiter === undefined) return AdminNotice.Closed;
-  const outcome = await limiter.limit({ key }).catch(() => null);
-  if (outcome === null) return AdminNotice.Closed;
-  if (outcome.success) return null;
-  return AdminNotice.TryAgain;
+const NOTICE_OF_REFUSAL: Record<SiteLimitRefusal, AdminRefusal> = {
+  [SiteLimitRefusal.TryAgain]: AdminNotice.TryAgain,
+  [SiteLimitRefusal.Unavailable]: AdminNotice.Closed,
+};
+
+async function refusalOfLimit({ env, limit, key }: { env: Env; limit: AdminLimit; key: string }): Promise<AdminRefusal | null> {
+  const refusal = await limitRefusal({ limiter: LIMITER_OF_LIMIT[limit](env), key });
+  if (refusal === null) return null;
+  return NOTICE_OF_REFUSAL[refusal];
 }
 
 export function isAdminUnguarded({ request, env, limits }: { request: Request; env: Env; limits: AdminLimit[] }): boolean {
-  if (isLocalSiteHost({ env, request })) return false;
-  const hasEveryLimiter = limits.every((limit) => LIMITER_OF_LIMIT[limit](env) !== undefined);
-  return request.headers.get(HttpHeader.ClientAddress) === null || !hasEveryLimiter;
+  const limiters = limits.map((limit) => LIMITER_OF_LIMIT[limit](env));
+  return isSiteUnguarded({ request, env, limiters });
 }
 
 export async function adminClientRefusal({
@@ -46,8 +48,8 @@ export async function adminClientRefusal({
 }): Promise<AdminRefusal | null> {
   if (isLocalSiteHost({ env, request })) return null;
   const clientAddress = request.headers.get(HttpHeader.ClientAddress);
-  if (clientAddress === null) return AdminNotice.Closed;
-  return limitRefusal({ env, limit: AdminLimit.Client, key: `${path}:${clientRateKey({ address: clientAddress })}` });
+  if (clientAddress === null) return NOTICE_OF_REFUSAL[SiteLimitRefusal.Unavailable];
+  return refusalOfLimit({ env, limit: AdminLimit.Client, key: `${path}:${clientRateKey({ address: clientAddress })}` });
 }
 
 export async function adminAddressRefusal({
@@ -60,10 +62,10 @@ export async function adminAddressRefusal({
   address: string;
 }): Promise<AdminRefusal | null> {
   if (isLocalSiteHost({ env, request })) return null;
-  return limitRefusal({ env, limit: AdminLimit.Address, key: `${AdminPath.SignInLinks}:${await digestCredential(address)}` });
+  return refusalOfLimit({ env, limit: AdminLimit.Address, key: `${AdminPath.SignInLinks}:${await digestCredential(address)}` });
 }
 
 export async function adminGlobalRefusal({ request, env }: { request: Request; env: Env }): Promise<AdminRefusal | null> {
   if (isLocalSiteHost({ env, request })) return null;
-  return limitRefusal({ env, limit: AdminLimit.Global, key: AdminPath.SignInLinks });
+  return refusalOfLimit({ env, limit: AdminLimit.Global, key: AdminPath.SignInLinks });
 }
