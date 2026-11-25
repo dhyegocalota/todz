@@ -43,6 +43,7 @@ const CLOUDFLARE_API_HOST = 'api.cloudflare.com';
 const WRONG_SESSION_BODY = 'scripts/deploy-bodies/wrong-session.json';
 const JUNK_LINK_BODY = 'scripts/deploy-bodies/junk-turnstile-link.json';
 const JUNK_WAITLIST_BODY = 'scripts/deploy-bodies/junk-turnstile-waitlist.txt';
+const JUNK_ADMIN_BODY = 'scripts/deploy-bodies/junk-turnstile-admin.txt';
 const WAITLIST_ADDRESS_FIELD = 'email';
 const WAITLIST_TOKEN_FIELD = 'cf-turnstile-response';
 const PROBE_ADDRESS = 'nobody@example.com';
@@ -242,6 +243,13 @@ describe('runbooks', () => {
 
   test('the junk waitlist body reaches siteverify byte for byte, so only Turnstile refuses it', () => {
     const fields = new URLSearchParams(readRepositoryFile(JUNK_WAITLIST_BODY));
+    expect(fields.get(WAITLIST_ADDRESS_FIELD)).toBe(PROBE_ADDRESS);
+    expect(fields.get(WAITLIST_TOKEN_FIELD)).toMatch(TURNSTILE_TOKEN_PATTERN);
+    expect(fields.get(WAITLIST_TOKEN_FIELD)).not.toBe(TURNSTILE_DUMMY_TOKEN);
+  });
+
+  test('the junk admin body reaches siteverify byte for byte, so only Turnstile refuses it', () => {
+    const fields = new URLSearchParams(readRepositoryFile(JUNK_ADMIN_BODY));
     expect(fields.get(WAITLIST_ADDRESS_FIELD)).toBe(PROBE_ADDRESS);
     expect(fields.get(WAITLIST_TOKEN_FIELD)).toMatch(TURNSTILE_TOKEN_PATTERN);
     expect(fields.get(WAITLIST_TOKEN_FIELD)).not.toBe(TURNSTILE_DUMMY_TOKEN);
