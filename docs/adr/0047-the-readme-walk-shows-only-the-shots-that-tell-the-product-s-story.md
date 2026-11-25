@@ -1,13 +1,13 @@
 # 0047. The README walk shows only the shots that tell the product's story
 
-- Status: Proposed; amends [0030](0030-product-screenshots-live-in-docs-screenshots-and-the-readme-walks-them.md) §1
+- Status: Proposed; amends [0030](0030-product-screenshots-live-in-docs-screenshots-and-the-readme-walks-them.md) §§1, 3, 4 and supersedes the README clause of [0039](0039-the-app-icon-is-a-layered-icon-composer-document-with-the-flat-set-as-its-fallback.md) (brand surfaces in light and dark, the icon's looks)
 - Date: 2026-11-24
 - Deciders: Dhyego Calota (owner) asked for it on 2026-11-24 ("deixa só os screenshots que fazem sentido no readme"); Claude (the build loop's call on the cut)
 - Inspired by: the README walk at 3d0e27e, 25 cells long
 
 ## Context
 
-ADR 0030 §1 gives every feature the owner can see its own screenshots in `docs/screenshots/<feature>/`, and the README walks all of them. After sixteen features the walk mixes the product with its setup (sign-in, naming the first workspace), its error states (a refused change, offline, an incomplete link), and light/dark pairs that add nothing. The owner wants only the shots that make sense.
+ADR 0030 gives every feature the owner can see its own screenshots in `docs/screenshots/<feature>/` (§1), and the README walks all of them (§§3, 4). ADR 0039 added each brand surface in dark and the icon's six looks. After sixteen features the walk mixes the product with its setup (sign-in, naming the first workspace), its error states (a refused change, offline, an incomplete link), and light/dark pairs that add nothing. The owner wants only the shots that make sense.
 
 ## Decision
 
@@ -36,7 +36,7 @@ ADR 0030 §1 gives every feature the owner can see its own screenshots in `docs/
 ## Consequences
 
 - `docs/screenshots/` loses the setup, error and variant shots of `mac-app-shell`, `mac-sync`, `brand-glass`, `magic-link-sign-in` and `transactional-email`; git history keeps them.
-- PROMPT's "every feature ships screenshots in the README" now means: a new screen in the story replaces or adds its cell.
+- The owner's earlier rule for the build loop, "every visible feature ships screenshots in the README", now means: a new screen in the story replaces or adds its cell.
 
 ## Revisit when
 

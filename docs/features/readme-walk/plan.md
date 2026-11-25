@@ -31,6 +31,6 @@ One commit; no product code.
 
 ## Z. Prove and ship
 
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md`.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict.
-- [ ] **/open-pr:** gates passed, PR opened.
+- [x] **Tester run:** 6 of 6 at 8a06309, no defect — evidence: 8502722.
+- [x] **Reviewer:** WITH RESERVATIONS: the ADR trail. ADR 0030 and ADR 0039 now point to ADR 0047, and ADR 0047 names the sections it amends. Security CLEAR, with one MINOR left as is: the mail shot's placeholder token, which reads as a preview string.
+- [x] **/open-pr:** gates passed, PR opened.
