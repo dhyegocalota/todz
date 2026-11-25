@@ -1,8 +1,9 @@
 import { MILLISECONDS_PER_SECOND, WAITLIST_FILL_HOLD_MS, WAITLIST_JOIN_TIMEOUT_MS } from '@todz/types';
+import type { Env } from '../env';
 import { escapedHtml } from '../escaped-html';
 import { MediaType } from '../request-body';
 import { TurnstileAction } from '../turnstile';
-import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
+import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, siteKeyOf, usableSiteKeyOf } from '../turnstile-page';
 import {
   ARIA_DISABLED,
   EMAIL_FIELD_NAME,
@@ -57,6 +58,8 @@ const FAILURE_CALLBACK = 'waitlistChallengeFailed';
 const EXPIRED_CALLBACK = 'waitlistTokenExpired';
 
 type LandingPage = { available: ({ siteKey, stamp }: { siteKey: string; stamp: string }) => string; unavailable: string };
+
+export type LandingChallengeKeys = { siteKey: string; stampSecret: string };
 
 type LandingChallenge = { widget: string; scriptTag: string; fieldsOf: (form: JoinForm) => string };
 
@@ -388,20 +391,26 @@ const LANDING_PAGES: Record<LandingNotice, LandingPage> = {
   [LandingNotice.TryAgain]: landingPageOf(LandingNotice.TryAgain),
 };
 
+export function landingChallengeKeysOf(env: Env): LandingChallengeKeys | null {
+  const siteKey = siteKeyOf(env);
+  const stampSecret = env.TURNSTILE_SECRET_KEY;
+  if (siteKey === null || stampSecret === undefined) return null;
+  return { siteKey, stampSecret };
+}
+
 export async function serveLandingPage({
   notice,
-  siteKey,
-  stampSecret,
+  challenge,
 }: {
   notice: LandingNotice;
-  siteKey: string | null;
-  stampSecret: string | undefined;
+  challenge: LandingChallengeKeys | null;
 }): Promise<Response> {
   const page = LANDING_PAGES[notice];
-  const usableSiteKey = usableSiteKeyOf(siteKey);
-  const isChallengeAvailable = usableSiteKey !== null && stampSecret !== undefined;
-  if (!isChallengeAvailable) return sitePageResponse({ html: page.unavailable, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
-  const stamp = await renderStampOf({ secret: stampSecret, renderedAt: Date.now() });
+  const usableSiteKey = challenge === null ? null : usableSiteKeyOf(challenge.siteKey);
+  if (challenge === null || usableSiteKey === null) {
+    return sitePageResponse({ html: page.unavailable, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+  }
+  const stamp = await renderStampOf({ secret: challenge.stampSecret, renderedAt: Date.now() });
   return sitePageResponse({
     html: page.available({ siteKey: usableSiteKey, stamp }),
     contentSecurityPolicy: CHALLENGE_CONTENT_SECURITY_POLICY,

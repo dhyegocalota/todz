@@ -84,11 +84,11 @@ async function pageOf(response: Promise<Response>): Promise<SitePage> {
 }
 
 function landingPage(notice: LandingNotice): Promise<SitePage> {
-  return pageOf(serveLandingPage({ notice, siteKey: null, stampSecret: TURNSTILE_TEST_SECRET }));
+  return pageOf(serveLandingPage({ notice, challenge: null }));
 }
 
 function widgetLandingPage(notice: LandingNotice): Promise<SitePage> {
-  return pageOf(serveLandingPage({ notice, siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }));
+  return pageOf(serveLandingPage({ notice, challenge: { siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET } }));
 }
 
 const LANDING_PAGES: NamedPage[] = NOTICES.map((notice) => [`the landing with the ${notice} notice`, () => landingPage(notice)]);
@@ -356,11 +356,9 @@ describe('the landing', () => {
 
   test.each([
     ['no site key', null],
-    ['an unusable site key', UNUSABLE_SITE_KEY],
-  ])('with %s, the landing renders no widget, no Turnstile script and no Turnstile origin', async (_name, siteKey) => {
-    const { response, html } = await pageOf(
-      serveLandingPage({ notice: LandingNotice.Joined, siteKey, stampSecret: TURNSTILE_TEST_SECRET }),
-    );
+    ['an unusable site key', { siteKey: UNUSABLE_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }],
+  ])('with %s, the landing renders no widget, no Turnstile script and no Turnstile origin', async (_name, challenge) => {
+    const { response, html } = await pageOf(serveLandingPage({ notice: LandingNotice.Joined, challenge }));
     expect(html).not.toMatch(WIDGET_PATTERN);
     expect(html).not.toContain(TURNSTILE_SCRIPT_TAG);
     expect(html).not.toContain(UNUSABLE_SITE_KEY);
@@ -401,7 +399,7 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
   });
 
   function stampedLandingPage(notice: LandingNotice): Promise<SitePage> {
-    return pageOf(serveLandingPage({ notice, siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }));
+    return pageOf(serveLandingPage({ notice, challenge: { siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET } }));
   }
 
   function stampsOf(html: string): string[] {
@@ -501,7 +499,7 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
   });
 
   test('without the secret, the page has no stamp and no widget', async () => {
-    const { html } = await pageOf(serveLandingPage({ notice: LandingNotice.None, siteKey: TEST_SITE_KEY, stampSecret: undefined }));
+    const { html } = await pageOf(serveLandingPage({ notice: LandingNotice.None, challenge: null }));
     expect(stampsOf(html)).toEqual([]);
     expect(html).not.toMatch(WIDGET_PATTERN);
   });
@@ -509,7 +507,7 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
 
 describe('the site host through the Worker', () => {
   function keyedLandingPage(notice: LandingNotice): Promise<SitePage> {
-    return pageOf(serveLandingPage({ notice, siteKey: TURNSTILE_TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }));
+    return pageOf(serveLandingPage({ notice, challenge: { siteKey: TURNSTILE_TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET } }));
   }
 
   async function postJoin(token: string | null): Promise<Response> {

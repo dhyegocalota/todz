@@ -12,7 +12,7 @@ import { publicOriginOf } from '../sign-in-links';
 import { TURNSTILE_TOKEN_PATTERN, TurnstileAction, TurnstileVerdict, verifyTurnstileToken } from '../turnstile';
 import { TURNSTILE_RESPONSE_FIELD, siteKeyOf } from '../turnstile-page';
 import { HONEYPOT_FIELD_NAME, JoinOutcome } from './join-form-markup';
-import { LandingNotice, serveLandingPage } from './landing-page';
+import { LandingNotice, landingChallengeKeysOf, serveLandingPage } from './landing-page';
 import type { SiteContext } from './site-endpoint';
 import {
   type WaitlistRefusal,
@@ -177,7 +177,7 @@ function jsonAnswer(outcome: JoinOutcome): Response {
 
 async function pageAnswer({ outcome, env }: { outcome: JoinOutcome; env: Env }): Promise<Response> {
   const notice = NOTICE_OF_OUTCOME[outcome];
-  const page = await serveLandingPage({ notice, siteKey: siteKeyOf(env), stampSecret: env.TURNSTILE_SECRET_KEY });
+  const page = await serveLandingPage({ notice, challenge: landingChallengeKeysOf(env) });
   return new Response(page.body, { status: STATUS_OF_NOTICE[notice], headers: page.headers });
 }
 
