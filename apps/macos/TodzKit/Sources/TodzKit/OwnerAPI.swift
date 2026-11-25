@@ -51,6 +51,7 @@ private final class RedirectRefusal: NSObject, URLSessionTaskDelegate {
 }
 
 public protocol OwnerService: Sendable {
+    func health() async throws -> ServerHealthAnswer
     func signInMethod() async throws -> SignInMethod
     func requestSignInLink(email: String, challenge: String, turnstileToken: String, linkScheme: AppLinkScheme) async throws
     func signIn(identityToken: String, linkVerifier: String?, turnstileToken: String?, timeZone: String) async throws -> IssuedSession

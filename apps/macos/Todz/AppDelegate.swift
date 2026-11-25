@@ -20,6 +20,7 @@ private func isFocusFilterQuiet() async -> Bool {
         preference: ServerPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
         connect: { ServerConnection(service: OwnerAPI(baseURL: $0.url, appVersion: AppConfiguration.appVersion), signals: SocketChangeSignals(baseURL: $0.url, appVersion: AppConfiguration.appVersion)) },
         probe: { await OwnerAPI(baseURL: $0.url, appVersion: AppConfiguration.appVersion, transport: OwnerAPI.probeTransport).probe(typedAddress: $0) },
+        appVersion: AppConfiguration.appVersion,
         linkScheme: AppConfiguration.linkScheme,
         vault: FileSessionVault(folder: AppConfiguration.sessionFolder),
         pendingLinks: FilePendingLinkVault(folder: AppConfiguration.sessionFolder),

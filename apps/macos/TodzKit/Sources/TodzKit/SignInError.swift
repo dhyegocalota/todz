@@ -6,6 +6,7 @@ public enum SignInError: Equatable, Sendable {
     case linkRejected
     case linkNotRequested
     case linkRefused
+    case appTooOld
     case timeZoneInvalid
     case unreachable
     case unexpected
