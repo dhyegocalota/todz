@@ -27,7 +27,7 @@ Two surfaces change: the popover gains a day-close mode; Settings gains a fourth
 
 - `MenuBarTodayHeading` takes a title: `closeTheDay` in the mode, `MainWindowCopy.today` otherwise; the count stays `MenuBarCopy.left(count:)`, `.secondary`.
 - Each open row gains an action line under the title, indented to the title's leading edge, always visible (O1), three text buttons (O2), the third worded `No date` (O3). The checkbox still completes; Done repeats it so the three choices sit side by side.
-- The add field is hidden in the mode: the popover opens while the owner is typing elsewhere, and a stray keystroke must not become a task. Nothing has focus when it opens.
+- The add field is hidden in the mode: the popover opens while the owner is typing elsewhere, and a stray keystroke must not become a task. Nothing has focus when it opens, and a day close the app opens by itself acts only after a click inside the popover: until then no key (D, T, N, Return, Space) reaches a row.
 - After an action the row lingers `completionLinger` (1 s) showing its result, then leaves with the usual animation (O4): Done shows the checked box and the done title; Tomorrow and No date replace the action line with `dueTomorrow` or `noDueDate` in `.secondary`. The heading count drops at once.
 - The workspace switcher stays; switching workspace ends the mode (the day close is about the active workspace).
 
@@ -89,7 +89,7 @@ New strings in § 8. Reused: `MenuBarCopy.left(count:)`, `MainWindowCopy.tomorro
 
 ## 5. Interaction and accessibility
 
-- **Keyboard:** Tab reaches each row, then (Full Keyboard Access) each of its buttons; Space presses a button. On a focused row, `D` Done, `T` Tomorrow, `N` No date (O7); Return and Space still reveal the task. Escape closes the popover and ends the mode.
+- **Keyboard:** a day close the app opens by itself acts only after a click inside the popover, so a stray keystroke aimed at another app never completes a task. After that click, Tab reaches each row, then (Full Keyboard Access) each of its buttons; Space presses a button. On a focused row, `D` Done, `T` Tomorrow, `N` No date (O7); Return and Space still reveal the task. Escape always closes the popover and ends the mode, with or without the click.
 - **VoiceOver:** on opening by itself, an announcement `dayCloseOpened(count:)`. The row reads its title and value as today, plus three actions (rotor) with the labels below. Each button is its own element: `Done, button` with the label `checkboxOpen(title:)`, `tomorrowLabel(title:)`, `noDateLabel(title:)`; `.help` gives the tooltips. After an action, the result is announced (`markedDone`, `dueTomorrow`, `noDueDate`); at the end, `dayClosedTitle`.
 - **Motion:** the row leaves with the default animation after the linger; none with Reduce Motion, as `endLinger` does. The popover's own close is the system's.
 - **Contrast:** `.primary` and `.secondary` on the popover's material, the system's guarantee in light, dark and Increase Contrast. Results are said in words and the checkbox shape, never colour.
