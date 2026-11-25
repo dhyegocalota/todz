@@ -1,11 +1,21 @@
 import { ADMIN_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
 import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
+import { serveAdminSignInPage } from './admin-page';
 import { ADMIN_RESPONSE_HEADERS, AdminPath } from './admin-paths';
+import { AdminNotice } from './admin-waitlist';
 
 const LOCATION_HEADER = 'Location';
 
 type AdminAnswerParts = { status: HttpStatus; cookies?: string[] };
+
+export const STATUS_OF_NOTICE: Record<AdminNotice, HttpStatus> = {
+  [AdminNotice.None]: HttpStatus.Ok,
+  [AdminNotice.CheckInbox]: HttpStatus.Ok,
+  [AdminNotice.TryAgain]: HttpStatus.TooManyRequests,
+  [AdminNotice.Closed]: HttpStatus.Unavailable,
+  [AdminNotice.Forbidden]: HttpStatus.Forbidden,
+};
 
 function adminAnswerWith({ answer, cookies = [] }: { answer: Response; cookies?: string[] }): Response {
   Object.entries(ADMIN_RESPONSE_HEADERS).forEach(([name, value]) => answer.headers.set(name, value));
@@ -16,6 +26,19 @@ function adminAnswerWith({ answer, cookies = [] }: { answer: Response; cookies?:
 
 export function adminPageAnswerOf({ page, status, cookies }: AdminAnswerParts & { page: Response }): Response {
   return adminAnswerWith({ answer: new Response(page.body, { status, headers: page.headers }), cookies });
+}
+
+export async function adminCardAnswerOf({
+  notice,
+  siteKey,
+  cookies,
+}: {
+  notice: AdminNotice;
+  siteKey: string | null;
+  cookies?: string[];
+}): Promise<Response> {
+  const page = await serveAdminSignInPage({ notice, siteKey });
+  return adminPageAnswerOf({ page, status: STATUS_OF_NOTICE[notice], cookies });
 }
 
 export function adminJsonAnswerOf({ status, cookies }: AdminAnswerParts): Response {

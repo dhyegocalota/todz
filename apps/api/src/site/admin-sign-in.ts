@@ -10,7 +10,7 @@ import { isLocalSiteHost } from '../local-origin';
 import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import { publicOriginOf } from '../sign-in-links';
 import { TURNSTILE_TOKEN_PATTERN, TurnstileAction, TurnstileVerdict, verifyTurnstileToken } from '../turnstile';
-import { adminJsonAnswerOf, adminPageAnswerOf } from './admin-answer';
+import { STATUS_OF_NOTICE, adminCardAnswerOf, adminJsonAnswerOf } from './admin-answer';
 import {
   AdminLimit,
   type AdminRefusal,
@@ -20,7 +20,6 @@ import {
   isAdminUnguarded,
 } from './admin-limiter';
 import { AdminField, AdminPath } from './admin-paths';
-import { serveAdminSignInPage } from './admin-page';
 import {
   ADMIN_SESSION_LIFETIME_MS,
   ADMIN_SIGN_IN_LINK_LIFETIME_MS,
@@ -47,14 +46,6 @@ const SessionBodySchema = z.object({ [AdminField.Token]: z.string() });
 type AdminLinkGuard = { adminEmail: string; siteOrigin: string; secret: string; sender: EmailSender };
 
 type AdminLinkAsk = { address: string; guard: AdminLinkGuard };
-
-const STATUS_OF_NOTICE: Record<AdminNotice, HttpStatus> = {
-  [AdminNotice.None]: HttpStatus.Ok,
-  [AdminNotice.CheckInbox]: HttpStatus.Ok,
-  [AdminNotice.TryAgain]: HttpStatus.TooManyRequests,
-  [AdminNotice.Closed]: HttpStatus.Unavailable,
-  [AdminNotice.Forbidden]: HttpStatus.Forbidden,
-};
 
 const REFUSAL_OF_VERDICT: Record<TurnstileVerdict, AdminRefusal | null> = {
   [TurnstileVerdict.Accepted]: null,
@@ -150,11 +141,11 @@ export async function serveAdminSignInLink({ request, env, executionContext }: S
   const ask = await linkAskOf({ request, env });
   const siteKey = waitlistSiteKeyOf(env);
   const isRefused = typeof ask === 'string';
-  if (isRefused) return adminPageAnswerOf({ page: await serveAdminSignInPage({ notice: ask, siteKey }), status: STATUS_OF_NOTICE[ask] });
+  if (isRefused) return adminCardAnswerOf({ notice: ask, siteKey });
   const challenge = generateCredentialSecret();
-  const answer = adminPageAnswerOf({
-    page: await serveAdminSignInPage({ notice: AdminNotice.CheckInbox, siteKey }),
-    status: STATUS_OF_NOTICE[AdminNotice.CheckInbox],
+  const answer = await adminCardAnswerOf({
+    notice: AdminNotice.CheckInbox,
+    siteKey,
     cookies: [adminCookieHeaderOf({ cookie: AdminCookie.Challenge, value: challenge })],
   });
   const isAdminAddress = ask.address === ask.guard.adminEmail;

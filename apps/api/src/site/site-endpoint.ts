@@ -2,6 +2,7 @@ import type { Env } from '../env';
 import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { noRouteResponse } from '../owner-errors';
+import { ADMIN_ROUTES } from './admin-routes';
 import { LandingNotice, serveLandingPage } from './landing-page';
 import { serveSelfHostPage } from './self-host-page';
 import { JOIN_PATH, LANDING_PATH, SELF_HOST_PATH } from './site-shell';
@@ -11,7 +12,7 @@ const LOCATION_HEADER = 'Location';
 
 export type SiteContext = { request: Request; env: Env; executionContext: ExecutionContext };
 
-type SiteRoute = (context: SiteContext) => Promise<Response> | Response;
+export type SiteRoute = (context: SiteContext) => Promise<Response> | Response;
 
 function routeKey({ method, pathname }: { method: string; pathname: string }): string {
   return `${method} ${pathname}`;
@@ -25,7 +26,12 @@ function redirectToLanding(): Response {
   return new Response(null, { status: HttpStatus.SeeOther, headers: { [LOCATION_HEADER]: LANDING_PATH } });
 }
 
+const ADMIN_ROUTE_OF_REQUEST: Record<string, SiteRoute> = Object.fromEntries(
+  ADMIN_ROUTES.map(({ method, path, route }) => [routeKey({ method, pathname: path }), route]),
+);
+
 const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
+  ...ADMIN_ROUTE_OF_REQUEST,
   [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: serveLanding,
   [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: serveLanding,
   [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: serveSelfHostPage,
