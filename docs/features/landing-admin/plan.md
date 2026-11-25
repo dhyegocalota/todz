@@ -90,7 +90,7 @@ Step 0 by the lead on `feat/landing-admin`; then G1 and G2 branch from it and ru
 
 ## Z. Prove and ship
 
-- [ ] **Tester run**
-- [ ] **Reviewer**
-- [ ] **Security reviewer**
-- [ ] **/open-pr**
+- [x] **Tester run:** 47 of 50 with one defect (4f315fb), then the fix round 58 ticked, 2 open with reasons (no screen reader; the reviewer box, ticked by the lead from the reviews) — evidence: af8538e.
+- [x] **Reviewer:** WITH RESERVATIONS (HIGH) at c9b2168, answered as spec V1–V8; the re-review held every V item and left six MINORs, answered in 8731cd7 and cc98731.
+- [x] **Security reviewer:** FINDINGS (one IMPORTANT: the committed `ADMIN_EMAIL`), answered by V1; then CLEAR on the fix round.
+- [x] **/open-pr:** gates passed, PR #29 opened.

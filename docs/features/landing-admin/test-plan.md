@@ -100,7 +100,7 @@ Found by the tester at c9b2168, scripted against a local wrangler dev (2026-11-2
 
 ## Adversarial review
 
-- [ ] Reviewer and security reviewer: the link spent only with its own challenge; no address told apart; no address or token in a log, URL or referrer; the cookies' attributes; the same-origin rule; the CSV formula guard; the API host refuses `/admin` — NOT TICKED: not the tester's box; left for the reviewer roles
+- [ ] Reviewer and security reviewer: the link spent only with its own challenge; no address told apart; no address or token in a log, URL or referrer; the cookies' attributes; the same-origin rule; the CSV formula guard; the API host refuses `/admin` — evidence: the reviewer's first pass (WITH RESERVATIONS, eleven findings) and re-review of c9b2168..2f13476 (all V items held, six MINORs answered in 8731cd7 and cc98731); security FINDINGS (one IMPORTANT, the committed `ADMIN_EMAIL`) answered by V1, then CLEAR on the fix round, including login CSRF through `hashchange` refused and Lax cookies with the same-origin rule
 
 ## Coverage honesty
 
