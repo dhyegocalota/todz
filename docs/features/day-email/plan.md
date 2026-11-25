@@ -80,7 +80,7 @@ Overlaps with lanes in flight (R18); whoever merges second merges `main` at a st
 
 - [ ] **Step 21:** Run the runbook from `main`: migration 0008, deploy, then subaddressing and the routing rule through `scripts/todz-cloudflare.sh api`; on an authentication error, the owner steps of ADR 0064 §8 go under Blockers in `todz-loop/STATE.md`. Record each answer in the run log.
 - [ ] **Step 22:** Owner step: in the Release app's Settings, turn on Email me my day with a time at the next quarter hour. The loop reads the `day_emails` row (`sent_at` set) and the Workers Logs summary line; the owner confirms the mail arrived and, from the message's original source, that it carries `Auto-Submitted: auto-generated` (if the platform dropped it, recorded in ADR 0063's Evidence).
-- [ ] **Step 23:** Owner step: reply to that mail with one line. The loop confirms one `day_email_replies` row and the task in the first workspace's Inbox. Then the forged reply (R17), sent only with the owner's explicit OK: a message to the same reply address with `From:` the owner's address sent from elsewhere (Python `smtplib` run with `-I` to a `todz.app` MX; if outbound port 25 is blocked, from any other mailbox with the owner's address only in the display name, and the case is stated) → no task and a `day_email_reply` log line with `unauthenticated` or `not_owner`. Finally Workers Logs for both messages and the run show no `rcptTo`, `mailFrom` or address (R5, R17).
+- [ ] **Step 23:** Owner step: reply to that mail with one line. The loop confirms one `day_email_replies` row and the task in the first workspace's Inbox. Then the forged reply (R17), sent only with the owner's explicit OK: a message to the same reply address with `From:` the owner's address sent from elsewhere (Python `smtplib` run with `-I` to a `todz.app` MX; if outbound port 25 is blocked, from any other mailbox with the owner's address only in the display name, and the case is stated) → no task and a `day_email_reply` log line with `unauthenticated` or `not_owner`. Finally Workers Logs for both messages and the run show no `rcptTo`, `mailFrom` or address (R5, R17). Also capture, from the owner's real reply (the handler logs only enums, so the owner pastes the header's shape with the local parts removed): whether Cloudflare's `Authentication-Results` always carries a `dmarc` result and writes it last, where the header sits among the others, whether `header.from` and `header.d` are present, whether the owner's provider's `DKIM-Signature` lists `to` in `h=`, and whether `message.headers.get('from')` equals the From of the raw message (fix round 1, security 3 and 1). A `not_a_reply`, `unauthenticated` or `not_owner` log line on the real reply names which rule to amend.
 
 ## Failure modes
 
@@ -137,3 +137,24 @@ The plan and security review of 2026-11-25 returned FINDINGS and "Plan ready? NO
 | R16 | MINOR (PICK) | DMARC vouches only for the domain | Picked: require an aligned DKIM pass (`dkim=pass header.d` = D) and refuse an SPF-only DMARC pass, tested with `spf=pass dkim=none dmarc=pass`; the residual shared-provider risk stated | ADR 0064 §3.7, Consequences; Step 10 |
 | R17 | MINOR | Production proof only covers the happy path | Step 23 also sends a forged reply (expect a refusal) and checks Workers Logs for `rcptTo` | Step 23; test plan Production |
 | R18 | MINOR | Lane overlaps were wrong | Corrected table under Sequencing: landing-seo, performance (server and app/load), morning-glance's row order and height test; lockfile regenerated, never hand-merged; budget rows after performance lands | Sequencing; Steps 16, 19 |
+
+## Fix round 1 (security FINDINGS and code review NO, 2026-11-25)
+
+Red `ab18ec2`, green `15b59a3`, docs in the commit after it. Every answer is the loop's call.
+
+| # | Finding | Answer | Where |
+|---|---------|--------|-------|
+| S1 | A live reply address in an unsigned `Cc` or `To` replays an owner's signed mail | The reply address only in the single `To`; every `DKIM-Signature` of D must sign `to`, at least one; ADR 0064 §3.9 and Consequences amended | `reply-addressing.ts`, `reply-addressing.test.ts`, `day-email-reply.test.ts` |
+| S2, R2 | From parser differential | More than one `@` or any `@`, `<`, `>` in the display name is `mailbox_not_single`; the runtime From must equal the parsed From (`from_mismatch`) | `reply-sender.ts`, §3.8 |
+| S3 | A whitespace-led sender line folds into Cloudflare's header | No result after `dmarc`, one `dkim` result for D (`results_after_dmarc`, `dkim_not_single`); header-capture questions added to Step 23 | `reply-authentication.ts`, §3.7 |
+| S4, R3 | `replyOwnerOf` exported | Pinned by a shape test: only the reply module names it (a pin) | `api-source.test.ts` |
+| S5 | A mail turned off mid-tick leaves a live address | The digest read joins `owners.day_email = 1` | `findReplyAddressOwner` |
+| S6 | Daily cap race | One conditional claim insert before the add; the title is read first | `claimReply`, §3.10 |
+| S7 | Trailing-dot domain slips past `isOwnDomainAddress` | `normalizedAddress` refuses it | `email-address.ts` |
+| R4 | The caps do not bound the repeated work | The candidates query skips owners claimed within the catch-up window; a partial index on `owners`; ADR 0063 Evidence states the subrequest limit and where the caps fall short | `day-email-store.ts`, `0008_day_email.sql` |
+| R5 | `else` chains in the tokenizer | `scannedCommentCharacter` and `scannedQuotedCharacter` with early returns | `reply-authentication.ts` |
+| R6, R7 | Title edge cases | A same-paragraph attribution keeps the lines above it; a `wrote:` line before a quote is part of the quote | `reply-title.ts` |
+| R8 | Duplicate constants | `MAIL_SENDER_ADDRESS` (replaces `REPLY_ATTRIBUTION_ADDRESS`) feeds the sender and the title; `isOwnDomainAddress` uses `REPLY_ADDRESS_DOMAIN` | `libs/types`, `email-sender.ts`, `email-address.ts` |
+| R9, R10, R11 | Style | `ClockPartType` enum; explicit `=== undefined` checks; one NB line | `day-email-due.ts`, `reply-*.ts`, `scheduled.ts` |
+| R12, R13 | Docs | Spec and index say `Building`; spec Interfaces name both indexes | `spec.md`, `docs/features/README.md` |
+| Briefing | One Step 11 red printed an assertion, not the stub text | Corrected | `tester-briefing.md` |
