@@ -4,6 +4,7 @@ import path from 'node:path';
 import { chromium, defineConfig } from '@playwright/test';
 import { PERSIST_FOLDER_VARIABLE } from './e2e/persist-folder';
 import { ProjectName } from './e2e/project-name';
+import { ADMIN_ADDRESS, SERVER_LOG_FILE_NAME } from './e2e/site-environment';
 
 const SITE_PORT = 8791;
 const INSPECTOR_PORT = 9291;
@@ -19,12 +20,14 @@ const ACTION_TIMEOUT_MS = 10_000;
 const SYSTEM_CHROME_CHANNEL = 'chrome';
 const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
 const MOBILE_VIEWPORT = { width: 375, height: 812 };
+const ADMIN_SPEC_PATTERN = /admin\.spec\.ts$/;
 
 const SITE_VARIABLES: Record<string, string> = {
   SIGN_IN_PROVIDER: 'fake',
   EMAIL_SENDER: 'console',
   PUBLIC_ORIGIN: API_ORIGIN,
   SITE_ORIGIN: SITE_ORIGIN,
+  ADMIN_EMAIL: ADMIN_ADDRESS,
   TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
   TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
 };
@@ -49,7 +52,8 @@ function siteServerCommand(): string {
     persistArgument,
     ...variableArguments,
   ].join(' ');
-  return `${migrate} && ${serve}`;
+  const serverLog = path.join(persistFolder(), SERVER_LOG_FILE_NAME);
+  return `${migrate} && ${serve} > ${serverLog} 2>&1`;
 }
 
 function browserLaunch(): { channel?: string } {
@@ -75,7 +79,7 @@ export default defineConfig({
   },
   projects: [
     { name: ProjectName.Desktop, use: { viewport: DESKTOP_VIEWPORT } },
-    { name: ProjectName.Mobile, use: { viewport: MOBILE_VIEWPORT } },
+    { name: ProjectName.Mobile, use: { viewport: MOBILE_VIEWPORT }, testIgnore: ADMIN_SPEC_PATTERN },
   ],
   webServer: {
     command: siteServerCommand(),
