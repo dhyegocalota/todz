@@ -15,16 +15,16 @@ export enum RowsReadUseCase {
   ReadHistory = 'read history',
 }
 
-export const OWNER_PROJECT_ROUTE_BUDGET: WorkBudget = { roundTrips: 2, statements: 2, projectCalls: 1 };
+export const OWNER_PROJECT_ROUTE_BUDGET: WorkBudget = { roundTrips: 1, statements: 1, projectCalls: 1 };
 export const OWNER_WORKSPACE_LIST_BUDGET: WorkBudget = { roundTrips: 3, statements: 3, projectCalls: 0 };
 
 export const MCP_LIST_BUDGET_OF_ERA: Record<ClientEra, WorkBudget> = {
-  [ClientEra.Legacy]: { roundTrips: 2, statements: 2, projectCalls: 1 },
+  [ClientEra.Legacy]: { roundTrips: 1, statements: 2, projectCalls: 1 },
   [ClientEra.Modern]: { roundTrips: 1, statements: 1, projectCalls: 1 },
 };
 
 export const MCP_NEXT_NUDGED_BUDGET_OF_ERA: Record<ClientEra, WorkBudget> = {
-  [ClientEra.Legacy]: { roundTrips: 2, statements: 2, projectCalls: 2 },
+  [ClientEra.Legacy]: { roundTrips: 1, statements: 2, projectCalls: 2 },
   [ClientEra.Modern]: { roundTrips: 1, statements: 1, projectCalls: 2 },
 };
 

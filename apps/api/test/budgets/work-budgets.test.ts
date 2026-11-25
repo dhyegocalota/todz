@@ -8,7 +8,7 @@ import { serveMcp } from '../../src/mcp-endpoint';
 import { parsedJson } from '../../src/parsed-json';
 import type { ProjectStore } from '../../src/project-store';
 import { type WorkCounts, countedWorkEnv, rowsReadBy, seedLargeProject, seedProjectsOf } from '../budget-counters';
-import { seedNudgedKey } from '../directory-seed';
+import { seedIssuedKey, seedNudgedKey } from '../directory-seed';
 import { ClientEra, callTool, connectClient } from '../mcp-client';
 import { createOwnedProject, serveOwnerCall, signInOwner } from '../owner-client';
 import { AGENT_ACTOR, TODAY, draftOf, newProjectStub, openTasksFilter, unwrap } from '../task-fixtures';
@@ -22,6 +22,7 @@ import {
   type WorkBudget,
 } from './budget-limits';
 
+const MCP_URL = 'http://localhost:8787/mcp';
 const TOOLS_CALL_METHOD = 'tools/call';
 const EXPECTED_PROJECT_COUNT = 200;
 const MIDDLE_TASK = 2_500;
@@ -117,6 +118,34 @@ describe('the directory and Durable Object work of a request', () => {
     const response = await serveOwnerCall({ call, now: Date.now(), workerEnv: countedEnv });
     expect(response.status).toBe(HttpStatus.Ok);
     expectWithin({ counts, budget: OWNER_PROJECT_ROUTE_BUDGET });
+  });
+
+  test('an owner project route naming the project of another owner answers 404 and costs the same', async () => {
+    const stranger = await createOwnedProject();
+    const owned = await createOwnedProject();
+    const { countedEnv, counts } = countedWorkEnv();
+    const call = { method: 'GET', path: `/owner/projects/${owned.projectId}/changes?cursor=0`, token: stranger.token };
+    const response = await serveOwnerCall({ call, now: Date.now(), workerEnv: countedEnv });
+    expect(response.status).toBe(HttpStatus.NotFound);
+    expectWithin({ counts, budget: { ...OWNER_PROJECT_ROUTE_BUDGET, projectCalls: 0 } });
+  });
+
+  test('a 2025-era call with a session id the directory does not know answers 404 in one round trip', async () => {
+    const { key } = await seedIssuedKey();
+    const { countedEnv, counts } = countedWorkEnv();
+    const request = new Request(MCP_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+        'Mcp-Session-Id': 'a-session-nobody-opened',
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
+    });
+    const response = await serveMcp({ request, env: countedEnv, now: Date.now() });
+    expect(response.status).toBe(HttpStatus.NotFound);
+    expectWithin({ counts, budget: { ...MCP_LIST_BUDGET_OF_ERA[ClientEra.Legacy], projectCalls: 0 } });
   });
 
   test('the workspace list of an owner with 200 projects in 20 workspaces', async () => {
