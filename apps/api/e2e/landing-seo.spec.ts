@@ -215,6 +215,19 @@ test.describe('WebMCP tools', () => {
     expect(posts[0]).toContain(`email=${encodeURIComponent(firstAddress)}`);
   });
 
+  test('join_waitlist answers that the check failed when the server refuses the token', async ({ page }) => {
+    await page.route(`**${JOIN_PATH}`, (route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill({ status: 403, contentType: 'application/json', body: '{"outcome":"check-failed"}' })
+        : route.continue(),
+    );
+    await page.clock.install();
+    await page.goto(LANDING_PATH);
+    await page.clock.fastForward(WAITLIST_FILL_HOLD_MS);
+    const answer = await callTool({ page, name: WebMcpToolName.Join, input: { email: uniqueAddress() } });
+    expect(answer).toBe(WEBMCP_COPY.answers.checkFailed);
+  });
+
   test('join_waitlist refuses an invalid address and posts nothing', async ({ page }) => {
     const posts: string[] = [];
     page.on('request', (request) => request.method() === 'POST' && posts.push(request.url()));

@@ -4,7 +4,7 @@ import { MILLISECONDS_PER_SECOND, WAITLIST_MINIMUM_FILL_MS } from '@todz/types';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
-import { LandingNotice, serveLandingPage } from '../src/site/landing-page';
+import { LandingNotice, PAGE_SCRIPT, serveLandingPage } from '../src/site/landing-page';
 import { serveSite } from '../src/site/site-endpoint';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { SITE_STYLE } from '../src/site/site-style';
@@ -446,6 +446,24 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
     JOIN_FORMS.forEach(({ id }, index) => {
       expect(forms[index]).toMatch(new RegExp(`<p id="${id}-notice"[^>]* role="status"[^>]*>[^<]*${LANDING_COPY.join.note}</p>`));
     });
+  });
+
+  test.each([
+    [LandingNotice.Joined, false],
+    [LandingNotice.TryAgain, true],
+    [LandingNotice.OpensSoon, true],
+  ])('with the %s notice, the status dot is neutral: %s', async (notice, isNeutral) => {
+    const { html } = await stampedLandingPage(notice);
+    expect(formsOf(html).every((form) => form.includes('join-notice-neutral') === isNeutral)).toBe(true);
+  });
+
+  test('the neutral dot uses the muted text colour and the script applies it to every outcome but joined', () => {
+    expect(SITE_STYLE).toContain('.join-notice-neutral .notice-dot{background:var(--color-text-muted);box-shadow:none}');
+    expect(PAGE_SCRIPT).toContain('join-notice-neutral');
+  });
+
+  test('the script resets the widgets again when the browser comes back online', () => {
+    expect(PAGE_SCRIPT).toContain("addEventListener('online'");
   });
 
   test('the markup carries no aria-disabled, the page script sets it', async () => {

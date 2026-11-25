@@ -29,7 +29,7 @@ window.turnstile = {
   reset: (widget) => {
     document.documentElement.dataset.${RESET_COUNT_PROPERTY} = String(Number(document.documentElement.dataset.${RESET_COUNT_PROPERTY}) + 1);
     widget.querySelectorAll('input[name="${TURNSTILE_RESPONSE_FIELD}"], .stub-turnstile-frame').forEach((token) => token.remove());
-    setTimeout(() => solveWidget(widget), 0);
+    setTimeout(() => navigator.onLine && solveWidget(widget), 0);
   },
 };`;
 

@@ -495,6 +495,73 @@ test.describe('join', () => {
     await expect.poll(() => mailCountTo(address)).toBe(1);
   });
 
+  test('after an offline press the check returns on its own when the connection does', async ({ page, context }) => {
+    await landingWithoutTheHold(page);
+    await context.setOffline(true);
+    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
+    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.unreachable);
+    await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'waiting');
+    await context.setOffline(false);
+    await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'ready');
+  });
+
+  test('a refusal gets a neutral dot and a join keeps the green one', async ({ page }) => {
+    await page.route(`**${SitePath.Join}`, (route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill({ status: FORBIDDEN_STATUS, contentType: JSON_MEDIA_TYPE, body: '{"outcome":"check-failed"}' })
+        : route.continue(),
+    );
+    await landingWithoutTheHold(page);
+    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
+    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveClass(/join-notice-neutral/);
+    await page.unroute(`**${SitePath.Join}`);
+    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
+    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
+    await expect(page.locator(`#${Fragment.Hero}-notice`)).not.toHaveClass(/join-notice-neutral/);
+  });
+
+  test('a press at once shows Joining and posts only three seconds after the navigation started', async ({ page }) => {
+    const posts: number[] = [];
+    page.on('request', (request) => request.method() === 'POST' && posts.push(Date.now()));
+    await page.goto(SitePath.Landing);
+    const timeOrigin = await page.evaluate(() => performance.timeOrigin);
+    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
+    await expect(page.locator(`form#${Fragment.Hero} button[type="submit"]`)).toHaveText(LANDING_COPY.join.submitting);
+    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
+    expect(posts).toHaveLength(1);
+    expect(Math.min(...posts) - timeOrigin).toBeGreaterThanOrEqual(WAITLIST_FILL_HOLD_MS);
+  });
+
+  test('an expiry after a solve waits for the next token and says nothing; before a solve it is not an error either', async ({ page }) => {
+    await page.goto(SitePath.Landing);
+    const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
+    await expect(button).not.toHaveAttribute(ARIA_DISABLED, 'true');
+    await page.evaluate(() => {
+      document.querySelectorAll('input[name="cf-turnstile-response"]').forEach((token) => token.remove());
+      Reflect.get(window, 'waitlistTokenExpired')();
+    });
+    await expect(button).toHaveAttribute(ARIA_DISABLED, 'true');
+    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.note);
+    await page.evaluate(() => Reflect.get(window, 'turnstile').reset(document.querySelector('form#join .cf-turnstile')));
+    await expect(button).not.toHaveAttribute(ARIA_DISABLED, 'true');
+  });
+
+  test('leaving during the hold and coming back leaves no form stuck sending', async ({ page }) => {
+    await page.goto(SitePath.Landing);
+    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
+    await page.goto('/llms.txt');
+    await page.goBack();
+    await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'ready');
+  });
+
+  test('a typed address the browser refuses posts nothing and is flagged invalid', async ({ page }) => {
+    const posts = joinPostsOf(page);
+    await page.goto(SitePath.Landing);
+    await submitForm({ page, form: Fragment.Hero, address: 'not-an-address' });
+    await expect(page.locator(`form#${Fragment.Hero} input[name="email"]:invalid`)).toHaveCount(1);
+    expect(posts).toEqual([]);
+  });
+
   test('a try again with Retry-After keeps the button waiting until the delay has passed', async ({ page }) => {
     await page.route(`**${SitePath.Join}`, (route) =>
       route.request().method() === 'POST'
