@@ -2,12 +2,14 @@ import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { AgentClient } from '../src/site/agent-setup';
 import { DOCS_PAGES } from '../src/site/discovery-copy';
+import { PAGE_SCRIPT } from '../src/site/landing-page';
 import { WEBMCP_COPY, WebMcpToolName } from '../src/site/webmcp-copy';
 import { WEBMCP_SCRIPT, WEBMCP_TOOLS, type WebMcpTool } from '../src/site/webmcp-script';
 import { inlineSources, sourceHash } from './page-script';
 
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
 const PLAIN_SCRIPT_PATTERN = /<script>([\s\S]*?)<\/script>/g;
+const NETWORK_CALLS = ['fetch(', 'XMLHttpRequest', 'sendBeacon'];
 const READ_ONLY_TOOLS = [WebMcpToolName.Overview, WebMcpToolName.Setup, WebMcpToolName.Docs];
 
 function toolNamed(name: WebMcpToolName): WebMcpTool {
@@ -63,6 +65,21 @@ describe('the WebMCP copy', () => {
     expect(WEBMCP_COPY.answers.sent).toContain('submitted');
     expect(WEBMCP_COPY.answers.sent).toContain('human check');
   });
+});
+
+describe('the scripts the landing ships', () => {
+  const SHIPPED_SCRIPTS = [
+    ['WEBMCP_SCRIPT', WEBMCP_SCRIPT],
+    ['PAGE_SCRIPT', PAGE_SCRIPT],
+  ];
+
+  test.each(SHIPPED_SCRIPTS)(
+    '%s makes no network call of its own, which connect-src self would permit (pin: green when it landed)',
+    (_name, script) => {
+      expect(script.length).toBeGreaterThan(0);
+      NETWORK_CALLS.forEach((call) => expect(script).not.toContain(call));
+    },
+  );
 });
 
 describe('the WebMCP script on the pages', () => {

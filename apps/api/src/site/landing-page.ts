@@ -46,7 +46,7 @@ const NOTICE_TEXT: Record<Exclude<LandingNotice, LandingNotice.None>, string> = 
   [LandingNotice.TryAgain]: LANDING_COPY.join.tryAgain,
 };
 
-const PAGE_SCRIPT = `{
+export const PAGE_SCRIPT = `{
   const waitingForToken = new Map();
   const hasToken = (form) => {
     const token = form.querySelector('[name="${TURNSTILE_RESPONSE_FIELD}"]');
