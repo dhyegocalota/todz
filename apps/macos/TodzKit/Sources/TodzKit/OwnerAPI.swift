@@ -71,6 +71,10 @@ public struct OwnerAPI: OwnerService {
         return URLSession(configuration: configuration)
     }
 
+    public func health() async throws -> ServerHealthAnswer {
+        preconditionFailure("OwnerAPI.health is not implemented")
+    }
+
     public func signInMethod() async throws -> SignInMethod {
         try await answer(SignInMethodAnswer.self, to: OwnerRequest(method: .get, path: signInMethodPath, session: nil)).method
     }
