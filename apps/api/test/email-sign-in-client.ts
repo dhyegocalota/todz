@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { digestCredential } from '../src/credential-digest';
 import { generateCredentialSecret } from '../src/credential-secret';
 import type { Env } from '../src/env';
+import { TurnstileAction } from '../src/turnstile';
 import { serveOwnerCall, workerEnvWith } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
 
@@ -13,16 +14,66 @@ export const LINK_CHALLENGE = 'ab'.repeat(32);
 const ACCEPTED_STATUS = 202;
 const LINKS_PATH = '/owner/sign-in-links';
 const SESSIONS_PATH = '/owner/sessions';
-export const EMAIL_SETTINGS: Partial<Env> = { SIGN_IN_PROVIDER: 'email', EMAIL_SENDER: 'console', PUBLIC_ORIGIN };
+export const TURNSTILE_TEST_SECRET = '1x0000000000000000000000000000000AA';
+export const EMAIL_SETTINGS: Partial<Env> = {
+  SIGN_IN_PROVIDER: 'email',
+  EMAIL_SENDER: 'console',
+  PUBLIC_ORIGIN,
+  TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET,
+};
 const TOKEN_IN_MAIL_PATTERN = /sign-in#token=([A-Za-z0-9_-]{43})/;
 const TOKEN_GROUP = 1;
 
 export const PUBLIC_HTTPS_ORIGIN = 'https://todz.app';
+const PUBLIC_HTTPS_HOSTNAME = 'todz.app';
 export const CLOUDFLARE_SETTINGS: Partial<Env> = {
   SIGN_IN_PROVIDER: 'email',
   EMAIL_SENDER: 'cloudflare',
   PUBLIC_ORIGIN: PUBLIC_HTTPS_ORIGIN,
 };
+export const CLIENT_ADDRESS_HEADER = 'CF-Connecting-IP';
+export const CLIENT_ADDRESS = '203.0.113.50';
+const SITEVERIFY_RESPONSE_FIELD = 'response';
+
+export const TURNSTILE_TOKEN_OF_ACTION: Record<TurnstileAction, string> = {
+  [TurnstileAction.RequestLink]: 'solved.request-link.token',
+  [TurnstileAction.SignIn]: 'solved.sign-in.token',
+};
+
+export type RecordingLimiter = { limiter: RateLimit; keys: string[] };
+
+export function recordingLimiter({ isAllowed }: { isAllowed: boolean }): RecordingLimiter {
+  const keys: string[] = [];
+  const limiter: RateLimit = {
+    async limit({ key }) {
+      keys.push(key);
+      return { success: isAllowed };
+    },
+  };
+  return { limiter, keys };
+}
+
+export function guardedSettings(): Partial<Env> {
+  return {
+    ...CLOUDFLARE_SETTINGS,
+    TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET,
+    SIGN_IN_LIMITER: recordingLimiter({ isAllowed: true }).limiter,
+    SIGN_IN_ADDRESS_LIMITER: recordingLimiter({ isAllowed: true }).limiter,
+    SIGN_IN_GLOBAL_LIMITER: recordingLimiter({ isAllowed: true }).limiter,
+  };
+}
+
+function actionOfToken(token: string | null): TurnstileAction | undefined {
+  return Object.values(TurnstileAction).find((action) => TURNSTILE_TOKEN_OF_ACTION[action] === token);
+}
+
+export function acceptingSiteverify(): MockInstance<typeof fetch> {
+  return vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+    const action = actionOfToken(new URLSearchParams(String(init?.body)).get(SITEVERIFY_RESPONSE_FIELD));
+    if (action === undefined) return Response.json({ success: false, 'error-codes': ['invalid-input-response'] });
+    return Response.json({ success: true, hostname: PUBLIC_HTTPS_HOSTNAME, action });
+  });
+}
 
 const SentMessageSchema = z.object({
   from: z.object({ name: z.string(), email: z.string() }),
