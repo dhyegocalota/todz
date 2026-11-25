@@ -106,7 +106,7 @@ private func snapshot(_ tasks: [TaskRecord], pendingTasks: [PendingTask] = []) t
     @Test func missingKeyFailsToDecode() throws {
         let data = try OwnerCoding.encoder().encode(try snapshot([open(1)]))
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        object.removeValue(forKey: "showsDayTemperature")
+        object.removeValue(forKey: "shows_day_temperature")
         let withoutTheKey = try JSONSerialization.data(withJSONObject: object)
         #expect(throws: DecodingError.self) {
             try OwnerCoding.decoder().decode(WidgetSnapshot.self, from: withoutTheKey)
