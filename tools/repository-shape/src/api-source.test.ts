@@ -65,9 +65,9 @@ const INFO_PLIST_API_BASE_URL_PATTERN = /TodzAPIBaseURL: \$\(TODZ_API_BASE_URL\)
 const FIRST_CAPTURE = 1;
 const CONSOLE_IDENTIFIER = /\bconsole\b/;
 const CONSOLE_EMAIL_SENDER = 'apps/api/src/email-sender.ts';
-const DIGEST_MODULE = 'apps/api/src/site/waitlist-digest.ts';
+const SCHEDULED_MODULE = 'apps/api/src/scheduled.ts';
 const DIGEST_CRON = '0 11 * * *';
-const DIGEST_CRON_PATTERN = /enum DigestCron \{\s*Daily = '([^']+)'/;
+const DIGEST_CRON_PATTERN = /enum ScheduledCron \{\s*WaitlistDigest = '([^']+)'/;
 const PROJECT_STORE_IDENTIFIER = /\bPROJECT_STORE\b/;
 
 const sourceFiles = repositoryFiles(API_SOURCE_FOLDER);
@@ -181,7 +181,7 @@ describe('the api source', () => {
 
   test('the digest cron the worker runs is the one the wrangler configuration triggers', () => {
     const [digestCron] = wranglerConfiguration().triggers.crons;
-    expect(DIGEST_CRON_PATTERN.exec(readRepositoryFile(DIGEST_MODULE))?.[FIRST_CAPTURE]).toBe(digestCron);
+    expect(DIGEST_CRON_PATTERN.exec(readRepositoryFile(SCHEDULED_MODULE))?.[FIRST_CAPTURE]).toBe(digestCron);
   });
 
   test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally with the shared limits', () => {

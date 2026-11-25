@@ -9,6 +9,7 @@ import {
 } from './directory';
 import { findOwnedWorkspace } from './directory-workspaces';
 import type { Env } from './env';
+import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 import type { ProjectStore } from './project-store';
 import { type RecordWait, measured } from './timed-call';
 
@@ -168,4 +169,20 @@ export async function openOwnedProject({
   const ownedProjectId = await findOwnedProjectId({ env, owner, projectId });
   if (ownedProjectId === null) return null;
   return openProject({ env, projectId: ownedProjectId });
+}
+
+export type ScheduledOwner = { readonly ownerId: string } & { readonly scheduledOwner: unique symbol };
+
+export type ScheduledProject = { record: ProjectRecord; project: DurableObjectStub<ProjectStore> };
+
+export type ScheduledWorkspace = { workspace: WorkspaceRecord; projects: ScheduledProject[] };
+
+export type DayEmailCandidate = { owner: ScheduledOwner; timeZone: string; minutes: number; address: string };
+
+export async function listDayEmailCandidates(input: { env: Env }): Promise<DayEmailCandidate[]> {
+  throw new Error(`listDayEmailCandidates is not implemented for ${typeof input.env}`);
+}
+
+export async function listScheduledWorkspaces(input: { env: Env; owner: ScheduledOwner }): Promise<ScheduledWorkspace[] | null> {
+  throw new Error(`listScheduledWorkspaces is not implemented for ${input.owner.ownerId}`);
 }
