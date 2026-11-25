@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import type { Env } from '../src/env';
+import { HttpHeader, NO_STORE } from '../src/http-header';
 import { HttpStatus } from '../src/http-status';
 import worker from '../src/index';
 import { withSecurityHeaders } from '../src/security-headers';
@@ -18,6 +19,8 @@ const CONTENT_TYPE_OPTIONS = 'X-Content-Type-Options';
 const REFERRER_POLICY = 'Referrer-Policy';
 const DEFAULT_POLICY = "default-src 'none'; frame-ancestors 'none'";
 const DEFAULT_TRANSPORT_SECURITY = 'max-age=31536000';
+const SCRIPT_DIRECTIVE = 'script-src';
+const UPGRADE_HEADER = 'Upgrade';
 const NOSNIFF = 'nosniff';
 const NO_REFERRER = 'no-referrer';
 const WEBSOCKET_UPGRADE = 'websocket';
@@ -56,7 +59,8 @@ function expectSecurityHeaders({ response, policy }: { response: Response; polic
   expect(response.headers.get(CONTENT_TYPE_OPTIONS)).toBe(NOSNIFF);
   expect(response.headers.get(REFERRER_POLICY)).toBe(NO_REFERRER);
   if (policy === null) {
-    expect(response.headers.get(CONTENT_SECURITY_POLICY)).not.toBeNull();
+    expect(response.headers.get(CONTENT_SECURITY_POLICY)).not.toBe(DEFAULT_POLICY);
+    expect(response.headers.get(CONTENT_SECURITY_POLICY)).toContain(SCRIPT_DIRECTIVE);
     return;
   }
   expect(response.headers.get(CONTENT_SECURITY_POLICY)).toBe(policy);
@@ -82,6 +86,7 @@ describe('the answers of the worker on every host kind', () => {
   test.each([
     ['an unknown path on the api host', () => new Request(`${API_ORIGIN}/unknown`), HttpStatus.NotFound, DEFAULT_POLICY],
     ['POST /mcp without a bearer', () => new Request(`${API_ORIGIN}/mcp`, { method: 'POST' }), HttpStatus.Unauthorized, DEFAULT_POLICY],
+    ['GET /sign-in', () => new Request(`${API_ORIGIN}/sign-in`), HttpStatus.Ok, null],
     ['GET /sign-in/challenge', () => new Request(`${API_ORIGIN}/sign-in/challenge`), HttpStatus.Ok, null],
     ['GET /health on the api host', () => new Request(`${API_ORIGIN}/health`), HttpStatus.Ok, DEFAULT_POLICY],
     ['an unknown path on the site host', () => new Request(`${SITE_ORIGIN}/unknown`), HttpStatus.NotFound, DEFAULT_POLICY],
@@ -106,6 +111,7 @@ describe('the answers of the worker on every host kind', () => {
     const request = new Request(`${SITE_ORIGIN}${AdminPath.Export}`, { headers: { Cookie: `${AdminCookie.Session}=${SESSION_SECRET}` } });
     const response = await answerOf({ request, settings: ADMIN_SETTINGS });
     expect(response.status).toBe(HttpStatus.Ok);
+    expect(response.headers.get(HttpHeader.CacheControl)).toBe(NO_STORE);
     expectSecurityHeaders({ response, policy: DEFAULT_POLICY });
   });
 
@@ -113,6 +119,7 @@ describe('the answers of the worker on every host kind', () => {
     const project = await createOwnedProject();
     const response = await projectCall({ project, method: 'GET', path: '/socket' });
     expect(response.status).toBe(HttpStatus.UpgradeRequired);
+    expect(response.headers.get(UPGRADE_HEADER)).toBe(WEBSOCKET_UPGRADE);
     expectSecurityHeaders({ response, policy: DEFAULT_POLICY });
   });
 
