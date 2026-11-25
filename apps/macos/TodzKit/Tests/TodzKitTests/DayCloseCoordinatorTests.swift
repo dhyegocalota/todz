@@ -245,6 +245,29 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(harness.popover.openings == 2)
     }
 
+    @Test func aShownPopoverOfAModeLeftFromYesterdayEndsItMarksNothingAndTomorrowIsDue() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.popover.showsWhenClicked = false
+        harness.at(today, hour: 18)
+        await harness.coordinator.check()
+        harness.at(tomorrow, hour: 8)
+        harness.coordinator.popoverShown()
+        #expect(harness.lastClosedDay == nil)
+        #expect(!harness.coordinator.isClosingDay)
+        harness.at(tomorrow, hour: 18)
+        await harness.coordinator.check()
+        #expect(harness.popover.openings == 2)
+    }
+
+    @Test func aPopoverShownAgainAfterTheDayWasMarkedKeepsTheMode() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.at(today, hour: 18)
+        await harness.coordinator.check()
+        harness.coordinator.popoverShown()
+        #expect(harness.coordinator.isClosingDay)
+        #expect(harness.lastClosedDay == today)
+    }
+
     @Test func aPopoverAlreadyVisibleWhenTheModeStartsMarksTheDayAtOnce() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.popover.isVisible = true
