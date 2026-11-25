@@ -3,7 +3,9 @@
 final class InMemoryPendingLinkVault: PendingLinkVault {
     var link: PendingSignInLink?
     var isUnwritable = false
+    var isUnerasable = false
     var eraseCount = 0
+    var onErase: (() -> Void)?
 
     func read() throws -> PendingSignInLink? {
         link
@@ -16,6 +18,8 @@ final class InMemoryPendingLinkVault: PendingLinkVault {
 
     func erase() throws {
         eraseCount += 1
+        guard !isUnerasable else { throw PendingLinkVaultError.unwritable }
         link = nil
+        onErase?()
     }
 }

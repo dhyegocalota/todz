@@ -16,4 +16,6 @@ The site also holds a small admin for the one owner address: a link mailed to it
 
 Once a day the same owner address gets a short digest of the waitlist's last day: who joined, the total and any confirmation that failed. Without that address the digest goes nowhere.
 
+On every host the Worker names its own origin at a public health address, so an app can check an address before it uses one.
+
 The deployed Worker is production on its own domain, with its own database and the mail sender of todz; a development Worker overrides that configuration and keeps its state on this machine. The development database has a new name since the Worker was first deployed, so state from earlier local runs stays behind and can be deleted.

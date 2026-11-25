@@ -12,3 +12,5 @@ export enum HttpHeader {
   ContentLength = 'Content-Length',
   Location = 'Location',
 }
+
+export const NO_STORE = 'no-store';

@@ -1,4 +1,5 @@
 import type { Env } from './env';
+import { HEALTH_PATH, serveHealth } from './health';
 import { HostKind, WWW_PREFIX, hostKindOf } from './host-kind';
 import { HttpStatus } from './http-status';
 import { serveMcp } from './mcp-endpoint';
@@ -50,6 +51,7 @@ const HANDLER_OF_HOST_KIND: Record<HostKind, HostHandler> = {
 
 export default {
   async fetch(request, env, executionContext): Promise<Response> {
+    if (new URL(request.url).pathname === HEALTH_PATH) return serveHealth({ request, env });
     const hostKind = hostKindOf({ request, env });
     if (hostKind === null) return noRouteResponse();
     return HANDLER_OF_HOST_KIND[hostKind]({ request, env, executionContext });

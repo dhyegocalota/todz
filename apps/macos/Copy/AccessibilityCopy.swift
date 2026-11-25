@@ -6,6 +6,8 @@ enum AccessibilityCopy {
     static let refreshing = "Refreshing"
     static let addProject = "New Project"
     static let rowOpensWindow = "Shows it in the todz window."
+    static let disclosureCollapsed = "Collapsed"
+    static let disclosureExpanded = "Expanded"
     static let markedDone = "Done"
 
     static func checkboxOpen(title: String) -> String {

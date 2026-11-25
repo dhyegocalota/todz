@@ -7,7 +7,7 @@ private let linkToken = String(repeating: "aB3_-", count: 8) + "xyz"
 private let pendingLifetime: TimeInterval = 20 * 60
 
 private func incomingLink() throws -> SignInLink {
-    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)"))
+    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)&origin=\(harnessDefaultServer)"))
     return try #require(SignInLink(url: url))
 }
 

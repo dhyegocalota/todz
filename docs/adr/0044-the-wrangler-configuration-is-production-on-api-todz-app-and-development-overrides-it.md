@@ -1,6 +1,6 @@
 # 0044. The Wrangler configuration is production on api.todz.app, and development overrides it
 
-- Status: Proposed; amends [0020](0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md) §3, [0041](0041-outgoing-email-goes-through-a-port-with-a-console-sender-for-development.md) §2 and [0008](0008-runbooks-live-in-the-repository.md)
+- Status: Proposed, partly superseded by [0056](0056-the-app-keeps-its-server-url-as-a-setting-and-switching-it-starts-clean.md) § 3 (§ 9's "Debug only" loopback HTTP); amends [0020](0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md) §3, [0041](0041-outgoing-email-goes-through-a-port-with-a-console-sender-for-development.md) §2 and [0008](0008-runbooks-live-in-the-repository.md)
 - Date: 2026-11-24
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) bought `todz.app`, authorized the deploy on 2026-11-24 ("já comprei todz.app no Cloudflare, configura tudo") and may overturn this
 - Inspired by: PROMPT.md "Publishing on todz.app" (2026-11-24), [ADR 0040](0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md), [ADR 0043](0043-mail-leaves-through-cloudflare-email-service-from-noreply-at-todz-app.md)
