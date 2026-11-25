@@ -91,7 +91,7 @@ function linkCall({
   email = freshAddress(),
   turnstileToken = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.RequestLink],
 }: { clientAddress?: string | null; origin?: string; email?: string; turnstileToken?: string } = {}): RouteCall {
-  const body = { email, link_challenge: LINK_CHALLENGE, turnstile_token: turnstileToken };
+  const body = { email, link_challenge: LINK_CHALLENGE, turnstile_token: turnstileToken, app_link_scheme: 'todz' };
   return { email, call: { method: 'POST', path: LINKS_PATH, body, headers: clientHeaders(clientAddress), origin } };
 }
 

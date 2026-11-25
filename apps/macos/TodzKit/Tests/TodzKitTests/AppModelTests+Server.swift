@@ -18,7 +18,7 @@ private func address(_ text: String) throws -> ServerAddress {
 
 private func incomingLink(origin: String = harnessDefaultServer) throws -> SignInLink {
     let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)&origin=\(origin)"))
-    return try #require(SignInLink(url: url))
+    return try #require(SignInLink(url: url, scheme: .release))
 }
 
 extension AppModelTests {

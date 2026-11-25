@@ -1,5 +1,6 @@
 {
   "email": "nobody@example.com",
   "link_challenge": "abababababababababababababababababababababababababababababababab",
-  "turnstile_token": "never.solved.token"
+  "turnstile_token": "never.solved.token",
+  "app_link_scheme": "todz"
 }

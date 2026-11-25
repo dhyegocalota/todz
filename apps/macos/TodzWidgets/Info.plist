@@ -25,5 +25,7 @@
 	</dict>
 	<key>TodzAppGroup</key>
 	<string>$(TeamIdentifierPrefix)$(TODZ_APP_GROUP)</string>
+	<key>TodzLinkScheme</key>
+	<string>$(TODZ_URL_SCHEME)</string>
 </dict>
 </plist>

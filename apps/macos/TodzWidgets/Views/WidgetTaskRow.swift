@@ -13,7 +13,7 @@ struct WidgetTaskRow: View {
         HStack {
             WidgetCheckbox(task: task, key: key)
                 .widgetAccentable(task.isDone)
-            Link(destination: WidgetLink.task(key).url) {
+            Link(destination: WidgetLink.task(key).url(scheme: AppLinkScheme.required(bundle: .main))) {
                 HStack {
                     Text(task.title)
                         .lineLimit(1)

@@ -1,11 +1,13 @@
 import { MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { z } from 'zod';
 import { digestCredential } from './credential-digest';
+import { AppLinkScheme } from './app-link-scheme';
 import { generateCredentialSecret } from './credential-secret';
 import { deleteSignInLink, insertSignInLinkWithinLimit } from './directory-sign-in-links';
 import { normalizedAddress } from './email-address';
 import { signInMail } from './emails/sign-in-mail';
 import { emailSenderOf } from './email-sender';
+import { enumValueOf } from './enum-value';
 import { isLocalOrigin } from './local-origin';
 import { HttpStatus } from './http-status';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
@@ -24,7 +26,12 @@ const SECURE_PROTOCOL = 'https:';
 const PLAIN_PROTOCOL = 'http:';
 const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
 
-const RequestBodySchema = z.object({ email: z.string(), link_challenge: z.string(), turnstile_token: z.string() });
+const RequestBodySchema = z.object({
+  email: z.string(),
+  link_challenge: z.string(),
+  turnstile_token: z.string(),
+  app_link_scheme: z.string(),
+});
 
 export function publicOriginOf(configured: string | undefined): string | null {
   if (configured === undefined) return null;
@@ -50,7 +57,8 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   const body = await parsedPublicBody({ request, schema: RequestBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const address = normalizedAddress(body.email);
-  const isMalformedAsk = address === null || !LINK_CHALLENGE_PATTERN.test(body.link_challenge);
+  const appLinkScheme = enumValueOf({ enumeration: AppLinkScheme, candidate: body.app_link_scheme });
+  const isMalformedAsk = address === null || appLinkScheme === null || !LINK_CHALLENGE_PATTERN.test(body.link_challenge);
   if (isMalformedAsk) return errorResponse(OwnerErrorCode.InvalidRequest);
   const challengeRefusal = await challenge.refusalOf(body.turnstile_token);
   if (challengeRefusal !== null) return challengeRefusal;
@@ -72,7 +80,9 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   });
   if (!isWithinLimit) return signInRefusal();
   try {
-    await sender.send(signInMail({ to: address, link: `${publicOrigin}${SIGN_IN_PAGE_PATH}#token=${token}`, origin: publicOrigin }));
+    await sender.send(
+      signInMail({ to: address, link: `${publicOrigin}${SIGN_IN_PAGE_PATH}#token=${token}&app=${appLinkScheme}`, origin: publicOrigin }),
+    );
   } catch {
     await deleteSignInLink({ directory: env.DIRECTORY, digest });
     return errorResponse(OwnerErrorCode.SignInUnavailable);

@@ -12,8 +12,8 @@ public struct SignInLink: Equatable, Sendable {
     public let turnstileToken: String
     public let origin: String
 
-    public init?(url: URL) {
-        guard url.scheme == linkScheme, url.host() == linkHost, url.path().isEmpty else { return nil }
+    public init?(url: URL, scheme: AppLinkScheme) {
+        guard url.scheme == scheme.rawValue, url.host() == linkHost, url.path().isEmpty else { return nil }
         let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
         guard let queryItems, queryItems.count == queryItemCount else { return nil }
         let valuesByName = Dictionary(queryItems.compactMap { item in item.value.map { (item.name, $0) } }, uniquingKeysWith: { first, _ in first })

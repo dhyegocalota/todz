@@ -13,7 +13,9 @@ const RETRY_AFTER_SECONDS = '60';
 const UNUSABLE_SITE_KEY = 'key"><script>';
 const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const TURNSTILE_SCRIPT_TAG = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
-const WIDGET_HTML = `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="interaction-only" data-theme="auto" data-callback="waitlistTokenReady"></div>`;
+const FAILURE_CALLBACK = 'waitlistChallengeFailed';
+const FAILURE_CALLBACK_ATTRIBUTES = ['data-error-callback', 'data-expired-callback', 'data-timeout-callback'];
+const WIDGET_HTML = `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="interaction-only" data-theme="auto" data-callback="waitlistTokenReady" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${FAILURE_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div>`;
 const WIDGET_PATTERN = /<div class="cf-turnstile"[^>]*><\/div>/g;
 const CAPSULE_END = '</button>\n</div>';
 const NOTICE_PATTERN = /<p id="([a-z]+)-notice" [^>]*role="status"[^>]*tabindex="-1"[^>]*>[\s\S]*?<\/span>([^<]*)<\/p>/;
@@ -302,6 +304,15 @@ describe('the landing', () => {
       });
     },
   );
+
+  test('the widget names one function for its error, expired and timeout callbacks, and the page script assigns it on window', async () => {
+    const { html } = await widgetLandingPage(LandingNotice.None);
+    const widget = html.match(WIDGET_PATTERN)?.[0];
+    if (widget === undefined) throw new Error('the page has no widget');
+    const named = FAILURE_CALLBACK_ATTRIBUTES.map((attribute) => new RegExp(`${attribute}="([^"]*)"`).exec(widget)?.[1]);
+    expect(named).toEqual(FAILURE_CALLBACK_ATTRIBUTES.map(() => FAILURE_CALLBACK));
+    expect(onlyInlineSource({ html, pattern: SCRIPT_PATTERN })).toContain(`window.${FAILURE_CALLBACK} =`);
+  });
 
   test.each([
     ['no site key', null],

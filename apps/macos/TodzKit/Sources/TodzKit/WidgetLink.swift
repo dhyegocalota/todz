@@ -1,6 +1,5 @@
 import Foundation
 
-let linkScheme = "todz"
 private let pathSeparator: Character = "/"
 private let taskLinkComponentCount = 2
 private let firstTaskNumber = 1
@@ -22,8 +21,8 @@ public enum WidgetLink: Equatable, Sendable {
     case today
     case task(TaskKey)
 
-    public init?(url: URL) {
-        guard url.scheme == linkScheme, let host = url.host().flatMap(WidgetLinkHost.init(rawValue:)) else { return nil }
+    public init?(url: URL, scheme: AppLinkScheme) {
+        guard url.scheme == scheme.rawValue, let host = url.host().flatMap(WidgetLinkHost.init(rawValue:)) else { return nil }
         let components = url.path(percentEncoded: true)
             .split(separator: pathSeparator, omittingEmptySubsequences: false)
             .dropFirst()
@@ -39,9 +38,9 @@ public enum WidgetLink: Equatable, Sendable {
         }
     }
 
-    public var url: URL {
+    public func url(scheme: AppLinkScheme) -> URL {
         var components = URLComponents()
-        components.scheme = linkScheme
+        components.scheme = scheme.rawValue
         components.host = host.rawValue
         components.percentEncodedPath = path
         guard let url = components.url else { preconditionFailure(linkFailure) }

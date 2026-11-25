@@ -10,6 +10,8 @@ import { CLOCK_NOW } from './task-fixtures';
 
 export const PUBLIC_ORIGIN = 'http://localhost:8787';
 export const LINK_CHALLENGE = 'ab'.repeat(32);
+export const RELEASE_LINK_SCHEME = 'todz';
+export const DEBUG_LINK_SCHEME = 'todz-dev';
 
 const ACCEPTED_STATUS = 202;
 const LINKS_PATH = '/owner/sign-in-links';
@@ -162,6 +164,7 @@ export function requestLink({
   workerEnv = emailEnv(),
   origin = PUBLIC_ORIGIN,
   turnstileToken = TURNSTILE_DUMMY_TOKEN,
+  appLinkScheme = RELEASE_LINK_SCHEME,
 }: {
   email?: unknown;
   challenge?: unknown;
@@ -169,8 +172,9 @@ export function requestLink({
   workerEnv?: Env;
   origin?: string;
   turnstileToken?: unknown;
+  appLinkScheme?: unknown;
 } = {}): Promise<Response> {
-  const body = { email, link_challenge: challenge, turnstile_token: turnstileToken };
+  const body = { email, link_challenge: challenge, turnstile_token: turnstileToken, app_link_scheme: appLinkScheme };
   return serveOwnerCall({
     call: { method: 'POST', path: LINKS_PATH, body, headers: CLIENT_HEADERS, origin },
     now,

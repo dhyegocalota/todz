@@ -141,7 +141,7 @@ type LinkRun = {
 function runLinkScript({ html, hash, answer }: { html: string; hash: string; answer: () => Promise<{ status: number }> }): LinkRun {
   const steps: string[] = [];
   const elements: Record<string, FakeElement> = {
-    [LINK_STATUS_ID]: fakeElement({ hidden: true }),
+    [LINK_STATUS_ID]: fakeElement({ hidden: false }),
     [LINK_TITLE_ID]: fakeElement({ hidden: false }),
     [LINK_BODY_ID]: fakeElement({ hidden: false }),
     [LINK_RETRY_ID]: fakeElement({ hidden: true }),
@@ -468,14 +468,19 @@ describe('the link page', () => {
     expect(directive({ policy: policyOf(page), name: 'connect-src' })).toBe(SELF_CONNECTION);
   });
 
-  test('is a hidden live region the script reveals, with the failed text ready and the link to a new one hidden', async () => {
+  test('is a live region that is never hidden and starts empty, with the link to a new one hidden', async () => {
     const { html } = await linkPage();
     const main = mainOf(html);
-    expect(main).toMatch(new RegExp(`<div id="${LINK_STATUS_ID}"[^>]*role="status"[^>]*aria-live="polite"[^>]*data-answer[^>]*hidden`));
+    const status = new RegExp(`<div id="${LINK_STATUS_ID}"([^>]*)>`).exec(main)?.[1];
+    if (status === undefined) throw new Error('the page has no status element');
+    expect(status).toContain('role="status"');
+    expect(status).toContain('aria-live="polite"');
+    expect(status).not.toMatch(/\shidden/);
+    expect(main).toContain(`<h1 id="${LINK_TITLE_ID}" class="admin-title"></h1>`);
+    expect(main).toContain(`<p id="${LINK_BODY_ID}" class="admin-body"></p>`);
     expect(main).toMatch(
       new RegExp(`<a id="${LINK_RETRY_ID}"[^>]*href="${AdminPath.Panel}"[^>]*hidden[^>]*>${ADMIN_COPY.link.failedAction}</a>`),
     );
-    expect(decoded(main)).toContain(`>${ADMIN_COPY.link.working}</h1>`);
     expect(html).toContain('<title>Signing in · todz admin</title>');
   });
 

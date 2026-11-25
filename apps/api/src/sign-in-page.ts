@@ -1,3 +1,4 @@
+import { AppLinkScheme } from './app-link-scheme';
 import type { Env } from './env';
 import { SIGN_IN_PAGE_COPY } from './sign-in-page-copy';
 import { SIGN_IN_PAGE_ICON } from './sign-in-page-icon';
@@ -6,8 +7,9 @@ import { TURNSTILE_EXPLICIT_SCRIPT_URL, type TurnstilePage, serveTurnstilePage, 
 
 export const SIGN_IN_PAGE_PATH = '/sign-in';
 const TOKEN_PARAMETER = 'token';
+const APP_PARAMETER = 'app';
 const TOKEN_PATTERN_SOURCE = '^[A-Za-z0-9_-]{43}$';
-const APP_LINK_PREFIX = 'todz://sign-in?token=';
+const APP_LINK_TOKEN_PREFIX = '://sign-in?token=';
 const APP_LINK_TURNSTILE_SEPARATOR = '&turnstile=';
 const APP_LINK_ORIGIN_SEPARATOR = '&origin=';
 const OPEN_BUTTON_ID = 'open';
@@ -16,10 +18,14 @@ const CHECKING_STATE = 'checking';
 const FAILED_STATE = 'failed';
 const READY_STATE = 'ready';
 
+const APP_LINK_SCHEMES = JSON.stringify(Object.values(AppLinkScheme));
+
 const PAGE_SCRIPT = `{
-  const token = new URLSearchParams(location.hash.slice(1)).get('${TOKEN_PARAMETER}');
+  const fragment = new URLSearchParams(location.hash.slice(1));
+  const token = fragment.get('${TOKEN_PARAMETER}');
+  const app = fragment.get('${APP_PARAMETER}');
   history.replaceState(null, '', location.pathname);
-  if (token !== null && /${TOKEN_PATTERN_SOURCE}/.test(token)) {
+  if (token !== null && /${TOKEN_PATTERN_SOURCE}/.test(token) && ${APP_LINK_SCHEMES}.includes(app)) {
     const button = document.getElementById('${OPEN_BUTTON_ID}');
     const check = document.getElementById('${CHECK_ID}');
     let appLink = null;
@@ -28,7 +34,7 @@ const PAGE_SCRIPT = `{
     const checked = (turnstileToken) => {
       if (!/${TURNSTILE_TOKEN_PATTERN_SOURCE}/.test(turnstileToken)) return fail();
       const isFirstCheck = appLink === null;
-      appLink = '${APP_LINK_PREFIX}' + token + '${APP_LINK_TURNSTILE_SEPARATOR}' + turnstileToken + '${APP_LINK_ORIGIN_SEPARATOR}' + encodeURIComponent(location.origin);
+      appLink = app + '${APP_LINK_TOKEN_PREFIX}' + token + '${APP_LINK_TURNSTILE_SEPARATOR}' + turnstileToken + '${APP_LINK_ORIGIN_SEPARATOR}' + encodeURIComponent(location.origin);
       document.body.dataset.state = '${READY_STATE}';
       if (!isFirstCheck) return;
       button.focus();

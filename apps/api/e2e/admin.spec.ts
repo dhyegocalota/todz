@@ -24,6 +24,9 @@ const STAT_LABELS = ['On the list', 'Last 24 hours', 'Failed confirmations'];
 const DOWNLOAD_LABEL = 'Download CSV';
 const SIGN_OUT_LABEL = 'Sign out';
 const GET_NEW_LINK_LABEL = 'Get a new link';
+const WORKING_COPY = 'Signing you in…';
+const NO_SCRIPT_TITLE = 'Finish signing in';
+const LINK_STATUS_TEXT_SELECTOR = '#link-title, #link-body';
 const CSV_FILE_NAME = 'todz-waitlist.csv';
 const CSV_HEADER = '"address","joined_at","confirmation"';
 const UNKNOWN_LINK_TOKEN = 'A'.repeat(43);
@@ -158,5 +161,16 @@ test.describe('the admin walk', () => {
     await expect(mailPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
     await expect(mailPage.getByRole('heading', { level: 1, name: PANEL_TITLE })).toBeVisible();
     expect(mailPage.url()).not.toContain('token=');
+  });
+});
+
+test.describe('the admin link page without JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('shows only the noscript copy and keeps its live region empty', async ({ page }) => {
+    await page.goto(AdminPath.LinkPage);
+    await expect(page.getByText(NO_SCRIPT_TITLE, { exact: true })).toBeVisible();
+    await expect(page.getByText(WORKING_COPY)).toHaveCount(0);
+    await expect(page.locator(LINK_STATUS_TEXT_SELECTOR)).toHaveText(['', '']);
   });
 });

@@ -9,6 +9,8 @@ const GENERATED_FILES = [
   'apps/macos/TodzWidgets/TodzWidgets.entitlements',
 ];
 const APP_INFO_PLIST = 'apps/macos/Todz/Info.plist';
+const WIDGETS_INFO_PLIST = 'apps/macos/TodzWidgets/Info.plist';
+const URL_SCHEME_REFERENCE = '$(TODZ_URL_SCHEME)';
 const APP_GROUP_REFERENCE = '$(TeamIdentifierPrefix)$(TODZ_APP_GROUP)';
 const APP_GROUP_LITERAL_PATTERN = /dev\.todz<|dev\.todz\n/;
 const FIRST_CAPTURE = 1;
@@ -55,6 +57,22 @@ describe('the macOS identities per configuration', () => {
       const text = readRepositoryFile(path);
       expect(text, path).toContain(APP_GROUP_REFERENCE);
       expect(text, path).not.toMatch(APP_GROUP_LITERAL_PATTERN);
+    });
+  });
+
+  test('each configuration registers its own link scheme, and Release keeps todz', () => {
+    expect(configurationSetting({ configuration: 'Debug', name: 'TODZ_URL_SCHEME' })).toBe('todz-dev');
+    expect(configurationSetting({ configuration: 'Release', name: 'TODZ_URL_SCHEME' })).toBe('todz');
+  });
+
+  test('the app registers the configuration scheme and both plists name it for the code to read', () => {
+    expect(readRepositoryFile(MACOS_PROJECT)).not.toContain('CFBundleURLSchemes: [todz]');
+    expect(occurrences({ text: readRepositoryFile(MACOS_PROJECT), fragment: `TodzLinkScheme: ${URL_SCHEME_REFERENCE}` })).toBe(2);
+    expect(readRepositoryFile(APP_INFO_PLIST)).toMatch(
+      /<key>CFBundleURLSchemes<\/key>\s*<array>\s*<string>\$\(TODZ_URL_SCHEME\)<\/string>\s*<\/array>/,
+    );
+    [APP_INFO_PLIST, WIDGETS_INFO_PLIST].forEach((path) => {
+      expect(readRepositoryFile(path), path).toMatch(/<key>TodzLinkScheme<\/key>\s*<string>\$\(TODZ_URL_SCHEME\)<\/string>/);
     });
   });
 
