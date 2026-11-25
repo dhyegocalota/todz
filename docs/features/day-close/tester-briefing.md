@@ -140,3 +140,33 @@ Both are pins: green when they landed, no product code changed. At `4451a51`, `s
 | `DayCloseCoordinatorTests/dueWhileOfflineOpensOnTheCachedRowsAndAnActionIsQueuedAndShown` | Launched from the cache with the server unreachable: the count reads the 2 cached rows and the coordinator opens; Done is queued in the outbox (`waitingChangeCount == 1`), the heading drops to 1, and the row lingers until its linger ends |
 
 The list scrolling inside the 360-wide popover is a view concern: the existing popover list ScrollView covers it, so it stays a walk item, not a unit.
+
+## Fix round 4: engagement only by a click; a mode that never showed does not block later days
+
+Security re-check findings, fixed red-first.
+
+- Engagement: `DayCloseCoordinator.engage(by:)` takes a `DayCloseEngagementInput` (`click`, `tab`, `hover`) and only `.click` sets `isEngaged`. The Tab handler in `MenuBarToday` and the hover engagement in `MenuBarRow` are gone; the tap gesture on the popover is the only caller (`.click`). The Done, Tomorrow and No date buttons are `.focusable(dayClose.isEngaged)`, so Full Keyboard Access cannot land on them or press them with Space before a click; a mouse click on them still works.
+- Blocking mode: `check()` is guarded by a private `isOpening` flag held only around the synchronous `openPopover()` call, not by `isClosingDay`. A re-entrant check during the open (E1) still opens nothing more; a mode left on by an opener that returned true but never showed no longer stops the next day's due check, which opens again and resets the engagement. `aCheckWhileTheDayCloseIsOpeningOpensNothingMore` and `aCheckWhileTheDayCloseIsOpenOpensNothingMore` are unchanged and green: the second one's same-day rule holds because the day is marked.
+
+| Test | Red commit | Printed failure | Green commit |
+|------|------------|-----------------|--------------|
+| `DayCloseCoordinatorTests/onlyAClickEngagesTheMode` (`.tab`, `.hover`) | `5510143` | `Expectation failed: !harness.coordinator.isEngaged` and `Expectation failed: !harness.coordinator.acceptsKeyActions`, once per argument (4 issues) | `1b845b0` |
+| `DayCloseCoordinatorTests/aModeLeftOnByAnOpenerThatNeverShowedDoesNotBlockTheNextDay` | `5510143` | `Expectation failed: harness.popover.openings == 2`, `Expectation failed: harness.lastClosedDay == tomorrow`, `Expectation failed: !harness.coordinator.isEngaged` (3 issues) | `1b845b0` |
+
+At `5510143` the run printed `Test run with 742 tests in 51 suites failed after 0.140 seconds with 7 issues`. At `1b845b0`: `swift test --package-path apps/macos/TodzKit` gives `Test run with 742 tests in 51 suites passed`; `xcodegen generate` and the Debug `xcodebuild` give `BUILD SUCCEEDED`, no warnings.
+
+### Walk rows to re-walk
+
+Opening 1; hidden launch (`open -g -j`); keys in the mode, including Tab twice then D does nothing, hover then D does nothing, a click then D acts; E2 (no focused row on opening).
+
+### Hypotheses to attack
+
+15. Hypothesis: with Full Keyboard Access on and no click yet, Tab skips the Done, Tomorrow and No date buttons and Space on a focused row does nothing; after one click they take focus and work.
+16. Hypothesis: a click on a Done, Tomorrow or No date button before any other click acts at once and also engages the mode.
+17. Hypothesis: if the popover never shows (full screen, Stage Manager) the next day's due check still opens the day close.
+
+### Known gaps
+
+- The `.tab` and `.hover` cases exist so the rule is testable; no view reports them any more.
+- Whether `.focusable(false)` removes a borderless Button from the Full Keyboard Access loop is a walk item, not a unit.
+- Hypothesis 16 is not certain: a click on a button may act through the button without the popover tap gesture firing; if so, `engage(by: .click)` is not reached by that click and the row stays unengaged.
