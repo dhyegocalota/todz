@@ -1,6 +1,6 @@
 # 0053. Agents mention today's tasks in `next` when the owner turns it on
 
-- Status: Accepted (the build loop's call, the owner may overturn it); amends the product design's v1 non-goal "reminders, notifications" for this one opt-in nudge, and [0036](0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md)'s Settings window gains its second control
+- Status: Accepted (the build loop's call, the owner may overturn it); amended by [0068](0068-one-respect-focus-switch-decides-for-every-proactive-surface-and-untouched-settings-follow-the-defaults.md) (§1 on by default, and a choice time tells the owner's choice from the default); amends the product design's v1 non-goal "reminders, notifications" for this one opt-in nudge, and [0036](0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md)'s Settings window gains its second control
 - Date: 2026-11-25
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) chose this idea from the loop's list ("1,4,5,6,7,9,10 e também 11 … seja criativo") and required every item to be "features opcionais", off by default, with no push notifications
 - Inspired by: the run-15 research in `todz-loop/notes/agent-nudge-research.md`, [ADR 0011](0011-due-dates-are-calendar-dates-and-the-caller-names-today.md), [ADR 0013](0013-a-project-is-reached-only-through-the-directory.md), [ADR 0016](0016-the-mcp-server-runs-on-the-sdk-v2-and-serves-both-protocol-eras.md), [ADR 0018](0018-the-mcp-server-reads-today-in-the-owner-s-time-zone.md)
@@ -11,7 +11,7 @@ The owner wants the agent, not the app, to remind him: when an agent starts on a
 
 ## Decision
 
-1. **One owner setting, off by default.** `owners.agent_nudge INTEGER NOT NULL DEFAULT 0 CHECK (agent_nudge IN (0, 1))` in migration 0007. It applies to every project and key of that owner. Later proactive items that the server must read get their own columns; app-only items stay in the app.
+1. **One owner setting, off by default.** `owners.agent_nudge INTEGER NOT NULL DEFAULT 0 CHECK (agent_nudge IN (0, 1))` in migration 0007. It applies to every project and key of that owner. Later proactive items that the server must read get their own columns; app-only items stay in the app. *Amended on 2026-11-25 by [ADR 0068](0068-one-respect-focus-switch-decides-for-every-proactive-surface-and-untouched-settings-follow-the-defaults.md):* the flag is on by default. A new owner's row names it from `AGENT_NUDGE_BY_DEFAULT`; `owners.agent_nudge_chosen_at` is stamped by every `PATCH` that names the flag, and migration 0009 turned the flag on for every row without that stamp.
 2. **It reaches the server through the key lookup.** `findKeyProject` already joins `owners` for the time zone; it also returns the flag, so no request makes a second query.
 3. **It speaks in `next`, every time.** When the flag is on and the project has open tasks due today or overdue, the `next` prompt and the `next` tool's answer start with one server line: "Today here: N due (M overdue). Start with T-12?", naming the task `next` would pick. Nothing is added at zero, nothing is added to `list`, `add`, `update` or `done`, and no task title is quoted, so no text of a task's author reaches the line.
 4. **Overdue counts.** "Due today" includes overdue, as `nextTask` ranks them together and the menu bar count does (ADR 0036).

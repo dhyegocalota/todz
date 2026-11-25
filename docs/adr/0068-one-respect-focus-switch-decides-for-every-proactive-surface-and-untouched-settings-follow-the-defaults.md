@@ -1,0 +1,53 @@
+# 0068. One Respect Focus switch decides for every proactive surface, and untouched settings follow the defaults
+
+- Status: Accepted (the build loop's call, the owner may overturn it)
+- Date: 2026-11-25
+- Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) asked, looking at the Settings window: "ao invés de cada feature flag consultar quiet… o ideal seria uma flag somente para respeitar Focus; daí todas as features se adequam… por padrão quero on: pending count, agents mention, morning glance, day temp, close the day às 18h; focus disabled", and later the same day: "deixa on email my day também"
+- Inspired by: [ADR 0054](0054-the-app-learns-focus-through-a-todz-focus-filter-not-the-focus-status-api.md) (the gate and the filter), [ADR 0053](0053-agents-mention-today-s-tasks-in-next-when-the-owner-turns-it-on.md), [ADR 0055](0055-the-day-closes-once-a-day-in-the-menu-bar-popover-at-the-owner-s-time.md), [ADR 0062](0062-the-morning-glance-is-a-non-activating-glass-panel-that-shows-today-on-the-first-wake-or-unlock-of-the-day.md), [ADR 0065](0065-the-day-temperature-steps-the-menu-bar-count-s-opacity-after-noon-and-washes-overdue-widget-rows-by-age-behind-a-setting.md) (the switches that were off by default), ADR 0063 on `feat/day-email` (the day email, opt-in until now), [RFC 8058](https://www.rfc-editor.org/rfc/rfc8058) (one-click unsubscribe)
+
+## Context
+
+Every proactive surface consults the Focus gate on its own terms, and the Settings window explains Focus per row ("Quiet in a Focus." under Day temperature, a "Quiet during Focus" row with a button). The owner wants one switch that decides for all of them, off by default, and the proactive features on by default. Two of those settings live on the server (`owners.agent_nudge`, `owners.day_email`), the others in the app's defaults. Accounts and Macs that already exist must take the new defaults where the owner never chose, and keep every explicit choice.
+
+## Decision
+
+1. **One switch, "Respect Focus", off by default.** An app-local preference (`RespectFocusPreference`, key `respectsFocus`) beside the others. It decides for every surface the app shows on its own: the day close, the morning glance, the day temperature, the menu bar ribbon when it lands, and any later one. No surface reads it; the gate does.
+2. **The gate is quiet only when both say so.** `ProactiveGate` keeps the filter's value as it does today and gains whether Focus is respected; `isQuiet` is true only when the switch is on and the todz filter says quiet. Turning the switch off while quiet ends the quiet exactly as a Focus ending does: each held surface is handed back once. Turning it on during a quiet Focus starts holding from then on.
+3. **Off means no Focus check at all.** With the switch off the app does not read `TodzFocusFilter.current` at launch, so the launch waits for nothing and the three-second timeout never quiets todz. A `perform()` from the system still records the filter's value in the gate (the system runs it whatever todz wants), but no surface sees it. Turning the switch on reads `current` once, with the same timeout, and a `perform()` that arrives first still wins (ADR 0054 §3).
+4. **Settings shows Focus in one place.** The per-feature Focus copy goes, starting with "Quiet in a Focus." under Day temperature. The "Respect Focus" row's detail says what on does; while the switch is on, a short helper line with "Open Focus Settings" sits under it, and "Quiet now, until this Focus ends." replaces the detail while the gate is quiet. The Focus filter's own description says it acts only when Respect Focus is on.
+5. **New defaults.** On: Show pending count in the menu bar (already on, ADR 0036), Let agents mention today's tasks (`agent_nudge`), Morning glance, Day temperature, Close the day at 18:00, Email me my day at 07:00 in the owner's time zone (`day_email`, `day_email_minutes` 420). Off: Respect Focus. The agent nudge and the day email stay ungated (ADR 0054 §5; the mail is not an app surface).
+6. **In the app, "never touched" is an absent key.** Settings writes a key only when the owner flips it (`@AppStorage` on a user action), so a key missing from the app's persistent domain means the owner never chose. Each preference reads the stored value when one is present and its type's default when none is: a Mac that never touched a switch takes the new default at the next launch, a Mac where the owner turned one off keeps it off. No migration, no stamp.
+7. **On the server, "never touched" is a missing choice time.** Migration 0009 adds `owners.agent_nudge_chosen_at` and `owners.day_email_chosen_at` (nullable epoch milliseconds). A `PATCH /owner` that names the field stores the value and stamps its time, even when the value does not change; sign-in and time zone changes never stamp. The same migration stamps every row whose flag is already on (the owner chose it, the old default was off), then sets the flag on for every row whose time is still null. The stored flag stays the effective value, so no read path, key lookup or cron query changes. A new owner's row names both flags from `libs/types` constants (`AGENT_NUDGE_BY_DEFAULT`, `DAY_EMAIL_BY_DEFAULT`), never the schema's `DEFAULT 0`, which a column rebuild would be needed to change. A later default change is another migration over rows with a null time.
+8. **Every day mail carries a one-click opt-out.** With the mail on for owners who never asked for it, the footer's "Turn it off there." is not enough. Each mail mints a stop link: a random 32-byte secret whose SHA-256 digest is stored in `day_email_stop_links` with the owner and an expiry of 30 days (the CAN-SPAM floor), pruned with the reply addresses. The mail carries `List-Unsubscribe: <https://api.todz.app/day-email/stop?token=…>` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, and a footer link "Stop these emails" to the same address. `GET` answers a page with one button and changes nothing, so a link scanner cannot turn the mail off; `POST` turns `day_email` off, stamps `day_email_chosen_at` and deletes the owner's reply addresses, as `PATCH {day_email: false}` does, and answers a page that says how to turn it back on. An unknown or expired token answers the same page for `GET` and `POST`, 404, with nothing stored. The token is never logged.
+
+## Alternatives considered
+
+| Option | Pros | Cons | Why not |
+|--------|------|------|---------|
+| One switch in the gate (chosen) | one place decides; surfaces unchanged | the gate gains a second input | the owner asked for one switch |
+| A per-surface "quiet in Focus" switch | fine-grained | four switches, the clutter the owner wants gone | the owner asked for one |
+| Keep reading the filter while the switch is off | simpler launch | a 3 s timeout can still quiet todz with Focus "off" | breaks "off checks nothing" |
+| Server: nullable flag columns | absence is the value itself | SQLite cannot drop `NOT NULL` without rebuilding `owners`, which other tables reference | a rebuild for a default |
+| Server: resolve the default at read time (`CASE WHEN chosen_at IS NULL`) | a default flip needs no data migration | every read, the key lookup and the cron's due query change, and the due query can no longer use the flag as is | more code on hot paths for a rare change |
+| Server: change the defaults for new owners only | no backfill | existing untouched accounts keep the old default | the owner asked for every untouched setting |
+| App: stamp a "defaults version" and migrate | explicit | a write on launch, and an off chosen before the stamp is indistinguishable anyway | the absent key already says it |
+| Opt-out only through Settings | no new route | a mail the owner never asked for with no way out from the mail itself | mail on by default needs a one-click stop |
+| Reuse the reply address secret as the stop token | no new table | one leaked secret would both add tasks and stop mail; the two expire differently | separate purposes, separate secrets |
+
+## Consequences
+
+- Existing Macs where a switch was never touched start showing the day close at 18:00, the morning glance and the day temperature after the update; existing accounts start receiving the day mail at 07:00 in their zone and agents start mentioning Today. That is the owner's request.
+- On the server an off that an owner chose before migration 0009 cannot be told from the old default: the flag was 0 either way. Those rows turn on. `agent_nudge` and `day_email` shipped on 2026-11-25, so few such choices can exist; the stop link and the Settings switch undo it in one action.
+- A `PATCH` served by the previous Worker in the minutes between the migration and the deploy stores the value without a time; that value is right until a later default change would overwrite it.
+- Focus filters an owner added stay in System Settings and do nothing while the switch is off; turning the switch on honours them at once.
+- A rollback of the app restores per-feature defaults off, but keys the owner flipped stay as flipped. A rollback of the Worker keeps the backfilled flags on; the columns and the table stay, unused.
+
+## Evidence
+
+The app's preferences already read the persistent domain only (`PersistentDomain.value(forKey:)`), and `@AppStorage` writes on a user action only, so an untouched switch is an absent key today. `storeOwnerChanges` passes `null` for an absent field and `COALESCE`s, so the stamp follows the same shape.
+
+## Revisit when
+
+- The owner wants a surface that ignores Respect Focus, or a Focus behaviour per surface again.
+- A setting's default changes again: write the migration over rows with a null choice time.
+- Mail volume reaches bulk-sender thresholds that need more than RFC 8058 (a postmaster complaint loop).
