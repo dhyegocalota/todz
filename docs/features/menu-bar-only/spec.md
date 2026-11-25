@@ -1,6 +1,6 @@
 # Menu bar only
 
-**Status:** Building
+**Status:** Shipped 2026-11-25
 **Tier:** 🟢 (one Settings switch, on by default, and the app's activation policy; no server, no schema, no new entitlement)
 **Owner approval:** approved 2026-11-25 by the owner's request to the loop: "coloca uma flag enabled by default urgente: para eu poder fechar e o todz não aparecer no Dock (nem no ⌘Tab), mas ainda tá ativo no menu bar e widgets e Siri tudo certinho", recorded in `todz-loop/PROMPT.md` "Menu bar only, URGENT".
 **ADRs:** [0074](../../adr/0074-closing-the-window-keeps-todz-in-the-menu-bar-as-an-accessory-app-behind-a-setting-on-by-default.md), [0031](../../adr/0031-the-menu-bar-extra-is-a-swiftui-window-over-the-app-s-one-model.md)
