@@ -18,6 +18,13 @@ enum SettingsCopy {
     static let morningGlanceDetail = "On the first wake or unlock of each day, todz shows Today for a few seconds."
     static let dayTemperature = "Day temperature"
     static let dayTemperatureDetail = "Dims the menu bar count through the afternoon and tints overdue widget rows. Quiet in a Focus."
+    static let menuBarRibbon = "Menu bar ribbon"
+    static let menuBarRibbonDetail = "Now and then, the menu bar unfolds what's next for a few seconds, then folds back."
+    static let menuBarRibbonCadence = "When the ribbon shows"
+    static let menuBarRibbonHourly = "Every hour"
+    static let menuBarRibbonDayClose = "At the close of the day"
+    static let menuBarRibbonAgentChange = "When an agent adds or completes a task"
+    static let menuBarRibbonDayCloseOverlap = "Close the day already opens todz at that time."
     static let server = "Server"
     static let serverDetail = "Where your tasks are kept. Switching signs you out and erases this Mac's copy."
     static let serverAddressLabel = "Server address"
@@ -63,6 +70,14 @@ enum SettingsCopy {
     static func confirmationMessage(server: String, losing: Int, signedIn: Bool) -> String {
         guard losing > 0 else { return switchMessage(server: server) }
         return signedIn ? switchLosingSignedInMessage(server: server) : switchLosingSignedOutMessage(server: server)
+    }
+
+    static func cadenceName(_ cadence: RibbonCadence) -> String {
+        switch cadence {
+        case .hourly: menuBarRibbonHourly
+        case .dayClose: menuBarRibbonDayClose
+        case .agentChange: menuBarRibbonAgentChange
+        }
     }
 
     static func agentNudgeSubtitle(notice: AgentNudgeNotice) -> String {
