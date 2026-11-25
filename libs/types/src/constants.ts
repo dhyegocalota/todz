@@ -29,3 +29,6 @@ export const COMPANY = {
   website: 'https://logicbit.com.br',
   logo: 'https://www.logicbit.com.br/favicon/apple-touch-icon.png',
 } as const;
+export const REPLY_SECRET_LENGTH = 32;
+export const REPLY_ADDRESS_DOMAIN = 'todz.app';
+export const REPLY_ATTRIBUTION_ADDRESS = 'noreply@todz.app';

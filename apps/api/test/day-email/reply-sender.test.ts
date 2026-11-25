@@ -65,6 +65,6 @@ describe('senderOf', () => {
   });
 
   test('an address that is not an address is refused', async () => {
-    expect(await senderOfHeaders(['From: not-an-address'])).toEqual({ verdict: SenderVerdict.MailboxNotSingle });
+    expect(await senderOfHeaders(['From: not-an-address'])).toEqual({ verdict: SenderVerdict.AddressInvalid });
   });
 });
