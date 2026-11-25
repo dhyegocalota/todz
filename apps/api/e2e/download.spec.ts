@@ -18,7 +18,7 @@ const LATEST_DISK_IMAGE_PATH = `/download/${LATEST_VERSION}/Todz-${LATEST_VERSIO
 const FOUND_STATUS = 302;
 const OK_STATUS = 200;
 const NOT_FOUND_STATUS = 404;
-const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
+const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 const APPCAST_CACHE_CONTROL = 'public, max-age=300';
 const TEXT_CONTENT_TYPE = 'text/plain; charset=utf-8';
