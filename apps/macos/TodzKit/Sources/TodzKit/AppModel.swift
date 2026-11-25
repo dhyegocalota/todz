@@ -2,6 +2,8 @@ import Foundation
 import Observation
 
 @MainActor @Observable public final class AppModel {
+    public internal(set) var serverURL: ServerAddress
+    public internal(set) var isSwitchingServer = false
     public internal(set) var phase: AppPhase = .loading
     public internal(set) var signInError: SignInError?
     public internal(set) var isSigningIn = false
@@ -86,13 +88,18 @@ import Observation
     @ObservationIgnored var keyIssueAnswerCount = 0
     @ObservationIgnored var revokedKeyIdentifiers: Set<String> = []
     @ObservationIgnored var keyLoading: Task<Void, Never>?
-    @ObservationIgnored let service: any OwnerService
+    @ObservationIgnored var serverSignOut: Task<Void, Never>?
+    @ObservationIgnored var service: any OwnerService
+    @ObservationIgnored var signals: any ChangeSignals
+    @ObservationIgnored let defaultURL: ServerAddress
+    @ObservationIgnored let preference: ServerPreference
+    @ObservationIgnored let connect: ServerConnectionFactory
+    @ObservationIgnored let probe: ServerProbe
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let pendingLinks: any PendingLinkVault
     @ObservationIgnored let store: any SyncStore
     @ObservationIgnored let widgetStore: any WidgetStore
     @ObservationIgnored let reloadWidgets: @Sendable () -> Void
-    @ObservationIgnored let signals: any ChangeSignals
     @ObservationIgnored public let timeZone: TimeZone
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored let pause: @Sendable (Duration) async throws -> Void
@@ -100,26 +107,35 @@ import Observation
     @ObservationIgnored let makeLinkVerifier: () -> String
 
     public init(
-        service: any OwnerService,
+        defaultURL: ServerAddress,
+        preference: ServerPreference,
+        connect: @escaping ServerConnectionFactory,
+        probe: @escaping ServerProbe,
         vault: any SessionVault,
         pendingLinks: any PendingLinkVault,
         store: any SyncStore,
         widgetStore: any WidgetStore,
         reloadWidgets: @escaping @Sendable () -> Void,
-        signals: any ChangeSignals,
         timeZone: TimeZone,
         now: @escaping () -> Date = Date.init,
         pause: @escaping @Sendable (Duration) async throws -> Void,
         makeIdempotencyKey: @escaping () -> String = TaskDraft.newIdempotencyKey,
         makeLinkVerifier: @escaping () -> String = SignInLinkChallenge.newVerifier
     ) {
-        self.service = service
+        let address = Self.addressInUse(preference: preference, defaultURL: defaultURL)
+        let connection = connect(address)
+        self.serverURL = address
+        self.service = connection.service
+        self.signals = connection.signals
+        self.defaultURL = defaultURL
+        self.preference = preference
+        self.connect = connect
+        self.probe = probe
         self.vault = vault
         self.pendingLinks = pendingLinks
         self.store = store
         self.widgetStore = widgetStore
         self.reloadWidgets = reloadWidgets
-        self.signals = signals
         self.timeZone = timeZone
         self.now = now
         self.pause = pause

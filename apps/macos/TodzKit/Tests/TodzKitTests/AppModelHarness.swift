@@ -5,6 +5,9 @@ import Testing
 let harnessTimeZoneIdentifier = "America/Sao_Paulo"
 let harnessChallengeToken = "challenge-token"
 let harnessLinkTurnstileToken = "link-turnstile-token"
+let harnessDefaultServer = "http://localhost:8787"
+let harnessServerKey = "serverURL"
+let harnessPendingLifetime: TimeInterval = 20 * 60
 
 final class KeySequence {
     private(set) var issued: [String] = []
@@ -50,23 +53,47 @@ final class HarnessClock {
     let verifiers = VerifierSequence()
     let clock = HarnessClock()
     let session = UUID().uuidString
+    let probes = ProbeRecorder()
+    let servers: FakeServers
+    let defaultURL: ServerAddress
+    let preference: ServerPreference
     let model: AppModel
 
-    init() throws {
+    init(storedServer: String? = nil, isLocalDataKept: Bool = false, isVaultUnerasable: Bool = false) throws {
         let timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
+        let defaultURL = try ServerAddress.checked(text: harnessDefaultServer).get()
+        let defaultsName = UUID().uuidString
+        let defaults = try #require(UserDefaults(suiteName: defaultsName))
+        defaults.removePersistentDomain(forName: defaultsName)
+        if let storedServer { defaults.set(storedServer, forKey: harnessServerKey) }
+        let preference = ServerPreference(defaults: defaults)
+        let servers = FakeServers(service: service, signals: signals)
+        let probes = probes
         let keys = keys
         let verifiers = verifiers
         let pause = pause
         let widgets = widgets
         let clock = clock
+        vault.isUnerasable = isVaultUnerasable
+        if isLocalDataKept {
+            vault.secret = session
+            store.owner = OwnerCache(ownerIdentifier: service.issuedSession.owner.identifier, workspaces: [], activeWorkspaceIdentifier: nil)
+            store.outbox = Data("outbox".utf8)
+            pendingLinks.link = PendingSignInLink(email: "maria@example.com", verifier: "verifier-0", expiresAt: fixedInstant.addingTimeInterval(harnessPendingLifetime))
+        }
+        self.defaultURL = defaultURL
+        self.preference = preference
+        self.servers = servers
         model = AppModel(
-            service: service,
+            defaultURL: defaultURL,
+            preference: preference,
+            connect: { servers.connect($0) },
+            probe: { await probes.probe($0) },
             vault: vault,
             pendingLinks: pendingLinks,
             store: store,
             widgetStore: widgets,
             reloadWidgets: { MainActor.assumeIsolated { widgets.recordReload() } },
-            signals: signals,
             timeZone: timeZone,
             now: { clock.now },
             pause: { try await pause.pause($0) },
@@ -103,6 +130,10 @@ final class HarnessClock {
 
     func flushed() async {
         await model.sendLoop?.value
+    }
+
+    func signedOutAtTheOldServer() async {
+        await model.serverSignOut?.value
     }
 
     func published() async {
