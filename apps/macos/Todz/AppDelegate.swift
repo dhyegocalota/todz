@@ -31,6 +31,7 @@ private func isFocusFilterQuiet() async -> Bool {
         pause: { try await Task.sleep(for: $0) }
     )
     let windowState = MainWindowState()
+    let updater = AppUpdater(bundle: .main)
     let panel = MenuBarPanel()
     let gate: ProactiveGate
     var dayChangeObservation: (any NSObjectProtocol)?

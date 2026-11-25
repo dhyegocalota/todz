@@ -11,15 +11,20 @@ settings:
       TODZ_APP_GROUP: dev.todz.debug
       TODZ_URL_SCHEME: todz-dev
       TODZ_ALLOWS_LOCAL_NETWORKING: "YES"
+      TODZ_UPDATE_FEED_URL: ""
     Release:
       TODZ_APP_BUNDLE_IDENTIFIER: dev.todz.Todz
       TODZ_WIDGETS_BUNDLE_IDENTIFIER: dev.todz.Todz.widgets
       TODZ_APP_GROUP: dev.todz
       TODZ_URL_SCHEME: todz
       TODZ_ALLOWS_LOCAL_NETWORKING: "YES"
+      TODZ_UPDATE_FEED_URL: https://todz.app/download/appcast.xml
 packages:
   TodzKit:
     path: TodzKit
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    revision: ab7d71291238df6e0492143b120c9b696a35f603
 targets:
   Todz:
     type: application
@@ -27,6 +32,7 @@ targets:
     sources: [Todz, Copy]
     dependencies:
       - package: TodzKit
+      - package: Sparkle
       - target: TodzWidgets
     settings:
       base:
@@ -49,6 +55,8 @@ targets:
           INFOPLIST_KEY_CFBundleDisplayName: Todz Dev
         Release:
           TODZ_API_BASE_URL: https://api.todz.app
+          ENABLE_HARDENED_RUNTIME: YES
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
     entitlements:
       path: Todz/Todz.entitlements
       properties:
@@ -56,6 +64,9 @@ targets:
         com.apple.security.network.client: true
         com.apple.security.application-groups:
           - $(TeamIdentifierPrefix)$(TODZ_APP_GROUP)
+        com.apple.security.temporary-exception.mach-lookup.global-name:
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spks
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spki
     info:
       path: Todz/Info.plist
       properties:
@@ -64,6 +75,13 @@ targets:
         TodzAPIBaseURL: $(TODZ_API_BASE_URL)
         TodzAppGroup: $(TeamIdentifierPrefix)$(TODZ_APP_GROUP)
         TodzLinkScheme: $(TODZ_URL_SCHEME)
+        SUFeedURL: $(TODZ_UPDATE_FEED_URL)
+        SUEnableInstallerLauncherService: YES
+        SUEnableAutomaticChecks: YES
+        SUScheduledCheckInterval: 86400
+        SURequireSignedFeed: YES
+        SUVerifyUpdateBeforeExtraction: YES
+        SUPublicEDKey: BYXfy/qfQvJmxxD6JPs8gelvFwACXZ8xhhcG2p/fpYY=
         CFBundleURLTypes:
           - CFBundleURLName: dev.todz.Todz
             CFBundleURLSchemes: [$(TODZ_URL_SCHEME)]
@@ -89,6 +107,10 @@ targets:
         ENABLE_HARDENED_RUNTIME: NO
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+      configs:
+        Release:
+          ENABLE_HARDENED_RUNTIME: YES
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
     entitlements:
       path: TodzWidgets/TodzWidgets.entitlements
       properties:
