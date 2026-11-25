@@ -15,7 +15,7 @@ The owner wants the agent, not the app, to remind him: when an agent starts on a
 2. **It reaches the server through the key lookup.** `findKeyProject` already joins `owners` for the time zone; it also returns the flag, so no request makes a second query.
 3. **It speaks in `next`, every time.** When the flag is on and the project has open tasks due today or overdue, the `next` prompt and the `next` tool's answer start with one server line: "Today here: N due (M overdue). Start with T-12?", naming the task `next` would pick. Nothing is added at zero, nothing is added to `list`, `add`, `update` or `done`, and no task title is quoted, so no text of a task's author reaches the line.
 4. **Overdue counts.** "Due today" includes overdue, as `nextTask` ranks them together and the menu bar count does (ADR 0036).
-5. **One read.** The project store answers `{count, overdue, first}` for the day in one call; if it fails, the nudge is left out and `next` answers as before.
+5. **One count.** The project store answers `{count, overdue}` for the day in one call, and the line names the task of the same `next` answer, so the two can never disagree; if the count fails, the nudge is left out and `next` answers as before.
 6. **The app owns the toggle.** The Settings window gains "Let agents mention today's tasks", read from `GET /owner` and written by a partial `PATCH /owner` (every field optional, at least one). The server is the source of truth; offline, the toggle shows its last known value and is disabled.
 
 ## Alternatives considered

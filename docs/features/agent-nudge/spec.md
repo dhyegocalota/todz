@@ -30,7 +30,7 @@ app Settings toggle → PATCH /owner {agent_nudge: true}  (partial body; time_zo
                     ← {owner: {id, time_zone, agent_nudge}}   (GET /owner and sign-in answer it too)
 
 MCP request → findKeyProject (joins owners: time_zone, agent_nudge)
-  next prompt / next tool, flag on → project.dueNow({today}) → {count, overdue, first}
+  next prompt / next tool, flag on → project.dueNow({today}) → {count, overdue}
       count > 0 → MCP_COPY.agentNudge({count, overdue, taskId}) + blank line + the usual answer
       count = 0, flag off, or dueNow fails → the usual answer
 ```
@@ -39,7 +39,7 @@ MCP request → findKeyProject (joins owners: time_zone, agent_nudge)
 
 - Migration `0007_agent_nudge.sql`: the column of ADR 0053 §1.
 - Directory: `OwnerRow`/`OwnerRecord`/`ownerJson` gain `agentNudge` (`agent_nudge` in JSON); `findKeyProject`/`KeyProject` gain `agentNudge`; `updateOwner` takes a partial body validated by zod (`time_zone` optional, `agent_nudge` optional boolean, at least one).
-- Project store: a `dueNow({ today })` RPC returning `{ count, overdue, first: TaskShortId | null }` from the core's due windows.
+- Project store: a `dueNow({ today })` RPC returning `{ count, overdue }` from the core's due windows; the line names the task the same `next` answer shows (plan review R3).
 - MCP: the scope gains `agentNudge`; `nextPromptText` and `nextAnswer` take an optional nudge line; copy in `mcp-copy.ts`.
 - macOS: `Owner.agentNudge`; `OwnerService.updateOwner` with a partial body; the Settings scene receives the model; a second `Toggle` with copy in `SettingsCopy.swift`, disabled offline.
 
