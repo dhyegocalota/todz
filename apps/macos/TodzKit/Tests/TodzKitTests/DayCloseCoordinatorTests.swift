@@ -20,8 +20,11 @@ private let minutesOutsideADay = [-2880, 1440]
     private(set) var openings = 0
     var isOpenable = true
 
+    var whileOpening: (() -> Void)?
+
     func open() -> Bool {
         openings += 1
+        whileOpening?()
         return isOpenable
     }
 }
@@ -91,6 +94,30 @@ private let minutesOutsideADay = [-2880, 1440]
         harness.at(today, hour: 21)
         #expect(harness.coordinator.check() == .doneToday(next: next))
         #expect(harness.popover.openings == 1)
+    }
+
+    @Test func aCheckWhileTheDayCloseIsOpeningOpensNothingMore() throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.at(today, hour: 18)
+        let coordinator = harness.coordinator
+        harness.popover.whileOpening = { coordinator.check() }
+        coordinator.check()
+        #expect(harness.popover.openings == 1)
+        #expect(harness.lastClosedDay == today)
+    }
+
+    @Test func aCheckWhileTheDayCloseIsOpenOpensNothingMore() throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.at(today, hour: 18)
+        harness.popover.isOpenable = false
+        harness.coordinator.check()
+        harness.popover.isOpenable = true
+        harness.popover.whileOpening = nil
+        harness.coordinator.check()
+        #expect(harness.popover.openings == 2)
+        #expect(harness.coordinator.isClosingDay)
+        harness.coordinator.check()
+        #expect(harness.popover.openings == 2)
     }
 
     @Test func dueWhileTodayIsLoadingWaitsThenOpensWhenTheCountArrives() async throws {
