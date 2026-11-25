@@ -13,7 +13,8 @@ window.${SOLVED_CALLBACK} = (token) => post(token);
 window.${LOST_CALLBACK} = () => post('');`;
 
 const PAGE_STYLE = `:root{color-scheme:light dark}
-body{margin:0;font:1rem system-ui;background:transparent;color:CanvasText}
+html,body{margin:0;overflow:hidden;background:transparent}
+body{display:flex;justify-content:center;font:1rem system-ui;color:CanvasText}
 p{margin:0;color:GrayText}`;
 
 function pageHtml(body: string): string {
