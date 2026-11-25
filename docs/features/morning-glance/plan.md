@@ -79,7 +79,7 @@ G1 first through Step 3: its red commits carry stubs for every public symbol, so
 
 ### Lead
 
-- [ ] **Step 11:** The app README and the product design name the morning glance (purpose only); the README walk gains the glance from the tester's screenshot, within ADR 0047's budget.
+- [x] **Step 11:** The app README and the product design name the morning glance (purpose only); the README walk gains the glance from the tester's screenshot, within ADR 0047's budget. — evidence: the app README and product design lines land with the In review commit; no README walk row, because the panel sets `sharingType = .none` and no screenshot of it can be taken (re-walks 2–4), and the Settings row is a setup shot that ADR 0047 keeps out.
 
 ## Failure modes
 
