@@ -186,3 +186,15 @@ What was wrong (hypothesis): the animation was `NSAnimationContext` over `animat
 Change: the fade is now ten explicit `alphaValue` steps (1.0 down to 0.0 at 0.9 ... 0.1, 0) spaced evenly over 0.5 s, and one step to 0 with Reduce Motion, driven by the dwell task so a cancel stops it. The schedule is `MorningGlanceDwell.fadeAlphas(reducesMotion:)`, pure and tested. Red `cdf75df`: `Expectation failed: alphas.count == 10`, `alphas.first == 0.9`, `alphas.last == 0`, and `fadeAlphas(reducesMotion: true) == [0]`. Green: the commit after it.
 
 Walk rows to re-check: sample `kCGWindowAlpha` every 50 ms from the first sighting: ten distinct values 0.9 ... 0 over about 0.5 s after about 5 s, then the window gone; no alpha above 0.9 after the fade starts. If `sharingType = .none` hides the alpha from the list, the tester says so and reads the fade from screenshots at 100 ms spacing instead.
+
+Re-walk 2 (`7e1e134`): the fade passes. The focus did not: `.defaultFocus` lost to AppKit's first-responder choice.
+
+## Fix round 3
+
+Decided by the lead: stop fighting the first responder. A window opened from the glance gets its add field disabled, and a disabled text field cannot become first responder, so focus falls to the list or nothing.
+
+- State: `AddFieldArming` in `TodzKit`. `AddFieldArming(opening: .list)` is disarmed, `.addField` is armed; `apply(.addFieldClicked)` and `apply(.newTaskCommand)` arm it. Red `ad2f188`: `Expectation failed: !AddFieldArming(opening: .list).isArmed`. Green: the commit after it.
+- Wiring (app target, walk only): `MainWindowState.addFieldArming` is set by `open(_:from:)` from the link's source, armed by `requestNewTask` (menu and Cmd+N), and reset by `windowClosed()` from `MainWindow`'s `onDisappear`. `TaskListView` puts `.disabled(!isArmed)` on the add field and, while disarmed, a clear tap overlay that arms it and then focuses it. `.defaultFocus` and the list's `.task` stay: they place the focus on the list when the window opens.
+- Visible consequence: the add field looks dimmed until the owner clicks it or presses Cmd+N.
+
+Walk rows to re-check: click the glance with the window closed; AX focused element is the list or none, never "Add a task"; type `x`: nothing lands in the add field. Click into the dimmed field: it arms, enables and takes the caret. Repeat with Cmd+N instead of the click. Close the window and open it from the menu bar or a widget: the add field is enabled and focused as before. Click the glance while the window is already open: the field dims until clicked.
