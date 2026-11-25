@@ -50,6 +50,11 @@ struct MenuBarToday: View {
                 .disabled(isClosingDay)
                 .hidden()
         }
+        .simultaneousGesture(TapGesture().onEnded { dayClose.engage() })
+        .onKeyPress(keys: [.tab]) { _ in
+            dayClose.engage()
+            return .ignored
+        }
         .onExitCommand(perform: escapeAction)
         .onChange(of: isClosingDay, initial: true) { _, isClosingDay in announceOpening(isClosingDay: isClosingDay) }
         .onChange(of: model.activeWorkspaceIdentifier) { dayClose.end() }

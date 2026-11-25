@@ -35,16 +35,17 @@ struct MenuBarRow: View {
                     .fill(.fill.quaternary)
             }
         }
-        .onHover { isHovered = $0 }
+        .onHover(perform: hover)
         .onTapGesture(perform: reveal)
         .focusable()
         .onKeyPress(keys: [.return, .space]) { _ in
+            guard dayClose.acceptsKeyActions else { return .ignored }
             reveal()
             return .handled
         }
         .onKeyPress(characters: CharacterSet(charactersIn: dayCloseOutcomes.keys.joined())) { press in
             let isUnmodified = press.modifiers.isEmpty
-            guard isActing, isUnmodified, let outcome = dayCloseOutcomes[press.characters] else { return .ignored }
+            guard isActing, isUnmodified, dayClose.acceptsKeyActions, let outcome = dayCloseOutcomes[press.characters] else { return .ignored }
             act(outcome)
             return .handled
         }
@@ -53,6 +54,12 @@ struct MenuBarRow: View {
     private var isActing: Bool {
         let isLingering = windowState.lingers.outcome(of: task.key) != nil
         return dayClose.isClosingDay && !task.isDone && !isLingering
+    }
+
+    private func hover(isInside: Bool) {
+        isHovered = isInside
+        guard isInside else { return }
+        dayClose.engage()
     }
 
     private func act(_ outcome: LingerOutcome) {
