@@ -13,6 +13,8 @@ public struct Owner: Codable, Sendable, Equatable {
         case identifier = "id"
         case timeZone
         case agentNudge
+        case dayEmail
+        case dayEmailMinutes
     }
 }
 

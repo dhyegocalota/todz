@@ -156,11 +156,13 @@ public struct OwnerAPI: OwnerService {
     }
 
     public func updateDayEmail(session: String, isEnabled: Bool) async throws -> Owner {
-        fatalError("OwnerAPI.updateDayEmail is not implemented")
+        let request = try OwnerRequest(method: .patch, path: ownerPath, session: session, body: DayEmailBody(dayEmail: isEnabled))
+        return try await answer(OwnerAnswer.self, to: request).owner
     }
 
     public func updateDayEmailMinutes(session: String, minutes: Int) async throws -> Owner {
-        fatalError("OwnerAPI.updateDayEmailMinutes is not implemented")
+        let request = try OwnerRequest(method: .patch, path: ownerPath, session: session, body: DayEmailBody(dayEmailMinutes: minutes))
+        return try await answer(OwnerAnswer.self, to: request).owner
     }
 
     public func listWorkspaces(session: String) async throws -> [Workspace] {
