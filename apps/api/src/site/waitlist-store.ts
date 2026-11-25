@@ -1,3 +1,9 @@
+export enum WaitlistJoin {
+  Claimed = 'claimed',
+  Known = 'known',
+  Full = 'full',
+}
+
 // NB ADR 0050: one statement inserts the address and claims its one confirmation mail, so a known address claims nothing.
 export async function joinWaitlist({ database, address, now }: { database: D1Database; address: string; now: number }): Promise<boolean> {
   const insertion = await database
@@ -5,6 +11,18 @@ export async function joinWaitlist({ database, address, now }: { database: D1Dat
     .bind(address, now)
     .run();
   return insertion.meta.changes === 1;
+}
+
+export async function joinWaitlistWithinLimit({
+  database,
+  address,
+  now,
+}: {
+  database: D1Database;
+  address: string;
+  now: number;
+}): Promise<WaitlistJoin> {
+  throw new Error('joinWaitlistWithinLimit is not implemented');
 }
 
 export async function recordConfirmationFailure({

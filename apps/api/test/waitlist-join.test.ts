@@ -1,6 +1,7 @@
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { MILLISECONDS_PER_HOUR, WAITLIST_DAILY_JOINS_MAX } from '@todz/types';
+import { afterEach, beforeEach, describe, expect, onTestFinished, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import { waitlistMail } from '../src/emails/waitlist-mail';
 import type { Env } from '../src/env';
@@ -19,7 +20,15 @@ import {
   recordingBinding,
 } from './email-sign-in-client';
 import { workerEnvWith } from './owner-client';
-import { LimiterBinding, type WaitlistRow, recordedLimiters, throwingLimiter, waitlistRows } from './waitlist-client';
+import {
+  LimiterBinding,
+  type WaitlistRow,
+  deleteSeededJoins,
+  recordedLimiters,
+  seedJoins,
+  throwingLimiter,
+  waitlistRows,
+} from './waitlist-client';
 
 const SITE_ORIGIN = 'https://todz.app';
 const SITE_HOSTNAME = 'todz.app';
@@ -265,6 +274,17 @@ describe('a join on a public site host', () => {
     const address = freshAddress();
     const run = await join({ email: address });
     expect(run.html).not.toContain(address);
+  });
+});
+
+describe('a join over the daily cap', () => {
+  test('answers opens soon, keeps no row and sends no mail', async () => {
+    const prefix = await seedJoins({ count: WAITLIST_DAILY_JOINS_MAX, joinedAt: Date.now() - MILLISECONDS_PER_HOUR });
+    onTestFinished(() => deleteSeededJoins(prefix));
+    const address = freshAddress();
+    const run = await join({ email: address });
+    await expectOpensSoon({ run });
+    await expectNothingKept({ run, address });
   });
 });
 

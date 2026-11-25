@@ -29,6 +29,7 @@ export const SIGNED_IN_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;
 export const OWNER_WORKSPACES_MAX = 20;
 export const WORKSPACE_PROJECTS_MAX = 50;
 export const PROJECT_LIVE_KEYS_MAX = 10;
+export const WAITLIST_DAILY_JOINS_MAX = 500;
 export const COMPANY = {
   tradeName: 'Logic Bit',
   legalName: 'Logic Bit AI Software Boutique Ltda',
