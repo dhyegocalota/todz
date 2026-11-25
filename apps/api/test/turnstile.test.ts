@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { TURNSTILE_DUMMY_TOKEN, TurnstileAction, type TurnstileCheck, TurnstileVerdict, verifyTurnstileToken } from '../src/turnstile';
 
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
@@ -7,6 +7,8 @@ const TOKEN = 'a-solved.challenge_token';
 const HOSTNAME = 'api.todz.app';
 const OTHER_HOSTNAME = 'evil.example';
 const SERVER_ERROR_STATUS = 500;
+const SITEVERIFY_TIMEOUT_MS = 5_000;
+const TIMEOUT_ERROR_NAME = 'TimeoutError';
 const ACCEPTED_ANSWER = { success: true, hostname: HOSTNAME, action: TurnstileAction.RequestLink };
 
 type FetcherCall = { url: string; init: RequestInit | undefined };
@@ -34,6 +36,10 @@ function hangingUntilAborted(): typeof fetch {
       init?.signal?.addEventListener('abort', () => reject(init.signal?.reason));
     })) as typeof fetch;
 }
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('verifyTurnstileToken', () => {
   test('accepts a successful answer for the expected host and action', async () => {
@@ -84,8 +90,13 @@ describe('verifyTurnstileToken', () => {
     expect(await verifyTurnstileToken(check({ fetcher }))).toBe(TurnstileVerdict.Unavailable);
   });
 
-  test('answers unavailable when siteverify never answers before the timeout aborts it', async () => {
-    expect(await verifyTurnstileToken(check({ fetcher: hangingUntilAborted() }))).toBe(TurnstileVerdict.Unavailable);
+  test('bounds siteverify by a 5-second timeout, and answers unavailable when it fires before an answer', async () => {
+    const timeout = new AbortController();
+    const timeoutSignal = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeout.signal);
+    const verdict = verifyTurnstileToken(check({ fetcher: hangingUntilAborted() }));
+    timeout.abort(new DOMException('siteverify took too long', TIMEOUT_ERROR_NAME));
+    expect(await verdict).toBe(TurnstileVerdict.Unavailable);
+    expect(timeoutSignal).toHaveBeenCalledExactlyOnceWith(SITEVERIFY_TIMEOUT_MS);
   });
 
   test('accepts the dummy token on a local host without a call', async () => {
