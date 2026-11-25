@@ -4,6 +4,11 @@ export enum EmailSlot {
   Link = '{{link}}',
   Email = '{{email}}',
   Origin = '{{origin}}',
+  Joined = '{{joined}}',
+  Total = '{{total}}',
+  Failed = '{{failed}}',
+  Addresses = '{{addresses}}',
+  More = '{{more}}',
 }
 
 export type EmailSlotValues = Partial<Record<EmailSlot, string>>;

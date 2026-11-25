@@ -17,6 +17,11 @@ const PREVIEW_VALUES = {
   [EmailSlot.Link]: 'http://localhost:8787/sign-in#token=preview-only-not-a-token',
   [EmailSlot.Email]: 'maria@example.com',
   [EmailSlot.Origin]: 'http://localhost:8787',
+  [EmailSlot.Joined]: '2',
+  [EmailSlot.Total]: '42',
+  [EmailSlot.Failed]: '1',
+  [EmailSlot.Addresses]: 'maria@example.com\njoao@example.com',
+  [EmailSlot.More]: 'and 3 more.',
 };
 
 async function generate(): Promise<number> {

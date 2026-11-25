@@ -7,6 +7,7 @@ import { noRouteResponse } from './owner-errors';
 import { SIGN_IN_CHALLENGE_PAGE_PATH, serveSignInChallengePage } from './sign-in-challenge-page';
 import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
 import { serveSite } from './site/site-endpoint';
+import { runScheduled } from './site/waitlist-digest';
 
 export { ProjectStore } from './project-store';
 
@@ -52,5 +53,8 @@ export default {
     const hostKind = hostKindOf({ request, env });
     if (hostKind === null) return noRouteResponse();
     return HANDLER_OF_HOST_KIND[hostKind]({ request, env, executionContext });
+  },
+  async scheduled(controller, env): Promise<void> {
+    await runScheduled({ controller, env });
   },
 } satisfies ExportedHandler<Env>;

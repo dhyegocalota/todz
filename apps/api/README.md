@@ -14,4 +14,6 @@ The waitlist keeps each address once and mails it a short confirmation once, eve
 
 The site also holds a small admin for the one owner address: a link mailed to it works only in the browser that asked for it, once and briefly, and opens a short session that shows the waitlist and exports it. Every other address gets the same answer and no mail, and the admin is guarded and closes the same way.
 
+Once a day the same owner address gets a short digest of the waitlist's last day: who joined, the total and any confirmation that failed. Without that address the digest goes nowhere.
+
 The deployed Worker is production on its own domain, with its own database and the mail sender of todz; a development Worker overrides that configuration and keeps its state on this machine. The development database has a new name since the Worker was first deployed, so state from earlier local runs stays behind and can be deleted.
