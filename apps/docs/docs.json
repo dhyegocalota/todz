@@ -29,7 +29,7 @@
   },
   "navigation": {
     "groups": [
-      { "group": "Get started", "pages": ["index", "quickstart", "connect-an-agent"] },
+      { "group": "Get started", "pages": ["index", "quickstart", "install-on-mac", "connect-an-agent"] },
       { "group": "Reference", "pages": ["mcp-tools"] },
       { "group": "Self-host", "pages": ["self-host"] }
     ]

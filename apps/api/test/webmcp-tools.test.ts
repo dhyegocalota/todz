@@ -61,25 +61,44 @@ describe('the WebMCP tool definitions', () => {
 });
 
 describe('the WebMCP copy', () => {
-  test('says the form was submitted and that the page may ask for a human check, not that it worked', () => {
-    expect(WEBMCP_COPY.answers.sent).toContain('submitted');
-    expect(WEBMCP_COPY.answers.sent).toContain('human check');
+  const ANSWER_KEYS = [
+    'alreadySubmitting',
+    'checkFailed',
+    'checkTimedOut',
+    'invalid',
+    'joined',
+    'opensSoon',
+    'tryAgain',
+    'unknownClient',
+    'unknownPage',
+    'unreachable',
+  ];
+
+  test('answers once per outcome, the check timing out and the unknowns, and has no sent answer', () => {
+    expect(Object.keys(WEBMCP_COPY.answers).sort()).toEqual(ANSWER_KEYS);
+  });
+
+  test('the join tool says it waits for the human check and answers with the result', () => {
+    const { description } = toolNamed(WebMcpToolName.Join);
+    expect(description).toContain('waits for');
+    expect(description).toContain('answers with the result');
+    expect(description).not.toContain('before it sends');
   });
 });
 
 describe('the scripts the landing ships', () => {
-  const SHIPPED_SCRIPTS = [
-    ['WEBMCP_SCRIPT', WEBMCP_SCRIPT],
-    ['PAGE_SCRIPT', PAGE_SCRIPT],
-  ];
+  const OTHER_NETWORK_CALLS = ['XMLHttpRequest', 'sendBeacon'];
 
-  test.each(SHIPPED_SCRIPTS)(
-    '%s makes no network call of its own, which connect-src self would permit (pin: green when it landed)',
-    (_name, script) => {
-      expect(script.length).toBeGreaterThan(0);
-      NETWORK_CALLS.forEach((call) => expect(script).not.toContain(call));
-    },
-  );
+  test('WEBMCP_SCRIPT makes no network call of its own, which connect-src self would permit (pin: green when it landed)', () => {
+    expect(WEBMCP_SCRIPT.length).toBeGreaterThan(0);
+    NETWORK_CALLS.forEach((call) => expect(WEBMCP_SCRIPT).not.toContain(call));
+  });
+
+  test('PAGE_SCRIPT makes one network call, the fetch of the join, and no other', () => {
+    expect(PAGE_SCRIPT.match(/fetch\(/g)).toHaveLength(1);
+    expect(PAGE_SCRIPT).toContain("fetch('/join'");
+    OTHER_NETWORK_CALLS.forEach((call) => expect(PAGE_SCRIPT).not.toContain(call));
+  });
 });
 
 describe('the WebMCP script on the pages', () => {

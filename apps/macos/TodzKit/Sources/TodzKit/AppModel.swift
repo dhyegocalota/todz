@@ -59,14 +59,19 @@ import Observation
 
     var refreshesInFlight = 0
     public internal(set) var isOffline = false
+    public internal(set) var agentChangeCount = 0
     var isOwnerConfirmed = false
     public internal(set) var agentNudge: Bool?
     var isSavingAgentNudge = false
     var isAgentNudgeNotSaved = false
     public internal(set) var showsDayTemperature = false
+    public internal(set) var dayEmail: Bool?
+    public internal(set) var dayEmailMinutes: Int?
+    var isSavingDayEmail = false
+    var isDayEmailNotSaved = false
 
     @ObservationIgnored var hasLaunched = false
-    @ObservationIgnored var isLaunchSettled = false
+    var isLaunchSettled = false
     var heldSignInLink: SignInLink?
     @ObservationIgnored var session: String?
     @ObservationIgnored var ownerIdentifier: String?
@@ -278,6 +283,8 @@ import Observation
         ownerIdentifier = issued.owner.identifier
         isOwnerConfirmed = true
         agentNudge = issued.owner.agentNudge
+        dayEmail = issued.owner.dayEmail
+        dayEmailMinutes = issued.owner.dayEmailMinutes
         phase = .loading
         keep(secret: issued.sessionToken)
         discardPendingLink()
@@ -357,6 +364,7 @@ import Observation
         ownerIdentifier = nil
         isOwnerConfirmed = false
         forgetAgentNudge()
+        forgetDayEmail()
         forgetWindow()
     }
 
@@ -397,6 +405,8 @@ import Observation
         ownerConfirmationFailures = 0
         ownerIdentifier = owner.identifier
         agentNudge = owner.agentNudge
+        dayEmail = owner.dayEmail
+        dayEmailMinutes = owner.dayEmailMinutes
     }
 
     private func openWorkspaces() async {

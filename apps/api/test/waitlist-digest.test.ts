@@ -4,7 +4,8 @@ import { env } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Env } from '../src/env';
 import worker from '../src/index';
-import { DigestCron, DigestMissingPiece } from '../src/site/waitlist-digest';
+import { ScheduledCron } from '../src/scheduled';
+import { DigestMissingPiece } from '../src/site/waitlist-digest';
 import { joinWaitlist } from '../src/site/waitlist-store';
 import { CLOUDFLARE_SETTINGS, bindingFailingWith, recordingBinding } from './email-sign-in-client';
 import { workerEnvWith } from './owner-client';
@@ -20,7 +21,7 @@ const REQUIRED_SETTINGS: Partial<Env> = { ...CLOUDFLARE_SETTINGS, ADMIN_EMAIL: A
 
 type ScheduledRun = { settings?: Partial<Env>; cron?: string; scheduledTime?: number };
 
-async function runDigest({ settings = {}, cron = DigestCron.Daily, scheduledTime = CLOCK_NOW }: ScheduledRun): Promise<void> {
+async function runDigest({ settings = {}, cron = ScheduledCron.WaitlistDigest, scheduledTime = CLOCK_NOW }: ScheduledRun): Promise<void> {
   await worker.scheduled(createScheduledController({ cron, scheduledTime }), workerEnvWith(settings));
 }
 

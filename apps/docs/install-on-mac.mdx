@@ -1,0 +1,67 @@
+---
+title: Install on Mac
+description: Build todz for Mac from source, open it, and check what you run.
+---
+
+todz is not in the App Store. There is no download or notarized build yet, so you build the app from source and check the result.
+
+<Warning>
+  The build is not notarized. Apple has not scanned it, so macOS asks you to allow it the first time you open it on a Mac that did not build it.
+</Warning>
+
+## 1. Build it
+
+You need a Mac with Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+
+<Note>
+  `project.yml` signs with the owner's team, `XFWR794VS8`, so only a Mac that holds that identity can build it as is. To build with your own team, replace `DEVELOPMENT_TEAM` and the bundle identifiers first, as in [the self-host guide](/self-host#7-build-the-macos-app-and-point-it-at-your-server). A self-built app shows the team it was signed with.
+</Note>
+
+From the root of the repository:
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+The app lands at `apps/macos/build/Build/Products/Release/Todz.app`. It talks to the todz cloud.
+
+## 2. Open it on another Mac you own
+
+A development-signed build uses an App Group and the sandbox, so it opens only on Macs its signing team knows. On such a Mac, zip the app so its signature survives the copy, and move the zip with AirDrop, a drive or `scp`:
+
+```bash
+ditto -c -k --keepParent apps/macos/build/Build/Products/Release/Todz.app Todz.zip
+```
+
+On the other Mac, unzip it, drag `Todz.app` into Applications and open it. macOS refuses the first time. Then:
+
+1. Open **System Settings** › **Privacy & Security**.
+2. Scroll to **Security**, find the line about `Todz` and click **Open Anyway**.
+3. Confirm with your password and open the app again.
+
+macOS asks once; later launches open normally.
+
+## 3. Verify it
+
+Check that the signature is intact. It ends with `valid on disk` and `satisfies its Designated Requirement` when it is:
+
+```bash
+codesign --verify --deep --strict --verbose=2 /Applications/Todz.app
+```
+
+Check who signed the app:
+
+```bash
+codesign -dv --verbose=4 /Applications/Todz.app
+```
+
+The output holds a `TeamIdentifier=` line: `XFWR794VS8` for the owner's team, or your own team's identifier for a build you signed.
+
+Check that the copy is the zip you made. On the Mac that built it:
+
+```bash
+shasum -a 256 Todz.zip
+```
+
+Run the same command on the copy and compare the two sums. They must be identical. A matching sum proves only that the copy is the zip you made, not who built it.
