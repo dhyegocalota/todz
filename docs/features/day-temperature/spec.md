@@ -1,7 +1,7 @@
 # Day temperature
 
 **Status:** Approved
-**Tier:** 🟡 (one Settings switch, one required key in the widget snapshot, the menu bar label's alpha and a timer, widget timeline entries and a row wash; no server, no schema, no new entitlement)
+**Tier:** 🟡 (one Settings switch, one required key in the widget snapshot, the menu bar label's alpha and a clock, and a row wash; no server, no schema, no new entitlement)
 **Owner approval:** approved 2026-11-25 by the owner's request to the loop (2026-11-24, ~20:30: "1,4,5,6,7,9,10 e também 11 … seja criativo, add no cron e só para quando tiver pronto"; every item "features opcionais", off by default, no push notifications), recorded in `todz-loop/STATE.md` "Owner requirements queued" → `proactive-day` item 4 (`day-temperature`, idea 6): "the menu bar count shifts tone as the afternoon advances with Today still full, and overdue tasks age visually in the widgets (fade or tint). It stays subtle, uses the template glyph, and reads in light and dark." The behaviour is the loop's call in [ADR 0065](../../adr/0065-the-day-temperature-steps-the-menu-bar-count-s-opacity-after-noon-and-washes-overdue-widget-rows-by-age-behind-a-setting.md).
 **ADRs:** [0065](../../adr/0065-the-day-temperature-steps-the-menu-bar-count-s-opacity-after-noon-and-washes-overdue-widget-rows-by-age-behind-a-setting.md), [0054](../../adr/0054-the-app-learns-focus-through-a-todz-focus-filter-not-the-focus-status-api.md), [0036](../../adr/0036-the-menu-bar-icon-counts-today-s-open-tasks-behind-a-setting.md), [0032](../../adr/0032-widgets-read-a-snapshot-in-an-app-group-that-a-team-prefix-replaces-later.md), [0055](../../adr/0055-the-day-closes-once-a-day-in-the-menu-bar-popover-at-the-owner-s-time.md), [0062](../../adr/0062-the-morning-glance-is-a-non-activating-glass-panel-that-shows-today-on-the-first-wake-or-unlock-of-the-day.md)
 **Not changing:** the count's text and its 99+ cap, the template glyph's asset, the popover, the main window, the Today list, the server, the widgets' layout and sizes, the day close, the morning glance, the gate's rule (the gate gains no new surface kind for this feature beyond its existing use)
@@ -18,7 +18,7 @@ The menu bar count says how many tasks are left, but not how far into the day th
 - With the switch on, an open overdue row in the Today list and the next-up card of the widgets sits on a red wash that deepens with the days overdue: 0.06 for one day, 0.12 for two to six days, 0.18 from seven. The title keeps its contrast; the existing due label stays.
 - During a Focus that holds todz, neither the menu bar nor the widgets show a tone; when the Focus ends the tone returns without a notification.
 - Increase Contrast turns the tone off in both places.
-- The clock wakes the app only at a step boundary; the widgets draw each step from their timeline entries.
+- The clock wakes the app only at a step boundary; the widgets need no new timeline entries (the wash changes only with the day).
 
 ## Non-goals
 
@@ -39,51 +39,54 @@ Settings: showsDayTemperature (defaults, off)        gate.isQuiet (ProactiveGate
    ▼                                                        ▼
 MenuBarLabel: DayTemperatureStep.step(at: Date(), in: Mac zone), openCount (todayHeadingCount),
               Increase Contrast, gate.isQuiet            → count alpha  (1.0 / 0.85 / 0.75 / 0.65)
-   │   one timer armed at the next boundary (≤ 4 a day); re-armed on count, setting, gate,
-   │   time zone change, wake, app activation
+   │   DayTemperatureClock (TodzKit, observable): one wait to the next boundary (≤ 4 a day);
+   │   refreshed by DayTemperatureScheduler on wake, unlock, time zone, clock and day changes, defaults changes
    │
-AppModel+Widgets: snapshot.showsDayTemperature = setting && !gate.isQuiet
-   │   written with every snapshot write; a gate change rewrites it and reloads the widgets
+AppDelegate+DayTemperature: model.showDayTemperature(DayTemperatureTone.isShown(isSettingOn:isQuiet:))
+   │   after readFocusFilter() settles, on defaults changes and on gate.isQuiet changes
+AppModel: showsDayTemperature (observable) → WidgetSnapshot.of(…showsDayTemperature:)
+   │   the existing observation writes once and reloads once per change
    ▼
-App Group snapshot (FileWidgetStore)  ──►  TodayTimelineProvider
-                                             entries at 12:00, 15:00, 18:00, midnight (policy .never)
-                                             each entry: flag && not Increase Contrast → wash opacity
-                                             OverdueWash.opacity(daysOverdue:) per open overdue row
+App Group snapshot (FileWidgetStore)  ──►  TodayTimelineProvider (unchanged: the existing midnight entry)
+                                             OverdueWash.opacity(of:on:isShown:isContrastIncreased:) per open overdue row
                                            ──►  TodayListView rows, NextUpView card (wash behind)
 ```
 
 ### Interfaces
 
 - `TodzKit`:
-  - `DayTemperatureStep` (enum: `plain`, `noon`, `afternoon`, `evening`): `step(at:in:)` from a date and a Mac zone; `countOpacity` per step; `boundaries(on:in:)` for the widget's entries and the menu bar's next timer; `nextBoundary(after:in:)`.
-  - `DayTemperatureStep.countOpacity(step:isToneOn:openCount:)`: 1.0 unless tone on, count above zero and step is not plain; the constants at the top of the file.
-  - `OverdueWash.opacity(daysOverdue:isOpen:isOverdue:)`: 0 for done or not overdue; 0.06 / 0.12 / 0.18 by the day bands; the constants at the top of the file.
+  - `DayTemperatureStep` (enum: `plain`, `noon`, `afternoon`, `evening`): `step(at:in:)` from a date and a Mac zone; `countOpacity` per step; `boundaries(on:in:)` for the clock's next wait; `nextBoundary(after:in:)`.
+  - `DayTemperatureStep.countOpacity(step:isSettingOn:isQuiet:isContrastIncreased:openCount:)`: 1.0 unless the setting is on, the gate is not quiet, contrast is not increased, the count is above zero and the step is not plain; the constants at the top of the file.
+  - `OverdueWash.opacity(of:on:isShown:isContrastIncreased:)` with a `WidgetSnapshotTask` and a `CalendarDate`: 0 unless the task is open and overdue and both switches allow it; otherwise 0.06 / 0.12 / 0.18 by the bands of `day.days(since: dueDate)`; the constants at the top of the file.
+  - `CalendarDate.days(since:)`: the whole calendar days between two dates.
+  - `DayTemperatureTone.isShown(isSettingOn:isQuiet:)`: the one composition the app and the snapshot share.
+  - `DayTemperatureClock` (`@MainActor @Observable`): `step`, `refresh()`, with injected `now` and `pause`; one pending wait to the next boundary.
   - `DayTemperaturePreference`: `showsDayTemperature` key, default `false`, registration, as `MorningGlancePreference`.
-  - `WidgetSnapshot.showsDayTemperature: Bool`: a required key in the Codable shape.
+  - `WidgetSnapshot.showsDayTemperature: Bool`: a required key in the Codable shape, carried by `WidgetToggle.setting`.
+  - `AppModel.showsDayTemperature` (observable) and `showDayTemperature(_:)`.
 - App:
-  - `MenuBarLabel` reads the preference through `@AppStorage`, the gate from the environment and Increase Contrast from `colorSchemeContrast`; applies `countOpacity` to the badge text only.
-  - `DayTemperatureTimer`: one `Timer` to `nextBoundary`, invalidated and re-armed on every change listed above.
-  - `AppModel+Widgets`: the snapshot's flag = setting && !gate.isQuiet; a gate change calls the existing reload.
+  - `MenuBarLabel` reads the preference through `@AppStorage`, the gate and the clock from the environment and Increase Contrast as the spike decides; applies `countOpacity` to the badge text only, or draws the count into a template image if the spike requires it.
+  - `DayTemperatureScheduler` (`apps/macos/Todz/MenuBar`, modelled on `DayCloseScheduler`): calls `clock.refresh()` on wake, unlock, time zone, system clock and calendar day changes and on defaults changes.
+  - `AppDelegate+DayTemperature`: calls `model.showDayTemperature(...)` after `readFocusFilter()` settles, on defaults changes and on `gate.isQuiet` changes.
   - `SettingsView`: one switch row with `SettingsCopy` title and detail.
 - Widgets:
-  - `TodayTimelineProvider`: entries at `DayTemperatureStep.boundaries` plus the midnight entry.
-  - `TodayEntry` gains the step and the flag via its snapshot.
+  - `TodayTimelineProvider` and `TodayEntry` are unchanged: the wash depends only on days overdue, which changes at the existing midnight entry.
   - `TodayListView` and `NextUpView`: the wash behind an overdue row, from `OverdueWash`.
 
 ### Failure handling
 
 | Case | Effect |
 |---|---|
-| the switch is off | plain count; no timer armed; snapshot flag false; no wash |
+| the switch is off | plain count; no wait armed; snapshot flag false; no wash |
 | the count is zero, or signed out, or no workspace | icon only, as ADR 0036; no wash |
-| a Focus that holds todz is on | plain count; snapshot rewritten with the flag false; widgets reloaded |
-| the Focus ends | the next write brings the tone back; nothing is pushed |
+| a Focus that holds todz is on | plain count; `model.showDayTemperature(false)` rewrites the snapshot with the flag false and reloads the widgets; with the switch already off nothing is written |
+| the Focus ends | `model.showDayTemperature(true)` brings the tone back; nothing is pushed |
+| launch under a Focus | the flag and the clock start only after `readFocusFilter()` settles, so the tone never shows and the snapshot is never written true then false |
 | Increase Contrast is on | plain count; no wash; the words stay |
-| the Mac's time zone changes | the step and the timer are recomputed at once |
-| the Mac sleeps across a boundary | the timer fires on wake or the next activation, whichever is first, and the step is the clock's step at that moment |
-| the snapshot is written by an older build without the key | the widget cannot read it and shows its prompt until the app writes the new one at launch |
+| the Mac sleeps across a boundary | the wait uses the continuous clock and the scheduler refreshes on wake and unlock, so the step is the clock's step at that moment |
+| the snapshot is written by an older build without the key | the widget cannot read it and shows its prompt until the app writes the new one at launch; the same while an old running process keeps writing the old shape after the bundle is replaced, until relaunch |
 | a snapshot is unreadable | the widget shows its prompt, as today |
-| the Mac is in another zone from the owner | the steps use the Mac's clock; the overdue age uses the snapshot's day (pinned by a test) |
+| the Mac's time zone changes after launch | the steps follow the new zone at once; the wash follows the snapshot's day until the next write |
 | an overdue task is completed during the day | its wash goes at the next snapshot write |
 | a row's title is longer than the row | one line, tail-truncated, as today; the wash behind it is unchanged |
 
@@ -110,4 +113,4 @@ Revert the app and widget commits. The preference key stays unread in the defaul
 
 ## Test strategy summary
 
-Swift tests in `TodzKit` for the step at every boundary and around midnight, the opacity by step, tone off at zero, Focus, the switch and Increase Contrast; the next boundary across DST and a zone change; the preference's default and key; the snapshot's required key (a missing key fails to decode, a round trip keeps the flag); the wash bands and the cap; and the flag the writer produces with the gate on and off. The widget lane is proven by a build, the timeline entries' dates in a test of the boundary list, and the walk. Screenshots of each step in light and dark are taken from a scratch render of the label, not committed. The walk keeps to the menu bar and one Settings window: no popover opening. Test plan: [test-plan.md](test-plan.md).
+Swift tests in `TodzKit` for the step at every boundary and around midnight, the opacity by step, tone off at zero and for each of the switch, Focus and Increase Contrast alone; the next boundary across DST, a zone change and a zone that skips midnight; `CalendarDate.days(since:)`; the clock with a held pause; the preference's default and key; the snapshot's required key (a missing key fails to decode, a round trip keeps the flag); the wash bands and the cap; and the routes the model produces when `showDayTemperature` changes. The widget lane is proven by a build and the walk in three rendering modes. Screenshots of each step in light and dark are taken from a scratch render of the label, not committed. The walk keeps to the menu bar and one Settings window: no popover opening. Test plan: [test-plan.md](test-plan.md).

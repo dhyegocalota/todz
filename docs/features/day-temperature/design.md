@@ -33,17 +33,19 @@ The glyph never changes. Only the count's opacity steps down.
 
 The text's weight and digits stay as today (`monospacedDigit()`), so the width of the item does not change between steps.
 
+The spike (plan step 1) decides how the alpha reaches the bar: `.opacity` on the `Text`, then `.foregroundStyle(.primary.opacity(...))`, then, if the status item drops both, the glyph and the count rendered with `ImageRenderer` into one template `NSImage` with the count drawn at the step's opacity (ADR 0065 §3). The accessibility label is the same in all three. Evidence is recorded here after the spike: (pending the spike).
+
 ### 1.2 The widget rows
 
 An overdue open row sits on a wash behind it. The title and the checkbox are unchanged.
 
 ```
  ┌──────────────────────────────────────────┐
- │ ○ Send the invoice to Ana       Overdue  │  ← wash 0.06  (1 day overdue)
+ │ ○ Send the invoice to Ana  Overdue · 24 November │  ← wash 0.06  (1 day overdue)
  ├──────────────────────────────────────────┤
- │ ○ Reply to the landlord    3 days overdue│  ← wash 0.12  (2–6 days)
+ │ ○ Reply to the landlord    Overdue · 22 November │  ← wash 0.12  (2–6 days)
  ├──────────────────────────────────────────┤
- │ ○ Renew the passport       9 days overdue│  ← wash 0.18  (7+ days)
+ │ ○ Renew the passport       Overdue · 16 November │  ← wash 0.18  (7+ days)
  ├──────────────────────────────────────────┤
  │ ○ Book the dentist              Today    │  ← no wash (not overdue)
  └──────────────────────────────────────────┘
@@ -53,13 +55,17 @@ An overdue open row sits on a wash behind it. The title and the checkbox are unc
 |---|---|---|---|
 | Not overdue | due today or later, or no due date | none | as today |
 | Overdue, 1 day | `daysOverdue == 1` | red 0.06 | the existing red words |
-| Overdue, 2 to 6 days | `2...6` | red 0.12 | the existing red words with the count |
-| Overdue, 7 days or more | `>= 7` | red 0.18 | the existing red words with the count |
+| Overdue, 2 to 6 days | `2...6` | red 0.12 | the existing red words (`TaskRowCopy.overdue(date:)`) |
+| Overdue, 7 days or more | `>= 7` | red 0.18 | the existing red words (`TaskRowCopy.overdue(date:)`) |
 | Done | the row is checked | none | as today |
 | Switch off, quiet, Increase Contrast | the snapshot flag is false | none | as today |
 | Empty Today | no rows | nothing to wash | the existing empty view |
 
 The next-up card of the small widget takes the same wash for an overdue next-up task. The ring widget shows counts only, so it does not change.
+
+Rendering modes. The wash reads `widgetRenderingMode` from the SwiftUI environment: `.fullColor` draws `Color.red.opacity(band)`; `.vibrant` (another app's window in front) and `.accented` (a tinted or monochrome widget style) draw `Color.primary.opacity(band)` at the same bands, a luminance step the system keeps, so the three bands stay distinct and never fall into a grey selection-like band. The spike captures all three modes.
+
+Geometry. The wash is the row's full width and its own height, with no padding added and the layout unchanged, as a `RoundedRectangle(cornerRadius:)` whose radius is a constant at the top of the view. Pending rows (`WidgetPendingRow`, a next-up without a key) get no wash. On the small widget the wash sits behind `NextUpTask` only, not the header.
 
 ### 1.3 The Settings row
 
@@ -86,7 +92,8 @@ Constants, not style values in views. They live at the top of their files in Tod
 | `OverdueWash.longOverdueOpacity` | 0.18 | seven days or more |
 | `OverdueWash.lateFromDays` | 2 | the band's first day |
 | `OverdueWash.longOverdueFromDays` | 7 | the band's first day |
-| wash colour | `Color.red` (system) | the existing overdue colour, dynamic in light and dark |
+| wash colour | `Color.red` (system) in `.fullColor`; `Color.primary` in `.vibrant` and `.accented` | the existing overdue colour, dynamic in light and dark; a luminance step in the system's own modes |
+| cap fallback | `lateOpacity` 0.09, `longOverdueOpacity` 0.12 | applied if the spike measures the due words below 3:1 on the 9-day row (ADR 0065 §5) |
 | title colour | `.primary` | unchanged; never faded |
 
 The count's opacity and the wash are the only new numbers. The steps' hours and the bands are constants, not literals in the views.
@@ -98,7 +105,7 @@ All owner-facing copy goes in the copy modules. No string sits inline in a view.
 | Where | Key | Text (en-US, the repository's language; the product copy lang is set by a later ADR) |
 |---|---|---|
 | `SettingsCopy` | `dayTemperature` | Day temperature |
-| `SettingsCopy` | `dayTemperatureDetail` | After noon the menu bar count fades a little, and overdue tasks get a faint red wash in the widgets. Quiet during a Focus that holds todz. |
+| `SettingsCopy` | `dayTemperatureDetail` | The count fades a little after noon, and overdue widget rows get a faint red tint. Quiet during a Focus that holds todz. |
 
 Options for the detail:
 
@@ -113,7 +120,7 @@ Options for the detail:
 - **Reduce Motion:** nothing to reduce. A step changes at once; no animation is added.
 - **Reduce Transparency:** no change. The wash is a tint over the widget's own background, which the system makes opaque already; the count is text.
 - **Dark and light, tinted and transparent bars:** the count is template-rendered text; the glyph is a template image, so the system colours both. The tone is alpha, so it shows as a dimmer count on every bar, and it is never the only signal: the number is there at every step.
-- **Contrast of the title on the wash:** the title is `.primary`. On the maximum wash of 0.18 red over the widget background, the title keeps the contrast the widget uses at plain. The walk measures it with Accessibility Inspector in light and dark on the owner's machine, and the result goes in the test plan; the unit tests only pin the maximum at 0.18.
+- **Contrast of the due words on the wash:** the `.primary` title stays near 16:1 (light) and 13:1 (dark) even at 0.18. The words that suffer are the red due words ("Overdue · …", `.foregroundStyle(.red)` in `WidgetTaskRow` and `NextUpTask`), red on red, estimated near 3.5:1 at no wash falling to 2.8:1 at 0.18 in light and 4.9:1 to 4.0:1 in dark. The inspector measures the due words on the 9-day row in light and dark; pass is at least 3:1. The fallback is decided now: lower `longOverdueOpacity` to 0.12 and `lateOpacity` to 0.09, recorded in ADR 0065 Evidence. The unit tests pin the maximum.
 - **VoiceOver:** the menu bar's label is unchanged (ADR 0036). The widget row's label already includes the due words; the wash adds no words.
 - **Hit targets and layout:** unchanged; the wash is behind the row, not a control.
 
@@ -139,7 +146,7 @@ PR evidence (`.pr-media/day-temperature/`):
 2. Menu bar count at each step, light bar: 12:00, 15:00, 18:00 with 6 open (scratch render), and 18:00 with zero open for the icon-only state.
 3. Menu bar count at each step, dark bar: the same three.
 4. Menu bar on a tinted bar at the evening step (one shot, for the glass and tinted case).
-5. Widget, medium, light and dark, with overdue rows at one, three and nine days and a row not overdue.
+5. Widget, medium, light and dark, with overdue rows at one, three and nine days and a row not overdue; plus the same in vibrant (another app in front) and accented (monochrome widget style).
 6. Widget, small (next-up card), overdue, light and dark.
 7. Settings window, the new row, switch off and on.
 8. Focus quiet: menu bar plain at the evening step, the Focus on (one screenshot).
