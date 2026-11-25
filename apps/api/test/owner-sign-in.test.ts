@@ -181,6 +181,13 @@ describe('POST /owner/sessions', () => {
     expect(Object.values(stored)).not.toContain(body.session_token);
   });
 
+  test('a new owner starts with the agent nudge and the day email on', async () => {
+    const { token, ownerId } = await signInOwner();
+    expect(await (await readOwner(token)).json()).toEqual({
+      owner: { id: ownerId, time_zone: 'UTC', agent_nudge: true, day_email: true, day_email_minutes: DEFAULT_DAY_EMAIL_MINUTES },
+    });
+  });
+
   test('the same identity again answers the same owner, a new token and the new zone', async () => {
     const identityToken = crypto.randomUUID();
     const first = await signInOwner({ identityToken, timeZone: 'UTC' });
