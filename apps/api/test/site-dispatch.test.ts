@@ -20,6 +20,8 @@ import { workerEnvWith } from './owner-client';
 const API_ORIGIN = 'https://api.todz.app';
 const SITE_ORIGIN = 'https://todz.app';
 const WWW_ORIGIN = 'https://www.todz.app';
+const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
+const DOCS_REDIRECT_CACHE_CONTROL = 'max-age=3600';
 const ADMIN_ADDRESS = 'hello@todz.app';
 const SESSION_SECRET = 'an-admin-session-secret';
 const OK_STATUS = 200;
@@ -56,8 +58,6 @@ describe('the site host', () => {
   test.each([
     ['GET', '/'],
     ['HEAD', '/'],
-    ['GET', '/self-host'],
-    ['HEAD', '/self-host'],
   ])('%s %s answers 200', async (method, path) => {
     const response = await serve(requestOf({ url: `${SITE_ORIGIN}${path}`, method }));
     expect(response.status).toBe(OK_STATUS);
@@ -98,6 +98,18 @@ describe('the site host', () => {
   ])('%s %s answers 404', async (method, path) => {
     const response = await serve(requestOf({ url: `${SITE_ORIGIN}${path}`, method }));
     expect(response.status).toBe(NOT_FOUND_STATUS);
+    expect(await response.text()).toBe('');
+  });
+
+  test.each([
+    ['GET', '/self-host'],
+    ['HEAD', '/self-host'],
+    ['GET', '/self-host?ref=x'],
+  ])('%s %s answers 301 to the guide on the docs, without the query, cached for an hour', async (method, path) => {
+    const response = await serve(requestOf({ url: `${SITE_ORIGIN}${path}`, method }));
+    expect(response.status).toBe(MOVED_PERMANENTLY_STATUS);
+    expect(response.headers.get('Location')).toBe(DOCS_SELF_HOST_URL);
+    expect(response.headers.get('Cache-Control')).toBe(DOCS_REDIRECT_CACHE_CONTROL);
     expect(await response.text()).toBe('');
   });
 
@@ -155,10 +167,20 @@ describe('the API host', () => {
 
 describe('the www host', () => {
   test('answers 301 to the site host with the path and the query', async () => {
-    const response = await serve(requestOf({ url: `${WWW_ORIGIN}/self-host?ref=x` }));
+    const response = await serve(requestOf({ url: `${WWW_ORIGIN}/?ref=x` }));
     expect(response.status).toBe(MOVED_PERMANENTLY_STATUS);
-    expect(response.headers.get('Location')).toBe(`${SITE_ORIGIN}/self-host?ref=x`);
+    expect(response.headers.get('Location')).toBe(`${SITE_ORIGIN}/?ref=x`);
   });
+
+  test.each(['GET', 'HEAD', 'POST'])(
+    '%s /self-host answers 301 straight to the guide on the docs, without the query, cached for an hour',
+    async (method) => {
+      const response = await serve(requestOf({ url: `${WWW_ORIGIN}/self-host?ref=x`, method }));
+      expect(response.status).toBe(MOVED_PERMANENTLY_STATUS);
+      expect(response.headers.get('Location')).toBe(DOCS_SELF_HOST_URL);
+      expect(response.headers.get('Cache-Control')).toBe(DOCS_REDIRECT_CACHE_CONTROL);
+    },
+  );
 });
 
 describe('the www host and the admin', () => {

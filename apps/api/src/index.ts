@@ -8,6 +8,7 @@ import { noRouteResponse } from './owner-errors';
 import { withSecurityHeaders } from './security-headers';
 import { SIGN_IN_CHALLENGE_PAGE_PATH, serveSignInChallengePage } from './sign-in-challenge-page';
 import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
+import { SELF_HOST_PATH, redirectToDocs } from './site/self-host-redirect';
 import { serveSite } from './site/site-endpoint';
 import { runScheduled } from './site/waitlist-digest';
 
@@ -40,6 +41,7 @@ async function serveApi({ request, env, executionContext }: HostContext): Promis
 
 async function redirectToSite({ request }: { request: Request }): Promise<Response> {
   const siteUrl = new URL(request.url);
+  if (siteUrl.pathname === SELF_HOST_PATH) return redirectToDocs();
   siteUrl.hostname = siteUrl.hostname.slice(WWW_PREFIX.length);
   return Response.redirect(siteUrl, HttpStatus.MovedPermanently);
 }

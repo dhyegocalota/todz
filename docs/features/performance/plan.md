@@ -43,7 +43,7 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ### G0
 
-- [ ] **Step 1:** Merge `origin/main`. Write `tester-briefing.md` with the template's headings under `## Lane L`, `## Lane S` and `## Lane A`, and set the spec and the index row to `Building`. Commit `docs(performance): building`.
+- [x] **Step 1:** Merge `origin/main`. Write `tester-briefing.md` with the template's headings under `## Lane L`, `## Lane S` and `## Lane A`, and set the spec and the index row to `Building`. Commit `docs(performance): building`.
 
 ### Lane L
 

@@ -93,6 +93,13 @@ describe('the answers of the worker on every host kind', () => {
     ['GET /join', () => joinRequest('GET'), HttpStatus.SeeOther, DEFAULT_POLICY],
     ['POST /join', () => joinRequest('POST'), HttpStatus.Unavailable, null],
     ['the www host', () => new Request(`${wwwOrigin()}/`, { redirect: 'manual' }), HttpStatus.MovedPermanently, DEFAULT_POLICY],
+    ['GET /self-host', () => new Request(`${SITE_ORIGIN}/self-host`, { redirect: 'manual' }), HttpStatus.MovedPermanently, DEFAULT_POLICY],
+    [
+      'GET /self-host on the www host',
+      () => new Request(`${wwwOrigin()}/self-host`, { redirect: 'manual' }),
+      HttpStatus.MovedPermanently,
+      DEFAULT_POLICY,
+    ],
     ['an unknown host', () => new Request(`${UNKNOWN_ORIGIN}/`), HttpStatus.NotFound, DEFAULT_POLICY],
   ])('%s answers its status with the four headers', async (_name, requestOf, status, policy) => {
     const response = await answerOf({ request: requestOf(), settings: ADMIN_SETTINGS });
