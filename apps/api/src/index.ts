@@ -1,3 +1,4 @@
+import { logCrash } from './crash-log';
 import { handleReply } from './day-email/day-email-reply';
 import type { Env } from './env';
 import { HEALTH_PATH, serveHealth } from './health';
@@ -66,7 +67,8 @@ async function serveHost({ request, env, executionContext }: HostContext): Promi
   return HANDLER_OF_HOST_KIND[hostKind]({ request, env, executionContext });
 }
 
-function crashResponse(): Response {
+function crashResponse(error: unknown): Response {
+  logCrash(error);
   return new Response(null, { status: HttpStatus.InternalServerError });
 }
 

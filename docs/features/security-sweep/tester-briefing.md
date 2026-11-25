@@ -65,7 +65,7 @@ pnpm --filter @todz/api dev
 - **Resolved in the merge of `origin/main`:** the limiters run 8601–8612 with `DAY_EMAIL_REPLY_LIMITER` at 8610 and the self-host line names twelve bindings; `joinOutcomeOf` keeps main's order (limits, honeypot, stamp, own-domain refusal) and maps `Full` to opens soon and `Known` to joined before the confirmation; the address pattern's labels refuse a trailing dot, so day-email's separate trailing-dot check went; `scheduled.test.ts` seeds through `joinWaitlistWithinLimit`.
 - **Red on this branch alone (before that merge):** `tools/repository-shape/src/self-host.test.ts::the rate-limit namespaces it names are the configured ones` needs one contiguous range of namespace ids; 8610 belongs to `feat/day-email`, so it is green only after that merge, with line 33 of the guide reading "`8601` to `8612`" and twelve bindings.
 - A session expiry or the eviction of an owner's 21st session does not close its sockets; only sign-out does.
-- The crash 500 no longer surfaces as an uncaught exception in the Workers logs.
+- A crash 500 is logged by `logCrash` (`apps/api/src/crash-log.ts`) as `{"event":"worker_crash","name","message"}`, never the request, its URL or its headers; it no longer surfaces as an uncaught exception in the Workers logs. An error message that itself quotes a secret would be logged; no code path builds one today.
 - The macOS app shows `limit_reached` and `rate_limited` as any refused write; it has no copy of its own for them.
 - The real Workers rate limiter is not exercised; the tests use recording doubles.
 
