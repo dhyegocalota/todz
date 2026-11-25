@@ -6,7 +6,11 @@ export const DIGEST_ADDRESSES_MAX = 50;
 
 const COUNTS_STATEMENT =
   'SELECT count(*) AS total, count(CASE WHEN joined_at > ? THEN 1 END) AS joined_last_day, count(confirmation_failed_at) AS failed_confirmations FROM waitlist';
-const ROWS_STATEMENT = 'SELECT address, joined_at, confirmation_failed_at FROM waitlist ORDER BY joined_at DESC, rowid DESC';
+const NEWEST_FIRST = 'ORDER BY joined_at DESC, rowid DESC';
+const ROWS_STATEMENT = `SELECT address, joined_at, confirmation_failed_at FROM waitlist ${NEWEST_FIRST}`;
+const DIGEST_COUNTS_STATEMENT =
+  'SELECT count(CASE WHEN joined_at > ?1 AND joined_at <= ?2 THEN 1 END) AS joined, count(CASE WHEN joined_at <= ?2 THEN 1 END) AS total, count(CASE WHEN confirmation_failed_at > ?1 AND confirmation_failed_at <= ?2 THEN 1 END) AS failed_confirmations FROM waitlist';
+const DIGEST_ADDRESSES_STATEMENT = `SELECT address FROM waitlist WHERE joined_at > ?1 AND joined_at <= ?2 ${NEWEST_FIRST} LIMIT ?3`;
 
 type AdminLinkInsertion = {
   database: D1Database;
@@ -32,6 +36,8 @@ export type WaitlistDigestFacts = {
 };
 
 type WaitlistCounts = { total: number; joined_last_day: number; failed_confirmations: number };
+
+type DigestCounts = { joined: number; total: number; failed_confirmations: number };
 
 type WaitlistRecord = { address: string; joined_at: number; confirmation_failed_at: number | null };
 
@@ -127,6 +133,27 @@ export async function waitlistRowsOf({ database }: { database: D1Database }): Pr
   return results.map(waitlistRowOf);
 }
 
-export async function waitlistDigestFacts(_window: { database: D1Database; since: number; until: number }): Promise<WaitlistDigestFacts> {
-  throw new Error('waitlistDigestFacts is not implemented');
+export async function waitlistDigestFacts({
+  database,
+  since,
+  until,
+}: {
+  database: D1Database;
+  since: number;
+  until: number;
+}): Promise<WaitlistDigestFacts> {
+  const [countsResult, addressesResult] = await database.batch<DigestCounts | { address: string }>([
+    database.prepare(DIGEST_COUNTS_STATEMENT).bind(since, until),
+    database.prepare(DIGEST_ADDRESSES_STATEMENT).bind(since, until, DIGEST_ADDRESSES_MAX),
+  ]);
+  const counts = countsResult?.results[0] as DigestCounts | undefined;
+  if (counts === undefined) throw new Error('the digest count returned no row');
+  const addresses = (addressesResult?.results as { address: string }[]).map((record) => record.address);
+  return {
+    joined: counts.joined,
+    total: counts.total,
+    failedConfirmations: counts.failed_confirmations,
+    addresses,
+    moreAddresses: counts.joined - addresses.length,
+  };
 }
