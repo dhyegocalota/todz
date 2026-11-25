@@ -24,9 +24,11 @@ extension AppDelegate {
         withObservationTracking {
             _ = gate.isQuiet
         } onChange: { [weak self] in
-            Task { @MainActor in
-                self?.showDayTemperature()
-                self?.observeQuietGate()
+            MainActor.assumeIsolated {
+                self?.quietGateReaction = Task { [weak self] in
+                    self?.showDayTemperature()
+                    self?.observeQuietGate()
+                }
             }
         }
     }

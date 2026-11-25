@@ -2,6 +2,7 @@ import SwiftUI
 import TodzKit
 
 let menuBarGlyphName = "MenuBarGlyph"
+let menuBarLabelSpacing: CGFloat = 8
 
 struct MenuBarLabel: View {
     @Environment(AppModel.self) private var model
@@ -11,7 +12,6 @@ struct MenuBarLabel: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.displayScale) private var displayScale
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
-    @AppStorage(DayTemperaturePreference.isOnStorageKey) private var isDayTemperatureOn = DayTemperaturePreference.isOnByDefault
     @State private var isContrastIncreased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
 
     var body: some View {
@@ -19,7 +19,7 @@ struct MenuBarLabel: View {
         let badgeText = MenuBarBadge.text(openCount: openCount, isEnabled: isCountEnabled)
         let countOpacity = DayTemperatureStep.countOpacity(
             step: dayTemperatureClock.step,
-            isSettingOn: isDayTemperatureOn,
+            isSettingOn: dayTemperatureClock.isOn,
             isQuiet: gate.isQuiet,
             isContrastIncreased: isContrastIncreased,
             openCount: openCount
@@ -50,9 +50,10 @@ struct MenuBarLabel: View {
     private func content(badgeText: String?, countOpacity: Double) -> some View {
         switch toneBadgeText(badgeText) {
         case let toneBadgeText?:
-            Image(nsImage: MenuBarCountImage.render(badgeText: toneBadgeText, opacity: countOpacity, displayScale: displayScale))
+            MenuBarCountLabel(badgeText: toneBadgeText, opacity: countOpacity, displayScale: displayScale)
+                .equatable()
         case nil:
-            HStack {
+            HStack(spacing: menuBarLabelSpacing) {
                 Image(menuBarGlyphName)
                 if let badgeText {
                     Text(badgeText)
@@ -63,7 +64,7 @@ struct MenuBarLabel: View {
     }
 
     private func toneBadgeText(_ badgeText: String?) -> String? {
-        guard isDayTemperatureOn else { return nil }
+        guard dayTemperatureClock.isOn else { return nil }
         return badgeText
     }
 

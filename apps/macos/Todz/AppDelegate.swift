@@ -35,6 +35,7 @@ private func isFocusFilterQuiet() async -> Bool {
     let gate: ProactiveGate
     var dayChangeObservation: (any NSObjectProtocol)?
     var dayTemperatureObservation: (any NSObjectProtocol)?
+    var quietGateReaction: Task<Void, Never>?
     let dayTemperaturePreference = DayTemperaturePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     private(set) lazy var dayClose = DayCloseCoordinator(
         gate: gate,
