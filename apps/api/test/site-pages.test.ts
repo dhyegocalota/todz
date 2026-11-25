@@ -18,7 +18,7 @@ const MAIN_PATTERN = /<main id="content"[^>]*>([\s\S]*?)<\/main>/;
 const STYLE_ATTRIBUTE_PATTERN = /<[^>]*\sstyle=/;
 const EVENT_HANDLER_PATTERN = /<[^>]*\son[a-z]+=/;
 const READABLE_ATTRIBUTE_PATTERN = /\s(?:alt|aria-label|placeholder|data-submitting)="([^"]*)"/g;
-const DESCRIPTION_PATTERN = /<meta name="description" content="([^"]*)">/;
+const DESCRIPTION_PATTERN = /<meta name="description" content="([^"]*)">/g;
 const IMAGE_SOURCE_PATTERN = /\s(?:src|srcset)="([^"]*)"/g;
 const REMOTE_ASSET_PATTERNS = [/\s(?:src|srcset)="https?:/, /<link[^>]*\shref="https?:/, /url\(\s*['"]?https?:/];
 const HREF_PATTERN = /\shref="([^"]*)"/g;
@@ -27,11 +27,11 @@ const IMPORT_PATTERN = /from '([^']+)'/g;
 const LOCAL_ORIGIN_MODULE = 'local-origin';
 const LANDING_ASSET_PREFIX = '/landing/';
 const SECTION_MARKERS = [
-  '<section class="hero"',
-  '<section class="benefits"',
-  '<section class="how-it-works"',
-  '<section class="final-call"',
-  '<footer class="site-footer"',
+  '<section class="hero',
+  '<section class="benefits',
+  '<section class="how-it-works',
+  '<section class="final-call',
+  '<footer class="site-footer',
 ];
 const JOIN_FORMS = [
   { id: 'join', action: '/join#join' },
@@ -39,6 +39,7 @@ const JOIN_FORMS = [
 ];
 const GUIDE_HEADING_PATTERN = /^## (.+)$/gm;
 const GUIDE_FENCE_PATTERN = /^```[a-z]*\n([\s\S]*?)^```$/gm;
+const CODE_REGION_PATTERN = /<pre class="code" tabindex="0" role="region" aria-label="Code"><code>([\s\S]*?)<\/code><\/pre>/g;
 const HEADING_TWO_PATTERN = /<h2 id="[^"]+">([\s\S]*?)<\/h2>/g;
 const MARKDOWN_INLINE_PATTERN = /`|\*\*/g;
 const SITE_SOURCES = import.meta.glob('../src/site/**/*.ts', { query: '?raw', import: 'default', eager: true });
@@ -82,10 +83,6 @@ function captures({ html, pattern }: { html: string; pattern: RegExp }): string[
 
 function guideHeadingText(markdown: string): string {
   return markdown.replace(MARKDOWN_INLINE_PATTERN, '');
-}
-
-function escapedCode(code: string): string {
-  return code.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
 describe('the site pages', () => {
@@ -232,13 +229,10 @@ describe('the self-host guide page', () => {
 
   test('holds every code block of docs/self-host.md as a keyboard-scrollable code region', async () => {
     const { html } = await selfHostPage();
-    const blocks = captures({ html: guide, pattern: GUIDE_FENCE_PATTERN });
+    const blocks = captures({ html: guide, pattern: GUIDE_FENCE_PATTERN }).map((block) => block.trimEnd());
+    const regions = captures({ html, pattern: CODE_REGION_PATTERN }).map(decoded);
     expect(blocks.length).toBeGreaterThan(0);
-    blocks.forEach((block) => {
-      expect(html).toContain(
-        `<pre class="code" tabindex="0" role="region" aria-label="${LANDING_COPY.selfHost.codeLabel}"><code>${escapedCode(block.trimEnd())}</code></pre>`,
-      );
-    });
+    expect(regions).toEqual(blocks);
   });
 
   test('links only to this site, a fragment or an https address', async () => {
