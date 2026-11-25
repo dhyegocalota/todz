@@ -81,6 +81,30 @@ import Testing
         #expect(gate.released == [.dayClose])
     }
 
+    @Test func aReleaseCannotBeClaimedWhileANewFocusIsOn() {
+        let gate = ProactiveGate()
+        gate.setQuiet(true)
+        #expect(gate.admit(.dayClose) == .held)
+        gate.setQuiet(false)
+        gate.setQuiet(true)
+        #expect(!gate.claimRelease(.dayClose))
+        #expect(gate.released == [.dayClose])
+    }
+
+    @Test func aReleaseHeldAgainDuringANewFocusIsHandedBackOnceWhenItEnds() {
+        let gate = ProactiveGate()
+        gate.setQuiet(true)
+        #expect(gate.admit(.dayClose) == .held)
+        gate.setQuiet(false)
+        gate.setQuiet(true)
+        #expect(gate.admit(.dayClose) == .held)
+        #expect(!gate.claimRelease(.dayClose))
+        gate.setQuiet(false)
+        #expect(gate.released == [.dayClose])
+        #expect(gate.claimRelease(.dayClose))
+        #expect(!gate.claimRelease(.dayClose))
+    }
+
     @Test func theLaunchReadQuietsAFreshGate() {
         let gate = ProactiveGate()
         gate.applyLaunchRead(isQuiet: true)
