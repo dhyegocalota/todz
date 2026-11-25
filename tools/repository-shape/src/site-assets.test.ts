@@ -12,7 +12,10 @@ const HEIGHT_OFFSET = 20;
 
 type ServedShot = { path: string; width: number; height: number };
 
-const SERVED = repositoryFiles(SERVED_FOLDER).map((path) => posix.relative(SERVED_FOLDER, path));
+const SCREENSHOT_EXTENSION = '.png';
+const SERVED = repositoryFiles(SERVED_FOLDER)
+  .map((path) => posix.relative(SERVED_FOLDER, path))
+  .filter((path) => path.endsWith(SCREENSHOT_EXTENSION));
 
 function screenshotOf(path: string): string {
   return posix.join(SCREENSHOTS_FOLDER, path);

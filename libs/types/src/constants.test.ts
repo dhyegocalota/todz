@@ -55,11 +55,12 @@ describe('time constants', () => {
 });
 
 describe('company constants', () => {
-  test('the company is Logic Bit with its legal name and website, and nothing else', () => {
+  test('the company is Logic Bit with its legal name, website and logo, and nothing else', () => {
     expect(COMPANY).toEqual({
       tradeName: 'Logic Bit',
       legalName: 'Logic Bit AI Software Boutique Ltda',
       website: 'https://logicbit.com.br',
+      logo: 'https://www.logicbit.com.br/favicon/apple-touch-icon.png',
     });
   });
 });

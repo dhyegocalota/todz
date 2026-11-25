@@ -1,12 +1,15 @@
 import { escapedHtml } from '../escaped-html';
 import { TurnstileAction } from '../turnstile';
 import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
+import { ARIA_DISABLED, EMAIL_FIELD_NAME, JOIN_BUTTON_CLASS, JOIN_FORM_CLASS } from './join-form-markup';
 import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
 import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
-import { CONTENT_ID, JOIN_PATH, siteDocumentHtml } from './site-shell';
+import { LANDING_STRUCTURED_DATA } from './site-json-ld';
+import { CONTENT_ID, JOIN_PATH, LANDING_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE, cropClassOf } from './site-style';
+import { WEBMCP_SCRIPT } from './webmcp-script';
 
 export enum LandingNotice {
   None = 'none',
@@ -20,11 +23,9 @@ enum JoinForm {
   Final = 'final',
 }
 
-const JOIN_FORM_CLASS = 'join-form';
-const JOIN_BUTTON_CLASS = 'join-button';
 const JOIN_NOTICE_CLASS = 'join-notice';
-const ARIA_DISABLED = 'aria-disabled';
 const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
+const SRCSET_LIST_SEPARATOR = ', ';
 const CLASS_SEPARATOR = ' ';
 const WORD_SEPARATOR = ' ';
 const WIDGET_APPEARANCE = 'interaction-only';
@@ -45,7 +46,7 @@ const NOTICE_TEXT: Record<Exclude<LandingNotice, LandingNotice.None>, string> = 
   [LandingNotice.TryAgain]: LANDING_COPY.join.tryAgain,
 };
 
-const PAGE_SCRIPT = `{
+export const PAGE_SCRIPT = `{
   const waitingForToken = new Map();
   const hasToken = (form) => {
     const token = form.querySelector('[name="${TURNSTILE_RESPONSE_FIELD}"]');
@@ -102,28 +103,37 @@ const PAGE_SCRIPT = `{
   }));
 }`;
 
+const PAGE_SCRIPTS = [PAGE_SCRIPT, WEBMCP_SCRIPT];
+
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  script: PAGE_SCRIPT,
+  scripts: [LANDING_STRUCTURED_DATA, ...PAGE_SCRIPTS],
   widgetOrigin: null,
-  connectsToSelf: false,
+  connectsToSelf: true,
+  declaresManifest: true,
 });
 const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  script: PAGE_SCRIPT,
+  scripts: [LANDING_STRUCTURED_DATA, ...PAGE_SCRIPTS],
   widgetOrigin: TURNSTILE_ORIGIN,
-  connectsToSelf: false,
+  connectsToSelf: true,
+  declaresManifest: true,
 });
 
-function shotImage({ shot, alt, isEager }: { shot: LandingShot; alt: string; isEager: boolean }): string {
+function webpSourceAttributes(shot: LandingShot): string {
+  const { webp } = LANDING_SHOTS[shot];
+  const srcset = webp.map(({ path, width }) => `${path}${WORD_SEPARATOR}${width}w`).join(SRCSET_LIST_SEPARATOR);
+  return `srcset="${srcset}" sizes="${Math.min(...webp.map(({ width }) => width))}px"`;
+}
+
+function shotImage({ shot, alt }: { shot: LandingShot; alt: string }): string {
   const { path, width, height } = LANDING_SHOTS[shot];
-  const loading = isEager ? 'fetchpriority="high"' : 'loading="lazy" decoding="async"';
-  return `<img src="${path}" width="${width}" height="${height}" alt="${escapedHtml(alt)}" ${loading}>`;
+  return `<img src="${path}" ${webpSourceAttributes(shot)} width="${width}" height="${height}" alt="${escapedHtml(alt)}" loading="lazy" decoding="async">`;
 }
 
 function windowPicture(): string {
-  const { path, width, height } = LANDING_SHOTS[LandingShot.WindowDark];
-  return `<picture><source media="${DARK_SCHEME_MEDIA}" srcset="${path}" width="${width}" height="${height}">${shotImage({ shot: LandingShot.Window, alt: LANDING_COPY.alt.window, isEager: true })}</picture>`;
+  const { width, height } = LANDING_SHOTS[LandingShot.WindowDark];
+  return `<picture><source media="${DARK_SCHEME_MEDIA}" ${webpSourceAttributes(LandingShot.WindowDark)} width="${width}" height="${height}">${shotImage({ shot: LandingShot.Window, alt: LANDING_COPY.alt.window })}</picture>`;
 }
 
 function joinStatusHtml({ form, notice }: { form: JoinForm; notice: LandingNotice }): string {
@@ -154,7 +164,7 @@ function joinFormHtml({
   return `<form id="${form}" class="${[JOIN_FORM_CLASS, ...classNames].join(CLASS_SEPARATOR)}" method="post" action="${JOIN_PATH}#${form}">
 <div class="join-capsule">
 <label class="visually-hidden" for="${inputId}">${escapedHtml(LANDING_COPY.join.emailLabel)}</label>
-<input id="${inputId}" class="join-input" name="email" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(LANDING_COPY.join.emailPlaceholder)}" required>
+<input id="${inputId}" class="join-input" name="${EMAIL_FIELD_NAME}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(LANDING_COPY.join.emailPlaceholder)}" required>
 <button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(LANDING_COPY.join.submitting)}">${escapedHtml(LANDING_COPY.join.submit)}</button>
 </div>
 ${widget}${joinStatusHtml({ form, notice })}
@@ -173,8 +183,8 @@ ${joinFormHtml({ form: JoinForm.Hero, notice, widget, classNames: ['rise', 'dela
 <figcaption class="visually-hidden">${escapedHtml(LANDING_COPY.stage.label)}</figcaption>
 <div class="menu-strip" aria-hidden="true"><span class="menu-strip-item">${MENU_BAR_GLYPH}<span>${escapedHtml(LANDING_COPY.stage.menuCount)}</span></span></div>
 <div class="shot shot-window arrive delay-4">${windowPicture()}</div>
-<div class="shot shot-popover settle delay-5">${shotImage({ shot: LandingShot.Popover, alt: LANDING_COPY.alt.popover, isEager: false })}</div>
-<div class="shot shot-widget settle delay-6"><div class="${cropClassOf(LandingShot.WidgetMedium)}">${shotImage({ shot: LandingShot.WidgetMedium, alt: LANDING_COPY.alt.widgetMedium, isEager: false })}</div></div>
+<div class="shot shot-popover settle delay-5">${shotImage({ shot: LandingShot.Popover, alt: LANDING_COPY.alt.popover })}</div>
+<div class="shot shot-widget settle delay-6"><div class="${cropClassOf(LandingShot.WidgetMedium)}">${shotImage({ shot: LandingShot.WidgetMedium, alt: LANDING_COPY.alt.widgetMedium })}</div></div>
 </figure>
 </section>`;
 }
@@ -192,8 +202,8 @@ function benefitsHtml(): string {
   return `<section class="benefits page-width" aria-labelledby="benefits-title">
 <h2 id="benefits-title" class="visually-hidden">${escapedHtml(LANDING_COPY.benefits.heading)}</h2>
 <ul class="benefit-list">
-${benefitHtml({ well: `<div class="benefit-well benefit-well-agents"><div class="benefit-shot-agents ${cropClassOf(LandingShot.AgentTasks)}">${shotImage({ shot: LandingShot.AgentTasks, alt: LANDING_COPY.alt.agentTasks, isEager: false })}</div></div>`, ...agents })}
-${benefitHtml({ well: `<div class="benefit-well"><div class="benefit-shot-ring ${cropClassOf(LandingShot.WidgetRing)}">${shotImage({ shot: LandingShot.WidgetRing, alt: LANDING_COPY.alt.widgetRing, isEager: false })}</div></div>`, ...glance })}
+${benefitHtml({ well: `<div class="benefit-well benefit-well-agents"><div class="benefit-shot-agents ${cropClassOf(LandingShot.AgentTasks)}">${shotImage({ shot: LandingShot.AgentTasks, alt: LANDING_COPY.alt.agentTasks })}</div></div>`, ...agents })}
+${benefitHtml({ well: `<div class="benefit-well"><div class="benefit-shot-ring ${cropClassOf(LandingShot.WidgetRing)}">${shotImage({ shot: LandingShot.WidgetRing, alt: LANDING_COPY.alt.widgetRing })}</div></div>`, ...glance })}
 ${benefitHtml({ well: `<div class="benefit-well">${glyphHtml({ glyph: SiteGlyph.Offline, className: 'offline-glyph' })}</div>`, ...offline })}
 </ul>
 </section>`;
@@ -237,6 +247,9 @@ ${joinFormHtml({ form: JoinForm.Final, notice, widget, classNames: [] })}
 function landingHtml({ notice, challenge }: { notice: LandingNotice; challenge: LandingChallenge }): string {
   const { widget, scriptTag } = challenge;
   return siteDocumentHtml({
+    kind: SitePageKind.Public,
+    path: LANDING_PATH,
+    structuredData: LANDING_STRUCTURED_DATA,
     title: LANDING_COPY.meta.title,
     description: LANDING_COPY.meta.description,
     main: `<main id="${CONTENT_ID}">
@@ -245,7 +258,7 @@ ${benefitsHtml()}
 ${howItWorksHtml()}
 ${finalCallHtml({ notice, widget })}
 ${scriptTag}</main>`,
-    script: PAGE_SCRIPT,
+    scripts: PAGE_SCRIPTS,
   });
 }
 

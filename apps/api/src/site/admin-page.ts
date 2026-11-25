@@ -7,7 +7,7 @@ import { AdminNotice, ConfirmationState, type WaitlistRow, type WaitlistSummary 
 import { LANDING_COPY } from './landing-copy';
 import { SiteGlyph, glyphHtml } from './site-glyphs';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
-import { CONTENT_ID, siteDocumentHtml } from './site-shell';
+import { CONTENT_ID, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE } from './site-style';
 
 const JOIN_FORM_CLASS = 'join-form';
@@ -79,21 +79,24 @@ const PAGE_SCRIPT = `{
 
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  script: PAGE_SCRIPT,
+  scripts: [PAGE_SCRIPT],
   widgetOrigin: null,
   connectsToSelf: false,
+  declaresManifest: false,
 });
 const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  script: PAGE_SCRIPT,
+  scripts: [PAGE_SCRIPT],
   widgetOrigin: TURNSTILE_ORIGIN,
   connectsToSelf: false,
+  declaresManifest: false,
 });
 const PANEL_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
-  script: null,
+  scripts: [],
   widgetOrigin: null,
   connectsToSelf: false,
+  declaresManifest: false,
 });
 
 export function adminCardMainHtml(content: string): string {
@@ -166,10 +169,11 @@ ${backLinkHtml()}`,
 
 function cardDocumentHtml({ documentTitle, content }: Card): string {
   return siteDocumentHtml({
+    kind: SitePageKind.Private,
     title: documentTitle,
     description: ADMIN_COPY.meta.description,
     main: adminCardMainHtml(content),
-    script: PAGE_SCRIPT,
+    scripts: [PAGE_SCRIPT],
   });
 }
 
@@ -251,6 +255,7 @@ function panelHtml(summary: WaitlistSummary): string {
   const { panel, stats } = ADMIN_COPY;
   const listing = summary.rows.length === 0 ? emptyCardHtml() : tableCardHtml(summary);
   return siteDocumentHtml({
+    kind: SitePageKind.Private,
     title: ADMIN_COPY.meta.panelTitle,
     description: ADMIN_COPY.meta.description,
     main: `<main id="${CONTENT_ID}">
@@ -272,7 +277,7 @@ ${statTileHtml({ label: stats.failed, count: summary.failedConfirmations })}
 ${listing}
 </div>
 </main>`,
-    script: null,
+    scripts: [],
   });
 }
 
