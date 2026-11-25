@@ -4,7 +4,7 @@
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-25 by PROMPT.md "Publishing on todz.app" (the loop runs `deploy-the-api.md` from `main` and records it) and [ADR 0044](../../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md) §6
 **ADRs:** [0044](../../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md), [0049](../../adr/0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md)
-**Not changing:** code, configuration, the Turnstile widget (the owner's step 10)
+**Not changing:** code, configuration, the Turnstile widget (the owner's step 10). The 🔴 change itself, the new public hosts and their DNS records, was reviewed in `landing` (PR #25); this folder only records its run.
 
 ## Problem
 

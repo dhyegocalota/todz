@@ -31,6 +31,6 @@ One commit after the run.
 
 ## Z. Prove and ship
 
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md`.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned its verdict.
+- [x] **Tester run:** 10 of 10, no defect — evidence: 142500a.
+- [x] **Reviewer:** YES, LOW; three MINORs: the step 15 row's reason (reworded), the tier note (added), and these ticks.
 - [ ] **/open-pr:** gates passed, PR opened.
