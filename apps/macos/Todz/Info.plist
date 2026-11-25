@@ -23,7 +23,7 @@
 			<string>dev.todz.Todz</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>todz</string>
+				<string>$(TODZ_URL_SCHEME)</string>
 			</array>
 		</dict>
 	</array>
@@ -38,5 +38,7 @@
 	<string>$(TODZ_API_BASE_URL)</string>
 	<key>TodzAppGroup</key>
 	<string>$(TeamIdentifierPrefix)$(TODZ_APP_GROUP)</string>
+	<key>TodzLinkScheme</key>
+	<string>$(TODZ_URL_SCHEME)</string>
 </dict>
 </plist>

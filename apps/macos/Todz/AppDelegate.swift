@@ -20,6 +20,7 @@ private func isFocusFilterQuiet() async -> Bool {
         preference: ServerPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
         connect: { ServerConnection(service: OwnerAPI(baseURL: $0.url), signals: SocketChangeSignals(baseURL: $0.url)) },
         probe: { await OwnerAPI(baseURL: $0.url, transport: OwnerAPI.probeTransport).probe(typedAddress: $0) },
+        linkScheme: AppConfiguration.linkScheme,
         vault: FileSessionVault(folder: AppConfiguration.sessionFolder),
         pendingLinks: FilePendingLinkVault(folder: AppConfiguration.sessionFolder),
         store: FileSyncStore(folder: AppConfiguration.sessionFolder.appending(path: cacheFolderName)),
@@ -39,7 +40,8 @@ private func isFocusFilterQuiet() async -> Bool {
         openCount: { [model] in model.todayHeadingCount },
         isScreenLocked: { ScreenLock.isLocked },
         isPopoverVisible: { [panel] in panel.isShown },
-        openPopover: { [panel] in await panel.open() }
+        openPopover: { [panel] in await panel.open() },
+        closePopover: { [panel] in panel.close() }
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
 
@@ -64,7 +66,7 @@ private func isFocusFilterQuiet() async -> Bool {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        guard let link = urls.compactMap(IncomingLink.init(url:)).last else { return }
+        guard let link = urls.compactMap({ IncomingLink(url: $0, scheme: AppConfiguration.linkScheme) }).last else { return }
         switch link {
         case let .signIn(signInLink): windowState.waitingSignInLink = signInLink
         case let .widget(widgetLink): windowState.waitingLink = widgetLink

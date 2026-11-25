@@ -23,9 +23,15 @@ private let minutesOutsideADay = [-2880, 1440]
 
 @MainActor private final class FakePopover {
     private(set) var openings = 0
+    private(set) var closings = 0
     var isOpenable = true
     var showsWhenClicked = true
     var isVisible = false
+
+    func close() {
+        closings += 1
+        isVisible = false
+    }
 
     var whileOpening: (() async -> Void)?
 
@@ -64,7 +70,8 @@ private let minutesOutsideADay = [-2880, 1440]
             openCount: openCount,
             isScreenLocked: { screen.isLocked },
             isPopoverVisible: { popover.isVisible },
-            openPopover: { await popover.open() }
+            openPopover: { await popover.open() },
+            closePopover: { popover.close() }
         )
     }
 
@@ -74,6 +81,10 @@ private let minutesOutsideADay = [-2880, 1440]
 
     func at(_ day: CalendarDate, hour: Int, minute: Int = 0) {
         clock.now = DayCloseSchedule.instant(day: day, minutesAfterMidnight: hour * minutesPerHour + minute, timeZone: timeZone)
+    }
+
+    func secondsFromMidnight(of day: CalendarDate, offset: TimeInterval) -> Date {
+        DayCloseSchedule.instant(day: day, minutesAfterMidnight: 0, timeZone: timeZone).addingTimeInterval(offset)
     }
 
     var lastClosedDay: CalendarDate? {
@@ -257,6 +268,51 @@ private let minutesOutsideADay = [-2880, 1440]
         harness.at(tomorrow, hour: 18)
         await harness.coordinator.check()
         #expect(harness.popover.openings == 2)
+    }
+
+    @Test func aShowAfterMidnightThatAnswersTheClickEndsTheUnengagedModeAndClosesThePopoverOnce() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.popover.showsWhenClicked = false
+        harness.clock.now = harness.secondsFromMidnight(of: tomorrow, offset: -2)
+        await harness.coordinator.check()
+        harness.clock.now = harness.secondsFromMidnight(of: tomorrow, offset: 1)
+        harness.coordinator.popoverShown()
+        #expect(!harness.coordinator.isClosingDay)
+        #expect(harness.popover.closings == 1)
+    }
+
+    @Test func anOpeningThatCrossesMidnightEndsTheUnengagedModeAndClosesThePopoverOnce() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.clock.now = harness.secondsFromMidnight(of: tomorrow, offset: -2)
+        let clock = harness.clock
+        let afterMidnight = harness.secondsFromMidnight(of: tomorrow, offset: 1)
+        harness.popover.whileOpening = { clock.now = afterMidnight }
+        await harness.coordinator.check()
+        #expect(!harness.coordinator.isClosingDay)
+        #expect(harness.popover.closings == 1)
+    }
+
+    @Test func pinAShowAfterMidnightOfAnEngagedModeEndsItAndClosesNothing()async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.popover.showsWhenClicked = false
+        harness.clock.now = harness.secondsFromMidnight(of: tomorrow, offset: -2)
+        await harness.coordinator.check()
+        harness.coordinator.engage()
+        harness.clock.now = harness.secondsFromMidnight(of: tomorrow, offset: 1)
+        harness.coordinator.popoverShown()
+        #expect(!harness.coordinator.isClosingDay)
+        #expect(harness.popover.closings == 0)
+    }
+
+    @Test func pinAShowAfterTheClickWaitEndsTheModeAndClosesNothing() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.popover.showsWhenClicked = false
+        harness.clock.now = harness.secondsFromMidnight(of: tomorrow, offset: -DayCloseCoordinator.popoverShowWait - 1)
+        await harness.coordinator.check()
+        harness.clock.now = harness.secondsFromMidnight(of: tomorrow, offset: 1)
+        harness.coordinator.popoverShown()
+        #expect(!harness.coordinator.isClosingDay)
+        #expect(harness.popover.closings == 0)
     }
 
     @Test func aPopoverShownAgainAfterTheDayWasMarkedKeepsTheMode() async throws {

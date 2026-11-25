@@ -8,7 +8,7 @@ private let pendingLifetime: TimeInterval = 20 * 60
 
 private func incomingLink() throws -> SignInLink {
     let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)&origin=\(harnessDefaultServer)"))
-    return try #require(SignInLink(url: url))
+    return try #require(SignInLink(url: url, scheme: .release))
 }
 
 @MainActor private func harnessWithAPendingLink() throws -> AppModelHarness {
