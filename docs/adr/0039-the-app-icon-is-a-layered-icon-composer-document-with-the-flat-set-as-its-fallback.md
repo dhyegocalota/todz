@@ -1,6 +1,6 @@
 # 0039. The app icon is a layered Icon Composer document, with the flat set as its fallback
 
-- Status: Proposed
+- Status: Proposed; its README clause (brand surfaces in light and dark, the icon's looks) superseded by [0047](0047-the-readme-walk-shows-only-the-shots-that-tell-the-product-s-story.md)
 - Date: 2026-11-24
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) asked for the Liquid Glass icon and may overturn this
 - Inspired by: the owner's request of 2026-11-24 ("o app, menu bar, tem que carregar tudo certinho a logo, o icon mas seguindo o glass style quando necessário"), [ADR 0038](0038-the-brand-sources-are-svgs-in-docs-brand-and-the-app-s-assets-are-generated-from-them.md), the spike recorded in [brand-glass](../features/brand-glass/spec.md)
