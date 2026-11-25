@@ -35,7 +35,7 @@ async function revokeKey(context: SessionContext): Promise<Response> {
   const projectId = await ownedProjectId(context);
   if (projectId === null) return errorResponse(OwnerErrorCode.NotFound);
   const keyId = routeParam({ context, name: RouteParam.KeyId });
-  const isRevoked = await revokeProjectKey({ directory: context.env.DIRECTORY, keyId, projectId, now: context.now });
+  const isRevoked = await revokeProjectKey({ directory: context.env.DIRECTORY, keyId, projectId });
   if (!isRevoked) return errorResponse(OwnerErrorCode.NotFound);
   return new Response(null, { status: HttpStatus.NoContent });
 }

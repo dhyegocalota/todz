@@ -22,7 +22,6 @@ const MCP_URL = 'http://localhost:8787/mcp';
 type KeyBody = { id: string; hint: string; created_at: number };
 type IssuedBody = { key: KeyBody; secret: string };
 type CountRow = { total: number };
-type KeyRow = { revoked_at: number | null };
 
 async function ownedProject(): Promise<{ token: string; ownerId: string; projectId: string }> {
   const { token, ownerId } = await signInOwner();
@@ -65,10 +64,10 @@ async function openSession(secret: string): Promise<string> {
   return openMcpSession({ directory: env.DIRECTORY, keyDigest: await digestCredential(secret), clientName: CLIENT_NAME, now: CLOCK_NOW });
 }
 
-async function storedRevocation(keyId: string): Promise<number | null> {
-  const row = await env.DIRECTORY.prepare('SELECT revoked_at FROM project_keys WHERE id = ?').bind(keyId).first<KeyRow>();
-  if (row === null) throw new Error('the key should exist');
-  return row.revoked_at;
+async function storedKeyRows(keyId: string): Promise<number> {
+  const row = await env.DIRECTORY.prepare('SELECT count(*) AS total FROM project_keys WHERE id = ?').bind(keyId).first<CountRow>();
+  if (row === null) throw new Error('count always answers a row');
+  return row.total;
 }
 
 describe('POST /owner/projects/:projectId/keys', () => {
@@ -137,7 +136,7 @@ describe('GET /owner/projects/:projectId/keys', () => {
 });
 
 describe('DELETE /owner/projects/:projectId/keys/:keyId', () => {
-  test('answers 204, drops the key from the list, refuses it on MCP and deletes its MCP sessions', async () => {
+  test('answers 204, drops the key from the list, refuses it on MCP and deletes it with its MCP sessions', async () => {
     const { token, projectId } = await ownedProject();
     const { key, secret } = await issueKey({ token, projectId });
     await openSession(secret);
@@ -152,7 +151,7 @@ describe('DELETE /owner/projects/:projectId/keys/:keyId', () => {
     expect(refused.status).toBe(UNAUTHORIZED_STATUS);
     expect(await refused.text()).toBe('');
     expect(await mcpSessionCount(secret)).toBe(0);
-    expect(await storedRevocation(key.id)).not.toBeNull();
+    expect(await storedKeyRows(key.id)).toBe(0);
   });
 
   test('leaves the other keys of the project and their MCP sessions working', async () => {
@@ -166,7 +165,7 @@ describe('DELETE /owner/projects/:projectId/keys/:keyId', () => {
     expect(await listKeys({ token, projectId })).toEqual([kept.key]);
   });
 
-  test('revoking a key twice answers 204 then 404 not_found and keeps the first revocation time', async () => {
+  test('revoking a key twice answers 204 then 404 not_found and keeps no row', async () => {
     const { token, projectId } = await ownedProject();
     const { key } = await issueKey({ token, projectId });
     const first = await serveOwnerCall({
@@ -180,7 +179,7 @@ describe('DELETE /owner/projects/:projectId/keys/:keyId', () => {
     });
     expect(second.status).toBe(NOT_FOUND_STATUS);
     expect(await second.json()).toEqual(NOT_FOUND);
-    expect(await storedRevocation(key.id)).toBe(CLOCK_NOW);
+    expect(await storedKeyRows(key.id)).toBe(0);
   });
 
   test('an unknown key id and a key of another project of the same owner answer 404 and revoke nothing', async () => {
@@ -200,7 +199,7 @@ describe('DELETE /owner/projects/:projectId/keys/:keyId', () => {
     expect([unknown.status, crossProject.status]).toEqual([NOT_FOUND_STATUS, NOT_FOUND_STATUS]);
     expect(await unknown.json()).toEqual(NOT_FOUND);
     expect(await crossProject.json()).toEqual(NOT_FOUND);
-    expect(await storedRevocation(otherKey.key.id)).toBeNull();
+    expect(await storedKeyRows(otherKey.key.id)).toBe(1);
   });
 
   test('an unknown project answers 404 not_found', async () => {
