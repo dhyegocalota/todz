@@ -42,6 +42,8 @@ const WAITLIST_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8606';
 const ADMIN_RATE_LIMIT_NAMESPACE_ID = '8607';
 const ADMIN_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8608';
 const ADMIN_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8609';
+const REPLY_RATE_LIMIT_NAMESPACE_ID = '8610';
+const REPLY_LIMITER_NAME_PATTERN = /REPLY/;
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -201,7 +203,7 @@ describe('the api source', () => {
     expect(DIGEST_CRON_PATTERN.exec(readRepositoryFile(SCHEDULED_MODULE))?.[FIRST_CAPTURE]).toBe(digestCron);
   });
 
-  test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally with the shared limits', () => {
+  test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally, and a reply per owner, with the shared limits', () => {
     expect(wranglerConfiguration().ratelimits).toEqual([
       {
         name: 'SIGN_IN_LIMITER',
@@ -248,7 +250,17 @@ describe('the api source', () => {
         namespace_id: ADMIN_GLOBAL_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('ADMIN_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
+      {
+        name: 'DAY_EMAIL_REPLY_LIMITER',
+        namespace_id: REPLY_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('REPLY_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
     ]);
+  });
+
+  test('the wrangler configuration holds one reply limiter and no global one, so strangers cannot use up the owner replies', () => {
+    const replyLimiters = wranglerConfiguration().ratelimits.filter(({ name }) => REPLY_LIMITER_NAME_PATTERN.test(name));
+    expect(replyLimiters.map(({ name }) => name)).toEqual(['DAY_EMAIL_REPLY_LIMITER']);
   });
 
   test('every rate-limit binding of the wrangler configuration is an optional RateLimit of the Worker environment', () => {
