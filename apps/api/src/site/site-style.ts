@@ -47,7 +47,7 @@ const ADMIN_STYLE = `.admin-card{display:flex;flex-direction:column;align-items:
 .admin-table caption,.admin-table thead{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .admin-table,.admin-table tbody{display:block}
 .admin-table tr{display:grid;grid-template-columns:1fr auto;align-items:center;gap:var(--space-1) var(--space-3);padding-block:var(--space-3);border-top:1px solid var(--color-hairline)}
-.admin-table tbody tr:first-child{border-top:0}
+.admin-table tr:first-child{border-top:0}
 .admin-table th,.admin-table td{display:block;padding:0;text-align:left}
 .admin-table th[scope=row]{grid-column:1 / -1;font-weight:400;overflow-wrap:anywhere}
 .admin-table td{font-size:var(--text-small);font-variant-numeric:tabular-nums;color:var(--color-text-muted)}
