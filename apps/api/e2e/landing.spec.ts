@@ -5,6 +5,8 @@ import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { ProjectName } from './project-name';
 import {
   ERRORING_TURNSTILE_STUB,
+  FAILED_BEFORE_PRESS_TURNSTILE_STUB,
+  FAILED_MARKER_ATTRIBUTE,
   JAVASCRIPT_CONTENT_TYPE,
   SLOW_TURNSTILE_STUB,
   TURNSTILE_DUMMY_TOKEN,
@@ -308,6 +310,26 @@ test.describe('join', () => {
       const address = uniqueAddress();
       const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
       await page.goto(SitePath.Landing);
+      const label = await button.innerText();
+      await submitForm({ page, form: Fragment.Hero, address });
+      await expect(button).toHaveText(label);
+      await expect(button).not.toHaveAttribute('aria-disabled', 'true');
+      await expect(page.locator(`form#${Fragment.Hero} input[name="email"]`)).toHaveValue(address);
+      expect(posts).toEqual([]);
+    });
+  });
+
+  test.describe('when the Turnstile widget errored before the visitor pressed', () => {
+    test('the press restores the button at once, keeps the address and posts nothing', async ({ page }) => {
+      await page.route(TURNSTILE_SCRIPT_URL, (route) =>
+        route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: FAILED_BEFORE_PRESS_TURNSTILE_STUB }),
+      );
+      const posts: string[] = [];
+      page.on('request', (request) => request.method() === 'POST' && posts.push(request.url()));
+      const address = uniqueAddress();
+      const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
+      await page.goto(SitePath.Landing);
+      await expect(page.locator(`html[${FAILED_MARKER_ATTRIBUTE}]`)).toHaveCount(1);
       const label = await button.innerText();
       await submitForm({ page, form: Fragment.Hero, address });
       await expect(button).toHaveText(label);

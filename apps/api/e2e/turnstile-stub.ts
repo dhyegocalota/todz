@@ -2,6 +2,8 @@ export const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile
 export const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
 export const TURNSTILE_RESPONSE_FIELD = 'cf-turnstile-response';
 export const JAVASCRIPT_CONTENT_TYPE = 'text/javascript';
+export const FAILED_MARKER_ATTRIBUTE = 'data-widget-failed';
+const FAILED_MARKER = 'widgetFailed';
 const SLOW_TOKEN_DELAY_MS = 1_000;
 const TURNSTILE_SOLVE = `const solve = () => document.querySelectorAll('.cf-turnstile').forEach((widget) => {
   const token = document.createElement('input');
@@ -30,5 +32,15 @@ setTimeout(solve, ${SLOW_TOKEN_DELAY_MS});
 
 export const ERRORING_TURNSTILE_STUB = `{
 ${TURNSTILE_ERROR}
-setTimeout(fail, ${SLOW_TOKEN_DELAY_MS});
+document.addEventListener('submit', fail);
+}`;
+
+export const FAILED_BEFORE_PRESS_TURNSTILE_STUB = `{
+${TURNSTILE_ERROR}
+const failOnce = () => {
+  fail();
+  document.documentElement.dataset.${FAILED_MARKER} = 'true';
+};
+if (document.readyState === 'complete') failOnce();
+else addEventListener('load', failOnce);
 }`;
