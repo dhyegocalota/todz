@@ -118,6 +118,7 @@ async function landingPolicy({ html, widgetOrigins }: { html: string; widgetOrig
     `style-src ${styleHash}`,
     "img-src 'self'",
     "manifest-src 'self'",
+    "connect-src 'self'",
     ...widgetOrigins.map((origin) => `frame-src ${origin}`),
     "form-action 'self'",
     "frame-ancestors 'none'",
@@ -402,6 +403,7 @@ describe('the self-host guide page', () => {
         `style-src ${await sourceHash(style)}`,
         "img-src 'self'",
         "manifest-src 'self'",
+        "connect-src 'self'",
         "form-action 'self'",
         "frame-ancestors 'none'",
         "base-uri 'none'",
@@ -434,6 +436,7 @@ describe('the self-host guide page', () => {
 const STRUCTURED_DATA_PATTERN = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
 const ATTRIBUTE_HANDLER_PATTERN = /<[^>]*\son[a-z]+=/;
 const MANIFEST_DIRECTIVE = "manifest-src 'self'";
+const CONNECT_DIRECTIVE = "connect-src 'self'";
 const UNSAFE_INLINE = "'unsafe-inline'";
 const SITE_CACHE_CONTROL = 'no-cache, no-transform';
 const ADMIN_SIGN_IN_PATH = '/admin';
@@ -464,6 +467,13 @@ describe('the structured data and the policy of the public pages', () => {
     const { response } = await page();
     expect(response.headers.get('Content-Security-Policy')?.split('; ')).toContain(MANIFEST_DIRECTIVE);
     expect(response.headers.get('Cache-Control')).toBe(SITE_CACHE_CONTROL);
+  });
+
+  test.each(PUBLIC_PAGES)('%s lets Lighthouse read its discovery files: connections to this origin only', async (_name, page) => {
+    const { response } = await page();
+    const directives = response.headers.get('Content-Security-Policy')?.split('; ');
+    expect(directives).toContain(CONNECT_DIRECTIVE);
+    expect(directives?.filter((directive) => directive.startsWith('connect-src '))).toEqual([CONNECT_DIRECTIVE]);
   });
 
   test('no site page widens its policy with unsafe-inline or carries an inline handler attribute', async () => {
