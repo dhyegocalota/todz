@@ -32,7 +32,7 @@ Every command runs from the repository root, one command per call. Cloudflare ca
 3. **Create the release key, once.** The script makes an Ed25519 key, stores it in the Keychain item `todz-release-key` through standard input, deletes its only file and prints the allowed-signers line:
 
    ```bash
-   scripts/release-mac.sh --create-release-key
+   pnpm release:mac --create-release-key
    ```
 
    Expected: one line starting `release@todz.app namespaces="todz-release" ssh-ed25519 `, which goes into `apps/macos/release/allowed-signers` and the "Install on Mac" docs page; `security find-generic-password -s todz-release-key` finds the item (without `-w`, so nothing secret prints). The owner then exports both keys by hand to his password manager: the loop never runs an export.
@@ -51,7 +51,7 @@ Every command runs from the repository root, one command per call. Cloudflare ca
 5. **Build a dry run and check it.** Everything but the upload and the tag push:
 
    ```bash
-   scripts/release-mac.sh --dry-run
+   pnpm release:mac --dry-run
    ```
 
    Expected: it prints `~/.todz-release/<version>/Todz-<version>.dmg` and its sum. Then, inside `~/.todz-release/<version>/`: `shasum -a 256 -c Todz-<version>.dmg.sha256` prints `OK`; `ssh-keygen -Y verify -f <repository>/apps/macos/release/allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg` prints `Good "todz-release" signature for release@todz.app`; on the mounted app `codesign -dv` shows `TeamIdentifier=XFWR794VS8` and `flags=0x10000(runtime)`, and `spctl -a -vv` answers `rejected` with `origin=Apple Development`.
@@ -65,7 +65,7 @@ Every command runs from the repository root, one command per call. Cloudflare ca
 7. **Release.** The same build, uploaded:
 
    ```bash
-   scripts/release-mac.sh
+   pnpm release:mac
    ```
 
    Expected: it uploads the DMG, the sum and the signature under `<version>/`, then `appcast.xml`, then `latest.json`, pushes the tag `mac-v<version>`, and prints `https://todz.app/download/<version>/Todz-<version>.dmg` and the sum. A second run of the same version prints "already published" and uploads nothing.
