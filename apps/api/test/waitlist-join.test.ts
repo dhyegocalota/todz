@@ -345,6 +345,19 @@ describe('a join over the daily cap', () => {
     await expectOpensSoon({ run });
     await expectNothingKept({ run, address });
   });
+
+  test('answers a known address exactly as an unknown one and mails neither', async () => {
+    const known = freshAddress();
+    await expectJoined(await join({ email: known }));
+    const prefix = await seedJoins({ count: WAITLIST_DAILY_JOINS_MAX, joinedAt: Date.now() - MILLISECONDS_PER_HOUR });
+    onTestFinished(() => deleteSeededJoins(prefix));
+    const knownRun = await join({ email: known });
+    const unknownRun = await join({ email: freshAddress() });
+    await expectOpensSoon({ run: knownRun });
+    await expectOpensSoon({ run: unknownRun });
+    expect(knownRun.html).toBe(unknownRun.html);
+    expect([...knownRun.sent, ...unknownRun.sent]).toEqual([]);
+  });
 });
 
 describe('a refused join answers try again, 429 with Retry-After 60, and keeps nothing', () => {

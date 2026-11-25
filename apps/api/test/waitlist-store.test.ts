@@ -73,13 +73,13 @@ describe('the waitlist store', () => {
     expect(await waitlistRows(address)).toHaveLength(1);
   });
 
-  test('a known address over the cap is known, not full, so the answer stays alike', async () => {
+  test('a known address over the cap is full like any other, so the answer never tells it is on the list', async () => {
     const now = CLOCK_NOW + KNOWN_DAY_OFFSET;
     const address = freshAddress();
     await joinWaitlistWithinLimit({ database: env.DIRECTORY, address, now: now - MILLISECONDS_PER_DAY });
     const prefix = await seedJoins({ count: WAITLIST_DAILY_JOINS_MAX, joinedAt: now - MILLISECONDS_PER_HOUR });
     onTestFinished(() => deleteSeededJoins(prefix));
-    expect(await joinWaitlistWithinLimit({ database: env.DIRECTORY, address, now })).toBe(WaitlistJoin.Known);
+    expect(await joinWaitlistWithinLimit({ database: env.DIRECTORY, address, now })).toBe(WaitlistJoin.Full);
   });
 
   test('recording a failure for an address not on the list adds no row', async () => {
