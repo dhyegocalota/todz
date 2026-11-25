@@ -8,3 +8,7 @@ export function normalizedAddress(email: string): string | null {
   if (!isAddress) return null;
   return address;
 }
+
+export function isOwnDomainAddress(address: string): boolean {
+  throw new Error(`isOwnDomainAddress is not implemented for ${address}`);
+}
