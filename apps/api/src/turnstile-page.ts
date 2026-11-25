@@ -6,7 +6,9 @@ const PAGE_METHOD = 'GET';
 const HASH_ALGORITHM = 'SHA-256';
 const SITE_KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
 const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
-export const TURNSTILE_SCRIPT_TAG = `<script src="${TURNSTILE_ORIGIN}/turnstile/v0/api.js" async defer></script>`;
+const TURNSTILE_SCRIPT_URL = `${TURNSTILE_ORIGIN}/turnstile/v0/api.js`;
+export const TURNSTILE_SCRIPT_TAG = `<script src="${TURNSTILE_SCRIPT_URL}" async defer></script>`;
+export const TURNSTILE_EXPLICIT_SCRIPT_URL = `${TURNSTILE_SCRIPT_URL}?render=explicit`;
 
 export type TurnstilePage = { available: (siteKey: string) => string; unavailable: string; contentSecurityPolicy: string };
 

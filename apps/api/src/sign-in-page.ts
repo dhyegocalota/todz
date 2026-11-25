@@ -2,7 +2,7 @@ import type { Env } from './env';
 import { SIGN_IN_PAGE_COPY } from './sign-in-page-copy';
 import { SIGN_IN_PAGE_ICON } from './sign-in-page-icon';
 import { TURNSTILE_TOKEN_PATTERN_SOURCE, TurnstileAction } from './turnstile';
-import { TURNSTILE_SCRIPT_TAG, type TurnstilePage, serveTurnstilePage, turnstilePagePolicy } from './turnstile-page';
+import { TURNSTILE_EXPLICIT_SCRIPT_URL, type TurnstilePage, serveTurnstilePage, turnstilePagePolicy } from './turnstile-page';
 
 export const SIGN_IN_PAGE_PATH = '/sign-in';
 const TOKEN_PARAMETER = 'token';
@@ -10,35 +10,50 @@ const TOKEN_PATTERN_SOURCE = '^[A-Za-z0-9_-]{43}$';
 const APP_LINK_PREFIX = 'todz://sign-in?token=';
 const APP_LINK_TURNSTILE_SEPARATOR = '&turnstile=';
 const OPEN_BUTTON_ID = 'open';
+const CHECK_ID = 'check';
 const CHECKING_STATE = 'checking';
 const FAILED_STATE = 'failed';
 const READY_STATE = 'ready';
-const CHECKED_CALLBACK = 'signInChecked';
-const EXPIRED_CALLBACK = 'signInCheckExpired';
-const FAILED_CALLBACK = 'signInCheckFailed';
 
-const PAGE_SCRIPT = `const token = new URLSearchParams(location.hash.slice(1)).get('${TOKEN_PARAMETER}');
-history.replaceState(null, '', location.pathname);
-if (token !== null && /${TOKEN_PATTERN_SOURCE}/.test(token)) {
-  const button = document.getElementById('${OPEN_BUTTON_ID}');
-  let appLink = null;
-  const fail = () => { document.body.dataset.state = '${FAILED_STATE}'; };
-  button.addEventListener('click', () => { location.href = appLink; });
-  document.body.dataset.state = '${CHECKING_STATE}';
-  window.${CHECKED_CALLBACK} = (turnstileToken) => {
-    if (!/${TURNSTILE_TOKEN_PATTERN_SOURCE}/.test(turnstileToken)) return fail();
-    const isFirstCheck = appLink === null;
-    appLink = '${APP_LINK_PREFIX}' + token + '${APP_LINK_TURNSTILE_SEPARATOR}' + turnstileToken;
-    document.body.dataset.state = '${READY_STATE}';
-    if (!isFirstCheck) return;
-    button.focus();
-    location.href = appLink;
-  };
-  window.${EXPIRED_CALLBACK} = () => {
+const PAGE_SCRIPT = `{
+  const token = new URLSearchParams(location.hash.slice(1)).get('${TOKEN_PARAMETER}');
+  history.replaceState(null, '', location.pathname);
+  if (token !== null && /${TOKEN_PATTERN_SOURCE}/.test(token)) {
+    const button = document.getElementById('${OPEN_BUTTON_ID}');
+    const check = document.getElementById('${CHECK_ID}');
+    let appLink = null;
+    let widget = null;
+    const fail = () => { document.body.dataset.state = '${FAILED_STATE}'; };
+    const checked = (turnstileToken) => {
+      if (!/${TURNSTILE_TOKEN_PATTERN_SOURCE}/.test(turnstileToken)) return fail();
+      const isFirstCheck = appLink === null;
+      appLink = '${APP_LINK_PREFIX}' + token + '${APP_LINK_TURNSTILE_SEPARATOR}' + turnstileToken;
+      document.body.dataset.state = '${READY_STATE}';
+      if (!isFirstCheck) return;
+      button.focus();
+      location.href = appLink;
+    };
+    const expired = () => {
+      document.body.dataset.state = '${CHECKING_STATE}';
+      turnstile.reset(widget);
+    };
+    button.addEventListener('click', () => { location.href = appLink; });
     document.body.dataset.state = '${CHECKING_STATE}';
-    turnstile.reset();
-  };
-  window.${FAILED_CALLBACK} = fail;
+    const loader = document.createElement('script');
+    loader.src = '${TURNSTILE_EXPLICIT_SCRIPT_URL}';
+    loader.addEventListener('load', () => {
+      widget = turnstile.render(check, {
+        sitekey: check.dataset.sitekey,
+        action: '${TurnstileAction.SignIn}',
+        'refresh-expired': 'manual',
+        callback: checked,
+        'expired-callback': expired,
+        'error-callback': fail,
+        'timeout-callback': fail,
+      });
+    });
+    document.head.appendChild(loader);
+  }
 }`;
 
 const PAGE_STYLE = `:root{color-scheme:light dark}
@@ -74,14 +89,13 @@ ${SIGN_IN_PAGE_ICON}
 <h1>${SIGN_IN_PAGE_COPY.title}</h1>
 <p class="missing">${SIGN_IN_PAGE_COPY.missingToken}</p>
 <p class="${CHECKING_STATE}">${SIGN_IN_PAGE_COPY.checking}</p>
-<div class="${CHECKING_STATE} cf-turnstile" data-sitekey="${siteKey}" data-action="${TurnstileAction.SignIn}" data-refresh-expired="manual" data-callback="${CHECKED_CALLBACK}" data-expired-callback="${EXPIRED_CALLBACK}" data-error-callback="${FAILED_CALLBACK}" data-timeout-callback="${FAILED_CALLBACK}"></div>
+<div id="${CHECK_ID}" class="${CHECKING_STATE}" data-sitekey="${siteKey}"></div>
 <p class="${FAILED_STATE}">${SIGN_IN_PAGE_COPY.checkFailed}</p>
 <p class="${READY_STATE}">${SIGN_IN_PAGE_COPY.opening}</p>
 <button id="${OPEN_BUTTON_ID}" class="${READY_STATE}" type="button">${SIGN_IN_PAGE_COPY.openButton}</button>
 <p class="${READY_STATE} footnote">${SIGN_IN_PAGE_COPY.notOpened}</p>
 </main>
-<script>${PAGE_SCRIPT}</script>
-${TURNSTILE_SCRIPT_TAG}`);
+<script>${PAGE_SCRIPT}</script>`);
 }
 
 const SIGN_IN_PAGE: TurnstilePage = {
