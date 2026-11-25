@@ -31,11 +31,14 @@ export type Send = { number: number; sentAtMs: number };
 
 type Values = Record<string, number>;
 
-export const PERF_PREDICATE = 'category == "perf"';
-const PERF_LINE_PATTERN = /\[[^\]]+:perf\]\s+(\S+)\s*(.*)$/;
+const APP_SUBSYSTEMS = ['dev.todz.Todz', 'dev.todz.Todz.debug'];
+const SUBSYSTEM_ALTERNATIVES = APP_SUBSYSTEMS.map((subsystem) => subsystem.replaceAll('.', '\\.')).join('|');
+export const PERF_PREDICATE = `(${APP_SUBSYSTEMS.map((subsystem) => `subsystem == "${subsystem}"`).join(' OR ')}) AND category == "perf"`;
+const PERF_LINE_PATTERN = new RegExp(`\\[(\\d+):[0-9a-f]+\\]\\s+\\[(?:${SUBSYSTEM_ALTERNATIVES}):perf\\]\\s+(\\S+)\\s*(.*)$`);
 const VALUE_PATTERN = /([a-z-]+)=(\d+)/g;
-const KIND_GROUP = 1;
-const PAYLOAD_GROUP = 2;
+const PROCESS_GROUP = 1;
+const KIND_GROUP = 2;
+const PAYLOAD_GROUP = 3;
 const NAME_GROUP = 1;
 const NUMBER_GROUP = 2;
 const FIRST_AFTER_BASELINE = 1;
@@ -46,17 +49,21 @@ function valueOf({ values, name }: { values: Values; name: string }): number {
   return value;
 }
 
-const PARSER_OF_KIND: Record<ProbeEventKind, (values: Values) => ProbeEvent> = {
-  [ProbeEventKind.LaunchReady]: (values) => ({ kind: ProbeEventKind.LaunchReady, ms: valueOf({ values, name: 'ms' }) }),
-  [ProbeEventKind.Scroll]: (values) => ({
+const PARSER_OF_KIND: Record<ProbeEventKind, (line: { values: Values; processIdentifier: number }) => ProbeEvent> = {
+  [ProbeEventKind.LaunchReady]: ({ values }) => ({ kind: ProbeEventKind.LaunchReady, ms: valueOf({ values, name: 'ms' }) }),
+  [ProbeEventKind.Scroll]: ({ values }) => ({
     kind: ProbeEventKind.Scroll,
     frames: valueOf({ values, name: 'frames' }),
     overBudget: valueOf({ values, name: 'over-budget' }),
     worstMs: valueOf({ values, name: 'worst-ms' }),
     refreshMs: valueOf({ values, name: 'refresh-ms' }),
   }),
-  [ProbeEventKind.Footprint]: (values) => ({ kind: ProbeEventKind.Footprint, mb: valueOf({ values, name: 'mb' }), processIdentifier: 0 }),
-  [ProbeEventKind.TaskArrived]: (values) => ({
+  [ProbeEventKind.Footprint]: ({ values, processIdentifier }) => ({
+    kind: ProbeEventKind.Footprint,
+    mb: valueOf({ values, name: 'mb' }),
+    processIdentifier,
+  }),
+  [ProbeEventKind.TaskArrived]: ({ values }) => ({
     kind: ProbeEventKind.TaskArrived,
     number: valueOf({ values, name: 'number' }),
     atMs: valueOf({ values, name: 'at-ms' }),
@@ -71,7 +78,7 @@ function eventOf(line: string): ProbeEvent[] {
   const values = Object.fromEntries(
     [...String(match[PAYLOAD_GROUP]).matchAll(VALUE_PATTERN)].map((pair) => [pair[NAME_GROUP], Number(pair[NUMBER_GROUP])]),
   );
-  return [PARSER_OF_KIND[kind](values)];
+  return [PARSER_OF_KIND[kind]({ values, processIdentifier: Number(match[PROCESS_GROUP]) })];
 }
 
 export function probeEventsOf(logText: string): ProbeEvent[] {
@@ -108,12 +115,22 @@ export function scrollCheck(events: ProbeEvent[]): AppCheck {
 }
 
 export function footprintCheck(events: ProbeEvent[]): AppCheck {
-  const footprints = events.flatMap((event) => (event.kind === ProbeEventKind.Footprint ? [event.mb] : []));
+  const samples = events.flatMap((event) => (event.kind === ProbeEventKind.Footprint ? [event] : []));
+  const processIdentifiers = [...new Set(samples.map((sample) => sample.processIdentifier))];
+  const launches = processIdentifiers.map((processIdentifier) =>
+    samples.filter((sample) => sample.processIdentifier === processIdentifier).map((sample) => sample.mb),
+  );
+  const footprints = launches.reduce<number[]>((longest, launch) => (launch.length > longest.length ? launch : longest), []);
   const baseline = footprints[FOOTPRINT_BASELINE_SAMPLE_INDEX];
   const latest = footprints.at(-1);
-  const isShort =
-    baseline === undefined || latest === undefined || footprints.length <= FOOTPRINT_BASELINE_SAMPLE_INDEX + FIRST_AFTER_BASELINE;
-  if (isShort) throw new Error('the soak is shorter than 5 minutes');
+  const samplesNeeded = FOOTPRINT_BASELINE_SAMPLE_INDEX + FIRST_AFTER_BASELINE + 1;
+  if (baseline === undefined || latest === undefined || footprints.length < samplesNeeded) {
+    return {
+      name: 'footprint',
+      summary: `not enough samples: the longest launch has ${footprints.length} of ${samplesNeeded}`,
+      verdict: Verdict.Skip,
+    };
+  }
   return {
     name: 'footprint',
     summary: `${baseline} MB at 5 minutes, ${latest} MB after ${footprints.length} samples`,

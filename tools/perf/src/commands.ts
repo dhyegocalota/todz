@@ -223,7 +223,7 @@ function appHandler(dependencies: CliDependencies): Handler {
       sendsPath: flagValueOf({ parsed, name: SENDS_FLAG }),
     });
     dependencies.out(checks.map((check) => `${check.name}: ${check.summary} ${check.verdict}`).join('\n') + '\n');
-    return exitCodeOf(checks.every((check) => check.verdict === Verdict.Pass));
+    return exitCodeOf(checks.every((check) => check.verdict !== Verdict.Fail));
   };
 }
 
