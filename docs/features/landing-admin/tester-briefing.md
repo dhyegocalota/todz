@@ -110,3 +110,36 @@ The preview line of the mail is html-only (react-email marks it `data-skip-in-te
 - **Three call sites outside G2's list** (`landing-page.ts` twice, `self-host-page.ts`) each gained `connectsToSelf: false`, one line each, because the new parameter is required.
 - **E2E cannot run green here.** The routes are G1's, so the admin walk is unproven end to end; it was only run to see each test fail for the right reason. The log reader assumes the console sender's line is `{"to":…,"text":…}` possibly after a prefix, and the link is found in `text` by the pattern `…/admin/sign-in#token=<43 base64url>`. If wrangler wraps the line, fix `loggedMessages` in the spec.
 - The mail button's 4.3:1 fill is the shared style, left as the design says.
+
+## Fix round
+
+Answers the review of `c9b2168` (spec "Review answers" V1 to V7; V8 is the lead's runbook). Every behaviour change has its red commit alone, then its fix; refactors ran with the suite green before and after. Final runs: `pnpm --filter @todz/api typecheck` clean, `pnpm --filter @todz/api exec vitest run` 60 files and 1582 tests passed, `pnpm --filter @todz/repository-shape exec vitest run` 234 passed, `pnpm --filter @todz/api exec playwright test` 45 passed and 2 skipped (the mobile-only skips of the landing spec).
+
+| Item | What changed | Red commit and the text it printed | Green commit |
+|------|--------------|------------------------------------|--------------|
+| V1 | `ADMIN_EMAIL` left `vars` in `wrangler.jsonc`; `api-source.test.ts` pins the exact `vars`; the dev scripts and `SITE_VARIABLES` keep passing it | `532cb0d`: `toEqual` Received had `"ADMIN_EMAIL": "hello@todz.app"` | `d24c6a4` |
+| V2 | both cookies `SameSite=Lax` (`admin-session.ts`) | `26afae8`: 13 failures in `admin-session`, `admin-sign-in` and `site-dispatch`, e.g. Expected `...HttpOnly; SameSite=Lax; Max-Age=900`, Received `...SameSite=Strict; Max-Age=900` | `ddd9348` |
+| V3 | `waitlist-join.ts` and `owner-request.ts` use `request-body.ts`; `sessionTokenOf` reads with `parsedJson`; `AGENTS.md` helper line names `isBoundedRequest` and `hasMediaType` | refactor, suite green before and after | `9779e89` |
+| V4 | `site/site-limiter.ts` holds `limitRefusal({ limiter, key })`, `isSiteUnguarded` and the neutral `SiteLimitRefusal`; each limiter maps it to its notice through a `Record` | refactor, limiter and join tests unchanged and green | `2398419` |
+| V5a | sign-out when the directory throws answers the Closed card and still clears the session cookie; the shared `adminClosedAnswerOf` lives in `admin-answer.ts` | `121662b`: `expected [] to deeply equal ["__Host-todz_admin=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0"]` | `34a1c8f` |
+| V5b | the export answers the Closed card (503) when the session check or the rows read throws | `b00115f`: `AssertionError: expected '{}' to be '<!doctype html>...'` | `683c128` |
+| V5c | `POST /admin/sessions` answers 503 when `publicOriginOf(SITE_ORIGIN)` is null, before the same-origin check | `671ee53`: `AssertionError: expected 403 to be 503` (no `SITE_ORIGIN`, and a plain http one on a public host) | `d1f2008` |
+| V6 | `ADMIN_SESSION_LIFETIME_HOURS`; `HttpHeader.ContentType` and `ContentLength`; `TURNSTILE_RESPONSE_FIELD` and `siteKeyOf` in `turnstile-page.ts` (renamed from `waitlistSiteKeyOf`); `MediaType.Json` on the link page | refactor, suite green before and after | `b9fa37d` |
+| V7 | the link page wraps the spend in `spend()`, run on load and on `hashchange`; it clears the fragment first and returns the status to the working state before each spend | `5b042b1`: `Error: the page does not listen to hashchange` | `c32f129` |
+| V7 E2E | `admin.spec.ts` opens `/admin/sign-in#token=<unknown>` in the admin context (refusal), then goes to the mailed link in the same tab; no third link request | the case fails on the old script (mutation: without the `addEventListener` line the tab stays on `/admin/sign-in#token=...` and `toHaveURL(/\/admin$/)` times out) | the E2E commit after `b9fa37d` |
+
+The E2E case replaces "the same link opened in the browser that asked" (a click from a mail page): the paste is now the walk's success path, the click from a mail page stays in the fresh-browser refusal. If the tester wants the mail-click success too, it needs a third link request.
+
+### Hypotheses for the tester
+
+- A link pasted into a tab that shows the refusal is spent, its token leaves the address bar before the post, and the card returns to "Signing you in…" with the retry link hidden while the post is out.
+- With a throwing directory, sign-out answers the Closed card (503) with the cleared session cookie, so the browser forgets the session even when the row stays.
+- The CSV route answers the Closed card (HTML, 503, admin headers, no `Content-Disposition`) when D1 throws, for the session check and the rows read alike.
+- `POST /admin/sessions` with an unusable `SITE_ORIGIN` answers 503 JSON `{}` even from a cross-site post, reads no body and touches no limiter.
+- Waitlist and admin limit behaviour is unchanged: a missing or throwing limiter is "opens soon" or Closed, a refusal is "try again" or 429, and the unguarded check still skips local site hosts.
+- Both cookies read `SameSite=Lax; Max-Age=900` and `43200`.
+
+### Gaps
+
+- A late failure of an earlier spend can still overwrite the card of a later one when two spends overlap (a refusal answered after a second paste); the post of the first is not aborted.
+- `docs/features/landing-waitlist/tester-briefing.md` still names `waitlistSiteKeyOf` (history, left as written).
