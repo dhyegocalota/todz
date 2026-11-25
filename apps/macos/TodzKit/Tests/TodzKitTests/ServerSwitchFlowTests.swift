@@ -118,15 +118,15 @@ private func checking() throws -> ServerSwitchFlow {
     func aSwitchThatDidNotHappenSaysWhy(result: ServerSwitchResult, expected: ServerSwitchState) throws {
         var flow = try checking()
         flow.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
-        flow.finish(result: result, server: try address(newText))
+        flow.finish(result: result)
         #expect(flow.state == expected)
     }
 
-    @Test func aFinishedSwitchNamesTheNewServer() throws {
+    @Test func aFinishedSwitchIsSwitched() throws {
         var flow = try checking()
         flow.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
-        flow.finish(result: .switched, server: try address(newText))
-        #expect(flow.state == .switched(server: "localhost:8791"))
+        flow.finish(result: .switched)
+        #expect(flow.state == .switched)
     }
 
     @Test func closingClearsEveryLineACheckAndAQuestionButNotASwitchInFlight() throws {
@@ -141,10 +141,10 @@ private func checking() throws -> ServerSwitchFlow {
         confirming.receive(outcome: .matches, isSignedIn: true, waitingChanges: 0)
         var switched = try checking()
         switched.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
-        switched.finish(result: .switched, server: try address(newText))
+        switched.finish(result: .switched)
         var failed = try checking()
         failed.receive(outcome: .matches, isSignedIn: false, waitingChanges: 0)
-        failed.finish(result: .eraseFailed, server: try address(newText))
+        failed.finish(result: .eraseFailed)
         let closedStates = [refused, alreadyInUse, notTodz, try checking(), confirming, switched, failed].map { flow in
             var closing = flow
             closing.close()

@@ -132,7 +132,7 @@ struct ServerAddressForm: View {
         case .failed(.eraseFailed): (ErrorCopy.serverSwitchFailed(server: serverInUseName), true)
         case .failed(.busy): (ErrorCopy.serverSwitchBusy(server: serverInUseName), true)
         case .alreadyInUse: (SettingsCopy.serverInUse, false)
-        case let .switched(server): layout == .row ? (SettingsCopy.switched(server: server), false) : nil
+        case .switched: layout == .row ? (SettingsCopy.switched(server: serverInUseName), false) : nil
         case .idle, .checking, .confirming, .switching: nil
         }
     }
@@ -214,7 +214,7 @@ struct ServerAddressForm: View {
     private func switchWhenReady() async {
         guard flow.state == .switching, let target else { return }
         let result = await model.switchServer(to: target)
-        flow.finish(result: result, server: target)
+        flow.finish(result: result)
     }
 
     private func cancelCheck() {
