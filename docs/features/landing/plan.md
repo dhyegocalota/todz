@@ -105,7 +105,7 @@ G1 and G2 run in parallel. G2 builds its pages as functions `serveLandingPage({ 
 
 - [x] **Plan review:** run 13 answered NO (`todz-loop` notes); run 14 answered R1–R17 in the spec (0a08a28) a `reviewer` sub-agent on this plan and the test plan.
 - [x] **Tester briefing:** G1, G2 and G3 sections in `tester-briefing.md` written from the developers' reports.
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md`.
-- [ ] **Reviewer and security reviewer:** fresh sub-agents returned verdicts.
+- [x] **Tester run:** (16f0523: 55 boxes ticked, 0 FAIL, about 20 edge cases added) a fresh `tester` sub-agent executed `test-plan.md`.
+- [x] **Reviewer and security reviewer:** (reviewer YES after 7 MINORs fixed in 4153a77 and the refutation; security CLEAR with 2 MINORs, the runbook one in 707be07) fresh sub-agents returned verdicts.
 - [ ] **/check-ui:** screenshots and video attached.
 - [ ] **/open-pr:** gates passed, PR opened.

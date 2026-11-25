@@ -1,6 +1,6 @@
 # Landing
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🔴 (a new public host and a DNS change)
 **Owner approval:** approved 2026-11-24 by the owner's request in PROMPT.md "Landing" ("cria uma landing page hiper mega simples com fila de espera, painel admin, digest etc igual zapbip … pra ser um prod ready mesmo"; "faz a landing page ser mais curta e objetiva que a do zapbip mas tão sexy quanto"). The split, the host dispatch and the rendering are the loop's calls in [ADR 0049](../../adr/0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md).
 **ADRs:** [0049](../../adr/0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md), [0048](../../adr/0048-the-self-host-guide-is-one-markdown-file-that-the-landing-serves.md), [0044](../../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md), [0042](../../adr/0042-emails-are-react-email-templates-rendered-at-build-time-into-a-generated-module.md)
