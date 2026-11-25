@@ -153,6 +153,8 @@ async function addReplyTask({
     drafts: [{ title, notes: null, dueDate, idempotencyKey: `${MAIL_KEY_PREFIX}${messageDigest}` }],
   });
   if (!result.ok) throw new Error(FAILURE_MESSAGE);
+  const isReplay = result.value.every(({ replayed }) => replayed);
+  if (isReplay) return { outcome: ReplyOutcome.Duplicate };
   return { outcome: ReplyOutcome.Added };
 }
 

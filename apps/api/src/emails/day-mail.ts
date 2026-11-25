@@ -30,6 +30,8 @@ const TIME_SEPARATOR = ':';
 const TIME_PART_LENGTH = 2;
 const TIME_PART_FILL = '0';
 const NO_OVERDUE_MARK = '';
+const BLANK_LINE_RUN = /\n{3,}/g;
+const BLANK_LINE = '\n\n';
 
 function timeOf(minutes: number): string {
   const parts = [Math.floor(minutes / MINUTES_PER_HOUR), minutes % MINUTES_PER_HOUR];
@@ -68,5 +70,5 @@ export function dayMail(input: DayMailInput): EmailMessage {
   const email = input.count === 0 ? DAY_EMAIL_EMPTY : DAY_EMAIL;
   const values = valuesOf(input);
   const message = filledEmailOf({ email, values, to: input.to, subject: subjectOf({ email, values }), replyTo: input.replyTo });
-  return { ...message, headers: { [MailHeader.AutoSubmitted]: AUTO_GENERATED } };
+  return { ...message, text: message.text.replace(BLANK_LINE_RUN, BLANK_LINE), headers: { [MailHeader.AutoSubmitted]: AUTO_GENERATED } };
 }
