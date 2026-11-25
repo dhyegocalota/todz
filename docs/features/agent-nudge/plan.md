@@ -74,4 +74,4 @@ G1 and G2 run in parallel in their own worktrees: G2 codes against the JSON cont
 - [x] **Reviewer:** WITH RESERVATIONS, two IMPORTANT fixed at f0daf4f; refutation recorded in `test-plan.md`.
 - [x] **Security reviewer:** `CLEAR`, no findings.
 - [x] **/check-ui:** Settings in light and dark and the agent's `next` from real builds (Orca and a real Claude Code session), in `docs/screenshots/agent-nudge/` and `.pr-media/agent-nudge/`.
-- [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened; then deploy through `docs/runbooks/deploy-the-api.md` (migration 0007).
+- [x] **/open-pr (evidence: PR #32; verify 8 gates green at b1182f8):** gates passed, learnings sweep stated, PR opened; then deploy through `docs/runbooks/deploy-the-api.md` (migration 0007).
