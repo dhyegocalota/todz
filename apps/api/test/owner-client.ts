@@ -54,7 +54,7 @@ export async function serveOwnerCall({
 }
 
 export function workerEnvWith(settings: Partial<Env>): Env {
-  return { DIRECTORY: env.DIRECTORY, PROJECT_STORE: env.PROJECT_STORE, ...settings };
+  return { DIRECTORY: env.DIRECTORY, PROJECT_STORE: env.PROJECT_STORE, ASSETS: env.ASSETS, ...settings };
 }
 
 export function recordingEnv(settings: Partial<Env> = {}): { workerEnv: Env; statements: string[] } {

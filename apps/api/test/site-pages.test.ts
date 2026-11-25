@@ -184,8 +184,8 @@ describe('the landing download', () => {
 
   test('without a released version there is no download button and the eyebrow says coming soon', async () => {
     const { html } = await landingPage(LandingNotice.None);
-    expect(html).not.toContain('download-button');
-    expect(html).not.toContain('download-note');
+    expect(html).not.toContain('class="download-button"');
+    expect(html).not.toContain('class="download-note"');
     expect(textNodes(html)).toContain(LANDING_COPY.hero.eyebrow);
     expect(LANDING_COPY.hero.eyebrow).toMatch(COMING_SOON_PATTERN);
   });

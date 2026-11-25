@@ -12,6 +12,7 @@ import { publicOriginOf } from '../sign-in-links';
 import { TURNSTILE_TOKEN_PATTERN, TurnstileAction, TurnstileVerdict, verifyTurnstileToken } from '../turnstile';
 import { TURNSTILE_RESPONSE_FIELD, siteKeyOf } from '../turnstile-page';
 import { HONEYPOT_FIELD_NAME, JoinOutcome, STAMP_FIELD_NAME } from './join-form-markup';
+import { isDownloadReleased } from './download-release';
 import { LandingNotice, landingChallengeKeysOf, serveLandingPage } from './landing-page';
 import type { SiteContext } from './site-endpoint';
 import {
@@ -177,7 +178,7 @@ function jsonAnswer(outcome: JoinOutcome): Response {
 
 async function pageAnswer({ outcome, env }: { outcome: JoinOutcome; env: Env }): Promise<Response> {
   const notice = NOTICE_OF_OUTCOME[outcome];
-  const page = await serveLandingPage({ notice, challenge: landingChallengeKeysOf(env), isReleased: false });
+  const page = await serveLandingPage({ notice, challenge: landingChallengeKeysOf(env), isReleased: await isDownloadReleased(env) });
   return new Response(page.body, { status: STATUS_OF_NOTICE[notice], headers: page.headers });
 }
 
