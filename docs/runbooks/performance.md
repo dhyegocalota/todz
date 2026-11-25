@@ -146,6 +146,15 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
 | 2026-11-25 | c80c272 | local | change feed | 50/s for 120 s | 4900 | 19 | 28 | 37 | 0 | PASS |
 | 2026-11-25 | c80c272 | local | stress, step that held | 169/s for 30 s | 4900 | - | - | 806 | 0 | PASS |
 | 2026-11-25 | c80c272 | local | stress, step that broke | 253/s for 30 s | 4900 | - | - | 8880 | 0 | FAIL |
+| 2026-11-25 | cbb90fd | local | list | 50/s for 120 s | 4900 | 4 | 7 | 13 | 0 | PASS |
+| 2026-11-25 | cbb90fd | local | add | 50/s for 120 s | 4900 | 5 | 8 | 14 | 0 | PASS |
+| 2026-11-25 | cbb90fd | local | done | 50/s for 120 s | 4900 | 4 | 7 | 12 | 0 | PASS |
+| 2026-11-25 | cbb90fd | local | owner | 50/s for 120 s | 4900 | 4 | 7 | 13 | 0 | PASS |
+| 2026-11-25 | cbb90fd | local | workspaces (200 projects) | 50/s for 120 s | 4900 | 4 | 6 | 9 | 0 | PASS |
+| 2026-11-25 | cbb90fd | local | initialize (2025 era) | 20 clients | 4900 | 4 | 7 | 12 | 0 | PASS |
+| 2026-11-25 | cbb90fd | local | change feed | 50/s for 120 s | 4900 | 6 | 11 | 17 | 0 | PASS |
+| 2026-11-25 | cbb90fd | local | stress, step that held | 253/s for 30 s | 4900 | - | - | 30 | 0 | PASS |
+| 2026-11-25 | cbb90fd | local | stress, step that broke | 380/s for 30 s | 4900 | - | - | 7677 | 0 | FAIL |
 
 The stress ramp of 2026-11-25 on `c80c272` held 169 requests a second (p99 806 ms) and broke at 253 (p99 8.9 s, no failed request), under the budget of 200. In the Worker's log every route slowed together at the breaking step (`/mcp`, `/owner/workspaces`, the change reads and the task writes all took over a second), so the first resource to fail is the local runtime as a whole; the split between the directory and the hot project's Durable Object waits for the `Server-Timing` header.
 
