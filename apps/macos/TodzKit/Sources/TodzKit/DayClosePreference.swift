@@ -9,22 +9,22 @@ public enum DayClosePreference {
     public static let minutesAfterMidnightByDefault = 18 * 60
 
     public static func registerDefaults(in defaults: UserDefaults) {
-        fatalError("DayClosePreference.registerDefaults is not implemented")
+        defaults.register(defaults: [isOnStorageKey: isOnByDefault, timeStorageKey: minutesAfterMidnightByDefault])
     }
 
     static func isOn(in defaults: UserDefaults) -> Bool {
-        fatalError("DayClosePreference.isOn is not implemented")
+        defaults.bool(forKey: isOnStorageKey)
     }
 
     static func minutesAfterMidnight(in defaults: UserDefaults) -> Int {
-        fatalError("DayClosePreference.minutesAfterMidnight is not implemented")
+        defaults.integer(forKey: timeStorageKey)
     }
 
     static func lastClosedDay(in defaults: UserDefaults) -> CalendarDate? {
-        fatalError("DayClosePreference.lastClosedDay is not implemented")
+        defaults.string(forKey: lastClosedDayStorageKey).flatMap(CalendarDate.init(text:))
     }
 
     static func markClosed(day: CalendarDate, in defaults: UserDefaults) {
-        fatalError("DayClosePreference.markClosed is not implemented")
+        defaults.set(day.text, forKey: lastClosedDayStorageKey)
     }
 }
