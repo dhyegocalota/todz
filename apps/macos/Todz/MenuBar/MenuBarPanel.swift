@@ -31,19 +31,24 @@ import TodzKit
         guard isUnengagedClosingDay else { return }
         let frontmostApplication = NSWorkspace.shared.frontmostApplication
         let isOtherApplication = frontmostApplication?.processIdentifier != ProcessInfo.processInfo.processIdentifier
-        if isOtherApplication { applicationBeforeEngaging = frontmostApplication }
+        applicationBeforeEngaging = isOtherApplication ? frontmostApplication : nil
         dayClose.engage()
         NSApp.activate()
         window?.makeKey()
     }
 
     func closeReturningToTheApplicationBefore() {
+        let applicationToReturnTo = applicationBeforeEngaging
+        applicationBeforeEngaging = nil
         close()
-        guard let applicationBeforeEngaging else { return }
-        self.applicationBeforeEngaging = nil
+        guard let applicationToReturnTo else { return }
         let hasOtherVisibleWindow = NSApp.windows.contains { $0.isVisible && $0.canBecomeMain }
         guard !hasOtherVisibleWindow else { return }
-        applicationBeforeEngaging.activate()
+        applicationToReturnTo.activate()
+    }
+
+    func forgetApplicationBeforeEngaging() {
+        applicationBeforeEngaging = nil
     }
 
     func openMainWindow(_ openWindow: OpenWindowAction) {
