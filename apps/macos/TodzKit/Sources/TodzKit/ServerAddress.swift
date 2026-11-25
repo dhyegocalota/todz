@@ -19,6 +19,7 @@ public struct ServerAddress: Equatable, Sendable {
     public let origin: String
     public let authority: String
     public let url: URL
+    public let isSecureRemote: Bool
 
     public static func checked(text: String) -> Result<ServerAddress, ServerAddressIssue> {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -36,6 +37,7 @@ public struct ServerAddress: Equatable, Sendable {
         let authority = authorityText(host: host, port: components.port, defaultPort: defaultPort)
         let origin = scheme + schemeSeparator + authority
         guard let url = URL(string: origin) else { return .failure(.invalid) }
-        return .success(ServerAddress(origin: origin, authority: authority, url: url))
+        let isSecureRemote = scheme == secureScheme && !loopbackHosts.contains(host)
+        return .success(ServerAddress(origin: origin, authority: authority, url: url, isSecureRemote: isSecureRemote))
     }
 }

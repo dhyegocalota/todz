@@ -232,6 +232,12 @@ import Observation
             phase = .signedOut(notice: nil)
             return
         }
+        guard stored.origin == serverURL.origin else {
+            eraseDataOfAnotherServer()
+            loadOutbox()
+            phase = .signedOut(notice: isLocalDataUnerased ? .sessionUnreadable : nil)
+            return
+        }
         session = stored.secret
         phase = .loading
         openCache(cachedOwner())
