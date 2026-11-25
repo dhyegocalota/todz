@@ -26,7 +26,7 @@ private let cacheFolderName = "Cache"
         defaults: .standard,
         timeZone: model.timeZone,
         openCount: { [model] in model.todayHeadingCount },
-        openPopover: { [panel] in panel.open() }
+        openPopover: { [panel] in await panel.open() }
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
 

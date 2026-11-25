@@ -32,7 +32,15 @@ private let shortestCheckDelay: Duration = .seconds(1)
 
     private func check() {
         nextCheck?.cancel()
-        switch coordinator.check() {
+        nextCheck = Task { [weak self] in
+            await self?.decide()
+        }
+    }
+
+    private func decide() async {
+        let decision = await coordinator.check()
+        guard !Task.isCancelled else { return }
+        switch decision {
         case let .notYet(next), let .doneToday(next): checkAgain(at: next)
         case .off, .due: return
         }
@@ -45,7 +53,7 @@ private let shortestCheckDelay: Duration = .seconds(1)
             } catch {
                 return
             }
-            self?.check()
+            await self?.decide()
         }
     }
 }

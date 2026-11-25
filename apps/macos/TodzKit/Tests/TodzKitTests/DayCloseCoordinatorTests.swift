@@ -20,12 +20,14 @@ private let minutesOutsideADay = [-2880, 1440]
 @MainActor private final class FakePopover {
     private(set) var openings = 0
     var isOpenable = true
+    var yieldsBeforeAnswering = false
 
-    var whileOpening: (() -> Void)?
+    var whileOpening: (() async -> Void)?
 
-    func open() -> Bool {
+    func open() async -> Bool {
         openings += 1
-        whileOpening?()
+        await whileOpening?()
+        if yieldsBeforeAnswering { await Task.yield() }
         return isOpenable
     }
 }
@@ -51,7 +53,7 @@ private let minutesOutsideADay = [-2880, 1440]
             timeZone: timeZone,
             now: { clock.now },
             openCount: openCount,
-            openPopover: { popover.open() }
+            openPopover: { await popover.open() }
         )
     }
 
@@ -69,55 +71,55 @@ private let minutesOutsideADay = [-2880, 1440]
 }
 
 @MainActor @Suite struct DayCloseCoordinatorTests {
-    @Test func aTurnedOffDayCloseOpensNothing() throws {
+    @Test func aTurnedOffDayCloseOpensNothing() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.defaults.set(false, forKey: DayClosePreference.isOnStorageKey)
         harness.at(today, hour: 18)
-        #expect(harness.coordinator.check() == .off)
+        #expect(await harness.coordinator.check() == .off)
         #expect(harness.popover.openings == 0)
     }
 
-    @Test func beforeTheTimeNothingOpens() throws {
+    @Test func beforeTheTimeNothingOpens() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 17)
-        #expect(harness.coordinator.check() == .notYet(next: DayCloseSchedule.instant(day: today, minutesAfterMidnight: DayClosePreference.minutesAfterMidnightByDefault, timeZone: harness.timeZone)))
+        #expect(await harness.coordinator.check() == .notYet(next: DayCloseSchedule.instant(day: today, minutesAfterMidnight: DayClosePreference.minutesAfterMidnightByDefault, timeZone: harness.timeZone)))
         #expect(harness.popover.openings == 0)
     }
 
-    @Test func aDueDayCloseOpensInTheModeAndMarksTheDayOnce() throws {
+    @Test func aDueDayCloseOpensInTheModeAndMarksTheDayOnce() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
         let next = DayCloseSchedule.instant(day: tomorrow, minutesAfterMidnight: DayClosePreference.minutesAfterMidnightByDefault, timeZone: harness.timeZone)
-        #expect(harness.coordinator.check() == .doneToday(next: next))
+        #expect(await harness.coordinator.check() == .doneToday(next: next))
         #expect(harness.popover.openings == 1)
         #expect(harness.coordinator.isClosingDay)
         #expect(harness.lastClosedDay == today)
         harness.at(today, hour: 21)
-        #expect(harness.coordinator.check() == .doneToday(next: next))
+        #expect(await harness.coordinator.check() == .doneToday(next: next))
         #expect(harness.popover.openings == 1)
     }
 
-    @Test func aCheckWhileTheDayCloseIsOpeningOpensNothingMore() throws {
+    @Test func aCheckWhileTheDayCloseIsOpeningOpensNothingMore() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
         let coordinator = harness.coordinator
-        harness.popover.whileOpening = { coordinator.check() }
-        coordinator.check()
+        harness.popover.whileOpening = { _ = await coordinator.check() }
+        await coordinator.check()
         #expect(harness.popover.openings == 1)
         #expect(harness.lastClosedDay == today)
     }
 
-    @Test func aCheckWhileTheDayCloseIsOpenOpensNothingMore() throws {
+    @Test func aCheckWhileTheDayCloseIsOpenOpensNothingMore() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
         harness.popover.isOpenable = false
-        harness.coordinator.check()
+        await harness.coordinator.check()
         harness.popover.isOpenable = true
         harness.popover.whileOpening = nil
-        harness.coordinator.check()
+        await harness.coordinator.check()
         #expect(harness.popover.openings == 2)
         #expect(harness.coordinator.isClosingDay)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         #expect(harness.popover.openings == 2)
     }
 
@@ -125,7 +127,7 @@ private let minutesOutsideADay = [-2880, 1440]
         let count = FakeTodayCount(openCount: nil)
         let harness = try DayCloseHarness(count: count)
         harness.at(today, hour: 18)
-        #expect(harness.coordinator.check() == .due)
+        #expect(await harness.coordinator.check() == .due)
         #expect(harness.popover.openings == 0)
         #expect(harness.lastClosedDay == nil)
         count.openCount = 2
@@ -141,7 +143,7 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(model.phase == .signedOut(notice: nil))
         let harness = try DayCloseHarness { model.todayHeadingCount }
         harness.at(today, hour: 18)
-        #expect(harness.coordinator.check() == .due)
+        #expect(await harness.coordinator.check() == .due)
         #expect(harness.popover.openings == 0)
         #expect(!harness.coordinator.isClosingDay)
         #expect(harness.lastClosedDay == nil)
@@ -164,7 +166,7 @@ private let minutesOutsideADay = [-2880, 1440]
         let model = appHarness.model
         let harness = try DayCloseHarness { model.todayHeadingCount }
         harness.at(today, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         #expect(harness.popover.openings == 1)
         #expect(harness.coordinator.isClosingDay)
         #expect(model.dayCloseTasks(lingers: CompletionLingers())?.map(\.task.title) == ["Cached 1", "Cached 2"])
@@ -178,11 +180,11 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(model.dayCloseTasks(lingers: lingers.ending(task: firstTask))?.map(\.task.title) == ["Cached 2"])
     }
 
-    @Test func dueWithNothingOpenMarksTheDayAndAsksNothing() throws {
+    @Test func dueWithNothingOpenMarksTheDayAndAsksNothing() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 0))
         harness.gate.setQuiet(true)
         harness.at(today, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         harness.gate.setQuiet(false)
         #expect(harness.popover.openings == 0)
         #expect(!harness.coordinator.isClosingDay)
@@ -190,17 +192,33 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(harness.gate.released == [])
     }
 
-    @Test func anOpenerThatFailsMarksNothingAndALaterCheckThatDayOpens() throws {
+    @Test func anOpenerThatFailsMarksNothingAndALaterCheckThatDayOpens() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.popover.isOpenable = false
         harness.at(today, hour: 18)
-        #expect(harness.coordinator.check() == .due)
+        #expect(await harness.coordinator.check() == .due)
         #expect(harness.popover.openings == 1)
         #expect(!harness.coordinator.isClosingDay)
         #expect(harness.lastClosedDay == nil)
         harness.popover.isOpenable = true
         harness.at(today, hour: 18, minute: 30)
-        harness.coordinator.check()
+        await harness.coordinator.check()
+        #expect(harness.popover.openings == 2)
+        #expect(harness.coordinator.isClosingDay)
+        #expect(harness.lastClosedDay == today)
+    }
+
+    @Test func anOpenerThatClicksButShowsNothingMarksNothingEndsTheModeAndALaterCheckOpens() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.popover.isOpenable = false
+        harness.popover.yieldsBeforeAnswering = true
+        harness.at(today, hour: 18)
+        #expect(await harness.coordinator.check() == .due)
+        #expect(!harness.coordinator.isClosingDay)
+        #expect(harness.lastClosedDay == nil)
+        harness.popover.isOpenable = true
+        harness.at(today, hour: 18, minute: 30)
+        await harness.coordinator.check()
         #expect(harness.popover.openings == 2)
         #expect(harness.coordinator.isClosingDay)
         #expect(harness.lastClosedDay == today)
@@ -210,7 +228,7 @@ private let minutesOutsideADay = [-2880, 1440]
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.gate.applyLaunchRead(isQuiet: true)
         harness.at(today, hour: 18)
-        #expect(harness.coordinator.check() == .due)
+        #expect(await harness.coordinator.check() == .due)
         #expect(harness.popover.openings == 0)
         #expect(harness.lastClosedDay == nil)
         harness.at(today, hour: 18, minute: 20)
@@ -226,7 +244,7 @@ private let minutesOutsideADay = [-2880, 1440]
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.gate.applyLaunchRead(isQuiet: true)
         harness.at(today, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         harness.at(tomorrow, hour: 0, minute: 10)
         harness.gate.setQuiet(false)
         await harness.coordinator.releaseTaking?.value
@@ -236,90 +254,90 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(harness.gate.released == [])
     }
 
-    @Test func endingTheModeLeavesTheUsualToday() throws {
+    @Test func endingTheModeLeavesTheUsualToday() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         harness.coordinator.end()
         #expect(!harness.coordinator.isClosingDay)
         #expect(harness.lastClosedDay == today)
     }
 
-    @Test func aModeStartedByTheCoordinatorIsNotEngagedAndRefusesKeyActions() throws {
+    @Test func aModeStartedByTheCoordinatorIsNotEngagedAndRefusesKeyActions() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         #expect(harness.coordinator.isClosingDay)
         #expect(!harness.coordinator.isEngaged)
         #expect(!harness.coordinator.acceptsKeyActions)
     }
 
-    @Test func engagingTheModeAcceptsKeyActions() throws {
+    @Test func engagingTheModeAcceptsKeyActions() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         harness.coordinator.engage(by: .click)
         #expect(harness.coordinator.isEngaged)
         #expect(harness.coordinator.acceptsKeyActions)
     }
 
-    @Test func aNewModeIsNotEngagedAgain() throws {
+    @Test func aNewModeIsNotEngagedAgain() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         harness.coordinator.engage(by: .click)
         harness.coordinator.end()
         harness.at(tomorrow, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         #expect(harness.coordinator.isClosingDay)
         #expect(!harness.coordinator.isEngaged)
         #expect(!harness.coordinator.acceptsKeyActions)
     }
 
     @Test(arguments: [DayCloseEngagementInput.tab, .hover])
-    func onlyAClickEngagesTheMode(input: DayCloseEngagementInput) throws {
+    func onlyAClickEngagesTheMode(input: DayCloseEngagementInput) async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         harness.coordinator.engage(by: input)
         #expect(!harness.coordinator.isEngaged)
         #expect(!harness.coordinator.acceptsKeyActions)
     }
 
-    @Test func aModeLeftOnByAnOpenerThatNeverShowedDoesNotBlockTheNextDay() throws {
+    @Test func aModeLeftOnByAnOpenerThatNeverShowedDoesNotBlockTheNextDay() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.at(today, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         harness.coordinator.engage(by: .click)
         harness.at(tomorrow, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         #expect(harness.popover.openings == 2)
         #expect(harness.lastClosedDay == tomorrow)
         #expect(!harness.coordinator.isEngaged)
     }
 
-    @Test func aModeStartingInPlaceAfterTheOwnerEngagedIsNotEngaged() throws {
+    @Test func aModeStartingInPlaceAfterTheOwnerEngagedIsNotEngaged() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.coordinator.engage(by: .click)
         harness.at(today, hour: 18)
-        harness.coordinator.check()
+        await harness.coordinator.check()
         #expect(harness.coordinator.isClosingDay)
         #expect(!harness.coordinator.isEngaged)
         #expect(!harness.coordinator.acceptsKeyActions)
     }
 
-    @Test func theUsualPopoverAcceptsKeyActions() throws {
+    @Test func theUsualPopoverAcceptsKeyActions() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         #expect(!harness.coordinator.isClosingDay)
         #expect(harness.coordinator.acceptsKeyActions)
     }
 
     @Test(arguments: minutesOutsideADay)
-    func aStoredTimeOutsideADayIsOffAndOpensNothing(minutes: Int) throws {
+    func aStoredTimeOutsideADayIsOffAndOpensNothing(minutes: Int) async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.defaults.set(minutes, forKey: DayClosePreference.timeStorageKey)
         harness.at(today, hour: 18)
-        #expect(harness.coordinator.check() == .off)
+        #expect(await harness.coordinator.check() == .off)
         #expect(harness.popover.openings == 0)
         #expect(harness.lastClosedDay == nil)
     }

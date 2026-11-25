@@ -13,7 +13,7 @@ import Observation
     @ObservationIgnored private let timeZone: TimeZone
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let openCount: () -> Int?
-    @ObservationIgnored private let openPopover: () -> Bool
+    @ObservationIgnored private let openPopover: () async -> Bool
 
     public init(
         gate: ProactiveGate,
@@ -21,7 +21,7 @@ import Observation
         timeZone: TimeZone,
         now: @escaping () -> Date = Date.init,
         openCount: @escaping () -> Int?,
-        openPopover: @escaping () -> Bool
+        openPopover: @escaping () async -> Bool
     ) {
         self.gate = gate
         self.defaults = defaults
@@ -33,10 +33,10 @@ import Observation
     }
 
     @discardableResult
-    public func check() -> DayCloseDecision {
+    public func check() async -> DayCloseDecision {
         let isDueAndIdle = decision == .due && !isOpening
         guard isDueAndIdle else { return decision }
-        closeTheDay()
+        await closeTheDay()
         return decision
     }
 
@@ -65,7 +65,7 @@ import Observation
     }
 
     // NB ADR 0055: nothing left marks the day closed without opening; a held or failed opening leaves the day unmarked.
-    private func closeTheDay() {
+    private func closeTheDay() async {
         guard let openCount = openCount() else {
             waitForCount()
             return
@@ -75,14 +75,14 @@ import Observation
             return
         }
         guard gate.admit(.dayClose) == .show else { return }
-        open()
+        await open()
     }
 
-    private func open() {
+    private func open() async {
         isEngaged = false
         isClosingDay = true
         isOpening = true
-        let didOpen = openPopover()
+        let didOpen = await openPopover()
         isOpening = false
         guard didOpen else {
             isClosingDay = false
@@ -104,7 +104,7 @@ import Observation
             MainActor.assumeIsolated {
                 self?.countWaiting = Task { [weak self] in
                     self?.isWaitingForCount = false
-                    self?.check()
+                    await self?.check()
                 }
             }
         }
@@ -116,15 +116,15 @@ import Observation
         } onChange: { [weak self] in
             MainActor.assumeIsolated {
                 self?.releaseTaking = Task { [weak self] in
-                    self?.takeRelease()
+                    await self?.takeRelease()
                     self?.observeReleases()
                 }
             }
         }
     }
 
-    private func takeRelease() {
+    private func takeRelease() async {
         guard gate.claimRelease(.dayClose) else { return }
-        check()
+        await check()
     }
 }
