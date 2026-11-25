@@ -8,10 +8,15 @@ private let inspectorKey: KeyEquivalent = "i"
 struct AppCommands: Commands {
     let model: AppModel
     let windowState: MainWindowState
+    let updater: AppUpdater?
 
     var body: some Commands {
         SidebarCommands()
         CommandGroup(after: .appInfo) {
+            if let updater {
+                Button(UpdateCopy.checkForUpdates) { updater.checkForUpdates() }
+                    .disabled(!updater.canCheckForUpdates)
+            }
             Divider()
             Button(MainWindowCopy.signOut) { windowState.requestSignOut(model: model) }
                 .disabled(!model.isSignedIn)
