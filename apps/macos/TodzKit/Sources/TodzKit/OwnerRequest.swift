@@ -20,7 +20,7 @@ struct OwnerRequest {
         self.body = try body.map { try OwnerCoding.encoder().encode($0) }
     }
 
-    func transportRequest(baseURL: URL) -> URLRequest {
+    func transportRequest(baseURL: URL, appVersion: String) -> URLRequest {
         let address = baseURL.appending(path: path)
         var request = URLRequest(url: queryItems.isEmpty ? address : address.appending(queryItems: queryItems))
         request.httpMethod = method.rawValue

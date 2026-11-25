@@ -54,9 +54,11 @@ private final class SocketWatch: NSObject, URLSessionWebSocketDelegate, Sendable
 // NB ADR 0029: one socket per shown project, opened with the session as a bearer, that only says "changed".
 public struct SocketChangeSignals: ChangeSignals {
     private let baseURL: URL
+    private let appVersion: String
 
-    public init(baseURL: URL) {
+    public init(baseURL: URL, appVersion: String) {
         self.baseURL = baseURL
+        self.appVersion = appVersion
     }
 
     public func watch(session: String, projectIdentifier: String) -> AsyncThrowingStream<ChangeSignalEvent, any Error> {
@@ -83,6 +85,6 @@ public struct SocketChangeSignals: ChangeSignals {
         guard let socketScheme = components.scheme.flatMap({ socketSchemeOfScheme[$0] }) else { throw OwnerAPIError.unreachable }
         components.scheme = socketScheme
         guard let socketBaseURL = components.url else { throw OwnerAPIError.unreachable }
-        return try OwnerRequest(method: .get, path: socketPath(projectIdentifier), session: session).transportRequest(baseURL: socketBaseURL)
+        return try OwnerRequest(method: .get, path: socketPath(projectIdentifier), session: session).transportRequest(baseURL: socketBaseURL, appVersion: appVersion)
     }
 }

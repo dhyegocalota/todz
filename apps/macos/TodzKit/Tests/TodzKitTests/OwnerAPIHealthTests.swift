@@ -5,6 +5,8 @@ import Testing
 
 private let baseText = "http://todz.test"
 private let todzBody = "{\"service\":\"todz\",\"origin\":\"https://x.example.com\"}"
+private let versionedTodzBody = "{\"service\":\"todz\",\"origin\":\"https://x.example.com\",\"version\":\"2026.11.25+3f9c2ab\",\"minimum_app_version\":\"0.2.0\"}"
+private let unstampedTodzBody = "{\"service\":\"todz\",\"origin\":\"https://x.example.com\",\"version\":null,\"minimum_app_version\":\"0.2.0\"}"
 private let redirectedLocation = "https://elsewhere.example.com/health"
 private let oversizedTodzBody = "{\"service\":\"todz\",\"origin\":\"https://x.example.com\"" + String(repeating: " ", count: 5_000) + "}"
 private let shortDeadline: TimeInterval = 1
@@ -99,7 +101,7 @@ private final class HealthStubProtocol: URLProtocol {
 
 private func healthAPI(answering answer: HealthStubAnswer, deadline: TimeInterval = ServerTiming.probeSeconds) throws -> OwnerAPI {
     let baseURL = try #require(URL(string: baseText))
-    return OwnerAPI(baseURL: baseURL, transport: HealthStubProtocol.session(answering: answer, deadline: deadline))
+    return OwnerAPI(baseURL: baseURL, appVersion: OwnerFixtures.appVersion, transport: HealthStubProtocol.session(answering: answer, deadline: deadline))
 }
 
 private func recordedRequests() -> [URLRequest] {
@@ -109,12 +111,28 @@ private func recordedRequests() -> [URLRequest] {
 @Suite(.serialized) struct OwnerAPIHealthTests {
     @Test func aTodzAnswerNamesItsOriginAndSendsNoSession() async throws {
         let answer = try await healthAPI(answering: .response(status: 200, body: todzBody)).health()
-        #expect(answer == .todz(origin: "https://x.example.com"))
+        #expect(answer == .todz(origin: "https://x.example.com", versions: ServerVersions(server: nil, minimumApp: nil)))
         let request = try #require(recordedRequests().first)
         #expect(recordedRequests().count == 1)
         #expect(request.httpMethod == "GET")
         #expect(request.url?.path() == "/health")
         #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
+    }
+
+    @Test func theRequestCarriesTheAppVersion() async throws {
+        _ = try await healthAPI(answering: .response(status: 200, body: todzBody)).health()
+        let request = try #require(recordedRequests().first)
+        #expect(request.value(forHTTPHeaderField: "Todz-App-Version") == OwnerFixtures.appVersion)
+    }
+
+    @Test func aTodzAnswerStatesItsVersionAndTheOldestAppItAccepts() async throws {
+        let answer = try await healthAPI(answering: .response(status: 200, body: versionedTodzBody)).health()
+        #expect(answer == .todz(origin: "https://x.example.com", versions: ServerVersions(server: "2026.11.25+3f9c2ab", minimumApp: "0.2.0")))
+    }
+
+    @Test func aTodzAnswerWithANullVersionHasNoServerVersion() async throws {
+        let answer = try await healthAPI(answering: .response(status: 200, body: unstampedTodzBody)).health()
+        #expect(answer == .todz(origin: "https://x.example.com", versions: ServerVersions(server: nil, minimumApp: "0.2.0")))
     }
 
     @Test(arguments: [

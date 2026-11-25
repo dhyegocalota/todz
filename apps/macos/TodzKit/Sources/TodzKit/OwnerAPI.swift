@@ -73,14 +73,16 @@ public protocol OwnerService: Sendable {
 
 public struct OwnerAPI: OwnerService {
     private let baseURL: URL
+    private let appVersion: String
     let transport: URLSession
 
-    public init(baseURL: URL) {
-        self.init(baseURL: baseURL, transport: Self.uncachedTransport())
+    public init(baseURL: URL, appVersion: String) {
+        self.init(baseURL: baseURL, appVersion: appVersion, transport: Self.uncachedTransport())
     }
 
-    public init(baseURL: URL, transport: URLSession) {
+    public init(baseURL: URL, appVersion: String, transport: URLSession) {
         self.baseURL = baseURL
+        self.appVersion = appVersion
         self.transport = transport
     }
 
@@ -104,7 +106,7 @@ public struct OwnerAPI: OwnerService {
     }
 
     public func health() async throws -> ServerHealthAnswer {
-        var request = try OwnerRequest(method: .get, path: healthPath, session: nil).transportRequest(baseURL: baseURL)
+        var request = try OwnerRequest(method: .get, path: healthPath, session: nil).transportRequest(baseURL: baseURL, appVersion: appVersion)
         request.timeoutInterval = ServerTiming.probeSeconds
         let body: Data
         do {
@@ -118,7 +120,7 @@ public struct OwnerAPI: OwnerService {
         guard body.count <= healthBodyLimit else { return .notTodz }
         guard let answer = try? OwnerCoding.decoder().decode(HealthBody.self, from: body), answer.service == todzServiceName else { return .notTodz }
         guard let origin = answer.origin else { return .notTodz }
-        return .todz(origin: origin)
+        return .todz(origin: origin, versions: ServerVersions(server: nil, minimumApp: nil))
     }
 
     public func signInMethod() async throws -> SignInMethod {
@@ -234,7 +236,7 @@ public struct OwnerAPI: OwnerService {
 
     private func exchange(_ request: OwnerRequest) async throws -> (Data, URLResponse) {
         do {
-            return try await transport.data(for: request.transportRequest(baseURL: baseURL))
+            return try await transport.data(for: request.transportRequest(baseURL: baseURL, appVersion: appVersion))
         } catch is URLError {
             throw OwnerAPIError.unreachable
         }

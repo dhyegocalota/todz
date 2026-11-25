@@ -10,6 +10,7 @@ public enum OwnerAPIError: Error, Equatable, Sendable {
     case ruleViolated(issue: RuleIssue, index: Int?)
     case timeZoneInvalid
     case invalidRequest
+    case appTooOld(minimum: String)
     case unreachable
     case unexpected(status: Int)
 }
