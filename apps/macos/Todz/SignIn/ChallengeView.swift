@@ -7,11 +7,19 @@ private let noToken = ""
 
 struct ChallengeView: View {
     @Environment(AppModel.self) private var model
+
+    var body: some View {
+        ChallengeRound(model: model)
+            .id(model.challengeRound)
+    }
+}
+
+private struct ChallengeRound: View {
+    let model: AppModel
     @State private var height = ChallengeHeight.minimum
 
     var body: some View {
         ChallengeWebView(model: model, height: $height)
-            .id(model.challengeRound)
             .frame(height: height)
     }
 }
@@ -98,8 +106,8 @@ private struct ChallengeWebView: NSViewRepresentable {
     }
 
     private func reportHeight(_ body: Any) {
-        guard let reported = body as? Double else { return }
-        height.wrappedValue = ChallengeHeight.clamped(reported: reported)
+        guard let reported = body as? Double, let clamped = ChallengeHeight.clamped(reported: reported) else { return }
+        height.wrappedValue = clamped
     }
 
     func webView(
