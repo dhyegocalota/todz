@@ -3,6 +3,6 @@ public enum FocusQuietNotice: Equatable, Sendable {
     case quietNow
 
     public init(isQuiet: Bool) {
-        fatalError("FocusQuietNotice is not implemented")
+        self = isQuiet ? .quietNow : .notQuiet
     }
 }
