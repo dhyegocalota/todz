@@ -35,7 +35,7 @@ System Settings › Privacy & Security. Install steps         "Install steps" li
 | Focus (keyboard) | `outline: 3px solid var(--color-focus); outline-offset: 2px` |
 | `prefers-reduced-motion` | the hero's `rise` animation is skipped as for the rest of the hero; no transform on press |
 | `prefers-reduced-transparency` / `forced-colors` | the button falls back as `.join-button` does (`ButtonFace`, `ButtonText`, a 1 px border) |
-| No release published yet | not a state of the page: the runbook publishes the first release before the Worker that renders the button deploys |
+| No release published yet | not a state of the page: the button's `/download` answers `404` only for the minutes between the first deploy and the first release, which the `deploy` skill runs back to back |
 
 ## 3. Light and dark
 
@@ -54,7 +54,7 @@ Both schemes use the same tokens; the action gradient and `--color-on-action` al
 
 ## 5. The app
 
-The app menu gains `Check for Updates…` right after `About Todz` in Release builds (Sparkle's standard action; copy in `apps/macos/Copy`). Sparkle's own window asks before an update installs. Debug builds show no item.
+The app menu gains `Check for Updates…` right after `About Todz` in Release builds (Sparkle's standard action; copy in `apps/macos/Copy`). Sparkle's own window asks before an update installs. Scheduled checks use Sparkle's gentle reminders: when todz is not the app in front, a found update never opens a window over the owner's work; it waits for the next launch or for "Check for Updates…". When the owner is in todz, Sparkle's standard window may show. Debug builds show no item.
 
 ## 6. Accessibility
 
