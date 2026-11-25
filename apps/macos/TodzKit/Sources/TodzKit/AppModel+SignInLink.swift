@@ -34,7 +34,7 @@ extension AppModel {
         let verifier = verifierToSend(to: email)
         let askedServer = serverURL
         do {
-            try await service.requestSignInLink(email: email, challenge: SignInLinkChallenge.challenge(for: verifier), turnstileToken: turnstileToken, linkScheme: .release)
+            try await service.requestSignInLink(email: email, challenge: SignInLinkChallenge.challenge(for: verifier), turnstileToken: turnstileToken, linkScheme: linkScheme)
         } catch let failure as OwnerAPIError {
             guard serverURL == askedServer else { return }
             signInError = SignInError(asking: failure)
