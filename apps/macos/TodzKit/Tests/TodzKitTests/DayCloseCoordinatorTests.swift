@@ -292,7 +292,7 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(harness.popover.closings == 1)
     }
 
-    @Test func pinAShowAfterMidnightOfAnEngagedModeEndsItAndClosesNothing()async throws {
+    @Test func pinAShowAfterMidnightOfAnEngagedModeEndsItAndClosesNothing() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.popover.showsWhenClicked = false
         harness.clock.now = harness.secondsFromMidnight(of: tomorrow, offset: -2)
