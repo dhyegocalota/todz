@@ -1,7 +1,25 @@
+import Observation
 import Testing
 @testable import TodzKit
 
+@MainActor private final class ObservedChange {
+    var isSeen = false
+}
+
 extension AppModelTests {
+    @Test func theLaunchSettlingIsObserved() async throws {
+        let harness = try AppModelHarness()
+        let change = ObservedChange()
+        withObservationTracking {
+            _ = harness.model.isLaunchSettled
+        } onChange: {
+            MainActor.assumeIsolated { change.isSeen = true }
+        }
+        await harness.model.launch()
+        #expect(harness.model.isLaunchSettled)
+        #expect(change.isSeen)
+    }
+
     @Test func aLaunchedLoadedModelIsReadyWithoutWaiting() async throws {
         let harness = try await todayHarness(openCount: 1)
         #expect(await harness.model.shortcutReadiness() == .ready)

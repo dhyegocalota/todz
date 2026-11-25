@@ -17,6 +17,7 @@ extension AppModelTests {
         #expect(addition == .added(title: "Book the dentist", destination: .today, workspaceName: "acme", isOffline: false))
         let draft = TaskDraft(title: "Book the dentist", notes: nil, dueDate: harness.model.today, idempotencyKey: "key-1")
         #expect(harness.model.outbox == Outbox().appending(.add(projectIdentifier: shortcutInboxIdentifier, draft: draft), isHeadSent: false))
+        await harness.service.held(.addTasks)
         harness.service.resume(.addTasks)
         await harness.flushed()
     }
@@ -28,6 +29,7 @@ extension AppModelTests {
         #expect(addition == .added(title: "Book the dentist", destination: .inbox, workspaceName: "acme", isOffline: false))
         let draft = TaskDraft(title: "Book the dentist", notes: nil, dueDate: nil, idempotencyKey: "key-1")
         #expect(harness.model.outbox == Outbox().appending(.add(projectIdentifier: shortcutInboxIdentifier, draft: draft), isHeadSent: false))
+        await harness.service.held(.addTasks)
         harness.service.resume(.addTasks)
         await harness.flushed()
     }
@@ -68,6 +70,7 @@ extension AppModelTests {
         let addition = await harness.model.addFromShortcut(title: "🦷 Book the dentist", isDueToday: true)
         #expect(addition == .added(title: "🦷 Book the dentist", destination: .today, workspaceName: "acme", isOffline: false))
         #expect(harness.model.outbox.pendingTasks.map(\.title) == ["🦷 Book the dentist"])
+        await harness.service.held(.addTasks)
         harness.service.resume(.addTasks)
         await harness.flushed()
     }
@@ -110,6 +113,7 @@ extension AppModelTests {
         let addition = await harness.model.addFromShortcut(title: "Water the garden", isDueToday: true)
         #expect(addition == .added(title: "Water the garden", destination: .today, workspaceName: "side", isOffline: false))
         #expect(harness.model.outbox.pendingChanges.map(\.projectIdentifier) == ["side-inbox"])
+        await harness.service.held(.addTasks)
         harness.service.resume(.addTasks)
         await harness.flushed()
     }
@@ -119,6 +123,7 @@ extension AppModelTests {
         harness.service.suspend(.completeTasks)
         #expect(await harness.model.completeFromShortcut(key: firstTask) == .completed(title: "Task 1", isOffline: false))
         #expect(harness.model.outbox == Outbox().appending(.state(firstTask, .done, at: fixedInstant), isHeadSent: false))
+        await harness.service.held(.completeTasks)
         harness.service.resume(.completeTasks)
         await harness.flushed()
     }
@@ -179,6 +184,7 @@ extension AppModelTests {
         #expect(await harness.model.completeFromShortcut(key: firstTask) == .completed(title: "Task 1", isOffline: false))
         #expect(await harness.model.completeFromShortcut(key: firstTask) == .alreadyDone(title: "Task 1"))
         #expect(harness.model.waitingChangeCount == 1)
+        await harness.service.held(.completeTasks)
         harness.service.resume(.completeTasks)
         await harness.flushed()
     }
