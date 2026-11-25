@@ -43,8 +43,9 @@ extension AppModel {
         return true
     }
 
-    func eraseDataOfUnreadableServer() {
-        guard preference.hasUnreadableValue else { return }
+    func eraseDataOfAnotherServer() {
+        let isUnreadableServer = preference.hasUnreadableValue
+        guard isUnreadableServer || isStoredSessionOfAnotherServer else { return }
         do {
             try vault.erase()
             try store.erase()
@@ -54,7 +55,18 @@ extension AppModel {
             return
         }
         eraseWidgets()
-        preference.clear()
+        if isUnreadableServer { preference.clear() }
+    }
+
+    private var isStoredSessionOfAnotherServer: Bool {
+        do {
+            guard let stored = try vault.read() else { return false }
+            return stored.origin != serverURL.origin
+        } catch SessionVaultError.unbound {
+            return true
+        } catch {
+            return false
+        }
     }
 
     private func forgetSignInState() {

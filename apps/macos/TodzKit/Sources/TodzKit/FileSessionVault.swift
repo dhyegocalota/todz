@@ -19,11 +19,24 @@ public struct FileSessionVault: SessionVault, Sendable {
     }
 
     public func read() throws -> StoredSession? {
-        fatalError("FileSessionVault.read of a bound session is not implemented")
+        guard FileManager.default.fileExists(atPath: sessionPath) else { return nil }
+        let contents: Data
+        do {
+            contents = try Data(contentsOf: sessionFile)
+        } catch {
+            throw SessionVaultError.unreadable
+        }
+        guard !contents.isEmpty else { throw SessionVaultError.unreadable }
+        guard let session = try? OwnerCoding.decoder().decode(StoredSession.self, from: contents) else { throw SessionVaultError.unbound }
+        return session
     }
 
     public func write(_ session: StoredSession) throws {
-        fatalError("FileSessionVault.write of a bound session is not implemented")
+        do {
+            try PrivateFile.write(OwnerCoding.encoder().encode(session), to: sessionFile)
+        } catch {
+            throw SessionVaultError.unwritable
+        }
     }
 
     public func erase() throws {

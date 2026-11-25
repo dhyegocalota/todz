@@ -142,7 +142,7 @@ import Observation
         self.pause = pause
         self.makeIdempotencyKey = makeIdempotencyKey
         self.makeLinkVerifier = makeLinkVerifier
-        eraseDataOfUnreadableServer()
+        eraseDataOfAnotherServer()
     }
 
     public var waitingChangeCount: Int {
@@ -392,7 +392,7 @@ import Observation
 
     private func keep(secret: String) {
         do {
-            try vault.write(StoredSession(secret: secret, origin: defaultURL.origin))
+            try vault.write(StoredSession(secret: secret, origin: serverURL.origin))
         } catch {
             raise(.sessionNotSaved)
         }
