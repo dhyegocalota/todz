@@ -67,4 +67,6 @@ export const DISCOVERY_COPY = {
     fullNote: 'This file with the Codex and Cursor setups and every tool parameter.',
   },
   setups: { codex: 'Codex', cursor: 'Cursor' },
+  card: { description: 'A to-do list that AI agents and its owner share, over MCP.' },
+  representativeQueries: ['Add a task to my todz project', 'What is the next task in my todz project?', 'Mark a task as done in todz'],
 };

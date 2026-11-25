@@ -3,12 +3,14 @@ import { HEALTH_PATH, serveHealth } from './health';
 import { HostKind, WWW_PREFIX, hostKindOf } from './host-kind';
 import { HttpStatus } from './http-status';
 import { serveMcp } from './mcp-endpoint';
+import { serveServerCard } from './mcp-server-card';
 import { serveOwner } from './owner-endpoint';
 import { noRouteResponse } from './owner-errors';
 import { withSecurityHeaders } from './security-headers';
 import { SIGN_IN_CHALLENGE_PAGE_PATH, serveSignInChallengePage } from './sign-in-challenge-page';
 import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
 import { serveSite } from './site/site-endpoint';
+import { SERVER_CARD_PATH } from './site/site-urls';
 import { runScheduled } from './site/waitlist-digest';
 
 export { ProjectStore } from './project-store';
@@ -22,6 +24,7 @@ type HostHandler = (context: HostContext) => Promise<Response>;
 
 const ROUTE_OF_PATH: Record<string, Route> = {
   [MCP_PATH]: ({ request, env }) => serveMcp({ request, env, now: Date.now() }),
+  [SERVER_CARD_PATH]: async ({ request }) => serveServerCard({ request }),
   [SIGN_IN_PAGE_PATH]: ({ request, env }) => serveSignInPage({ request, env }),
   [SIGN_IN_CHALLENGE_PAGE_PATH]: ({ request, env }) => serveSignInChallengePage({ request, env }),
 };

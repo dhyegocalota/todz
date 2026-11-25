@@ -1,10 +1,11 @@
 import { MCP_COPY, McpToolName } from '../mcp-copy';
+import { SERVER_CARD_FILE, SERVER_CARD_MEDIA_TYPE } from '../mcp-server-card';
 import { AgentClient, agentSetupOf } from './agent-setup';
 import { DISCOVERY_COPY, DOCS_PAGES, TOOL_PARAMETERS } from './discovery-copy';
-import type { DiscoveryFile } from './discovery-response';
+import { type DiscoveryFile, NO_HEADERS, OPEN_READ_HEADERS } from './discovery-response';
 import { LANDING_COPY } from './landing-copy';
 import { SITE_ICONS, SiteIcon } from './site-icons';
-import { DOCS_URL, DiscoveryPath, MCP_URL, SITE_URL } from './site-urls';
+import { DOCS_URL, DiscoveryPath, MCP_URL, SERVER_CARD_PATH, SITE_URL } from './site-urls';
 
 const KEY_PLACEHOLDER = '<key>';
 const FENCE = '```';
@@ -13,7 +14,8 @@ const TEXT_TYPE = 'text/plain; charset=utf-8';
 const XML_TYPE = 'application/xml; charset=utf-8';
 const MANIFEST_TYPE = 'application/manifest+json';
 const SITEMAP_NAMESPACE = 'http://www.sitemaps.org/schemas/sitemap/0.9';
-const NO_HEADERS = {};
+const JSON_TYPE = 'application/json';
+const CATALOG_IDENTIFIER = 'urn:air:todz.app:mcp:todz';
 const MANIFEST_ICONS = [SiteIcon.Icon192, SiteIcon.Icon512, SiteIcon.Maskable192, SiteIcon.Maskable512];
 const CRAWLERS = [
   'Googlebot',
@@ -71,6 +73,18 @@ const MANIFEST_JSON = JSON.stringify({
     const { path, size, mediaType, purpose } = SITE_ICONS[icon];
     return { src: path, sizes: `${size}x${size}`, type: mediaType, purpose };
   }),
+});
+
+const CATALOG_JSON = JSON.stringify({
+  entries: [
+    {
+      identifier: CATALOG_IDENTIFIER,
+      displayName: LANDING_COPY.meta.siteName,
+      type: SERVER_CARD_MEDIA_TYPE,
+      url: new URL(SERVER_CARD_PATH, MCP_URL).href,
+      representativeQueries: DISCOVERY_COPY.representativeQueries,
+    },
+  ],
 });
 
 const HEAD_LINES = [
@@ -150,4 +164,6 @@ export const DISCOVERY_FILES: DiscoveryFile[] = [
   { path: DiscoveryPath.Llms, contentType: TEXT_TYPE, body: LLMS_TEXT, headers: NO_HEADERS },
   { path: DiscoveryPath.LlmsFull, contentType: TEXT_TYPE, body: LLMS_FULL_TEXT, headers: NO_HEADERS },
   { path: DiscoveryPath.Manifest, contentType: MANIFEST_TYPE, body: MANIFEST_JSON, headers: NO_HEADERS },
+  { path: DiscoveryPath.Catalog, contentType: JSON_TYPE, body: CATALOG_JSON, headers: OPEN_READ_HEADERS },
+  { path: DiscoveryPath.ServerCard, ...SERVER_CARD_FILE },
 ];
