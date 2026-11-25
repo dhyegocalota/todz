@@ -6,6 +6,8 @@ export enum WaitlistJoin {
   Full = 'full',
 }
 
+type DayRow = { is_full: number };
+
 // NB ADR 0050: one statement inserts the address and claims its one confirmation mail, so a known address claims nothing.
 export async function joinWaitlistWithinLimit({
   database,
@@ -23,8 +25,12 @@ export async function joinWaitlistWithinLimit({
     .bind(address, now, now - MILLISECONDS_PER_DAY, WAITLIST_DAILY_JOINS_MAX)
     .run();
   if (insertion.meta.changes === 1) return WaitlistJoin.Claimed;
-  const known = await database.prepare('SELECT address FROM waitlist WHERE address = ?').bind(address).first();
-  if (known === null) return WaitlistJoin.Full;
+  const day = await database
+    .prepare('SELECT count(*) >= ?2 AS is_full FROM waitlist WHERE joined_at > ?1')
+    .bind(now - MILLISECONDS_PER_DAY, WAITLIST_DAILY_JOINS_MAX)
+    .first<DayRow>();
+  if (day === null) throw new Error('count always answers a row');
+  if (day.is_full === 1) return WaitlistJoin.Full;
   return WaitlistJoin.Known;
 }
 
