@@ -57,7 +57,7 @@ A stub's `fatalError` kills the test process, so each red run stops at the first
 
 Red inside a green commit (`68ec2a4`, as the plan allows): `WidgetToggleTests/togglingARowOfASnapshotThatShowsTheDayTemperatureKeepsItShown` printed `Expectation failed: toggled.snapshot.showsDayTemperature` against a toggle that wrote `false`, then went green when the toggle carried `snapshot.showsDayTemperature`.
 
-Pins (green on landing): `WidgetSnapshotTests/flagRoundTrips` (`68ec2a4`). `DayTemperaturePreferenceTests/theStorageKeyIsShowsDayTemperature` only reads a constant and so ran green beside its suite.
+Pins (green on landing, R27): `WidgetSnapshotTests/flagRoundTrips` and the `WidgetToggleTests` carry case (`68ec2a4`; its in-commit red above was seen locally against a toggle that wrote `false`). The re-review commit adds the one-day-band cases of `OverdueWashTests` (R29, red before its change, landed with it) and drops the DST cases of `days(since:)` (R26). `DayTemperaturePreferenceTests/theStorageKeyIsShowsDayTemperature` only reads a constant and so ran green beside its suite.
 
 `5baa2d6` removed the key as `showsDayTemperature`, but the owner coding spells it `shows_day_temperature`, so the case would have stayed red after the green; `f51a813` fixes the spelling and is red for the same printed reason.
 

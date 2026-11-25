@@ -4,21 +4,21 @@ import Observation
 @MainActor @Observable public final class DayTemperatureClock {
     public private(set) var step = DayTemperatureStep.plain
     @ObservationIgnored var waiting: Task<Void, Never>?
-    @ObservationIgnored private let timeZone: TimeZone
     @ObservationIgnored private let now: () -> Date
-    @ObservationIgnored private let pause: (Duration) async throws -> Void
+    @ObservationIgnored private let timeZone: () -> TimeZone
     @ObservationIgnored private let isOn: () -> Bool
+    @ObservationIgnored private let pause: (Duration) async throws -> Void
 
     public init(
-        timeZone: TimeZone,
-        now: @escaping () -> Date = Date.init,
-        pause: @escaping (Duration) async throws -> Void,
-        isOn: @escaping () -> Bool
+        now: @escaping () -> Date,
+        timeZone: @escaping () -> TimeZone,
+        isOn: @escaping () -> Bool,
+        pause: @escaping (Duration) async throws -> Void
     ) {
-        self.timeZone = timeZone
         self.now = now
-        self.pause = pause
+        self.timeZone = timeZone
         self.isOn = isOn
+        self.pause = pause
     }
 
     // NB ADR 0065: one wait to the next boundary, at most four a day, restarted on wake, unlock, zone, clock and defaults changes.
@@ -30,14 +30,14 @@ import Observation
             return
         }
         let instant = now()
-        step = DayTemperatureStep.step(at: instant, in: timeZone)
+        step = DayTemperatureStep.step(at: instant, in: timeZone())
         waiting = Task { [weak self] in
             await self?.wait(after: instant)
         }
     }
 
     private func wait(after instant: Date) async {
-        let next = DayTemperatureStep.nextBoundary(after: instant, in: timeZone)
+        let next = DayTemperatureStep.nextBoundary(after: instant, in: timeZone())
         do {
             try await pause(.seconds(next.timeIntervalSince(instant)))
         } catch {

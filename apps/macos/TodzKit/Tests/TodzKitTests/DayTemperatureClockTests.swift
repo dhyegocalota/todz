@@ -25,10 +25,10 @@ private final class ClockSwitch {
         self.timeZone = timeZone
         self.now.now = try Self.instant(day: today, hour: hour, minute: minute, timeZone: timeZone)
         clock = DayTemperatureClock(
-            timeZone: timeZone,
             now: { now.now },
-            pause: { try await pause.pause($0) },
-            isOn: { setting.isOn }
+            timeZone: { timeZone },
+            isOn: { setting.isOn },
+            pause: { try await pause.pause($0) }
         )
     }
 

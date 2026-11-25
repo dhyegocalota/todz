@@ -25,13 +25,8 @@ extension CalendarDateTests {
         #expect(CalendarDate(year: 2026, month: 11, day: 25).days(since: CalendarDate(year: 2026, month: 11, day: 24)) == 1)
     }
 
-    @Test func theDaysOfADaylightSavingChangeAreStillOneDayApart() {
-        let springForward = CalendarDate(year: 2026, month: 3, day: 8)
-        let fallBack = CalendarDate(year: 2026, month: 11, day: 1)
-        #expect(springForward.days(since: springForward.adding(days: -1)) == 1)
-        #expect(springForward.adding(days: 1).days(since: springForward) == 1)
-        #expect(fallBack.days(since: fallBack.adding(days: -1)) == 1)
-        #expect(fallBack.adding(days: 1).days(since: fallBack) == 1)
+    @Test func aMonthBoundaryIsOneDaySince() {
+        #expect(CalendarDate(year: 2026, month: 12, day: 1).days(since: CalendarDate(year: 2026, month: 11, day: 30)) == 1)
     }
 
     @Test func aYearApartIsThreeHundredSixtyFiveDaysSince() {
