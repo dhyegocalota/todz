@@ -1,10 +1,10 @@
-import { HistoryAction, LAST_INDEX, TaskState } from '@todz/types';
+import { HistoryAction, TaskState } from '@todz/types';
 import { assertBatchSize } from './batch-size';
 import { normalizeDueDate } from './calendar-date';
 import { atBatchIndex } from './errors';
 import { orderKeyBetween } from './order-key';
 import type { Clock, TaskStore } from './ports';
-import { FIRST_TASK_NUMBER, listAllTasks } from './project-tasks';
+import { FIRST_TASK_NUMBER, NO_EXCLUDED_TASK_NUMBER } from './project-tasks';
 import type { Actor, Task, TaskDraft } from './task';
 import { normalizeIdempotencyKey, normalizeNotes, normalizeTitle } from './task-text';
 
@@ -93,12 +93,11 @@ export function addTasks({
   const validatedDrafts = drafts.map((draft, index) => validateDraft({ draft, index }));
   const now = clock.now();
   const lastIssuedNumber = store.lastIssuedTaskNumber();
-  const lastTask = listAllTasks(store).at(LAST_INDEX);
   const initialState: BatchState = {
     results: [],
     createdTasks: [],
     nextNumber: lastIssuedNumber === null ? FIRST_TASK_NUMBER : lastIssuedNumber + 1,
-    lastOrderKey: lastTask ? lastTask.orderKey : null,
+    lastOrderKey: store.lastOrderKey({ excludingNumber: NO_EXCLUDED_TASK_NUMBER }),
   };
   const { results, createdTasks } = validatedDrafts.reduce((state, draft) => planDraft({ state, draft, store, actor, now }), initialState);
   createdTasks.forEach((task) => {

@@ -188,7 +188,7 @@ describe('arguments that arrive through RPC', () => {
     expect(added[0]?.task.createdBy).toEqual({ kind: ActorKind.Owner });
   });
 
-  test('a row that does not map leaves the tasks, the counter and the history as they were after a failed add', async () => {
+  test('a row that does not map leaves the tasks, the counter and the history as they were after a failed completion', async () => {
     const stub = newProjectStub();
     unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('One')] }));
     const countRows = () =>
@@ -203,7 +203,7 @@ describe('arguments that arrive through RPC', () => {
     });
     const message = await rejectionMessageOf({
       stub,
-      call: (instance) => instance.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Two')] }),
+      call: (instance) => instance.completeTasks({ actor: AGENT_ACTOR, numbers: [1], note: null }),
     });
     expect(message).toBe('tasks.created_by_client of task 1 is not valid');
     expect(await countRows()).toEqual(before);

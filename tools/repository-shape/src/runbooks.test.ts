@@ -9,8 +9,17 @@ const INDEX_FILE_NAME = 'README.md';
 const MARKDOWN_EXTENSION = '.md';
 const ROOT_PACKAGE_FILE = 'package.json';
 const DEPLOY_RUNBOOK = 'deploy-the-api.md';
-const AGENT_EXCEPTION_SENTENCE = "agents never run them, except `deploy-the-api` and the loop's steps of `mintlify-publish`";
+const AGENT_EXCEPTION_SENTENCE =
+  "agents never run them, except `deploy-the-api`, the loop's steps of `mintlify-publish` and the loop's steps of `performance`";
 const MINTLIFY_RUNBOOK = 'mintlify-publish.md';
+const PERFORMANCE_RUNBOOK = 'performance.md';
+const LOG_SHOW_WORDS = 'log show';
+const PERFORMANCE_LOG_SHOW =
+  '/usr/bin/log show --info --last 10m --predicate \'(subsystem == "dev.todz.Todz" OR subsystem == "dev.todz.Todz.debug") AND category == "perf"\'';
+const PERFORMANCE_TAIL_PIPELINE = "wrangler tail todz-api --format json | jq -R -c 'fromjson? | {outcome, cpuTime}' > <scratch>/tail.json";
+const PERFORMANCE_TAIL_REMOVAL = 'rm <scratch>/tail.json';
+const PERFORMANCE_TAIL_STEP = 10;
+const PERFORMANCE_REVOKE_STEP = 13;
 const SETUP_HEADING = '## Setup';
 const NEXT_SECTION_PATTERN = /\n## /;
 const NOT_FOUND = -1;
@@ -422,5 +431,22 @@ describe('runbooks', () => {
     expect(logStart).toBeGreaterThan(0);
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.filter((row) => !RUN_LOG_ROW_PATTERN.test(row))).toEqual([]);
+  });
+
+  test('every log show of the performance runbook is /usr/bin/log with --info and the subsystems of the app', () => {
+    const lines = readRunbook(PERFORMANCE_RUNBOOK)
+      .text.split(LINE_SEPARATOR)
+      .filter((line) => line.includes(LOG_SHOW_WORDS));
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.filter((line) => !line.includes(PERFORMANCE_LOG_SHOW))).toEqual([]);
+  });
+
+  test('the performance runbook keeps only outcome and cpuTime of the production tail on disk, and deletes the file when the key is revoked', () => {
+    const steps = stepSections(readRunbook(PERFORMANCE_RUNBOOK).text);
+    const tailStep = steps.find((step) => step.number === PERFORMANCE_TAIL_STEP);
+    const revokeStep = steps.find((step) => step.number === PERFORMANCE_REVOKE_STEP);
+    expect(tailStep?.body).toContain(PERFORMANCE_TAIL_PIPELINE);
+    expect(tailStep?.body).not.toMatch(/wrangler tail [^\n|]*> /);
+    expect(revokeStep?.body).toContain(PERFORMANCE_TAIL_REMOVAL);
   });
 });

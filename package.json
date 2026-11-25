@@ -22,6 +22,7 @@
     "test:unit": "pnpm -r test:unit && pnpm test:hooks && pnpm test:verify",
     "test:hooks": "bash .agents/hooks/hooks.test.sh",
     "test:verify": "bash scripts/verify.test.sh && bash scripts/pr-media.test.sh && bash scripts/todz-cloudflare.test.sh",
+    "perf": "pnpm --filter @todz/perf perf",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "verify": "bash scripts/verify.sh"

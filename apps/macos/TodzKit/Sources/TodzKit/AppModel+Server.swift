@@ -26,7 +26,7 @@ extension AppModel {
         let leavingService = service
         do {
             try vault.erase()
-            try store.erase()
+            try eraseCache()
             try pendingLinks.erase()
         } catch {
             return .eraseFailed
@@ -47,7 +47,7 @@ extension AppModel {
         guard isUnreadableServer || isStoredSessionOfAnotherServer() else { return }
         do {
             try vault.erase()
-            try store.erase()
+            try eraseCache()
             try pendingLinks.erase()
         } catch {
             isLocalDataUnerased = true

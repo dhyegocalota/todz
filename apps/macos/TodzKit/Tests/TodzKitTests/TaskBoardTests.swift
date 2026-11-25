@@ -24,6 +24,20 @@ private func task(number: Int, title: String, updatedAt: Date) -> TaskRecord {
         #expect(board.task(projectIdentifier: inboxIdentifier, number: 2)?.title == "Two")
     }
 
+    @Test func keepsTheNumbersOrderedWhateverTheOrderOfArrival() {
+        var board = TaskBoard()
+        [5, 1, 3, 4, 2, 3].forEach { board.replace(projectIdentifier: inboxIdentifier, task: task(number: $0, title: "T\($0)", updatedAt: older)) }
+        #expect(board.tasks(projectIdentifier: inboxIdentifier).map(\.number) == [1, 2, 3, 4, 5])
+    }
+
+    @Test func twoBoardsWithTheSameTasksAreEqualWhateverTheOrderOfArrival() {
+        var ascending = TaskBoard()
+        var descending = TaskBoard()
+        (1...3).forEach { ascending.replace(projectIdentifier: inboxIdentifier, task: task(number: $0, title: "T", updatedAt: older)) }
+        (1...3).reversed().forEach { descending.replace(projectIdentifier: inboxIdentifier, task: task(number: $0, title: "T", updatedAt: older)) }
+        #expect(ascending == descending)
+    }
+
     @Test func aNewerCopyReplacesTheHeldOne() {
         var board = TaskBoard()
         board.merge(projectIdentifier: inboxIdentifier, tasks: [task(number: 1, title: "Old", updatedAt: older)])

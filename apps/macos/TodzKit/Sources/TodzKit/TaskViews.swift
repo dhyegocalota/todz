@@ -3,6 +3,7 @@ import Foundation
 private typealias DatedTask = (dueDate: CalendarDate, positioned: PositionedTask)
 private typealias FinishedTask = (completedAt: Date, positioned: PositionedTask)
 private typealias DayEntry = (day: CalendarDate, task: BoardTask)
+private typealias DayRun = (day: CalendarDate, tasks: [BoardTask])
 
 private func isEarlierDue(_ lhs: DatedTask, _ rhs: DatedTask) -> Bool {
     guard lhs.dueDate == rhs.dueDate else { return lhs.dueDate < rhs.dueDate }
@@ -130,12 +131,13 @@ public struct TaskViews: Sendable {
     }
 
     private func groupedByDay(_ entries: [DayEntry]) -> [TaskDay] {
-        entries.reduce(into: []) { days, entry in
-            guard let last = days.last, last.day == entry.day else {
-                days.append(TaskDay(day: entry.day, tasks: [entry.task]))
+        let runs = entries.reduce(into: [DayRun]()) { runs, entry in
+            guard runs.last?.day == entry.day else {
+                runs.append(DayRun(day: entry.day, tasks: [entry.task]))
                 return
             }
-            days[days.count - 1] = TaskDay(day: last.day, tasks: last.tasks + [entry.task])
+            runs[runs.count - 1].tasks.append(entry.task)
         }
+        return runs.map { TaskDay(day: $0.day, tasks: $0.tasks) }
     }
 }

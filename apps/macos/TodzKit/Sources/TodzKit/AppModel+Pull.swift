@@ -115,9 +115,11 @@ extension AppModel {
     private func record(_ pulled: ProjectPull) {
         switch pulled {
         case let .loaded(projectIdentifier, changes):
+            let arrivedNumbers = arrivedNumbers(projectIdentifier: projectIdentifier, tasks: changes.tasks)
             if changes.isFromStart { board.reset(projectIdentifier: projectIdentifier) }
             board.merge(projectIdentifier: projectIdentifier, tasks: changes.tasks)
             board = board.setting(cursor: changes.cursor, projectIdentifier: projectIdentifier)
+            arrivedNumbers.forEach { onTaskArrived?($0) }
             projectLoads[projectIdentifier] = .loaded
             noteAnswer()
             keepProject(identifier: projectIdentifier)
@@ -129,6 +131,20 @@ extension AppModel {
             isOffline = true
             guard projectLoads[projectIdentifier] != .loaded else { return }
             projectLoads[projectIdentifier] = pulled.isUnreachable ? .unreachable : .failed
+        }
+    }
+
+    private func arrivedNumbers(projectIdentifier: String, tasks: [TaskRecord]) -> [Int] {
+        let isPulledBefore = board.cursor(projectIdentifier: projectIdentifier) != nil
+        guard onTaskArrived != nil, isPulledBefore, projectIdentifier == windowProjectIdentifier else { return [] }
+        return tasks.map(\.number).filter { board.task(projectIdentifier: projectIdentifier, number: $0) == nil }
+    }
+
+    private var windowProjectIdentifier: String? {
+        switch selectedItem {
+        case .inbox: activeWorkspace?.projects.first(where: \.isInbox)?.identifier
+        case let .project(identifier): identifier
+        case .today, .upcoming, .done, .connectAgent: nil
         }
     }
 
