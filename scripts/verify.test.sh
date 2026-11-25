@@ -231,7 +231,7 @@ commit_change apps/docs/index.mdx
 STUB_FAIL="--filter @todz/docs --fail-if-no-match run broken-links"
 run_verify
 expect_equal "a failing link check exits 1" "$status" 1
-expect_match "a failing link check names the registry and the client download" "$output" "verify: docs failed: .*npm registry.*Mintlify's client download"
+expect_match "a failing link check names the installed mint CLI and the client download" "$output" "verify: docs failed: .*installed mint CLI.*Mintlify's client download"
 expect_no_match "a failing link check never walks" "$(calls)" 'test:walk'
 expect_no_match "a failing link check never validates" "$(calls)" 'run validate'
 

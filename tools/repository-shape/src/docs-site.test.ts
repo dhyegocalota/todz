@@ -36,7 +36,11 @@ const WEBSITE_PATTERN = /website: '([^']+)'/;
 const SITE_ORIGIN_PATTERN = /"SITE_ORIGIN": "([^"]+)"/;
 const FENCED_BLOCK_PATTERN = /```[\s\S]*?```/g;
 const TITLE_HEADING_PATTERN = /^# /m;
-const MINT_VERSION_PATTERN = /mint@([\d.]+)/g;
+const EXACT_VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
+const MINT_PACKAGE = 'mint';
+const MINT_SCRIPT_NAMES = ['dev', 'broken-links', 'validate'];
+const MINT_COMMAND_PATTERN = /^mint /;
+const DLX_COMMAND = 'dlx';
 const CLIENT_VERSION_FLAG = '--client-version';
 const PLAYWRIGHT_CONFIGURATION = 'apps/docs/playwright.config.ts';
 const DOCS_PORT_SOURCE = 'apps/docs/e2e/support/docs-port.ts';
@@ -176,11 +180,15 @@ describe('the pages', () => {
 });
 
 describe('the package', () => {
-  test('pins one Mintlify version for every script, and the client for the preview (pin)', () => {
-    const scripts = (JSON.parse(readRepositoryFile(DOCS_MANIFEST)) as { scripts: Record<string, string> }).scripts;
-    const versions = new Set(capturedNames({ text: Object.values(scripts).join('\n'), pattern: MINT_VERSION_PATTERN }));
-    expect(versions.size).toBe(1);
-    expect(scripts.dev).toContain(CLIENT_VERSION_FLAG);
+  test('installs Mintlify as one exact-pinned dev dependency that every script calls directly, and pins the client for the preview', () => {
+    const manifest = JSON.parse(readRepositoryFile(DOCS_MANIFEST)) as {
+      scripts: Record<string, string>;
+      devDependencies: Record<string, string>;
+    };
+    const mintScripts = MINT_SCRIPT_NAMES.map((name) => manifest.scripts[name]!);
+    expect(manifest.devDependencies[MINT_PACKAGE]).toMatch(EXACT_VERSION_PATTERN);
+    expect(mintScripts.filter((script) => !MINT_COMMAND_PATTERN.test(script) || script.includes(DLX_COMMAND))).toEqual([]);
+    expect(manifest.scripts.dev).toContain(CLIENT_VERSION_FLAG);
   });
 
   test('the walk takes its port only from docsPortOf, which reads TODZ_DOCS_PORT before choosing a free one and writes the choice back (pin)', () => {
