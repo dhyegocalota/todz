@@ -51,9 +51,9 @@ Walk on 8537dd62: scratch Debug build (bundle `dev.todz.Todz.menubaronlywalk`, i
 
 ## Edge cases found during execution
 
-- [ ] Minimize the window with the switch on, then open the popover — FAIL on 2db66de2: `lsappinfo` read Foreground right after the minimize, then UIElement once the popover opened (the minimized window does not count as visible), so the Dock icon, which holds the minimized window, disappears. Expected: the Dock icon stays. Regression test needed (the rule or its window count must treat a miniaturized window as present). Reopening with `open -a` brought it back
+- [x] Minimize the window with the switch on, then open the popover — FIXED, re-walked on fe0dd7fe: Foreground before and after opening the popover with the window minimized (isMinimized true). Earlier FAIL on 2db66de2: `lsappinfo` read Foreground right after the minimize, then UIElement once the popover opened (the minimized window does not count as visible), so the Dock icon, which holds the minimized window, disappears. Expected: the Dock icon stays. Regression test needed (the rule or its window count must treat a miniaturized window as present). Reopening with `open -a` brought it back
 
-- [ ] The popover's "Open todz" while hidden leaves the app an accessory: the window is shown but the app is not activated (see the FAIL above); the policy waits for the window to become key and an inactive app's window never does until clicked. Regression needed: the open-window path from the popover must activate the app (or the policy must flip when the window is shown, not when it becomes key).
+- [x] The popover's "Open todz" while hidden leaves the app an accessory: the window is shown but the app is not activated (see the FAIL above); the policy waits for the window to become key and an inactive app's window never does until clicked. Regression needed: the open-window path from the popover must activate the app (or the policy must flip when the window is shown, not when it becomes key). — FIXED, re-walked on fe0dd7fe: hidden, Finder frontmost, real click on "Open todz": Foreground, in front; "Quit todz" quits (process gone)
 - [ ] A fresh launch briefly shows as Foreground before flipping to accessory when no window opens — observed for the first reads after `open -g`; settles to UIElement.
 
 ## Adversarial review
