@@ -71,3 +71,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0048](0048-the-self-host-guide-is-one-markdown-file-that-the-landing-serves.md) | The self-host guide is one Markdown file that the landing serves | Proposed | 2026-11-24 |
 | [0049](0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md) | todz.app is served by the same Worker, dispatched by host, and built in three features | Accepted | 2026-11-24 |
 | [0050](0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md) | The waitlist answers alike for every address, mails once, and is guarded like sign-in | Accepted | 2026-11-25 |
+| [0051](0051-the-admin-signs-in-by-a-mail-link-bound-to-the-browser-that-asked-into-a-cookie-session.md) | The admin signs in by a mail link bound to the browser that asked, into a cookie session | Accepted | 2026-11-25 |
