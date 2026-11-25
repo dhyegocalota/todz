@@ -3,13 +3,16 @@ import { HEALTH_PATH, serveHealth } from './health';
 import { HostKind, WWW_PREFIX, hostKindOf } from './host-kind';
 import { HttpStatus } from './http-status';
 import { serveMcp } from './mcp-endpoint';
+import { serveServerCard } from './mcp-server-card';
 import { serveOwner } from './owner-endpoint';
 import { noRouteResponse } from './owner-errors';
 import { withSecurityHeaders } from './security-headers';
+import { serveTimed } from './server-timing';
 import { SIGN_IN_CHALLENGE_PAGE_PATH, serveSignInChallengePage } from './sign-in-challenge-page';
 import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
 import { SELF_HOST_PATH, redirectToDocs } from './site/self-host-redirect';
 import { serveSite } from './site/site-endpoint';
+import { SERVER_CARD_PATH } from './site/site-urls';
 import { runScheduled } from './site/waitlist-digest';
 
 export { ProjectStore } from './project-store';
@@ -22,7 +25,8 @@ type HostContext = { request: Request; env: Env; executionContext: ExecutionCont
 type HostHandler = (context: HostContext) => Promise<Response>;
 
 const ROUTE_OF_PATH: Record<string, Route> = {
-  [MCP_PATH]: ({ request, env }) => serveMcp({ request, env, now: Date.now() }),
+  [MCP_PATH]: ({ request, env }) => serveTimed({ env, serve: (observedEnv) => serveMcp({ request, env: observedEnv, now: Date.now() }) }),
+  [SERVER_CARD_PATH]: async ({ request }) => serveServerCard({ request }),
   [SIGN_IN_PAGE_PATH]: ({ request, env }) => serveSignInPage({ request, env }),
   [SIGN_IN_CHALLENGE_PAGE_PATH]: ({ request, env }) => serveSignInChallengePage({ request, env }),
 };
@@ -33,7 +37,9 @@ function isOwnerPath(pathname: string): boolean {
 
 async function serveApi({ request, env, executionContext }: HostContext): Promise<Response> {
   const { pathname } = new URL(request.url);
-  if (isOwnerPath(pathname)) return serveOwner({ request, env, now: Date.now(), executionContext });
+  if (isOwnerPath(pathname)) {
+    return serveTimed({ env, serve: (observedEnv) => serveOwner({ request, env: observedEnv, now: Date.now(), executionContext }) });
+  }
   const route = ROUTE_OF_PATH[pathname];
   if (route === undefined) return noRouteResponse();
   return route({ request, env });

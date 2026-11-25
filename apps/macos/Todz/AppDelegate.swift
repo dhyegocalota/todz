@@ -24,6 +24,7 @@ private func isFocusFilterQuiet() async -> Bool {
         vault: FileSessionVault(folder: AppConfiguration.sessionFolder),
         pendingLinks: FilePendingLinkVault(folder: AppConfiguration.sessionFolder),
         store: FileSyncStore(folder: AppConfiguration.sessionFolder.appending(path: cacheFolderName)),
+        cacheScheduler: .background,
         widgetStore: AppConfiguration.widgetStore,
         reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
         timeZone: .autoupdatingCurrent,
@@ -35,7 +36,7 @@ private func isFocusFilterQuiet() async -> Bool {
     var dayChangeObservation: (any NSObjectProtocol)?
     private(set) lazy var dayClose = DayCloseCoordinator(
         gate: gate,
-        defaults: .standard,
+        preference: DayClosePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
         timeZone: model.timeZone,
         openCount: { [model] in model.todayHeadingCount },
         isScreenLocked: { ScreenLock.isLocked },
@@ -44,6 +45,15 @@ private func isFocusFilterQuiet() async -> Bool {
         closePopover: { [panel] in panel.close() }
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
+    private lazy var morningGlancePresenter = MorningGlancePresenter(windowState: windowState)
+    private(set) lazy var morningGlance = MorningGlanceCoordinator.app(
+        model: model,
+        gate: gate,
+        dayClose: dayClose,
+        popover: panel,
+        presenter: morningGlancePresenter
+    )
+    private lazy var morningGlanceTrigger = MorningGlanceTrigger(coordinator: morningGlance)
 
     override init() {
         let gate = ProactiveGate()
@@ -53,12 +63,18 @@ private func isFocusFilterQuiet() async -> Bool {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        PerfProbe.shared?.start(model: model)
         observeWidgetRequests()
         observeDayChanges()
         Task {
             await readFocusFilter()
             dayCloseScheduler.start()
+            morningGlanceTrigger.start()
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        model.flushCache()
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -69,7 +85,7 @@ private func isFocusFilterQuiet() async -> Bool {
         guard let link = urls.compactMap({ IncomingLink(url: $0, scheme: AppConfiguration.linkScheme) }).last else { return }
         switch link {
         case let .signIn(signInLink): windowState.waitingSignInLink = signInLink
-        case let .widget(widgetLink): windowState.waitingLink = widgetLink
+        case let .widget(widgetLink): windowState.open(widgetLink, from: .widget)
         }
     }
 

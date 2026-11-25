@@ -30,6 +30,10 @@ struct TaskRows: View {
             }
             .scrollContentBackground(.hidden)
             .focused(focus, equals: .list)
+            .task {
+                guard windowState.openingFocus == .list else { return }
+                focus.wrappedValue = .list
+            }
             .onKeyPress(.space) {
                 toggleSelectedTask()
                 return .handled
@@ -40,6 +44,8 @@ struct TaskRows: View {
                 guard !keys.isEmpty else { return }
                 windowState.openInspectorTitle()
             }
+            .onAppear { PerfProbe.shared?.rowsAppeared() }
+            .task { await ScrollWalk.run(sections: sections, proxy: proxy) }
             .onChange(of: model.selectedTask) { _, selectedTask in
                 guard let selectedTask else { return }
                 Task { proxy.scrollTo(selectedTask) }

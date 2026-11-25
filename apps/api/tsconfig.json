@@ -2,5 +2,5 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "types": ["@cloudflare/workers-types", "@cloudflare/vitest-plugin/types"] },
   "include": ["src", "test"],
-  "exclude": ["test/emails", "test/server", "test/brand-asset.test.ts"]
+  "exclude": ["test/emails", "test/site", "test/server", "test/brand-asset.test.ts"]
 }

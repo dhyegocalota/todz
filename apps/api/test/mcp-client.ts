@@ -21,20 +21,34 @@ const CLIENT_OPTIONS_OF_ERA: Record<ClientEra, ClientOptions> = {
   [ClientEra.Modern]: { versionNegotiation: { mode: { pin: MODERN_PROTOCOL_VERSION } } },
 };
 
+function ignoreResponse(): void {}
+
+function serveWithWorker(request: Request): Promise<Response> {
+  return exports.default.fetch(request);
+}
+
 export type ToolAnswer = { text: string; isError: boolean | undefined };
 
 export async function connectClient({
   era,
   key,
   clientName = CLIENT_NAME_OF_ERA[era],
+  onResponse = ignoreResponse,
+  serve = serveWithWorker,
 }: {
   era: ClientEra;
   key: string;
   clientName?: string;
+  onResponse?: (response: Response) => void;
+  serve?: (request: Request) => Promise<Response>;
 }): Promise<Client> {
   const client = new Client({ name: clientName, version: CLIENT_VERSION }, CLIENT_OPTIONS_OF_ERA[era]);
   const transport = new StreamableHTTPClientTransport(MCP_URL, {
-    fetch: (input, init) => exports.default.fetch(new Request(input, init)),
+    fetch: async (input, init) => {
+      const response = await serve(new Request(input, init));
+      onResponse(response);
+      return response;
+    },
     requestInit: { headers: { Authorization: `Bearer ${key}` } },
   });
   await client.connect(transport);

@@ -187,6 +187,10 @@ describe('every admin page', () => {
     ['the link page', linkPage],
   ];
 
+  test.each(PAGES)('%s allows no manifest, which only the public pages declare', async (_name, page) => {
+    expect(policyOf(await page())).not.toContain('manifest-src');
+  });
+
   test.each(PAGES)('%s answers HTML that is never stored and never indexed, with the site headers', async (_name, page) => {
     const { response } = await page();
     expect(response.status).toBe(OK_STATUS);

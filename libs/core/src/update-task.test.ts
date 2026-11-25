@@ -185,6 +185,22 @@ describe('updateTask placement', () => {
     expect(store.historyOf(2)).toHaveLength(1);
   });
 
+  test("Before the next task, with the moving task as that task's own neighbour, writes nothing (pin)", () => {
+    const { store, update } = setup(3);
+    expectNoWrite({ store, run: () => update({ number: 1, patch: { placement: { kind: TaskPlacement.Before, anchor: 2 } } }) });
+  });
+
+  test("After the previous task, with the moving task as that task's own neighbour, writes nothing (pin)", () => {
+    const { store, update } = setup(3);
+    expectNoWrite({ store, run: () => update({ number: 3, patch: { placement: { kind: TaskPlacement.After, anchor: 2 } } }) });
+  });
+
+  test('moving the middle task After the last one, which is its own next neighbour, gives [1, 3, 2] (pin)', () => {
+    const { update, orderOf } = setup(3);
+    update({ number: 2, patch: { placement: { kind: TaskPlacement.After, anchor: 3 } } });
+    expect(orderOf(TaskState.Open)).toEqual([1, 3, 2]);
+  });
+
   test('First on the task holding the lowest key writes nothing', () => {
     const { store, update } = setup(3);
     expectNoWrite({ store, run: () => update({ number: 1, patch: { placement: { kind: TaskPlacement.First } } }) });

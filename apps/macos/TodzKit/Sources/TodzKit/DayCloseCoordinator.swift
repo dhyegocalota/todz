@@ -11,7 +11,7 @@ import Observation
     @ObservationIgnored private var isWaitingForCount = false
     @ObservationIgnored private var clickedAt: Date?
     @ObservationIgnored private let gate: ProactiveGate
-    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let preference: DayClosePreference
     @ObservationIgnored private let timeZone: TimeZone
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let openCount: () -> Int?
@@ -22,7 +22,7 @@ import Observation
 
     public init(
         gate: ProactiveGate,
-        defaults: UserDefaults,
+        preference: DayClosePreference,
         timeZone: TimeZone,
         now: @escaping () -> Date = Date.init,
         openCount: @escaping () -> Int?,
@@ -32,7 +32,7 @@ import Observation
         closePopover: @escaping () -> Void
     ) {
         self.gate = gate
-        self.defaults = defaults
+        self.preference = preference
         self.timeZone = timeZone
         self.now = now
         self.openCount = openCount
@@ -45,10 +45,13 @@ import Observation
 
     @discardableResult
     public func check() async -> DayCloseDecision {
-        let isDueAndIdle = decision == .due && !isClickInFlight
         guard isDueAndIdle else { return decision }
         await closeTheDay()
         return decision
+    }
+
+    public var isDueAndIdle: Bool {
+        decision == .due && !isClickInFlight
     }
 
     public func end() {
@@ -95,12 +98,12 @@ import Observation
     }
 
     private var decision: DayCloseDecision {
-        guard let minutesAfterMidnight = DayClosePreference.minutesAfterMidnight(in: defaults) else { return .off }
+        guard let minutesAfterMidnight = preference.minutesAfterMidnight else { return .off }
         return DayCloseSchedule.decision(
             at: now(),
             minutesAfterMidnight: minutesAfterMidnight,
-            lastClosedDay: DayClosePreference.lastClosedDay(in: defaults),
-            isOn: DayClosePreference.isOn(in: defaults),
+            lastClosedDay: preference.lastClosedDay,
+            isOn: preference.isOn,
             timeZone: timeZone
         )
     }
@@ -134,7 +137,7 @@ import Observation
     }
 
     private func markClosed() {
-        DayClosePreference.markClosed(day: CalendarDate.today(in: timeZone, at: now()), in: defaults)
+        preference.markClosed(day: CalendarDate.today(in: timeZone, at: now()))
     }
 
     private func waitForCount() {

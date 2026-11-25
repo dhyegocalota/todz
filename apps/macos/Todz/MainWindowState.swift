@@ -12,6 +12,8 @@ private let tomorrowOffset = 1
     var isConfirmingSignOut = false
     var lingers = CompletionLingers()
     var waitingLink: WidgetLink?
+    var openingFocus = OpeningFocus.addField
+    var addFieldArming = AddFieldArming(opening: .addField)
     var waitingSignInLink: SignInLink?
     var agentClient: AgentClient = .claudeCode
     @ObservationIgnored private var lingerTimers: [TaskKey: Task<Void, Never>] = [:]
@@ -23,7 +25,13 @@ private let tomorrowOffset = 1
     func requestNewTask(model: AppModel) {
         let hasNoAddField = model.selectedItem == .upcoming || model.selectedItem == .done || model.selectedItem == .connectAgent
         if hasNoAddField { model.selectedItem = .inbox }
+        addFieldArming.apply(.newTaskCommand)
         focusRequest = .addField
+    }
+
+    func windowClosed() {
+        openingFocus = .addField
+        addFieldArming = AddFieldArming(opening: .addField)
     }
 
     func requestSignOut(model: AppModel) {
@@ -32,6 +40,12 @@ private let tomorrowOffset = 1
             return
         }
         Task { await model.signOut() }
+    }
+
+    func open(_ link: WidgetLink, from source: LinkSource) {
+        openingFocus = source.openingFocus
+        addFieldArming = AddFieldArming(opening: source.openingFocus)
+        waitingLink = link
     }
 
     func follow(_ link: WidgetLink, model: AppModel) {

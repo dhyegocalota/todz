@@ -9,10 +9,6 @@ private let recheckedNotifications: [Notification.Name] = [
 ]
 private let shortestCheckDelay: Duration = .seconds(1)
 
-private extension Notification.Name {
-    static let screenIsUnlocked = Notification.Name("com.apple.screenIsUnlocked")
-}
-
 @MainActor final class DayCloseScheduler {
     private let coordinator: DayCloseCoordinator
     private var nextCheck: Task<Void, Never>?

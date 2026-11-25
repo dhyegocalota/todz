@@ -23,13 +23,14 @@ private func order(_ openNumbers: [Int], moving number: Int, to placement: TaskP
 
 public struct TaskBoard: Sendable, Equatable {
     private var tasksOfProject: [String: [Int: TaskRecord]] = [:]
+    private var numbersOfProject: [String: [Int]] = [:]
     private var cursorOfProject: [String: Int] = [:]
 
     public init() {}
 
     public func tasks(projectIdentifier: String) -> [TaskRecord] {
-        guard let held = tasksOfProject[projectIdentifier] else { return [] }
-        return held.values.sorted { $0.number < $1.number }
+        guard let held = tasksOfProject[projectIdentifier], let numbers = numbersOfProject[projectIdentifier] else { return [] }
+        return numbers.compactMap { held[$0] }
     }
 
     public func task(projectIdentifier: String, number: Int) -> TaskRecord? {
@@ -42,7 +43,18 @@ public struct TaskBoard: Sendable, Equatable {
 
     public mutating func replace(projectIdentifier: String, task: TaskRecord) {
         guard !isOlderThanTheHeldCopy(task, projectIdentifier: projectIdentifier) else { return }
+        let isNewNumber = tasksOfProject[projectIdentifier]?[task.number] == nil
         tasksOfProject[projectIdentifier, default: [:]][task.number] = task
+        guard isNewNumber else { return }
+        insert(number: task.number, projectIdentifier: projectIdentifier)
+    }
+
+    private mutating func insert(number: Int, projectIdentifier: String) {
+        if let lowerIndex = numbersOfProject[projectIdentifier]?.lastIndex(where: { $0 < number }) {
+            numbersOfProject[projectIdentifier, default: []].insert(number, at: lowerIndex + 1)
+            return
+        }
+        numbersOfProject[projectIdentifier, default: []].insert(number, at: 0)
     }
 
     private func isOlderThanTheHeldCopy(_ task: TaskRecord, projectIdentifier: String) -> Bool {
@@ -52,6 +64,7 @@ public struct TaskBoard: Sendable, Equatable {
 
     public mutating func reset(projectIdentifier: String) {
         tasksOfProject[projectIdentifier] = nil
+        numbersOfProject[projectIdentifier] = nil
     }
 
     public func cursor(projectIdentifier: String) -> Int? {

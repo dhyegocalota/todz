@@ -9,6 +9,7 @@ enum AccessibilityCopy {
     static let disclosureCollapsed = "Collapsed"
     static let disclosureExpanded = "Expanded"
     static let markedDone = "Done"
+    static let glanceOpensToday = "Opens Today in the todz window."
 
     static func checkboxOpen(title: String) -> String {
         "Mark \(title) as done"
@@ -47,6 +48,10 @@ enum AccessibilityCopy {
 
     static func menuBarCount(count: Int) -> String {
         InflectedCopy.text("todz, \(count) left today")
+    }
+
+    static func morningGlance(count: Int) -> String {
+        InflectedCopy.text("Today, \(count) left")
     }
 
     static func todayIn(workspace: String) -> String {
