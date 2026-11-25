@@ -1,5 +1,5 @@
 import { normalizeName } from '@todz/core';
-import { INBOX_PROJECT_NAME } from '@todz/types';
+import { INBOX_PROJECT_NAME, OWNER_WORKSPACES_MAX, WORKSPACE_PROJECTS_MAX } from '@todz/types';
 import { z } from 'zod';
 import {
   findOwnerWorkspace,
@@ -35,7 +35,7 @@ async function createWorkspace({ request, env, owner, now }: SessionContext): Pr
   if (!nameResult.ok) return failureResponse(nameResult.failure);
   const workspace = { id: crypto.randomUUID(), name: nameResult.value, createdAt: now };
   const inbox = { id: crypto.randomUUID(), name: INBOX_PROJECT_NAME, isInbox: true, createdAt: now };
-  await insertWorkspaceWithInbox({
+  const isInserted = await insertWorkspaceWithInbox({
     directory: env.DIRECTORY,
     ownerId: owner.ownerId,
     workspaceId: workspace.id,
@@ -43,7 +43,9 @@ async function createWorkspace({ request, env, owner, now }: SessionContext): Pr
     name: workspace.name,
     inboxName: inbox.name,
     now,
+    workspacesPerOwnerMax: OWNER_WORKSPACES_MAX,
   });
+  if (!isInserted) return errorResponse(OwnerErrorCode.LimitReached);
   return Response.json({ workspace: workspaceJson({ workspace, projects: [inbox] }) }, { status: HttpStatus.Created });
 }
 
@@ -78,8 +80,9 @@ async function createProject(context: SessionContext): Promise<Response> {
     workspaceId,
     name: project.name,
     now,
+    projectsPerWorkspaceMax: WORKSPACE_PROJECTS_MAX,
   });
-  if (!isInserted) return errorResponse(OwnerErrorCode.NotFound);
+  if (!isInserted) return errorResponse(OwnerErrorCode.LimitReached);
   return Response.json({ project: projectJson(project) }, { status: HttpStatus.Created });
 }
 

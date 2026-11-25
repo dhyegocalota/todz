@@ -1,7 +1,7 @@
 import { MILLISECONDS_PER_HOUR } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { digestCredential } from '../src/credential-digest';
-import { issueProjectKey } from '../src/project-keys';
+import { type IssuedKey, issueProjectKey } from '../src/project-keys';
 import { type SessionOwner, resolveSessionOwner } from '../src/project-routing';
 import { CLOCK_NOW } from './task-fixtures';
 
@@ -55,9 +55,15 @@ export async function seedKey({
     .run();
 }
 
+export async function issuedKeyOf(issuance: Promise<IssuedKey | null>): Promise<IssuedKey> {
+  const issued = await issuance;
+  if (issued === null) throw new Error('the project is at its cap of live keys');
+  return issued;
+}
+
 export async function seedIssuedKey(timeZone = 'UTC'): Promise<{ projectId: string; key: string }> {
   const projectId = await seedProject({ ownerId: await seedOwner(timeZone) });
-  const { secret } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+  const { secret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
   return { projectId, key: secret };
 }
 
@@ -65,7 +71,7 @@ export async function seedNudgedKey(): Promise<{ projectId: string; key: string 
   const ownerId = await seedOwner();
   await enableAgentNudge({ directory: env.DIRECTORY, ownerId });
   const projectId = await seedProject({ ownerId });
-  const { secret } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+  const { secret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
   return { projectId, key: secret };
 }
 

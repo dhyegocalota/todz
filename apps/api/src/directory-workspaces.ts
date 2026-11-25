@@ -83,6 +83,7 @@ export async function insertWorkspaceWithInbox({
   name,
   inboxName,
   now,
+  workspacesPerOwnerMax,
 }: {
   directory: D1Database;
   ownerId: string;
@@ -91,13 +92,20 @@ export async function insertWorkspaceWithInbox({
   name: string;
   inboxName: string;
   now: number;
-}): Promise<void> {
-  await directory.batch([
-    directory.prepare('INSERT INTO workspaces (id, owner_id, name, created_at) VALUES (?, ?, ?, ?)').bind(workspaceId, ownerId, name, now),
+  workspacesPerOwnerMax: number;
+}): Promise<boolean> {
+  const [workspaceInsertion] = await directory.batch([
     directory
-      .prepare('INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) VALUES (?, ?, ?, 1, ?)')
-      .bind(inboxId, workspaceId, inboxName, now),
+      .prepare(
+        'INSERT INTO workspaces (id, owner_id, name, created_at) SELECT ?, ?, ?, ? WHERE (SELECT count(*) FROM workspaces WHERE owner_id = ?) < ?',
+      )
+      .bind(workspaceId, ownerId, name, now, ownerId, workspacesPerOwnerMax),
+    directory
+      .prepare('INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) SELECT ?, id, ?, 1, ? FROM workspaces WHERE id = ?')
+      .bind(inboxId, inboxName, now, workspaceId),
   ]);
+  if (workspaceInsertion === undefined) throw new Error('the batch answered fewer results than statements');
+  return workspaceInsertion.meta.changes > 0;
 }
 
 export async function updateWorkspaceName({
@@ -125,6 +133,7 @@ export async function insertProject({
   workspaceId,
   name,
   now,
+  projectsPerWorkspaceMax,
 }: {
   directory: D1Database;
   ownerId: string;
@@ -132,12 +141,13 @@ export async function insertProject({
   workspaceId: string;
   name: string;
   now: number;
+  projectsPerWorkspaceMax: number;
 }): Promise<boolean> {
   const result = await directory
     .prepare(
-      'INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) SELECT ?, id, ?, 0, ? FROM workspaces WHERE id = ? AND owner_id = ?',
+      'INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) SELECT ?, id, ?, 0, ? FROM workspaces WHERE id = ? AND owner_id = ? AND (SELECT count(*) FROM projects WHERE workspace_id = ?) < ?',
     )
-    .bind(projectId, name, now, workspaceId, ownerId)
+    .bind(projectId, name, now, workspaceId, ownerId, workspaceId, projectsPerWorkspaceMax)
     .run();
   return result.meta.changes > 0;
 }
