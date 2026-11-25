@@ -268,6 +268,28 @@ private let minutesOutsideADay = [-2880, 1440]
         #expect(harness.lastClosedDay == today)
     }
 
+    @Test func aWorkspaceChangeDuringAnUnengagedModeAsksToCloseThePopoverAndKeepsTheMode() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.at(today, hour: 18)
+        await harness.coordinator.check()
+        #expect(harness.coordinator.workspaceChanged())
+        #expect(harness.coordinator.isClosingDay)
+    }
+
+    @Test func aWorkspaceChangeDuringAnEngagedModeEndsItInPlace() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.at(today, hour: 18)
+        await harness.coordinator.check()
+        harness.coordinator.engage()
+        #expect(!harness.coordinator.workspaceChanged())
+        #expect(!harness.coordinator.isClosingDay)
+    }
+
+    @Test func aWorkspaceChangeOutsideTheModeAsksNothing() async throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        #expect(!harness.coordinator.workspaceChanged())
+    }
+
     @Test func aPopoverAlreadyVisibleWhenTheModeStartsMarksTheDayAtOnce() async throws {
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         harness.popover.isVisible = true

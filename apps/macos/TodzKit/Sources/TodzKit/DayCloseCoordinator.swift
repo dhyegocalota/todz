@@ -60,6 +60,10 @@ import Observation
         isEngaged = true
     }
 
+    public func workspaceChanged() -> Bool {
+        false
+    }
+
     public func popoverShown() {
         guard isClosingDay else { return }
         markClosed()
