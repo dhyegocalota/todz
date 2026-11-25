@@ -189,13 +189,13 @@ describe('POST /owner/sign-in-links', () => {
   });
 
   test.each([['x@todz.app'], ['X@TODZ.APP'], ['reply+abc@todz.app'], ['hello+1@todz.app']])(
-    'the own domain address %j answers 400 invalid_request, stores no link and sends nothing',
+    'the own domain address %j answers 202 like any address, stores no link and sends nothing',
     async (email) => {
       const output = consoleOutput();
       const before = await totalLinks();
       const response = await requestLink({ email });
-      expect(response.status).toBe(BAD_REQUEST_STATUS);
-      expect(await response.json()).toEqual(INVALID_REQUEST);
+      expect(response.status).toBe(ACCEPTED_STATUS);
+      expect(await response.json()).toEqual({});
       expect(output).not.toHaveBeenCalled();
       expect(await totalLinks()).toBe(before);
     },
