@@ -66,9 +66,9 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 
 ### G3 docs
 
-- [ ] **Step 27:** `docs/product/README.md`: the proactive line says the nudges are on by default and one Respect Focus switch, off by default, holds the app's own surfaces in a Focus that has the filter (ADR 0068).
+- [x] **Step 27:** `docs/product/README.md`: the proactive line says the nudges are on by default and one Respect Focus switch, off by default, holds the app's own surfaces in a Focus that has the filter (ADR 0068).
 - [ ] **Step 28:** the recorder's Settings shots (light and dark, defaults; Respect Focus on with the helper line) into `docs/screenshots/focus-switch-defaults/`; the README walk's four Settings shots replaced, not added to (ADR 0047), the "Quiet during Focus" caption gone; the old Settings shots no README links deleted.
-- [ ] **Step 29:** `apps/docs/self-host.mdx`: one sentence that, on a server that already has owners, an owner who never touched Email me my day gets it only after the day email default step, and new owners get it at once.
+- [x] **Step 29:** `apps/docs/self-host.mdx`: one sentence that, on a server that already has owners, an owner who never touched Email me my day gets it only after the day email default step, and new owners get it at once.
 
 ## Failure modes
 
@@ -106,8 +106,14 @@ Author this list with every box empty. A sub-agent ticks its own line. A wrong s
 - [ ] **Deploy 3, the owner's own mail:** the project owner's day email is already chosen on (if it is not, the owner turns it on in Settings first, which stamps it); at its next send the owner's session reads the mail's original source: both `List-Unsubscribe` headers present; the loop opens the link with `GET` only and sees the button page while `GET /owner` still answers `day_email: true`; `day_emails` holds no `send_failed` row for that day. A `send_failed` row stops the deploy here. The one-click `POST` is proven on the local stack only; a real stop link is never posted in production.
 - [ ] **Deploy 4, counts:** `wrangler d1 execute todz-directory --remote --file apps/api/scripts/setting-defaults/candidate-counts.sql`, read-only, four numbers and never an address, recorded in the run log. Deploy 3 proved the project owner's `day_email` is 1, so 0009 stamped that row: every untouched candidate (the fourth number) is another owner.
 - [ ] **Deploy 5, nudge default:** apply 0010 (from the merged head). Expected: `SELECT count(*) FROM owners WHERE agent_nudge = 0 AND agent_nudge_chosen_at IS NULL` is 0.
-- [ ] **Deploy 6, day email default:** the project owner is already on and stamped, so the owner-only backfill of R3 changes no row. When the fourth number is 0, run `day-email-default.sql` (it reaches only rows that cannot be mailed today); when it is not 0, run nothing. The call and the row count go in the run log.
+- [ ] **Deploy 6, day email default:** the project owner is already on and stamped, so the owner-only backfill of R3 changes no row. When the fourth number is 0, run `day-email-default.sql` (it reaches only owners with an email identity and a null choice time, which the fourth number counted, so it changes no row); when it is not 0, run nothing. The call and the row count go in the run log.
 - [ ] **Release preferences:** before installing the Release build, read `closesTheDay`, `showsMorningGlance`, `showsDayTemperature` and `respectsFocus` in the Release container's preferences; report each as absent (takes the new default) or present with its value; a present `false` is reported as "stays off because it was flipped".
+
+## v1.1 fix round
+
+- The counts' fourth number is `untouched_email_owners`: every owner with an email identity and a null day email choice time, with or without a workspace. `day-email-default.sql` reaches only those rows, so an owner who cannot be mailed today is never turned on for later. Red `6f0942d8`.
+- Runbook: the rollback `UPDATE` comes after step 20; the deploy section names the skip of steps 7 and 8.
+- Steps 27 and 29 landed with this round.
 
 ## Plan review answers (R1–R23)
 

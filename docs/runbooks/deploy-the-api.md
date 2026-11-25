@@ -294,7 +294,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
 
 ## Turning on a default for owners who never chose it
 
-Steps 19 to 24 ship a setting that is on by default (the agent nudge and the day email, [ADR 0068](../adr/0068-one-respect-focus-switch-decides-for-every-proactive-surface-and-untouched-settings-follow-the-defaults.md)) to owners who already exist, in an order that never mails anyone before the mail can be stopped in one click. They run after steps 1 to 6 on the merged head; `<schema-commit>` is the parent of the commit that adds `apps/api/migrations/0010_agent_nudge_default.sql`: `git log --diff-filter=A --format=%h -n 1 -- apps/api/migrations/0010_agent_nudge_default.sql` names that commit, and `<schema-commit>` is its hash followed by `^`.
+Steps 19 to 24 ship a setting that is on by default (the agent nudge and the day email, [ADR 0068](../adr/0068-one-respect-focus-switch-decides-for-every-proactive-surface-and-untouched-settings-follow-the-defaults.md)) to owners who already exist, in an order that never mails anyone before the mail can be stopped in one click. They run after steps 1 to 6 on the merged head and replace steps 7 and 8 for this deploy: step 19 applies 0009 alone and step 20 deploys the Worker, so steps 7 and 8 are skipped; `<schema-commit>` is the parent of the commit that adds `apps/api/migrations/0010_agent_nudge_default.sql`: `git log --diff-filter=A --format=%h -n 1 -- apps/api/migrations/0010_agent_nudge_default.sql` names that commit, and `<schema-commit>` is its hash followed by `^`.
 
 19. **Apply migration 0009 alone.** `wrangler d1 migrations apply` has no stop point, so run it from a detached worktree at `<schema-commit>`, which holds no `0010` file. Count the flags first and again after; the counts carry no address:
 
@@ -337,7 +337,7 @@ Steps 19 to 24 ship a setting that is on by default (the agent nudge and the day
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --file ./scripts/setting-defaults/candidate-counts.sql
     ```
 
-    Expected: `owners`, `candidates`, `agent_nudge_on` and `untouched_candidates`, which go in the run log. Step 21 proved the project owner's `day_email` is on, so 0009 stamped that row and `untouched_candidates` counts only other owners.
+    Expected: `owners`, `candidates`, `agent_nudge_on` and `untouched_email_owners`, which go in the run log. `untouched_email_owners` counts every owner with an email identity whose day email was never chosen, with or without a workspace. Step 21 proved the project owner's `day_email` is on, so 0009 stamped that row and the count holds only other owners.
     If it fails: an error on the file path means the command ran outside the package folder; run it as written.
 
 23. **Apply migration 0010.** From the merged head, as step 7 does, then count the nudges still off with no choice:
@@ -351,13 +351,13 @@ Steps 19 to 24 ship a setting that is on by default (the agent nudge and the day
     Expected: the list names `0010_agent_nudge_default.sql` and no other; `untouched_off` is `0`. The nudge sends no mail.
     If it fails: a nonzero count means an owner was created between the list and the apply; run the same `UPDATE` as the migration once: `UPDATE owners SET agent_nudge = 1 WHERE agent_nudge_chosen_at IS NULL`. To undo the default, `UPDATE owners SET agent_nudge = 0 WHERE agent_nudge_chosen_at IS NULL` restores it exactly for owners who never chose.
 
-24. **Default the day email, only when no other owner would be mailed.** When `untouched_candidates` of step 22 is `0`, run the statement; when it is not `0`, run nothing and tell the owner:
+24. **Default the day email, only when no other owner would be mailed.** When `untouched_email_owners` of step 22 is `0`, run the statement; when it is not `0`, run nothing and tell the owner:
 
     ```bash
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --file ./scripts/setting-defaults/day-email-default.sql
     ```
 
-    Expected: the statement reports the rows it changed, all of them owners who cannot be mailed today (no email identity or no workspace); the call and the row count go in the run log.
+    Expected: the statement changes no row, because it reaches only owners with an email identity whose day email was never chosen, and step 22 counted none; an owner with no email address is never touched. The call and the row count go in the run log.
     If it fails: an owner mailed by mistake is stopped by `UPDATE owners SET day_email = 0 WHERE day_email_chosen_at IS NULL` run through `wrangler d1 execute todz-directory --remote --command` before the next quarter-hour tick; the owner is told.
 
 ## Rollback
@@ -376,7 +376,7 @@ Steps 19 to 24 ship a setting that is on by default (the agent nudge and the day
 - The digest's cron belongs to the Worker, not to a version: `wrangler rollback` keeps the `0 11 * * *` and `*/15 * * * *` schedules, and a version without the digest or the day email then fails each run, which only shows in Cron Events. To stop it, set `"triggers": { "crons": [] }` in `wrangler.jsonc` through a pull request and deploy.
 - The reply rule: to turn the inbound half of the day email off without a deploy, delete the `reply@` rule. Read `scripts/todz-cloudflare.sh api GET /zones/06490974636c535e2cbfd7c5b09925a5/email/routing/rules`, pick the entry named `todz day email replies` whose matcher is the literal `to` `reply@todz.app` (exactly one, else stop), and delete it with `scripts/todz-cloudflare.sh api DELETE /zones/06490974636c535e2cbfd7c5b09925a5/email/routing/rules/<rule-id>` using its `id`. Replies then reach no Worker and add nothing; the mail out keeps going. Subaddressing may stay on: `hello+x@` and `support+x@` keep forwarding to the owner, and the Worker refuses addresses on `todz.app` anywhere else. To stop the mail out too, the owner turns Email me my day off in the app, or `wrangler.jsonc` drops the `*/15 * * * *` cron through a pull request.
 - The day email's tables (migration 0008) and the owner's `day_email` and `day_email_minutes` columns stay through any rollback; an older version never reads them and the stored choices come back with a version that does.
-- The setting choice columns and the stop link table (migration 0009) stay through any rollback, and an older version never reads them. After step 24 and before any rollback, first turn the untouched day emails off with `UPDATE owners SET day_email = 0 WHERE day_email_chosen_at IS NULL` through `wrangler d1 execute todz-directory --remote --command`, because an older version mails every owner whose `day_email` is on and a mail already sent carries a stop link that answers 404 there; then roll back. Migration 0010's nudge default is undone, for owners who never chose, by `UPDATE owners SET agent_nudge = 0 WHERE agent_nudge_chosen_at IS NULL`.
+- The setting choice columns and the stop link table (migration 0009) stay through any rollback, and an older version never reads them. After step 20 and before any rollback, first turn the untouched day emails off with `UPDATE owners SET day_email = 0 WHERE day_email_chosen_at IS NULL` through `wrangler d1 execute todz-directory --remote --command`, because an older version mails every owner whose `day_email` is on and a mail already sent carries a stop link that answers 404 there; then roll back. Migration 0010's nudge default is undone, for owners who never chose, by `UPDATE owners SET agent_nudge = 0 WHERE agent_nudge_chosen_at IS NULL`.
 - Durable Object classes are never deleted: a `migrations` entry in `wrangler.jsonc` never removes `ProjectStore`.
 
 ## Rotate the token

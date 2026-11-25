@@ -69,7 +69,7 @@ private let cacheFolderName = "Cache"
     private lazy var morningGlanceTrigger = MorningGlanceTrigger(coordinator: morningGlance)
 
     override init() {
-        let gate = ProactiveGate(respectsFocus: RespectFocusPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain).isOn)
+        let gate = ProactiveGate(respectsFocus: respectFocusPreference.isOn)
         AppDependencyManager.shared.add(dependency: gate)
         self.gate = gate
         super.init()
