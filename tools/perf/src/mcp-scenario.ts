@@ -21,6 +21,8 @@ const CLIENT_NAME = 'todz-perf';
 const CLIENT_VERSION = '1.0.0';
 const MODERN_PROTOCOL_VERSION = '2026-07-28';
 const TEXT_CONTENT = 'text';
+const CALL_METHOD = 'POST';
+const DEFAULT_METHOD = 'GET';
 const LIST_HEADER_PATTERN = /^(?:Open|Done) tasks: \d+ of (\d+)/;
 const TASK_LINE_PATTERN = new RegExp(`^${TASK_SHORT_ID_PREFIX}(\\d+) (.*?)(?: · due .*)?$`);
 const ADDED_PATTERN = new RegExp(`^(?:Already added|Added) ${TASK_SHORT_ID_PREFIX}(\\d+)`);
@@ -31,6 +33,12 @@ const CLIENT_OPTIONS_OF_ERA = {
   [McpEra.Legacy]: {},
   [McpEra.Modern]: { versionNegotiation: { mode: { pin: MODERN_PROTOCOL_VERSION } } },
 };
+
+function methodOf({ input, init }: { input: Parameters<typeof fetch>[0]; init: RequestInit | undefined }): string {
+  if (init !== undefined && init.method !== undefined) return init.method;
+  if (input instanceof Request) return input.method;
+  return DEFAULT_METHOD;
+}
 
 async function connectedClient({ origin, key, era, fetch }: McpAccess): Promise<Client> {
   const client = new Client({ name: CLIENT_NAME, version: CLIENT_VERSION }, CLIENT_OPTIONS_OF_ERA[era]);
@@ -57,7 +65,11 @@ export async function connectMeasuredMcp({
       if (measuring.isOn) record(sample);
     },
   });
-  const client = await connectedClient({ ...access, fetch: timed });
+  const measuredCalls: typeof fetch = (input, init) => {
+    if (methodOf({ input, init }) !== CALL_METHOD) return access.fetch(input, init);
+    return timed(input, init);
+  };
+  const client = await connectedClient({ ...access, fetch: measuredCalls });
   measuring.isOn = true;
   return client;
 }
