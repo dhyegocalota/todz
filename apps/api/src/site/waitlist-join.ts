@@ -20,12 +20,18 @@ import {
   waitlistClientRefusal,
   waitlistGlobalRefusal,
 } from './waitlist-limiter';
+import { StampVerdict, stampVerdictOf } from './waitlist-stamp';
 import { joinWaitlist, recordConfirmationFailure } from './waitlist-store';
 
 const ACCEPT_HEADER = 'Accept';
 const VARY_HEADER = 'Vary';
 
-const JoinFormSchema = z.object({ email: z.string(), [TURNSTILE_RESPONSE_FIELD]: z.string().optional() });
+const JoinFormSchema = z.object({
+  email: z.string(),
+  [TURNSTILE_RESPONSE_FIELD]: z.string().optional(),
+  stamp: z.string().optional(),
+  website: z.string().optional(),
+});
 
 type JoinForm = z.output<typeof JoinFormSchema>;
 
@@ -130,6 +136,12 @@ async function joinOutcomeOf({ request, env, executionContext }: SiteContext): P
   const token = form[TURNSTILE_RESPONSE_FIELD];
   const hasUsableToken = token !== undefined && TURNSTILE_TOKEN_PATTERN.test(token);
   if (!hasUsableToken) return JoinOutcome.CheckFailed;
+  const now = Date.now();
+  const stampVerdict = await stampVerdictOf({ secret: guard.secret, stamp: form.stamp, now });
+  if (stampVerdict === StampVerdict.Missing) return JoinOutcome.CheckFailed;
+  const isHoneypotFilled = form.website !== undefined && form.website !== '';
+  if (isHoneypotFilled) return JoinOutcome.Joined;
+  if (stampVerdict !== StampVerdict.Patient) return JoinOutcome.Joined;
   const verdict = await verifyTurnstileToken({
     token,
     secret: guard.secret,
@@ -144,7 +156,7 @@ async function joinOutcomeOf({ request, env, executionContext }: SiteContext): P
   if (globalRefusal !== null) return globalRefusal;
   const addressRefusal = outcomeOfRefusal(await waitlistAddressRefusal({ request, env, address }));
   if (addressRefusal !== null) return addressRefusal;
-  const isClaimed = await joinWaitlist({ database: env.DIRECTORY, address, now: Date.now() }).catch(() => null);
+  const isClaimed = await joinWaitlist({ database: env.DIRECTORY, address, now }).catch(() => null);
   if (isClaimed === null) return JoinOutcome.TryAgain;
   if (!isClaimed) return JoinOutcome.Joined;
   const confirmation = sendConfirmation({ sender: guard.sender, database: env.DIRECTORY, address, siteOrigin: guard.siteOrigin });

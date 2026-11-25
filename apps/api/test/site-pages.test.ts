@@ -7,6 +7,7 @@ import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { SITE_STYLE } from '../src/site/site-style';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
 import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
+import { joinStampOf } from './waitlist-client';
 
 const OK_STATUS = 200;
 const TOO_MANY_STATUS = 429;
@@ -364,8 +365,8 @@ describe('the site host through the Worker', () => {
     return pageOf(serveLandingPage({ notice, siteKey: TURNSTILE_TEST_SITE_KEY }));
   }
 
-  function postJoin(token: string | null): Promise<Response> {
-    const fields = new URLSearchParams({ email: `${crypto.randomUUID()}@example.com` });
+  async function postJoin(token: string | null): Promise<Response> {
+    const fields = new URLSearchParams({ email: `${crypto.randomUUID()}@example.com`, stamp: await joinStampOf() });
     if (token !== null) fields.set(TOKEN_FIELD, token);
     const body = fields.toString();
     return exports.default.fetch(`${LOCAL_SITE_ORIGIN}/join`, {
