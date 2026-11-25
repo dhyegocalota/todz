@@ -18,6 +18,8 @@
     "emails:generate": "pnpm --filter @todz/api emails:generate",
     "emails:check": "pnpm --filter @todz/api emails:check",
     "emails:preview": "pnpm --filter @todz/api emails:preview",
+    "site:generate": "pnpm --filter @todz/api site:generate",
+    "site:check": "pnpm --filter @todz/api site:check",
     "security:audit": "pnpm audit --prod --audit-level=high",
     "test:unit": "pnpm -r test:unit && pnpm test:hooks && pnpm test:verify",
     "test:hooks": "bash .agents/hooks/hooks.test.sh",

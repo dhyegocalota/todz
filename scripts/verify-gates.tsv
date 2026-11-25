@@ -31,6 +31,7 @@ AGENTS.md	tooling	-
 CLAUDE.md	tooling	-
 GEMINI.md	tooling	-
 docs/scenarios/*	tooling	-
+docs/self-host.md	product	unit
 docs/*.md	docs	-
 docs/media/*	docs	-
 *.md	docs	-
