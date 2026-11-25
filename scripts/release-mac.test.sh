@@ -265,7 +265,7 @@ FAKE
 
 cat > "$fakes/deploy-worker" <<'FAKE'
 #!/usr/bin/env bash
-echo "deploy-worker lock=$([[ -n "${TODZ_RELEASE_LOCK_HELD:-}" && "$TODZ_RELEASE_LOCK_HELD" == "$(cat "$HOME/.todz-release/lock/token")" ]] && echo yes || echo no) $*" >> "$CALLS"
+echo "deploy-worker token-mode=$(stat -f %Lp "$HOME/.todz-release/lock/token") lock=$([[ -n "${TODZ_RELEASE_LOCK_HELD:-}" && "$TODZ_RELEASE_LOCK_HELD" == "$(cat "$HOME/.todz-release/lock/token")" ]] && echo yes || echo no) $*" >> "$CALLS"
 [[ "${FAKE_HANG:-}" == deploy-worker ]] && exec tail -f /dev/null
 [[ -n "${FAKE_DEPLOY_FAIL:-}" ]] && { echo "deploy-worker: refused" >&2; exit 1; }
 site="$HOME/.todz-release/site/download"
@@ -525,7 +525,7 @@ expect_equal "the tag sits on HEAD" "$(git -C "$repository" rev-parse "mac-v$ver
 for served in "$disk_image_name" "$disk_image_name.sha256" "$disk_image_name.sig" appcast.xml; do
   expect_equal "the release copied $served into site" "$(cmp -s "$build_directory/$served" "$site_directory/$served" && echo same || echo different)" "same"
 done
-expect_contains "the deploy ran under the release's lock" "$(cat "$CALLS")" "deploy-worker lock=yes --candidate $version"
+expect_contains "the deploy ran under the release's lock" "$(cat "$CALLS")" "token-mode=600 lock=yes --candidate $version"
 expect_equal "the release frees the lock" "$(test -d "$lock" && echo held || echo free)" "free"
 expect_equal "the private key reaches the agent on standard input" "$(cat "$SSH_ADD_STDIN")" "$private_key_value"
 expect_contains "the agent is the script's own socket" "$(cat "$CALLS")" "ssh-agent -a $home/.todz-release/agent."

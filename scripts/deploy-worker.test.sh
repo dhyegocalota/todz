@@ -312,7 +312,9 @@ TODZ_RELEASE_LOCK_HELD=holder-token run_deploy
 expect_equal "a deploy inside a release runs under the holder's token" "$status" "0"
 expect_equal "a deploy inside a release leaves the release's lock" "$(test -d "$lock" && echo held || echo free)" "held"
 rm -rf "$lock"
+chmod 755 "$home/.todz-release"
 TODZ_RELEASE_LOCK_HELD=yes run_deploy
+expect_equal "taking the lock makes the release folder private" "$(stat -f %Lp "$home/.todz-release")" "700"
 expect_equal "a stale inherited value with a free lock deploys normally" "$status" "0"
 expect_equal "a deploy takes the lock and frees it" "$(test -d "$lock" && echo held || echo free)" "free"
 
