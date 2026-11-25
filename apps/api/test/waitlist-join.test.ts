@@ -19,7 +19,15 @@ import {
   recordingBinding,
 } from './email-sign-in-client';
 import { workerEnvWith } from './owner-client';
-import { LimiterBinding, type WaitlistRow, recordedLimiters, throwingLimiter, waitlistRows } from './waitlist-client';
+import {
+  JSON_ACCEPT,
+  LimiterBinding,
+  type WaitlistRow,
+  joinStampOf,
+  recordedLimiters,
+  throwingLimiter,
+  waitlistRows,
+} from './waitlist-client';
 
 const SITE_ORIGIN = 'https://todz.app';
 const SITE_HOSTNAME = 'todz.app';
@@ -33,6 +41,17 @@ const UNUSABLE_SITE_KEY = 'not a site key';
 const CLIENT_ADDRESS = '203.0.113.9';
 const EMAIL_FIELD = 'email';
 const TOKEN_FIELD = 'cf-turnstile-response';
+const STAMP_FIELD = 'stamp';
+const ACCEPT_HEADER = 'Accept';
+const VARY_HEADER = 'Vary';
+const HEADER_CONTENT_TYPE = 'Content-Type';
+const HEADER_CACHE_CONTROL = 'Cache-Control';
+const HEADER_CONTENT_TYPE_OPTIONS = 'X-Content-Type-Options';
+const NO_STORE = 'no-store';
+const NO_SNIFF = 'nosniff';
+const JSON_CONTENT_TYPE = 'application/json';
+const BAD_REQUEST_STATUS = 400;
+const FORBIDDEN_STATUS = 403;
 const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const WAITLIST_TOKEN = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.Waitlist];
@@ -67,6 +86,8 @@ const LOCAL_SETTINGS: Partial<Env> = {
 type JoinCall = {
   email?: string;
   token?: string | null;
+  stamp?: string | null;
+  accept?: string;
   body?: string;
   contentType?: string;
   contentLength?: string | null;
@@ -86,9 +107,10 @@ type JoinRun = {
   siteverifyBodies: Record<string, string>[];
 };
 
-function formBody({ email, token }: { email: string; token: string | null }): string {
+function formBody({ email, token, stamp }: { email: string; token: string | null; stamp: string | null }): string {
   const fields = new URLSearchParams({ [EMAIL_FIELD]: email });
   if (token !== null) fields.set(TOKEN_FIELD, token);
+  if (stamp !== null) fields.set(STAMP_FIELD, stamp);
   return fields.toString();
 }
 
@@ -97,13 +119,16 @@ function joinHeaders({
   contentType,
   contentLength,
   clientAddress,
+  accept,
 }: {
   body: string;
   contentType: string;
   contentLength: string | null | undefined;
   clientAddress: string | null;
+  accept: string | undefined;
 }): Headers {
   const headers = new Headers({ 'Content-Type': contentType });
+  if (accept !== undefined) headers.set(ACCEPT_HEADER, accept);
   const length = contentLength === undefined ? String(new TextEncoder().encode(body).length) : contentLength;
   if (length !== null) headers.set('Content-Length', length);
   if (clientAddress !== null) headers.set(CLIENT_ADDRESS_HEADER, clientAddress);
@@ -117,7 +142,9 @@ function siteverifyCalls(): Parameters<typeof fetch>[] {
 async function join({
   email = freshAddress(),
   token = WAITLIST_TOKEN,
-  body = formBody({ email, token }),
+  stamp,
+  accept,
+  body,
   contentType = FORM_CONTENT_TYPE,
   contentLength,
   clientAddress = CLIENT_ADDRESS,
@@ -128,8 +155,10 @@ async function join({
 }: JoinCall = {}): Promise<JoinRun> {
   const { limiters, keys } = recordedLimiters({ refusing });
   const workerEnv = workerEnvWith({ ...PUBLIC_SETTINGS, EMAIL: recording.binding, ...limiters, ...settings });
-  const headers = joinHeaders({ body, contentType, contentLength, clientAddress });
-  const request = new Request(`${origin}${JOIN_PATH}`, { method: 'POST', headers, body });
+  const stampField = stamp === undefined ? await joinStampOf() : stamp;
+  const bodyText = body === undefined ? formBody({ email, token, stamp: stampField }) : body;
+  const headers = joinHeaders({ body: bodyText, contentType, contentLength, clientAddress, accept });
+  const request = new Request(`${origin}${JOIN_PATH}`, { method: 'POST', headers, body: bodyText });
   const siteverifyCallsBefore = siteverifyCalls().length;
   const executionContext = createExecutionContext();
   const response = await serveWaitlistJoin({ request, env: workerEnv, executionContext });
@@ -165,18 +194,34 @@ function failingDirectory(): D1Database {
 async function expectJoined(run: JoinRun): Promise<void> {
   expect(run.response.status).toBe(OK_STATUS);
   expect(run.response.headers.get(RETRY_AFTER_HEADER)).toBeNull();
+  expect(run.response.headers.get(VARY_HEADER)).toBe(ACCEPT_HEADER);
   expect(run.html).toBe(await landingHtml({ notice: LandingNotice.Joined, siteKey: SITE_KEY }));
 }
 
 async function expectTryAgain(run: JoinRun): Promise<void> {
   expect(run.response.status).toBe(TOO_MANY_STATUS);
   expect(run.response.headers.get(RETRY_AFTER_HEADER)).toBe(RETRY_AFTER_SECONDS);
+  expect(run.response.headers.get(VARY_HEADER)).toBe(ACCEPT_HEADER);
   expect(run.html).toBe(await landingHtml({ notice: LandingNotice.TryAgain, siteKey: SITE_KEY }));
 }
 
 async function expectOpensSoon({ run, siteKey = SITE_KEY }: { run: JoinRun; siteKey?: string | null }): Promise<void> {
   expect(run.response.status).toBe(UNAVAILABLE_STATUS);
+  expect(run.response.headers.get(VARY_HEADER)).toBe(ACCEPT_HEADER);
   expect(run.html).toBe(await landingHtml({ notice: LandingNotice.OpensSoon, siteKey }));
+}
+
+function joinJson(call: JoinCall = {}): Promise<JoinRun> {
+  return join({ ...call, accept: JSON_ACCEPT });
+}
+
+function expectOutcome({ run, status, outcome }: { run: JoinRun; status: number; outcome: string }): void {
+  expect(run.response.status).toBe(status);
+  expect(run.response.headers.get(HEADER_CONTENT_TYPE)).toBe(JSON_CONTENT_TYPE);
+  expect(run.response.headers.get(HEADER_CACHE_CONTROL)).toBe(NO_STORE);
+  expect(run.response.headers.get(HEADER_CONTENT_TYPE_OPTIONS)).toBe(NO_SNIFF);
+  expect(run.response.headers.get(VARY_HEADER)).toBe(ACCEPT_HEADER);
+  expect(run.html).toBe(JSON.stringify({ outcome }));
 }
 
 async function expectNothingKept({ run, address }: { run: JoinRun; address: string }): Promise<void> {
@@ -351,7 +396,7 @@ describe('a refused join answers try again, 429 with Retry-After 60, and keeps n
 
   test('a body of 5 KB, before it is read', async () => {
     const address = freshAddress();
-    const body = `${formBody({ email: address, token: WAITLIST_TOKEN })}&padding=${'a'.repeat(OVERSIZED_BODY_LENGTH)}`;
+    const body = `${formBody({ email: address, token: WAITLIST_TOKEN, stamp: await joinStampOf() })}&padding=${'a'.repeat(OVERSIZED_BODY_LENGTH)}`;
     const run = await join({ email: address, body });
     await expectTryAgain(run);
     expect(run.request.bodyUsed).toBe(false);
@@ -360,7 +405,7 @@ describe('a refused join answers try again, 429 with Retry-After 60, and keeps n
 
   test('a body of exactly 4096 bytes is read', async () => {
     const address = freshAddress();
-    const form = formBody({ email: address, token: WAITLIST_TOKEN });
+    const form = formBody({ email: address, token: WAITLIST_TOKEN, stamp: await joinStampOf() });
     const padding = '&padding=';
     const body = `${form}${padding}${'a'.repeat(BODY_LENGTH_MAX - form.length - padding.length)}`;
     expect(body).toHaveLength(BODY_LENGTH_MAX);
@@ -449,6 +494,97 @@ describe('an unguarded waitlist answers opens soon, 503, reads no body and keeps
     const run = await join({ email: address });
     await expectOpensSoon({ run });
     await expectNothingKept({ run, address });
+  });
+});
+
+describe('a JSON join answers an outcome and never the address', () => {
+  test('a new address answers joined, keeps the row and mails once', async () => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address });
+    expectOutcome({ run, status: OK_STATUS, outcome: 'joined' });
+    expect(await waitlistRows(address)).toHaveLength(1);
+    expect(run.sent).toHaveLength(1);
+  });
+
+  test('the same address again answers the same and sends no second mail', async () => {
+    const address = freshAddress();
+    const first = await joinJson({ email: address });
+    const second = await joinJson({ email: address });
+    expectOutcome({ run: second, status: OK_STATUS, outcome: 'joined' });
+    expect(second.html).toBe(first.html);
+    expect(second.sent).toEqual([]);
+  });
+
+  test.each([
+    ['a text body', { contentType: 'text/plain' }],
+    ['an address that does not normalise', { email: 'not-an-address' }],
+  ])('%s answers invalid, 400', async (_name, call) => {
+    const run = await joinJson(call);
+    expectOutcome({ run, status: BAD_REQUEST_STATUS, outcome: 'invalid' });
+  });
+
+  test.each([
+    ['no token', { token: null }],
+    ['a token with a space and a bang', { token: 'bad token!' }],
+  ])('%s answers check-failed, 403, without calling siteverify', async (_name, call) => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, ...call });
+    expectOutcome({ run, status: FORBIDDEN_STATUS, outcome: 'check-failed' });
+    expect(run.siteverifyBodies).toEqual([]);
+    await expectNothingKept({ run, address });
+  });
+
+  test('a refusing siteverify answers check-failed, 403', async () => {
+    siteverifyAnswering(async () => Response.json({ success: false, 'error-codes': ['invalid-input-response'] }));
+    const address = freshAddress();
+    const run = await joinJson({ email: address });
+    expectOutcome({ run, status: FORBIDDEN_STATUS, outcome: 'check-failed' });
+    await expectNothingKept({ run, address });
+  });
+
+  test('an unreachable siteverify answers opens-soon, 503', async () => {
+    siteverifyAnswering(() => Promise.reject(new DOMException('The operation timed out.', 'TimeoutError')));
+    const run = await joinJson();
+    expectOutcome({ run, status: UNAVAILABLE_STATUS, outcome: 'opens-soon' });
+  });
+
+  test.each(Object.values(LimiterBinding))('a join over %s answers try-again, 429, Retry-After 60', async (binding) => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, refusing: [binding] });
+    expectOutcome({ run, status: TOO_MANY_STATUS, outcome: 'try-again' });
+    expect(run.response.headers.get(RETRY_AFTER_HEADER)).toBe(RETRY_AFTER_SECONDS);
+    await expectNothingKept({ run, address });
+  });
+
+  test.each([
+    ['no limiter', { [LimiterBinding.Client]: undefined }],
+    ['no site key', { TURNSTILE_SITE_KEY: undefined }],
+    ['no secret', { TURNSTILE_SECRET_KEY: undefined }],
+  ])('%s answers opens-soon, 503, and reads no body', async (_name, settings) => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, settings });
+    expectOutcome({ run, status: UNAVAILABLE_STATUS, outcome: 'opens-soon' });
+    await expectUntouched({ run, address });
+  });
+
+  test('no client address answers opens-soon, 503, and reads no body', async () => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, clientAddress: null });
+    expectOutcome({ run, status: UNAVAILABLE_STATUS, outcome: 'opens-soon' });
+    await expectUntouched({ run, address });
+  });
+
+  test('a failing store answers try-again, 429', async () => {
+    const address = freshAddress();
+    const run = await joinJson({ email: address, settings: { DIRECTORY: failingDirectory() } });
+    expectOutcome({ run, status: TOO_MANY_STATUS, outcome: 'try-again' });
+    await expectNothingKept({ run, address });
+  });
+
+  test('no answer body contains the address', async () => {
+    const address = freshAddress();
+    const runs = await Promise.all([joinJson({ email: address }), joinJson({ email: address, token: null })]);
+    expect(runs.map((run) => run.html.includes(address))).toEqual([false, false]);
   });
 });
 
