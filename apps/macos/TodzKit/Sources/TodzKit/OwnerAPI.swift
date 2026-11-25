@@ -56,6 +56,8 @@ public protocol OwnerService: Sendable {
     func readOwner(session: String) async throws -> Owner
     func updateOwner(session: String, timeZone: String) async throws -> Owner
     func updateAgentNudge(session: String, isEnabled: Bool) async throws -> Owner
+    func updateDayEmail(session: String, isEnabled: Bool) async throws -> Owner
+    func updateDayEmailMinutes(session: String, minutes: Int) async throws -> Owner
     func listWorkspaces(session: String) async throws -> [Workspace]
     func createWorkspace(session: String, name: String) async throws -> Workspace
     func createProject(session: String, workspaceIdentifier: String, name: String) async throws -> Project
@@ -150,6 +152,16 @@ public struct OwnerAPI: OwnerService {
 
     public func updateAgentNudge(session: String, isEnabled: Bool) async throws -> Owner {
         let request = try OwnerRequest(method: .patch, path: ownerPath, session: session, body: AgentNudgeBody(agentNudge: isEnabled))
+        return try await answer(OwnerAnswer.self, to: request).owner
+    }
+
+    public func updateDayEmail(session: String, isEnabled: Bool) async throws -> Owner {
+        let request = try OwnerRequest(method: .patch, path: ownerPath, session: session, body: DayEmailBody(dayEmail: isEnabled))
+        return try await answer(OwnerAnswer.self, to: request).owner
+    }
+
+    public func updateDayEmailMinutes(session: String, minutes: Int) async throws -> Owner {
+        let request = try OwnerRequest(method: .patch, path: ownerPath, session: session, body: DayEmailBody(dayEmailMinutes: minutes))
         return try await answer(OwnerAnswer.self, to: request).owner
     }
 

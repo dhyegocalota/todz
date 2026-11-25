@@ -1,3 +1,4 @@
+import { DAY_EMAIL_MINUTES_DEFAULT } from '@todz/types';
 import { z } from 'zod';
 import { findIdentityOwner, insertOwnerWithIdentity, storeOwnerChanges } from './directory-owners';
 import { emailSenderOf } from './email-sender';
@@ -50,7 +51,7 @@ async function retimedOwner({
   ownerId: string;
   timeZone: string;
 }): Promise<IdentityOwner> {
-  const owner = await storeOwnerChanges({ directory, ownerId, timeZone, agentNudge: null });
+  const owner = await storeOwnerChanges({ directory, ownerId, timeZone, agentNudge: null, dayEmail: null, dayEmailMinutes: null });
   if (owner === null) throw new Error('an identity names an owner with no row');
   return { owner, isNewOwner: false };
 }
@@ -67,7 +68,10 @@ async function identityOwner({
   const ownerId = crypto.randomUUID();
   try {
     await insertOwnerWithIdentity({ directory, ownerId, provider: kind, subject, timeZone, now });
-    return { owner: { id: ownerId, timeZone, agentNudge: false }, isNewOwner: true };
+    return {
+      owner: { id: ownerId, timeZone, agentNudge: false, dayEmail: false, dayEmailMinutes: DAY_EMAIL_MINUTES_DEFAULT },
+      isNewOwner: true,
+    };
   } catch (failure) {
     const rivalOwnerId = await findIdentityOwner({ directory, provider: kind, subject });
     if (rivalOwnerId === null) throw failure;

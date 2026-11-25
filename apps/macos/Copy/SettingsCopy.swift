@@ -5,8 +5,8 @@ enum SettingsCopy {
     static let showPendingCountDetail = "Today's open tasks in the active workspace. Hidden when none are left."
     static let agentNudge = "Let agents mention today's tasks"
     static let agentNudgeDetail = "When an agent asks what's next, it hears what's due today in its project."
-    static let agentNudgeOffline = "Can't reach todz. You can change this when it's back."
-    static let agentNudgeSignedOut = "Sign in to change this."
+    static let ownerSettingOffline = "Can't reach todz. You can change this when it's back."
+    static let ownerSettingSignedOut = "Sign in to change this."
     static let focusQuiet = "Quiet during Focus"
     static let focusQuietDetail = "todz stays quiet in any Focus with the todz filter on."
     static let focusQuietNow = "Quiet now, until this Focus ends."
@@ -18,6 +18,9 @@ enum SettingsCopy {
     static let morningGlanceDetail = "On the first wake or unlock of each day, todz shows Today for a few seconds."
     static let dayTemperature = "Day temperature"
     static let dayTemperatureDetail = "Dims the menu bar count through the afternoon and tints overdue widget rows. Quiet in a Focus."
+    static let dayEmail = "Email me my day"
+    static let dayEmailDetail = "At this time each day, todz mails Today to your sign-in address. Reply to add a task."
+    static let dayEmailTime = "Time to email my day"
     static let server = "Server"
     static let serverDetail = "Where your tasks are kept. Switching signs you out and erases this Mac's copy."
     static let serverAddressLabel = "Server address"
@@ -65,11 +68,11 @@ enum SettingsCopy {
         return signedIn ? switchLosingSignedInMessage(server: server) : switchLosingSignedOutMessage(server: server)
     }
 
-    static func agentNudgeSubtitle(notice: AgentNudgeNotice) -> String {
+    static func ownerSettingSubtitle(notice: OwnerSettingNotice, detail: String) -> String {
         switch notice {
-        case .detail: agentNudgeDetail
-        case .signedOut: agentNudgeSignedOut
-        case .offline: agentNudgeOffline
+        case .detail: detail
+        case .signedOut: ownerSettingSignedOut
+        case .offline: ownerSettingOffline
         case .notSaved: ErrorCopy.changeNotSaved
         }
     }
