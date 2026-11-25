@@ -21,7 +21,7 @@ The bar is "simple, but super effective": few concepts, no setup, nothing that l
 - iPhone or iPad app, and a web app.
 - Teams: members, invitations, roles, per-seat billing. One owner per workspace.
 - Agents as live actors: no presence, no progress bars, no agent steps, no "connected agents" list, and no agent asking the owner for input.
-- Recurring tasks, reminders, notifications, attachments, comments.
+- Recurring tasks, reminders, notifications, attachments, comments. The owner's opt-in nudges, each off by default, are the exception: with one on, an agent's `next` opens with what is due today in its project ([ADR 0053](../adr/0053-agents-mention-today-s-tasks-in-next-when-the-owner-turns-it-on.md)).
 - OAuth for MCP clients. v1 uses a bearer key per project.
 - A public repository, a deploy, a domain or any spend without the owner's explicit OK.
 
