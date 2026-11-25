@@ -14,6 +14,8 @@ struct MenuBarPrompt: View {
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.defaultAction)
+            MenuBarQuitButton()
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .padding()

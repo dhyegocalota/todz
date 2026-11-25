@@ -14,6 +14,8 @@ const WEBSOCKET_UPGRADE = 'websocket';
 const UPGRADE_REQUIRED_STATUS = 426;
 const SWITCHING_PROTOCOLS_STATUS = 101;
 const CHANGED = 'changed';
+const BAD_REQUEST_STATUS = 400;
+const SESSION_HEADERS = { Upgrade: WEBSOCKET_UPGRADE, 'Todz-Session-Digest': 'a-session-digest' };
 
 async function addTitled({ stub, count }: { stub: ReturnType<typeof newProjectStub>; count: number }): Promise<void> {
   const titles = Array.from({ length: count }, (_unused, index) => `Task ${index + 1}`);
@@ -87,7 +89,7 @@ type ProjectStub = ReturnType<typeof newProjectStub>;
 type SocketProbe = { socket: WebSocket; messages: string[]; waitForCount: (count: number) => Promise<void> };
 
 async function openSocket(stub: ProjectStub): Promise<SocketProbe> {
-  const response = await stub.fetch(SOCKET_URL, { headers: { Upgrade: WEBSOCKET_UPGRADE } });
+  const response = await stub.fetch(SOCKET_URL, { headers: SESSION_HEADERS });
   const socket = response.webSocket;
   if (socket === null) throw new Error('the project did not accept the socket');
   socket.accept();
@@ -127,8 +129,14 @@ describe('ProjectStore fetch', () => {
     expect(response.headers.get('Upgrade')).toBe(WEBSOCKET_UPGRADE);
   });
 
-  test('a request with the upgrade header is answered 101 with the client socket', async () => {
+  test('an upgrade without its session is refused with 400', async () => {
     const response = await newProjectStub().fetch(SOCKET_URL, { headers: { Upgrade: WEBSOCKET_UPGRADE } });
+    expect(response.status).toBe(BAD_REQUEST_STATUS);
+    expect(response.webSocket).toBeNull();
+  });
+
+  test('a request with the upgrade header and its session is answered 101 with the client socket', async () => {
+    const response = await newProjectStub().fetch(SOCKET_URL, { headers: SESSION_HEADERS });
     expect(response.status).toBe(SWITCHING_PROTOCOLS_STATUS);
     expect(response.webSocket).not.toBeNull();
     response.webSocket?.accept();

@@ -116,6 +116,7 @@ extension AppModel {
         switch pulled {
         case let .loaded(projectIdentifier, changes):
             let arrivedNumbers = arrivedNumbers(projectIdentifier: projectIdentifier, tasks: changes.tasks)
+            if isAgentChange(projectIdentifier: projectIdentifier, changes: changes) { agentChangeCount += 1 }
             if changes.isFromStart { board.reset(projectIdentifier: projectIdentifier) }
             board.merge(projectIdentifier: projectIdentifier, tasks: changes.tasks)
             board = board.setting(cursor: changes.cursor, projectIdentifier: projectIdentifier)

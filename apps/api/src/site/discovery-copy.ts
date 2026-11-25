@@ -4,6 +4,7 @@ import { MCP_COPY, McpToolName } from '../mcp-copy';
 export enum DocsPageSlug {
   Introduction = 'introduction',
   Quickstart = 'quickstart',
+  InstallOnMac = 'install-on-mac',
   ConnectAnAgent = 'connect-an-agent',
   McpTools = 'mcp-tools',
   SelfHost = 'self-host',
@@ -14,6 +15,7 @@ export type DocsPage = { slug: DocsPageSlug; title: string; path: string };
 export const DOCS_PAGES: DocsPage[] = [
   { slug: DocsPageSlug.Introduction, title: 'Introduction', path: '/' },
   { slug: DocsPageSlug.Quickstart, title: 'Quickstart', path: '/quickstart' },
+  { slug: DocsPageSlug.InstallOnMac, title: 'Install on Mac', path: '/install-on-mac' },
   { slug: DocsPageSlug.ConnectAnAgent, title: 'Connect an agent', path: '/connect-an-agent' },
   { slug: DocsPageSlug.McpTools, title: 'MCP tools', path: '/mcp-tools' },
   { slug: DocsPageSlug.SelfHost, title: 'Self-host todz', path: '/self-host' },

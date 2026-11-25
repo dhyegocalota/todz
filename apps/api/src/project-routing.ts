@@ -7,8 +7,10 @@ import {
   findSessionOwner,
   findSessionProject,
 } from './directory';
-import { findOwnedWorkspace } from './directory-workspaces';
+import { findCandidateRows, findFirstInboxId } from './day-email/day-email-store';
+import { findOwnedWorkspace, listOwnerProjectIds, listOwnerWorkspaces } from './directory-workspaces';
 import type { Env } from './env';
+import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 import type { ProjectStore } from './project-store';
 import { type RecordWait, measured } from './timed-call';
 
@@ -168,4 +170,67 @@ export async function openOwnedProject({
   const ownedProjectId = await findOwnedProjectId({ env, owner, projectId });
   if (ownedProjectId === null) return null;
   return openProject({ env, projectId: ownedProjectId });
+}
+
+export async function closeSessionSockets({ env, owner, secret }: { env: Env; owner: SessionOwner; secret: string }): Promise<void> {
+  if (!resolvedOwners.has(owner)) return;
+  const [projectIds, sessionDigest] = await Promise.all([
+    listOwnerProjectIds({ directory: env.DIRECTORY, ownerId: owner.ownerId }),
+    digestCredential(secret),
+  ]);
+  await Promise.all(projectIds.map((projectId) => openProject({ env, projectId }).closeSessionSockets({ sessionDigest })));
+}
+
+export type ScheduledOwner = { readonly ownerId: string } & { readonly scheduledOwner: unique symbol };
+
+export type ScheduledProject = { record: ProjectRecord; project: DurableObjectStub<ProjectStore> };
+
+export type ScheduledWorkspace = { workspace: WorkspaceRecord; projects: ScheduledProject[] };
+
+export type DayEmailCandidate = { owner: ScheduledOwner; timeZone: string; minutes: number; address: string };
+
+const scheduledOwners = new WeakSet<ScheduledOwner>();
+
+function scheduledOwnerOf(ownerId: string): ScheduledOwner {
+  const owner = Object.freeze({ ownerId }) as ScheduledOwner;
+  scheduledOwners.add(owner);
+  return owner;
+}
+
+// NB ADR 0063: only the candidates query makes a scheduled owner, and only that owner's own projects are listed and opened.
+export async function listDayEmailCandidates({ env, now }: { env: Env; now: number }): Promise<DayEmailCandidate[]> {
+  const rows = await findCandidateRows({ directory: env.DIRECTORY, now });
+  return rows.map((row) => ({
+    owner: scheduledOwnerOf(row.owner_id),
+    timeZone: row.time_zone,
+    minutes: row.day_email_minutes,
+    address: row.address,
+  }));
+}
+
+export async function listScheduledWorkspaces({ env, owner }: { env: Env; owner: ScheduledOwner }): Promise<ScheduledWorkspace[] | null> {
+  if (!scheduledOwners.has(owner)) return null;
+  const listings = await listOwnerWorkspaces({ directory: env.DIRECTORY, ownerId: owner.ownerId });
+  return listings.map(({ workspace, projects }) => ({
+    workspace,
+    projects: projects.map((record) => ({ record, project: openProject({ env, projectId: record.id }) })),
+  }));
+}
+
+export type ReplyOwner = { readonly ownerId: string } & { readonly replyOwner: unique symbol };
+
+const replyOwners = new WeakSet<ReplyOwner>();
+
+// NB ADR 0064: only the reply module makes a reply owner, after the recipient, authentication, sender and addressing checks, and only that owner's first Inbox is opened.
+export function replyOwnerOf(ownerId: string): ReplyOwner {
+  const owner = Object.freeze({ ownerId }) as ReplyOwner;
+  replyOwners.add(owner);
+  return owner;
+}
+
+export async function openReplyInbox({ env, owner }: { env: Env; owner: ReplyOwner }): Promise<DurableObjectStub<ProjectStore> | null> {
+  if (!replyOwners.has(owner)) return null;
+  const inboxId = await findFirstInboxId({ directory: env.DIRECTORY, ownerId: owner.ownerId });
+  if (inboxId === null) return null;
+  return openProject({ env, projectId: inboxId });
 }

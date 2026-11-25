@@ -16,7 +16,7 @@ import {
   waitlistSummaryOf,
 } from '../src/site/admin-store';
 import { ConfirmationState } from '../src/site/admin-waitlist';
-import { joinWaitlist, recordConfirmationFailure } from '../src/site/waitlist-store';
+import { joinWaitlistWithinLimit, recordConfirmationFailure } from '../src/site/waitlist-store';
 import { adminLinkRows, adminSessionRows } from './admin-client';
 import { CLOCK_NOW } from './task-fixtures';
 
@@ -226,9 +226,9 @@ describe('the waitlist summary', () => {
     const oldest = 'oldest@example.com';
     const failed = 'failed@example.com';
     const newest = 'newest@example.com';
-    await joinWaitlist({ database: env.DIRECTORY, address: oldest, now: CLOCK_NOW - MILLISECONDS_PER_DAY - 1 });
-    await joinWaitlist({ database: env.DIRECTORY, address: failed, now: CLOCK_NOW - MILLISECONDS_PER_HOUR });
-    await joinWaitlist({ database: env.DIRECTORY, address: newest, now: CLOCK_NOW - MILLISECONDS_PER_MINUTE });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: oldest, now: CLOCK_NOW - MILLISECONDS_PER_DAY - 1 });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: failed, now: CLOCK_NOW - MILLISECONDS_PER_HOUR });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: newest, now: CLOCK_NOW - MILLISECONDS_PER_MINUTE });
     await recordConfirmationFailure({ database: env.DIRECTORY, address: failed, now: CLOCK_NOW });
     expect(await waitlistSummaryOf({ database: env.DIRECTORY, now: CLOCK_NOW })).toEqual({
       total: 3,
@@ -264,8 +264,8 @@ describe('the waitlist export', () => {
   test('it marks a recorded failure as failed and the rest as sent', async () => {
     const failed = 'failed@example.com';
     const sent = 'sent@example.com';
-    await joinWaitlist({ database: env.DIRECTORY, address: sent, now: CLOCK_NOW - MILLISECONDS_PER_MINUTE });
-    await joinWaitlist({ database: env.DIRECTORY, address: failed, now: CLOCK_NOW });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: sent, now: CLOCK_NOW - MILLISECONDS_PER_MINUTE });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: failed, now: CLOCK_NOW });
     await recordConfirmationFailure({ database: env.DIRECTORY, address: failed, now: CLOCK_NOW });
     expect(await waitlistRowsOf({ database: env.DIRECTORY })).toEqual([
       { address: failed, joinedAt: CLOCK_NOW, confirmation: ConfirmationState.Failed },
@@ -291,10 +291,10 @@ describe('the waitlist digest facts', () => {
     const afterStart = 'after-start@example.com';
     const atEnd = 'at-end@example.com';
     const afterEnd = 'after-end@example.com';
-    await joinWaitlist({ database: env.DIRECTORY, address: atStart, now: since });
-    await joinWaitlist({ database: env.DIRECTORY, address: afterStart, now: since + 1 });
-    await joinWaitlist({ database: env.DIRECTORY, address: atEnd, now: until });
-    await joinWaitlist({ database: env.DIRECTORY, address: afterEnd, now: until + 1 });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: atStart, now: since });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: afterStart, now: since + 1 });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: atEnd, now: until });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: afterEnd, now: until + 1 });
     expect(await digestFacts()).toEqual({
       joined: 2,
       total: 3,
@@ -308,9 +308,9 @@ describe('the waitlist digest facts', () => {
     const before = 'before@example.com';
     const inside = 'inside@example.com';
     const after = 'after@example.com';
-    await joinWaitlist({ database: env.DIRECTORY, address: before, now: since - MILLISECONDS_PER_HOUR });
-    await joinWaitlist({ database: env.DIRECTORY, address: inside, now: since + MILLISECONDS_PER_HOUR });
-    await joinWaitlist({ database: env.DIRECTORY, address: after, now: since + MILLISECONDS_PER_HOUR });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: before, now: since - MILLISECONDS_PER_HOUR });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: inside, now: since + MILLISECONDS_PER_HOUR });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: after, now: since + MILLISECONDS_PER_HOUR });
     await recordConfirmationFailure({ database: env.DIRECTORY, address: before, now: since });
     await recordConfirmationFailure({ database: env.DIRECTORY, address: inside, now: until });
     await recordConfirmationFailure({ database: env.DIRECTORY, address: after, now: until + 1 });
@@ -321,9 +321,9 @@ describe('the waitlist digest facts', () => {
     const older = 'older@example.com';
     const first = 'first@example.com';
     const second = 'second@example.com';
-    await joinWaitlist({ database: env.DIRECTORY, address: older, now: since + 1 });
-    await joinWaitlist({ database: env.DIRECTORY, address: first, now: since + 2 });
-    await joinWaitlist({ database: env.DIRECTORY, address: second, now: since + 2 });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: older, now: since + 1 });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: first, now: since + 2 });
+    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: second, now: since + 2 });
     expect((await digestFacts()).addresses).toEqual([second, first, older]);
   });
 

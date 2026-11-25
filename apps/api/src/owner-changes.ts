@@ -1,3 +1,5 @@
+import { digestCredential } from './credential-digest';
+import { HttpHeader } from './http-header';
 import { OwnerErrorCode, errorResponse, failureResponse } from './owner-errors';
 import { taskJson } from './owner-json';
 import { ownedProjectOf } from './owner-project';
@@ -29,5 +31,7 @@ export async function readChanges(context: SessionContext): Promise<Response> {
 export async function watchChanges(context: SessionContext): Promise<Response> {
   const project = await ownedProjectOf(context);
   if (project === null) return errorResponse(OwnerErrorCode.NotFound);
-  return project.fetch(context.request);
+  const sessionRequest = new Request(context.request);
+  sessionRequest.headers.set(HttpHeader.SessionDigest, await digestCredential(context.secret));
+  return project.fetch(sessionRequest);
 }

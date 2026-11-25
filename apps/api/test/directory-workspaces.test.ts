@@ -1,3 +1,4 @@
+import { OWNER_WORKSPACES_MAX, WORKSPACE_PROJECTS_MAX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import {
@@ -56,7 +57,17 @@ describe('insertProject', () => {
     const ownerId = await seedOwner();
     const workspaceId = await seedWorkspace({ ownerId });
     const projectId = crypto.randomUUID();
-    expect(await insertProject({ directory: env.DIRECTORY, ownerId, projectId, workspaceId, name: CREATED, now: CLOCK_NOW })).toBe(true);
+    expect(
+      await insertProject({
+        directory: env.DIRECTORY,
+        ownerId,
+        projectId,
+        workspaceId,
+        name: CREATED,
+        now: CLOCK_NOW,
+        projectsPerWorkspaceMax: WORKSPACE_PROJECTS_MAX,
+      }),
+    ).toBe(true);
     expect(await storedProjectName(projectId)).toBe(CREATED);
   });
 
@@ -65,7 +76,15 @@ describe('insertProject', () => {
     const intruderId = await seedOwner();
     const projectId = crypto.randomUUID();
     expect(
-      await insertProject({ directory: env.DIRECTORY, ownerId: intruderId, projectId, workspaceId, name: CREATED, now: CLOCK_NOW }),
+      await insertProject({
+        directory: env.DIRECTORY,
+        ownerId: intruderId,
+        projectId,
+        workspaceId,
+        name: CREATED,
+        now: CLOCK_NOW,
+        projectsPerWorkspaceMax: WORKSPACE_PROJECTS_MAX,
+      }),
     ).toBe(false);
     expect(await projectCountOf(workspaceId)).toBe(0);
   });
@@ -81,6 +100,7 @@ describe('insertProject', () => {
         workspaceId,
         name: CREATED,
         now: CLOCK_NOW,
+        projectsPerWorkspaceMax: WORKSPACE_PROJECTS_MAX,
       }),
     ).toBe(false);
   });
@@ -113,6 +133,7 @@ describe('updateProjectName', () => {
       name: 'Work',
       inboxName: 'Inbox',
       now: CLOCK_NOW,
+      workspacesPerOwnerMax: OWNER_WORKSPACES_MAX,
     });
     expect(await updateProjectName({ directory: env.DIRECTORY, ownerId, projectId: inboxId, name: RENAMED })).toBe(false);
     expect(await storedProjectName(inboxId)).toBe('Inbox');
@@ -132,6 +153,7 @@ describe('findOwnerWorkspace', () => {
       name: 'Work',
       inboxName: 'Inbox',
       now: CLOCK_NOW,
+      workspacesPerOwnerMax: OWNER_WORKSPACES_MAX,
     });
     await seedProject({ ownerId });
     const listing = await findOwnerWorkspace({ directory: env.DIRECTORY, ownerId, workspaceId });

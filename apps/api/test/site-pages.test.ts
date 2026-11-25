@@ -1,12 +1,19 @@
+import { createExecutionContext } from 'cloudflare:test';
 import { exports } from 'cloudflare:workers';
-import { describe, expect, test, vi } from 'vitest';
+import { MILLISECONDS_PER_SECOND, WAITLIST_MINIMUM_FILL_MS } from '@todz/types';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
-import { LandingNotice, serveLandingPage } from '../src/site/landing-page';
+import { LandingNotice, PAGE_SCRIPT, serveLandingPage } from '../src/site/landing-page';
+import { serveSite } from '../src/site/site-endpoint';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { SITE_STYLE } from '../src/site/site-style';
+import { StampVerdict, stampVerdictOf } from '../src/site/waitlist-stamp';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
+import { TURNSTILE_TEST_SECRET } from './email-sign-in-client';
+import { workerEnvWith } from './owner-client';
 import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
+import { joinStampOf, withoutStamps } from './waitlist-client';
 
 const OK_STATUS = 200;
 const TOO_MANY_STATUS = 429;
@@ -15,8 +22,10 @@ const UNUSABLE_SITE_KEY = 'key"><script>';
 const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const TURNSTILE_SCRIPT_TAG = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
 const FAILURE_CALLBACK = 'waitlistChallengeFailed';
-const FAILURE_CALLBACK_ATTRIBUTES = ['data-error-callback', 'data-expired-callback', 'data-timeout-callback'];
-const WIDGET_HTML = `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="interaction-only" data-theme="auto" data-callback="waitlistTokenReady" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${FAILURE_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div>`;
+const EXPIRED_CALLBACK = 'waitlistTokenExpired';
+const FAILURE_CALLBACK_ATTRIBUTES = ['data-error-callback', 'data-timeout-callback'];
+const widgetHtmlOf = (form: string) =>
+  `<div class="cf-turnstile" data-sitekey="${TEST_SITE_KEY}" data-action="waitlist" data-appearance="always" data-size="flexible" data-theme="auto" data-callback="waitlistTokenReady" data-error-callback="${FAILURE_CALLBACK}_${form}" data-expired-callback="${EXPIRED_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}_${form}"></div>`;
 const WIDGET_PATTERN = /<div class="cf-turnstile"[^>]*><\/div>/g;
 const CAPSULE_END = '</button>\n</div>';
 const NOTICE_PATTERN = /<p id="([a-z]+)-notice" [^>]*role="status"[^>]*tabindex="-1"[^>]*>[\s\S]*?<\/span>([^<]*)<\/p>/;
@@ -31,7 +40,7 @@ const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
 const TOKEN_FIELD = 'cf-turnstile-response';
 const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
-const STRICT_TRANSPORT_SECURITY = 'max-age=31536000';
+const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
 const SCRIPT_PATTERN = /<script>([\s\S]*?)<\/script>/g;
 const STYLE_PATTERN = /<style>([\s\S]*?)<\/style>/g;
 const SVG_PATTERN = /<svg[\s\S]*?<\/svg>/g;
@@ -52,6 +61,7 @@ const LOCAL_ORIGIN_IMPORT_PATTERN = /import ([^;]+?) from '[^']*local-origin'/g;
 const SITE_HOST_PREDICATE_IMPORT = '{ isLocalSiteHost }';
 const LANDING_ASSET_PREFIX = '/landing/';
 const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
+const DOCS_INSTALL_URL = 'https://docs.todz.app/install-on-mac';
 const GUIDE_LINK_PATTERN = /<a class="(?:nav-link|footer-link)" href="([^"]*)"/g;
 const FOOTER_CREDIT =
   '<p class="footer-credit">todz is a product of <a class="footer-credit-link" href="https://logicbit.com.br" rel="noopener noreferrer">Logic Bit</a>, made in Brazil</p>';
@@ -79,11 +89,11 @@ async function pageOf(response: Promise<Response>): Promise<SitePage> {
 }
 
 function landingPage(notice: LandingNotice): Promise<SitePage> {
-  return pageOf(serveLandingPage({ notice, siteKey: null }));
+  return pageOf(serveLandingPage({ notice, challenge: null }));
 }
 
 function widgetLandingPage(notice: LandingNotice): Promise<SitePage> {
-  return pageOf(serveLandingPage({ notice, siteKey: TEST_SITE_KEY }));
+  return pageOf(serveLandingPage({ notice, challenge: { siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET } }));
 }
 
 const LANDING_PAGES: NamedPage[] = NOTICES.map((notice) => [`the landing with the ${notice} notice`, () => landingPage(notice)]);
@@ -260,9 +270,14 @@ describe('the landing', () => {
     expect(SITE_SOURCES['../src/site/landing-copy.ts']).toContain('MCP_COPY.added');
   });
 
-  test.each(NOTICES)('with the %s notice, the header and footer guide links open the guide on the docs', async (notice) => {
+  test.each(NOTICES)('with the %s notice, the header and footer open the guide and the Mac install page on the docs', async (notice) => {
     const { html } = await landingPage(notice);
-    expect(captures({ html, pattern: GUIDE_LINK_PATTERN })).toEqual([DOCS_SELF_HOST_URL, DOCS_SELF_HOST_URL]);
+    expect(captures({ html, pattern: GUIDE_LINK_PATTERN })).toEqual([
+      DOCS_SELF_HOST_URL,
+      DOCS_INSTALL_URL,
+      DOCS_SELF_HOST_URL,
+      DOCS_INSTALL_URL,
+    ]);
   });
 
   test('links only to this site, a fragment or an https address', async () => {
@@ -311,7 +326,7 @@ describe('the landing', () => {
   test('without a notice, each form shows its note and no notice', async () => {
     const { html } = await landingPage(LandingNotice.None);
     const forms = [...html.matchAll(FORM_PATTERN)].map(([form]) => form);
-    expect(html).not.toContain(LANDING_COPY.join.opensSoon);
+    expect(textNodes(html)).not.toContain(LANDING_COPY.join.opensSoon);
     expect(forms.filter((form) => !form.includes(LANDING_COPY.join.note))).toEqual([]);
   });
 
@@ -332,26 +347,28 @@ describe('the landing', () => {
       const forms = formsOf(html);
       expect(forms).toHaveLength(JOIN_FORMS.length);
       expect(html.match(WIDGET_PATTERN)).toHaveLength(JOIN_FORMS.length);
-      forms.forEach((form) => {
-        expect(form).toContain(`${CAPSULE_END}\n${WIDGET_HTML}\n<p `);
+      JOIN_FORMS.forEach(({ id }, index) => {
+        expect(forms[index]).toContain(`${CAPSULE_END}\n<div class="join-check">${widgetHtmlOf(id)}</div>\n`);
       });
     },
   );
 
-  test('the widget names one function for its error, expired and timeout callbacks, and the page script assigns it on window', async () => {
+  test('the widget names one function for its error and timeout callbacks and another for its expiry, and the page script assigns both on window', async () => {
     const { html } = await widgetLandingPage(LandingNotice.None);
     const widget = html.match(WIDGET_PATTERN)?.[0];
     if (widget === undefined) throw new Error('the page has no widget');
     const named = FAILURE_CALLBACK_ATTRIBUTES.map((attribute) => new RegExp(`${attribute}="([^"]*)"`).exec(widget)?.[1]);
-    expect(named).toEqual(FAILURE_CALLBACK_ATTRIBUTES.map(() => FAILURE_CALLBACK));
-    expect(pageScriptOf(html)).toContain(`window.${FAILURE_CALLBACK} =`);
+    expect(named).toEqual(FAILURE_CALLBACK_ATTRIBUTES.map(() => `${FAILURE_CALLBACK}_join`));
+    expect(widget).toContain(`data-expired-callback="${EXPIRED_CALLBACK}"`);
+    expect(pageScriptOf(html)).toContain(`window['${FAILURE_CALLBACK}_' + form.id] =`);
+    expect(pageScriptOf(html)).toContain(`window.${EXPIRED_CALLBACK} =`);
   });
 
   test.each([
     ['no site key', null],
-    ['an unusable site key', UNUSABLE_SITE_KEY],
-  ])('with %s, the landing renders no widget, no Turnstile script and no Turnstile origin', async (_name, siteKey) => {
-    const { response, html } = await pageOf(serveLandingPage({ notice: LandingNotice.Joined, siteKey }));
+    ['an unusable site key', { siteKey: UNUSABLE_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }],
+  ])('with %s, the landing renders no widget, no Turnstile script and no Turnstile origin', async (_name, challenge) => {
+    const { response, html } = await pageOf(serveLandingPage({ notice: LandingNotice.Joined, challenge }));
     expect(html).not.toMatch(WIDGET_PATTERN);
     expect(html).not.toContain(TURNSTILE_SCRIPT_TAG);
     expect(html).not.toContain(UNUSABLE_SITE_KEY);
@@ -359,13 +376,184 @@ describe('the landing', () => {
   });
 });
 
-describe('the site host through the Worker', () => {
-  function keyedLandingPage(notice: LandingNotice): Promise<SitePage> {
-    return pageOf(serveLandingPage({ notice, siteKey: TURNSTILE_TEST_SITE_KEY }));
+describe('the landing joins in place behind a stamp, a honeypot and a visible check', () => {
+  const STAMP_INPUT_PATTERN = /<input [^>]*type="hidden"[^>]*name="stamp"[^>]*value="([^"]*)"/g;
+  const HONEYPOT_PATTERN =
+    /<div class="join-extra" aria-hidden="true">\s*<label [^>]*for="([^"]+)">[^<]+<\/label>\s*<input [^>]*id="\1"[^>]*>\s*<\/div>/;
+  const HONEYPOT_INPUT_ATTRIBUTES = [
+    'name="todz_fax"',
+    'type="text"',
+    'tabindex="-1"',
+    'autocomplete="off"',
+    'data-1p-ignore',
+    'data-lpignore="true"',
+    'data-bwignore',
+    'data-form-type="other"',
+  ];
+  const WIDGET_ATTRIBUTES = [
+    'data-appearance="always"',
+    'data-size="flexible"',
+    'data-theme="auto"',
+    'data-action="waitlist"',
+    'data-callback="waitlistTokenReady"',
+    'data-error-callback="waitlistChallengeFailed_join"',
+    'data-expired-callback="waitlistTokenExpired"',
+    'data-timeout-callback="waitlistChallengeFailed_join"',
+  ];
+  const FIRST_RENDER = 1_790_000_000_000;
+  const SECOND_RENDER = FIRST_RENDER + MILLISECONDS_PER_SECOND;
+  const STAMP_TIME_LENGTH = 13;
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function stampedLandingPage(notice: LandingNotice): Promise<SitePage> {
+    return pageOf(serveLandingPage({ notice, challenge: { siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET } }));
   }
 
-  function postJoin(token: string | null): Promise<Response> {
-    const fields = new URLSearchParams({ email: `${crypto.randomUUID()}@example.com` });
+  function stampsOf(html: string): string[] {
+    return [...html.matchAll(STAMP_INPUT_PATTERN)].map(([, stamp]) => {
+      if (stamp === undefined) throw new Error('a stamp input has a value');
+      return stamp;
+    });
+  }
+
+  test.each(NOTICES)('with the %s notice, each form holds one stamp input that is patient two seconds after its render', async (notice) => {
+    vi.spyOn(Date, 'now').mockReturnValue(FIRST_RENDER);
+    const { html } = await stampedLandingPage(notice);
+    const stamps = formsOf(html).map((form) => stampsOf(form));
+    expect(stamps.map((formStamps) => formStamps.length)).toEqual(JOIN_FORMS.map(() => 1));
+    const verdicts = await Promise.all(
+      stamps.flat().map((stamp) => stampVerdictOf({ secret: TURNSTILE_TEST_SECRET, stamp, now: FIRST_RENDER + WAITLIST_MINIMUM_FILL_MS })),
+    );
+    expect(verdicts).toEqual(JOIN_FORMS.map(() => StampVerdict.Patient));
+  });
+
+  test('each form holds one aria-hidden honeypot whose labelled input is out of the tab order and the autofill', async () => {
+    const { html } = await stampedLandingPage(LandingNotice.None);
+    formsOf(html).forEach((form) => {
+      const honeypot = HONEYPOT_PATTERN.exec(form);
+      expect(honeypot).not.toBeNull();
+      HONEYPOT_INPUT_ATTRIBUTES.forEach((attribute) => expect(honeypot?.[0]).toContain(attribute));
+      expect(form.match(/class="join-extra"/g)).toHaveLength(1);
+    });
+  });
+
+  test('each widget is always visible, flexible and automatic in theme, with the four callbacks', async () => {
+    const { html } = await stampedLandingPage(LandingNotice.None);
+    const widgets = html.match(WIDGET_PATTERN);
+    expect(widgets).toHaveLength(JOIN_FORMS.length);
+    JOIN_FORMS.forEach(({ id }, index) => {
+      WIDGET_ATTRIBUTES.map((attribute) => attribute.replace('_join', `_${id}`)).forEach((attribute) =>
+        expect(widgets?.[index]).toContain(attribute),
+      );
+    });
+  });
+
+  test('each form holds its own status line with its note, ready for the answer', async () => {
+    const { html } = await stampedLandingPage(LandingNotice.None);
+    const forms = formsOf(html);
+    JOIN_FORMS.forEach(({ id }, index) => {
+      expect(forms[index]).toMatch(new RegExp(`<p id="${id}-notice"[^>]* role="status"[^>]*>[^<]*${LANDING_COPY.join.note}</p>`));
+    });
+  });
+
+  test.each([
+    [LandingNotice.Joined, false],
+    [LandingNotice.TryAgain, true],
+    [LandingNotice.OpensSoon, true],
+  ])('with the %s notice, the status dot is neutral: %s', async (notice, isNeutral) => {
+    const { html } = await stampedLandingPage(notice);
+    expect(formsOf(html).every((form) => form.includes('join-notice-neutral') === isNeutral)).toBe(true);
+  });
+
+  test('the neutral dot uses the muted text colour and the script applies it to every outcome but joined', () => {
+    expect(SITE_STYLE).toContain('.join-notice-neutral .notice-dot{background:var(--color-text-muted);box-shadow:none}');
+    expect(PAGE_SCRIPT).toContain('join-notice-neutral');
+  });
+
+  test('the script resets the widgets again when the browser comes back online', () => {
+    expect(PAGE_SCRIPT).toContain("addEventListener('online'");
+  });
+
+  test('the markup carries no aria-disabled, the page script sets it', async () => {
+    const { html } = await stampedLandingPage(LandingNotice.None);
+    expect(html).not.toMatch(/<[^>]*\saria-disabled=/);
+  });
+
+  test('the check frame reserves the height of the widget and the final card narrows its padding on a phone', () => {
+    expect(SITE_STYLE).toContain('.join-check{min-height:65px');
+    expect(SITE_STYLE).toContain('.final-call{margin-top:var(--space-section);padding:var(--space-8) var(--space-4);');
+    expect(SITE_STYLE).toContain('.final-call{padding-inline:var(--space-5)}');
+  });
+
+  test('the waiting button shows a blocked cursor and only the sending one a busy cursor', () => {
+    expect(SITE_STYLE).toContain('.join-button[aria-disabled=true]{cursor:not-allowed');
+    expect(SITE_STYLE).toContain('.join-form[data-join-state=sending] .join-button{cursor:progress');
+  });
+
+  test('a page without a challenge has no stamp, no widget and no aria-disabled', async () => {
+    const { html } = await landingPage(LandingNotice.None);
+    expect(stampsOf(html)).toEqual([]);
+    expect(html).not.toMatch(WIDGET_PATTERN);
+    expect(html).not.toMatch(/<[^>]*\saria-disabled=/);
+  });
+
+  test('no element carries an event handler attribute', async () => {
+    const { html } = await stampedLandingPage(LandingNotice.None);
+    expect(html).not.toMatch(EVENT_HANDLER_PATTERN);
+  });
+
+  test('two renders carry different stamps and the same policy', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(FIRST_RENDER);
+    const first = await stampedLandingPage(LandingNotice.None);
+    vi.spyOn(Date, 'now').mockReturnValue(SECOND_RENDER);
+    const second = await stampedLandingPage(LandingNotice.None);
+    expect(stampsOf(first.html)).toHaveLength(JOIN_FORMS.length);
+    expect(stampsOf(first.html)[0]?.slice(0, STAMP_TIME_LENGTH)).toBe(String(FIRST_RENDER));
+    expect(stampsOf(second.html)[0]?.slice(0, STAMP_TIME_LENGTH)).toBe(String(SECOND_RENDER));
+    expect(stampsOf(first.html)).not.toEqual(stampsOf(second.html));
+    expect(first.response.headers.get('Content-Security-Policy')).toBe(second.response.headers.get('Content-Security-Policy'));
+  });
+
+  test('the policy is hash based, names only the widget origin for scripts and frames and keeps connections and forms on the site', async () => {
+    const { response } = await stampedLandingPage(LandingNotice.None);
+    const directives = response.headers.get('Content-Security-Policy')?.split('; ');
+    const scriptDirective = directives?.find((directive) => directive.startsWith('script-src '));
+    expect(scriptDirective?.split(' ').filter((source) => source.startsWith("'sha256-")).length).toBeGreaterThan(0);
+    expect(scriptDirective).toContain(TURNSTILE_ORIGIN);
+    expect(response.headers.get('Content-Security-Policy')).not.toContain(UNSAFE_INLINE);
+    expect(response.headers.get('Content-Security-Policy')).not.toContain("'unsafe-eval'");
+    expect(directives).toContain(`frame-src ${TURNSTILE_ORIGIN}`);
+    expect(directives).toContain(CONNECT_DIRECTIVE);
+    expect(directives).toContain("form-action 'self'");
+  });
+
+  test('through the Worker with a site key and no secret, the page has no stamp and no widget', async () => {
+    const request = new Request(`${LOCAL_SITE_ORIGIN}/`);
+    const workerEnv = workerEnvWith({ SITE_ORIGIN: LOCAL_SITE_ORIGIN, TURNSTILE_SITE_KEY: TEST_SITE_KEY, TURNSTILE_SECRET_KEY: undefined });
+    const answer = await serveSite({ request, env: workerEnv, executionContext: createExecutionContext() });
+    const html = await answer.text();
+    expect(stampsOf(html)).toEqual([]);
+    expect(html).not.toMatch(WIDGET_PATTERN);
+    expect(answer.headers.get('Content-Security-Policy')).not.toContain(TURNSTILE_ORIGIN);
+  });
+
+  test('without the secret, the page has no stamp and no widget', async () => {
+    const { html } = await pageOf(serveLandingPage({ notice: LandingNotice.None, challenge: null }));
+    expect(stampsOf(html)).toEqual([]);
+    expect(html).not.toMatch(WIDGET_PATTERN);
+  });
+});
+
+describe('the site host through the Worker', () => {
+  function keyedLandingPage(notice: LandingNotice): Promise<SitePage> {
+    return pageOf(serveLandingPage({ notice, challenge: { siteKey: TURNSTILE_TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET } }));
+  }
+
+  async function postJoin(token: string | null): Promise<Response> {
+    const fields = new URLSearchParams({ email: `${crypto.randomUUID()}@example.com`, stamp: await joinStampOf() });
     if (token !== null) fields.set(TOKEN_FIELD, token);
     const body = fields.toString();
     return exports.default.fetch(`${LOCAL_SITE_ORIGIN}/join`, {
@@ -377,7 +565,7 @@ describe('the site host through the Worker', () => {
 
   async function expectPage({ response, expected, status }: { response: Response; expected: SitePage; status: number }): Promise<void> {
     expect(response.status).toBe(status);
-    expect(await response.text()).toBe(expected.html);
+    expect(withoutStamps(await response.text())).toBe(withoutStamps(expected.html));
     expect(response.headers.get('Content-Security-Policy')).toBe(expected.response.headers.get('Content-Security-Policy'));
     expect(response.headers.get('Strict-Transport-Security')).toBe(STRICT_TRANSPORT_SECURITY);
   }

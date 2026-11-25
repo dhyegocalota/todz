@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import { issueProjectKey } from '../src/project-keys';
 import { openKeyProject } from '../src/project-routing';
-import { seedOwner, seedProject } from './directory-seed';
+import { issuedKeyOf, seedOwner, seedProject } from './directory-seed';
 import { AGENT_ACTOR, CLOCK_NOW, TODAY, draftOf, openTasksFilter, unwrap } from './task-fixtures';
 
 const PROJECT_KEY_PATTERN = /^todz_[A-Za-z0-9_-]{43}$/;
@@ -41,7 +41,7 @@ async function directoryValues(): Promise<unknown[]> {
 describe('issueProjectKey', () => {
   test('a seeded project gets a prefixed key stored only as its digest', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
-    const { id, secret } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+    const { id, secret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
     expect(secret).toMatch(PROJECT_KEY_PATTERN);
     expect(id).toMatch(UUID_PATTERN);
     expect(await keyRowsOf(projectId)).toEqual([
@@ -52,8 +52,8 @@ describe('issueProjectKey', () => {
 
   test('two keys of one project have two ids and two hints taken from their own secrets', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
-    const first = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
-    const second = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+    const first = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+    const second = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
     expect(first.id).not.toBe(second.id);
     const rows = await keyRowsOf(projectId);
     expect(rows.map((row) => row.id).sort()).toEqual([first.id, second.id].sort());
@@ -64,8 +64,8 @@ describe('issueProjectKey', () => {
 
   test('two keys of one project are two secrets and two rows that both open the project', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
-    const { secret: firstSecret } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
-    const { secret: secondSecret } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+    const { secret: firstSecret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+    const { secret: secondSecret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
     expect(firstSecret).not.toBe(secondSecret);
     expect(await keyRowsOf(projectId)).toHaveLength(2);
     const firstKeyProject = await openKeyProject({ env, secret: firstSecret });

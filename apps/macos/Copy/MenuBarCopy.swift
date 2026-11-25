@@ -2,6 +2,7 @@ import TodzKit
 
 enum MenuBarCopy {
     static let openWindow = "Open todz"
+    static let quit = "Quit todz"
     static let signedOut = "Sign in to see what's due today."
     static let naming = "Name your first workspace to see what's due today."
     static let closeTheDay = "Close the day"
@@ -21,6 +22,26 @@ enum MenuBarCopy {
 
     static func doneToday(count: Int) -> String {
         InflectedCopy.text("\(count) done today")
+    }
+
+    static func ribbonRemaining(left: Int, next: String) -> String {
+        "\(Self.left(count: left)) · next: \(next)"
+    }
+
+    static func ribbonLast(next: String) -> String {
+        "Last one: \(next)"
+    }
+
+    static func ribbonTask(_ task: RibbonTask) -> String {
+        guard let number = task.number else { return task.title }
+        return "\(TaskRowCopy.shortId(number: number)) \(task.title)"
+    }
+
+    static func ribbon(_ content: RibbonContent) -> String {
+        switch content {
+        case let .remaining(left, next): ribbonRemaining(left: left, next: ribbonTask(next))
+        case let .last(next): ribbonLast(next: ribbonTask(next))
+        }
     }
 
     static func switchHint(last: Int) -> String {

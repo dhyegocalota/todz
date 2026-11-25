@@ -1,4 +1,4 @@
-public enum AgentNudgeNotice: Equatable, Sendable {
+public enum OwnerSettingNotice: Equatable, Sendable {
     case detail
     case signedOut
     case offline

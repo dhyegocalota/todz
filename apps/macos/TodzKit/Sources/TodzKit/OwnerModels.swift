@@ -6,11 +6,15 @@ public struct Owner: Codable, Sendable, Equatable {
     public let identifier: String
     public let timeZone: String
     public internal(set) var agentNudge: Bool? = nil
+    public internal(set) var dayEmail: Bool? = nil
+    public internal(set) var dayEmailMinutes: Int? = nil
 
     enum CodingKeys: String, CodingKey {
         case identifier = "id"
         case timeZone
         case agentNudge
+        case dayEmail
+        case dayEmailMinutes
     }
 }
 

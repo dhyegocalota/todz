@@ -352,9 +352,9 @@ extension AppModelTests {
     }
 
     @Test func anEarlierBuildsSessionWithNoStoredServerIsBoundToTheDefaultAndKeepsTheCacheAndOutbox() async throws {
-        let harness = try AppModelHarness(isLocalDataKept: true, sessionOrigin: nil)
+        let harness = try AppModelHarness(defaultServer: storedText, isLocalDataKept: true, sessionOrigin: nil)
         #expect(harness.vault.secret == harness.session)
-        #expect(harness.vault.origin == harnessDefaultServer)
+        #expect(harness.vault.origin == storedText)
         #expect(harness.vault.eraseCount == 0)
         #expect(harness.store.owner != nil)
         #expect(harness.store.outbox != nil)
@@ -362,6 +362,26 @@ extension AppModelTests {
         await harness.model.launch()
         #expect(harness.model.isSignedIn)
         #expect(harness.model.phase != .signedOut(notice: .sessionUnreadable))
+    }
+
+    @Test func anEarlierBuildsSessionIsErasedWhenTheDefaultServerIsLoopback() async throws {
+        let harness = try AppModelHarness(isLocalDataKept: true, sessionOrigin: nil)
+        #expect(harness.vault.secret == nil)
+        #expect(harness.vault.origin == nil)
+        #expect(harness.store.owner == nil)
+        await harness.model.launch()
+        #expect(harness.model.phase == .signedOut(notice: nil))
+        #expect(harness.service.calls == [])
+    }
+
+    @Test func aSessionWhoseServerChangesBetweenTheTwoLaunchReadsIsErasedAndNoCallCarriesIt() async throws {
+        let harness = try AppModelHarness(isLocalDataKept: true)
+        harness.vault.origin = storedText
+        await harness.model.launch()
+        #expect(harness.vault.secret == nil)
+        #expect(harness.model.phase == .signedOut(notice: nil))
+        #expect(harness.model.isSignedIn == false)
+        #expect(harness.service.calls == [])
     }
 
     @Test func anEarlierBuildsSessionWithAStoredServerIsErasedBeforeLaunchAndNoCallCarriesIt() async throws {
