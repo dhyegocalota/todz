@@ -1,6 +1,6 @@
 # Security fixes
 
-**Status:** In review
+**Status:** Shipped 2026-11-25
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-25 by the owner's directive in `todz-loop/PROMPT.md` ("Security" → `security-fixes`: "aí no loop tem security fixes? add aí"): production is live with real sign-in, so the known open findings do not wait for the final sweep; fix every item, red first, each with a test
 **ADRs:** [0058](../../adr/0058-the-app-tells-the-server-its-own-link-scheme-and-the-sign-in-link-carries-it-back.md), [0057](../../adr/0057-the-focus-filter-stays-discoverable-so-the-owner-can-add-it.md), [0040](../../adr/0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md), [0044](../../adr/0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md), [0045](../../adr/0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md), [0050](../../adr/0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md), [0054](../../adr/0054-the-app-learns-focus-through-a-todz-focus-filter-not-the-focus-status-api.md), [0055](../../adr/0055-the-day-closes-once-a-day-in-the-menu-bar-popover-at-the-owner-s-time.md), and ADR 0056 from `server-url` (the server is a runtime setting), which merges first
