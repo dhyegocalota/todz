@@ -10,14 +10,14 @@ struct ChallengeView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        ChallengeWebView(model: model, round: model.challengeRound)
+        ChallengeWebView(model: model)
+            .id(model.challengeRound)
             .frame(height: challengeHeight)
     }
 }
 
 private struct ChallengeWebView: NSViewRepresentable {
     let model: AppModel
-    let round: Int
 
     func makeCoordinator() -> ChallengeCoordinator {
         ChallengeCoordinator(model: model)
@@ -30,14 +30,11 @@ private struct ChallengeWebView: NSViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.setAccessibilityLabel(SignInCopy.challengeLabel)
+        webView.load(URLRequest(url: ChallengeNavigation.pageURL(apiBaseURL: AppConfiguration.baseURL)))
         return webView
     }
 
-    func updateNSView(_ webView: WKWebView, context: Context) {
-        guard context.coordinator.loadedRound != round else { return }
-        context.coordinator.loadedRound = round
-        webView.load(URLRequest(url: ChallengeNavigation.pageURL(apiBaseURL: AppConfiguration.baseURL)))
-    }
+    func updateNSView(_ webView: WKWebView, context: Context) {}
 
     static func dismantleNSView(_ webView: WKWebView, coordinator: ChallengeCoordinator) {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: messageHandlerName)
@@ -45,7 +42,6 @@ private struct ChallengeWebView: NSViewRepresentable {
 }
 
 @MainActor final class ChallengeCoordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
-    var loadedRound: Int?
     private let model: AppModel
 
     init(model: AppModel) {
