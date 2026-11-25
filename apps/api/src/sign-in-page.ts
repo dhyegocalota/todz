@@ -1,3 +1,4 @@
+import type { Env } from './env';
 import { noRouteResponse } from './owner-errors';
 import { SIGN_IN_PAGE_COPY } from './sign-in-page-copy';
 import { SIGN_IN_PAGE_ICON } from './sign-in-page-icon';
@@ -71,7 +72,7 @@ const CONTENT_SECURITY_POLICY = [
 ].join('; ');
 
 // NB ADR 0040: the page never receives the token; its script reads the fragment, which no request carries.
-export async function serveSignInPage(request: Request): Promise<Response> {
+export async function serveSignInPage({ request }: { request: Request; env: Env }): Promise<Response> {
   if (request.method !== PAGE_METHOD) return noRouteResponse();
   return new Response(PAGE_HTML, {
     headers: {

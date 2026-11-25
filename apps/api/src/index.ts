@@ -13,7 +13,7 @@ type Route = ({ request, env }: { request: Request; env: Env }) => Promise<Respo
 
 const ROUTE_OF_PATH: Record<string, Route> = {
   [MCP_PATH]: ({ request, env }) => serveMcp({ request, env, now: Date.now() }),
-  [SIGN_IN_PAGE_PATH]: ({ request }) => serveSignInPage(request),
+  [SIGN_IN_PAGE_PATH]: ({ request, env }) => serveSignInPage({ request, env }),
 };
 
 function isOwnerPath(pathname: string): boolean {
