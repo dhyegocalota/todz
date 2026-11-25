@@ -34,21 +34,21 @@ G1 and G2 run in parallel. G2 builds its pages as functions `serveLandingPage({ 
 
 ### G1
 
-- [ ] **Step 1:** Red: `host-kind.test.ts` for `hostKindOf`:
+- [x] **Step 1:** (e2cc8ce, red: 18 failed on `hostKindOf is not implemented`) Red: `host-kind.test.ts` for `hostKindOf`:
   - the API, site and `www` hosts in production and in development;
   - unknown hosts, including `workers.dev`, an IP and `evil.todz.app`;
   - `SITE_ORIGIN` absent or invalid.
 
   Commit it red with a throwing stub.
-- [ ] **Step 2:** Green: `host-kind.ts`, plus `SITE_ORIGIN` in `env.ts`.
-- [ ] **Step 3:** Red: `site-dispatch.test.ts`, red against the stubbed pages:
+- [x] **Step 2:** (51cb1c7) Green: `host-kind.ts`, plus `SITE_ORIGIN` in `env.ts`.
+- [x] **Step 3:** (5b5835a, red: 11 failed, 10 pins) Red: `site-dispatch.test.ts`, red against the stubbed pages:
   - `todz.app` serves `/` and `/self-host`;
   - `/owner`, `/mcp` and `/sign-in` on `todz.app` answer 404;
   - `api.todz.app/` answers 404 as today;
   - `www.todz.app/x?y=1` answers 301 to `https://todz.app/x?y=1`;
   - an unknown host answers 404;
   - `POST todz.app/join` answers the "opens soon" page.
-- [ ] **Step 4:** Green:
+- [x] **Step 4:** (5a21a36; `site-headers.ts` and `join-placeholder.ts` became G2's `site-headers.ts` and G1's `site-endpoint.ts`, per the plan review answers) Green:
   - the `Record<HostKind, Handler>` dispatch in `index.ts`;
   - `site-headers.ts`: HSTS, `nosniff`, the Referrer-Policy, and a CSP builder from hashes that allows `img-src 'self'` and `form-action 'self'`;
   - `join-placeholder.ts`;
@@ -59,21 +59,21 @@ G1 and G2 run in parallel. G2 builds its pages as functions `serveLandingPage({ 
 
 ### G2
 
-- [ ] **Step 5:** Red: `site-pages.test.ts`:
+- [x] **Step 5:** (5dae707, eff9dd8, 388cabe red; 8d586e2 a pin through the Worker) Red: `site-pages.test.ts`:
   - the landing page has the design's sections in order;
   - every visible string comes from `LANDING_COPY`;
   - each CSP hash matches its inline block;
   - no external origin appears;
   - images point at `/landing/…`;
   - the self-host page holds the generated HTML of `docs/self-host.md` inside the shell.
-- [ ] **Step 6:** Green:
+- [x] **Step 6:** (855ac8b, 63bca02, 4731d9e; renderer with no dependency) Green:
   - `site-shell.ts`, `landing-copy.ts`, `landing-page.ts` and `self-host-page.ts` per `design.md`;
   - `scripts/site/` renders `docs/self-host.md` into `src/site/generated/self-host-html.ts` (`site:generate`, `site:check`). Use a small renderer for the Markdown the guide uses (headings, paragraphs, lists, fenced code, inline code, links, bold), or `marked` as a devDependency if that is shorter, named in the briefing.
-- [ ] **Step 7:** `public/landing/` copies the design's screenshots byte for byte; `site-assets.test.ts` pins the equality with `docs/screenshots/`.
+- [x] **Step 7:** (0b5d063) `public/landing/` copies the design's screenshots byte for byte; `site-assets.test.ts` pins the equality with `docs/screenshots/`.
 
 ### G3
 
-- [ ] **Step 8:** `playwright.config.ts` boots `pnpm dev:email` on its own port and runs desktop (1280) and mobile (375) projects. `e2e/landing.spec.ts` covers:
+- [x] **Step 8:** (87a006e, 682135c pins, `@playwright/test` 1.61.0; d2541f7 red and 502cd44 green for the `e2e` gate and the package column) ~~`playwright.config.ts` boots `pnpm dev:email`~~ boots the site instance on its own port 8791 and runs desktop (1280) and mobile (375) projects. `e2e/landing.spec.ts` covers:
   - the first fold, with the logo, the promise, the shot and the form;
   - the three rows, the strip, the CTA and the footer;
   - light and dark;
@@ -84,7 +84,7 @@ G1 and G2 run in parallel. G2 builds its pages as functions `serveLandingPage({ 
 
 ### Lead
 
-- [ ] **Step 9:**
+- [x] **Step 9:** (69c21e8; the README hero row lands with the tester's shot)
   - the runbook: a DNS check for `todz.app` and `www.todz.app` before step 8, the custom domains in step 8's expectation, and the site smoke checks in step 13;
   - `apps/api/README.md` names the site's purpose;
   - the root README's hero row gains the landing.
@@ -103,8 +103,8 @@ G1 and G2 run in parallel. G2 builds its pages as functions `serveLandingPage({ 
 
 ## Z. Prove and ship
 
-- [ ] **Plan review:** a `reviewer` sub-agent on this plan and the test plan.
-- [ ] **Tester briefing:** written from the developers' reports.
+- [x] **Plan review:** run 13 answered NO (`todz-loop` notes); run 14 answered R1–R17 in the spec (0a08a28) a `reviewer` sub-agent on this plan and the test plan.
+- [x] **Tester briefing:** G1, G2 and G3 sections in `tester-briefing.md` written from the developers' reports.
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md`.
 - [ ] **Reviewer and security reviewer:** fresh sub-agents returned verdicts.
 - [ ] **/check-ui:** screenshots and video attached.
