@@ -85,3 +85,40 @@ At `3ef8dbe`: `swift test --package-path apps/macos/TodzKit` → `Test run with 
 - A held day close released by a real Focus is proven by `DayCloseCoordinatorTests` only (coverage honesty in `test-plan.md`).
 - `EmptyDefaults.swift` (tests) repeats `MenuBarBadgeDefaultsTests`' private helper under another name; that file is outside G1's paths. `DayCloseSchedule.swift` repeats `CalendarDate.swift`'s private Gregorian-calendar helper for the same reason.
 - READMEs and screenshots are the lead's (Step 6).
+
+## Fix round 1
+
+The security review's two findings, red first. The app was built, never launched.
+
+### What changed
+
+- Finding 1 (IMPORTANT, keystrokes meant for another app): `DayCloseCoordinator` gains `isEngaged` (false each time the coordinator starts the mode, including in place while the popover shows), `engage()` and `acceptsKeyActions` (true outside the mode, and in the mode only once engaged). `MenuBarRow` refuses D / T / N and Return / Space while `acceptsKeyActions` is false, and engages on pointer hover. `MenuBarToday` engages on a click anywhere in it (a simultaneous tap gesture) and on Tab or Shift-Tab. `MenuBarPopover` sets its `@FocusState` to nil when the mode starts. The Done, Tomorrow and No date buttons and the rotor actions are not gated: they take a click, a hover first, or VoiceOver.
+- Finding 2 (MINOR, crafted defaults): `DayClosePreference.minutesAfterMidnight(in:)` returns nil outside `0..<1440`, and the coordinator decides `.off` on nil. `DayCloseScheduler` never sleeps less than `shortestCheckDelay` (1 s).
+
+### Red today, green after
+
+Each red test run alone with `swift test --filter`.
+
+| Test | Red commit | Printed when red | Green at |
+|------|-----------|------------------|----------|
+| `DayCloseCoordinatorTests/aModeStartedByTheCoordinatorIsNotEngagedAndRefusesKeyActions` | `09ca7b4` | `TodzKit/DayCloseCoordinator.swift:45: Fatal error: DayCloseCoordinator.isEngaged is not implemented` | `676e309` |
+| `DayCloseCoordinatorTests/engagingTheModeAcceptsKeyActions`, `aNewModeIsNotEngagedAgain`, `aModeStartingInPlaceAfterTheOwnerEngagedIsNotEngaged` | `09ca7b4` | `TodzKit/DayCloseCoordinator.swift:53: Fatal error: DayCloseCoordinator.engage is not implemented` | `676e309` |
+| `DayCloseCoordinatorTests/theUsualPopoverAcceptsKeyActions` | `09ca7b4` | `TodzKit/DayCloseCoordinator.swift:49: Fatal error: DayCloseCoordinator.acceptsKeyActions is not implemented` | `676e309` |
+| `DayClosePreferenceTests/aStoredTimeOutsideADayReadsAsOff` (-2880, 1440, Int.max) | `705e101` | `Expectation failed: DayClosePreference.minutesAfterMidnight(in: defaults) == nil`, once per argument (3 issues) | `51aa146` |
+| `DayCloseCoordinatorTests/aStoredTimeOutsideADayIsOffAndOpensNothing` (-2880, 1440) | `705e101` | `Expectation failed: harness.coordinator.check() == .off` for both arguments, plus `harness.popover.openings == 0` and `harness.lastClosedDay == nil` for -2880 (4 issues) | `51aa146` |
+| `DayClosePreferenceTests/aStoredTimeInsideADayReadsAsSet` (0, 1439) | `705e101` | **pin**: green when it landed | `705e101` |
+
+At `51aa146`: `swift test --package-path apps/macos/TodzKit` → `Test run with 734 tests in 51 suites passed`; `xcodegen generate` and the Debug `xcodebuild` → `BUILD SUCCEEDED`, no warnings.
+
+### Hypotheses to attack
+
+11. Hypothesis: when the day close opens by itself, no row and no field shows a focus ring, and D, T, N, Return and Space typed before touching the popover change nothing and open no window. Break it by: clicking a row in the usual popover so it holds focus, closing it, then forcing a day close and typing `d` at once.
+12. Hypothesis: hovering any row, clicking anywhere in the popover, or pressing Tab enables D / T / N on the focused row for the rest of that opening. Break it by: a first Tab when nothing is focused (the Tab that moves focus onto a row may not reach the handler; the second one does), Shift-Tab, a click on the heading.
+13. Hypothesis: the next day close starts unengaged again even if the owner had hovered the popover before it started in place.
+14. Hypothesis: with `dayCloseMinutes` written as -2880, 1440 or a huge number (app quit), the app launches, nothing opens, and the CPU stays idle (no re-check loop).
+
+### Known gaps
+
+- Settings still converts the stored minutes straight to the picker's date: a crafted `dayCloseMinutes` far outside a day may hit `DayCloseSchedule.instant`'s `preconditionFailure` when the Settings window opens. Unverified without a launch; the day close itself reads as off.
+- With Full Keyboard Access, a stale focus on a Done, Tomorrow or No date button would still take Space before engagement; the buttons are not gated so VoiceOver keeps working.
+- Hover engagement fires if the popover appears under a resting pointer.
