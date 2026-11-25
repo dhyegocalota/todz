@@ -389,6 +389,26 @@ describe('the admin routes on the site host', () => {
       expect(await adminSessionRows()).toEqual([]);
     });
 
+    test('a directory that throws answers the closed card and still clears the cookie', async () => {
+      const failingDirectory = new Proxy(env.DIRECTORY, {
+        get(target, property) {
+          if (property === 'prepare') {
+            return () => {
+              throw new Error('the directory is down');
+            };
+          }
+          return Reflect.get(target, property);
+        },
+      });
+      const response = await serveWith({
+        request: signOutRequest({ ...SAME_ORIGIN, Cookie: SIGNED_IN_COOKIE }),
+        settings: { ...ADMIN_SETTINGS, DIRECTORY: failingDirectory },
+      });
+      expect(response.status).toBe(UNAVAILABLE_STATUS);
+      expect(await response.text()).toBe(await cardOf({ notice: AdminNotice.Closed }));
+      expect(response.headers.getSetCookie()).toEqual([CLEARED_SESSION_COOKIE]);
+    });
+
     test.each([
       ['Sec-Fetch-Site: cross-site', { 'Sec-Fetch-Site': 'cross-site' }],
       ['Sec-Fetch-Site: same-site with the API Origin', { 'Sec-Fetch-Site': 'same-site', Origin: API_ORIGIN }],
