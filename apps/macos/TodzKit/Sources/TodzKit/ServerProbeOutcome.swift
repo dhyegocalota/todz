@@ -8,7 +8,8 @@ public enum ServerProbeOutcome: Equatable, Sendable {
 
     public static func of(answer: ServerHealthAnswer, typedAddress: ServerAddress) -> ServerProbeOutcome {
         guard case let .todz(origin) = answer else { return .notTodz }
-        guard origin == typedAddress.origin else { return .answersAs(origin: origin) }
+        guard case let .success(answered) = ServerAddress.checked(text: origin) else { return .notTodz }
+        guard answered == typedAddress else { return .answersAs(origin: answered.origin) }
         return .matches
     }
 }
