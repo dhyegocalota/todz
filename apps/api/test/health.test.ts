@@ -1,5 +1,7 @@
 import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
+import { serveHealth } from '../src/health';
+import { workerEnvWith } from './owner-client';
 
 const API_ORIGIN = 'http://localhost:8787';
 const SITE_ORIGIN = 'http://localhost:8788';
@@ -36,6 +38,15 @@ describe('GET /health', () => {
   test('a trailing slash answers 404', async () => {
     const response = await exports.default.fetch(`${API_ORIGIN}/health/`);
     expect(response.status).toBe(NOT_FOUND_STATUS);
+  });
+
+  test('a configured origin with a trailing slash is not an origin, so it answers 404 with an empty body', async () => {
+    const response = await serveHealth({
+      request: new Request(`${API_ORIGIN}/health`),
+      env: workerEnvWith({ PUBLIC_ORIGIN: `${API_ORIGIN}/` }),
+    });
+    expect(response.status).toBe(NOT_FOUND_STATUS);
+    expect(await response.text()).toBe('');
   });
 
   test.each([API_ORIGIN, SITE_ORIGIN])('POST answers 404 on %s', async (origin) => {
