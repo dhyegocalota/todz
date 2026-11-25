@@ -53,7 +53,7 @@ const UNAVAILABLE_STATUS = 503;
 const RETRY_AFTER_HEADER = 'Retry-After';
 const RETRY_AFTER_SECONDS = '60';
 const SET_COOKIE_HEADER = 'Set-Cookie';
-const LINK_PATTERN = /^https:\/\/todz\.app\/admin\/sign-in#token=([A-Za-z0-9_-]{43})$/;
+const LINK_PATTERN = /https:\/\/todz\.app\/admin\/sign-in#token=([A-Za-z0-9_-]{43})(?![A-Za-z0-9_-])/;
 const LOCAL_LINK_PATTERN = /http:\/\/localhost:8788\/admin\/sign-in#token=([A-Za-z0-9_-]{43})/;
 const COOKIE_VALUE_PATTERN = /^(__Host-[a-z_]+)=([A-Za-z0-9_-]*);/;
 const CHALLENGE_COOKIE_PATTERN = /^__Host-todz_admin_challenge=[A-Za-z0-9_-]{43}; Path=\/; Secure; HttpOnly; SameSite=Strict; Max-Age=900$/;

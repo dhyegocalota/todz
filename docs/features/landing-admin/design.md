@@ -536,3 +536,4 @@ The owner is away and the build loop decides (PROMPT.md). These are the loop's p
 - S-A, P-A, F-A, T-B, B-A, C-A, J-A, M-A and X-A: the recommended options, as written above.
 - The three new strings `refusal.crossOriginTitle`, `refusal.crossOriginBody` and the link page's `link.noScriptTitle` are the loop's wording; the spec gave none.
 - The mail button's 4.3:1 fill is left as the other mails have it; the follow-up is for all of them at once.
+- As built, P-A is partly changed (the loop's call at the merge): the shell header stays the site's, with its "Self-host guide" link, and Sign out sits in the panel's action row beside Download CSV, inside `nav aria-label="Admin"`, so `site-shell.ts` keeps one header for every page. Every refusal of `POST /admin/sessions` (401, 403, 429, 503) shows the one failed state.
