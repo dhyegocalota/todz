@@ -61,26 +61,30 @@ beforeAll(async () => {
   await setFlags({ ownerId: withoutWorkspace.ownerId, agentNudge: 0, dayEmail: 0, dayEmailChosenAt: null });
 });
 
+async function countsRow(): Promise<Record<string, number>> {
+  const row = await env.DIRECTORY.prepare(statementNamed(COUNTS_STATEMENT)).first<Record<string, number>>();
+  if (row === null) throw new Error('the counts always answer a row');
+  return row;
+}
+
 describe('the candidate counts', () => {
   test('answer four numbers and no address or id', async () => {
-    const row = await env.DIRECTORY.prepare(statementNamed(COUNTS_STATEMENT)).first<Record<string, number>>();
-    expect(row).not.toBeNull();
-    expect(Object.values(row ?? {}).every((value) => typeof value === 'number')).toBe(true);
-    expect(Object.keys(row ?? {})).toHaveLength(4);
+    const row = await countsRow();
+    expect(Object.values(row).every((value) => typeof value === 'number')).toBe(true);
+    expect(Object.keys(row)).toHaveLength(4);
   });
 
-  test('count all owners, the owners with an email identity and a workspace, the owners with the nudge on and the untouched candidates', async () => {
-    const row = await env.DIRECTORY.prepare(statementNamed(COUNTS_STATEMENT)).first<Record<string, number>>();
-    expect(Object.values(row ?? {})).toEqual([5, 3, 2, 1]);
+  test('count all owners, the owners with an email identity and a workspace, the owners with the nudge on and every email owner who never chose the day email', async () => {
+    expect(Object.values(await countsRow())).toEqual([5, 3, 2, 2]);
   });
 });
 
 describe('the day email default', () => {
-  test('turns on every owner whose day email was never chosen and leaves a chosen off at off and a chosen on at on', async () => {
+  test('turns on only the email owners who never chose it and leaves a chosen off at off, a chosen on at on and an owner with no email address at off', async () => {
     await env.DIRECTORY.prepare(statementNamed(DEFAULT_STATEMENT)).run();
     expect(await flagsOf(untouched.ownerId)).toEqual({ day_email: 1, day_email_chosen_at: null });
     expect(await flagsOf(withoutWorkspace.ownerId)).toEqual({ day_email: 1, day_email_chosen_at: null });
-    expect(await flagsOf(withoutAddress)).toEqual({ day_email: 1, day_email_chosen_at: null });
+    expect(await flagsOf(withoutAddress)).toEqual({ day_email: 0, day_email_chosen_at: null });
     expect(await flagsOf(chosenOff.ownerId)).toEqual({ day_email: 0, day_email_chosen_at: CLOCK_NOW });
     expect(await flagsOf(chosenOn.ownerId)).toEqual({ day_email: 1, day_email_chosen_at: CLOCK_NOW });
   });
