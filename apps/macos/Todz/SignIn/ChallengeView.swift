@@ -2,7 +2,6 @@ import SwiftUI
 import TodzKit
 import WebKit
 
-private let challengePath = "/sign-in/challenge"
 private let messageHandlerName = "turnstile"
 private let challengeHeight: CGFloat = 65
 private let noToken = ""
@@ -37,7 +36,7 @@ private struct ChallengeWebView: NSViewRepresentable {
     func updateNSView(_ webView: WKWebView, context: Context) {
         guard context.coordinator.loadedRound != round else { return }
         context.coordinator.loadedRound = round
-        webView.load(URLRequest(url: AppConfiguration.baseURL.appending(path: challengePath)))
+        webView.load(URLRequest(url: ChallengeNavigation.pageURL(apiBaseURL: AppConfiguration.baseURL)))
     }
 
     static func dismantleNSView(_ webView: WKWebView, coordinator: ChallengeCoordinator) {
@@ -54,6 +53,15 @@ private struct ChallengeWebView: NSViewRepresentable {
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        let origin = message.frameInfo.securityOrigin
+        let isTrusted = ChallengeNavigation.isTrustedMessage(
+            isMainFrame: message.frameInfo.isMainFrame,
+            scheme: origin.protocol,
+            host: origin.host,
+            port: origin.port,
+            apiBaseURL: AppConfiguration.baseURL
+        )
+        guard isTrusted else { return }
         guard let token = message.body as? String else {
             model.acceptChallenge(token: noToken)
             return
@@ -66,11 +74,11 @@ private struct ChallengeWebView: NSViewRepresentable {
         decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
     ) {
-        guard let url = navigationAction.request.url else {
+        guard let url = navigationAction.request.url, let targetFrame = navigationAction.targetFrame else {
             decisionHandler(.cancel)
             return
         }
-        let isAllowed = ChallengeNavigation.isAllowed(url: url, apiBaseURL: AppConfiguration.baseURL, isMainFrame: navigationAction.targetFrame?.isMainFrame == true)
+        let isAllowed = ChallengeNavigation.isAllowed(url: url, apiBaseURL: AppConfiguration.baseURL, isMainFrame: targetFrame.isMainFrame)
         decisionHandler(isAllowed ? .allow : .cancel)
     }
 }
