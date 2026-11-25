@@ -93,6 +93,12 @@ describe('the day mail with tasks', () => {
     expect(mailOf({ tasks: numberedTasks(LINES_MAX) }).text).not.toContain(' more.');
   });
 
+  test('keeps one blank line between the task list and the reply hint when nothing more is said', () => {
+    const { text } = mailOf({ tasks: numberedTasks(2), count: 2 });
+    expect(text).not.toContain('\n\n\n');
+    expect(text).toMatch(/Task 2[^\n]*\n\nReply from the address/);
+  });
+
   test('escapes a title in the html and keeps it as it is in the text', () => {
     const message = mailOf({ tasks: [taskOf({ title: '<script>alert(1)</script>' })] });
     expect(message.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');

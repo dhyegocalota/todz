@@ -21,6 +21,7 @@ const FAILURE_MESSAGE = 'the day email reply failed';
 
 export enum ReplyOutcome {
   Added = 'added',
+  Duplicate = 'duplicate',
   UnknownRecipient = 'unknown_recipient',
   Limited = 'limited',
   TooLarge = 'too_large',

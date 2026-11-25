@@ -398,6 +398,18 @@ describe('a reply to the day email', () => {
     expect(await replyRows(context.owner.ownerId)).toHaveLength(1);
   });
 
+  test('a replayed Message-ID logs duplicate and not added', async () => {
+    const output = consoleOutput();
+    const context = await seedReplyContext();
+    const overrides = { 'Message-ID': uniqueMessageId() };
+    await deliverReply({ delivery: ownerReplyOf({ context, overrides }) });
+    await deliverReply({ delivery: ownerReplyOf({ context, overrides }) });
+    expect(replyLogLines(output)).toEqual([
+      { event: 'day_email_reply', outcome: ReplyOutcome.Added },
+      { event: 'day_email_reply', outcome: ReplyOutcome.Duplicate },
+    ]);
+  });
+
   test('the row keeps the digest of the Message-ID and not the Message-ID', async () => {
     const context = await seedReplyContext();
     const messageId = uniqueMessageId();
