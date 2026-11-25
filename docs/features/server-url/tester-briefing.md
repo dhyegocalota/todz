@@ -123,3 +123,60 @@ Mutation checks I ran: refusing the redirect (`completionHandler(nil)` → `comp
 - `ServerAddressForm` has no unit test (it is a SwiftUI view in the app target, which has no test target); its logic lives in `ServerSwitchFlow` and the model, and the walk covers the rest.
 - `ServerAddress.checked` treats any whitespace inside the text as `invalid` (`not a url`), since `URLComponents` otherwise accepts it as a relative path.
 - The switched line is kept by the form's `@State`; whether it clears when Settings closes depends on SwiftUI discarding the Settings scene content, which the walk must check.
+
+## Fix round 1
+
+The lead's round: security S1 to S5, review R1 to R11, tester defects D1 to D4. Every red commit was run before its green one; the text below is what the red run printed.
+
+### Per item
+
+| Item | Change | Red commit and printed failure | Green commit |
+|------|--------|--------------------------------|--------------|
+| S1 (worker) | `apps/api/src/sign-in-page.ts`: the hand-off adds `&origin=` + `encodeURIComponent(location.origin)`, read by the script at run time, so the script stays one fixed source and its CSP hash holds. `test/page-script.ts` gives the fake page `location.origin` (`TEST_PAGE_ORIGIN`) | f7c82ce: `AssertionError: expected [ 'replace /sign-in', 'focus', …(1) ] to deeply equal [ 'replace /sign-in', 'focus', …(1) ]` and `AssertionError: expected 'navigate todz://sign-in?token=AAAAAAA…' to match /&origin=http%3A%2F%2Flocalhost%3A8787$/` (4 failed, 44 passed in the two page files) | a11ae17 |
+| S1 (app) | `SignInLink` requires a non-empty `origin` (three query items: `token`, `turnstile`, `origin`); a link without it is not a sign-in link, so the app ignores it as it ignores any malformed one. `redeem` refuses with `linkNotRequested` before any request when `signInLink.origin != serverURL.origin`, and keeps the pending link | 3fb2db7: `Expectation failed: SignInLink(url: url)` (every test that builds a link with `&origin=`), `Expectation failed: try SignInLink(url: url(text)) == nil` for the link without `origin`, `Expectation failed: link?.origin == origin`; 43 issues in 365 tests across the four suites | 569a7b9 |
+| S2 (domain) | `ServerPreference(defaults:domainName:)` reads only `persistentDomain(forName:)`; `AppDelegate` passes `AppConfiguration.defaultsDomain` (the bundle identifier). Writing still goes through `set`, which lands in the app's own domain | 7f92505: `Expectation failed: domain.preference.storedAddress() == nil` (the value in another searched domain) and `Expectation failed: !domain.preference.hasUnreadableValue` (`not a url` there) | 4110e03 |
+| S2 (session) | `SessionVault` keeps a `StoredSession(secret:origin:)`; `FileSessionVault` writes it as JSON; a file that is the secret alone (an earlier build) throws `SessionVaultError.unbound`. `AppModel.init` runs `eraseDataOfAnotherServer()`: an unreadable preference, a session bound to another origin or an unbound session erases the session, the cache with its outbox, the pending link and the widgets before launch; the preference is cleared only when it is the unreadable one; an erase that throws launches with `sessionUnreadable` and never reads the vault. `keep(secret:)` binds to `serverURL` | 40c15bc: `TodzKit/FileSessionVault.swift:22: Fatal error: FileSessionVault.read of a bound session is not implemented` (`FileSessionVaultTests` run alone); `AppModelTests`: `Expectation failed: harness.vault.secret == nil` (then `store.owner`, `store.outbox`, `pendingLinks.link`, `phase == .signedOut(notice: nil)`, `service.calls == []`), `phase == .signedOut(notice: .sessionUnreadable)` and `harness.vault.origin == storedText`; 14 issues | f87b383 |
+| S3 | `ServerProbeOutcome.of` puts the answered origin through `ServerAddress.checked`; one that fails is `notTodz`, another one shows only its normalized origin | 0b6cd01: `Expectation failed: outcome == .answersAs(origin: "https://other.example.com")` and six `Expectation failed: ServerProbeOutcome.of(answer: .todz(origin: origin), typedAddress: typed) == .notTodz` | b46b80a |
+| S4 | `ServerAddress.checked` refuses as `invalid` an address whose `percentEncodedHost` differs from `host` (`%2E`, `%41`, `local%68ost`, `exämple.com`) | 849c293: four `Expectation failed: ServerAddress.checked(text: text) == .failure(issue)` | dc59a24 |
+| R1, R11 (S5) | One shared `OwnerAPI.probeTransport` built from `probeConfiguration(deadline: ServerTiming.probeSeconds)`, which sets `timeoutIntervalForResource`; `AppDelegate`'s probe uses it. `health()` streams the body and answers `notTodz` past 4 096 bytes (`healthBodyLimit`) | 6e76052: `Expectation failed: OwnerAPI.probeTransport.configuration.timeoutIntervalForResource == ServerTiming.probeSeconds`, `Expectation failed: outcome == .unreachable` (the drip ran its whole 4.26 s and decoded as `notTodz`), `Expectation failed: answer == .notTodz` | cda7211 |
+| R2 | `apps/macos/README.md`: the build only picks the default server; Settings › Server changes it | n/a (docs) | 08f5ba4 |
+| R3 | `switchServer(to:)` returns `ServerSwitchResult` (`switched`, `busy`, `alreadyInUse`, `eraseFailed`); `ServerSwitchFlow.finish(result:)` maps busy to `failed(.busy)`, already in use to `alreadyInUse`; the form shows `ErrorCopy.serverSwitchBusy(server:)`, "Sign-in was still in progress, so todz stayed on {server}." (design § 9; it sits in `ErrorCopy` beside `serverSwitchFailed`, where the form's other refusals live) | 40108e9: `Expectation failed: result == .busy` (twice), `Expectation failed: result == .alreadyInUse`, `Expectation failed: flow.state == expected` for `.busy` and `.alreadyInUse` | a16a09f |
+| R4 | `isSwitchingServer` dropped from the model and the form; plan R5 row and step A6, design § 2 and § 7 note 1 struck with the reason | refactor | b53f639 |
+| R5 | the two hand-set race tests are `aRedeemWhoseSigningInFlagWasLostFinishingAfterASwitchIsDroppedAndSignedOutAtItsService` and `aLinkRequestWhoseRequestingFlagWasLostFinishingAfterASwitchKeepsNoPendingLink` (Lane A's names above are the old ones) | rename | e0553b8 |
+| R6 | `serveHealth` answers only `publicOriginOf(env.PUBLIC_ORIGIN)`; `null` is the empty 404 | 2675bbf: `AssertionError: expected 200 to be 404 // Object.is equality` (1 failed, 8 passed) | b8b2847 |
+| R7 | `publicOriginInWranglerText` strips `//` line comments, keeping slashes inside strings, before the trailing commas and `JSON.parse` | 3ad993e (also the rename): `SyntaxError: Expected property name or '}' in JSON at position 4 (line 2 column 3)` (1 failed, 4 passed) | 100e16f |
+| R8 | `HEALTH_SERVICE_NAME` in `libs/types` with a pin; `health.ts` uses it. TodzKit keeps its own `todzServiceName` (Swift cannot import the TypeScript package); the pin names the shared value | pin | 97937d9 |
+| R9, R10 | `ServerDisclosure`'s chevrons are file constants; `ServerAddress: Equatable` | refactor | 6b69ef3 |
+| D1 | the field's title is `serverAddressLabel`, hidden with `.labelsHidden()`, and `serverPlaceholder` is its `prompt` | walk row (no view test target) | 9ab42fd |
+| D2 | the Cancel button shown while checking has `.keyboardShortcut(.cancelAction)`, so Escape cancels while the field is disabled | walk row; the flow's `cancel()` is already pinned by `cancellingTheCheckGoesBackToIdle` | 1248d4f |
+| D3, D4 | `ServerSwitchFlow.close()` returns every state but `switching` to idle; the form calls it, with the check cancelled, on `onDisappear` | 1ee2e6f (`close()` landed empty): `Expectation failed: closedStates.allSatisfy { $0 == .idle }` | d1c6c30 |
+| D4 | `.switched` carries no name; the form names `model.serverURL` when the line shows | pin (the state changed shape) | 1b4fde3 |
+
+### Counts
+
+- `swift test --package-path apps/macos/TodzKit`: 812 tests in 57 suites before the round, 825 in 57 after, all passing.
+- `pnpm --filter @todz/api test:unit`: 1686 tests in 66 files, all passing; `pnpm --filter @todz/api typecheck` clean. `@todz/types`: 18 tests.
+- `xcodebuild clean build` Debug and Release: `BUILD SUCCEEDED`, no warning.
+- `pnpm verify`: 8 gates green at 08f5ba4 (product).
+
+### Walk rows to re-check
+
+- W1 and W24: the Settings Server row shows the field filling the row with `https://todz.example.com` as its prompt only when empty, and no label to its left, light and dark (D1).
+- W11: `http://localhost:8798` (never answers), Return, then Escape during `Checking the server…`: back to idle with the typed text and no line (D2).
+- D3: `localhost:8791`, Return (refusal), close Settings, ⌘,: the field holds the address in use and no line shows.
+- D4: switch from Settings, close and reopen: no `Switched to …` line; with Settings open, switch from the sign-in disclosure: the Settings line, if any, names the server in use.
+- A sign-in link from another origin: with the app on `http://localhost:8791`, ask for a link there, then open `todz://sign-in?token=<43>&turnstile=<token>&origin=http%3A%2F%2Flocalhost%3A8787`: `Open the link on the Mac that asked for it, or send a new one.`, no `POST /owner/sessions` on either Worker, and a link with the right origin still signs in. A link without `origin` does nothing.
+- S2 at launch: `defaults write -g serverURL https://example.com` and launching with `-serverURL https://example.com` leave the app on its stored server; a session file from another origin (or the bare secret an earlier build wrote) launches signed out with the cache, outbox and pending link gone. Delete the global key after.
+
+### Hypotheses to attack
+
+1. A relayed link cannot sign in: the origin in the link is the page's `location.origin`, which only the real server's page can produce. Break it by: serving a copy of the page from another origin and checking which origin it hands over.
+2. The probe never runs past 10 s in total, whatever the server drips, and never holds more than 4 KB.
+3. Nothing in the argument or global domain can move the app to another server.
+
+### Known gaps
+
+- Upgrading from a build before this round signs the owner out and erases the cache and the unsent outbox once, because the session file holds the secret alone (`unbound`), as the lead decided ("treated like the unreadable-value case"). A session file that is not JSON for any other reason is treated the same way.
+- ADR 0046 still describes the hand-off as `token` and `turnstile` only, and ADR 0056 does not state the link origin, the defaults domain or the session binding; `docs/adr` is the lead's.
+- The app gives no message for a sign-in link without `origin`; it ignores it like any malformed link.
+- D1, D2 and the `onDisappear` half of D3 and D4 have no automated test: the app target has no test target. Whether `onDisappear` fires when the Settings window closes is for the walk.
