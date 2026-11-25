@@ -33,7 +33,7 @@ Every command runs from the repository root, one command per call. Cloudflare ca
 3. **Create the release key, once.** The script makes an Ed25519 key inside `~/.todz-release`, stores it in the Keychain item `todz-release-key` through standard input, deletes the file, and prints the allowed-signers line and its fingerprint:
 
    ```bash
-   scripts/release-mac.sh --create-release-key
+   pnpm release:mac --create-release-key
    ```
 
    Expected: one line starting `release@todz.app namespaces="todz-release" ssh-ed25519 `, which goes into `apps/macos/release/allowed-signers` and the "Install on Mac" docs page, and a `SHA256:` fingerprint, which goes on that page too; `security find-generic-password -s todz-release-key` finds the item (without `-w`, so nothing secret prints). The owner then adds the public key as an SSH signing key on his GitHub account, so the fingerprint is published outside the `todz.app` zone, and exports both private keys by hand to his password manager: the loop never runs an export.
@@ -42,7 +42,7 @@ Every command runs from the repository root, one command per call. Cloudflare ca
 4. **Build a dry run and check it.** Everything but the deploy, the tag and the push:
 
    ```bash
-   scripts/release-mac.sh --dry-run
+   pnpm release:mac --dry-run
    ```
 
    Expected: it prints `~/.todz-release/builds/<version>/Todz-<version>.dmg` and its sum. Then, inside that folder: `shasum -a 256 -c Todz-<version>.dmg.sha256` prints `OK`; `ssh-keygen -Y verify -f <repository>/apps/macos/release/allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg` prints `Good "todz-release" signature for release@todz.app`; on the mounted app `codesign -dv` shows `TeamIdentifier=XFWR794VS8` and `flags=0x10000(runtime)`, and `spctl -a -vv` answers `rejected` with `origin=Apple Development`. Nothing appears under `~/.todz-release/site/`, `git tag -l "mac-v*"` is unchanged, and `git status --porcelain` still prints nothing.
@@ -61,7 +61,7 @@ Every command runs from the repository root, one command per call. Cloudflare ca
 7. **Release.** The dry run's build, deployed:
 
    ```bash
-   scripts/release-mac.sh
+   pnpm release:mac
    ```
 
    Expected: it reuses the dry run's build for this `HEAD`, records the active deployment's version id, copies the build into `site/download/<version>/`, deploys, checks `https://todz.app/download/latest`, the DMG's headers, its sum, its signature and the signed appcast, then adds `<version>` to `site/released`, creates and pushes the tag `mac-v<version>`, and prints `https://todz.app/download/<version>/Todz-<version>.dmg` and the sum. A second run prints "already published" and deploys nothing.

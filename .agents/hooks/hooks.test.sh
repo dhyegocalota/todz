@@ -79,6 +79,16 @@ expect_jq "codex: guard-secrets watches Bash" "$codex_hooks_file" '[.hooks.PreTo
 for rule in 'Edit(./**/.env)' 'Edit(./**/.env.local)' 'Write(./**/.env)' 'Write(./**/.env.production)' 'Read(./**/.env.*.local)' 'Read(~/.ssh/**)'; do
   expect_jq "settings: deny lists $rule" "$settings_file" ".permissions.deny | index(\"$rule\") != null"
 done
+blocked_release_secret_commands=('security find-generic-password -s todz-release-key -w' 'security find-generic-password -s todz-release-key -g' 'security find-generic-password -w -s todz-release-key' 'security find-generic-password -ws todz-release-key' 'security find-generic-password -a todz -s https://sparkle-project.org' 'security find-generic-password -s https://sparkle-project.org -w' 'security delete-generic-password -s https://sparkle-project.org' '~/.todz-release/packages/artifacts/sparkle/Sparkle/bin/generate_keys -x sparkle.key' 'pnpm release:mac --dry-run; security find-generic-password -s todz-release-key -w')
+for form in "${blocked_release_secret_commands[@]}"; do
+  expect_exit "claude: $form is blocked" 2 guard-secrets.sh "$(bash_call "$form")"
+  expect_exit "codex: $form is blocked" 2 guard-secrets.sh "$(codex_bash_call "$form")"
+done
+allowed_release_commands=('pnpm release:mac' 'pnpm release:mac --dry-run' 'pnpm release:mac --version 0.3.0' 'pnpm release:mac --create-release-key' 'scripts/release-mac.sh --create-release-key' 'security find-generic-password -s todz-release-key' 'security find-generic-password -s todz-cloudflare' 'grep -rn todz-release-key docs' '~/.todz-release/packages/artifacts/sparkle/Sparkle/bin/generate_keys -p')
+for form in "${allowed_release_commands[@]}"; do
+  expect_exit "claude: $form is allowed" 0 guard-secrets.sh "$(bash_call "$form")"
+  expect_exit "codex: $form is allowed" 0 guard-secrets.sh "$(codex_bash_call "$form")"
+done
 expect_exit "empty input is allowed" 0 guard-secrets.sh '{}'
 
 expect_exit "git add -A is blocked" 2 guard-git-add-all.sh "$(bash_call 'git add -A')"
