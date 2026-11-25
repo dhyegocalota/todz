@@ -1,11 +1,11 @@
 import { COMPANY } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
 import { LANDING_COPY } from './landing-copy';
+import { DOCS_SELF_HOST_URL } from './self-host-redirect';
 import { SITE_GLYPH_SPRITE, SiteGlyph, glyphHtml } from './site-glyphs';
 import { SITE_STYLE } from './site-style';
 
 export const LANDING_PATH = '/';
-export const SELF_HOST_PATH = '/self-host';
 export const JOIN_PATH = '/join';
 export const CONTENT_ID = 'content';
 const LIGHT_THEME_COLOR = '#F2F4FA';
@@ -22,7 +22,7 @@ function headerHtml(): string {
 <div class="site-header-inner page-width">
 ${brandHtml()}
 <nav class="site-nav" aria-label="${escapedHtml(LANDING_COPY.shell.navLabel)}">
-<a class="nav-link" href="${SELF_HOST_PATH}"><span class="label-long">${escapedHtml(LANDING_COPY.shell.selfHostLink)}</span><span class="label-short">${escapedHtml(LANDING_COPY.shell.selfHostLinkShort)}</span></a>
+<a class="nav-link" href="${DOCS_SELF_HOST_URL}"><span class="label-long">${escapedHtml(LANDING_COPY.shell.selfHostLink)}</span><span class="label-short">${escapedHtml(LANDING_COPY.shell.selfHostLinkShort)}</span></a>
 </nav>
 </div>
 </header>`;
@@ -39,7 +39,7 @@ function footerHtml(): string {
 ${brandHtml()}
 <p class="footer-copyright">${escapedHtml(LANDING_COPY.shell.copyright)}</p>
 ${creditHtml()}
-<a class="footer-link" href="${SELF_HOST_PATH}">${escapedHtml(LANDING_COPY.shell.footerSelfHost)}</a>
+<a class="footer-link" href="${DOCS_SELF_HOST_URL}">${escapedHtml(LANDING_COPY.shell.footerSelfHost)}</a>
 </div>
 </footer>`;
 }
