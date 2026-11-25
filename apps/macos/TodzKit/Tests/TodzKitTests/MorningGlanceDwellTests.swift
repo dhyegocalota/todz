@@ -51,6 +51,18 @@ private func after(_ seconds: TimeInterval) -> Date {
         #expect(MorningGlanceDwell.fadeDuration(reducesMotion: true) == 0)
     }
 
+    @Test func theFadeStepsTheAlphaDownToZeroInTenEvenSteps() {
+        let alphas = MorningGlanceDwell.fadeAlphas(reducesMotion: false)
+        #expect(alphas.count == 10)
+        #expect(alphas.first == 0.9)
+        #expect(alphas.last == 0)
+        #expect(zip(alphas, alphas.dropFirst()).allSatisfy { $0 > $1 })
+    }
+
+    @Test func theFadeWithReduceMotionIsOneStepToZero() {
+        #expect(MorningGlanceDwell.fadeAlphas(reducesMotion: true) == [0])
+    }
+
     @Test func thePointerIsIgnoredForTheFirstFourTenthsOfASecond() {
         #expect(MorningGlanceDwell.pointerGrace == fourTenthsOfASecond)
     }

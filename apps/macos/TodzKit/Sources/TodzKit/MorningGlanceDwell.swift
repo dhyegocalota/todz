@@ -18,6 +18,10 @@ public struct MorningGlanceDwell: Equatable, Sendable {
         reducesMotion ? 0 : fadeSeconds
     }
 
+    public static func fadeAlphas(reducesMotion: Bool) -> [Double] {
+        []
+    }
+
     public init(shownAt: Date) {
         self.init(shownAt: shownAt, pointer: .away(since: shownAt))
     }
