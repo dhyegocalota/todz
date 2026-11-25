@@ -1,0 +1,176 @@
+import { existsSync } from 'node:fs';
+import { posix } from 'node:path';
+import { describe, expect, test } from 'vitest';
+import { bodyOf, frontMatterOf } from './front-matter';
+import { capturedNames, readRepositoryFile, repositoryFiles, repositoryPath } from './repository-files';
+
+const DOCS_DIRECTORY = 'apps/docs';
+const DOCS_CONFIGURATION = 'apps/docs/docs.json';
+const DOCS_MANIFEST = 'apps/docs/package.json';
+const SITE_STYLE = 'apps/api/src/site/site-style.ts';
+const LANDING_COPY = 'apps/api/src/site/landing-copy.ts';
+const COMPANY_CONSTANTS = 'libs/types/src/constants.ts';
+const WRANGLER_CONFIGURATION = 'apps/api/wrangler.jsonc';
+const BRAND_ICON = 'docs/brand/todz-icon.svg';
+const FAVICON = 'apps/docs/favicon.svg';
+const PAGE_EXTENSION = '.mdx';
+const NAVIGATION_GROUPS = [
+  { group: 'Get started', pages: ['index', 'quickstart', 'connect-an-agent'] },
+  { group: 'Reference', pages: ['mcp-tools'] },
+  { group: 'Self-host', pages: ['self-host'] },
+];
+const NOT_FOUND_TITLE = 'Page not found';
+const HOME_LINK = '](/)';
+const HOME_PATH = '/';
+const DOCS_THEME = 'mint';
+const DOCS_APPEARANCE = 'system';
+const WORDMARK = 'todz';
+const SCHEME_COUNT = 2;
+const FIRST_CAPTURE = 1;
+const GRADIENT_STOP_PATTERN = /<stop [^>]*stop-color="(#[0-9A-Fa-f]{6})"/g;
+const ICON_PATH_PATTERN = / d="([^"]+)"/g;
+const CREDIT_LEAD_PATTERN = /creditLead: '([^']+)'/;
+const CREDIT_TAIL_PATTERN = /creditTail: '([^']+)'/;
+const TRADE_NAME_PATTERN = /tradeName: '([^']+)'/;
+const WEBSITE_PATTERN = /website: '([^']+)'/;
+const SITE_ORIGIN_PATTERN = /"SITE_ORIGIN": "([^"]+)"/;
+const FENCED_BLOCK_PATTERN = /```[\s\S]*?```/g;
+const TITLE_HEADING_PATTERN = /^# /m;
+const MINT_VERSION_PATTERN = /mint@([\d.]+)/g;
+const CLIENT_VERSION_FLAG = '--client-version';
+
+type Scheme = 'light' | 'dark';
+
+type DocsConfiguration = {
+  theme?: string;
+  appearance?: { default?: string };
+  favicon?: string;
+  logo?: { light?: string; dark?: string; href?: string };
+  colors?: { primary?: string; light?: string; dark?: string };
+  background?: { color?: { light?: string; dark?: string } };
+  navbar?: { links?: { label: string; href: string }[] };
+  footer?: { links?: { header: string; items: { label: string; href: string }[] }[] };
+  errors?: { '404'?: { redirect?: boolean; title?: string; description?: string } };
+  navigation?: { groups?: { group: string; pages: string[] }[] };
+};
+
+const configuration = JSON.parse(readRepositoryFile(DOCS_CONFIGURATION)) as DocsConfiguration;
+
+function tokenOf({ name, scheme }: { name: string; scheme: Scheme }): string {
+  const pattern = new RegExp(`--color-${name}:(#[0-9A-Fa-f]{6})`, 'g');
+  const values = capturedNames({ text: readRepositoryFile(SITE_STYLE), pattern });
+  expect(values).toHaveLength(SCHEME_COUNT);
+  return values[scheme === 'light' ? 0 : 1]!;
+}
+
+function singleCapture({ text, pattern }: { text: string; pattern: RegExp }): string {
+  const match = pattern.exec(text);
+  expect(match).not.toBeNull();
+  return match![FIRST_CAPTURE]!;
+}
+
+function pagePaths(): string[] {
+  return repositoryFiles(DOCS_DIRECTORY).filter((path) => path.endsWith(PAGE_EXTENSION));
+}
+
+function pageName(path: string): string {
+  return posix.relative(DOCS_DIRECTORY, path).slice(0, -PAGE_EXTENSION.length);
+}
+
+function navigationPages(): string[] {
+  const groups = configuration.navigation?.groups;
+  expect(groups).toBeDefined();
+  return groups!.flatMap((group) => group.pages);
+}
+
+function isMissingFile(path: string | undefined): boolean {
+  return path === undefined || !existsSync(repositoryPath(posix.join(DOCS_DIRECTORY, path)));
+}
+
+describe('docs.json', () => {
+  test('uses the mint theme and follows the system appearance', () => {
+    expect(configuration.theme).toBe(DOCS_THEME);
+    expect(configuration.appearance?.default).toBe(DOCS_APPEARANCE);
+  });
+
+  test('wears the landing accent in light and dark, and its page colour as the background', () => {
+    const accent = { light: tokenOf({ name: 'accent', scheme: 'light' }), dark: tokenOf({ name: 'accent', scheme: 'dark' }) };
+    const page = { light: tokenOf({ name: 'page', scheme: 'light' }), dark: tokenOf({ name: 'page', scheme: 'dark' }) };
+    expect(configuration.colors).toEqual({ primary: accent.light, dark: accent.light, light: accent.dark });
+    expect(configuration.background?.color).toEqual(page);
+  });
+
+  test('names a logo for each scheme and a favicon that exist', () => {
+    expect(configuration.logo?.href).toBe(HOME_PATH);
+    expect([configuration.logo?.light, configuration.logo?.dark, configuration.favicon].filter(isMissingFile)).toEqual([]);
+  });
+
+  test('the favicon is a byte copy of the brand icon', () => {
+    expect(readRepositoryFile(FAVICON)).toBe(readRepositoryFile(BRAND_ICON));
+  });
+
+  test.each<Scheme>(['light', 'dark'])(
+    'the %s logo holds the icon gradient and paths and the wordmark in the landing text colour',
+    (scheme) => {
+      const icon = readRepositoryFile(BRAND_ICON);
+      const logoPath = configuration.logo?.[scheme];
+      expect(logoPath).toBeDefined();
+      const logo = readRepositoryFile(posix.join(DOCS_DIRECTORY, logoPath!));
+      const iconPieces = [
+        ...capturedNames({ text: icon, pattern: GRADIENT_STOP_PATTERN }),
+        ...capturedNames({ text: icon, pattern: ICON_PATH_PATTERN }),
+      ];
+      expect(iconPieces.length).toBeGreaterThan(0);
+      expect(iconPieces.filter((piece) => !logo.includes(piece))).toEqual([]);
+      expect(logo).toMatch(new RegExp(`<text[^>]*fill="${tokenOf({ name: 'text', scheme })}"[^>]*>${WORDMARK}</text>`));
+    },
+  );
+
+  test('credits Logic Bit in one footer column, with the words and the link of the company', () => {
+    const copy = readRepositoryFile(LANDING_COPY);
+    const constants = readRepositoryFile(COMPANY_CONSTANTS);
+    const tradeName = singleCapture({ text: constants, pattern: TRADE_NAME_PATTERN });
+    const creditLead = singleCapture({ text: copy, pattern: CREDIT_LEAD_PATTERN });
+    const creditTail = singleCapture({ text: copy, pattern: CREDIT_TAIL_PATTERN });
+    const website = singleCapture({ text: constants, pattern: WEBSITE_PATTERN });
+    expect(configuration.footer?.links).toEqual([
+      { header: tradeName, items: [{ label: `${creditLead} ${tradeName}${creditTail}`, href: website }] },
+    ]);
+  });
+
+  test('links the landing from the navbar', () => {
+    const siteOrigin = singleCapture({ text: readRepositoryFile(WRANGLER_CONFIGURATION), pattern: SITE_ORIGIN_PATTERN });
+    expect(configuration.navbar?.links).toEqual([{ label: new URL(siteOrigin).host, href: siteOrigin }]);
+  });
+
+  test('answers a missing page with its own page that links back to the introduction', () => {
+    expect(configuration.errors?.['404']?.redirect).toBe(false);
+    expect(configuration.errors?.['404']?.title).toBe(NOT_FOUND_TITLE);
+    expect(configuration.errors?.['404']?.description).toContain(HOME_LINK);
+  });
+
+  test('lists the five pages in their groups, in order', () => {
+    expect(configuration.navigation?.groups).toEqual(NAVIGATION_GROUPS);
+  });
+});
+
+describe('the pages', () => {
+  test('every page on disk is in the navigation, and every page of the navigation is on disk', () => {
+    expect(pagePaths().map(pageName).sort()).toEqual([...navigationPages()].sort());
+  });
+
+  test('every page has a front matter title and no heading of its own', () => {
+    const pages = pagePaths().map((path) => ({ path, text: readRepositoryFile(path) }));
+    expect(pages.filter(({ text }) => !frontMatterOf(text).title)).toEqual([]);
+    expect(pages.filter(({ text }) => TITLE_HEADING_PATTERN.test(bodyOf(text).replace(FENCED_BLOCK_PATTERN, '')))).toEqual([]);
+  });
+});
+
+describe('the package', () => {
+  test('pins one Mintlify version for every script, and the client for the preview (pin)', () => {
+    const scripts = (JSON.parse(readRepositoryFile(DOCS_MANIFEST)) as { scripts: Record<string, string> }).scripts;
+    const versions = new Set(capturedNames({ text: Object.values(scripts).join('\n'), pattern: MINT_VERSION_PATTERN }));
+    expect(versions.size).toBe(1);
+    expect(scripts.dev).toContain(CLIENT_VERSION_FLAG);
+  });
+});

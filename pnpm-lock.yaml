@@ -80,6 +80,15 @@ importers:
         specifier: 4.167.0
         version: 4.167.0(@cloudflare/workers-types@5.20261123.1)(@types/node@24.19.2)(vitest@5.0.5)
 
+  apps/docs:
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.61.0
+        version: 1.61.0
+      '@types/node':
+        specifier: 24.19.2
+        version: 24.19.2
+
   libs/core:
     dependencies:
       '@todz/types':
