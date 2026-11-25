@@ -5,6 +5,7 @@ struct MenuBarPopover: View {
     @Environment(AppModel.self) private var model
     @Environment(MenuBarPanel.self) private var panel
     @Environment(DayCloseCoordinator.self) private var dayClose
+    @Environment(MorningGlanceCoordinator.self) private var morningGlance
     @FocusState private var focus: MenuBarFocus?
 
     var body: some View {
@@ -13,7 +14,7 @@ struct MenuBarPopover: View {
                 MenuBarPanelReader(
                     panel: panel,
                     onBecomeKey: focusAddField,
-                    onShow: { dayClose.popoverShown() },
+                    onShow: showPopover,
                     onHide: endDayClose,
                     onWorkspaceNumber: switchWorkspace
                 )
@@ -26,6 +27,11 @@ struct MenuBarPopover: View {
     private func closeWhenTheDayCloseAsks() {
         guard dayClose.workspaceChanged() else { return }
         panel.close()
+    }
+
+    private func showPopover() {
+        dayClose.popoverShown()
+        morningGlance.popoverShown()
     }
 
     private func endDayClose() {

@@ -44,6 +44,15 @@ private func isFocusFilterQuiet() async -> Bool {
         closePopover: { [panel] in panel.close() }
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
+    private lazy var morningGlancePresenter = MorningGlancePresenter(windowState: windowState)
+    private(set) lazy var morningGlance = MorningGlanceCoordinator.app(
+        model: model,
+        gate: gate,
+        dayClose: dayClose,
+        popover: panel,
+        presenter: morningGlancePresenter
+    )
+    private lazy var morningGlanceTrigger = MorningGlanceTrigger(coordinator: morningGlance)
 
     override init() {
         let gate = ProactiveGate()
@@ -58,6 +67,7 @@ private func isFocusFilterQuiet() async -> Bool {
         Task {
             await readFocusFilter()
             dayCloseScheduler.start()
+            morningGlanceTrigger.start()
         }
     }
 
