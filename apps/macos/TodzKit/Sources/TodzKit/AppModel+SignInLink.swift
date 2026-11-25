@@ -12,14 +12,23 @@ extension AppModel {
         }
     }
 
+    public func acceptChallenge(token: String) {
+        signInChallengeToken = ChallengeToken.isWellFormed(token) ? token : nil
+    }
+
     public func requestSignInLink(email: String) async {
+        guard let turnstileToken = signInChallengeToken else { return }
+        signInChallengeToken = nil
         signInError = nil
         heldSignInLink = nil
         isRequestingLink = true
-        defer { isRequestingLink = false }
+        defer {
+            isRequestingLink = false
+            challengeRound += 1
+        }
         let verifier = verifierToSend(to: email)
         do {
-            try await service.requestSignInLink(email: email, challenge: SignInLinkChallenge.challenge(for: verifier))
+            try await service.requestSignInLink(email: email, challenge: SignInLinkChallenge.challenge(for: verifier), turnstileToken: turnstileToken)
         } catch let failure as OwnerAPIError {
             signInError = SignInError(asking: failure)
             return
@@ -43,10 +52,11 @@ extension AppModel {
             return
         }
         let isOpened = await openSession {
-            try await service.signIn(identityToken: signInLink.token, linkVerifier: pendingLink.verifier, timeZone: timeZone.identifier)
+            try await service.signIn(identityToken: signInLink.token, linkVerifier: pendingLink.verifier, turnstileToken: signInLink.turnstileToken, timeZone: timeZone.identifier)
         }
         guard !isOpened else { return }
         if signInError == .identityRejected { signInError = .linkRejected }
+        if signInError == .signInRefused { signInError = .linkRefused }
         if isExpired(pendingLink) { discardPendingLink() }
         let isRetryable = signInError == .unreachable && self.pendingLink != nil
         guard isRetryable else { return }

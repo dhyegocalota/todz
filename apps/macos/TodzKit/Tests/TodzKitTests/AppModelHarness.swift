@@ -3,6 +3,8 @@ import Testing
 @testable import TodzKit
 
 let harnessTimeZoneIdentifier = "America/Sao_Paulo"
+let harnessChallengeToken = "challenge-token"
+let harnessLinkTurnstileToken = "link-turnstile-token"
 
 final class KeySequence {
     private(set) var issued: [String] = []
@@ -71,6 +73,11 @@ final class HarnessClock {
             makeIdempotencyKey: { keys.next() },
             makeLinkVerifier: { verifiers.next() }
         )
+    }
+
+    func askForLink(email: String) async {
+        model.acceptChallenge(token: harnessChallengeToken)
+        await model.requestSignInLink(email: email)
     }
 
     var ownerIdentifier: String {

@@ -8,7 +8,7 @@ private let pendingLifetime: TimeInterval = 20 * 60
 private let firstVerifier = "verifier-1"
 
 private func incomingLink() throws -> SignInLink {
-    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)"))
+    let url = try #require(URL(string: "todz://sign-in?token=\(linkToken)&turnstile=\(harnessLinkTurnstileToken)"))
     return try #require(SignInLink(url: url))
 }
 
@@ -60,7 +60,7 @@ extension AppModelTests {
         harness.service.failures[.signIn] = .unreachable
         await harness.model.redeem(signInLink: try incomingLink())
         harness.service.failures = [:]
-        await harness.model.requestSignInLink(email: emailAddress)
+        await harness.askForLink(email: emailAddress)
         #expect(harness.model.canRedeemAgain == false)
     }
 
@@ -78,10 +78,10 @@ extension AppModelTests {
 
     @Test func usingADifferentEmailClearsTheErrorLine() async throws {
         let harness = try AppModelHarness()
-        await harness.model.requestSignInLink(email: emailAddress)
-        harness.service.failures[.requestSignInLink] = .tooManyLinks
-        await harness.model.requestSignInLink(email: emailAddress)
-        #expect(harness.model.signInError == .tooManyLinks)
+        await harness.askForLink(email: emailAddress)
+        harness.service.failures[.requestSignInLink] = .signInRefused
+        await harness.askForLink(email: emailAddress)
+        #expect(harness.model.signInError == .signInRefused)
         harness.model.useDifferentEmail()
         #expect(harness.model.signInError == nil)
         #expect(harness.model.pendingLink == nil)
@@ -90,8 +90,8 @@ extension AppModelTests {
     @Test(arguments: ["MARIA@example.com", " maria@Example.com ", "Maria@EXAMPLE.COM"])
     func sendingAgainReusesTheVerifierWhateverTheCaseAndPaddingOfTheAddress(typed: String) async throws {
         let harness = try AppModelHarness()
-        await harness.model.requestSignInLink(email: emailAddress)
-        await harness.model.requestSignInLink(email: typed)
+        await harness.askForLink(email: emailAddress)
+        await harness.askForLink(email: typed)
         #expect(harness.verifiers.issued == [firstVerifier])
         #expect(harness.model.pendingLink?.verifier == firstVerifier)
     }
@@ -150,7 +150,7 @@ extension AppModelTests {
     @Test func anInvalidAddressAnswerOnAskingShowsTheAddressHintAndKeepsNoPendingLink() async throws {
         let harness = try AppModelHarness()
         harness.service.failures[.requestSignInLink] = .invalidRequest
-        await harness.model.requestSignInLink(email: emailAddress)
+        await harness.askForLink(email: emailAddress)
         #expect(harness.model.signInError == .invalidAddress)
         #expect(harness.model.pendingLink == nil)
     }

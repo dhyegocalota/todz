@@ -30,8 +30,8 @@ private func keysPath(_ projectIdentifier: String) -> String {
 
 public protocol OwnerService: Sendable {
     func signInMethod() async throws -> SignInMethod
-    func requestSignInLink(email: String, challenge: String) async throws
-    func signIn(identityToken: String, linkVerifier: String?, timeZone: String) async throws -> IssuedSession
+    func requestSignInLink(email: String, challenge: String, turnstileToken: String) async throws
+    func signIn(identityToken: String, linkVerifier: String?, turnstileToken: String?, timeZone: String) async throws -> IssuedSession
     func signOut(session: String) async throws
     func readOwner(session: String) async throws -> Owner
     func updateOwner(session: String, timeZone: String) async throws -> Owner
@@ -74,13 +74,13 @@ public struct OwnerAPI: OwnerService {
         try await answer(SignInMethodAnswer.self, to: OwnerRequest(method: .get, path: signInMethodPath, session: nil)).method
     }
 
-    public func requestSignInLink(email: String, challenge: String) async throws {
-        let body = SignInLinkRequestBody(email: email, linkChallenge: challenge)
+    public func requestSignInLink(email: String, challenge: String, turnstileToken: String) async throws {
+        let body = SignInLinkRequestBody(email: email, linkChallenge: challenge, turnstileToken: turnstileToken)
         _ = try await send(OwnerRequest(method: .post, path: signInLinksPath, session: nil, body: body))
     }
 
-    public func signIn(identityToken: String, linkVerifier: String?, timeZone: String) async throws -> IssuedSession {
-        let body = SignInBody(identityToken: identityToken, linkVerifier: linkVerifier, timeZone: timeZone)
+    public func signIn(identityToken: String, linkVerifier: String?, turnstileToken: String?, timeZone: String) async throws -> IssuedSession {
+        let body = SignInBody(identityToken: identityToken, linkVerifier: linkVerifier, turnstileToken: turnstileToken, timeZone: timeZone)
         return try await answer(IssuedSession.self, to: OwnerRequest(method: .post, path: sessionsPath, session: nil, body: body))
     }
 
