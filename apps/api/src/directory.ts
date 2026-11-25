@@ -1,19 +1,19 @@
-type KeyRow = { project_id: string; time_zone: string };
+type KeyRow = { project_id: string; time_zone: string; agent_nudge: number };
 type SessionRow = { owner_id: string };
 type ProjectRow = { id: string };
 type McpSessionRow = { client_name: string };
 
-export type KeyProjectRecord = { projectId: string; timeZone: string };
+export type KeyProjectRecord = { projectId: string; timeZone: string; agentNudge: boolean };
 
 export async function findKeyProject({ directory, digest }: { directory: D1Database; digest: string }): Promise<KeyProjectRecord | null> {
   const row = await directory
     .prepare(
-      'SELECT project_keys.project_id, owners.time_zone FROM project_keys JOIN projects ON projects.id = project_keys.project_id JOIN workspaces ON workspaces.id = projects.workspace_id JOIN owners ON owners.id = workspaces.owner_id WHERE project_keys.digest = ? AND project_keys.revoked_at IS NULL',
+      'SELECT project_keys.project_id, owners.time_zone, owners.agent_nudge FROM project_keys JOIN projects ON projects.id = project_keys.project_id JOIN workspaces ON workspaces.id = projects.workspace_id JOIN owners ON owners.id = workspaces.owner_id WHERE project_keys.digest = ? AND project_keys.revoked_at IS NULL',
     )
     .bind(digest)
     .first<KeyRow>();
   if (row === null) return null;
-  return { projectId: row.project_id, timeZone: row.time_zone };
+  return { projectId: row.project_id, timeZone: row.time_zone, agentNudge: row.agent_nudge === 1 };
 }
 
 export async function insertProjectKey({

@@ -13,6 +13,10 @@ export async function seedOwner(timeZone = 'UTC'): Promise<string> {
   return ownerId;
 }
 
+export async function enableAgentNudge({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<void> {
+  await directory.prepare('UPDATE owners SET agent_nudge = 1 WHERE id = ?').bind(ownerId).run();
+}
+
 export async function seedEmailIdentity({ ownerId, email }: { ownerId: string; email: string }): Promise<void> {
   await env.DIRECTORY.prepare('INSERT INTO owner_identities (provider, subject, owner_id, created_at) VALUES (?, ?, ?, ?)')
     .bind('email', email, ownerId, CLOCK_NOW)
@@ -53,6 +57,14 @@ export async function seedKey({
 
 export async function seedIssuedKey(timeZone = 'UTC'): Promise<{ projectId: string; key: string }> {
   const projectId = await seedProject({ ownerId: await seedOwner(timeZone) });
+  const { secret } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
+  return { projectId, key: secret };
+}
+
+export async function seedNudgedKey(): Promise<{ projectId: string; key: string }> {
+  const ownerId = await seedOwner();
+  await enableAgentNudge({ directory: env.DIRECTORY, ownerId });
+  const projectId = await seedProject({ ownerId });
   const { secret } = await issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW });
   return { projectId, key: secret };
 }

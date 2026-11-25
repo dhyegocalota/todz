@@ -18,6 +18,10 @@ enum OwnerFixtures {
         "{\"id\":\"\(identifier)\",\"time_zone\":\"\(timeZone)\"}"
     }
 
+    static func ownerJSON(identifier: String, timeZone: String, agentNudge: Bool) -> String {
+        "{\"id\":\"\(identifier)\",\"time_zone\":\"\(timeZone)\",\"agent_nudge\":\(agentNudge)}"
+    }
+
     static func projectJSON(identifier: String, name: String, isInbox: Bool) -> String {
         "{\"id\":\"\(identifier)\",\"name\":\"\(name)\",\"is_inbox\":\(isInbox),\"created_at\":\(createdAtMilliseconds)}"
     }

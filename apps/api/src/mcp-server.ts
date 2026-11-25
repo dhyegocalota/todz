@@ -1,9 +1,19 @@
 import { CLIENT_INFO_META_KEY, type CallToolResult, McpServer, type ServerContext } from '@modelcontextprotocol/server';
-import { type Actor, parseShortId } from '@todz/core';
+import { type Actor, type DueNow, type Task, parseShortId } from '@todz/core';
 import { ActorKind } from '@todz/types';
 import { z } from 'zod';
 import { MCP_COPY, McpPromptName, McpToolName } from './mcp-copy';
-import { addedAnswer, completedAnswer, failureText, listAnswer, nextAnswer, nextPromptText, updatedAnswer } from './mcp-format';
+import {
+  addedAnswer,
+  completedAnswer,
+  failureText,
+  listAnswer,
+  nextAnswer,
+  nextPromptText,
+  nudgeLine,
+  nudgedText,
+  updatedAnswer,
+} from './mcp-format';
 import {
   AddArgumentsSchema,
   DoneArgumentsSchema,
@@ -22,12 +32,13 @@ const TEXT_CONTENT = 'text';
 const USER_ROLE = 'user';
 const READ_ONLY_ANNOTATIONS = { readOnlyHint: true };
 const WRITE_ANNOTATIONS = { destructiveHint: false };
+const NOTHING_DUE = 0;
 
 const EnvelopeClientSchema = z.object({ [CLIENT_INFO_META_KEY]: z.object({ name: z.string() }) });
 
 export type ClientNameOf = (ctx: ServerContext) => string | null;
 
-export type McpServerScope = { project: DurableObjectStub<ProjectStore>; today: string; clientNameOf: ClientNameOf };
+export type McpServerScope = { project: DurableObjectStub<ProjectStore>; today: string; agentNudge: boolean; clientNameOf: ClientNameOf };
 
 export function envelopeClientName(ctx: ServerContext): string | null {
   const envelope = EnvelopeClientSchema.safeParse(ctx.mcpReq.envelope);
@@ -48,6 +59,25 @@ function resultAnswer<Value>({ result, answer }: { result: ProjectResult<Value>;
   return textAnswer(answer(result.value));
 }
 
+async function dueNowOf({ project, today }: Pick<McpServerScope, 'project' | 'today'>): Promise<DueNow | null> {
+  try {
+    const result = await project.dueNow({ today });
+    if (!result.ok) return null;
+    return result.value;
+  } catch {
+    return null;
+  }
+}
+
+async function nudgeOf({ scope, task }: { scope: McpServerScope; task: Task | null }): Promise<string | null> {
+  const isSilent = !scope.agentNudge || task === null;
+  if (isSilent) return null;
+  const dueNow = await dueNowOf(scope);
+  const isNothingToSay = dueNow === null || dueNow.count === NOTHING_DUE;
+  if (isNothingToSay) return null;
+  return nudgeLine({ ...dueNow, taskNumber: task.number });
+}
+
 async function asAgent({
   clientNameOf,
   ctx,
@@ -64,9 +94,12 @@ async function asAgent({
 
 function registerReadTools({ server, scope }: { server: McpServer; scope: McpServerScope }): void {
   const { project, today } = scope;
-  server.registerTool(McpToolName.Next, { description: MCP_COPY.tools[McpToolName.Next], annotations: READ_ONLY_ANNOTATIONS }, async () =>
-    resultAnswer({ result: await project.nextTask({ today }), answer: nextAnswer }),
-  );
+  server.registerTool(McpToolName.Next, { description: MCP_COPY.tools[McpToolName.Next], annotations: READ_ONLY_ANNOTATIONS }, async () => {
+    const result = await project.nextTask({ today });
+    if (!result.ok) return errorAnswer(failureText(result.failure));
+    const nudge = await nudgeOf({ scope, task: result.value });
+    return textAnswer(nudgedText({ nudge, text: nextAnswer(result.value) }));
+  });
   server.registerTool(
     McpToolName.List,
     { description: MCP_COPY.tools[McpToolName.List], inputSchema: ListArgumentsSchema, annotations: READ_ONLY_ANNOTATIONS },
@@ -124,7 +157,9 @@ function registerNextPrompt({ server, scope }: { server: McpServer; scope: McpSe
   server.registerPrompt(McpPromptName.Next, { description: MCP_COPY.prompts[McpPromptName.Next] }, async () => {
     const result = await project.nextTask({ today });
     if (!result.ok) throw new Error(failureText(result.failure));
-    return { messages: [{ role: USER_ROLE, content: { type: TEXT_CONTENT, text: nextPromptText(result.value) } }] };
+    const nudge = await nudgeOf({ scope, task: result.value });
+    const text = nudgedText({ nudge, text: nextPromptText(result.value) });
+    return { messages: [{ role: USER_ROLE, content: { type: TEXT_CONTENT, text } }] };
   });
 }
 

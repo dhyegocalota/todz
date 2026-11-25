@@ -1,7 +1,7 @@
 import type { OwnerRecord } from './owner-records';
 
 type IdentityRow = { owner_id: string };
-type OwnerRow = { id: string; time_zone: string };
+type OwnerRow = { id: string; time_zone: string; agent_nudge: number };
 
 export async function findIdentityOwner({
   directory,
@@ -43,22 +43,35 @@ export async function insertOwnerWithIdentity({
   ]);
 }
 
-export async function updateOwnerTimeZone({
+function ownerRecordOf(row: OwnerRow): OwnerRecord {
+  return { id: row.id, timeZone: row.time_zone, agentNudge: row.agent_nudge === 1 };
+}
+
+export async function storeOwnerChanges({
   directory,
   ownerId,
   timeZone,
+  agentNudge,
 }: {
   directory: D1Database;
   ownerId: string;
-  timeZone: string;
-}): Promise<void> {
-  await directory.prepare('UPDATE owners SET time_zone = ? WHERE id = ?').bind(timeZone, ownerId).run();
+  timeZone: string | null;
+  agentNudge: boolean | null;
+}): Promise<OwnerRecord | null> {
+  const row = await directory
+    .prepare(
+      'UPDATE owners SET time_zone = COALESCE(?, time_zone), agent_nudge = COALESCE(?, agent_nudge) WHERE id = ? RETURNING id, time_zone, agent_nudge',
+    )
+    .bind(timeZone, agentNudge === null ? null : Number(agentNudge), ownerId)
+    .first<OwnerRow>();
+  if (row === null) return null;
+  return ownerRecordOf(row);
 }
 
 export async function findOwner({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<OwnerRecord | null> {
-  const row = await directory.prepare('SELECT id, time_zone FROM owners WHERE id = ?').bind(ownerId).first<OwnerRow>();
+  const row = await directory.prepare('SELECT id, time_zone, agent_nudge FROM owners WHERE id = ?').bind(ownerId).first<OwnerRow>();
   if (row === null) return null;
-  return { id: row.id, timeZone: row.time_zone };
+  return ownerRecordOf(row);
 }
 
 export async function insertOwnerSession({

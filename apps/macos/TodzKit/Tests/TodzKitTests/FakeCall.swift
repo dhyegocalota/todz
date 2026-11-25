@@ -7,6 +7,7 @@ enum FakeRoute: Hashable, Sendable {
     case signOut
     case readOwner
     case updateOwner
+    case updateAgentNudge
     case listWorkspaces
     case createWorkspace
     case createProject
@@ -29,6 +30,7 @@ enum FakeCall: Equatable, Sendable {
     case signOut(session: String)
     case readOwner(session: String)
     case updateOwner(session: String, timeZone: String)
+    case updateAgentNudge(session: String, isEnabled: Bool)
     case listWorkspaces(session: String)
     case createWorkspace(session: String, name: String)
     case createProject(session: String, workspaceIdentifier: String, name: String)
@@ -51,6 +53,7 @@ enum FakeCall: Equatable, Sendable {
         case .signOut: .signOut
         case .readOwner: .readOwner
         case .updateOwner: .updateOwner
+        case .updateAgentNudge: .updateAgentNudge
         case .listWorkspaces: .listWorkspaces
         case .createWorkspace: .createWorkspace
         case .createProject: .createProject
@@ -80,7 +83,7 @@ enum FakeCall: Equatable, Sendable {
             let .issueKey(_, projectIdentifier),
             let .revokeKey(_, projectIdentifier, _):
             projectIdentifier
-        case .signInMethod, .requestSignInLink, .signIn, .signOut, .readOwner, .updateOwner, .listWorkspaces, .createWorkspace, .createProject:
+        case .signInMethod, .requestSignInLink, .signIn, .signOut, .readOwner, .updateOwner, .updateAgentNudge, .listWorkspaces, .createWorkspace, .createProject:
             nil
         }
     }

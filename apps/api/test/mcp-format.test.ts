@@ -8,6 +8,8 @@ import {
   listAnswer,
   nextAnswer,
   nextPromptText,
+  nudgeLine,
+  nudgedText,
   taskBlock,
   taskLine,
   updatedAnswer,
@@ -97,6 +99,28 @@ describe('the next answers', () => {
 
   test('the prompt without a task says there is nothing to do', () => {
     expect(nextPromptText(null)).toBe('There is nothing to do in todz right now: no open tasks.');
+  });
+});
+
+describe('the nudge line', () => {
+  test.each([
+    [1, 0, 'Today here: 1 due. Start with T-12?'],
+    [3, 0, 'Today here: 3 due. Start with T-12?'],
+    [3, 1, 'Today here: 3 due (1 overdue). Start with T-12?'],
+    [2, 2, 'Today here: 2 overdue. Start with T-12?'],
+    [1, 1, 'Today here: 1 overdue. Start with T-12?'],
+  ])('%i due and %i overdue say %j (pin)', (count, overdue, line) => {
+    expect(nudgeLine({ count, overdue, taskNumber: 12 })).toBe(line);
+  });
+
+  test('a nudge goes above the text after a blank line', () => {
+    expect(nudgedText({ nudge: 'Today here: 1 due. Start with T-3?', text: 'T-3 Ship it' })).toBe(
+      'Today here: 1 due. Start with T-3?\n\nT-3 Ship it',
+    );
+  });
+
+  test('no nudge leaves the text as it is', () => {
+    expect(nudgedText({ nudge: null, text: 'T-3 Ship it' })).toBe('T-3 Ship it');
   });
 });
 

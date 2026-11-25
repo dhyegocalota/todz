@@ -1,11 +1,12 @@
 import { z } from 'zod';
-import { findIdentityOwner, insertOwnerWithIdentity, updateOwnerTimeZone } from './directory-owners';
+import { findIdentityOwner, insertOwnerWithIdentity, storeOwnerChanges } from './directory-owners';
 import { emailSenderOf } from './email-sender';
 import { welcomeMail } from './emails/welcome-mail';
 import type { Env } from './env';
 import { HttpStatus } from './http-status';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
 import { ownerJson } from './owner-json';
+import type { OwnerRecord } from './owner-records';
 import { type OwnerContext, parsedPublicBody } from './owner-request';
 import { OwnerRoute } from './owner-routes';
 import { openOwnerSession } from './owner-sessions';
@@ -38,7 +39,7 @@ const CHALLENGE_OF_KIND: Record<SignInProviderKind, (context: { request: Request
 
 type OwnerIdentity = { directory: D1Database; kind: SignInProviderKind; subject: string };
 
-type IdentityOwner = { ownerId: string; isNewOwner: boolean };
+type IdentityOwner = { owner: OwnerRecord; isNewOwner: boolean };
 
 async function retimedOwner({
   directory,
@@ -49,8 +50,9 @@ async function retimedOwner({
   ownerId: string;
   timeZone: string;
 }): Promise<IdentityOwner> {
-  await updateOwnerTimeZone({ directory, ownerId, timeZone });
-  return { ownerId, isNewOwner: false };
+  const owner = await storeOwnerChanges({ directory, ownerId, timeZone, agentNudge: null });
+  if (owner === null) throw new Error('an identity names an owner with no row');
+  return { owner, isNewOwner: false };
 }
 
 async function identityOwner({
@@ -65,7 +67,7 @@ async function identityOwner({
   const ownerId = crypto.randomUUID();
   try {
     await insertOwnerWithIdentity({ directory, ownerId, provider: kind, subject, timeZone, now });
-    return { ownerId, isNewOwner: true };
+    return { owner: { id: ownerId, timeZone, agentNudge: false }, isNewOwner: true };
   } catch (failure) {
     const rivalOwnerId = await findIdentityOwner({ directory, provider: kind, subject });
     if (rivalOwnerId === null) throw failure;
@@ -103,9 +105,9 @@ export async function signIn({ request, env, now, executionContext }: OwnerConte
     now,
   });
   if (subject === null) return errorResponse(OwnerErrorCode.IdentityRejected);
-  const { ownerId, isNewOwner } = await identityOwner({ directory: env.DIRECTORY, kind, subject, timeZone, now });
-  const sessionToken = await openOwnerSession({ directory: env.DIRECTORY, ownerId, now });
+  const { owner, isNewOwner } = await identityOwner({ directory: env.DIRECTORY, kind, subject, timeZone, now });
+  const sessionToken = await openOwnerSession({ directory: env.DIRECTORY, ownerId: owner.id, now });
   const isWelcomedOwner = isNewOwner && kind === SignInProviderKind.Email;
   if (isWelcomedOwner) executionContext.waitUntil(sendWelcome({ request, env, address: subject }).catch(() => undefined));
-  return Response.json({ session_token: sessionToken, owner: ownerJson({ id: ownerId, timeZone }) }, { status: HttpStatus.Created });
+  return Response.json({ session_token: sessionToken, owner: ownerJson(owner) }, { status: HttpStatus.Created });
 }
