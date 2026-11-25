@@ -17,6 +17,7 @@ struct TodzApp: App {
         DayTemperaturePreference.registerDefaults(in: .standard)
         RibbonPreference.registerDefaults(in: .standard)
         MenuBarOnlyPreference.registerDefaults(in: .standard)
+        RespectFocusPreference.registerDefaults(in: .standard)
     }
 
     var body: some Scene {

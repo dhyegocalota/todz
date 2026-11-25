@@ -3,7 +3,7 @@ import TodzKit
 
 struct TodzFocusFilter: SetFocusFilterIntent {
     static let title: LocalizedStringResource = "Quiet todz"
-    static let description: IntentDescription? = "Keeps todz from showing anything on its own while this Focus is on."
+    static let description: IntentDescription? = "Keeps todz from showing anything on its own while this Focus is on, when Respect Focus is on in todz Settings."
 
     @Parameter(title: "Keep todz quiet", default: false) var isQuiet: Bool
 

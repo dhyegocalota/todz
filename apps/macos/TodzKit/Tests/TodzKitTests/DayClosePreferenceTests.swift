@@ -18,12 +18,36 @@ private struct DayCloseDomain {
 }
 
 @Suite struct DayClosePreferenceTests {
-    @Test func theRegisteredDefaultsReadOffAtSixInTheEvening() throws {
+    @Test func theRegisteredDefaultsReadOnAtSixInTheEvening() throws {
         let dayClose = try DayCloseDomain()
         DayClosePreference.registerDefaults(in: dayClose.domain.defaults)
-        #expect(!dayClose.preference.isOn)
+        #expect(dayClose.preference.isOn)
         #expect(dayClose.preference.minutesAfterMidnight == 1080)
         #expect(dayClose.preference.lastClosedDay == nil)
+    }
+
+    @Test func aFreshDomainReadsOn() throws {
+        let dayClose = try DayCloseDomain()
+        #expect(dayClose.preference.isOn)
+    }
+
+    @Test func registeringTheDefaultsRegistersOn() throws {
+        let dayClose = try DayCloseDomain()
+        DayClosePreference.registerDefaults(in: dayClose.domain.defaults)
+        #expect(dayClose.domain.defaults.object(forKey: DayClosePreference.isOnStorageKey) as? Bool == true)
+    }
+
+    @Test func aStoredFalseStaysOff() throws {
+        let dayClose = try DayCloseDomain()
+        dayClose.domain.defaults.set(false, forKey: DayClosePreference.isOnStorageKey)
+        DayClosePreference.registerDefaults(in: dayClose.domain.defaults)
+        #expect(!dayClose.preference.isOn)
+    }
+
+    @Test func aNonBoolValueReadsAsTheDefault() throws {
+        let dayClose = try DayCloseDomain()
+        dayClose.domain.defaults.set("no", forKey: DayClosePreference.isOnStorageKey)
+        #expect(dayClose.preference.isOn)
     }
 
     @Test func nothingStoredReadsAsSixInTheEvening() throws {
@@ -58,12 +82,12 @@ private struct DayCloseDomain {
         let dayClose = try DayCloseDomain()
         let searched = try EmptyDomain()
         defer { searched.defaults.removePersistentDomain(forName: searched.name) }
-        searched.defaults.set(true, forKey: DayClosePreference.isOnStorageKey)
+        searched.defaults.set(false, forKey: DayClosePreference.isOnStorageKey)
         searched.defaults.set(storedMinutes, forKey: DayClosePreference.timeStorageKey)
         searched.defaults.set("2026-11-25", forKey: DayClosePreference.lastClosedDayStorageKey)
         dayClose.domain.defaults.addSuite(named: searched.name)
-        #expect(dayClose.domain.defaults.bool(forKey: DayClosePreference.isOnStorageKey))
-        #expect(!dayClose.preference.isOn)
+        #expect(!dayClose.domain.defaults.bool(forKey: DayClosePreference.isOnStorageKey))
+        #expect(dayClose.preference.isOn)
         #expect(dayClose.preference.minutesAfterMidnight == DayClosePreference.minutesAfterMidnightByDefault)
         #expect(dayClose.preference.lastClosedDay == nil)
     }

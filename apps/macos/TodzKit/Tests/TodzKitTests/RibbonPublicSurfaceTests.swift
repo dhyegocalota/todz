@@ -5,6 +5,6 @@ import TodzKit
     @Test func theCloseTheDaySwitchIsReadableOutsideTheModule() throws {
         let domain = try EmptyDomain()
         let preference = DayClosePreference(defaults: domain.defaults, domainName: domain.name)
-        #expect(!preference.isOn)
+        #expect(preference.isOn)
     }
 }

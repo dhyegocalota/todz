@@ -41,7 +41,7 @@ private func shown(_ content: RibbonContent, frames: [RibbonFrame] = fittingTime
 }
 
 @MainActor private struct RibbonBench {
-    let gate = ProactiveGate()
+    let gate = ProactiveGate(respectsFocus: true)
     let clock = HarnessClock()
     let pauses = RibbonPauses()
     let world = RibbonWorld()
