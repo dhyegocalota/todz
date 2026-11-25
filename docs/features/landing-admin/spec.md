@@ -143,8 +143,8 @@ The code review (WITH RESERVATIONS, HIGH), the security review (FINDINGS: one IM
 
 | Question | Options | Owner's answer | Date |
 |----------|---------|----------------|------|
-| Who is the admin? | the owner's personal address in a secret; `hello@todz.app` in `vars` | the loop's call: `hello@todz.app` (ADR 0051 §1) | 2026-11-25 |
-| How is the link bound to a browser? | a Strict challenge cookie spent by a same-origin post; a Lax cookie read on the navigation; unbound | the loop's call: Strict cookie, by the run-15 spike (ADR 0051 §2–3) | 2026-11-25 |
+| Who is the admin? | the owner's personal address in a secret; `hello@todz.app` in `vars` | the loop's call: `hello@todz.app` (ADR 0051 §1), changed by V1 to a secret holding it | 2026-11-25 |
+| How is the link bound to a browser? | a Strict challenge cookie spent by a same-origin post; a Lax cookie read on the navigation; unbound | the loop's call: Strict cookie, by the run-15 spike (ADR 0051 §2–3), changed by V2 to Lax | 2026-11-25 |
 | Admin on its own host or a path? | `admin.todz.app`; `todz.app/admin` | the loop's call: the path, no new DNS record (ADR 0049 §3.3) | 2026-11-25 |
 | Digest in this feature? | yes; its own feature | the loop's call: `landing-digest` (ADR 0051 §8) | 2026-11-25 |
 
