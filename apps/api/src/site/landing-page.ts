@@ -31,6 +31,7 @@ const WIDGET_APPEARANCE = 'interaction-only';
 const WIDGET_THEME = 'auto';
 const WIDGET_CLASS = 'cf-turnstile';
 const TOKEN_CALLBACK = 'waitlistTokenReady';
+const FAILURE_CALLBACK = 'waitlistChallengeFailed';
 
 type LandingPage = { available: (siteKey: string) => string; unavailable: string };
 
@@ -45,33 +46,40 @@ const NOTICE_TEXT: Record<Exclude<LandingNotice, LandingNotice.None>, string> = 
 };
 
 const PAGE_SCRIPT = `{
-  const waitingForToken = new Set();
+  const waitingForToken = new Map();
   const hasToken = (form) => {
     const token = form.querySelector('[name="${TURNSTILE_RESPONSE_FIELD}"]');
     return token !== null && token.value !== '';
   };
-  window.${TOKEN_CALLBACK} = () => waitingForToken.forEach((form) => {
+  window.${TOKEN_CALLBACK} = () => waitingForToken.forEach((_restore, form) => {
     if (!hasToken(form)) return;
     waitingForToken.delete(form);
     form.submit();
+  });
+  window.${FAILURE_CALLBACK} = () => waitingForToken.forEach((restore, form) => {
+    waitingForToken.delete(form);
+    restore();
   });
   document.querySelectorAll('.${JOIN_FORM_CLASS}').forEach((form) => {
     const button = form.querySelector('.${JOIN_BUTTON_CLASS}');
     const label = button.textContent;
     const hasWidget = form.querySelector('.${WIDGET_CLASS}') !== null;
+    const restore = () => {
+      button.removeAttribute('${ARIA_DISABLED}');
+      button.textContent = label;
+    };
     form.addEventListener('submit', (event) => {
       if (button.getAttribute('${ARIA_DISABLED}') === 'true') return event.preventDefault();
       button.setAttribute('${ARIA_DISABLED}', 'true');
       button.textContent = button.dataset.submitting;
       if (!hasWidget || hasToken(form)) return;
       event.preventDefault();
-      waitingForToken.add(form);
+      waitingForToken.set(form, restore);
     });
     addEventListener('pageshow', (event) => {
       if (!event.persisted) return;
       waitingForToken.delete(form);
-      button.removeAttribute('${ARIA_DISABLED}');
-      button.textContent = label;
+      restore();
     });
   });
   addEventListener('load', () => requestAnimationFrame(() => {
@@ -113,7 +121,7 @@ function joinStatusHtml({ form, notice }: { form: JoinForm; notice: LandingNotic
 // NB ADR 0046: the site key sits in a data attribute, so the page script stays one fixed source with one hash.
 function challengeOf(siteKey: string): LandingChallenge {
   return {
-    widget: `<div class="${WIDGET_CLASS}" data-sitekey="${siteKey}" data-action="${TurnstileAction.Waitlist}" data-appearance="${WIDGET_APPEARANCE}" data-theme="${WIDGET_THEME}" data-callback="${TOKEN_CALLBACK}"></div>\n`,
+    widget: `<div class="${WIDGET_CLASS}" data-sitekey="${siteKey}" data-action="${TurnstileAction.Waitlist}" data-appearance="${WIDGET_APPEARANCE}" data-theme="${WIDGET_THEME}" data-callback="${TOKEN_CALLBACK}" data-error-callback="${FAILURE_CALLBACK}" data-expired-callback="${FAILURE_CALLBACK}" data-timeout-callback="${FAILURE_CALLBACK}"></div>\n`,
     scriptTag: `${TURNSTILE_SCRIPT_TAG}\n`,
   };
 }

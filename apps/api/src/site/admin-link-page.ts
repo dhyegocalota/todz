@@ -36,7 +36,6 @@ const PAGE_SCRIPT = `{
     title.textContent = ${JSON.stringify(ADMIN_COPY.link.working)};
     body.textContent = '';
     retry.hidden = true;
-    status.hidden = false;
     const answer = token === null
       ? Promise.reject(new Error('the link carries no token'))
       : fetch('${AdminPath.Sessions}', {
@@ -61,8 +60,8 @@ const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
 const LINK_PAGE_HTML = siteDocumentHtml({
   title: ADMIN_COPY.meta.linkTitle,
   description: ADMIN_COPY.meta.description,
-  main: adminCardMainHtml(`<div id="${STATUS_ID}" class="link-status" data-state="${WORKING_STATE}" role="status" aria-live="polite" data-answer hidden>
-<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(ADMIN_COPY.link.working)}</h1>
+  main: adminCardMainHtml(`<div id="${STATUS_ID}" class="link-status" role="status" aria-live="polite" data-answer>
+<h1 id="${TITLE_ID}" class="admin-title"></h1>
 <p id="${BODY_ID}" class="admin-body"></p>
 <a id="${RETRY_ID}" class="admin-link" href="${AdminPath.Panel}" hidden>${escapedHtml(ADMIN_COPY.link.failedAction)}</a>
 </div>
