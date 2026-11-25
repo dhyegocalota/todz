@@ -13,6 +13,8 @@
     "server:deploy": "wrangler deploy && tsx scripts/server/cli.ts",
     "site:generate": "tsx scripts/site/cli.ts generate",
     "site:check": "tsx scripts/site/cli.ts check",
+    "site:assets": "tsx scripts/site-assets/cli.ts generate",
+    "site:assets:check": "tsx scripts/site-assets/cli.ts check",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
     "test:unit": "vitest run",
     "test:e2e": "playwright test"

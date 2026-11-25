@@ -1,0 +1,22 @@
+{
+  "inputs": {
+    "apps/api/public/landing/mac-app-shell/04-inspector-notes-and-history.png": "c7f8ebaa4d4d565dee130e4b55e695d2b54d765bb43b541dc4becf12c7e9c1d7",
+    "apps/api/public/landing/mac-sync/01-agent-add-live.png": "1e50342a8e5c0771ce179e0406faf1a835a6f29dd921082565c3b8aff15bf077",
+    "apps/api/public/landing/menu-bar/01-today-popover.png": "ca9baab595ffed4d4887aba7e1200a3f0fc1a35016750d484dca877dcee6f8f4",
+    "apps/api/public/landing/v1-walk/01-agent-tasks-in-a-project.png": "f49a7cab160a2075938447d5fc8baa084aa1f9a9423bbf47ca59045f01e89eb7",
+    "apps/api/public/landing/widgets/01-today-ring.png": "b5c4ff3cad2aee46f2edf37c639ca297f74c3abbb602ccbf6387c78a272e38de",
+    "apps/api/public/landing/widgets/03-medium-today.png": "a4a24b72fac9a1d173d4018e43ca931db4f3ebacd47727e4891a46d55d9e956b",
+    "apps/api/scripts/site-assets/cli.ts": "06e96f0182109b5971a759658b67bd16f89813d986ce9a7abfd4dc76bfce3da2",
+    "apps/api/scripts/site-assets/ico-file.ts": "9d0a1105d55bb0ce64678ab8e9674123e811e4461778fb545b03a983fcf6230b",
+    "apps/api/scripts/site-assets/png-size.ts": "17e4c72db4526d05fff88b1ebb42a0ff7d87832f1f0e723e4fa164eb3bd719b0",
+    "apps/api/scripts/site-assets/site-assets.ts": "f4fcae07d9bc05a413ba02c9f4f913faab898ea5ffb7d3b8063ae0a3a07565ff",
+    "apps/api/src/site/landing-shots.ts": "3674318ba754afced3962541058afd64b5a96764a5a4b8998b6662047bf6a559",
+    "apps/api/src/site/site-icons.ts": "818fcbb948ac997d77a52ee9f26318d2a6107623850f9b06b2c444ae3caf95f0",
+    "docs/brand/todz-icon-check.svg": "046c88648efc3f3846b5f109a4ee0b394c2b17552ff2f8aa2b934f31ad6e2285",
+    "docs/brand/todz-icon-sparkle.svg": "307552a457735f0fc0f2565e59c921b55deb64cb866b4c81374cba34fa26f871",
+    "docs/brand/todz-icon.svg": "92fcba5bd3744137f7b8256a55659cd4096b6cd35279bfae5254581eea1bc81b",
+    "docs/brand/todz-lockup.png": "8f3bb8d37a4c883101b927d66e2838c6df897779b20b01e2f7b3b8eabb199068",
+    "docs/brand/todz-lockup.svg": "b576ff19dacd08a7e3df9e3710761300974f8d8601ef04d00042b200a68dc930",
+    "docs/brand/todz-menubar.svg": "4199ddbb997e9b95d56abc453c8632637b0d2194ca57f4cd513980ff5a820ca2"
+  }
+}
