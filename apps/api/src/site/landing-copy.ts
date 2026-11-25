@@ -1,0 +1,91 @@
+import { formatShortId } from '@todz/core';
+import { MCP_COPY, McpToolName } from '../mcp-copy';
+
+const EXAMPLE_TASK_NUMBER = 12;
+const EXAMPLE_TASK_TITLE = 'Review PR';
+
+export const LANDING_COPY = {
+  meta: {
+    title: 'todz: your tasks, shared with your agents',
+    description: 'A native Mac to-do list that Claude Code, Codex and Cursor work over MCP. Menu bar, widgets, offline sync.',
+  },
+  shell: {
+    skipLink: 'Skip to content',
+    homeLabel: 'todz home',
+    wordmark: 'todz',
+    navLabel: 'Site',
+    selfHostLink: 'Self-host guide',
+    selfHostLinkShort: 'Self-host',
+    githubLabel: 'todz on GitHub',
+    footerSelfHost: 'Self-host guide',
+    footerGithub: 'GitHub',
+    copyright: '© todz',
+  },
+  hero: {
+    eyebrow: 'macOS · Coming soon',
+    title: 'Your tasks, shared with your agents.',
+    lead: 'A native Mac to-do list that Claude Code, Codex and Cursor work over MCP.',
+  },
+  stage: {
+    label: 'The todz app on a Mac desktop',
+    menuCount: '2',
+  },
+  join: {
+    emailLabel: 'Email address',
+    emailPlaceholder: 'you@example.com',
+    submit: 'Join the waitlist',
+    submitting: 'Joining…',
+    note: 'Only to tell you when todz opens.',
+    opensSoon: 'The waitlist opens soon.',
+  },
+  benefits: {
+    heading: 'Why todz',
+    agents: {
+      title: 'Agents add tasks over MCP',
+      body: 'Claude Code, Codex and Cursor read, add and finish tasks with one key per project. Every change says who made it.',
+    },
+    glance: {
+      title: 'Your menu bar and widgets',
+      body: 'Today is one click away, and widgets check tasks off without opening the app.',
+    },
+    offline: {
+      title: 'Works offline, syncs everywhere',
+      body: 'Changes wait while you are offline and land on every Mac when you are back.',
+    },
+  },
+  howItWorks: {
+    eyebrow: 'How it works',
+    title: 'Connect once. Ask in plain words.',
+    step1: 'Add the server: one command, one key per project.',
+    step2: 'Ask your agent to add, list or finish a task.',
+    step3: 'It shows up in your menu bar and widgets.',
+  },
+  terminal: {
+    label: 'Adding todz to Claude Code, then adding a task',
+    shellPrompt: '$',
+    command: "claude mcp add --transport http todz 'https://api.todz.app/mcp' --header 'Authorization: Bearer <key>'",
+    askPrompt: '>',
+    ask: 'Add a todz task: review the PR',
+    toolCall: `todz - ${McpToolName.Add} (MCP)(tasks: [{"title": "${EXAMPLE_TASK_TITLE}"}])`,
+    toolResult: `${MCP_COPY.added} ${formatShortId(EXAMPLE_TASK_NUMBER)} ${EXAMPLE_TASK_TITLE}`,
+  },
+  final: {
+    title: 'Be first on the list.',
+    body: 'Join the waitlist and get todz when it opens.',
+  },
+  selfHost: {
+    title: 'Self-host todz · todz',
+    description: 'Run your own todz server on Cloudflare: fork, deploy, point the app and your agents at it.',
+    eyebrow: 'Guide',
+    backToTop: 'Back to top',
+    codeLabel: 'Code',
+  },
+  alt: {
+    window: "The todz main window: a project's tasks, one added via Claude Code, with its notes and history in the inspector",
+    windowDark: 'The todz main window in dark mode: three tasks added via Claude Code',
+    popover: "The todz menu bar popover: today's tasks and an Add a task field",
+    widgetMedium: 'The medium Today widget with three open tasks',
+    widgetRing: 'The Today widget: 2 of 7 done',
+    agentTasks: "A project's tasks in todz, the newest added via Claude Code",
+  },
+};
