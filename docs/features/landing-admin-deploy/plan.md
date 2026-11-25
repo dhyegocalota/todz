@@ -31,6 +31,6 @@ One commit after the run.
 
 ## Z. Prove and ship
 
-- [ ] **Tester run**
-- [ ] **Reviewer**
-- [ ] **/open-pr**
+- [x] **Tester run:** 12 of 12, no defect — evidence: dde39b2; the review's `/sign-in` and `/mcp` read added and run by the lead.
+- [x] **Reviewer:** WITH RESERVATIONS, LOW; three MINORs: row 9 names both versions, the domain command spelled out, the `/sign-in` and `/mcp` read added. Security: CLEAR; its two notes answered (row 10 names how the secret went in; row 15's counts are the run's own).
+- [x] **/open-pr:** gates passed.
