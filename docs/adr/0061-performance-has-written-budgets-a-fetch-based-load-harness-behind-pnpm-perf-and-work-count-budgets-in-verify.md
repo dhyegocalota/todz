@@ -1,0 +1,71 @@
+# 0061. Performance has written budgets, a fetch-based load harness behind pnpm perf, and work-count budgets in verify
+
+- Status: Accepted (the build loop's call, the owner may overturn it)
+- Date: 2026-11-25
+- Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) asked on 2026-11-25: "tem que ser performático.. então stress e load test, fix it", `todz-loop/PROMPT.md` → "Performance"
+- Inspired by: [ADR 0005](0005-the-local-gate-runs-what-the-diff-can-break.md) (the local gate), [ADR 0008](0008-runbooks-live-in-the-repository.md) (runbooks), [ADR 0016](0016-the-mcp-server-runs-on-the-sdk-v2-and-serves-both-protocol-eras.md) and [ADR 0017](0017-a-2025-era-client-is-named-by-a-session-in-the-directory.md) (the two MCP eras), [ADR 0027](0027-the-app-caches-each-owner-s-data-as-json-files-in-its-own-container-until-it-has-a-team.md) (the app's cache), [ADR 0044](0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md) (production), ADR 0060 on `feat/landing-seo` (the landing's Lighthouse procedure), the code read under Evidence
+
+## Context
+
+todz has never been measured. Every MCP call and owner request crosses up to three remote stores in series: the D1 directory (the key or the session, then the project's ownership, and for a 2025-era client the MCP session), then one Durable Object per project. A task write reads every task of its project to place the new one, and the history and state listings have no index. The app keeps its whole board in memory, rebuilds its task views on every read, and rewrites a project's whole cache file on each change. Nobody knows which of these matters at the owner's scale, because no number exists.
+
+The owner wants budgets, load and stress tests, fixes and a regression check. Production is live with real owners, runs on the Workers Free plan (10 ms of CPU per request, daily request and row caps) and must never be stressed. A dedicated production owner cannot be created by the loop: the only production sign-in is an email link to a real inbox.
+
+## Decision
+
+1. **Budgets.** At the target load (point 2), measured from the client:
+   - MCP `tools/call` (`list`, `add`, `done`) and owner API requests: p95 under 150 ms and p99 under 400 ms, with zero 5xx answers. A 2025-era client's `initialize` is measured on its own: p95 under 400 ms.
+   - The change feed: from the moment one client sends a write to the moment another client holds the changed task (the socket's `changed`, then `GET …/changes`), p95 under 1,000 ms.
+   - Many projects: an owner with 200 projects in 20 workspaces lists them (`GET /owner/workspaces`) within the API budget.
+   - The macOS app, signed in with a cache of 5,000 tasks in one project: cold launch (process start to the first task rows on screen) under 1,000 ms as the median of five launches, none over 1,500 ms; a scripted scroll from the first row to the last with no frame over 50 ms and at most 1% of frames over 1.5 times the display's refresh interval; resident footprint after 30 minutes of a steady soak within 10% of its value at 5 minutes; the model work one change costs on the main actor (the board, the task views, the menu bar count and the widget snapshot) under 8 ms, half a 60 Hz frame.
+   - The landing on a phone profile (Lighthouse 13.6.0 through `pnpm dlx`, median of three runs, the procedure of ADR 0060): LCP under 2.5 s, CLS under 0.1 and Total Blocking Time under 200 ms, the lab stand-in for INP.
+   - Stress, local only: the breaking point, where 5xx answers pass 1% or p99 passes 2 s, is at least four times the target load.
+2. **The target load** is 50 requests a second for 2 minutes, the most production may take. The mix: 40% MCP `list`, 20% `add`, 20% `done` (each completing a task the run added), 20% owner API (workspace list, change reads, task writes). The MCP share falls on one project, the hottest Durable Object an agent swarm can make; the owner share spreads over the many-projects owner. Locally the run uses both MCP eras half and half. In production the owner share becomes MCP `list` (point 5) and the run uses only the 2026-07-28 era, so it leaves no MCP session rows in D1.
+3. **The harness is a TypeScript workspace package, `tools/perf` (`@todz/perf`), behind `pnpm perf`.** It schedules requests on an open model (each request starts at its planned time, whatever the previous ones did, so a slow server cannot hide its queue), times each HTTP exchange around `fetch`, and computes nearest-rank percentiles itself. MCP calls go through `@modelcontextprotocol/client` 2.4.0, already pinned in the lockfile, with a timing `fetch`, so the requests are the ones real clients send in both eras; owner calls and the change feed use Node's own `fetch` and `WebSocket`. It adds no new third-party package. It prints one row per scenario with the count, the achieved rate, p50, p95, p99, the maximum, the 5xx count and the verdict against point 1, and exits non-zero on a missed budget.
+4. **Where it may point.** The target is an enum with two fixed origins, never a free URL: `local` (`http://localhost:8787`, `wrangler dev` with the fake sign-in provider) and `production` (`https://api.todz.app`). Locally, each run signs in a fresh owner through the fake provider and seeds what it needs (a project of 5,000 tasks, the many-projects owner, keys). The stress ramp (from 50 requests a second, times 1.5 every 30 s, until it breaks) runs only on `local`. On `production` the code refuses any rate over 50 a second, any duration over 120 s, any route other than `/mcp`, and any run without the key; sign-in, waitlist and admin routes are never requested, and no limit or Turnstile setting changes.
+5. **The `todz-perf` account.** The owner creates a workspace named `todz-perf` in his own production account, issues an MCP key for its Inbox in the app, and stores it in the macOS Keychain under the service `todz-perf-key`. The harness reads it itself with `security find-generic-password -s todz-perf-key -w`, never from an argument, a variable or a file, and never prints it. A key reaches only its own project ([ADR 0013](0013-a-project-is-reached-only-through-the-directory.md)), so the run cannot touch the owner's other data. The run cleans up after itself: within its 2 minutes it completes every task it added and ends by reporting how many it left open, which must be 0. No route deletes a workspace or a task, so the `todz-perf` workspace and its done tasks stay; the owner revokes the key in the app afterwards. The owner API and the change feed are measured in production only by the production smoke walk (point 7), because the loop holds no owner session there and never will.
+6. **Attribution.** The `/mcp` and `/owner` answers carry a `Server-Timing` header with the time spent in the directory and in the project store, so a slow percentile can be split between D1, the Durable Object and the network without a profiler.
+7. **The app is measured by a probe and by model benchmarks.** A probe in the app, off unless the app is launched with `-TodzPerfProbe YES`, logs to the unified log (subsystem the bundle identifier, category `perf`): the launch time, the frame intervals of a scripted scroll, the footprint every 30 s, and the moment each task number from a pull reaches the board. `pnpm perf app` reads those lines with `log show` and checks them against point 1; joined with a production run's send times, the arrival lines give the change feed's latency in production with the owner's Release app open on `todz-perf`, which is how the production smoke walk re-checks the budgets. TodzKit tests time the model work of point 1 with 5,000 tasks (the median of seven runs after one warm-up). Launches stay few and short and run in the background with `open -g`, because a window that takes focus disturbs the owner.
+8. **The regression check in `pnpm verify` counts work, not milliseconds.** Wall time on a busy laptop is noise; work is deterministic. The API's unit suite gains budget tests that count, for each route kind and MCP era, the D1 statements prepared and the Durable Object calls made, and, on a project of 5,000 tasks, the SQLite rows each use case reads. Each is pinned to the count after this feature's fixes, so a change that adds a round trip or a full scan fails the `unit` gate. The app's budget tests are the TodzKit timings of point 7, in the `macos` gate, against the 8 ms ceiling.
+9. **Fixes follow the numbers.** A candidate is fixed, red-first, when it grows with the size of a project or the number of projects (a full scan or a statement per project on a single-task path), when it holds at least a quarter of a missed percentile by attribution, or when it is the first thing to fail in the stress ramp below four times the target. Anything else is recorded as measured and not fixed, with its number.
+10. **Numbers live in `docs/runbooks/performance.md`.** The runbook holds every procedure above with its expected result and its `If it fails` line, and a dated results table (date, commit, where, scenario, load, p50, p95, p99, 5xx, verdict) with a row for each run, before and after each fix. The build loop runs the runbook's local steps and, under the owner's authorization in `todz-loop/PROMPT.md`, its bounded production step.
+
+## Alternatives considered
+
+| Option | Pros | Cons | Why not |
+|--------|------|------|---------|
+| `autocannon`, pinned | Mature, fast, prints percentiles | A new dependency tree; closed-loop by default, so a slow server lowers the rate and hides its queue; requests are static or need per-request hooks to chain an `add` to its `done` or to speak the MCP handshake | The scenarios are stateful and MCP-shaped; the hooks would rebuild the harness inside it |
+| k6 | Scenario language, open-model executors | A machine install (a Go binary), which the loop may not do; JavaScript in a non-Node runtime, so no MCP SDK | Forbidden install |
+| A TypeScript harness with `fetch` and the MCP SDK (chosen) | No new package; real client requests in both eras; open model; percentiles in one tested module | Its own code to maintain and test | — |
+| Wall-clock budgets in `pnpm verify` | Closest to the budgets | Flaky on a loaded machine, as the `macos` gate's history shows; a red gate that is noise trains everyone to rerun | Work counts are deterministic and catch the regressions that matter (a new round trip, a full scan) |
+| A dedicated production owner made by the loop | A clean account, owner API and change feed measurable in production | Needs a mailbox the loop can read, or the fake provider in production, which [ADR 0020](0020-sign-in-goes-through-a-provider-port-and-v1-ships-only-the-fake.md) keeps to development and tests | Not possible without weakening sign-in ([ADR 0040](0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md)) |
+| The owner's own session in the Keychain for the loop | Owner API in production | A credential to all of the owner's data in an agent's hands | The MCP key reaches one project only |
+| XCTest UI tests with `XCTApplicationLaunchMetric` | Apple's launch metric | A UI test target, a runner that drives the screen during `pnpm verify`, disturbing the owner | The probe measures the same interval in a short, backgrounded walk |
+
+## Consequences
+
+- `pnpm perf` exists with the subcommands the runbook names; `tools/perf` joins `AGENTS.md`'s layout and `scripts/verify-gates.tsv` (`typecheck unit`).
+- Every PR that touches `apps/api/src` or `libs/core` can now fail on a work count; raising a pinned count is a reviewed change with its reason in the PR.
+- `/mcp` and `/owner` answers gain `Server-Timing`.
+- The app gains a probe that costs nothing unless its launch argument is set.
+- The production run leaves a `todz-perf` workspace with done tasks in the owner's account, and a key the owner revokes by hand.
+- The production smoke walk gains the bounded run and, with the owner's app open, the change feed's production latency.
+
+## Evidence
+
+Read on `main` at `2cbca72` on 2026-11-25:
+- `apps/api/src/project-routing.ts`, `directory.ts`: an MCP call reads its key in one D1 statement (a four-table join); a 2025-era call adds a second for the session (`mcp-sessions.ts`); an owner project route reads the session, then the ownership, two statements in series (`owner-endpoint.ts`, `owner-project.ts`), before the Durable Object.
+- `libs/core/src/add-tasks.ts` and `update-task.ts` call `listAllTasks`, which reads every open and done task of the project to find one order key.
+- `apps/api/src/project-schema.ts`: no index on `tasks (state, order_key)` or `task_history (task_number)`.
+- `apps/api/src/mcp-server.ts`: `next` with the nudge on calls the Durable Object twice.
+- `apps/macos/TodzKit/Sources/TodzKit/AppModel.swift`: `taskViews` is computed, applying the outbox to the board on every read; `AppModel+Cache.swift`: `keepInProjectFile` reads, decodes and rewrites a project's whole file for one task, on the main actor.
+- `apps/api/wrangler.jsonc`: no rate limiter on `/mcp` or `/owner`; the nine limiters guard sign-in, the waitlist and the admin only.
+
+No number exists yet; the first run of the runbook writes the first row.
+
+## Revisit when
+
+- Production misses a latency budget after every fix the decision rule allows; the next candidates are Smart Placement, D1 read replicas or a cache of key lookups, each with its own ADR because each changes where data lives or how fast a revocation lands.
+- The plan leaves Workers Free, which changes the CPU limit and the daily caps.
+- An owner's project passes 5,000 tasks, or an owner passes 200 projects.
+- A route to delete a workspace exists, so the `todz-perf` workspace can be removed after a run.
