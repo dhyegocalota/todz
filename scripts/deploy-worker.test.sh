@@ -142,7 +142,7 @@ stage_only
 expect_equal "an empty release folder stages the public files" "$status" "0"
 expect_equal "the public files are staged" "$(list_of "$stage")" "_headers index.html "
 expect_equal "no release means no redirect and no download folder" "$(test -e "$stage/_redirects" -o -e "$stage/download" && echo present || echo absent)" "absent"
-expect_equal "no release leaves _headers as the repository has it" "$(cat "$stage/_headers")" "$public_headers"
+expect_equal "no release leaves _headers as the repository has it" "$(cmp -s "$stage/_headers" "$repository/apps/api/public/_headers" && echo same || echo different)" "same"
 
 new_world
 echo junk > "$repository/apps/api/public/.DS_Store"
