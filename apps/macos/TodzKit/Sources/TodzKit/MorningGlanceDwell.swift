@@ -35,7 +35,7 @@ public struct MorningGlanceDwell: Equatable, Sendable {
         }
     }
 
-    public func hovered(at instant: Date) -> MorningGlanceDwell {
+    public func hovered() -> MorningGlanceDwell {
         MorningGlanceDwell(shownAt: shownAt, pointer: .over)
     }
 

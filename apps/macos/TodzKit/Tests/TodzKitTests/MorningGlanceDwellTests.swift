@@ -18,31 +18,31 @@ private func after(_ seconds: TimeInterval) -> Date {
     }
 
     @Test func aHoverHoldsThePanelUntilTheCap() {
-        let dwell = MorningGlanceDwell(shownAt: shownAt).hovered(at: after(3))
+        let dwell = MorningGlanceDwell(shownAt: shownAt).hovered()
         #expect(dwell.fadeStart == after(thirtySeconds))
     }
 
     @Test func theFiveSecondsRestartWhenThePointerLeaves() {
-        let dwell = MorningGlanceDwell(shownAt: shownAt).hovered(at: after(3)).left(at: after(10))
+        let dwell = MorningGlanceDwell(shownAt: shownAt).hovered().left(at: after(10))
         #expect(dwell.fadeStart == after(15))
     }
 
     @Test func aSecondHoverAndLeaveRestartTheFiveSecondsAgain() {
         let dwell = MorningGlanceDwell(shownAt: shownAt)
-            .hovered(at: after(3))
+            .hovered()
             .left(at: after(10))
-            .hovered(at: after(12))
+            .hovered()
             .left(at: after(20))
         #expect(dwell.fadeStart == after(25))
     }
 
     @Test func aHoverNeverLeftFadesAtTheCap() {
-        let dwell = MorningGlanceDwell(shownAt: shownAt).hovered(at: after(1))
+        let dwell = MorningGlanceDwell(shownAt: shownAt).hovered()
         #expect(dwell.fadeStart == after(thirtySeconds))
     }
 
     @Test func aLeaveNearTheCapFadesAtTheCapNotFiveSecondsLater() {
-        let dwell = MorningGlanceDwell(shownAt: shownAt).hovered(at: after(1)).left(at: after(28))
+        let dwell = MorningGlanceDwell(shownAt: shownAt).hovered().left(at: after(28))
         #expect(dwell.fadeStart == after(thirtySeconds))
     }
 

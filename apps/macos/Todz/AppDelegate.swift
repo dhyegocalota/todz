@@ -79,7 +79,7 @@ private func isFocusFilterQuiet() async -> Bool {
         guard let link = urls.compactMap({ IncomingLink(url: $0, scheme: AppConfiguration.linkScheme) }).last else { return }
         switch link {
         case let .signIn(signInLink): windowState.waitingSignInLink = signInLink
-        case let .widget(widgetLink): windowState.waitingLink = widgetLink
+        case let .widget(widgetLink): windowState.open(widgetLink, from: .widget)
         }
     }
 

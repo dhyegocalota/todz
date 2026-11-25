@@ -12,6 +12,7 @@ private let tomorrowOffset = 1
     var isConfirmingSignOut = false
     var lingers = CompletionLingers()
     var waitingLink: WidgetLink?
+    var openingFocus = OpeningFocus.addField
     var waitingSignInLink: SignInLink?
     var agentClient: AgentClient = .claudeCode
     @ObservationIgnored private var lingerTimers: [TaskKey: Task<Void, Never>] = [:]
@@ -32,6 +33,11 @@ private let tomorrowOffset = 1
             return
         }
         Task { await model.signOut() }
+    }
+
+    func open(_ link: WidgetLink, from source: LinkSource) {
+        openingFocus = source.openingFocus
+        waitingLink = link
     }
 
     func follow(_ link: WidgetLink, model: AppModel) {

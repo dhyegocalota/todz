@@ -3,7 +3,10 @@ public enum LinkSource: Sendable, CaseIterable {
     case morningGlance
 
     public var openingFocus: OpeningFocus {
-        .addField
+        switch self {
+        case .widget: .addField
+        case .morningGlance: .list
+        }
     }
 }
 
