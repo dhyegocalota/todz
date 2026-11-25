@@ -10,7 +10,7 @@ const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
   scripts: [SITE_STRUCTURED_DATA],
   widgetOrigin: null,
-  connectsToSelf: false,
+  connectsToSelf: true,
 });
 
 const SELF_HOST_PAGE_HTML = siteDocumentHtml({

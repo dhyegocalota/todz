@@ -108,13 +108,13 @@ const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
   scripts: [LANDING_STRUCTURED_DATA, ...PAGE_SCRIPTS],
   widgetOrigin: null,
-  connectsToSelf: false,
+  connectsToSelf: true,
 });
 const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
   scripts: [LANDING_STRUCTURED_DATA, ...PAGE_SCRIPTS],
   widgetOrigin: TURNSTILE_ORIGIN,
-  connectsToSelf: false,
+  connectsToSelf: true,
 });
 
 function shotImage({ shot, alt, isEager }: { shot: LandingShot; alt: string; isEager: boolean }): string {
