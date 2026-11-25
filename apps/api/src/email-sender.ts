@@ -2,7 +2,6 @@ import { enumValueOf } from './enum-value';
 import { isLocalOrigin } from './local-origin';
 
 const SENDER_ADDRESS: EmailAddress = { name: 'todz', email: 'noreply@todz.app' };
-const REPLY_TO_ADDRESS = 'hello@todz.app';
 
 export enum EmailSenderKind {
   Console = 'console',
@@ -14,7 +13,7 @@ export type EmailMessage = {
   subject: string;
   html: string;
   text: string;
-  replyTo?: string;
+  replyTo: string;
   headers?: Record<string, string>;
 };
 
@@ -25,15 +24,15 @@ type EmailSenderFactory = (binding: SendEmail | undefined) => EmailSender | null
 // NB ADR 0041: the console sender only logs, so a deployed origin never selects it.
 const EMAIL_SENDER_FACTORY_OF_KIND: Record<EmailSenderKind, EmailSenderFactory> = {
   [EmailSenderKind.Console]: () => ({
-    async send({ to, text }) {
-      console.log(JSON.stringify({ to, text }));
+    async send({ to, replyTo, text }) {
+      console.log(JSON.stringify({ to, replyTo, text }));
     },
   }),
   [EmailSenderKind.Cloudflare]: (binding) => {
     if (binding === undefined) return null;
     return {
-      async send({ to, subject, html, text }) {
-        await binding.send({ from: SENDER_ADDRESS, replyTo: REPLY_TO_ADDRESS, to, subject, html, text });
+      async send({ to, subject, html, text, replyTo, headers }) {
+        await binding.send({ from: SENDER_ADDRESS, replyTo, to, subject, html, text, headers });
       },
     };
   },
