@@ -1,4 +1,4 @@
-import { escapedHtml } from '../../src/site/escaped-html';
+import { escapedHtml } from '../../src/escaped-html';
 import { LANDING_COPY } from '../../src/site/landing-copy';
 
 enum LineKind {

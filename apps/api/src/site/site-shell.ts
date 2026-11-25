@@ -1,4 +1,4 @@
-import { escapedHtml } from './escaped-html';
+import { escapedHtml } from '../escaped-html';
 import { LANDING_COPY } from './landing-copy';
 import { SITE_GLYPH_SPRITE, SiteGlyph, glyphHtml } from './site-glyphs';
 import { SITE_STYLE } from './site-style';
