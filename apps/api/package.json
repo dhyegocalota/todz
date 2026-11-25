@@ -13,7 +13,8 @@
     "site:generate": "tsx scripts/site/cli.ts generate",
     "site:check": "tsx scripts/site/cli.ts check",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",
@@ -25,6 +26,7 @@
     "@cloudflare/vitest-plugin": "1.9.0",
     "@cloudflare/workers-types": "5.20261123.1",
     "@modelcontextprotocol/client": "2.4.0",
+    "@playwright/test": "1.61.0",
     "@react-email/render": "2.3.1",
     "@types/react": "19.3.0",
     "prettier": "3.9.10",
