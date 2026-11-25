@@ -1,0 +1,80 @@
+import SwiftUI
+import TodzKit
+import WebKit
+
+private let messageHandlerName = "turnstile"
+private let challengeHeight: CGFloat = 65
+private let noToken = ""
+
+struct ChallengeView: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        ChallengeWebView(model: model)
+            .id(model.challengeRound)
+            .frame(height: challengeHeight)
+    }
+}
+
+private struct ChallengeWebView: NSViewRepresentable {
+    let model: AppModel
+
+    func makeCoordinator() -> ChallengeCoordinator {
+        ChallengeCoordinator(model: model)
+    }
+
+    func makeNSView(context: Context) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        configuration.userContentController.add(context.coordinator, name: messageHandlerName)
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.navigationDelegate = context.coordinator
+        webView.setAccessibilityLabel(SignInCopy.challengeLabel)
+        webView.load(URLRequest(url: ChallengeNavigation.pageURL(apiBaseURL: AppConfiguration.baseURL)))
+        return webView
+    }
+
+    func updateNSView(_ webView: WKWebView, context: Context) {}
+
+    static func dismantleNSView(_ webView: WKWebView, coordinator: ChallengeCoordinator) {
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: messageHandlerName)
+    }
+}
+
+@MainActor final class ChallengeCoordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
+    private let model: AppModel
+
+    init(model: AppModel) {
+        self.model = model
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        let origin = message.frameInfo.securityOrigin
+        let isTrusted = ChallengeNavigation.isTrustedMessage(
+            isMainFrame: message.frameInfo.isMainFrame,
+            scheme: origin.protocol,
+            host: origin.host,
+            port: origin.port,
+            apiBaseURL: AppConfiguration.baseURL
+        )
+        guard isTrusted else { return }
+        guard let token = message.body as? String else {
+            model.acceptChallenge(token: noToken)
+            return
+        }
+        model.acceptChallenge(token: token)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
+    ) {
+        guard let url = navigationAction.request.url, let targetFrame = navigationAction.targetFrame else {
+            decisionHandler(.cancel)
+            return
+        }
+        let isAllowed = ChallengeNavigation.isAllowed(url: url, apiBaseURL: AppConfiguration.baseURL, isMainFrame: targetFrame.isMainFrame)
+        decisionHandler(isAllowed ? .allow : .cancel)
+    }
+}

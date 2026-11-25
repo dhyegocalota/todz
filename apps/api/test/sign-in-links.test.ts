@@ -1,16 +1,19 @@
 import { MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { env } from 'cloudflare:workers';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import { publicOriginOf } from '../src/sign-in-links';
+import { TURNSTILE_DUMMY_TOKEN, TurnstileAction } from '../src/turnstile';
 import { seedEmailIdentity, seedOwner } from './directory-seed';
 import {
-  CLOUDFLARE_SETTINGS,
   LINK_CHALLENGE,
   freshAddress,
+  guardedSettings,
   EMAIL_SETTINGS,
   PUBLIC_HTTPS_ORIGIN,
   PUBLIC_ORIGIN,
+  TURNSTILE_TOKEN_OF_ACTION,
+  acceptingSiteverify,
   bindingFailingWith,
   consoleOutput,
   emailEnv,
@@ -33,7 +36,8 @@ const BAD_REQUEST_STATUS = 400;
 const TOO_MANY_STATUS = 429;
 const UNAVAILABLE_STATUS = 503;
 const INVALID_REQUEST = { error: 'invalid_request' };
-const TOO_MANY_LINKS = { error: 'too_many_links' };
+const SIGN_IN_REFUSED = { error: 'sign_in_refused' };
+const RETRY_AFTER_SECONDS = '60';
 const SIGN_IN_UNAVAILABLE = { error: 'sign_in_unavailable' };
 const OWNER_TABLES_PATTERN = /owners|owner_identities/;
 
@@ -187,7 +191,7 @@ describe('POST /owner/sign-in-links', () => {
           method: 'POST',
           path: '/owner/sign-in-links',
           origin: PUBLIC_ORIGIN,
-          rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE }),
+          rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE, turnstile_token: TURNSTILE_DUMMY_TOKEN }),
           headers: { 'Content-Type': contentType },
         },
         now: CLOCK_NOW,
@@ -207,7 +211,7 @@ describe('POST /owner/sign-in-links', () => {
         method: 'POST',
         path: '/owner/sign-in-links',
         origin: PUBLIC_ORIGIN,
-        rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE }),
+        rawBody: JSON.stringify({ email: freshAddress(), link_challenge: LINK_CHALLENGE, turnstile_token: TURNSTILE_DUMMY_TOKEN }),
         headers: { 'Content-Type': 'Application/JSON; charset=utf-8' },
       },
       now: CLOCK_NOW,
@@ -223,7 +227,7 @@ describe('POST /owner/sign-in-links', () => {
         method: 'POST',
         path: '/owner/sign-in-links',
         origin: PUBLIC_ORIGIN,
-        body: { email: freshAddress(), link_challenge: LINK_CHALLENGE },
+        body: { email: freshAddress(), link_challenge: LINK_CHALLENGE, turnstile_token: TURNSTILE_DUMMY_TOKEN },
         token: 'unknown',
       },
       now: CLOCK_NOW,
@@ -236,6 +240,11 @@ describe('POST /owner/sign-in-links', () => {
 describe('POST /owner/sign-in-links through the cloudflare sender', () => {
   const PUBLIC_REQUEST_ORIGIN = 'https://api.todz.test';
   const LINK_PATTERN = /https:\/\/todz\.app\/sign-in#token=[A-Za-z0-9_-]{43}/;
+  const REQUEST_LINK_TOKEN = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.RequestLink];
+
+  beforeEach(() => {
+    acceptingSiteverify();
+  });
 
   test('sends one mail from a public https origin whose html button and text both carry the link and whose header shows the lockup', async () => {
     const { binding, sent } = recordingBinding();
@@ -243,7 +252,8 @@ describe('POST /owner/sign-in-links through the cloudflare sender', () => {
     const response = await requestLink({
       email,
       origin: PUBLIC_REQUEST_ORIGIN,
-      workerEnv: emailEnv({ ...CLOUDFLARE_SETTINGS, EMAIL: binding }),
+      turnstileToken: REQUEST_LINK_TOKEN,
+      workerEnv: emailEnv({ ...guardedSettings(), EMAIL: binding }),
     });
     expect(response.status).toBe(ACCEPTED_STATUS);
     const mail = messageSent(sent);
@@ -259,7 +269,12 @@ describe('POST /owner/sign-in-links through the cloudflare sender', () => {
   test('stores the digest of the token it mailed', async () => {
     const { binding, sent } = recordingBinding();
     const email = freshAddress();
-    await requestLink({ email, origin: PUBLIC_REQUEST_ORIGIN, workerEnv: emailEnv({ ...CLOUDFLARE_SETTINGS, EMAIL: binding }) });
+    await requestLink({
+      email,
+      origin: PUBLIC_REQUEST_ORIGIN,
+      turnstileToken: REQUEST_LINK_TOKEN,
+      workerEnv: emailEnv({ ...guardedSettings(), EMAIL: binding }),
+    });
     const [row] = await linkRows(email);
     expect(row?.digest).toBe(await digestCredential(tokenOfMail(messageSent(sent))));
   });
@@ -269,7 +284,8 @@ describe('POST /owner/sign-in-links through the cloudflare sender', () => {
     const response = await requestLink({
       email,
       origin: PUBLIC_REQUEST_ORIGIN,
-      workerEnv: emailEnv({ ...CLOUDFLARE_SETTINGS, EMAIL: bindingFailingWith(new Error('the binding is down')) }),
+      turnstileToken: REQUEST_LINK_TOKEN,
+      workerEnv: emailEnv({ ...guardedSettings(), EMAIL: bindingFailingWith(new Error('the binding is down')) }),
     });
     expect(response.status).toBe(UNAVAILABLE_STATUS);
     expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
@@ -278,7 +294,11 @@ describe('POST /owner/sign-in-links through the cloudflare sender', () => {
 
   test('no binding answers 503 sign_in_unavailable and stores nothing', async () => {
     const before = await totalLinks();
-    const response = await requestLink({ origin: PUBLIC_REQUEST_ORIGIN, workerEnv: emailEnv(CLOUDFLARE_SETTINGS) });
+    const response = await requestLink({
+      origin: PUBLIC_REQUEST_ORIGIN,
+      turnstileToken: REQUEST_LINK_TOKEN,
+      workerEnv: emailEnv(guardedSettings()),
+    });
     expect(response.status).toBe(UNAVAILABLE_STATUS);
     expect(await response.json()).toEqual(SIGN_IN_UNAVAILABLE);
     expect(await totalLinks()).toBe(before);
@@ -286,7 +306,7 @@ describe('POST /owner/sign-in-links through the cloudflare sender', () => {
 });
 
 describe('the limit of five links per address in 15 minutes', () => {
-  test('the sixth request answers 429 too_many_links and sends nothing, whatever the case and spaces of the address', async () => {
+  test('the sixth request answers 429 sign_in_refused with Retry-After 60 and sends nothing, whatever the case and spaces of the address', async () => {
     const output = consoleOutput();
     const email = 'limit-sixth@example.com';
     const statuses = await Array.from({ length: LINKS_PER_WINDOW_MAX }).reduce<Promise<number[]>>(async (issued) => {
@@ -296,7 +316,8 @@ describe('the limit of five links per address in 15 minutes', () => {
     expect(statuses).toEqual(Array.from({ length: LINKS_PER_WINDOW_MAX }, () => ACCEPTED_STATUS));
     const sixth = await requestLink({ email: '  LIMIT-Sixth@Example.com ' });
     expect(sixth.status).toBe(TOO_MANY_STATUS);
-    expect(await sixth.json()).toEqual(TOO_MANY_LINKS);
+    expect(await sixth.json()).toEqual(SIGN_IN_REFUSED);
+    expect(sixth.headers.get('Retry-After')).toBe(RETRY_AFTER_SECONDS);
     expect(output).toHaveBeenCalledTimes(LINKS_PER_WINDOW_MAX);
     expect(await linkRows(email)).toHaveLength(LINKS_PER_WINDOW_MAX);
   });

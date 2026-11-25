@@ -5,11 +5,11 @@ extension SignInError {
         switch self {
         case .identityRejected: SignInCopy.identityRejected
         case .signInUnavailable: SignInCopy.signInUnavailable
-        case .tooManyLinks: SignInCopy.tooManyLinks
-        case .tooManyRequests: SignInCopy.tooManyRequests
+        case .signInRefused: SignInCopy.signInRefused
         case .invalidAddress: SignInCopy.emailFormat
         case .linkRejected: SignInCopy.linkRejected
         case .linkNotRequested: SignInCopy.linkNotRequested
+        case .linkRefused: SignInCopy.linkRefused
         case .timeZoneInvalid: SignInCopy.timeZoneInvalid
         case .unreachable: ErrorCopy.networkTitle
         case .unexpected: ErrorCopy.serverTitle
@@ -19,7 +19,7 @@ extension SignInError {
     var canTryAgain: Bool {
         switch self {
         case .unreachable, .unexpected: true
-        case .identityRejected, .signInUnavailable, .tooManyLinks, .tooManyRequests, .invalidAddress, .linkRejected, .linkNotRequested,
+        case .identityRejected, .signInUnavailable, .signInRefused, .invalidAddress, .linkRejected, .linkNotRequested, .linkRefused,
             .timeZoneInvalid:
             false
         }

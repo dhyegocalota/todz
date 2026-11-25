@@ -1,11 +1,11 @@
 public enum SignInError: Equatable, Sendable {
     case identityRejected
     case signInUnavailable
-    case tooManyLinks
-    case tooManyRequests
+    case signInRefused
     case invalidAddress
     case linkRejected
     case linkNotRequested
+    case linkRefused
     case timeZoneInvalid
     case unreachable
     case unexpected
@@ -22,8 +22,7 @@ public enum SignInError: Equatable, Sendable {
         switch failure {
         case .identityRejected: self = .identityRejected
         case .signInUnavailable: self = .signInUnavailable
-        case .tooManyLinks: self = .tooManyLinks
-        case .tooManyRequests: self = .tooManyRequests
+        case .signInRefused: self = .signInRefused
         case .timeZoneInvalid: self = .timeZoneInvalid
         case .unreachable: self = .unreachable
         case .unauthorized, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead, .ruleViolated, .invalidRequest, .unexpected:

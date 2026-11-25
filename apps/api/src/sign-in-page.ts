@@ -1,39 +1,74 @@
-import { noRouteResponse } from './owner-errors';
+import type { Env } from './env';
 import { SIGN_IN_PAGE_COPY } from './sign-in-page-copy';
 import { SIGN_IN_PAGE_ICON } from './sign-in-page-icon';
+import { TURNSTILE_TOKEN_PATTERN_SOURCE, TurnstileAction } from './turnstile';
+import { TURNSTILE_EXPLICIT_SCRIPT_URL, type TurnstilePage, serveTurnstilePage, turnstilePagePolicy } from './turnstile-page';
 
 export const SIGN_IN_PAGE_PATH = '/sign-in';
-const PAGE_METHOD = 'GET';
-const HASH_ALGORITHM = 'SHA-256';
 const TOKEN_PARAMETER = 'token';
 const TOKEN_PATTERN_SOURCE = '^[A-Za-z0-9_-]{43}$';
 const APP_LINK_PREFIX = 'todz://sign-in?token=';
+const APP_LINK_TURNSTILE_SEPARATOR = '&turnstile=';
 const OPEN_BUTTON_ID = 'open';
+const CHECK_ID = 'check';
+const CHECKING_STATE = 'checking';
+const FAILED_STATE = 'failed';
 const READY_STATE = 'ready';
 
-const PAGE_SCRIPT = `const token = new URLSearchParams(location.hash.slice(1)).get('${TOKEN_PARAMETER}');
-history.replaceState(null, '', location.pathname);
-if (token !== null && /${TOKEN_PATTERN_SOURCE}/.test(token)) {
-  const appLink = '${APP_LINK_PREFIX}' + token;
-  const button = document.getElementById('${OPEN_BUTTON_ID}');
-  button.addEventListener('click', () => { location.href = appLink; });
-  document.body.dataset.state = '${READY_STATE}';
-  button.focus();
-  location.href = appLink;
+const PAGE_SCRIPT = `{
+  const token = new URLSearchParams(location.hash.slice(1)).get('${TOKEN_PARAMETER}');
+  history.replaceState(null, '', location.pathname);
+  if (token !== null && /${TOKEN_PATTERN_SOURCE}/.test(token)) {
+    const button = document.getElementById('${OPEN_BUTTON_ID}');
+    const check = document.getElementById('${CHECK_ID}');
+    let appLink = null;
+    let widget = null;
+    const fail = () => { document.body.dataset.state = '${FAILED_STATE}'; };
+    const checked = (turnstileToken) => {
+      if (!/${TURNSTILE_TOKEN_PATTERN_SOURCE}/.test(turnstileToken)) return fail();
+      const isFirstCheck = appLink === null;
+      appLink = '${APP_LINK_PREFIX}' + token + '${APP_LINK_TURNSTILE_SEPARATOR}' + turnstileToken;
+      document.body.dataset.state = '${READY_STATE}';
+      if (!isFirstCheck) return;
+      button.focus();
+      location.href = appLink;
+    };
+    const expired = () => {
+      document.body.dataset.state = '${CHECKING_STATE}';
+      turnstile.reset(widget);
+    };
+    button.addEventListener('click', () => { location.href = appLink; });
+    document.body.dataset.state = '${CHECKING_STATE}';
+    const loader = document.createElement('script');
+    loader.src = '${TURNSTILE_EXPLICIT_SCRIPT_URL}';
+    loader.addEventListener('load', () => {
+      widget = turnstile.render(check, {
+        sitekey: check.dataset.sitekey,
+        action: '${TurnstileAction.SignIn}',
+        'refresh-expired': 'manual',
+        callback: checked,
+        'expired-callback': expired,
+        'error-callback': fail,
+        'timeout-callback': fail,
+      });
+    });
+    document.head.appendChild(loader);
+  }
 }`;
 
 const PAGE_STYLE = `:root{color-scheme:light dark}
 body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font:1rem system-ui;background:Canvas;color:CanvasText}
-main{box-sizing:border-box;max-width:280px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+main{box-sizing:border-box;max-width:332px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
 h1{margin:0;font-size:22px;font-weight:700}
 p{margin:0;color:GrayText}
 .footnote{font-size:0.8125rem}
 button{font:inherit;padding:8px 16px;border:0;border-radius:8px;background:AccentColor;color:AccentColorText}
-.ready{display:none}
-body[data-state=${READY_STATE}] .ready{display:block}
-body[data-state=${READY_STATE}] .missing{display:none}`;
+.${CHECKING_STATE},.${FAILED_STATE},.${READY_STATE}{display:none}
+body[data-state=${CHECKING_STATE}] .${CHECKING_STATE},body[data-state=${FAILED_STATE}] .${FAILED_STATE},body[data-state=${READY_STATE}] .${READY_STATE}{display:block}
+body[data-state] .missing{display:none}`;
 
-const PAGE_HTML = `<!doctype html>
+function pageHtml(main: string): string {
+  return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -42,44 +77,38 @@ const PAGE_HTML = `<!doctype html>
 <style>${PAGE_STYLE}</style>
 </head>
 <body>
-<main>
-${SIGN_IN_PAGE_ICON}
-<h1>${SIGN_IN_PAGE_COPY.title}</h1>
-<p class="missing">${SIGN_IN_PAGE_COPY.missingToken}</p>
-<p class="ready">${SIGN_IN_PAGE_COPY.opening}</p>
-<button id="${OPEN_BUTTON_ID}" class="ready" type="button">${SIGN_IN_PAGE_COPY.openButton}</button>
-<p class="ready footnote">${SIGN_IN_PAGE_COPY.notOpened}</p>
-</main>
-<script>${PAGE_SCRIPT}</script>
+${main}
 </body>
 </html>
 `;
-
-async function sourceHash(source: string): Promise<string> {
-  const digest = await crypto.subtle.digest(HASH_ALGORITHM, new TextEncoder().encode(source));
-  return `'sha256-${btoa(String.fromCharCode(...new Uint8Array(digest)))}'`;
 }
 
-const CONTENT_SECURITY_POLICY = [
-  "default-src 'none'",
-  `script-src ${await sourceHash(PAGE_SCRIPT)}`,
-  `style-src ${await sourceHash(PAGE_STYLE)}`,
-  'img-src data:',
-  "base-uri 'none'",
-  "form-action 'none'",
-  "frame-ancestors 'none'",
-].join('; ');
+function availableHtml(siteKey: string): string {
+  return pageHtml(`<main>
+${SIGN_IN_PAGE_ICON}
+<h1>${SIGN_IN_PAGE_COPY.title}</h1>
+<p class="missing">${SIGN_IN_PAGE_COPY.missingToken}</p>
+<p class="${CHECKING_STATE}">${SIGN_IN_PAGE_COPY.checking}</p>
+<div id="${CHECK_ID}" class="${CHECKING_STATE}" data-sitekey="${siteKey}"></div>
+<p class="${FAILED_STATE}">${SIGN_IN_PAGE_COPY.checkFailed}</p>
+<p class="${READY_STATE}">${SIGN_IN_PAGE_COPY.opening}</p>
+<button id="${OPEN_BUTTON_ID}" class="${READY_STATE}" type="button">${SIGN_IN_PAGE_COPY.openButton}</button>
+<p class="${READY_STATE} footnote">${SIGN_IN_PAGE_COPY.notOpened}</p>
+</main>
+<script>${PAGE_SCRIPT}</script>`);
+}
+
+const SIGN_IN_PAGE: TurnstilePage = {
+  available: availableHtml,
+  unavailable: pageHtml(`<main>
+${SIGN_IN_PAGE_ICON}
+<h1>${SIGN_IN_PAGE_COPY.title}</h1>
+<p>${SIGN_IN_PAGE_COPY.unavailable}</p>
+</main>`),
+  contentSecurityPolicy: await turnstilePagePolicy({ script: PAGE_SCRIPT, style: PAGE_STYLE }),
+};
 
 // NB ADR 0040: the page never receives the token; its script reads the fragment, which no request carries.
-export async function serveSignInPage(request: Request): Promise<Response> {
-  if (request.method !== PAGE_METHOD) return noRouteResponse();
-  return new Response(PAGE_HTML, {
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-store',
-      'Referrer-Policy': 'no-referrer',
-      'X-Content-Type-Options': 'nosniff',
-      'Content-Security-Policy': CONTENT_SECURITY_POLICY,
-    },
-  });
+export async function serveSignInPage({ request, env }: { request: Request; env: Env }): Promise<Response> {
+  return serveTurnstilePage({ request, env, page: SIGN_IN_PAGE });
 }

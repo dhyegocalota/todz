@@ -19,6 +19,7 @@ struct AddressSlot: View {
                 .focused($isEmailFocused)
                 .disabled(model.isRequestingLink)
                 .onSubmit(submit)
+            ChallengeView()
             if isFormatRefused {
                 Text(SignInCopy.emailFormat)
                     .foregroundStyle(.red)
@@ -30,7 +31,7 @@ struct AddressSlot: View {
             if !model.isRequestingLink {
                 Button(SignInCopy.sendLink, action: submit)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(because: missingEmailReason)
+                    .disabled(because: sendReason)
             }
             if let signInError = model.signInError {
                 SignInErrorLine(signInError: signInError, tryAgain: submit)
@@ -62,8 +63,13 @@ struct AddressSlot: View {
         return SignInCopy.emailRequired
     }
 
+    private var sendReason: String? {
+        guard missingEmailReason == nil else { return missingEmailReason }
+        return model.missingChallengeReason
+    }
+
     private func submit() {
-        guard missingEmailReason == nil, !model.isRequestingLink else { return }
+        guard sendReason == nil, !model.isRequestingLink else { return }
         isFormatRefused = !EmailAddressFormat.isValid(address)
         guard !isFormatRefused else {
             isEmailFocused = true
