@@ -4,6 +4,7 @@ final class InMemorySessionVault: SessionVault {
     var secret: String?
     var isUnreadable = false
     var isUnwritable = false
+    var isUnerasable = false
     var eraseCount = 0
     var onErase: (() -> Void)?
 
@@ -19,6 +20,7 @@ final class InMemorySessionVault: SessionVault {
 
     func erase() throws {
         eraseCount += 1
+        guard !isUnerasable else { throw SessionVaultError.unwritable }
         secret = nil
         onErase?()
     }

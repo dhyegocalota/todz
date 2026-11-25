@@ -4,14 +4,14 @@ import TodzKit
 private let baseURLKey = "TodzAPIBaseURL"
 
 enum AppConfiguration {
-    static var baseURL: URL {
+    static var defaultURL: ServerAddress {
         guard let text = Bundle.main.object(forInfoDictionaryKey: baseURLKey) as? String else {
             fatalError("\(baseURLKey) is missing from the app's Info.plist")
         }
-        guard let address = URL(string: text), address.host() != nil else {
-            fatalError("\(baseURLKey) in the app's Info.plist is not a URL with a host: \(text)")
+        switch ServerAddress.checked(text: text) {
+        case let .success(address): return address
+        case let .failure(issue): fatalError("\(baseURLKey) in the app's Info.plist is not a server address (\(issue)): \(text)")
         }
-        return address
     }
 
     static var sessionFolder: URL {

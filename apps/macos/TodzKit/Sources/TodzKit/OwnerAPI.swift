@@ -1,5 +1,7 @@
 import Foundation
 
+private let healthPath = "/health"
+private let todzServiceName = "todz"
 private let ownerPath = "/owner"
 private let sessionsPath = "/owner/sessions"
 private let signInMethodPath = "/owner/sign-in-method"
@@ -26,6 +28,23 @@ private func taskPath(projectIdentifier: String, number: Int) -> String {
 
 private func keysPath(_ projectIdentifier: String) -> String {
     "\(projectPath(projectIdentifier))/keys"
+}
+
+private struct HealthBody: Decodable {
+    let service: String
+    let origin: String?
+}
+
+private final class RedirectRefusal: NSObject, URLSessionTaskDelegate {
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping @Sendable (URLRequest?) -> Void
+    ) {
+        completionHandler(nil)
+    }
 }
 
 public protocol OwnerService: Sendable {
@@ -69,6 +88,22 @@ public struct OwnerAPI: OwnerService {
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         return URLSession(configuration: configuration)
+    }
+
+    public func health() async throws -> ServerHealthAnswer {
+        var request = try OwnerRequest(method: .get, path: healthPath, session: nil).transportRequest(baseURL: baseURL)
+        request.timeoutInterval = ServerTiming.probeSeconds
+        let body: Data
+        let response: URLResponse
+        do {
+            (body, response) = try await transport.data(for: request, delegate: RedirectRefusal())
+        } catch is URLError {
+            throw OwnerAPIError.unreachable
+        }
+        guard let response = response as? HTTPURLResponse, ResponseStatus.successes.contains(response.statusCode) else { return .notTodz }
+        guard let answer = try? OwnerCoding.decoder().decode(HealthBody.self, from: body), answer.service == todzServiceName else { return .notTodz }
+        guard let origin = answer.origin else { return .notTodz }
+        return .todz(origin: origin)
     }
 
     public func signInMethod() async throws -> SignInMethod {
