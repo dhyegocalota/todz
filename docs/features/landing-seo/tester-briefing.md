@@ -6,54 +6,97 @@ Written by the developer sub-agents when their steps are done. A developer does 
 
 ### What changed
 
-Partial: only steps 2, 4, 6 and 7 are done (the ones disjoint from `security-fixes`' Lane W). Steps 3 and 5 and everything after (8 to 18) are pending the `security-fixes` merge to `main` and the lead's merge of it into `lane/landing-seo-h` (plan → Sequencing 3).
+Lane H is done: plan steps 2 to 18 (step 1 is G0's). `origin/main` was merged twice: with `security-fixes` (before steps 3 and 5) and with `docs-cutover` (`93003fe`, before the gate), which made `/self-host` a 301, deleted `self-host-page.ts` and the generator, and dropped `test/site` from three API configs; the merge restores `test/site` there (`dfbbf73`) because Lane I's asset tests live in it.
 
-- Step 2 (`43a383a`, red): `apps/api/test/site-head.test.ts`.
-- Step 4 (`26fcec2`, red): `apps/api/test/site-json-ld.test.ts`, `libs/types/src/constants.test.ts` (`COMPANY.logo`), and a new `describe` at the end of `apps/api/test/site-pages.test.ts` (hashes, `manifest-src`, `Cache-Control`, no `'unsafe-inline'`, no inline handler).
-- Step 6 (`0df5fbf`, red): `tools/repository-shape/src/agent-setup.test.ts` with a stub `apps/api/src/site/agent-setup.ts`.
-- Step 7 (`92d1e34`, green): `apps/api/src/site/agent-setup.ts` (`AgentClient`, `agentSetupOf`), and `landing-copy.ts`'s `terminal.command` now comes from it.
+- Head (steps 2 and 3): `site-shell.ts` writes `SiteDocument` as a union on `kind` (`SitePageKind.Public` with `path` and `structuredData`, `Private` without) and a `scripts: string[]` list; public pages get the canonical, the Open Graph and Twitter tags, the touch icon and the manifest link, every page the two favicon links; `site-headers.ts` hashes the list. The admin pages moved to the list shape and the private kind and changed nothing else. `landing-copy.ts` gains `meta.siteName`.
+- JSON-LD and policy (steps 4 and 5): `site-json-ld.ts` (`LANDING_STRUCTURED_DATA`, one `@graph` with `Organization`, `WebSite`, `SoftwareApplication`, every `<` escaped as `<`), `COMPANY.logo`, `manifest-src 'self'`, `Cache-Control: no-cache, no-transform` with the ADR pointer. The landing's policy hashes `[structured data, page script, WebMCP script]`.
+- Agent setup (steps 6 and 7): `agent-setup.ts`, pinned to `AgentCommand.swift` by `tools/repository-shape/src/agent-setup.test.ts`; `landing-copy.ts` takes the terminal line from it.
+- Discovery (steps 8 to 11): `discovery-copy.ts` (facts, the docs page list, the tool parameters, the card text, the catalog's queries), `discovery-response.ts` (`discoveryResponse`, the open-read headers), `site-discovery.ts` (the bodies, built at module load), `mcp-server-card.ts` (the card and `serveServerCard`, GET and HEAD only), one line in `index.ts`'s path table for `/mcp/server-card`, `export` on `MCP_SERVER_VERSION`, and the routes in `site-endpoint.ts`.
+- WebMCP (steps 12 and 13): `webmcp-copy.ts`, `webmcp-script.ts` (`WEBMCP_TOOLS`, one fixed `WEBMCP_SCRIPT`), `join-form-markup.ts` (the form class names `landing-page.ts` and the script share).
+- Browser checks and the ratio fix (steps 14 and 15): `apps/api/e2e/landing-seo.spec.ts`, `e2e/model-context-stub.ts`; `site-style.ts` hides the mobile window shot with `visibility:hidden` instead of `display:none`, so it keeps a box.
+- Performance (step 16): the landing's shots carry `srcset` and `sizes` from Lane I's WebP copies, the PNG staying the `src`.
+- Not in the plan, decided here (step 16a): the public pages allow `connect-src 'self'`. Lighthouse fetches `robots.txt`, `llms.txt` and the catalog from inside the page, and with `default-src 'none'` the three audits (`robots-txt`, `llms-txt`, `ard-schema`) fail with "Protocol error (Network.loadNetworkResource): CSP violation". Measured on `wrangler dev`: Agentic browsing 60 and SEO 92 without it, 100 and 100 with it. The landing still makes no `fetch` call (`join_waitlist` calls `requestSubmit()`), so the directive permits what no script uses; ADR 0060 § 7 says "everything else stays 'none' or 'self'", which it does, but the spec's goal 9 ("nothing else widens") and the ADR's note that `connect-src` stays absent read otherwise. The two commits (`1a239e5`, `2d3fca5`) revert together if the lead disagrees, and then the three audits go red again.
+- Outside the lane's file map, each small: `apps/api/e2e/landing.spec.ts` (the two window-shot assertions accept the WebP copy the browser picks, because `currentSrc` is no longer the PNG), `apps/api/test/site-pages.test.ts` beyond the policy rows (the remote-asset pattern skips the canonical link; the landing now has two plain scripts; the self-host rows left with the page), `apps/api/tsconfig.json`, `tsconfig.scripts.json` and `vitest.config.mts` (restored `test/site`).
+- Docs: `docs/runbooks/deploy-the-api.md` step 16 (the landing's discovery files, icons and scores), "Record the run" is 17; `apps/api/README.md`; `AGENTS.md` names `discoveryResponse`. `runbooks.test.ts` needed no change: its generic rows (numbering, `If it fails`, scripts that exist, no command the secrets guard refuses) cover the new step.
 
 ### How to run
 
 ```bash
-pnpm --filter @todz/api exec vitest run test/site-head.test.ts test/site-json-ld.test.ts test/site-pages.test.ts
-pnpm --filter @todz/types exec vitest run src/constants.test.ts
-pnpm --filter @todz/repository-shape exec vitest run src/agent-setup.test.ts
+pnpm --filter @todz/api exec vitest run
+pnpm --filter @todz/api exec playwright test
+pnpm --filter @todz/api exec tsc --noEmit
+pnpm --filter @todz/api exec tsc --noEmit -p tsconfig.scripts.json
+pnpm --filter @todz/api run site:assets:check
+pnpm --filter @todz/repository-shape exec vitest run
+pnpm --filter @todz/types exec vitest run
+```
+
+Lighthouse, as the plan describes (a dev server on 8788, the Chromium of `@playwright/test`, three runs):
+
+```bash
+pnpm --filter @todz/api exec wrangler dev --port 8788 --local-upstream localhost:8788 --var SIGN_IN_PROVIDER:fake --var EMAIL_SENDER:console --var PUBLIC_ORIGIN:http://localhost:8787 --var SITE_ORIGIN:http://localhost:8788 --var ADMIN_EMAIL:admin@todz.test --var TURNSTILE_SITE_KEY:1x00000000000000000000AA --var TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA
+CHROME_PATH=~/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/"Google Chrome for Testing.app"/Contents/MacOS/"Google Chrome for Testing" pnpm dlx lighthouse@13.6.0 http://localhost:8788/ --chrome-flags="--headless=new" --quiet --output=json --output-path=stdout > landing-1.json
 ```
 
 ### Red today, green after
 
+Failure texts are what the red runs printed, never the ones expected. After the merge of `security-fixes` the red tests of steps 2 and 4 were rerun on the merged tree (`1dbb3d1`): 23 failed, 77 passed across `site-head`, `site-json-ld` and `site-pages`, with the texts below.
+
 | Test | Red before the change because | Green after because |
 |------|--------------------------------|---------------------|
-| `apps/api/test/site-constants.test.ts` (pin) | not red first: the constants have no behaviour to fail; step 1 of G0 | pins every value of `site-urls.ts` and `site-icons.ts` |
-| `site-head.test.ts` `canonical link` (both pages) | `AssertionError: expected [] to deeply equal [ { rel: 'canonical', … } ]` | step 3 |
-| `site-head.test.ts` `Open Graph and Twitter tags` (both pages) | `AssertionError: expected { 'og:title': [], … } to deeply equal { … }`, every `og:*` array empty | step 3 |
-| `site-head.test.ts` `icon links and the manifest link` (both pages) | `AssertionError: expected [] to deeply equal [ { rel: 'icon', href: '/favicon.ico', sizes: '48x48' }, … ]` | step 3 |
+| `apps/api/test/site-constants.test.ts` (pin) | not red first: G0's constants have no behaviour to fail | pins every value of `site-urls.ts` and `site-icons.ts` |
+| `site-head.test.ts` canonical, Open Graph and Twitter, icon and manifest links (landing) | `AssertionError: expected [] to deeply equal [ { rel: 'canonical', … } ]`; every `og:*` array empty; `expected [] to deeply equal [ { rel: 'icon', href: '/favicon.ico', sizes: '48x48' }, … ]` | step 3, `5602a31` |
 | `site-head.test.ts` private pages favicon rows (two) | `AssertionError: expected [] to deeply equal [ '/favicon.ico', '/icon.svg' ]` | step 3 |
-| `site-json-ld.test.ts` (eleven rows: parseable block, types, shape table, references, exact values, both pages, plus the organization) | `Error: the page holds exactly one application/ld+json block` (the organization row: `expected …toMatchObject` with no block, the same error) | steps 4 and 5 |
-| `site-pages.test.ts` JSON-LD hash (both pages) | `Error: the page has exactly one inline element of that kind` | step 5 |
-| `site-pages.test.ts` manifest and cache rows (both pages) | `AssertionError: expected [ 'default-src \'none\'', … ] to include 'manifest-src \'self\''` | step 5 |
+| `site-json-ld.test.ts` (landing rows and the organization row) | `Error: the page holds exactly one application/ld+json block` | steps 4 and 5, `f39ecd2` |
+| `site-pages.test.ts` JSON-LD hash, manifest and cache rows | `Error: the page has exactly one inline element of that kind`; `AssertionError: expected [ 'default-src \'none\'', … ] to include 'manifest-src \'self\''` | step 5 |
 | `libs/types/src/constants.test.ts` company row | `AssertionError: expected { tradeName: 'Logic Bit', …(2) } to deeply equal { tradeName: 'Logic Bit', …(3) }` | step 5 (`COMPANY.logo`) |
 | `agent-setup.test.ts` three client rows | `Error: agentSetup is not implemented` | `92d1e34` (step 7) |
+| `site-discovery.test.ts` (20 of 26 red, `1b608fe`) | `AssertionError: expected 404 to be 200 // Object.is equality` for every GET, HEAD and body row | step 9, `6efbb35` |
+| `mcp-server-card.test.ts` (8 of 15 red, `dfcc669`) | `SyntaxError: Unexpected end of JSON input` (card and catalog bodies empty), `AssertionError: expected 404 to be 200`, `expected 0 to be greater than 0` | step 11, `ffab11e` |
+| `webmcp-tools.test.ts` (5 of 6 red, `0cdfcaf`) | `AssertionError: expected [] to deeply equal [ 'get_todz_overview', …(3) ]`; `expected 0 to be greater than 0`; `Error: the tool get_mcp_setup is defined` | step 13, `86a5f9f` |
+| `landing-seo.spec.ts` WebMCP rows (18 of 20 red, desktop and mobile) | `expect(received).toEqual(expected) - Expected - 18 + Received + 1` (no tool registered); `page.evaluate: TypeError: Cannot read properties of undefined (reading 'tool')`; `TimeoutError: page.waitForURL: Timeout 15000ms exceeded`; `expect(locator).toHaveText(expected) failed … element(s) not found` | step 13 |
+| `landing-seo.spec.ts` ratio row, mobile and dark (`eb4ece3`) | `Error: images off by more than 1 %`, the dark window shot: `displayed: 1.5794…` against its file's 1.88 | step 15, `0e30fe5` |
+| `site-pages.test.ts` policy rows (11 red, `1a239e5`) | `AssertionError: expected 'default-src \'none\'; script-src \'sh…' to be 'default-src \'none\'; script-src \'sh…'`; `expected [ 'default-src \'none\'', …(7) ] to include 'connect-src \'self\''` | step 16a, `2d3fca5` |
+| `site-pages.test.ts` WebP row (`11a8d67`) | `AssertionError: expected '<!doctype html>\n<html lang="en">\n<h…' to contain 'srcset="/landing/mac-app-shell/04-ins…'` | step 16, `370285c` |
 
-Pins (green when they landed, never stand in for red-first): `site-head.test.ts` GET/HEAD header parity, title and description, `lang` and the two `theme-color` tags, one `h1` and the four landmarks, `HEAD / carries the headers, not the head`; `site-json-ld.test.ts` the two shape-table self-checks; `site-pages.test.ts` the landing page script hash and the no-`'unsafe-inline'` and no-inline-handler row (admin pages through `/admin` and `/admin/sign-in`); `agent-setup.test.ts` the templates-found row and `LANDING_COPY.terminal.command` equals the Claude Code line.
+Pins (green when they landed, never stand in for red-first): the site-head GET and HEAD parity, title, description, `lang`, the two theme colours, one `h1` and the landmarks, `HEAD / carries the headers, not the head`; the shape-table self-checks; the landing page-script hash and the no-`'unsafe-inline'` and no-inline-handler rows; `agent-setup.test.ts` (templates found, the terminal line); in `site-discovery.test.ts` the 404 rows on the API host, to POST and with a trailing slash, and the `www` 301; in `mcp-server-card.test.ts` the `POST /mcp` 401 row, and the catalog's `POST` and `OPTIONS` 404 rows; in `webmcp-tools.test.ts` the self-host row; in `landing-seo.spec.ts` the "no model context" row, every icon, manifest and share-image row, the console and policy-violation rows and the light-scheme ratio row.
 
 ### Hypotheses to attack
 
 Every "it works" is a hypothesis the tester tries to break.
 
-1. `agentSetupOf` returns, for the three clients, exactly what `AgentCommand.swift` produces for `MCP_URL` and `<key>`; the Codex block is the config followed by a newline and the `export TODZ_API_KEY='<key>'` line; the Cursor JSON is `JSON.stringify` at two spaces.
-2. Changing a Swift literal (the server name, the key variable, the Claude Code line) turns `agent-setup.test.ts` red.
-3. The landing's terminal line did not change by one character after `landing-copy.ts` took it from `agentSetupOf`.
+1. `agentSetupOf` returns for the three clients exactly what `AgentCommand.swift` produces; changing a Swift literal turns `agent-setup.test.ts` red; the landing's terminal line did not change by one character.
+2. Every public page has exactly one title, description and canonical; the admin pages have only the title and favicon links. Look at the HTML of `/`, `/admin` signed out, and the link page.
+3. The landing's CSP lists three hashes (JSON-LD, page script, WebMCP) and `connect-src 'self'`; no `'unsafe-inline'` anywhere; every inline `<script>` in the HTML is in the list (a console with no `securitypolicyviolation`).
+4. `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, `site.webmanifest`, `ard.json` and both cards answer GET and HEAD with the types of the spec and nothing else (POST, OPTIONS, trailing slash, the API host: 404). The sitemap holds `https://todz.app/` only, and nothing in `llms.txt` links `todz.app/self-host`.
+5. The card carries no key and no tools; `GET <api>/mcp/server-card` and `GET <site>/.well-known/mcp/server-card.json` return the same bytes; `POST /mcp` without a bearer still answers 401.
+6. With a `document.modelContext` the four tools register once; with only `navigator.modelContext` they register there; with both, only on `document`; with neither, nothing and no console error. `join_waitlist` posts `POST /join` once with `cf-turnstile-response`, answers "invalid" for a bad address with no request, and "already submitting" on a second call while the token is pending. Try a thrown `registerTool`, a rejected one, and a `join_waitlist` call before the widget loads.
+7. Nothing visible changed on the landing at 1280 and 375, light and dark; compare screenshots with `main`. `.shot-window` is `visibility:hidden` below the desktop breakpoint: check no horizontal scroll, no focus trap and nothing read aloud from it.
+8. Lighthouse (phone profile, local, three runs each, `wrangler dev`): see the numbers below. Run it in a light and a dark OS appearance: the headless Chromium followed the OS scheme on this machine, and the dark window shot is what the ratio audit flagged.
+
+### Local Lighthouse, Lighthouse 13.6.0, phone profile, Chromium 149
+
+After the lane's last commit, on `wrangler dev` (`http://localhost:8788`), Performance, Accessibility, Best Practices, SEO, Agentic browsing:
+
+| Page | Run 1 | Run 2 | Run 3 | Median |
+|------|-------|-------|-------|--------|
+| `/` | 100, 100, 100, 100, 100 (FCP 0.6 s, LCP 0.6 s, TBT 0 ms, CLS 0) | 100, 100, 100, 100, 100 (TBT 0 ms) | 100, 100, 100, 100, 100 (TBT 0 ms) | 100, 100, 100, 100, 100 |
+| `/self-host` (before `docs-cutover` made it a redirect) | 100, 100, 100, 100, 100 | 100, 100, 100, 100, 100 (TBT 10 ms) | 100, 100, 100, 100, 100 | 100, 100, 100, 100, 100 |
+
+Before the two fixes (one run each, noisy: the machine was loaded, TBT 940 ms): without step 15 and 16a, `/` scored 79, 100, 96, 92, 60, failing `image-aspect-ratio` (the dark window shot, 1600 x 1013 attributes against a 1600 x 851 file, box 0 x 0), `robots-txt`, `llms-txt` and `ard-schema` ("CSP violation"). With only `connect-src 'self'` added: 100, 100, 96, 100, 100, `image-aspect-ratio` still failing. The reports are in the lane's scratchpad, not in the repository. The acceptance is on production (step 25); no performance fix was needed, so step 26 should not open.
 
 ### Known gaps
 
-- Steps 3, 5 and 8 to 18 are not done: the green for the head, the JSON-LD and the policy waits for `security-fixes` (Sequencing 3). After that merge the red tests above must be rerun and recorded again.
-- The plan says eleven Open Graph and Twitter tags; the spec lists ten (nine `og:*` and `twitter:card`). `site-head.test.ts` pins those ten. If the lead wants `twitter:title`, `twitter:description` or `twitter:image`, they are an addition to the spec and to this test.
-- The JSON-LD test fixes choices the spec leaves open: the block is `<script type="application/ld+json">` with no other attribute, the offer's `price` is the number `0`, and the `SoftwareApplication` `url` is `https://todz.app/`. The block must contain no `<` at all (every one escaped as `<`).
-- The shape table's `required` lists are what the spec's graph carries (Google names no required property for `Organization` and `WebSite`); each row cites schema.org and, where one exists, Google's guide.
-- The `no-cache, no-transform` and `manifest-src` rows assert the public pages only; the admin pages keep `no-store`.
-- The `site-pages.test.ts` block declares its own constants at the file's end to stay disjoint from Lane W's edits to the imports; a later cleanup may hoist them.
+- The test plan says to record every run's five scores in `test-plan.md`; that file is the lead's, so the numbers are here.
+- `sizes` is the smallest WebP width (`min` of the copies), which is each shot's 1x width. Measured at 1280 and 375, the popover (299 and 269 px shown against 311), the medium widget (391 and 291 against 408) and the ring (182 and 182) are covered; the window shot (760 against 760 at 1280, hidden at 375) too; the agent-tasks shot is displayed at 904 px at 1280 and 877 px at 375 against a 1x width of 828, so a device at pixel ratio 1 gets the 828 copy slightly enlarged (about 9 %). Lane I's widths for it assume a smaller box. Fix in Lane I's `landing-shots.ts` data (a 1x width of about 910), not in the page.
+- The `join_waitlist` answer "sent" is the tool's answer; the result of the join is the page the form lands on. An agent that needs the notice reads the page after the navigation.
+- `/self-host` is not covered anywhere in this lane any more (it is a 301 on `main`): no head, JSON-LD or Lighthouse rows. `webmcp-tools.test.ts` keeps one self-host row that holds on an empty body.
+- The deploy runbook's step 16 runs Lighthouse on the landing only, not on `/self-host`, for the same reason.
+- Runbook step 16 has no test of its own: `runbooks.test.ts` is in the file map only when it counts steps, and it does not. A row that pins the discovery paths in that step would be an addition for the lead.
+- `docs-pages.test.ts` (step 24) is the lead's; `DOCS_PAGES` in `discovery-copy.ts` lists the five slugs `introduction`, `quickstart`, `connect-an-agent`, `mcp-tools`, `self-host`, the last one titled "Self-host todz" as on the docs site.
+- The JSON-LD test fixes choices the spec leaves open: `<script type="application/ld+json">` with no other attribute, the offer's `price` the number `0`, and the `SoftwareApplication` `url` `https://todz.app/`. The plan said eleven Open Graph and Twitter tags; the spec lists ten (nine `og:*` and `twitter:card`), and `site-head.test.ts` pins ten.
+- The shape table's `required` lists are what the spec's graph carries (Google names no required property for `Organization` and `WebSite`).
+- The e2e drives a `modelContext` stub; no real Chrome with the WebMCP flag or origin trial ran it. The Chrome origin trial token is an owner step.
 
 ## Lane I
 
