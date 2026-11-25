@@ -146,9 +146,11 @@ export async function waitlistDigestFacts({
     database.prepare(DIGEST_COUNTS_STATEMENT).bind(since, until),
     database.prepare(DIGEST_ADDRESSES_STATEMENT).bind(since, until, DIGEST_ADDRESSES_MAX),
   ]);
-  const counts = countsResult?.results[0] as DigestCounts | undefined;
+  const isMissingResult = countsResult === undefined || addressesResult === undefined;
+  if (isMissingResult) throw new Error('the batch answers one result per statement');
+  const counts = countsResult.results[0] as DigestCounts | undefined;
   if (counts === undefined) throw new Error('the digest count returned no row');
-  const addresses = (addressesResult?.results as { address: string }[]).map((record) => record.address);
+  const addresses = (addressesResult.results as { address: string }[]).map((record) => record.address);
   return {
     joined: counts.joined,
     total: counts.total,

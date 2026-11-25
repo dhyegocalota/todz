@@ -82,7 +82,7 @@ The admin at `https://example.com/admin`, where you read and export the waitlist
 pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
 ```
 
-The same address gets the waitlist digest every day at 11:00 UTC, from the cron in `triggers` in `apps/api/wrangler.jsonc`; without the secret the cron sends nothing.
+The same address gets the waitlist digest every day at 11:00 UTC, from the cron in `triggers` in `apps/api/wrangler.jsonc`; without the secret the cron sends nothing and each run fails in the Worker's Cron Events; set `"crons": []` there to turn the digest off.
 
 ## 7. Point the macOS app at your server
 

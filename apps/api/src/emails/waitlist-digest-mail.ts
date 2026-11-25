@@ -3,6 +3,7 @@ import { AdminPath } from '../site/admin-paths';
 import type { WaitlistDigestFacts } from '../site/admin-store';
 import { EmailSlot, type EmailSlotValues, filledTextOf } from './email-slot';
 import { filledEmailOf } from './filled-email';
+import { WAITLIST_DIGEST_MAIL_COPY } from './waitlist-digest-mail-copy';
 import type { GeneratedEmail } from './generated-email';
 import { WAITLIST_DIGEST_EMAIL, WAITLIST_DIGEST_EMPTY_EMAIL } from './generated/email-templates';
 
@@ -11,7 +12,7 @@ const NO_MORE_ADDRESSES = '';
 
 function moreSentenceOf(moreAddresses: number): string {
   if (moreAddresses === 0) return NO_MORE_ADDRESSES;
-  return `and ${moreAddresses} more.`;
+  return WAITLIST_DIGEST_MAIL_COPY.moreAddresses(moreAddresses);
 }
 
 function valuesOf({ facts, origin }: { facts: WaitlistDigestFacts; origin: string }): EmailSlotValues {

@@ -21,6 +21,8 @@ The owner sees new joins only by opening the admin. He asked for a daily digest 
 ## Non-goals
 
 - Retries, a "sent today" table, other schedules, time zones, unsubscribe, per-locale totals, referrers.
+- One address per line in mail clients that ignore `white-space: pre-line` (Outlook for Windows runs them together; the text part keeps one per line), and the empty paragraph or blank lines left when "and N more" is empty (review MINORs 6 and 7, accepted).
+- Filling the subject from the values for every mail: only the digest passes a subject today (review MINOR 8, accepted; a template with a slot in its subject must pass one).
 
 ## Design
 

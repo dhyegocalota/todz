@@ -24,7 +24,13 @@ async function runDigest({ settings = {}, cron = DigestCron.Daily, scheduledTime
   await worker.scheduled(createScheduledController({ cron, scheduledTime }), workerEnvWith(settings));
 }
 
-async function digestSentBy(recording: ReturnType<typeof recordingBinding>, settings: Partial<Env> = {}): Promise<void> {
+async function digestSentBy({
+  recording,
+  settings = {},
+}: {
+  recording: ReturnType<typeof recordingBinding>;
+  settings?: Partial<Env>;
+}): Promise<void> {
   await runDigest({ settings: { ...REQUIRED_SETTINGS, EMAIL: recording.binding, ...settings } });
 }
 
@@ -54,7 +60,7 @@ describe('the scheduled waitlist digest', () => {
     await joinWaitlist({ database: env.DIRECTORY, address: 'first@example.com', now: SINCE + MILLISECONDS_PER_HOUR });
     await joinWaitlist({ database: env.DIRECTORY, address: 'last@example.com', now: CLOCK_NOW });
     await joinWaitlist({ database: env.DIRECTORY, address: 'later@example.com', now: CLOCK_NOW + 1 });
-    await digestSentBy(recording);
+    await digestSentBy({ recording });
     const [message, ...others] = recording.sent;
     expect(others).toEqual([]);
     expect(message?.to).toBe(ADMIN_ADDRESS);
@@ -69,7 +75,7 @@ describe('the scheduled waitlist digest', () => {
   test('still mails on an empty day, with the total', async () => {
     const recording = recordingBinding();
     await joinWaitlist({ database: env.DIRECTORY, address: 'old@example.com', now: SINCE - MILLISECONDS_PER_HOUR });
-    await digestSentBy(recording);
+    await digestSentBy({ recording });
     const [message, ...others] = recording.sent;
     expect(others).toEqual([]);
     expect(message?.subject).toBe('Your todz waitlist: no one new');
@@ -79,7 +85,7 @@ describe('the scheduled waitlist digest', () => {
   test('escapes an address in the html and keeps it as it is in the text', async () => {
     const recording = recordingBinding();
     await joinWaitlist({ database: env.DIRECTORY, address: ESCAPING_ADDRESS, now: CLOCK_NOW });
-    await digestSentBy(recording);
+    await digestSentBy({ recording });
     const [message] = recording.sent;
     expect(message?.html).toContain(ESCAPED_ESCAPING_ADDRESS);
     expect(message?.html).not.toContain(ESCAPING_ADDRESS);
@@ -96,7 +102,7 @@ describe('the scheduled waitlist digest', () => {
   ])('rejects naming the missing piece and sends nothing with %s', async (_name, settings, piece) => {
     const recording = recordingBinding();
     const output = vi.spyOn(console, 'log');
-    const failure = digestSentBy(recording, settings);
+    const failure = digestSentBy({ recording, settings });
     await expect(failure).rejects.toThrow(piece);
     await expect(failure).rejects.not.toThrow(ADMIN_ADDRESS);
     expect(recording.sent).toEqual([]);
@@ -106,7 +112,7 @@ describe('the scheduled waitlist digest', () => {
   test('rejects with the console sender on the public site origin and sends nothing', async () => {
     const recording = recordingBinding();
     const output = vi.spyOn(console, 'log');
-    await expect(digestSentBy(recording, { EMAIL_SENDER: 'console' })).rejects.toThrow(DigestMissingPiece.EmailSender);
+    await expect(digestSentBy({ recording, settings: { EMAIL_SENDER: 'console' } })).rejects.toThrow(DigestMissingPiece.EmailSender);
     expect(recording.sent).toEqual([]);
     expect(output).not.toHaveBeenCalled();
   });
@@ -120,14 +126,14 @@ describe('the scheduled waitlist digest', () => {
 
   test('rejects when the directory throws and sends nothing', async () => {
     const recording = recordingBinding();
-    await expect(digestSentBy(recording, { DIRECTORY: directoryFailingToBatch() })).rejects.toThrow('the directory is down');
+    await expect(digestSentBy({ recording, settings: { DIRECTORY: directoryFailingToBatch() } })).rejects.toThrow('the directory is down');
     expect(recording.sent).toEqual([]);
   });
 
   test('rejects when the send throws', async () => {
     const recording = recordingBinding();
-    await expect(digestSentBy(recording, { EMAIL: bindingFailingWith(new Error('the mail service is down')) })).rejects.toThrow(
-      'the mail service is down',
-    );
+    await expect(
+      digestSentBy({ recording, settings: { EMAIL: bindingFailingWith(new Error('the mail service is down')) } }),
+    ).rejects.toThrow('the mail service is down');
   });
 });
