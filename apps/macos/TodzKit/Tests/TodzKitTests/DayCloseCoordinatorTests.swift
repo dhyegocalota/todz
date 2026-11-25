@@ -6,6 +6,7 @@ import Testing
 private let today = CalendarDate(year: 2026, month: 11, day: 25)
 private let tomorrow = today.adding(days: 1)
 private let minutesPerHour = 60
+private let minutesOutsideADay = [-2880, 1440]
 
 @MainActor @Observable private final class FakeTodayCount {
     var openCount: Int?
@@ -230,5 +231,15 @@ private let minutesPerHour = 60
         let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
         #expect(!harness.coordinator.isClosingDay)
         #expect(harness.coordinator.acceptsKeyActions)
+    }
+
+    @Test(arguments: minutesOutsideADay)
+    func aStoredTimeOutsideADayIsOffAndOpensNothing(minutes: Int) throws {
+        let harness = try DayCloseHarness(count: FakeTodayCount(openCount: 2))
+        harness.defaults.set(minutes, forKey: DayClosePreference.timeStorageKey)
+        harness.at(today, hour: 18)
+        #expect(harness.coordinator.check() == .off)
+        #expect(harness.popover.openings == 0)
+        #expect(harness.lastClosedDay == nil)
     }
 }
