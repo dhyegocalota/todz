@@ -155,13 +155,14 @@ describe('a production run the server refuses', () => {
 describe('the cleanup of a run', () => {
   test('only a filtered list and done are sent, in batches of fifty, and the foreign tasks stay open', async () => {
     const own = Array.from({ length: 120 }, (_, index) => `${PREFIX}${index}`);
-    const server = fakeTaskServer({ openTitles: [...FOREIGN_TITLES, ...own] });
+    const lookalike = `Remember ${PREFIX}9 later`;
+    const server = fakeTaskServer({ openTitles: [...FOREIGN_TITLES, lookalike, ...own] });
     const { openTasksLeft } = await cleanupProduction(dependenciesOver({ fetch: server.fetch }));
     const calls = server.toolCalls();
     expect(new Set(calls.map((call) => call.name))).toEqual(new Set(['list', 'done']));
     expect(calls.filter((call) => call.name === 'list').every((call) => call.arguments.text === PREFIX)).toBe(true);
     expect(calls.filter((call) => call.name === 'done').every((call) => listOf(call.arguments.ids).length <= 50)).toBe(true);
-    expect(server.openTasks().map((task) => task.title)).toEqual(FOREIGN_TITLES);
-    expect(openTasksLeft).toBe(0);
+    expect(server.openTasks().map((task) => task.title)).toEqual([...FOREIGN_TITLES, lookalike]);
+    expect(openTasksLeft).toBe(1);
   });
 });

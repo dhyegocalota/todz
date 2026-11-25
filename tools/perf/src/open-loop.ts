@@ -7,7 +7,14 @@ export const realClock: LoopClock = {
   waitUntil: (timeMs) => new Promise((resolve) => setTimeout(resolve, Math.max(timeMs - performance.now(), 0))),
 };
 
-export function runOpenLoop(_: {
+export async function runOpenLoop({
+  starts,
+  clock,
+  execute,
+  onDropped,
+  onFailure,
+  inFlightMax = Number.POSITIVE_INFINITY,
+}: {
   starts: number[];
   clock: LoopClock;
   execute: (slot: LoopSlot) => Promise<void>;
@@ -15,5 +22,21 @@ export function runOpenLoop(_: {
   onFailure: (failure: unknown) => void;
   inFlightMax?: number;
 }): Promise<void> {
-  throw new Error('runOpenLoop is not implemented');
+  const startedAt = clock.now();
+  const inFlight = { count: 0 };
+  await Promise.all(
+    starts.map(async (offsetMs, index) => {
+      await clock.waitUntil(startedAt + offsetMs);
+      const slot = { index, offsetMs };
+      if (inFlight.count >= inFlightMax) return onDropped(slot);
+      inFlight.count += 1;
+      try {
+        await execute(slot);
+      } catch (failure) {
+        onFailure(failure);
+      } finally {
+        inFlight.count -= 1;
+      }
+    }),
+  );
 }
