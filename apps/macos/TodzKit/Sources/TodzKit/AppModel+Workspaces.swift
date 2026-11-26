@@ -8,7 +8,7 @@ extension AppModel {
         workspaces.append(created)
         selectedItem = .inbox
         phase = .ready
-        await show(.chosen([created.identifier]))
+        await show(selection == .all ? .all : .chosen([created.identifier]))
         return created
     }
 
@@ -151,15 +151,36 @@ extension AppModel {
     private func show(_ newSelection: WorkspaceSelection) async {
         let shown = newSelection.workspaces(in: workspaces)
         guard let primary = primary(of: shown) else { return }
+        let previousIdentifiers = Set(shownProjects.map(\.identifier))
+        let shownIdentifiers = shown.flatMap(\.projects).map(\.identifier)
         let isAnotherSet = shown.map(\.identifier) != shownWorkspaces.map(\.identifier)
-        if isAnotherSet { forgetActiveWorkspace() }
+        let isIncremental = isAnotherSet && !previousIdentifiers.isEmpty
+        if isAnotherSet && !isIncremental { forgetActiveWorkspace() }
+        if isIncremental { release(projectIdentifiers: previousIdentifiers.subtracting(shownIdentifiers)) }
         selection = newSelection
         activeWorkspaceIdentifier = primary.identifier
         keepOwner()
         keepSelection(in: shown)
         loadCachedProjects(of: shown)
         followActiveProjects()
-        await pull(projectIdentifiers: shown.flatMap(\.projects).map(\.identifier), workspaceIdentifier: primary.identifier)
+        let joinedIdentifiers = shownIdentifiers.filter { !previousIdentifiers.contains($0) }
+        await pull(projectIdentifiers: isIncremental ? joinedIdentifiers : shownIdentifiers, workspaceIdentifier: primary.identifier)
+    }
+
+    private func release(projectIdentifiers: Set<String>) {
+        projectIdentifiers.forEach { projectIdentifier in
+            watches.removeValue(forKey: projectIdentifier)?.cancel()
+            watchAttempts[projectIdentifier] = nil
+            isWatchAnswered[projectIdentifier] = nil
+            board.reset(projectIdentifier: projectIdentifier)
+            board = board.clearingCursor(projectIdentifier: projectIdentifier)
+            projectLoads[projectIdentifier] = nil
+        }
+        histories = histories.filter { !projectIdentifiers.contains($0.key.projectIdentifier) }
+        unsavedNotes = unsavedNotes.filter { !projectIdentifiers.contains($0.key.projectIdentifier) }
+        forgetKeys()
+        selectedTask = nil
+        dismissBanner()
     }
 
     private func forgetActiveWorkspace() {

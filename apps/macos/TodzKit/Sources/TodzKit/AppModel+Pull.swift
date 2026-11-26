@@ -41,11 +41,13 @@ extension AppModel {
 
     func pull(projectIdentifiers: [String], workspaceIdentifier: String) async {
         guard let session, activeWorkspaceIdentifier == workspaceIdentifier else { return }
-        let gates = projectIdentifiers.compactMap { requestPull(projectIdentifier: $0) }
         var pulls: [ProjectPull] = []
-        for gate in gates {
-            guard let pulled = await gate.value else { continue }
-            pulls.append(pulled)
+        for batch in projectIdentifiers.chunked(into: Self.pullConcurrencyLimit) {
+            let gates = batch.compactMap { requestPull(projectIdentifier: $0) }
+            for gate in gates {
+                guard let pulled = await gate.value else { continue }
+                pulls.append(pulled)
+            }
         }
         guard isCurrent(session: session, workspaceIdentifier: workspaceIdentifier) else { return }
         raiseFailures(of: pulls, workspaceIdentifier: workspaceIdentifier)
@@ -102,7 +104,7 @@ extension AppModel {
             endSession()
             return nil
         }
-        guard isCurrent(session: session, workspaceIdentifier: workspaceIdentifier) else { return nil }
+        guard isCurrent(session: session, workspaceIdentifier: workspaceIdentifier), isShown(projectIdentifier: projectIdentifier) else { return nil }
         record(pulled)
         return pulled
     }
@@ -160,5 +162,11 @@ extension AppModel {
         let isServerUnreachable = pulls.allSatisfy(\.isUnreachable)
         let banner: AppBanner = isServerUnreachable ? .network : .someProjectsFailed
         raise(banner, retry: { await self.pull(projectIdentifiers: failedIdentifiers, workspaceIdentifier: workspaceIdentifier) })
+    }
+}
+
+private extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        stride(from: 0, to: count, by: size).map { Array(self[$0..<Swift.min($0 + size, count)]) }
     }
 }
