@@ -243,7 +243,7 @@ describe('the landing', () => {
 
   test('serves every shot as WebP copies with sizes, and keeps the PNG as the fallback source', async () => {
     const { html } = await landingPage();
-    const shots = Object.entries(LANDING_SHOTS).filter(([shot]) => shot !== LandingShot.WidgetRing);
+    const shots = Object.entries(LANDING_SHOTS);
     shots.forEach(([, { webp }]) => {
       const srcset = webp.map(({ path, width }) => `${path} ${width}w`).join(', ');
       const sizes = `${Math.min(...webp.map(({ width }) => width))}px`;

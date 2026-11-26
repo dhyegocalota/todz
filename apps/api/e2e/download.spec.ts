@@ -23,6 +23,28 @@ const APPCAST_CACHE_CONTROL = 'public, max-age=300';
 const TEXT_CONTENT_TYPE = 'text/plain; charset=utf-8';
 const NO_ROUTE_PATH = '/no-such-page';
 const INSTALL_STEPS_URL = 'https://docs.todz.app/install-on-mac';
+const ODD_METHODS = ['GET', 'HEAD'];
+const ODD_DOWNLOAD_PATHS = [
+  '/download/',
+  '/download//latest',
+  '/download/latest/',
+  '/download/latest.',
+  '/download/Latest',
+  '/download/%ZZ',
+  '/download/%00',
+  '/download/%2fetc',
+  '/download/%2e/latest',
+  '/download/appcast.xml/',
+  '/download/appcast.xml/x',
+  `/download/${LATEST_VERSION}/`,
+  `/download/${LATEST_VERSION}`,
+  `${LATEST_DISK_IMAGE_PATH}/`,
+  `${LATEST_DISK_IMAGE_PATH}%00`,
+  '/download/9.9.9/Todz-9.9.9.dmg',
+  '/download?x=1',
+  '/download/latest?a=%ZZ',
+];
+const RELEASE_LOCATION_PATTERN = /^\/download\/\d+\.\d+\.\d+\/Todz-\d+\.\d+\.\d+\.dmg(\?.*)?$/;
 const COLOR_SCHEMES = [ColorScheme.Light, ColorScheme.Dark];
 const DOWNLOAD_BUTTON = '.hero .download-button';
 const DOWNLOAD_NOTE = '.hero .download-note';
@@ -107,6 +129,16 @@ test.describe('the staged downloads', () => {
       expect(await response.text(), missingPath).toBe(noRouteBody);
     }
   });
+
+  for (const method of ODD_METHODS) {
+    for (const oddPath of ODD_DOWNLOAD_PATHS) {
+      test(`${method} ${oddPath} answers a 404 or a redirect to a release and never a server error`, async ({ request }) => {
+        const response = await request.fetch(oddPath, { method, maxRedirects: 0 });
+        expect([NOT_FOUND_STATUS, FOUND_STATUS]).toContain(response.status());
+        if (response.status() === FOUND_STATUS) expect(response.headers()['location']).toMatch(RELEASE_LOCATION_PATTERN);
+      });
+    }
+  }
 
   test('the headers and redirects files are not served', async ({ request }) => {
     for (const hiddenPath of ['/_headers', '/_redirects']) {
