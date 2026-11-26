@@ -6,6 +6,7 @@ private let fewestWorkspacesToSwitch = 2
 struct MenuBarFoot: View {
     let doneCount: Int
     @Environment(AppModel.self) private var model
+    @Environment(\.appUpdater) private var appUpdater
 
     var body: some View {
         let isOffline = model.syncStatus != .online
@@ -19,9 +20,18 @@ struct MenuBarFoot: View {
             if showsDoneCount {
                 Text(MenuBarCopy.doneToday(count: doneCount))
             }
+            if let appUpdater, let updatedVersion = appUpdater.updatedToVersion {
+                Button(UpdateCopy.updatedTo(version: updatedVersion)) { appUpdater.acknowledgeUpdate() }
+                    .buttonStyle(.borderless)
+            }
             Spacer()
             if canSwitchWorkspace {
                 Text(MenuBarCopy.switchHint(last: WorkspaceShortcuts.lastNumber(of: model.workspaces)))
+            }
+            if let appUpdater {
+                Button(UpdateCopy.checkForUpdates) { appUpdater.checkForUpdates() }
+                    .buttonStyle(.borderless)
+                    .disabled(!appUpdater.canCheckForUpdates)
             }
             MenuBarQuitButton()
         }
