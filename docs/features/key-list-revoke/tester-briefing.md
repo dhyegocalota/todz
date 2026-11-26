@@ -28,6 +28,24 @@ Green commit `5421ac23`.
 | `aFailedRevokeAnsweredAfterTheScreenReappearedShowsNoFailureOnTheNewList` | pin (green before the fix; forgetKeys already cleared the failure state) |
 | `aRevokeAnswerAfterTheProjectChangedLeavesTheNewListAlone` (existing) | green before and after |
 
+## Fix round (review finding)
+
+`revokeKey` also stopped clearing the in-flight marker for an answer from an earlier visit: the marker and the failure line are touched only in the same visit; the project guard and `forget` stay as before.
+
+Red commit `16671533`, run of `--filter AppModelTests` printed:
+
+```
+✘ Test anAnswerOfAnEarlierVisitKeepsTheSecondRevokeOfTheSameKeyRevoking() recorded an issue at AppModelTests+Keys.swift:514:9: Expectation failed: harness.model.revokingKeyIdentifiers == [launchKey.identifier]
+✘ Test run with 509 tests in 1 suite failed after 0.210 seconds with 1 issue.
+```
+
+Green commit `e12ea774`; whole suite 1358 tests in 107 suites passing.
+
+| Test | State at the red commit |
+|------|-------------------------|
+| `anAnswerOfAnEarlierVisitKeepsTheSecondRevokeOfTheSameKeyRevoking` | red |
+| `pinARevokeAnswerAfterLeavingTheScreenChangesNothing` | pin (green before the fix) |
+
 ## Hypotheses for the tester
 
 - A revoke confirmed after the screen left and reappeared for the same project removes the key from the new list, and a list read before the revoke cannot bring it back.

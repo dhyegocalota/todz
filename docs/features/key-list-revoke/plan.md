@@ -23,6 +23,7 @@ G1, one developer.
 - [x] **Step 1:** Red: the spec's model tests in `AppModelTests+Keys.swift`, committed alone — evidence: d5b7075e
 - [x] **Step 2:** Green: `revokeKey` keeps a confirmed revoke for the same project (`swift test` green) — evidence: 5421ac23, 1356 tests passing
 - [x] **Step 3:** Tester briefing — evidence: tester-briefing.md
+- [x] **Step 4 (added by the review):** the marker of a second revoke survives an earlier visit's answer; red `16671533`, green `e12ea774`, 1358 tests passing
 
 ## Failure modes
 
