@@ -55,6 +55,10 @@ import Observation
     public internal(set) var keyReloadFailure: KeyFailure?
     public internal(set) var revokingKeyIdentifiers: Set<String> = []
     public internal(set) var failedRevokeIdentifiers: Set<String> = []
+    public internal(set) var ownerKeys: KeyList?
+    public internal(set) var issuedOwnerKey: IssuedKey?
+    public internal(set) var isChangingOwnerKeys = false
+    public internal(set) var ownerKeyFailure: OwnerKeyFailure?
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
     var outbox = Outbox() {
@@ -100,6 +104,7 @@ import Observation
     @ObservationIgnored var sendFailures = 0
     @ObservationIgnored var hasServerAnswered = false
     @ObservationIgnored var refusalsInFlush = 0
+    @ObservationIgnored var isSendingPaused = false
     @ObservationIgnored var selectionsAtAdd: [String: TaskKey?] = [:]
     @ObservationIgnored var projectsToPullFromStart: Set<String> = []
     @ObservationIgnored var pullGates: [String: PullGate] = [:]
@@ -111,6 +116,7 @@ import Observation
     @ObservationIgnored var publishedWidgetSnapshot: WidgetSnapshotState?
     @ObservationIgnored var keyScreenIdentifier: UUID?
     @ObservationIgnored var keyIssueAnswerCount = 0
+    @ObservationIgnored var ownerKeyVisit = UUID()
     @ObservationIgnored var revokedKeyIdentifiers: Set<String> = []
     @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored var serverSignOut: Task<Void, Never>?
@@ -424,6 +430,7 @@ import Observation
         activeWorkspaceIdentifier = nil
         selection = nil
         forgetKeys()
+        forgetOwnerKeys()
         selectedItem = .inbox
         selectedTask = nil
         board = TaskBoard()

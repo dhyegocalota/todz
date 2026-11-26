@@ -210,6 +210,24 @@ extension AppModelTests {
         #expect(harness.model.board.tasks(projectIdentifier: inboxIdentifier).map(\.number) == [1, 2, 3, 4])
     }
 
+    @Test func aPullDropsTheTasksTheFeedSaysWereDeletedFromTheBoardAndTheCache() async throws {
+        let harness = try await pullHarness()
+        let remaining = MutableTask(number: 1, title: "Task 1").record
+        harness.service.changeScripts[inboxIdentifier] = [.success(ChangePage(tasks: [], deletedNumbers: [2], cursor: 3, hasMore: false))]
+        await harness.model.pullProject(identifier: inboxIdentifier)
+        harness.model.cacheWriter.flush()
+        #expect(harness.model.board.tasks(projectIdentifier: inboxIdentifier) == [remaining])
+        #expect(harness.store.projects[inboxIdentifier]?.tasks == [remaining])
+        #expect(harness.store.projects[inboxIdentifier]?.cursor == 3)
+    }
+
+    @Test func aDeletedNumberThatIsNotHeldChangesNothing() async throws {
+        let harness = try await pullHarness()
+        harness.service.changeScripts[inboxIdentifier] = [.success(ChangePage(tasks: [], deletedNumbers: [9], cursor: 3, hasMore: false))]
+        await harness.model.pullProject(identifier: inboxIdentifier)
+        #expect(harness.model.board.tasks(projectIdentifier: inboxIdentifier).map(\.number) == [1, 2])
+    }
+
     @Test func aCachedLaunchWithTheServerDownIsOffline() async throws {
         let harness = try AppModelHarness()
         let acme = harness.seedWorkspace(name: "acme")

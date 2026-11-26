@@ -35,6 +35,7 @@ struct CommandBlock: View {
     private var commandText: some View {
         Text(text, marking: KeyScreenCopy.secretPlaceholder) { $0.foregroundStyle(.secondary) }
             .font(.body.monospaced())
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
             .background(.fill.quaternary)

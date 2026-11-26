@@ -31,6 +31,8 @@ private func taskPath(projectIdentifier: String, number: Int) -> String {
     "\(tasksPath(projectIdentifier))/\(number)"
 }
 
+private let ownerKeysPath = "/owner/keys"
+
 private func keysPath(_ projectIdentifier: String) -> String {
     "\(projectPath(projectIdentifier))/keys"
 }
@@ -81,6 +83,9 @@ public protocol OwnerService: Sendable {
     func listKeys(session: String, projectIdentifier: String) async throws -> [ProjectKey]
     func issueKey(session: String, projectIdentifier: String) async throws -> IssuedKey
     func revokeKey(session: String, projectIdentifier: String, keyIdentifier: String) async throws
+    func listOwnerKeys(session: String) async throws -> [ProjectKey]
+    func issueOwnerKey(session: String) async throws -> IssuedKey
+    func revokeOwnerKey(session: String, keyIdentifier: String) async throws
 }
 
 public struct OwnerAPI: OwnerService {
@@ -254,6 +259,18 @@ public struct OwnerAPI: OwnerService {
     public func revokeKey(session: String, projectIdentifier: String, keyIdentifier: String) async throws {
         let path = "\(keysPath(projectIdentifier))/\(keyIdentifier)"
         _ = try await send(OwnerRequest(method: .delete, path: path, session: session))
+    }
+
+    public func listOwnerKeys(session: String) async throws -> [ProjectKey] {
+        try await answer(KeysAnswer.self, to: OwnerRequest(method: .get, path: ownerKeysPath, session: session)).keys
+    }
+
+    public func issueOwnerKey(session: String) async throws -> IssuedKey {
+        try await answer(IssuedKey.self, to: OwnerRequest(method: .post, path: ownerKeysPath, session: session))
+    }
+
+    public func revokeOwnerKey(session: String, keyIdentifier: String) async throws {
+        _ = try await send(OwnerRequest(method: .delete, path: "\(ownerKeysPath)/\(keyIdentifier)", session: session))
     }
 
     private func answer<Answer: Decodable>(_ type: Answer.Type, to request: OwnerRequest) async throws -> Answer {

@@ -6,6 +6,14 @@ function storageMessageOf(max: number): string {
   return FAIR_USE_COPY.limitMessageOf({ limit: FairUseLimit.StoredBytes, max });
 }
 
+describe('every fair-use refusal', () => {
+  test('points to the fair-use docs page', () => {
+    const limitMessages = Object.values(FairUseLimit).map((limit) => FAIR_USE_COPY.limitMessageOf({ limit, max: 1 }));
+    const messages = [...limitMessages, FAIR_USE_COPY.suspended, FAIR_USE_COPY.signUpRefused];
+    messages.forEach((message) => expect(message).toContain('https://docs.todz.app/fair-use'));
+  });
+});
+
 describe('the storage limit message', () => {
   test('names the default in whole megabytes', () => {
     expect(storageMessageOf(OWNER_STORED_BYTES_MAX)).toContain('limit of 50 MB of task text');

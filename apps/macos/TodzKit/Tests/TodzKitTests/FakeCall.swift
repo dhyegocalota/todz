@@ -26,6 +26,9 @@ enum FakeRoute: Hashable, Sendable {
     case listKeys
     case issueKey
     case revokeKey
+    case listOwnerKeys
+    case issueOwnerKey
+    case revokeOwnerKey
 }
 
 enum FakeCall: Equatable, Sendable {
@@ -54,6 +57,9 @@ enum FakeCall: Equatable, Sendable {
     case listKeys(session: String, projectIdentifier: String)
     case issueKey(session: String, projectIdentifier: String)
     case revokeKey(session: String, projectIdentifier: String, keyIdentifier: String)
+    case listOwnerKeys(session: String)
+    case issueOwnerKey(session: String)
+    case revokeOwnerKey(session: String, keyIdentifier: String)
 
     var route: FakeRoute {
         switch self {
@@ -82,6 +88,9 @@ enum FakeCall: Equatable, Sendable {
         case .listKeys: .listKeys
         case .issueKey: .issueKey
         case .revokeKey: .revokeKey
+        case .listOwnerKeys: .listOwnerKeys
+        case .issueOwnerKey: .issueOwnerKey
+        case .revokeOwnerKey: .revokeOwnerKey
         }
     }
 
@@ -99,7 +108,8 @@ enum FakeCall: Equatable, Sendable {
             let .issueKey(_, projectIdentifier),
             let .revokeKey(_, projectIdentifier, _):
             projectIdentifier
-        case .signInMethod, .requestSignInLink, .signIn, .signOut, .readOwner, .updateOwner, .updateAgentNudge, .updateDayEmail, .updateDayEmailMinutes, .listWorkspaces, .createWorkspace, .renameWorkspace, .deleteWorkspace, .createProject:
+        case .signInMethod, .requestSignInLink, .signIn, .signOut, .readOwner, .updateOwner, .updateAgentNudge, .updateDayEmail, .updateDayEmailMinutes, .listWorkspaces, .createWorkspace, .renameWorkspace, .deleteWorkspace, .createProject,
+            .listOwnerKeys, .issueOwnerKey, .revokeOwnerKey:
             nil
         }
     }

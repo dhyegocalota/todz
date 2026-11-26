@@ -136,3 +136,6 @@ Every command runs from the repository root, one command per call. Cloudflare ca
 | 2026-11-26 | 0.2.0 | 2063 | c4d3eb9 | `89544e285796233d7642a1682d91044368ca24c413196edf1efd73d86c9cca44` |
 | 2026-11-26 | 0.2.1 | 2069 | 3ecdab2 | `66b6c61c8af95dda257e9dc1c7de31ab339f10119259b24751fea1c8dcc68b25` |
 | 2026-11-26 | 0.2.2 | 2165 | f7d4810 | `012156e22501b7784ae3ef949981a8bd9e16b3d92a7b0f29092016be64f3b5fb` |
+| 2026-11-26 | 0.2.3 | 2300 | aef5360a | `87c94a426c460e2a5a6ce464e73a4a6c74f51527dfe1c3900c9b09a17173c244` |
+
+The first attempt at 0.2.3 failed with "the served signature does not verify" and the release command rolled the Worker back; the retry passed and tagged `mac-v0.2.3`.

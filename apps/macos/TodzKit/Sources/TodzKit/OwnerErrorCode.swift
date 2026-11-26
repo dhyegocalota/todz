@@ -10,4 +10,7 @@ enum OwnerErrorCode: String, Decodable {
     case signInUnavailable = "sign_in_unavailable"
     case signInRefused = "sign_in_refused"
     case appTooOld = "app_too_old"
+    case limitReached = "limit_reached"
+    case accountSuspended = "account_suspended"
+    case signUpRefused = "sign_up_refused"
 }
