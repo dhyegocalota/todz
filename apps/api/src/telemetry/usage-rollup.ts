@@ -1,3 +1,4 @@
+import { USAGE_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
 import { z } from 'zod';
 import { clientRateKey } from '../client-rate-key';
 import type { Env } from '../env';
@@ -9,7 +10,7 @@ import { noRouteResponse } from '../owner-errors';
 import { parsedJson } from '../parsed-json';
 import { DIMENSION_SEPARATOR, Metric, UsageEvent } from './metric';
 import { incrementMetrics, incrementWithinCap } from './metrics-store';
-import { USAGE_BODY_MAX_BYTES, USAGE_COUNT_MAX, USAGE_RATE_LIMIT_PERIOD_SECONDS, USAGE_ROLLUPS_PER_DAY_MAX } from './telemetry-constants';
+import { USAGE_BODY_MAX_BYTES, USAGE_COUNT_MAX, USAGE_ROLLUPS_PER_DAY_MAX } from './telemetry-constants';
 import { utcDayOf } from './telemetry-day';
 import { isTelemetryOn } from './telemetry-mode';
 
