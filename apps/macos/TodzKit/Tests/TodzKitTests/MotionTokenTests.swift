@@ -1,9 +1,15 @@
+import SwiftUI
 import Testing
 @testable import TodzKit
 
 private let ceiling = MotionTiming.ceilingMilliseconds
 private let everyToken = MotionToken.allCases
 private let crossfades = Array(repeating: MotionToken.crossfade, count: MotionToken.allCases.count)
+
+private func settlingMilliseconds(_ curve: MotionCurve) -> Double? {
+    guard case let .spring(response, dampingFraction) = curve else { return nil }
+    return Spring(response: response, dampingRatio: dampingFraction).settlingDuration * millisecondsPerSecond
+}
 
 private func isWellFormed(_ curve: MotionCurve) -> Bool {
     guard case let .spring(response, dampingFraction) = curve else { return true }
@@ -21,6 +27,14 @@ private func isWellFormed(_ curve: MotionCurve) -> Bool {
 
     @Test func everySpringHasAPositiveResponseAndADampingUpToOne() {
         #expect(everyToken.allSatisfy { isWellFormed($0.curve) })
+    }
+
+    @Test func everySpringSettlesWithinItsOwnDuration() {
+        let overruns = everyToken.filter { token in
+            guard let settling = settlingMilliseconds(token.curve) else { return false }
+            return settling > Double(token.durationMilliseconds)
+        }
+        #expect(overruns.isEmpty)
     }
 
     @Test func reduceMotionTurnsEveryTokenIntoACrossfade() {
