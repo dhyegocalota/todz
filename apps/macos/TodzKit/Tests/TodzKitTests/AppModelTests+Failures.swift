@@ -102,7 +102,7 @@ extension AppModelTests {
         harness.service.suspend(.readChanges)
         harness.vault.secret = harness.session
         let launching = Task { await harness.model.launch() }
-        await harness.service.held(.readChanges, count: workspace.projects.count)
+        await harness.service.held(.readChanges, count: AppModel.pullConcurrencyLimit)
         let callsBeforeTheFirstUnauthorized = harness.service.calls
         harness.service.failures[.readChanges] = .unauthorized
         harness.service.unsuspend(.readChanges)

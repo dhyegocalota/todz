@@ -10,12 +10,13 @@ extension AppModel {
     }
 
     private var readyWidgetSnapshot: WidgetSnapshotState {
-        guard let workspace = activeWorkspace, isTodayKnown(in: workspace), let views = taskViews else { return .absent }
-        return .ready(WidgetSnapshot.of(views: views, workspace: workspace, day: today, timeZone: timeZone, showsDayTemperature: showsDayTemperature))
+        let shown = shownWorkspaces
+        guard isTodayKnown(in: shown), let views = taskViews else { return .absent }
+        return .ready(WidgetSnapshot.of(views: views, workspaces: shown, day: today, timeZone: timeZone, showsDayTemperature: showsDayTemperature))
     }
 
-    func isTodayKnown(in workspace: Workspace) -> Bool {
-        !isFirstLoad(of: workspace) && loadFailure(of: workspace) == nil
+    func isTodayKnown(in workspaces: [Workspace]) -> Bool {
+        !workspaces.isEmpty && !isFirstLoad(of: workspaces) && loadFailure(of: workspaces) == nil
     }
 
     public func dayChanged() {
@@ -71,6 +72,7 @@ extension AppModel {
     }
 
     // NB ADR 0033: a widget's request reaches the outbox only for a task in the current Today that is not already in that state.
+    // NB ADR 0080: a request that names a workspace is taken only when the task's own project belongs to it.
     private func take(_ request: WidgetRequest) async {
         guard let today = taskViews?.today else { return }
         let isRequested = { (boardTask: BoardTask) in
@@ -78,11 +80,17 @@ extension AppModel {
         }
         let requested = (today.open + today.doneToday).first(where: isRequested)
         guard let requested, requested.task.state != request.state else { return }
+        let isOfRequestedWorkspace = request.workspaceIdentifier == nil || workspace(ofProject: requested.project.identifier)?.identifier == request.workspaceIdentifier
+        guard isOfRequestedWorkspace else { return }
         let key = TaskKey(projectIdentifier: request.projectIdentifier, number: request.number)
         switch request.state {
         case .done: await complete(task: key)
         case .open: await reopen(task: key)
         }
+    }
+
+    func workspace(ofProject projectIdentifier: String) -> Workspace? {
+        shownWorkspaces.first { workspace in workspace.projects.contains { $0.identifier == projectIdentifier } }
     }
 
     func observeWidgets() {

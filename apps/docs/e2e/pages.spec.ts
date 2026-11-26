@@ -8,6 +8,7 @@ const SIDEBAR_TITLES = [
   'Quickstart',
   'Install on Mac',
   'Connect an agent',
+  'A tour of the app',
   'Workspaces',
   'Keyboard shortcuts',
   'Updates',

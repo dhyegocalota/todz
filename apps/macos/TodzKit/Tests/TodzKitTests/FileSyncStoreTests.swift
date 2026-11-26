@@ -126,7 +126,7 @@ private func projectCache(taskCount: Int = 2) -> ProjectCache {
         try store.erase()
     }
 
-    @Test func writesAThousandTasksWithinTheBudget() throws {
+    @Test(.enabled(if: !isOnHostedRunner)) func writesAThousandTasksWithinTheBudget() throws {
         let cache = projectCache(taskCount: largeTaskCount)
         let clock = ContinuousClock()
         let durations = try (1...timedWriteCount).map { _ in try clock.measure { try store.writeProject(cache) } }

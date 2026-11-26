@@ -7,10 +7,10 @@ struct ProjectRow: View {
     @Environment(MainWindowState.self) private var windowState
 
     var body: some View {
-        Text(project.name)
+        Text(label)
             .lineLimit(1)
             .truncationMode(.tail)
-            .help(project.name)
+            .help(label)
             .openCountBadge(model.openCount(of: item))
             .tag(item)
             .contextMenu {
@@ -18,6 +18,11 @@ struct ProjectRow: View {
                     windowState.sheet = .renameProject(project)
                 }
             }
+    }
+
+    private var label: String {
+        guard let workspaceName = model.taggedWorkspaceName[project.identifier] else { return project.name }
+        return MainWindowCopy.workspaceTag(workspaceName: workspaceName, projectName: project.name)
     }
 
     private var item: SidebarItem {

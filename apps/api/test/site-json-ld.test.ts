@@ -1,6 +1,6 @@
 import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
-import { COMPANY } from '@todz/types';
+import { COMPANY, REPOSITORY } from '@todz/types';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { OPEN_GRAPH_IMAGE } from '../src/site/site-icons';
 import { SITE_URL } from '../src/site/site-urls';
@@ -47,6 +47,10 @@ const SHAPES: Record<string, Shape> = {
       'applicationSubCategory',
       'publisher',
       'offers',
+      'codeRepository',
+      'license',
+      'downloadUrl',
+      'sameAs',
     ],
   },
   Offer: {
@@ -85,12 +89,16 @@ const APPLICATION: Node = {
   applicationCategory: 'BusinessApplication',
   applicationSubCategory: 'Productivity',
   publisher: { '@id': ORGANIZATION_ID },
+  codeRepository: REPOSITORY.url,
+  license: REPOSITORY.licenseSpdxUrl,
+  downloadUrl: `${SITE_URL}/download`,
+  sameAs: [REPOSITORY.url, 'https://docs.todz.app'],
   offers: {
     '@type': 'Offer',
-    price: 0,
+    price: '0',
     priceCurrency: 'USD',
-    availability: 'https://schema.org/PreOrder',
-    url: `${SITE_URL}/#join`,
+    availability: 'https://schema.org/InStock',
+    url: `${SITE_URL}/download`,
   },
 };
 

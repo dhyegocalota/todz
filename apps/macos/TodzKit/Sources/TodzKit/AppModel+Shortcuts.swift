@@ -20,11 +20,13 @@ import Observation
     }
 }
 
+private let shownWorkspaceNameSeparator = ", "
+
 extension AppModel {
     public var shortcutToday: ShortcutToday? {
-        guard let workspace = activeWorkspace, let content = morningGlanceContent, let taskViews else { return nil }
+        guard let content = morningGlanceContent, let taskViews else { return nil }
         return ShortcutToday(
-            workspaceName: workspace.name,
+            workspaceName: shownWorkspaces.map(\.name).joined(separator: shownWorkspaceNameSeparator),
             content: content,
             tasks: taskViews.today.open.map(ShortcutTask.of),
             isOffline: isOffline || !isLaunchSettled
@@ -38,8 +40,8 @@ extension AppModel {
 
     public func shortcutTasks(matching text: String) -> [ShortcutTask] {
         let searchedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !searchedText.isEmpty, let workspace = activeWorkspace, let taskViews else { return [] }
-        return openTasksInShortcutOrder(views: taskViews, workspace: workspace)
+        guard !searchedText.isEmpty, let taskViews else { return [] }
+        return openTasksInShortcutOrder(views: taskViews)
             .filter { $0.task.title.localizedStandardContains(searchedText) }
             .prefix(ShortcutLimits.taskLimit)
             .map(ShortcutTask.of)
@@ -91,8 +93,7 @@ extension AppModel {
     }
 
     private var isActiveTodayKnown: Bool {
-        guard let activeWorkspace else { return false }
-        return isTodayKnown(in: activeWorkspace)
+        isTodayKnown(in: shownWorkspaces)
     }
 
     private var isShortcutReadinessSettled: Bool {
@@ -123,16 +124,16 @@ extension AppModel {
     }
 
     private func shownBoardTask(key: TaskKey) -> BoardTask? {
-        let project = activeWorkspace?.projects.first { $0.identifier == key.projectIdentifier }
+        let project = shownProjects.first { $0.identifier == key.projectIdentifier }
         let task = board.applying(outbox).task(projectIdentifier: key.projectIdentifier, number: key.number)
         guard let project, let task else { return nil }
         return BoardTask(project: project, task: task)
     }
 
-    private func openTasksInShortcutOrder(views: TaskViews, workspace: Workspace) -> [BoardTask] {
+    private func openTasksInShortcutOrder(views: TaskViews) -> [BoardTask] {
         let todayTasks = views.today.open
         let todayKeys = Set(todayTasks.map { ShortcutTask.of($0).key })
-        let laterTasks = workspace.projects
+        let laterTasks = shownProjects
             .flatMap { views.project(identifier: $0.identifier) }
             .filter { !todayKeys.contains(ShortcutTask.of($0).key) }
         return todayTasks + laterTasks

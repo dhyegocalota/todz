@@ -197,6 +197,8 @@ cat > "$fakes/hdiutil" <<'FAKE'
 #!/usr/bin/env bash
 echo "hdiutil $*" >> "$CALLS"
 [[ "${FAKE_HANG:-}" == hdiutil ]] && exec tail -f /dev/null
+while [[ "$1" != -srcfolder ]]; do shift 2> /dev/null || break; done
+echo "hdiutil-staged $(cd "$2" && find . -type f -o -type l | sort | tr '\n' ' ')" >> "$CALLS"
 echo fake-dmg-bytes > "${@: -1}"
 FAKE
 
@@ -266,7 +268,7 @@ FAKE
 
 cat > "$fakes/deploy-worker" <<'FAKE'
 #!/usr/bin/env bash
-echo "deploy-worker token-mode=$(stat -f %Lp "$HOME/.todz-release/lock/token") lock=$([[ -n "${TODZ_RELEASE_LOCK_HELD:-}" && "$TODZ_RELEASE_LOCK_HELD" == "$(cat "$HOME/.todz-release/lock/token")" ]] && echo yes || echo no) $*" >> "$CALLS"
+echo "deploy-worker token-mode=$(stat -c %a "$HOME/.todz-release/lock/token" 2>/dev/null || stat -f %Lp "$HOME/.todz-release/lock/token") lock=$([[ -n "${TODZ_RELEASE_LOCK_HELD:-}" && "$TODZ_RELEASE_LOCK_HELD" == "$(cat "$HOME/.todz-release/lock/token")" ]] && echo yes || echo no) $*" >> "$CALLS"
 [[ "${FAKE_HANG:-}" == deploy-worker ]] && exec tail -f /dev/null
 [[ -n "${FAKE_DEPLOY_FAIL:-}" ]] && { echo "deploy-worker: refused" >&2; exit 1; }
 site="$HOME/.todz-release/site/download"
@@ -316,6 +318,8 @@ new_world() {
   printf '#!/usr/bin/env bash\necho "git-push released=$(tr "\\n" "," < "%s/.todz-release/site/released")" >> "%s"\n' "$home" "$CALLS" > "$origin/hooks/pre-receive"
   chmod +x "$origin/hooks/pre-receive"
   printf 'release@todz.app namespaces="todz-release" %s\n' "$(cut -d' ' -f1,2 "$release_key.pub")" > "$repository/apps/macos/release/allowed-signers"
+  echo fake-background > "$repository/apps/macos/release/dmg-background.tiff"
+  echo fake-layout > "$repository/apps/macos/release/dmg-layout.dsstore"
   cp "$here/release-mac.sh" "$here/release-shared.sh" "$here/deploy-worker.sh" "$repository/scripts/"
   git init -q -b main "$repository"
   git -C "$repository" remote add origin "$origin"
@@ -453,6 +457,20 @@ for provision in app appex; do
   expect_equal "a provisioning profile in the $provision never reaches hdiutil" "$(call_count '^hdiutil')" "0"
 done
 
+for asset_case in "dmg-background.tiff:the disk image background is missing" "dmg-layout.dsstore:the disk image layout is missing"; do
+  asset=${asset_case%%:*}
+  message=${asset_case#*:}
+  new_world
+  git -C "$repository" rm -q "apps/macos/release/$asset"
+  git -C "$repository" commit -q -m "drop $asset"
+  git -C "$repository" push -q origin main 2> /dev/null
+  export ACTIVE_MESSAGE=$(git -C "$repository" rev-parse HEAD)
+  run_release
+  expect_refused "a missing $asset is refused" "$message"
+  expect_equal "a missing $asset never reaches xcodebuild" "$(call_count '^xcodebuild')" "0"
+  expect_equal "a missing $asset never reaches hdiutil" "$(call_count '^hdiutil')" "0"
+done
+
 new_world
 FAKE_FEED=https://example.com/appcast.xml run_release
 expect_refused "a built feed address that is not the constant is refused" "SUFeedURL is https://example.com/appcast.xml, not https://todz.app/download/appcast.xml"
@@ -488,11 +506,15 @@ expect_equal "a dry run creates no tag" "$(git -C "$repository" tag --list)" ""
 expect_equal "a dry run writes nothing under site" "$(find "$site/download" -type f | wc -l | tr -d ' ')" "0"
 expect_equal "a dry run leaves released empty" "$(cat "$site/released")" ""
 expect_equal "the build holds the commit it built" "$(cat "$build_directory/commit")" "$(git -C "$repository" rev-parse HEAD)"
-expect_equal "the build folder is private" "$(stat -f %Lp "$build_directory")" "700"
+expect_equal "the build folder is private" "$(stat -c %a "$build_directory" 2>/dev/null || stat -f %Lp "$build_directory")" "700"
 expect_contains "xcodebuild gets the version" "$(cat "$CALLS")" "MARKETING_VERSION=$version"
 expect_contains "xcodebuild gets the build number" "$(cat "$CALLS")" "CURRENT_PROJECT_VERSION=$commit_count"
 expect_contains "xcodebuild builds Release into the build folder" "$(cat "$CALLS")" "-configuration Release -derivedDataPath $build_directory/derived"
 expect_contains "xcodebuild turns automatic updates on, only for the release command" "$(cat "$CALLS")" "TODZ_AUTOMATICALLY_UPDATES=YES"
+expect_contains "the disk image is packed as UDZO" "$(cat "$CALLS")" "-format UDZO"
+expect_contains "the disk image holds the background" "$(cat "$CALLS")" "./.background/dmg-background.tiff"
+expect_contains "the disk image holds the layout as .DS_Store" "$(cat "$CALLS")" "./.DS_Store"
+expect_contains "the disk image holds the app and the Applications link" "$(cat "$CALLS")" "./Applications ./Todz.app/"
 expect_contains "the disk image is signed" "$(cat "$CALLS")" "codesign --force --sign Apple Development $build_directory/$disk_image_name"
 appcast=$(cat "$build_directory/appcast.xml")
 expect_contains "the appcast names the build" "$appcast" "<sparkle:version>$commit_count</sparkle:version>"

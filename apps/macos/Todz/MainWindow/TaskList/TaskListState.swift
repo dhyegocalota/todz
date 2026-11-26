@@ -7,10 +7,10 @@ enum TaskListState {
     case rows([TaskSection])
 
     @MainActor static func of(workspace: Workspace, item: SidebarItem, model: AppModel, lingers: CompletionLingers) -> TaskListState {
-        let loads = workspace.projects.map { model.projectLoads[$0.identifier] }
+        let loads = model.shownWorkspaces.flatMap(\.projects).map { model.projectLoads[$0.identifier] }
         let isFirstLoad = loads.contains(nil)
         guard !isFirstLoad else { return .loading }
-        if let loadFailure = model.loadFailure(of: workspace) { return .failed(loadFailure) }
+        if let loadFailure = model.loadFailure(of: model.shownWorkspaces) { return .failed(loadFailure) }
         guard let views = model.taskViews else { return .loading }
         let sections = TaskSections.sections(
             item: item,

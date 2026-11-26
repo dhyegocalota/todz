@@ -22,7 +22,7 @@ public enum WidgetToggle {
             doneToday: snapshot.doneToday.map(setInPlace),
             showsDayTemperature: snapshot.showsDayTemperature
         )
-        let request = WidgetRequest(projectIdentifier: projectIdentifier, number: number, state: state, at: instant)
+        let request = WidgetRequest(projectIdentifier: projectIdentifier, number: number, state: state, at: instant, workspaceIdentifier: toggled.workspaceIdentifier)
         return (snapshot: changed, request: request)
     }
 }

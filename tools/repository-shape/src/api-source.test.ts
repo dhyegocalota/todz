@@ -47,6 +47,11 @@ const REPLY_LIMITER_NAME_PATTERN = /REPLY/;
 const OWNER_RATE_LIMIT_NAMESPACE_ID = '8611';
 const MCP_RATE_LIMIT_NAMESPACE_ID = '8612';
 const STOP_RATE_LIMIT_NAMESPACE_ID = '8613';
+const USAGE_RATE_LIMIT_NAMESPACE_ID = '8614';
+const USAGE_INSTALL_RATE_LIMIT_NAMESPACE_ID = '8615';
+const USAGE_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8616';
+const APPCAST_RATE_LIMIT_NAMESPACE_ID = '8617';
+const APPCAST_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8618';
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -63,7 +68,7 @@ const NO_LOCAL_PROVIDER_PATTERN = /"(fake|console)"/;
 const SEND_EMAIL_BINDING_PATTERN =
   /"send_email":\s*\[\s*\{\s*"name":\s*"EMAIL",\s*"allowed_sender_addresses":\s*\["noreply@todz\.app"\]\s*,?\s*\}\s*,?\s*\]/;
 const ASSETS_PATTERN =
-  /"assets":\s*\{\s*"directory":\s*"\.\/public",\s*"binding":\s*"ASSETS",\s*"run_worker_first":\s*\["\/owner",\s*"\/owner\/\*",\s*"\/mcp",\s*"\/sign-in",\s*"\/sign-in\/challenge",\s*"\/day-email\/stop",\s*"\/health"\]\s*,?\s*\}/;
+  /"assets":\s*\{\s*"directory":\s*"\.\/public",\s*"binding":\s*"ASSETS",\s*"run_worker_first":\s*\[\s*"\/owner",\s*"\/owner\/\*",\s*"\/mcp",\s*"\/sign-in",\s*"\/sign-in\/challenge",\s*"\/day-email\/stop",\s*"\/health",\s*"\/download\/appcast\.xml"\s*,?\s*\]\s*,?\s*\}/;
 const DEBUG_API_BASE_URL_PATTERN = /configs:\s*\n\s+Debug:\s*\n\s+TODZ_API_BASE_URL: (\S+)\s*\n/;
 const RELEASE_API_BASE_URL_PATTERN = /\n\s+Release:\s*\n\s+TODZ_API_BASE_URL: (\S+)\s*\n/;
 const INFO_PLIST_API_BASE_URL_PATTERN = /TodzAPIBaseURL: \$\(TODZ_API_BASE_URL\)/;
@@ -73,12 +78,11 @@ const CONSOLE_CRASH_LOG = 'apps/api/src/crash-log.ts';
 const CONSOLE_DAY_EMAIL_LOG = 'apps/api/src/day-email/day-email-log.ts';
 const CONSOLE_EMAIL_SENDER = 'apps/api/src/email-sender.ts';
 const SCHEDULED_MODULE = 'apps/api/src/scheduled.ts';
-const DIGEST_CRON = '0 11 * * *';
 const DAY_EMAIL_CRON = '*/15 * * * *';
+const METRICS_CRON = '0 3 * * *';
 const SCHEDULED_CRON_ENUM_PATTERN = /enum ScheduledCron \{([^}]*)\}/;
 const QUOTED_VALUE_PATTERN = /'([^']+)'/g;
 const PRODUCTION_OBSERVABILITY = { enabled: true, logs: { invocation_logs: false } };
-const DIGEST_CRON_PATTERN = /enum ScheduledCron \{\s*WaitlistDigest = '([^']+)'/;
 const PROJECT_STORE_IDENTIFIER = /\bPROJECT_STORE\b/;
 
 const sourceFiles = repositoryFiles(API_SOURCE_FOLDER);
@@ -157,6 +161,7 @@ describe('the api source', () => {
       PUBLIC_ORIGIN: PRODUCTION_ORIGIN,
       SITE_ORIGIN,
       TURNSTILE_SITE_KEY,
+      TELEMETRY: 'on',
     });
   });
 
@@ -191,8 +196,8 @@ describe('the api source', () => {
     expect(configuration.preview_urls).toBe(false);
   });
 
-  test('the wrangler configuration triggers the waitlist digest once a day at 11:00 UTC, the day email every quarter hour and nothing else', () => {
-    expect(wranglerConfiguration().triggers).toEqual({ crons: [DIGEST_CRON, DAY_EMAIL_CRON] });
+  test('the wrangler configuration triggers the day email every quarter hour, the metrics run at 03:00 UTC and nothing else', () => {
+    expect(wranglerConfiguration().triggers).toEqual({ crons: [DAY_EMAIL_CRON, METRICS_CRON] });
   });
 
   test('every cron the worker dispatches is one the wrangler configuration triggers, and every trigger is dispatched', () => {
@@ -204,11 +209,6 @@ describe('the api source', () => {
 
   test('the wrangler configuration turns Workers Logs on with invocation logs off, so the envelope addresses of a mail are never kept', () => {
     expect(wranglerConfiguration().observability).toEqual(PRODUCTION_OBSERVABILITY);
-  });
-
-  test('the digest cron the worker runs is the one the wrangler configuration triggers', () => {
-    const [digestCron] = wranglerConfiguration().triggers.crons;
-    expect(DIGEST_CRON_PATTERN.exec(readRepositoryFile(SCHEDULED_MODULE))?.[FIRST_CAPTURE]).toBe(digestCron);
   });
 
   test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally, a reply per owner, and signed-in owners and keys, with the shared limits', () => {
@@ -277,6 +277,31 @@ describe('the api source', () => {
         name: 'DAY_EMAIL_STOP_LIMITER',
         namespace_id: STOP_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('DAY_EMAIL_STOP_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'USAGE_LIMITER',
+        namespace_id: USAGE_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('USAGE_ADDRESS_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'USAGE_INSTALL_LIMITER',
+        namespace_id: USAGE_INSTALL_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('USAGE_INSTALL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'USAGE_GLOBAL_LIMITER',
+        namespace_id: USAGE_GLOBAL_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('USAGE_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'APPCAST_LIMITER',
+        namespace_id: APPCAST_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('APPCAST_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'APPCAST_ADDRESS_LIMITER',
+        namespace_id: APPCAST_ADDRESS_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('APPCAST_ADDRESS_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
   });

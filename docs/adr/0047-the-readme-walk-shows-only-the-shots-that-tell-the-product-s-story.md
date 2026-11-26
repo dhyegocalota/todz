@@ -1,6 +1,6 @@
 # 0047. The README walk shows only the shots that tell the product's story
 
-- Status: Proposed; amends [0030](0030-product-screenshots-live-in-docs-screenshots-and-the-readme-walks-them.md) §§1, 3, 4 and supersedes the README clause of [0039](0039-the-app-icon-is-a-layered-icon-composer-document-with-the-flat-set-as-its-fallback.md) (brand surfaces in light and dark, the icon's looks)
+- Status: Superseded by [0085](0085-the-readme-is-a-six-shot-showcase-and-the-docs-hold-the-tour.md); was Proposed and amends [0030](0030-product-screenshots-live-in-docs-screenshots-and-the-readme-walks-them.md) §§1, 3, 4 and supersedes the README clause of [0039](0039-the-app-icon-is-a-layered-icon-composer-document-with-the-flat-set-as-its-fallback.md) (brand surfaces in light and dark, the icon's looks)
 - Date: 2026-11-24
 - Deciders: Dhyego Calota (owner) asked for it on 2026-11-24 ("deixa só os screenshots que fazem sentido no readme"); Claude (the build loop's call on the cut)
 - Inspired by: the README walk at 3d0e27e, 25 cells long

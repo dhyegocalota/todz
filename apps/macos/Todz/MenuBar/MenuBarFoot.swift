@@ -33,6 +33,8 @@ struct MenuBarFoot: View {
                     .buttonStyle(.borderless)
                     .disabled(!appUpdater.canCheckForUpdates)
             }
+            StarRepositoryButton()
+                .buttonStyle(.borderless)
             MenuBarQuitButton()
         }
         .font(.subheadline)

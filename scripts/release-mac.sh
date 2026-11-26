@@ -18,6 +18,9 @@ tag_prefix="mac-v"
 scheme_name="Todz"
 agent_lifetime_seconds=120
 allowed_signers_path="apps/macos/release/allowed-signers"
+disk_image_background_path="apps/macos/release/dmg-background.tiff"
+disk_image_layout_path="apps/macos/release/dmg-layout.dsstore"
+background_folder_name=".background"
 notarization_enabled=false
 version_pattern='^[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}$'
 usage="usage: release-mac.sh [--version <x.y.z>] [--dry-run] | --create-release-key"
@@ -328,12 +331,20 @@ build_app() {
   require_built_app
 }
 
+require_disk_image_assets() {
+  [[ -f "$root/$disk_image_background_path" ]] || fail "the disk image background is missing: $disk_image_background_path"
+  [[ -f "$root/$disk_image_layout_path" ]] || fail "the disk image layout is missing: $disk_image_layout_path"
+}
+
 create_disk_image() {
   local staging="$build_directory/staging"
   rm -rf "$staging"
   mkdir -p "$staging"
   cp -R "$app_path" "$staging/"
   ln -s /Applications "$staging/Applications"
+  mkdir "$staging/$background_folder_name"
+  cp "$root/$disk_image_background_path" "$staging/$background_folder_name/"
+  cp "$root/$disk_image_layout_path" "$staging/.DS_Store"
   bounded "$hdiutil_seconds" "hdiutil" "$hdiutil_binary" create -volname "$scheme_name" -srcfolder "$staging" -ov -format UDZO "$disk_image_path" > /dev/null
   bounded "$codesign_seconds" "codesign" "$codesign_binary" --force --sign "$signing_identity" "$disk_image_path"
   rm -rf "$staging"
@@ -405,6 +416,7 @@ APPCAST
 }
 
 build_release() {
+  require_disk_image_assets
   build_app
   create_disk_image
   if [[ "$notarization_enabled" == true ]]; then notarize_and_staple; fi

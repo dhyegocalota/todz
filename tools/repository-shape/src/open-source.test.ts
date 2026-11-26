@@ -24,6 +24,7 @@ const CONTRIBUTING_FILE = '.github/CONTRIBUTING.md';
 const PULL_REQUEST_TEMPLATE = '.github/pull_request_template.md';
 const CONTRIBUTOR_AGREEMENT_CHECKBOX = '- [ ] ✍️ I agree to the [Contributor License Agreement]';
 const README_FILE = 'README.md';
+const STATIC_LICENSE_BADGE = '[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)';
 const SECURITY_FILE = '.github/SECURITY.md';
 const SECURITY_ADDRESS = 'security@todz.app';
 const ISSUE_TEMPLATE_CONFIG = '.github/ISSUE_TEMPLATE/config.yml';
@@ -98,6 +99,10 @@ describe('open source', () => {
     const readme = readRepositoryFile(README_FILE);
     expect(readme).toContain(`](${DOCS_ORIGIN})`);
     expect(readme).toContain(`](${DOWNLOAD_ADDRESS})`);
+  });
+
+  test('the README license badge is static and links the license, so it never depends on the GitHub API', () => {
+    expect(readRepositoryFile(README_FILE)).toContain(STATIC_LICENSE_BADGE);
   });
 
   test('the security policy names the address and the issue template configuration the private advisory form', () => {

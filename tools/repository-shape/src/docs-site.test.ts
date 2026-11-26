@@ -19,6 +19,7 @@ const NAVIGATION_GROUPS = [
   {
     group: 'Guides',
     pages: [
+      'tour',
       'workspaces',
       'keyboard-shortcuts',
       'updates',

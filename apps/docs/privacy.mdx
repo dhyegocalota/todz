@@ -1,38 +1,41 @@
 ---
 title: Privacy
-description: What todz counts, what it never keeps, and how to turn it off.
+description: Exactly what todz counts, what it never stores, and how to turn it off.
 ---
 
-todz counts how the product is used so it can be improved. It counts; it never records what you do or what you write.
+todz counts how it is used in daily totals. It never stores a log of what anyone did, and it never reads your tasks to do it.
 
 ## What is counted
 
-- **On the server:** daily totals, such as active owners, new sign-ins, workspaces, tasks added and done, and MCP calls by client name.
-- **On todz.app:** page views, download clicks and star clicks, counted by the server that serves the page. There is no third-party script.
-- **Updates:** update checks per app version and per macOS major version, rolled up per day.
-- **In the app, only if you opt in:** at most one rollup a day with a count per feature, such as the popover opened, the day close, the morning glance, a shortcut used and several workspaces shown.
+Each count is one number for one day, with at most one short label.
+
+| Count | Where it comes from | Label |
+| --- | --- | --- |
+| Owners, workspaces, projects | The server's own records, once a night | none |
+| Tasks added, tasks completed | A count from each project, once a night | none |
+| Agent writes | A count of what agents changed, once a night | the agent's name from a fixed list (Claude Code, Codex, Cursor, Gemini, Windsurf, Zed, VS Code), anything else as `other` |
+| Day mails sent | The server's own records, once a night | none |
+| Update checks | The Mac app asking for updates | the app version and the macOS major version, such as `0.2.1\|15` |
+| Shared usage reports | The Mac app, only if you turn on **Share anonymous usage** | the app version and the macOS major version |
+| Shared usage events | The same report | one of `popover_opened`, `day_closed`, `morning_glance`, `shortcut_used`, `multi_workspace` |
 
 ## What is never stored
 
-- Task titles, notes, project or workspace names, or any task content.
-- Email addresses, IP addresses or user agents.
-- A log of single events. Only daily totals are kept.
-- An identifier that outlives 30 days.
+- No task title, note, project name, workspace name or email address.
+- No IP address and no user agent. An update check's user agent is read for the two version numbers and dropped.
+- No log of events and no timestamp of any single event. Only a day and a total.
+- The random code the Mac app sends with a report changes every 30 days, is used only to slow down abuse and is never stored.
 
-## The opt-in
+Totals are kept for 13 months and then deleted by the server.
 
-Sharing usage from the app is off by default. todz asks once; you can change your answer in todz › Settings.
+## Share anonymous usage
 
-The rollup holds counts only, is at most 1 KB per install per day, and carries a random install identifier that rotates every 30 days. The identifier is never stored on the server.
+The Mac app asks once. It is off until you say yes, and you can change it any time in Settings. When on, the app keeps a count of the five events above on your Mac and sends one small report a day: counts, the app version, the macOS major version and the random code. A report is under 1 KB, and the server refuses anything over 2 KB.
 
-## Retention
+## Self-hosting
 
-The server keeps daily rollups only, for 13 months, and then deletes them.
+A server you run counts nothing. The setting `TELEMETRY` is off unless it is set to exactly `on`, and the self-host guide has you remove it. A Mac app signed in to your server sends its report to your server, which refuses it.
 
-## The code
+## Where the numbers are read
 
-What is counted lives in [the server's code](https://github.com/dhyegocalota/todz/tree/main/apps/api).
-
-## Self-host
-
-A server you run has all of this off. Nothing reaches todz from it unless you turn it on.
+Only the owner of the hosted service reads them, on a signed-in admin page with a CSV export. The code is open: see `apps/api/src/telemetry` in the repository.

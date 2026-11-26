@@ -1,10 +1,12 @@
 extension AppModel {
     public var morningGlanceContent: MorningGlanceContent? {
-        guard let workspace = activeWorkspace, isTodayKnown(in: workspace), let taskViews else { return nil }
+        guard let primaryWorkspace = activeWorkspace, isTodayKnown(in: shownWorkspaces), let taskViews else { return nil }
         let openTasks = taskViews.today.open
-        let rows = openTasks.prefix(MorningGlanceContent.rowLimit).map { WidgetSnapshotTask.of($0, day: today) }
+        let rows = openTasks.prefix(MorningGlanceContent.rowLimit).compactMap { boardTask in
+            workspace(ofProject: boardTask.project.identifier).map { WidgetSnapshotTask.of(boardTask, workspace: $0, isWorkspaceTagged: shownWorkspaces.count > 1, day: today) }
+        }
         return MorningGlanceContent(
-            workspaceIdentifier: workspace.identifier,
+            workspaceIdentifier: primaryWorkspace.identifier,
             openCount: openTasks.count,
             rows: rows,
             restCount: openTasks.count - rows.count

@@ -1,6 +1,6 @@
 # 0030. Product screenshots live in docs/screenshots, and the README walks them
 
-- Status: Proposed; amended by [0039](0039-the-app-icon-is-a-layered-icon-composer-document-with-the-flat-set-as-its-fallback.md) (brand surfaces are shown in light and dark, and the icon's looks as a rendered sheet); amended by [0047](0047-the-readme-walk-shows-only-the-shots-that-tell-the-product-s-story.md) (the README shows only the story's shots)
+- Status: Proposed; amended by [0039](0039-the-app-icon-is-a-layered-icon-composer-document-with-the-flat-set-as-its-fallback.md) (brand surfaces are shown in light and dark, and the icon's looks as a rendered sheet); amended by [0047](0047-the-readme-walk-shows-only-the-shots-that-tell-the-product-s-story.md) (the README shows only the story's shots); amended by [0085](0085-the-readme-is-a-six-shot-showcase-and-the-docs-hold-the-tour.md) (§3: a hero and four cells, not a walk; §4: new shots go to the docs tour; §6: a screenshot is shown by the README, the landing or a docs page)
 - Date: 2026-11-24
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) may overturn it
 - Inspired by: the owner's words of 2026-11-24, "take screenshots and put them in the README to make everything easier"; [ADR 0006](0006-pull-request-media-is-attached-with-the-github-cli.md); [ADR 0026](0026-a-native-app-is-walked-with-computer-use-and-recorded-from-its-screenshots.md)

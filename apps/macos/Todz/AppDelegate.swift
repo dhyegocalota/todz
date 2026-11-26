@@ -34,6 +34,8 @@ private let cacheFolderName = "Cache"
     private var engagementObservation: (any NSObjectProtocol)?
     private var isAwaitingEngagement = false
     private var launchReading: Task<Void, Never>?
+    let usageSharingPreference = UsageSharingPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
+    let usageSharing = UsageSharing(defaults: .standard, domainName: AppConfiguration.defaultsDomain, timeZone: .gmt)
     let dayTemperaturePreference = DayTemperaturePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     let menuBarOnlyPreference = MenuBarOnlyPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     let respectFocusPreference = RespectFocusPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
@@ -48,6 +50,11 @@ private let cacheFolderName = "Cache"
         openPopover: { [panel] in await panel.open() },
         closePopover: { [panel] in panel.close() }
     )
+    private(set) lazy var workspaceShortcuts = WorkspaceShortcutController(
+        model: model,
+        preference: WorkspaceShortcutsPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
+        onUsed: { [usageSharing] in usageSharing.record(.shortcutUsed, at: Date()) }
+    )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
     private(set) lazy var dayTemperatureClock = DayTemperatureClock(
         now: Date.init,
@@ -59,7 +66,11 @@ private let cacheFolderName = "Cache"
     let ribbonStrips = MenuBarRibbonStripCache()
     private(set) lazy var ribbon = makeRibbon()
     lazy var ribbonScheduler = RibbonScheduler(coordinator: ribbon, model: model)
-    private lazy var morningGlancePresenter = MorningGlancePresenter(windowState: windowState)
+    private lazy var morningGlancePresenter: MorningGlancePresenter = {
+        let presenter = MorningGlancePresenter(windowState: windowState)
+        presenter.onPresented = { [usageSharing] in usageSharing.record(.morningGlance, at: Date()) }
+        return presenter
+    }()
     private(set) lazy var morningGlance = MorningGlanceCoordinator.app(
         model: model,
         gate: gate,
@@ -80,8 +91,10 @@ private let cacheFolderName = "Cache"
     func applicationDidFinishLaunching(_ notification: Notification) {
         PerfProbe.shared?.start(model: model)
         decideLaunchSurfaceStart(notification)
+        workspaceShortcuts.start()
         observeWidgetRequests()
         observeDayChanges()
+        startUsageSharing()
         observeWindows(LaunchActivation.of(isDefaultLaunch: notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool))
         launchReading = Task {
             await focusSwitch.start()
@@ -128,6 +141,7 @@ private let cacheFolderName = "Cache"
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        workspaceShortcuts.stop()
         model.flushCache()
     }
 

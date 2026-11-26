@@ -41,6 +41,7 @@
       {
         "group": "Guides",
         "pages": [
+          "tour",
           "workspaces",
           "keyboard-shortcuts",
           "updates",

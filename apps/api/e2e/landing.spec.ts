@@ -1,22 +1,7 @@
-import { MILLISECONDS_PER_SECOND, WAITLIST_FILL_HOLD_MS, WAITLIST_JOIN_TIMEOUT_MS } from '@todz/types';
-import { type ConsoleMessage, type Locator, type Page, type Request, type Route, expect, test } from '@playwright/test';
-import { ARIA_DISABLED, HONEYPOT_FIELD_NAME, STAMP_FIELD_NAME } from '../src/site/join-form-markup';
+import { type ConsoleMessage, type Locator, type Page, expect, test } from '@playwright/test';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { ProjectName } from './project-name';
-import { mailCountTo } from './server-log';
-import {
-  FAILED_BEFORE_PRESS_TURNSTILE_STUB,
-  FAILED_MARKER_ATTRIBUTE,
-  JAVASCRIPT_CONTENT_TYPE,
-  NEVER_SOLVING_TURNSTILE_STUB,
-  RESET_COUNT_ATTRIBUTE,
-  SLOW_TURNSTILE_STUB,
-  TURNSTILE_DUMMY_TOKEN,
-  TURNSTILE_RESPONSE_FIELD,
-  TURNSTILE_SCRIPT_URL,
-  TURNSTILE_STUB,
-} from './turnstile-stub';
 
 enum SitePath {
   Landing = '/',
@@ -29,59 +14,10 @@ enum ColorScheme {
   Dark = 'dark',
 }
 
-enum Fragment {
-  Hero = 'join',
-  Final = 'final',
-}
-
-enum Css {
-  None = 'none',
-  ZeroSeconds = '0s',
-}
-
 const BRAND_ASSET_PATH = '/brand/todz-lockup.png';
 const OK_STATUS = 200;
+const GONE_STATUS = 410;
 const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
-const JOINED_NOTICE = "You're on the list. Check your inbox.";
-const TOO_MANY_STATUS = 429;
-const FORBIDDEN_STATUS = 403;
-const RETRY_AFTER_SECONDS = 2;
-const ACCEPT_HEADER = 'accept';
-const JSON_MEDIA_TYPE = 'application/json';
-const JOINED_OUTCOME = 'joined';
-const STAMP_FIELD = STAMP_FIELD_NAME;
-const HONEYPOT_FIELD = HONEYPOT_FIELD_NAME;
-const HONEYPOT_VALUE = 'https://spam.example';
-const STAMP_PATTERN = /^\d{13}\.[A-Za-z0-9_-]{43}$/;
-const POLICY_HEADER = 'content-security-policy';
-const SLOW_FIRST_BYTE_MS = 2_000;
-const WIDGET_FRAME_PATTERN = /<div class="join-check">.*?<\/div><\/div>/gs;
-const UNSAFE_INLINE = "'unsafe-inline'";
-const CONNECT_DIRECTIVE = "connect-src 'self'";
-const ANSWERED_LINES: { name: string; answer: (route: Route) => Promise<void>; line: string }[] = [
-  {
-    name: 'invalid, 400',
-    answer: (route) => route.fulfill({ status: 400, contentType: JSON_MEDIA_TYPE, body: JSON.stringify({ outcome: 'invalid' }) }),
-    line: LANDING_COPY.join.invalid,
-  },
-  {
-    name: 'check-failed, 403',
-    answer: (route) =>
-      route.fulfill({ status: FORBIDDEN_STATUS, contentType: JSON_MEDIA_TYPE, body: JSON.stringify({ outcome: 'check-failed' }) }),
-    line: LANDING_COPY.join.checkFailed,
-  },
-  {
-    name: 'opens-soon, 503',
-    answer: (route) => route.fulfill({ status: 503, contentType: JSON_MEDIA_TYPE, body: JSON.stringify({ outcome: 'opens-soon' }) }),
-    line: LANDING_COPY.join.opensSoon,
-  },
-  { name: 'an aborted request', answer: (route) => route.abort(), line: LANDING_COPY.join.unreachable },
-  {
-    name: 'a 200 answer that is HTML',
-    answer: (route) => route.fulfill({ status: OK_STATUS, contentType: 'text/html', body: '<p>not the join answer</p>' }),
-    line: LANDING_COPY.join.unreachable,
-  },
-];
 const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
 const MOVED_PERMANENTLY_STATUS = 301;
 const DOCS_REDIRECT_CACHE_CONTROL = 'max-age=3600';
@@ -92,36 +28,33 @@ const HEADER_INSTALL_LINK = `.site-header .nav-link[href="${DOCS_INSTALL_URL}"]`
 const FOOTER_INSTALL_LINK = `.site-footer .footer-link[href="${DOCS_INSTALL_URL}"]`;
 const MAXIMUM_DARK_CHANNEL = 40;
 const SUBPIXEL_TOLERANCE = 0.5;
-const KEYBOARD_ORDER = ['.skip-link', '.site-header .brand', HEADER_GUIDE_LINK, HEADER_INSTALL_LINK, '#join-email', '#join .join-button'];
+const KEYBOARD_ORDER = [
+  '.skip-link',
+  '.site-header .brand',
+  HEADER_GUIDE_LINK,
+  HEADER_INSTALL_LINK,
+  '.hero-free-link',
+  '.hero .download-button',
+];
 const CREDIT_LINK = '.site-footer .footer-credit-link';
-const CREDIT_TEXT = 'todz is a product of Logic Bit, made in Brazil';
+const CREDIT_TEXT = '© todz · todz is a product of Logic Bit, made in Brazil';
 const CREDIT_WEBSITE = 'https://logicbit.com.br';
 const SCRIPT_OWNED_TRANSITION_PROPERTIES = ['color', 'background-color', 'opacity'];
-const JOIN_FORMS = [Fragment.Hero, Fragment.Final];
 const SITE_PAGES = [SitePath.Landing, SitePath.Join];
-
-test.beforeEach(async ({ page }) => {
-  await page.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: TURNSTILE_STUB }));
-});
 
 function webpPathsOf(shot: LandingShot): string[] {
   return LANDING_SHOTS[shot].webp.map(({ path }) => path);
 }
 
-function uniqueAddress(): string {
-  const { project, testId } = test.info();
-  return `maria.${project.name}.${testId}@example.com`;
-}
-
 function isForeignRequest({ url, baseURL }: { url: string; baseURL: string | undefined }): boolean {
   const isOwnOrigin = new URL(url).origin === baseURL;
-  return !isOwnOrigin && url !== TURNSTILE_SCRIPT_URL;
+  return !isOwnOrigin;
 }
 
 function isMainFrameMessage({ message, baseURL }: { message: ConsoleMessage; baseURL: string | undefined }): boolean {
   const { url } = message.location();
   const isOwnOrigin = url.length === 0 || new URL(url).origin === baseURL;
-  return isOwnOrigin || url === TURNSTILE_SCRIPT_URL;
+  return isOwnOrigin;
 }
 
 function watchConsoleAndNetwork({ page, baseURL }: { page: Page; baseURL: string | undefined }): {
@@ -136,36 +69,6 @@ function watchConsoleAndNetwork({ page, baseURL }: { page: Page; baseURL: string
   return { errors, foreignRequests };
 }
 
-function joinPostsOf(page: Page): Request[] {
-  const posts: Request[] = [];
-  page.on('request', (request) => request.method() === 'POST' && new URL(request.url()).pathname === SitePath.Join && posts.push(request));
-  return posts;
-}
-
-function onlyPost(posts: Request[]): Request {
-  const [post, ...others] = posts;
-  if (post === undefined || others.length > 0) throw new Error('exactly one join was posted');
-  return post;
-}
-
-function postFieldsOf(post: Request): URLSearchParams {
-  const body = post.postData();
-  if (body === null) throw new Error('the join post has a body');
-  return new URLSearchParams(body);
-}
-
-function navigationsOf(page: Page): { count: number } {
-  const navigations = { count: 0 };
-  page.on('framenavigated', (frame) => frame === page.mainFrame() && (navigations.count += 1));
-  return navigations;
-}
-
-async function landingWithoutTheHold(page: Page): Promise<void> {
-  await page.clock.install();
-  await page.goto(SitePath.Landing);
-  await page.clock.fastForward(WAITLIST_FILL_HOLD_MS);
-}
-
 function onlyOn(projectName: ProjectName): void {
   test.skip(test.info().project.name !== projectName, `runs on ${projectName} only`);
 }
@@ -174,12 +77,6 @@ function darkestChannelLimitHolds(color: string): boolean {
   const channels = color.match(/\d+/g);
   if (channels === null) throw new Error(`not an rgb color: ${color}`);
   return channels.slice(0, 3).every((channel) => Number(channel) < MAXIMUM_DARK_CHANNEL);
-}
-
-async function submitForm({ page, form, address }: { page: Page; form: Fragment; address: string }): Promise<void> {
-  const formLocator = page.locator(`form#${form}`);
-  await formLocator.locator('input[name="email"]').fill(address);
-  await formLocator.locator('button[type="submit"]').click();
 }
 
 async function scrolledImages(page: Page): Promise<Locator[]> {
@@ -197,23 +94,14 @@ async function hasFocusRing(element: Locator): Promise<boolean> {
   });
 }
 
-test.describe('without a released version', () => {
-  test('keeps coming soon and shows no download button', async ({ page }) => {
-    await page.goto(SitePath.Landing);
-    await expect(page.locator('.hero .eyebrow-pill')).toHaveText(LANDING_COPY.hero.eyebrow);
-    await expect(page.locator('.download-button')).toHaveCount(0);
-    await expect(page.locator('.download-note')).toHaveCount(0);
-  });
-});
-
 test.describe('first fold', () => {
-  test('shows the logo, the promise, the hero shot and the form above the fold at 1280', async ({ page }) => {
+  test('shows the logo, the promise, the hero shot and the download above the fold at 1280', async ({ page }) => {
     onlyOn(ProjectName.Desktop);
     await page.goto(SitePath.Landing);
     await expect(page.locator('.site-header .brand')).toBeInViewport();
     await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
     await expect(page.locator('.shot-window img')).toBeInViewport();
-    await expect(page.locator('form#join')).toBeInViewport({ ratio: 1 });
+    await expect(page.locator('.hero .download-button')).toBeInViewport({ ratio: 1 });
   });
 
   test('loads the light window shot in the light scheme', async ({ page }) => {
@@ -228,13 +116,12 @@ test.describe('first fold', () => {
 });
 
 test.describe('narrow screen', () => {
-  test('has no horizontal scroll, reaches the form and fits every visible hero shot at 375', async ({ page }) => {
+  test('has no horizontal scroll, reaches the download and fits every visible hero shot at 375', async ({ page }) => {
     onlyOn(ProjectName.Mobile);
     await page.goto(SitePath.Landing);
     const hasHorizontalScroll = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(hasHorizontalScroll).toBe(false);
-    await page.locator('form#join').scrollIntoViewIfNeeded();
-    await expect(page.locator('form#join')).toBeInViewport({ ratio: 1 });
+    await expect(page.locator('.hero .download-button')).toBeInViewport({ ratio: 1 });
     const shotsOverflowing = await page.locator('.desk-stage img').evaluateAll(
       (images, tolerance) =>
         images
@@ -311,380 +198,17 @@ test.describe('reduced motion', () => {
   });
 });
 
-test.describe('join', () => {
-  test('each form carries the token the Turnstile widget writes', async ({ page }) => {
+test.describe('the waitlist is off', () => {
+  test('the landing has no form and the join path answers 410', async ({ page, request }) => {
     await page.goto(SitePath.Landing);
-    const tokens = JOIN_FORMS.map((form) => page.locator(`form#${form} input[name="${TURNSTILE_RESPONSE_FIELD}"]`));
-    await Promise.all(tokens.map((token) => expect(token).toHaveValue(TURNSTILE_DUMMY_TOKEN)));
+    await expect(page.locator('form')).toHaveCount(0);
+    const response = await request.post(SitePath.Join, { form: { email: 'maria@example.com' } });
+    expect(response.status()).toBe(GONE_STATUS);
   });
 
-  JOIN_FORMS.forEach((form) => {
-    test(`the ${form} form joins in place with one JSON post and answers "${JOINED_NOTICE}" without echoing the address`, async ({
-      page,
-    }) => {
-      const address = uniqueAddress();
-      await page.goto(SitePath.Landing);
-      const landingUrl = page.url();
-      const posts = joinPostsOf(page);
-      const navigations = navigationsOf(page);
-      await submitForm({ page, form, address });
-      await expect(page.locator(`#${form}-notice`)).toHaveText(JOINED_NOTICE);
-      expect(page.url()).toBe(landingUrl);
-      expect(navigations.count).toBe(0);
-      expect(posts).toHaveLength(1);
-      const post = onlyPost(posts);
-      expect(post.headers()[ACCEPT_HEADER]).toContain(JSON_MEDIA_TYPE);
-      const fields = postFieldsOf(post);
-      expect(fields.get(TURNSTILE_RESPONSE_FIELD)).toBe(TURNSTILE_DUMMY_TOKEN);
-      expect(fields.get(STAMP_FIELD)).toMatch(STAMP_PATTERN);
-      expect(fields.get(HONEYPOT_FIELD)).toBe('');
-      const response = await post.response();
-      expect(response?.status()).toBe(OK_STATUS);
-      expect(await response?.json()).toEqual({ outcome: JOINED_OUTCOME });
-      await expect(page.locator(`form#${form} input[name="email"]`)).toHaveValue('');
-      expect(await page.content()).not.toContain(address);
-      await expect.poll(() => mailCountTo(address)).toBe(1);
-    });
-  });
-
-  test.describe('while the check is not solved', () => {
-    test('the button is aria-disabled until the token arrives', async ({ page }) => {
-      await page.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: SLOW_TURNSTILE_STUB }));
-      const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
-      await page.goto(SitePath.Landing, { waitUntil: 'domcontentloaded' });
-      await expect(button).toHaveAttribute(ARIA_DISABLED, 'true');
-      await expect(button).not.toHaveAttribute(ARIA_DISABLED, 'true');
-    });
-
-    test('a press posts nothing and says to finish the check', async ({ page }) => {
-      await page.route(TURNSTILE_SCRIPT_URL, (route) =>
-        route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: NEVER_SOLVING_TURNSTILE_STUB }),
-      );
-      const posts = joinPostsOf(page);
-      await page.goto(SitePath.Landing);
-      await page.locator(`form#${Fragment.Hero} input[name="email"]`).fill(uniqueAddress());
-      await page.locator(`form#${Fragment.Hero} button[type="submit"]`).click({ force: true });
-      await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.waitingForCheck);
-      expect(posts).toEqual([]);
-    });
-
-    test('the script of the check never loading leaves the button waiting and says the check could not load', async ({ page }) => {
-      await page.route(TURNSTILE_SCRIPT_URL, (route) => route.abort());
-      await page.goto(SitePath.Landing);
-      await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.checkError);
-      await expect(page.locator(`form#${Fragment.Hero} button[type="submit"]`)).toHaveAttribute(ARIA_DISABLED, 'true');
-    });
-
-    test('the widget erroring leaves the button waiting and says the check could not load', async ({ page }) => {
-      await page.route(TURNSTILE_SCRIPT_URL, (route) =>
-        route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: FAILED_BEFORE_PRESS_TURNSTILE_STUB }),
-      );
-      await page.goto(SitePath.Landing);
-      await expect(page.locator(`html[${FAILED_MARKER_ATTRIBUTE}]`)).toHaveCount(1);
-      await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.checkError);
-      await expect(page.locator(`form#${Fragment.Hero} button[type="submit"]`)).toHaveAttribute(ARIA_DISABLED, 'true');
-    });
-  });
-
-  test('the widget is reset once after an answer and the button waits for the new token', async ({ page }) => {
-    await page.goto(SitePath.Landing);
-    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    await expect(page.locator('html')).toHaveAttribute(RESET_COUNT_ATTRIBUTE, '1');
-    await expect(page.locator(`form#${Fragment.Hero} button[type="submit"]`)).not.toHaveAttribute(ARIA_DISABLED, 'true');
-  });
-
-  test('the same address twice answers the same line both times and sends one mail', async ({ page }) => {
-    const address = uniqueAddress();
-    await page.goto(SitePath.Landing);
-    const posts = joinPostsOf(page);
-    await submitForm({ page, form: Fragment.Hero, address });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    await submitForm({ page, form: Fragment.Final, address });
-    await expect(page.locator(`#${Fragment.Final}-notice`)).toHaveText(JOINED_NOTICE);
-    expect(posts).toHaveLength(2);
-    const responses = await Promise.all(posts.map((post) => post.response().then((response) => response?.json())));
-    expect(responses).toEqual([{ outcome: JOINED_OUTCOME }, { outcome: JOINED_OUTCOME }]);
-    await expect.poll(() => mailCountTo(address)).toBe(1);
-  });
-
-  test('a filled honeypot answers joined and keeps nothing, and a real join of the address afterwards is kept', async ({ page }) => {
-    const address = uniqueAddress();
-    await page.goto(SitePath.Landing);
-    await page.locator(`form#${Fragment.Hero} input[name="${HONEYPOT_FIELD}"]`).evaluate((input: HTMLInputElement, value) => {
-      input.value = value;
-    }, HONEYPOT_VALUE);
-    await submitForm({ page, form: Fragment.Hero, address });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    await page.reload();
-    expect(mailCountTo(address)).toBe(0);
-    await submitForm({ page, form: Fragment.Hero, address });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    await expect.poll(() => mailCountTo(address)).toBe(1);
-  });
-
-  test('a submit faster than the server minimum answers joined and keeps nothing, and a real join afterwards is kept', async ({
-    page,
-    browser,
-    baseURL,
-  }) => {
-    const address = uniqueAddress();
-    await landingWithoutTheHold(page);
-    await submitForm({ page, form: Fragment.Hero, address });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    expect(mailCountTo(address)).toBe(0);
-    const patientContext = await browser.newContext({ baseURL });
-    const patientPage = await patientContext.newPage();
-    await patientPage.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: TURNSTILE_STUB }));
-    await patientPage.goto(SitePath.Landing);
-    expect(mailCountTo(address)).toBe(0);
-    await submitForm({ page: patientPage, form: Fragment.Hero, address });
-    await expect(patientPage.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    await expect.poll(() => mailCountTo(address)).toBe(1);
-    await patientContext.close();
-  });
-
-  test.describe('each answer the server can give shows its own line and gives the button back', () => {
-    ANSWERED_LINES.forEach(({ name, answer, line }) => {
-      test(name, async ({ page }) => {
-        await page.route(`**${SitePath.Join}`, (route) => (route.request().method() === 'POST' ? answer(route) : route.continue()));
-        await landingWithoutTheHold(page);
-        await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-        await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(line);
-        await expect(page.locator(`form#${Fragment.Hero} button[type="submit"]`)).toHaveText(LANDING_COPY.join.submit);
-        await expect(page.locator('html')).toHaveAttribute(RESET_COUNT_ATTRIBUTE, '1');
-      });
-    });
-  });
-
-  test('a join the server never answers shows the unreachable line after the timeout and gives the button back', async ({ page }) => {
-    await page.route(`**${SitePath.Join}`, (route) =>
-      route.request().method() === 'POST' ? new Promise(() => undefined) : route.continue(),
-    );
-    await landingWithoutTheHold(page);
-    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-    await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'sending');
-    await page.clock.fastForward(WAITLIST_JOIN_TIMEOUT_MS);
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.unreachable);
-    await expect(page.locator(`form#${Fragment.Hero} button[type="submit"]`)).toHaveText(LANDING_COPY.join.submit);
-    await expect(page.locator('html')).toHaveAttribute(RESET_COUNT_ATTRIBUTE, '1');
-  });
-
-  test('a token that expires in one form leaves the other form ready', async ({ page }) => {
-    await page.goto(SitePath.Landing);
-    await expect(page.locator(`form#${Fragment.Final} button[type="submit"]`)).not.toHaveAttribute(ARIA_DISABLED, 'true');
-    await page.evaluate(() => {
-      document.querySelector('form#final input[name="cf-turnstile-response"]')?.remove();
-      Reflect.get(window, 'waitlistTokenExpired')();
-    });
-    await expect(page.locator(`form#${Fragment.Final} button[type="submit"]`)).toHaveAttribute(ARIA_DISABLED, 'true');
-    await expect(page.locator(`form#${Fragment.Hero} button[type="submit"]`)).not.toHaveAttribute(ARIA_DISABLED, 'true');
-    await expect(page.locator(`#${Fragment.Final}-notice`)).not.toHaveText(LANDING_COPY.join.checkError);
-  });
-
-  test('a page without a widget is ready at once and its press shows the answer of the server', async ({ page }) => {
-    await page.route(`**${SitePath.Landing}`, async (route) => {
-      const response = await route.fetch();
-      const widgetlessHtml = (await response.text()).replaceAll(WIDGET_FRAME_PATTERN, '');
-      await route.fulfill({ response, body: widgetlessHtml });
-    });
-    await page.goto(SitePath.Landing);
-    const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
-    await expect(button).not.toHaveAttribute(ARIA_DISABLED, 'true');
-    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.checkFailed);
-  });
-
-  test('a slow first byte does not make a fast submit too young for the server', async ({ page }) => {
-    const address = uniqueAddress();
-    await page.route(`**${SitePath.Landing}`, async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, SLOW_FIRST_BYTE_MS));
-      await route.continue();
-    });
-    await page.goto(SitePath.Landing);
-    await submitForm({ page, form: Fragment.Hero, address });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    await expect.poll(() => mailCountTo(address)).toBe(1);
-  });
-
-  test('after an offline press the check returns on its own when the connection does', async ({ page, context }) => {
-    await landingWithoutTheHold(page);
-    await context.setOffline(true);
-    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.unreachable);
-    await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'waiting');
-    await context.setOffline(false);
-    await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'ready');
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.note);
-  });
-
-  test('an error of one widget resets that form only and leaves its sibling alone', async ({ page }) => {
-    await page.goto(SitePath.Landing);
-    await expect(page.locator(`form#${Fragment.Final} button[type="submit"]`)).not.toHaveAttribute(ARIA_DISABLED, 'true');
-    await page.evaluate(() => {
-      document.querySelectorAll('input[name="cf-turnstile-response"]').forEach((token) => token.remove());
-      Reflect.get(window, 'waitlistChallengeFailed_final')();
-    });
-    await expect(page.locator('html')).toHaveAttribute(RESET_COUNT_ATTRIBUTE, '1');
-    await expect(page.locator(`form#${Fragment.Final}`)).toHaveAttribute('data-join-state', 'ready');
-    await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'waiting');
-  });
-
-  test('a refusal gets a neutral dot and a join keeps the green one', async ({ page }) => {
-    await page.route(`**${SitePath.Join}`, (route) =>
-      route.request().method() === 'POST'
-        ? route.fulfill({ status: FORBIDDEN_STATUS, contentType: JSON_MEDIA_TYPE, body: '{"outcome":"check-failed"}' })
-        : route.continue(),
-    );
-    await landingWithoutTheHold(page);
-    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveClass(/join-notice-neutral/);
-    await page.unroute(`**${SitePath.Join}`);
-    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).not.toHaveClass(/join-notice-neutral/);
-  });
-
-  test('a press at once shows Joining and posts only three seconds after the navigation started', async ({ page }) => {
-    const posts: number[] = [];
-    page.on('request', (request) => request.method() === 'POST' && posts.push(Date.now()));
-    await page.goto(SitePath.Landing);
-    const timeOrigin = await page.evaluate(() => performance.timeOrigin);
-    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-    await expect(page.locator(`form#${Fragment.Hero} button[type="submit"]`)).toHaveText(LANDING_COPY.join.submitting);
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    expect(posts).toHaveLength(1);
-    expect(Math.min(...posts) - timeOrigin).toBeGreaterThanOrEqual(WAITLIST_FILL_HOLD_MS);
-  });
-
-  test('an expiry after a solve waits for the next token and says nothing; before a solve it is not an error either', async ({ page }) => {
-    await page.goto(SitePath.Landing);
-    const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
-    await expect(button).not.toHaveAttribute(ARIA_DISABLED, 'true');
-    await page.evaluate(() => {
-      document.querySelectorAll('input[name="cf-turnstile-response"]').forEach((token) => token.remove());
-      Reflect.get(window, 'waitlistTokenExpired')();
-    });
-    await expect(button).toHaveAttribute(ARIA_DISABLED, 'true');
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.note);
-    await page.evaluate(() => Reflect.get(window, 'turnstile').reset(document.querySelector('form#join .cf-turnstile')));
-    await expect(button).not.toHaveAttribute(ARIA_DISABLED, 'true');
-  });
-
-  test('leaving during the hold and coming back leaves no form stuck sending', async ({ page }) => {
-    await page.goto(SitePath.Landing);
-    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-    await page.goto('/llms.txt');
-    await page.goBack();
-    await expect(page.locator(`form#${Fragment.Hero}`)).toHaveAttribute('data-join-state', 'ready');
-  });
-
-  test('a typed address the browser refuses posts nothing and is flagged invalid', async ({ page }) => {
-    const posts = joinPostsOf(page);
-    await page.goto(SitePath.Landing);
-    await submitForm({ page, form: Fragment.Hero, address: 'not-an-address' });
-    await expect(page.locator(`form#${Fragment.Hero} input[name="email"]:invalid`)).toHaveCount(1);
-    expect(posts).toEqual([]);
-  });
-
-  test('a try again with Retry-After keeps the button waiting until the delay has passed', async ({ page }) => {
-    await page.route(`**${SitePath.Join}`, (route) =>
-      route.request().method() === 'POST'
-        ? route.fulfill({
-            status: TOO_MANY_STATUS,
-            contentType: JSON_MEDIA_TYPE,
-            headers: { 'Retry-After': String(RETRY_AFTER_SECONDS) },
-            body: JSON.stringify({ outcome: 'try-again' }),
-          })
-        : route.continue(),
-    );
-    const button = page.locator(`form#${Fragment.Hero} button[type="submit"]`);
-    await landingWithoutTheHold(page);
-    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.tryAgain);
-    await expect(page.locator(`form#${Fragment.Hero} input[name="${TURNSTILE_RESPONSE_FIELD}"]`)).toHaveValue(TURNSTILE_DUMMY_TOKEN);
-    await expect(button).toHaveAttribute(ARIA_DISABLED, 'true');
-    await page.clock.fastForward(RETRY_AFTER_SECONDS * MILLISECONDS_PER_SECOND);
-    await expect(button).not.toHaveAttribute(ARIA_DISABLED, 'true');
-  });
-
-  test('a post with no token answers check-failed in JSON, and so does a token that is not one', async ({ request }) => {
-    const forms: Record<string, string>[] = [
-      { email: uniqueAddress() },
-      { email: uniqueAddress(), [TURNSTILE_RESPONSE_FIELD]: 'bad token!' },
-    ];
-    const answers = await Promise.all(
-      forms.map((form) => request.post(SitePath.Join, { headers: { [ACCEPT_HEADER]: JSON_MEDIA_TYPE }, form })),
-    );
-    expect(answers.map((answer) => answer.status())).toEqual([FORBIDDEN_STATUS, FORBIDDEN_STATUS]);
-    expect(await Promise.all(answers.map((answer) => answer.json()))).toEqual([{ outcome: 'check-failed' }, { outcome: 'check-failed' }]);
-  });
-
-  test.describe('without JavaScript', () => {
-    test.use({ javaScriptEnabled: false });
-
-    test('a press posts the form and the browser lands on the try again page, 429', async ({ page }) => {
-      await page.goto(SitePath.Landing);
-      await page.locator(`form#${Fragment.Hero} input[name="email"]`).fill(uniqueAddress());
-      const [response] = await Promise.all([
-        page.waitForResponse((answer) => answer.request().method() === 'POST' && new URL(answer.url()).pathname === SitePath.Join),
-        page.locator(`form#${Fragment.Hero} button[type="submit"]`).click(),
-      ]);
-      expect(response.status()).toBe(TOO_MANY_STATUS);
-      await expect(page).toHaveURL(new RegExp(`${SitePath.Join}#${Fragment.Hero}$`));
-      await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(LANDING_COPY.join.tryAgain);
-    });
-  });
-
-  test('the policy has no unsafe-inline and a join raises no violation and no console error', async ({ page, baseURL }) => {
-    const { errors } = watchConsoleAndNetwork({ page, baseURL });
-    await page.addInitScript(() => {
-      const violations: string[] = [];
-      Object.assign(window, { violations });
-      document.addEventListener('securitypolicyviolation', (event) => violations.push(event.violatedDirective));
-    });
-    const landing = await page.goto(SitePath.Landing);
-    const policy = landing?.headers()[POLICY_HEADER];
-    expect(policy).not.toContain(UNSAFE_INLINE);
-    expect(policy).toContain(CONNECT_DIRECTIVE);
-    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    expect(await page.evaluate(() => Reflect.get(window, 'violations'))).toEqual([]);
-    expect(errors).toEqual([]);
-  });
-
-  [ColorScheme.Light, ColorScheme.Dark].forEach((colorScheme) => {
-    test.describe(`the check in the ${colorScheme} scheme`, () => {
-      test.use({ colorScheme });
-
-      test('sits inside its form and the viewport, follows the scheme and adds no horizontal scroll', async ({ page }) => {
-        await page.goto(SitePath.Landing);
-        const fits = await Promise.all(
-          JOIN_FORMS.map((form) =>
-            page.locator(`form#${form}`).evaluate((formElement) => {
-              const widget = formElement.querySelector('.cf-turnstile');
-              const frame = formElement.querySelector('.stub-turnstile-frame');
-              if (widget === null || frame === null) throw new Error('the form holds no widget frame');
-              const formBox = formElement.getBoundingClientRect();
-              const widgetBox = frame.getBoundingClientRect();
-              return {
-                theme: widget.getAttribute('data-theme'),
-                isInsideForm: widgetBox.left >= formBox.left && widgetBox.right <= formBox.right,
-                isInsideViewport: widgetBox.left >= 0 && widgetBox.right <= window.innerWidth,
-              };
-            }),
-          ),
-        );
-        expect(fits).toEqual(JOIN_FORMS.map(() => ({ theme: 'auto', isInsideForm: true, isInsideViewport: true })));
-        expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
-      });
-    });
-  });
-
-  test('a direct GET of /join lands on the landing page', async ({ page }) => {
+  test('GET /join returns to the landing', async ({ page }) => {
     await page.goto(SitePath.Join);
     await expect(page).toHaveURL(new RegExp(`${SitePath.Landing}$`));
-    await expect(page.locator('.join-notice')).toHaveCount(0);
   });
 });
 
@@ -739,7 +263,7 @@ test.describe('credit', () => {
 });
 
 test.describe('keyboard', () => {
-  test('tabs through the skip link, logo, guide link, email and join button with a visible focus ring', async ({ page }) => {
+  test('tabs through the skip link, logo, guide link, install link and download button with a visible focus ring', async ({ page }) => {
     await page.goto(SitePath.Landing);
     const focusRings = await KEYBOARD_ORDER.reduce<Promise<boolean[]>>(async (ringsSoFar, selector) => {
       const rings = await ringsSoFar;
@@ -753,9 +277,9 @@ test.describe('keyboard', () => {
 });
 
 test.describe('keyboard in the footer', () => {
-  test('shift-tab from the guide link reaches the credit link with a visible focus ring', async ({ page }) => {
+  test('shift-tab from the footer star pill reaches the credit link with a visible focus ring', async ({ page }) => {
     await page.goto(SitePath.Landing);
-    await page.locator(FOOTER_GUIDE_LINK).focus();
+    await page.locator('.site-footer .star-pill').focus();
     await page.keyboard.press('Shift+Tab');
     await expect(page.locator(CREDIT_LINK)).toBeFocused();
     expect(await hasFocusRing(page.locator(CREDIT_LINK))).toBe(true);
@@ -764,20 +288,12 @@ test.describe('keyboard in the footer', () => {
 
 test.describe('console and network', () => {
   SITE_PAGES.forEach((sitePath) => {
-    test(`${sitePath} logs no error and calls only its own origin and the Turnstile script`, async ({ page, baseURL }) => {
+    test(`${sitePath} logs no error and calls only its own origin`, async ({ page, baseURL }) => {
       const { errors, foreignRequests } = watchConsoleAndNetwork({ page, baseURL });
       await page.goto(sitePath);
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       await page.waitForLoadState('networkidle');
       expect({ errors, foreignRequests }).toEqual({ errors: [], foreignRequests: [] });
     });
-  });
-
-  test('the join answer logs no error and calls only its own origin and the Turnstile script', async ({ page, baseURL }) => {
-    const { errors, foreignRequests } = watchConsoleAndNetwork({ page, baseURL });
-    await page.goto(SitePath.Landing);
-    await submitForm({ page, form: Fragment.Hero, address: uniqueAddress() });
-    await expect(page.locator(`#${Fragment.Hero}-notice`)).toHaveText(JOINED_NOTICE);
-    expect({ errors, foreignRequests }).toEqual({ errors: [], foreignRequests: [] });
   });
 });

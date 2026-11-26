@@ -27,7 +27,7 @@ struct PendingTaskRow: View {
     }
 
     private var details: TaskRowDetails {
-        let project = model.activeWorkspace?.projects.first { $0.identifier == task.projectIdentifier }
-        return TaskRowDetails(pendingTask: task, projectName: project?.name, item: item, today: model.today)
+        let project = model.shownWorkspaces.flatMap(\.projects).first { $0.identifier == task.projectIdentifier }
+        return TaskRowDetails(pendingTask: task, projectName: project?.name, workspaceName: model.taggedWorkspaceName[task.projectIdentifier], item: item, today: model.today)
     }
 }

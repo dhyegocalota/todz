@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 400" width="660" height="400">
+  <defs>
+    <linearGradient id="canvas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0E1020"/>
+      <stop offset="1" stop-color="#151A3D"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.45" r="0.6">
+      <stop offset="0" stop-color="#4C6BFF" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#4C6BFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5E7BFF"/>
+      <stop offset="1" stop-color="#4560E8"/>
+    </linearGradient>
+  </defs>
+  <rect width="660" height="400" fill="url(#canvas)"/>
+  <rect width="660" height="400" fill="url(#glow)"/>
+  <rect x="80" y="70" width="200" height="230" rx="28" fill="url(#plate)" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.5"/>
+  <rect x="380" y="70" width="200" height="230" rx="28" fill="url(#plate)" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.5"/>
+  <path d="M302 190 H350 M332 170 L354 190 L332 210" fill="none" stroke="#8CF7D0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M330 345 C333 357 337 361 349 363 C337 365 333 369 330 381 C327 369 323 365 311 363 C323 361 327 357 330 345 Z" fill="#8CF7D0"/>
+</svg>

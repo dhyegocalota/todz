@@ -19,7 +19,9 @@ export enum HttpHeader {
   ServerTiming = 'Server-Timing',
   Accept = 'Accept',
   Vary = 'Vary',
+  Link = 'Link',
   SessionDigest = 'Todz-Session-Digest',
+  UserAgent = 'User-Agent',
 }
 
 export const NO_STORE = 'no-store';
