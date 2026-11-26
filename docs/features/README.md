@@ -24,6 +24,7 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 
 | Feature | Delivers | Status |
 |---------|----------|--------|
+| [`workspace-select`](workspace-select/) | On sign-in, an account with several workspaces and no remembered choice gets a picker of names and project counts; Settings and the Workspace menu list and switch them; last activity is v1.1 | Approved |
 | [`task-core`](task-core/) | The task and project rules in `libs/core` behind ports, with their enums in `libs/types` | Shipped 2026-11-23 ([PR #3](https://github.com/dhyegocalota/todz/pull/3)) |
 | [`project-store`](project-store/) | The Worker, the D1 directory, one SQLite Durable Object per project, routing from a credential and the isolation suite | Shipped 2026-11-23 ([PR #4](https://github.com/dhyegocalota/todz/pull/4)) |
 | [`mcp-server`](mcp-server/) | MCP over Streamable HTTP on the Worker: keys, the five tools, the `next` prompt, compact text, both protocol eras | Shipped 2026-11-23 ([PR #5](https://github.com/dhyegocalota/todz/pull/5)) |
