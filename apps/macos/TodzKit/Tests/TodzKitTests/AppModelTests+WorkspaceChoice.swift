@@ -83,12 +83,19 @@ extension AppModelTests {
         #expect(harness.model.activeWorkspace == acme)
     }
 
-    @Test func aWorkspaceCountsItsNamedProjectsWithoutTheInbox() {
+    @Test func aWorkspaceCountsEveryProjectIncludingTheInbox() {
         let workspace = Workspace(identifier: "acme", name: "acme", createdAt: fixedInstant, projects: [
             Project(identifier: "acme-inbox", name: "Inbox", isInbox: true, createdAt: fixedInstant),
             Project(identifier: "acme-launch", name: "launch", isInbox: false, createdAt: fixedInstant),
         ])
-        #expect(workspace.namedProjectCount == 1)
+        #expect(workspace.projectCount == 2)
+    }
+
+    @Test func aWorkspaceWithOnlyTheInboxCountsOneProject() {
+        let workspace = Workspace(identifier: "perf", name: "todz-perf", createdAt: fixedInstant, projects: [
+            Project(identifier: "perf-inbox", name: "Inbox", isInbox: true, createdAt: fixedInstant),
+        ])
+        #expect(workspace.projectCount == 1)
     }
 
     @Test func switchingByNumberWhileChoosingChangesNothing() async throws {

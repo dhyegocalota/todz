@@ -2,19 +2,19 @@ import Foundation
 import Testing
 @testable import TodzKit
 
-private let liveAddressVariable = "TODZ_LIVE_API_URL"
-private let liveTimeZone = "America/Sao_Paulo"
+let liveAddressVariable = "TODZ_LIVE_API_URL"
+let liveTimeZone = "America/Sao_Paulo"
 
-private func liveAddress() throws -> URL {
+func liveAddress() throws -> URL {
     let address = try #require(ProcessInfo.processInfo.environment[liveAddressVariable])
     return try #require(URL(string: address))
 }
 
-private func liveAPI() throws -> OwnerAPI {
+func liveAPI() throws -> OwnerAPI {
     OwnerAPI(baseURL: try liveAddress(), appVersion: OwnerFixtures.appVersion)
 }
 
-private func liveSignals() throws -> SocketChangeSignals {
+func liveSignals() throws -> SocketChangeSignals {
     SocketChangeSignals(baseURL: try liveAddress(), appVersion: OwnerFixtures.appVersion)
 }
 
