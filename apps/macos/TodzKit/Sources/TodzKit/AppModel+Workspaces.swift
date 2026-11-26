@@ -18,6 +18,8 @@ extension AppModel {
         await activate(workspace)
     }
 
+    public func chooseWorkspace(identifier: String) async {}
+
     public func switchWorkspace(number: Int) async {
         guard let workspace = WorkspaceShortcuts.workspace(number: number, in: workspaces) else { return }
         await switchWorkspace(identifier: workspace.identifier)

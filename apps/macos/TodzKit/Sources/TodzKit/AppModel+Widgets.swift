@@ -4,7 +4,7 @@ extension AppModel {
     var widgetSnapshot: WidgetSnapshotState {
         switch phase {
         case .loading: .loading
-        case .signedOut, .naming: .absent
+        case .signedOut, .naming, .choosing: .absent
         case .ready: readyWidgetSnapshot
         }
     }

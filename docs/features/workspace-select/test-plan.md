@@ -12,7 +12,6 @@
 - [ ] `chooseWorkspace` outside `choosing` (phase `ready`): nothing changes.
 - [ ] The picker offers exactly the listed workspaces: a workspace from another owner never appears in the listing the model holds.
 - [ ] While `choosing`, the widget snapshot is `absent`.
-- [ ] While `choosing`, the shortcut readiness is `noWorkspace`.
 
 ## User-visible walk (tester, by hand, after the Debug app runs against a local `wrangler dev`)
 

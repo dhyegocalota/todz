@@ -63,7 +63,7 @@ struct MenuBarPopover: View {
             MenuBarLoading()
         case let .signedOut(notice):
             MenuBarPrompt(line: signedOutLine(notice: notice))
-        case .naming:
+        case .naming, .choosing:
             MenuBarPrompt(line: MenuBarCopy.naming)
         case .ready:
             if let workspace = model.activeWorkspace {

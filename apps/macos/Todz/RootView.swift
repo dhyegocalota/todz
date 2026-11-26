@@ -33,7 +33,7 @@ struct RootView: View {
             LoadingScreen()
         case let .signedOut(notice):
             SignInScreen(notice: notice)
-        case .naming:
+        case .naming, .choosing:
             FirstWorkspaceScreen()
         case .ready:
             if let workspace = model.activeWorkspace {
