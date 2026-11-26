@@ -24,8 +24,8 @@ export async function readChanges(context: SessionContext): Promise<Response> {
   if (project === null) return errorResponse(OwnerErrorCode.NotFound);
   const result = await project.readChanges({ cursor });
   if (!result.ok) return failureResponse(result.failure);
-  const { tasks, cursor: nextCursor, hasMore } = result.value;
-  return Response.json({ tasks: tasks.map(taskJson), cursor: nextCursor, has_more: hasMore });
+  const { tasks, deletedNumbers, cursor: nextCursor, hasMore } = result.value;
+  return Response.json({ tasks: tasks.map(taskJson), deleted_numbers: deletedNumbers, cursor: nextCursor, has_more: hasMore });
 }
 
 export async function watchChanges(context: SessionContext): Promise<Response> {

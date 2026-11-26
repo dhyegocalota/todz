@@ -1,14 +1,14 @@
 import { DAY_EMAIL_MINUTES_MAX } from '@todz/types';
 import { z } from 'zod';
-import { findOwner, storeOwnerChanges } from './directory-owners';
 import { HttpStatus } from './http-status';
+import { failedResponse } from './owner-action-response';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
 import { ownerJson } from './owner-json';
 import { type SessionContext, type SessionHandler, parsedBody } from './owner-request';
 import { OwnerRoute } from './owner-routes';
 import { closeOwnerSession } from './owner-sessions';
+import { readSettings, updateSettings } from './owner-settings-actions';
 import { closeSessionSockets } from './project-routing';
-import { canonicalTimeZone } from './time-zone';
 
 const UpdateOwnerBodySchema = z
   .object({
@@ -19,11 +19,6 @@ const UpdateOwnerBodySchema = z
   })
   .refine((body) => Object.values(body).some((field) => field !== undefined));
 
-function absentAsNull<Value>(value: Value | undefined): Value | null {
-  if (value === undefined) return null;
-  return value;
-}
-
 type AccountRoute = OwnerRoute.SignOut | OwnerRoute.ReadOwner | OwnerRoute.UpdateOwner;
 
 async function signOut({ env, secret, owner, executionContext }: SessionContext): Promise<Response> {
@@ -33,28 +28,21 @@ async function signOut({ env, secret, owner, executionContext }: SessionContext)
 }
 
 async function readOwner({ env, owner }: SessionContext): Promise<Response> {
-  const ownerRecord = await findOwner({ directory: env.DIRECTORY, ownerId: owner.ownerId });
-  if (ownerRecord === null) throw new Error('a live session names an owner with no row');
-  return Response.json({ owner: ownerJson(ownerRecord) });
+  return Response.json({ owner: ownerJson(await readSettings({ env, owner })) });
 }
 
 async function updateOwner({ request, env, owner, now }: SessionContext): Promise<Response> {
   const body = await parsedBody({ request, schema: UpdateOwnerBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
-  const timeZone = body.time_zone === undefined ? null : canonicalTimeZone(body.time_zone);
-  const isInvalidTimeZone = body.time_zone !== undefined && timeZone === null;
-  if (isInvalidTimeZone) return errorResponse(OwnerErrorCode.TimeZoneInvalid);
-  const ownerRecord = await storeOwnerChanges({
-    directory: env.DIRECTORY,
-    ownerId: owner.ownerId,
-    timeZone,
-    agentNudge: absentAsNull(body.agent_nudge),
-    dayEmail: absentAsNull(body.day_email),
-    dayEmailMinutes: absentAsNull(body.day_email_minutes),
-    now,
-  });
-  if (ownerRecord === null) throw new Error('a live session names an owner with no row');
-  return Response.json({ owner: ownerJson(ownerRecord) });
+  const input = {
+    timeZone: body.time_zone,
+    agentNudge: body.agent_nudge,
+    dayEmail: body.day_email,
+    dayEmailMinutes: body.day_email_minutes,
+  };
+  const result = await updateSettings({ env, owner, now, input });
+  if (!result.ok) return failedResponse(result.failure);
+  return Response.json({ owner: ownerJson(result.value) });
 }
 
 export const ACCOUNT_HANDLERS: Record<AccountRoute, SessionHandler> = {

@@ -5,6 +5,7 @@ import type { Env } from './env';
 import { ACCOUNT_HANDLERS } from './owner-account';
 import { HttpMethod } from './http-method';
 import { OwnerErrorCode, appTooOldResponse, errorResponse, noRouteResponse, suspendedResponse } from './owner-errors';
+import { OWNER_KEY_HANDLERS } from './owner-key-routes';
 import { KEY_HANDLERS } from './owner-keys';
 import type { OwnerContext, PublicHandler, PublicRoute, SessionHandler, SessionRoute } from './owner-request';
 import { OwnerRoute, RouteParam, matchOwnerRoute } from './owner-routes';
@@ -21,6 +22,7 @@ const SESSION_HANDLERS: Record<SessionRoute, SessionHandler> = {
   ...ACCOUNT_HANDLERS,
   ...WORKSPACE_HANDLERS,
   ...KEY_HANDLERS,
+  ...OWNER_KEY_HANDLERS,
   ...TASK_HANDLERS,
 };
 

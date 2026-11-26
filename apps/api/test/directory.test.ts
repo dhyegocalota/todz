@@ -23,6 +23,7 @@ describe('findKeyProject', () => {
     await seedKey({ projectId, secret });
     expect(await findKeyProject({ directory: env.DIRECTORY, digest: await digestCredential(secret) })).toEqual({
       projectId,
+      workspaceId: expect.any(String),
       timeZone: SAO_PAULO_TIME_ZONE,
       agentNudge: false,
       ownerId: expect.any(String),

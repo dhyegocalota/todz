@@ -49,6 +49,8 @@ export const VERSION_FOUR_STATEMENTS = [
   "INSERT INTO open_counter (open_tasks) SELECT count(*) FROM tasks WHERE state = 'open'",
 ];
 
+const VERSION_FIVE_STATEMENTS = ['ALTER TABLE tasks ADD COLUMN deleted_at INTEGER'];
+
 type Migration = { version: number; statements: string[] };
 
 export const MIGRATIONS: Migration[] = [
@@ -56,6 +58,7 @@ export const MIGRATIONS: Migration[] = [
   { version: 2, statements: VERSION_TWO_STATEMENTS },
   { version: 3, statements: VERSION_THREE_STATEMENTS },
   { version: 4, statements: VERSION_FOUR_STATEMENTS },
+  { version: 5, statements: VERSION_FIVE_STATEMENTS },
 ];
 
 export const PROJECT_SCHEMA_VERSION = MIGRATIONS.length;

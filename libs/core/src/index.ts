@@ -3,6 +3,7 @@ export { addTasks, validateDrafts, type AddedTask } from './add-tasks';
 export { assertBatchSize } from './batch-size';
 export { dueWindowOf, normalizeDueDate, parseCalendarDate } from './calendar-date';
 export { completeTasks, type CompletedTask } from './complete-tasks';
+export { deleteTask } from './delete-task';
 export { dueNow, type DueNow } from './due-now';
 export { LimitViolation, RuleViolation, TaskNotFoundError } from './errors';
 export { listTasks, type TaskList } from './list-tasks';

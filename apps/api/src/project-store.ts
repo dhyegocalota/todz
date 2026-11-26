@@ -18,6 +18,7 @@ import {
   addTasks,
   agentActor,
   completeTasks,
+  deleteTask,
   dueNow,
   listTasks,
   nextTask,
@@ -43,7 +44,7 @@ const WEBSOCKET_UPGRADE = 'websocket';
 const NORMAL_CLOSURE_CODE = 1000;
 const SESSION_ENDED_REASON = 'session ended';
 
-export type TaskChanges = { tasks: Task[]; cursor: number; hasMore: boolean };
+export type TaskChanges = { tasks: Task[]; deletedNumbers: number[]; cursor: number; hasMore: boolean };
 
 const SYSTEM_CLOCK: Clock = { now: () => Date.now() };
 
@@ -84,10 +85,20 @@ export class ProjectStore extends DurableObject<Env> {
     ctx.blockConcurrencyWhile(async () => applyProjectSchema(ctx.storage));
   }
 
-  addTasks({ actor, drafts, openTasksMax }: { actor: Actor; drafts: TaskDraft[]; openTasksMax: number }): ProjectResult<AddedTask[]> {
+  addTasks({
+    actor,
+    drafts,
+    openTasksMax,
+    arrivalNote,
+  }: {
+    actor: Actor;
+    drafts: TaskDraft[];
+    openTasksMax: number;
+    arrivalNote?: string | null;
+  }): ProjectResult<AddedTask[]> {
     return this.runWrite(() => {
       this.requireOpenTaskRoom({ incoming: drafts.length, openTasksMax });
-      return addTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), drafts });
+      return addTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), drafts, arrivalNote });
     });
   }
 
@@ -103,6 +114,18 @@ export class ProjectStore extends DurableObject<Env> {
     return this.runWrite(() => {
       this.requireOpenTaskRoom({ incoming: numbers.length, openTasksMax });
       return reopenTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers });
+    });
+  }
+
+  deleteTask({ number, confirmation }: { number: number; confirmation: string }): ProjectResult<Task> {
+    return this.runWrite(() => deleteTask({ store: this.store, clock: SYSTEM_CLOCK, number, confirmation }));
+  }
+
+  readTask({ number }: { number: number }): ProjectResult<Task> {
+    return resultOf(() => {
+      const task = this.store.findTask(number);
+      if (task === null) throw new TaskNotFoundError(number);
+      return task;
     });
   }
 
@@ -149,7 +172,13 @@ export class ProjectStore extends DurableObject<Env> {
     const page = changes.slice(0, CHANGE_PAGE_SIZE);
     const lastOnPage = page.at(LAST_INDEX);
     const nextCursor = lastOnPage === undefined ? cursor : lastOnPage.changeNumber;
-    return { ok: true, value: { tasks: page.map(({ task }) => task), cursor: nextCursor, hasMore: changes.length > CHANGE_PAGE_SIZE } };
+    const value = {
+      tasks: page.filter(({ isDeleted }) => !isDeleted).map(({ task }) => task),
+      deletedNumbers: page.filter(({ isDeleted }) => isDeleted).map(({ task }) => task.number),
+      cursor: nextCursor,
+      hasMore: changes.length > CHANGE_PAGE_SIZE,
+    };
+    return { ok: true, value };
   }
 
   readHistory({ number }: { number: number }): ProjectResult<HistoryEntry[]> {

@@ -1,4 +1,12 @@
-import { type TaskDraft, assertBatchSize, normalizeCompletionNote, normalizeNotes, normalizeTitle, validateDrafts } from '@todz/core';
+import {
+  type TaskDraft,
+  assertBatchSize,
+  normalizeCompletionNote,
+  normalizeName,
+  normalizeNotes,
+  normalizeTitle,
+  validateDrafts,
+} from '@todz/core';
 import { type ProjectFailure, resultOf } from './project-result';
 
 function failureOf(run: () => void): ProjectFailure | null {
@@ -16,6 +24,10 @@ export function fieldsFailureOf({ title, notes }: { title?: string; notes?: stri
     if (title !== undefined) normalizeTitle(title);
     if (notes !== undefined) normalizeNotes(notes);
   });
+}
+
+export function nameFailureOf(name: string): ProjectFailure | null {
+  return failureOf(() => normalizeName(name));
 }
 
 export function batchFailureOf(size: number): ProjectFailure | null {

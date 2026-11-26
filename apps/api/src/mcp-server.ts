@@ -1,6 +1,6 @@
 import { CLIENT_INFO_META_KEY, type CallToolResult, McpServer, type ServerContext } from '@modelcontextprotocol/server';
 import { type Actor, type DueNow, type Task, parseShortId } from '@todz/core';
-import { ActorKind, FairUseLimit } from '@todz/types';
+import { ActorKind, FairUseLimit, HistoryAction, RuleIssue } from '@todz/types';
 import type { FairUseLimits } from './fair-use-limits';
 import { textBytesOf } from './owner-write-quota';
 import { z } from 'zod';
@@ -8,26 +8,39 @@ import { MCP_COPY, McpPromptName, McpToolName } from './mcp-copy';
 import {
   addedAnswer,
   completedAnswer,
+  deletedAnswer,
   failureText,
+  historyAnswer,
   listAnswer,
+  movedAnswer,
   nextAnswer,
   nextPromptText,
   nudgeLine,
   nudgedText,
+  projectsAnswer,
+  reopenedAnswer,
+  showAnswer,
   updatedAnswer,
 } from './mcp-format';
 import {
   AddArgumentsSchema,
+  DeleteArgumentsSchema,
   DoneArgumentsSchema,
+  HistoryArgumentsSchema,
   ListArgumentsSchema,
+  MoveArgumentsSchema,
+  ReopenArgumentsSchema,
+  ShowArgumentsSchema,
   UpdateArgumentsSchema,
   draftsOf,
   patchOf,
   taskNumbers,
 } from './mcp-tool-arguments';
+import { moveTask } from './move-task';
 import type { ProjectResult } from './project-result';
+import type { KeyWorkspace } from './project-routing';
 import type { ProjectStore } from './project-store';
-import { completionFailureOf, draftsFailureOf, fieldsFailureOf } from './write-rules';
+import { batchFailureOf, completionFailureOf, draftsFailureOf, fieldsFailureOf } from './write-rules';
 
 const MCP_SERVER_NAME = 'todz';
 export const MCP_SERVER_VERSION = '0.1.0';
@@ -35,7 +48,9 @@ const TEXT_CONTENT = 'text';
 const USER_ROLE = 'user';
 const READ_ONLY_ANNOTATIONS = { readOnlyHint: true };
 const WRITE_ANNOTATIONS = { destructiveHint: false };
+const DESTRUCTIVE_ANNOTATIONS = { destructiveHint: true };
 const NOTHING_DUE = 0;
+const NO_TEXT_BYTES = 0;
 
 const EnvelopeClientSchema = z.object({ [CLIENT_INFO_META_KEY]: z.object({ name: z.string() }) });
 
@@ -45,6 +60,7 @@ export type WriteRefusalTextOf = (args: { writes: number; bytes: number }) => Pr
 
 export type McpServerScope = {
   project: DurableObjectStub<ProjectStore>;
+  workspace: KeyWorkspace;
   today: string;
   agentNudge: boolean;
   clientNameOf: ClientNameOf;
@@ -118,6 +134,36 @@ function registerReadTools({ server, scope }: { server: McpServer; scope: McpSer
     async ({ state, due, text, limit }) => {
       const result = await project.listTasks({ today, filter: { state, dueWindows: due, text, limit } });
       return resultAnswer({ result, answer: (list) => listAnswer({ state, list }) });
+    },
+  );
+  server.registerTool(
+    McpToolName.Show,
+    { description: MCP_COPY.tools[McpToolName.Show], inputSchema: ShowArgumentsSchema, annotations: READ_ONLY_ANNOTATIONS },
+    async ({ id }) => {
+      const number = parseShortId(id);
+      if (number === null) return errorAnswer(MCP_COPY.taskIdInvalid);
+      const result = await project.readTask({ number });
+      if (!result.ok) return errorAnswer(failureText(result.failure));
+      const history = await project.readHistory({ number });
+      const arrivalNote = history.ok ? history.value.find((entry) => entry.action === HistoryAction.Created)?.note : undefined;
+      return textAnswer(showAnswer({ task: result.value, arrivalNote }));
+    },
+  );
+  server.registerTool(
+    McpToolName.History,
+    { description: MCP_COPY.tools[McpToolName.History], inputSchema: HistoryArgumentsSchema, annotations: READ_ONLY_ANNOTATIONS },
+    async ({ id }) => {
+      const number = parseShortId(id);
+      if (number === null) return errorAnswer(MCP_COPY.taskIdInvalid);
+      return resultAnswer({ result: await project.readHistory({ number }), answer: historyAnswer });
+    },
+  );
+  server.registerTool(
+    McpToolName.Projects,
+    { description: MCP_COPY.tools[McpToolName.Projects], annotations: READ_ONLY_ANNOTATIONS },
+    async () => {
+      const projects = await scope.workspace.listProjects();
+      return textAnswer(projectsAnswer({ projects, currentProjectId: scope.workspace.projectId }));
     },
   );
 }
@@ -198,6 +244,79 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
           const refusal = await refusedAnswer({ refusalTextOf, writes: numbers.length, bytes: textBytesOf([note]) });
           if (refusal !== null) return refusal;
           return resultAnswer({ result: await project.completeTasks({ actor, numbers, note }), answer: completedAnswer });
+        },
+      });
+    },
+  );
+  server.registerTool(
+    McpToolName.Reopen,
+    { description: MCP_COPY.tools[McpToolName.Reopen], inputSchema: ReopenArgumentsSchema, annotations: WRITE_ANNOTATIONS },
+    async ({ ids }, ctx) => {
+      const numbers = taskNumbers(ids);
+      if (numbers === null) return errorAnswer(MCP_COPY.taskIdInvalid);
+      return asAgent({
+        clientNameOf,
+        ctx,
+        write: async (actor) => {
+          const batchFailure = batchFailureOf(numbers.length);
+          if (batchFailure !== null) return errorAnswer(failureText(batchFailure));
+          const refusal = await refusedAnswer({ refusalTextOf, writes: numbers.length, bytes: NO_TEXT_BYTES });
+          if (refusal !== null) return refusal;
+          const result = await project.reopenTasks({ actor, numbers, openTasksMax: limits[FairUseLimit.OpenTasks] });
+          return resultAnswer({ result, answer: reopenedAnswer });
+        },
+      });
+    },
+  );
+  server.registerTool(
+    McpToolName.Delete,
+    { description: MCP_COPY.tools[McpToolName.Delete], inputSchema: DeleteArgumentsSchema, annotations: DESTRUCTIVE_ANNOTATIONS },
+    async ({ id, confirm }, ctx) => {
+      const number = parseShortId(id);
+      if (number === null) return errorAnswer(MCP_COPY.taskIdInvalid);
+      return asAgent({
+        clientNameOf,
+        ctx,
+        write: async () => {
+          const read = await project.readTask({ number });
+          if (!read.ok) return errorAnswer(failureText(read.failure));
+          if (confirm.trim() !== read.value.title) return errorAnswer(MCP_COPY.ruleIssue[RuleIssue.ConfirmationMismatch]);
+          const refusal = await refusedAnswer({ refusalTextOf, writes: 1, bytes: NO_TEXT_BYTES });
+          if (refusal !== null) return refusal;
+          return resultAnswer({ result: await project.deleteTask({ number, confirmation: confirm }), answer: deletedAnswer });
+        },
+      });
+    },
+  );
+  server.registerTool(
+    McpToolName.Move,
+    { description: MCP_COPY.tools[McpToolName.Move], inputSchema: MoveArgumentsSchema, annotations: DESTRUCTIVE_ANNOTATIONS },
+    async ({ id, project: destinationId }, ctx) => {
+      const number = parseShortId(id);
+      if (number === null) return errorAnswer(MCP_COPY.taskIdInvalid);
+      const sibling = await scope.workspace.openSibling(destinationId);
+      if (sibling === null) return errorAnswer(MCP_COPY.projectNotInWorkspace);
+      return asAgent({
+        clientNameOf,
+        ctx,
+        write: async (actor) => {
+          const sourceProject = (await scope.workspace.listProjects()).find((record) => record.id === scope.workspace.projectId);
+          if (sourceProject === undefined) throw new Error('a key project is in its own workspace');
+          const read = await project.readTask({ number });
+          if (!read.ok) return errorAnswer(failureText(read.failure));
+          const bytes = textBytesOf([read.value.title, read.value.notes]);
+          const refusal = await refusedAnswer({ refusalTextOf, writes: 1, bytes });
+          if (refusal !== null) return refusal;
+          const result = await moveTask({
+            openTasksMax: limits[FairUseLimit.OpenTasks],
+            source: project,
+            sourceProjectId: scope.workspace.projectId,
+            sourceProjectName: sourceProject.name,
+            destination: sibling.project,
+            actor,
+            number,
+          });
+          return resultAnswer({ result, answer: (moved) => movedAnswer({ moved, projectName: sibling.record.name }) });
         },
       });
     },

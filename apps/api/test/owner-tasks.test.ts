@@ -100,6 +100,13 @@ describe('POST /owner/projects/:projectId/tasks', () => {
     expect(tasks[0]?.task).toMatchObject({ notes: 'Some notes', due_date: '2026-12-01', idempotency_key: 'run-1' });
   });
 
+  test('a key in the space of moves is refused with 400 and adds nothing', async () => {
+    const project = await createOwnedProject();
+    const response = await addTasks({ project, tasks: [{ title: 'Forged', idempotency_key: 'move:project:1' }] });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'invalid_request' });
+  });
+
   test('an idempotency key replays the task already added', async () => {
     const project = await createOwnedProject();
     const keyed = { title: 'Once', idempotency_key: 'run-1' };
