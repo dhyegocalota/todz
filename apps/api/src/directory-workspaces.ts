@@ -190,24 +190,6 @@ export async function updateProjectName({
   return result.meta.changes > 0;
 }
 
-export async function listWorkspaceProjectIds({
-  directory,
-  ownerId,
-  workspaceId,
-}: {
-  directory: D1Database;
-  ownerId: string;
-  workspaceId: string;
-}): Promise<string[]> {
-  const { results } = await directory
-    .prepare(
-      'SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ?',
-    )
-    .bind(workspaceId, ownerId)
-    .all<ProjectIdRow>();
-  return results.map((row) => row.id);
-}
-
 export async function deleteOwnerWorkspace({
   directory,
   ownerId,
@@ -216,8 +198,8 @@ export async function deleteOwnerWorkspace({
   directory: D1Database;
   ownerId: string;
   workspaceId: string;
-}): Promise<boolean> {
-  const [, , , workspaceDeletion] = await directory.batch([
+}): Promise<string[] | null> {
+  const [, , projectDeletion, workspaceDeletion] = await directory.batch([
     directory
       .prepare(
         'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT project_keys.digest FROM project_keys JOIN projects ON projects.id = project_keys.project_id JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ?)',
@@ -229,12 +211,13 @@ export async function deleteOwnerWorkspace({
       )
       .bind(workspaceId, ownerId),
     directory
-      .prepare('DELETE FROM projects WHERE workspace_id IN (SELECT id FROM workspaces WHERE id = ? AND owner_id = ?)')
+      .prepare('DELETE FROM projects WHERE workspace_id IN (SELECT id FROM workspaces WHERE id = ? AND owner_id = ?) RETURNING id')
       .bind(workspaceId, ownerId),
-    directory.prepare('DELETE FROM workspaces WHERE id = ? AND owner_id = ?').bind(workspaceId, ownerId),
+    directory.prepare('DELETE FROM workspaces WHERE id = ? AND owner_id = ? RETURNING id').bind(workspaceId, ownerId),
   ]);
-  if (workspaceDeletion === undefined) throw new Error('the batch answers one result per statement');
-  return workspaceDeletion.meta.changes > 0;
+  if (projectDeletion === undefined || workspaceDeletion === undefined) throw new Error('the batch answers one result per statement');
+  if (workspaceDeletion.results.length === 0) return null;
+  return (projectDeletion.results as ProjectIdRow[]).map((row) => row.id);
 }
 
 export async function deleteOwnerProject({

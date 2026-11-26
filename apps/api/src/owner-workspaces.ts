@@ -9,7 +9,6 @@ import {
   insertProject,
   insertWorkspaceWithInbox,
   listOwnerWorkspaces,
-  listWorkspaceProjectIds,
   updateProjectName,
   updateWorkspaceName,
 } from './directory-workspaces';
@@ -115,10 +114,9 @@ async function deleteWorkspace(context: SessionContext): Promise<Response> {
   const { env, owner } = context;
   const workspaceId = await findOwnedWorkspaceId({ env, owner, workspaceId: routeParam({ context, name: RouteParam.WorkspaceId }) });
   if (workspaceId === null) return errorResponse(OwnerErrorCode.NotFound);
-  const projectIds = await listWorkspaceProjectIds({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId });
-  const isDeleted = await deleteOwnerWorkspace({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId });
-  if (!isDeleted) return errorResponse(OwnerErrorCode.NotFound);
-  await Promise.all(projectIds.map((projectId) => wipeProjectStorage({ env, projectId })));
+  const deletedProjectIds = await deleteOwnerWorkspace({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId });
+  if (deletedProjectIds === null) return errorResponse(OwnerErrorCode.NotFound);
+  await Promise.all(deletedProjectIds.map((projectId) => wipeProjectStorage({ env, projectId })));
   return new Response(null, { status: HttpStatus.NoContent });
 }
 
