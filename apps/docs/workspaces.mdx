@@ -7,7 +7,7 @@ A workspace holds one company's projects and starts with an Inbox. Each workspac
 
 ## Switch
 
-Pick a workspace in the workspace menu of the window, or use the keys:
+Pick a workspace in the workspace menu of the window, or use the keys while todz is in front:
 
 | Keys | Action |
 | --- | --- |
@@ -17,20 +17,18 @@ Pick a workspace in the workspace menu of the window, or use the keys:
 
 A workspace past the ninth has no key of its own; step to it with **Previous Workspace** and **Next Workspace**. The same keys sit in the **Switch With Control** submenu of the workspace menu. The ⌘1 … ⌘9 keys of the list stay as they are.
 
-## Rebind the keys
-
-Open **Workspace shortcuts** in todz › Settings. Each workspace, **Previous Workspace** and **Next Workspace** have a row with their keys. Press **Record**, then the new keys; Escape cancels (**Cancel**).
-
-- Hold ⌃, ⌥ or ⌘ with the key, or todz refuses it.
-- Keys that another workspace shortcut already uses are refused.
-- A row you never changed follows the defaults.
-
 ## Switch from any app
 
-**Switch from any app** is on by default: the same keys work while another app is in front, and they need no extra permission. Turn it off to leave these keys to other apps. A key that macOS or another app already holds may not register; the menu key still works while todz is in front.
+**Switch from any app** is off by default, so the keys above stay with the apps you use. Turn it on in **Workspace shortcuts** in todz › Settings, and the workspaces 1 … 9 switch from any app on ⌃⌥⌘1 … ⌃⌥⌘9. These need no extra permission.
+
+- Press **Record** on a workspace's row, then the new keys; Escape cancels (**Cancel**).
+- Hold two of ⌃, ⌥ or ⌘ with the key, or todz refuses it. Keys that another workspace or one of the in-app keys above already uses are refused.
+- A row you never changed follows the defaults.
+- todz can't see other apps' shortcuts. It registers each key exclusively: if another app already holds that key exclusively, the row shows **In use by another app** and todz does not register it. If another app uses the same key in an ordinary way, both may respond, so pick keys other apps don't use; the ⌃⌥⌘ default avoids the common ones.
+- Previous Workspace and Next Workspace, and the in-app keys above, can't be changed in this version; rebinding them returns in a later release.
 
 <Note>
-  ⌃1–⌃9 can clash with Mission Control's Switch to Desktop keys. If both are on, the system wins; turn those off in System Settings, or rebind the workspace keys.
+  The in-app keys ⌃1–⌃9 can clash with Mission Control's Switch to Desktop keys while todz is in front. If both are on, the system wins; turn those off in System Settings.
 </Note>
 
 ## Show several workspaces

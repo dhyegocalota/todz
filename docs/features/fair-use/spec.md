@@ -1,6 +1,6 @@
 # Fair use
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🔴
 **Owner approval:** approved by inheritance: [docs/product/README.md](../../product/README.md) (approved 2026-11-23) plus the owner's words of 2026-11-26 ("apply some rules pra avoid free user abusers"), quoted in the loop brief. The numbers are the loop's call, recorded in [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md).
 **ADRs:** [0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md), [0088](../../adr/0088-daily-writes-and-stored-text-are-counted-in-d1-by-one-conditional-statement-per-write.md), [0089](../../adr/0089-sign-up-abuse-is-capped-per-client-per-day-and-disposable-email-domains-are-refused-for-new-accounts.md), [0090](../../adr/0090-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md)
