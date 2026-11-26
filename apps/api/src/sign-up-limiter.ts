@@ -1,6 +1,6 @@
 import { FairUseLimit } from '@todz/types';
 import { clientRateKey } from './client-rate-key';
-import { digestCredential } from './credential-digest';
+import { keyedDigest } from './credential-digest';
 import { findIdentityOwner } from './directory-owners';
 import { isDisposableEmailAddress } from './disposable-email-domains';
 import type { Env } from './env';
@@ -30,9 +30,11 @@ export async function signUpRefusalOf({
   if (kind === SignInProviderKind.Email && isDisposableEmailAddress(subject)) return signUpRefusedResponse();
   if (isLocalHost({ env, request })) return null;
   const clientAddress = request.headers.get(HttpHeader.ClientAddress);
-  if (clientAddress === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
+  const { SIGN_UP_KEY_SECRET: keySecret } = env;
+  const isUnkeyed = clientAddress === null || keySecret === undefined || keySecret === '';
+  if (isUnkeyed) return errorResponse(OwnerErrorCode.SignInUnavailable);
   const limits = fairUseLimitsOf(env);
-  const clientKey = await digestCredential(clientRateKey({ address: clientAddress }));
+  const clientKey = await keyedDigest({ secret: keySecret, text: clientRateKey({ address: clientAddress }) });
   const reservation = await reserveSignUp({
     directory: env.DIRECTORY,
     clientKey,

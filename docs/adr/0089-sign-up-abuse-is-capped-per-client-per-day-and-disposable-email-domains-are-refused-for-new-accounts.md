@@ -30,7 +30,8 @@ Turnstile and the per-minute limits slow a script that signs up, but not one tha
 
 - One more D1 row per new account; the same statement batch deletes counter rows for earlier days, so the table stays one day deep.
 - The list is short by design; coverage is partial and the docs say so. Anyone can add a domain by a reviewed commit.
-- Address and client counts are stored as the client rate key's digest, never as a raw IP.
+- Client counts are stored as an HMAC-SHA-256 of the client rate key under the Worker secret `SIGN_UP_KEY_SECRET`, never as a raw IP and never as an unkeyed hash, which could be turned back into an address by trying every address. A Worker without the secret refuses a new account's sign-up with 503 `sign_in_unavailable` (an existing owner still signs in). The secret is put once, as the deploy runbook's step 25 says.
+- A listed domain also matches its subdomains and a trailing dot (`mail.mailinator.com`, `mailinator.com.`); a longer unrelated name that merely ends in the same letters does not.
 
 ## Evidence
 

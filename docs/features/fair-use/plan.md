@@ -94,3 +94,22 @@ No step is without a backout.
 - I3: the self-host vars are listed on the Fair use docs page; there is no `docs/self-host.md` in this repository, the Server setup page is the self-host guide.
 - J1: `pnpm verify` at the merge of `origin/main`: 9 gates green (format, secrets, typecheck, audit, shape, unit, e2e, docs, doctor).
 - J2 stays open: the tester role has not run `test-plan.md`.
+
+## Fix round (PR #94, review and security review of c4584899)
+
+- Notes keep the shipped 20,000 code point limit, not 10,240 bytes: A2 and A3 above describe the first attempt, which would have made the outbox of the shipped app drop long notes. Red `task-text.test.ts` (commit "notes keep the shipped 20,000 code point limit (red)"), then code. The 10 KB byte cap is v1.1, tied to an app release.
+- A day email reply reserves its write first, so a suspended owner or one at the daily cap adds nothing (`ReplyOutcome.WriteRefused`); red commit then code, tests in `day-email-reply.test.ts`.
+- Suspension rides the session lookup (`SessionOwner.isSuspended`), zero extra statements; red in `directory.test.ts` and `project-routing.test.ts`.
+- Stored text is documented as an upper bound that never decreases; the admin gets a per-owner "Reset stored text" action (`POST /admin/stored-text-resets`, tests in `admin-usage.test.ts`). Charging only growth needs a Durable Object call per edit and was not taken.
+- The sign-up client key is an HMAC under `SIGN_UP_KEY_SECRET` (fails closed with 503); runbook step 25 and the self-host guide say how to put it. Disposable domains match subdomains and a trailing dot.
+- The MCP suspension code stays -32003 (the other MCP refusals use -32000 and -32001); spec and test plan now say -32003.
+- ADR 0087 re-measured the rows written per task write (11 to 13, measured) and restated the ceiling (about $2,200 a month for a thousand accounts at 5,000 a day, not $490); the 5,000 is stated as the loop's call.
+
+## v1.1 from the review
+
+- A reply or write that the Durable Object then recognises as a replay has already spent its reservation; the open-task room is checked before replays are recognised.
+- A D1 failure during a reservation answers 500, not 503; the C-8 and G-6 failure cases have no test.
+- Missing owner-API tests: `daily_writes` 429 with `Retry-After`, `stored_bytes` 409, the MCP open-task refusal, concurrent adds; the suspension tests skip update, complete, reopen and revoke.
+- The macOS app decodes `limit_reached`, `account_suspended` and `sign_up_refused` and shows the server's `message`.
+- Exact stored text: a byte ledger in the Durable Object, charging only growth.
+- The 10 KB notes cap, with an app release that enforces it.

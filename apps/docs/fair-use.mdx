@@ -12,10 +12,10 @@ todz is free to use. So that one account cannot take the service down or push it
 | Projects per workspace | 100 | Creating a project is refused |
 | Open tasks per project | 5,000 | Adding or reopening tasks is refused; completing one frees a slot |
 | Title | 500 characters | The task is refused |
-| Notes | 10 KB | The task is refused |
+| Notes | 20,000 characters | The task is refused |
 | Agent keys per project | 10 | Issuing a key is refused; revoke one to make room |
 | Task changes per day | 5,000 (UTC day) | Writes are refused until midnight UTC; reading keeps working |
-| Stored task text | 50 MB | Writes are refused; reading keeps working |
+| Stored task text | 50 MB | Writes are refused; reading keeps working. The count is an upper bound: it adds every title, note and edit as written and does not go down when you edit or delete, so the operator can reset it for an account |
 | New accounts per network per day | 5 | Signing up is refused until the next day |
 
 A refusal tells you what happened. The server answers with a code and a plain sentence; for an agent the tool answers with the same sentence.
@@ -40,4 +40,4 @@ The counts are Worker variables. Leave one out to keep its default; set it to a 
 - `FAIR_USE_STORED_BYTES_MAX` (in bytes)
 - `FAIR_USE_SIGN_UPS_PER_CLIENT_DAY_MAX`
 
-A value that is not a positive whole number stops the server with an error that names the variable. Title and note sizes are fixed, because the app and the agent tools state them.
+The cap on new accounts also needs the secret `SIGN_UP_KEY_SECRET` (see [Server setup](/self-host)); without it, new accounts cannot sign up. A value that is not a positive whole number stops the server with an error that names the variable. Title and note sizes are fixed, because the app and the agent tools state them.

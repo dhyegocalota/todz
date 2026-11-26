@@ -12,7 +12,7 @@ A free account can write without a bound beyond the per-minute limiters. One acc
 
 ## Goals
 
-1. One documented set of per-owner limits, enforced on the server, with the numbers of [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md): 20 workspaces, 100 projects per workspace, 5,000 open tasks per project, 500-character titles, 10 KB notes, 10 live MCP keys per project, 5,000 task writes per UTC day, 50 MiB of stored text.
+1. One documented set of per-owner limits, enforced on the server, with the numbers of [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md): 20 workspaces, 100 projects per workspace, 5,000 open tasks per project, 500-character titles, 20,000-character notes (unchanged, so the shipped app never loses a note; a 10 KB byte cap waits for an app release), 10 live MCP keys per project, 5,000 task writes per UTC day (the loop's call; the owner's example was 20,000), 50 MiB of stored text.
 2. Every refusal names the limit and carries a human-readable message, over the owner API (`message` in the body) and over MCP (the tool's error text).
 3. Sign-up abuse: a daily cap of new accounts per client and a refusal for disposable email domains, both only for new accounts ([ADR 0089](../../adr/0089-sign-up-abuse-is-capped-per-client-per-day-and-disposable-email-domains-are-refused-for-new-accounts.md)).
 4. The admin (owner only, the existing admin session) sees Top usage over seven days by task writes and by stored text bytes, and suspends or restores an account. A suspended account reads and cannot write nor use MCP ([ADR 0090](../../adr/0090-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md)).
@@ -53,10 +53,10 @@ Admin:
 ### Interfaces
 
 - `libs/types`: the limit defaults (`OWNER_WORKSPACES_MAX`, `WORKSPACE_PROJECTS_MAX` = 100, `PROJECT_OPEN_TASKS_MAX`, `PROJECT_LIVE_KEYS_MAX`, `OWNER_WRITES_PER_DAY_MAX`, `OWNER_STORED_BYTES_MAX`, `SIGN_UPS_PER_CLIENT_DAY_MAX`, `BYTES_PER_KIBIBYTE`), `TASK_TITLE_MAX_LENGTH` = 500, `TASK_NOTES_MAX_BYTES` = 10 KB, and the enum `FairUseLimit`.
-- `libs/core`: notes are measured in UTF-8 bytes; `LimitViolation` carries a `FairUseLimit`.
-- `apps/api`: `fairUseLimitsOf(env)`; the `FAIR_USE_*` Worker vars (optional strings, positive whole numbers, a bad value stops the Worker); `reserveOwnerWrites`; `findOwnerSuspension`; `setOwnerSuspension`; `signUpAllowance`; `isDisposableEmailDomain`; the admin usage page and the suspension route.
+- `libs/core`: notes keep the 20,000 code point limit; `LimitViolation` carries a `FairUseLimit`.
+- `apps/api`: `fairUseLimitsOf(env)`; the `FAIR_USE_*` Worker vars (optional strings, positive whole numbers, a bad value stops the Worker); `reserveOwnerWrites`; `findOwnerSuspension`; `setOwnerSuspension`; `signUpAllowance`; `isDisposableEmailAddress`; the admin usage page and the suspension route.
 - Error bodies (owner API): `{ error: 'limit_reached', limit, message }` with the status of the limit (409 for counts, 429 for the two daily limits, which also carry `Retry-After` to the next UTC midnight); `{ error: 'account_suspended', message }` (403); `{ error: 'sign_up_refused', message }` (403).
-- MCP: a refusal is an error tool result whose text is the message; a suspended key answers JSON-RPC error code -32000 with status 403.
+- MCP: a refusal is an error tool result whose text is the message; a suspended key answers JSON-RPC error code -32003 with status 403.
 
 ### Failure handling
 
@@ -70,7 +70,7 @@ Admin:
 
 | Question | Options | Owner's answer | Date |
 |----------|---------|----------------|------|
-| The numbers | the owner's examples, or sized ones | Loop's call: [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md) (5,000 writes a day at the owner's request for agent-heavy owners; the arithmetic is redone at that number) | 2026-11-26 |
+| The numbers | the owner's examples, or sized ones | Loop's call: [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md) (5,000 writes a day is the loop's call, not the owner's: the owner's example was 20,000; the cost arithmetic is in the ADR's Sizing) | 2026-11-26 |
 | Disposable list source | vendored by hand, or a service | Loop's call: vendored by hand, updated in reviewed commits | 2026-11-26 |
 | What a suspended owner can do | read; or nothing | Owner's brief: reads, no writes, no MCP | 2026-11-26 |
 | The app's copy | change the app now, or follow-up | Loop's call: follow-up, the server carries the message | 2026-11-26 |
