@@ -164,6 +164,13 @@ describe('the pages carry no stale phrase', () => {
   });
 });
 
+describe('llms-full.txt for a live product', () => {
+  test('names the download and the open source licence', async () => {
+    const body = await (await siteGet({ path: DiscoveryPath.LlmsFull })).text();
+    [DOWNLOAD_URL, REPOSITORY.url, REPOSITORY.licenseName].forEach((fact) => expect(body).toContain(fact));
+  });
+});
+
 describe('the landing policy', () => {
   test('keeps the same directives, hash based and with no unsafe-inline', async () => {
     const response = await siteGet({ path: '/' });

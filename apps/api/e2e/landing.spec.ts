@@ -28,6 +28,10 @@ const HEADER_INSTALL_LINK = `.site-header .nav-link[href="${DOCS_INSTALL_URL}"]`
 const FOOTER_INSTALL_LINK = `.site-footer .footer-link[href="${DOCS_INSTALL_URL}"]`;
 const MAXIMUM_DARK_CHANNEL = 40;
 const SUBPIXEL_TOLERANCE = 0.5;
+const MAXIMUM_PHONE_FOOTER_HEIGHT = 190;
+const MAXIMUM_BLANK_WIDGET_BAND = 48;
+const BLANK_PIXEL_FLOOR = 200;
+const WIDGET_SIDE_MARGIN = 100;
 const KEYBOARD_ORDER = [
   '.skip-link',
   '.site-header .brand',
@@ -131,6 +135,46 @@ test.describe('narrow screen', () => {
       SUBPIXEL_TOLERANCE,
     );
     expect(shotsOverflowing).toEqual([]);
+  });
+
+  test('keeps the footer compact on a phone with every link and the credit line', async ({ page }) => {
+    onlyOn(ProjectName.Mobile);
+    await page.goto(SitePath.Landing);
+    const footer = page.locator('.site-footer');
+    const footerBox = await footer.boundingBox();
+    expect(footerBox?.height).toBeLessThanOrEqual(MAXIMUM_PHONE_FOOTER_HEIGHT);
+    await expect(footer.locator('.footer-link')).toHaveCount(4);
+    await expect(footer.locator('.star-pill')).toBeVisible();
+    await expect(footer.locator('.footer-credit')).toHaveText(CREDIT_TEXT);
+  });
+});
+
+test.describe('hero widget frame', () => {
+  test('leaves no blank band below the last row of the widget shot', async ({ page }) => {
+    await page.goto(SitePath.Landing);
+    const { path, crop } = LANDING_SHOTS[LandingShot.WidgetMedium];
+    if (crop === null) throw new Error('the widget shot has no crop');
+    const blankBand = await page.evaluate(
+      async ({ path: shotPath, crop: box, margin, blankFloor }) => {
+        const image = new Image();
+        image.src = shotPath;
+        await image.decode();
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const context = canvas.getContext('2d');
+        if (context === null) throw new Error('no canvas context');
+        context.drawImage(image, 0, 0);
+        const rows = Array.from({ length: box.height }, (_, offset) => box.y + offset);
+        const inkRows = rows.filter((row) => {
+          const { data } = context.getImageData(box.x + margin, row, box.width - 2 * margin, 1);
+          return Array.from(data).some((channel, index) => index % 4 !== 3 && channel < blankFloor);
+        });
+        return box.y + box.height - (Math.max(...inkRows) + 1);
+      },
+      { path, crop, margin: WIDGET_SIDE_MARGIN, blankFloor: BLANK_PIXEL_FLOOR },
+    );
+    expect(blankBand).toBeLessThanOrEqual(MAXIMUM_BLANK_WIDGET_BAND);
   });
 });
 
