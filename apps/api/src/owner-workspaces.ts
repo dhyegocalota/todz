@@ -116,7 +116,7 @@ async function deleteWorkspace(context: SessionContext): Promise<Response> {
   if (workspaceId === null) return errorResponse(OwnerErrorCode.NotFound);
   const deletedProjectIds = await deleteOwnerWorkspace({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId });
   if (deletedProjectIds === null) return errorResponse(OwnerErrorCode.NotFound);
-  await Promise.all(deletedProjectIds.map((projectId) => wipeProjectStorage({ env, projectId })));
+  await Promise.allSettled(deletedProjectIds.map((projectId) => wipeProjectStorage({ env, projectId })));
   return new Response(null, { status: HttpStatus.NoContent });
 }
 
@@ -129,7 +129,7 @@ async function deleteProject(context: SessionContext): Promise<Response> {
   if (project.isInbox) return errorResponse(OwnerErrorCode.InboxIsFixed);
   const isDeleted = await deleteOwnerProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId });
   if (!isDeleted) return errorResponse(OwnerErrorCode.NotFound);
-  await wipeProjectStorage({ env, projectId });
+  await Promise.allSettled([wipeProjectStorage({ env, projectId })]);
   return new Response(null, { status: HttpStatus.NoContent });
 }
 
