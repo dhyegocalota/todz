@@ -16,7 +16,7 @@ The app reads the owner's server-side settings (Let agents mention today's tasks
 - It runs when the app becomes active and when the Settings window appears.
 - It does nothing while signed out or before the owner is confirmed, and starts no second read while one is in flight.
 - A setting that is saving when the read starts, or starts saving while it runs, keeps its own value: a read never overwrites a save.
-- A failed read keeps every last known value and shows no new notice; an expired session ends as any other request does.
+- A failed read keeps every last known value and shows no `notSaved` notice, and an unreachable read marks the app offline as any request does, while a cancelled read never does; an expired session ends as any other request does.
 - An answer that arrives after a sign-out or a session change is dropped.
 
 ## Test list

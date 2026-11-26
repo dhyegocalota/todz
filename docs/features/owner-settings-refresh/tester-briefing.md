@@ -5,10 +5,10 @@ Written by the developer sub-agent when its steps are done. The developer does n
 ## What changed
 
 - `apps/macos/TodzKit/Sources/TodzKit/AppModel+OwnerSettingsRefresh.swift` (new) — `refreshOwnerSettings()`: skipped while signed out, before the owner is confirmed, or while a read is in flight; reads with `readOwner` (`GET /owner`, never the time-zone `PATCH`) through `request`; takes `agentNudge`, `dayEmail` and `dayEmailMinutes` from the answer, except for a setting whose save was in flight when the read began or started during it; a failed read changes nothing and sets no notice of its own.
-- `AppModel.swift` — `agentNudgeSavesStarted`, `dayEmailSavesStarted` and `isReadingOwnerSettings`.
+- `AppModel.swift` — `agentNudgeSavesStarted`, `dayEmailSavesStarted` and `ownerSettingsReadIdentifier` (the read in flight, cleared when the session ends), all `@ObservationIgnored`.
 - `AppModel+AgentNudge.swift`, `AppModel+DayEmail.swift` — each save increments its count when it starts.
 - `apps/macos/Todz/AppDelegate.swift` — `applicationDidBecomeActive` starts the refresh in a `Task`.
-- `apps/macos/Todz/Settings/SettingsView.swift` — `.task` runs the refresh when Settings appears.
+- `apps/macos/Todz/Settings/SettingsView.swift` — `.onAppear` starts the refresh in a `Task` when Settings appears.
 
 ## How to run
 
@@ -40,20 +40,26 @@ The Worker log shows each `GET /owner` the refresh makes.
 
 ## Red today, green after
 
-Red text as the run printed it on cb201781 (`swift test --filter OwnerSettingsRefresh`, stub reads and discards the answer): 6 of 9 tests red, 3 pins.
+Red text as the run printed it on cb201781 (`swift test --filter OwnerSettingsRefresh`, stub reads and discards the answer): 5 of 9 tests red, 4 pins.
 
 | Test | Red before the change because | Green after because |
 |------|--------------------------------|---------------------|
 | `refreshingTheOwnerSettingsTakesAllThreeValuesFromTheRead` | `Expectation failed: harness.model.agentNudge == false`, `↳ harness.model.agentNudge → true`; the same for `dayEmail` and `dayEmailMinutes` | 22d3a4ff: the three values come from the read |
 | `refreshingTheOwnerSettingsBeforeTheOwnerIsConfirmedReadsNothing` | `Expectation failed: harness.service.routes().contains(.readOwner) == false` | 22d3a4ff: the guard on `isOwnerConfirmed` |
-| `aSecondRefreshWhileTheFirstReadIsHeldMakesNoSecondRead` | `Expectation failed: readOwnerCount(harness) == 1` | 22d3a4ff: `isReadingOwnerSettings` |
+| `aSecondRefreshWhileTheFirstReadIsHeldMakesNoSecondRead` | `Expectation failed: readOwnerCount(harness) == 1` | 22d3a4ff: the read in flight is skipped (since 27d4c2a3 by `ownerSettingsReadIdentifier`) |
 | `aNudgeSaveInFlightWhenTheReadStartsKeepsTheSavedValue` | `Expectation failed: harness.model.dayEmail == false` and `dayEmailMinutes == readMinutes` (the nudge line passed with the stub) | 22d3a4ff |
 | `aDayEmailSaveThatStartsWhileTheReadIsHeldKeepsTheSavedValues` | `Expectation failed: harness.model.agentNudge == false` (the day email lines passed with the stub) | 22d3a4ff |
 | `refreshingTheOwnerSettingsSignedOutMakesNoCall`, `aReadThatCannotReachTodzKeepsEveryValueAndShowsNoNotSavedNotice`, `anUnauthorizedReadEndsTheSession`, `aReadAnsweredAfterASignOutIsDropped` | pin: green on landing, because the stub's own `request` call already ends the session, drops a stale answer, and applies nothing | still green |
 
-The first red attempt, with a stub that did nothing, hung forever in `service.held(.readOwner)`; the stub therefore performs the read and discards it.
+Review round 1 (tests added after the green commit):
 
-Full suite on 22d3a4ff: 1310 tests in 102 suites passed. App build on 76cb966d: `** BUILD SUCCEEDED **`.
+| Test | State on landing | Evidence |
+|------|------------------|----------|
+| `aNudgeSaveThatFinishesWhileTheReadIsHeldKeepsTheSavedValue`, `aDayEmailSaveThatFinishesWhileTheReadIsHeldKeepsTheSavedValue` | pin (a3f04c35): green against the real code | with the counter checks swapped for `isSavingAgentNudge` and `isSavingDayEmail` both fail: `Expectation failed: harness.model.agentNudge == false` and `harness.model.dayEmail == false`; the other 10 stay green |
+| `aDayEmailSaveInFlightWhenTheReadStartsKeepsTheSavedValue` | pin (a3f04c35): completes the matrix; green on the mutant too, because `isSaving` covers a save in flight when the read starts | not needed for the counters |
+| `aReadHeldFromASessionThatEndedDoesNotBlockTheNextSessionsRead` | red on 6e020082 | `Expectation failed: readOwnerCount(harness) == 1`, `↳ readOwnerCount(harness) == 1 → false` (the held read of the ended session blocked the new session's read); green on 27d4c2a3 |
+
+Full suite on 27d4c2a3: 1314 tests in 102 suites passed. App build on 27d4c2a3: `** BUILD SUCCEEDED **`. Settings now refreshes from `.onAppear` in an unstructured `Task`, as `AppDelegate` does, so closing Settings cannot cancel the read into a false offline state.
 
 ## Hypotheses to attack
 
@@ -68,6 +74,5 @@ Full suite on 22d3a4ff: 1310 tests in 102 suites passed. App build on 76cb966d: 
 ## Known gaps
 
 - The activation and Settings hooks have no unit test (the app target has none); only the build proves they compile.
-- A failed read still marks the app offline through `request`, as every request does; the spec's "no new notice" is read as no `notSaved` notice.
-- A read that began in an old session keeps `isReadingOwnerSettings` set until its answer arrives, so a refresh in a new session started in that window is skipped.
+- An unreachable read marks the app offline through `request`, as every request does; the spec now says so. A cancelled read must not: the Settings hook is unstructured for that reason, and no test covers it (the app target has none), so the tester closes Settings while a slow `GET /owner` is pending and checks the switches stay enabled.
 - Not run in the app by the developer.
