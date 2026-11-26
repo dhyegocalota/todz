@@ -7,6 +7,7 @@ const FORBIDDEN_STATUS = 403;
 const CREATED_STATUS = 201;
 const OK_STATUS = 200;
 const SUSPENDED_ERROR = 'account_suspended';
+const FAIR_USE_URL = 'https://docs.todz.app/fair-use';
 
 type WorkspaceBody = { workspace: { id: string; projects: { id: string }[] } };
 
@@ -41,7 +42,7 @@ describe('a suspended owner', () => {
       expect(response.status).toBe(FORBIDDEN_STATUS);
       const body = await response.json<{ error: string; message: string }>();
       expect(body.error).toBe(SUSPENDED_ERROR);
-      expect(body.message.length).toBeGreaterThan(0);
+      expect(body.message).toContain(FAIR_USE_URL);
     }
     const listed = await ownerCall({ method: 'GET', path: '/owner/workspaces', token });
     expect((await listed.json<{ workspaces: { id: string }[] }>()).workspaces.map(({ id }) => id)).toEqual([workspace.id]);
