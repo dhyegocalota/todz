@@ -10,12 +10,11 @@ struct SettingsWorkspaceShortcuts: View {
     var body: some View {
         if !model.workspaces.isEmpty {
             Section {
-                Toggle(isOn: $isGlobalOn) {
-                    Text(WorkspaceShortcutsCopy.fromAnyApp)
-                    Text(WorkspaceShortcutsCopy.fromAnyAppDetail(modifiers: WorkspaceShortcuts.globalModifiers.symbols, numbers: WorkspaceShortcuts.numbers))
-                        .lineLimit(subtitleLines, reservesSpace: true)
+                SettingsRow(title: WorkspaceShortcutsCopy.fromAnyApp, detail: WorkspaceShortcutsCopy.fromAnyAppDetail(modifiers: WorkspaceShortcuts.globalModifiers.symbols, numbers: WorkspaceShortcuts.numbers)) {
+                    Toggle(WorkspaceShortcutsCopy.fromAnyApp, isOn: $isGlobalOn)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
                 }
-                .toggleStyle(.switch)
                 .onChange(of: isGlobalOn) { shortcuts.registerHotKeys() }
                 if isGlobalOn {
                     ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
