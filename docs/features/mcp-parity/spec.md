@@ -66,7 +66,7 @@ All three need the signed-in session as `Authorization: Bearer <session>` and th
 - `GET /owner/keys` → `200 { "keys": [ { "id": string, "hint": string, "created_at": number } ] }`, oldest first, no secret.
 - `POST /owner/keys` (no body) → `201 { "key": { "id", "hint", "created_at" }, "secret": "todz-owner_…" }`; the secret is in this answer only. `409 { "error": "limit_reached" }` at five live keys.
 - `DELETE /owner/keys/:keyId` → `204`; `404 { "error": "not_found" }` for an absent, already revoked or another owner's key.
-- The project change feed `GET /owner/projects/:id/changes?cursor=` gains `"deleted_numbers": [number]`: the task numbers deleted since the cursor. The app removes those tasks from its cache. An older app ignores it.
+- The project change feed `GET /owner/projects/:id/changes?cursor=` gains `"deleted_numbers": [number]`: the task numbers deleted since the cursor. The app removes those tasks from its cache. An older app ignores it, so up to 0.2.3 an MCP delete leaves a ghost and an MCP move shows the task in both projects (ADR 0102). The 0.2.4 app reads `deleted_numbers`, and the same release raises `MINIMUM_APP_VERSION` so an older app is refused.
 
 #### Copy for the app lane's Settings section (en-US, for `SettingsCopy`)
 

@@ -69,14 +69,24 @@ async function renameProjectRoute(context: SessionContext): Promise<Response> {
 
 async function deleteWorkspaceRoute(context: SessionContext): Promise<Response> {
   const { env, owner } = context;
-  const result = await deleteWorkspace({ env, owner, workspaceId: routeParam({ context, name: RouteParam.WorkspaceId }) });
+  const result = await deleteWorkspace({
+    env,
+    owner,
+    workspaceId: routeParam({ context, name: RouteParam.WorkspaceId }),
+    expectedName: null,
+  });
   if (!result.ok) return failedResponse(result.failure);
   return new Response(null, { status: HttpStatus.NoContent });
 }
 
 async function deleteProjectRoute(context: SessionContext): Promise<Response> {
   const { env, owner } = context;
-  const result = await deleteProject({ env, owner, projectId: routeParam({ context, name: RouteParam.ProjectId }) });
+  const result = await deleteProject({
+    env,
+    owner,
+    projectId: routeParam({ context, name: RouteParam.ProjectId }),
+    expectedName: null,
+  });
   if (!result.ok) return failedResponse(result.failure);
   return new Response(null, { status: HttpStatus.NoContent });
 }

@@ -47,6 +47,16 @@ One developer, in this order: G1, G2, G3 (project tools), G4 (owner keys and acc
 - [x] **Step 7:** The MCP tools page with every tool and scope, the parity table and its test — evidence: d3f36628, 90725a9e
 - [x] **Step 8:** ADRs 0101 and 0102, this folder, the indexes — evidence: the commit that adds this folder
 
+## v1.1 (parked by the review)
+
+- A delete leaves no attribution: nobody can tell which agent deleted a task.
+- `countActivity` counts tombstones and a move twice (added in the destination, and the source's earlier add).
+- Owner-key traffic is limited per key, not per owner; the fair-use wiring bounds it.
+
+## Review round
+
+- [x] Findings 2, 3, 4, 5, 8, 9 and the honest residual of 1: red 01b47dd2, green in the commit after it.
+
 ## Failure modes
 
 | Step | What breaks | How I notice (the concrete signal) | How I back out |

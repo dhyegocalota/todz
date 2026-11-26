@@ -83,11 +83,13 @@ export function addTasks({
   clock,
   actor,
   drafts,
+  arrivalNote = null,
 }: {
   store: TaskStore;
   clock: Clock;
   actor: Actor;
   drafts: TaskDraft[];
+  arrivalNote?: string | null;
 }): AddedTask[] {
   assertBatchSize(drafts.length);
   const validatedDrafts = drafts.map((draft, index) => validateDraft({ draft, index }));
@@ -102,7 +104,7 @@ export function addTasks({
   const { results, createdTasks } = validatedDrafts.reduce((state, draft) => planDraft({ state, draft, store, actor, now }), initialState);
   createdTasks.forEach((task) => {
     store.insertTask(task);
-    store.appendHistory({ number: task.number, entry: { at: now, actor, action: HistoryAction.Created, fields: [], note: null } });
+    store.appendHistory({ number: task.number, entry: { at: now, actor, action: HistoryAction.Created, fields: [], note: arrivalNote } });
   });
   return results;
 }

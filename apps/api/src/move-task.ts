@@ -1,22 +1,25 @@
 import type { Actor, Task } from '@todz/core';
-import { TaskState } from '@todz/types';
-import type { ProjectResult } from './project-result';
+import { RuleIssue, TaskState } from '@todz/types';
+import { MCP_COPY } from './mcp-copy';
+import { type ProjectResult, ProjectFailureKind } from './project-result';
 import type { ProjectStore } from './project-store';
 
 export const MOVE_KEY_PREFIX = 'move:';
 
 export type MovedTask = { task: Task; arrived: Task };
 
-// NB ADR 0101: a move adds to the destination first under a key naming the source task, then deletes the source, so a failure leaves a copy and a retry finishes the move.
+// NB ADR 0102: a move adds to the destination first under a key naming the source task, then deletes the source, so a failure leaves a copy and a retry finishes the move.
 export async function moveTask({
   source,
   sourceProjectId,
+  sourceProjectName,
   destination,
   actor,
   number,
 }: {
   source: DurableObjectStub<ProjectStore>;
   sourceProjectId: string;
+  sourceProjectName: string;
   destination: DurableObjectStub<ProjectStore>;
   actor: Actor;
   number: number;
@@ -27,10 +30,12 @@ export async function moveTask({
   const drafts = [
     { title: task.title, notes: task.notes, dueDate: task.dueDate, idempotencyKey: `${MOVE_KEY_PREFIX}${sourceProjectId}:${number}` },
   ];
-  const added = await destination.addTasks({ actor, drafts });
+  const added = await destination.addTasks({ actor, drafts, arrivalNote: MCP_COPY.movedFrom(sourceProjectName) });
   if (!added.ok) return added;
   const [addition] = added.value;
   if (addition === undefined) throw new Error('adding one task answers one task');
+  const isSameTask = addition.task.title === task.title && addition.task.notes === task.notes;
+  if (!isSameTask) return { ok: false, failure: { kind: ProjectFailureKind.RuleViolated, issue: RuleIssue.MoveConflict, index: null } };
   const arrival = await arrivedAs({ destination, actor, task, arrived: addition.task });
   if (!arrival.ok) return arrival;
   const deleted = await source.deleteTask({ number, confirmation: task.title });

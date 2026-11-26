@@ -162,6 +162,7 @@ export const MCP_COPY = {
   reopened: 'Reopened',
   alreadyOpen: 'Already open',
   deleted: 'Deleted',
+  reservedKey: 'This idempotency key is reserved for moves: choose another.',
   moved: 'Moved',
   movedFrom: (projectName: string) => `Moved from ${projectName}`,
   movedTo: ({ projectName, shortId }: { projectName: string; shortId: string }) => `to ${projectName} as ${shortId}`,

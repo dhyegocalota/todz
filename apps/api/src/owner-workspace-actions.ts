@@ -73,10 +73,20 @@ export async function renameWorkspace({
   return { ok: true, value: renamed };
 }
 
-export async function deleteWorkspace({ env, owner, workspaceId }: Acting & { workspaceId: string }): Promise<ActionResult<null>> {
+export async function deleteWorkspace({
+  env,
+  owner,
+  workspaceId,
+  expectedName,
+}: Acting & { workspaceId: string; expectedName: string | null }): Promise<ActionResult<null>> {
   const ownedWorkspaceId = await findOwnedWorkspaceId({ env, owner, workspaceId });
   if (ownedWorkspaceId === null) return failed(ActionFailureKind.NotFound);
-  const deletedProjectIds = await deleteOwnerWorkspace({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId: ownedWorkspaceId });
+  const deletedProjectIds = await deleteOwnerWorkspace({
+    directory: env.DIRECTORY,
+    ownerId: owner.ownerId,
+    workspaceId: ownedWorkspaceId,
+    expectedName,
+  });
   if (deletedProjectIds === null) return failed(ActionFailureKind.NotFound);
   await Promise.allSettled(deletedProjectIds.map((projectId) => wipeProjectStorage({ env, projectId })));
   return { ok: true, value: null };
@@ -167,10 +177,15 @@ export async function renameProject({
   return { ok: true, value: { ...changeable.value, name: normalized.value } };
 }
 
-export async function deleteProject({ env, owner, projectId }: Acting & { projectId: string }): Promise<ActionResult<null>> {
+export async function deleteProject({
+  env,
+  owner,
+  projectId,
+  expectedName,
+}: Acting & { projectId: string; expectedName: string | null }): Promise<ActionResult<null>> {
   const changeable = await ownedChangeableProject({ env, owner, projectId });
   if (!changeable.ok) return changeable;
-  const isDeleted = await deleteOwnerProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId });
+  const isDeleted = await deleteOwnerProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId, expectedName });
   if (!isDeleted) return failed(ActionFailureKind.NotFound);
   await Promise.allSettled([wipeProjectStorage({ env, projectId })]);
   return { ok: true, value: null };

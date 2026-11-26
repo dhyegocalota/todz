@@ -2,7 +2,12 @@ import { type Placement, type TaskDraft, type TaskPatch, parseShortId } from '@t
 import { DueWindow, LIST_LIMIT_DEFAULT, TaskPlacement, TaskState } from '@todz/types';
 import { z } from 'zod';
 import { MCP_COPY } from './mcp-copy';
+import { MOVE_KEY_PREFIX } from './move-task';
 import { fieldPatchOf } from './task-field-patch';
+
+function isFreeKey(key: string): boolean {
+  return !key.startsWith(MOVE_KEY_PREFIX);
+}
 
 export const AddArgumentsSchema = z.object({
   tasks: z.array(
@@ -10,7 +15,7 @@ export const AddArgumentsSchema = z.object({
       title: z.string().describe(MCP_COPY.fields.title),
       notes: z.string().nullable().default(null).describe(MCP_COPY.fields.notes),
       due_date: z.string().nullable().default(null).describe(MCP_COPY.fields.dueDate),
-      idempotency_key: z.string().nullable().default(null).describe(MCP_COPY.fields.idempotencyKey),
+      idempotency_key: z.string().refine(isFreeKey, MCP_COPY.reservedKey).nullable().default(null).describe(MCP_COPY.fields.idempotencyKey),
     }),
   ),
 });

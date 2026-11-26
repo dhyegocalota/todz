@@ -181,7 +181,7 @@ function registerWorkspaceTools({ server, scope }: { server: McpServer; scope: O
     async ({ workspace, confirm }) => {
       const confirmed = await findConfirmedWorkspace({ env, owner, workspaceId: workspace, confirmation: confirm });
       if (!confirmed.ok) return errorAnswer(failureTextOf({ failure: confirmed.failure, limitText }));
-      const result = await deleteWorkspace({ env, owner, workspaceId: workspace });
+      const result = await deleteWorkspace({ env, owner, workspaceId: workspace, expectedName: confirmed.value.workspace.name });
       return answerOf({ result, answer: () => MCP_COPY.workspaceDeleted(confirmed.value.workspace.name), limitText });
     },
   );
@@ -231,7 +231,7 @@ function registerProjectTools({ server, scope }: { server: McpServer; scope: Own
     async ({ project, confirm }) => {
       const confirmed = await findConfirmedProject({ env, owner, projectId: project, confirmation: confirm });
       if (!confirmed.ok) return errorAnswer(failureTextOf({ failure: confirmed.failure, limitText }));
-      const result = await deleteProject({ env, owner, projectId: project });
+      const result = await deleteProject({ env, owner, projectId: project, expectedName: confirmed.value.name });
       return answerOf({ result, answer: () => MCP_COPY.projectDeleted(confirmed.value.name), limitText });
     },
   );

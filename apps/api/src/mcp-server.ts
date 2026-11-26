@@ -1,6 +1,6 @@
 import { CLIENT_INFO_META_KEY, type CallToolResult, McpServer, type ServerContext } from '@modelcontextprotocol/server';
 import { type Actor, type DueNow, type Task, parseShortId } from '@todz/core';
-import { ActorKind } from '@todz/types';
+import { ActorKind, HistoryAction } from '@todz/types';
 import { z } from 'zod';
 import { MCP_COPY, McpPromptName, McpToolName } from './mcp-copy';
 import {
@@ -134,7 +134,11 @@ function registerReadTools({ server, scope }: { server: McpServer; scope: McpSer
     async ({ id }) => {
       const number = parseShortId(id);
       if (number === null) return errorAnswer(MCP_COPY.taskIdInvalid);
-      return resultAnswer({ result: await project.readTask({ number }), answer: showAnswer });
+      const result = await project.readTask({ number });
+      if (!result.ok) return errorAnswer(failureText(result.failure));
+      const history = await project.readHistory({ number });
+      const arrivalNote = history.ok ? history.value.find((entry) => entry.action === HistoryAction.Created)?.note : undefined;
+      return textAnswer(showAnswer({ task: result.value, arrivalNote }));
     },
   );
   server.registerTool(
@@ -234,9 +238,12 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
         clientNameOf,
         ctx,
         write: async (actor) => {
+          const sourceProject = (await scope.workspace.listProjects()).find((record) => record.id === scope.workspace.projectId);
+          if (sourceProject === undefined) throw new Error('a key project is in its own workspace');
           const result = await moveTask({
             source: project,
             sourceProjectId: scope.workspace.projectId,
+            sourceProjectName: sourceProject.name,
             destination: sibling.project,
             actor,
             number,

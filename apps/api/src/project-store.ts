@@ -84,8 +84,8 @@ export class ProjectStore extends DurableObject<Env> {
     ctx.blockConcurrencyWhile(async () => applyProjectSchema(ctx.storage));
   }
 
-  addTasks({ actor, drafts }: { actor: Actor; drafts: TaskDraft[] }): ProjectResult<AddedTask[]> {
-    return this.runWrite(() => addTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), drafts }));
+  addTasks({ actor, drafts, arrivalNote }: { actor: Actor; drafts: TaskDraft[]; arrivalNote?: string | null }): ProjectResult<AddedTask[]> {
+    return this.runWrite(() => addTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), drafts, arrivalNote }));
   }
 
   updateTask({ actor, number, patch }: { actor: Actor; number: number; patch: TaskPatch }): ProjectResult<Task> {

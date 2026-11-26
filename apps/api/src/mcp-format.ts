@@ -72,9 +72,10 @@ export function completedAnswer(completed: CompletedTask[]): string {
   return lines(completed.map(completedLine));
 }
 
-export function showAnswer(task: Task): string {
+export function showAnswer({ task, arrivalNote }: { task: Task; arrivalNote: string | null | undefined }): string {
   const notes = task.notes === null ? [] : [task.notes];
-  return paragraphs([taskLine(task), MCP_COPY.stateLine(task.state), ...notes]);
+  const arrival = typeof arrivalNote === 'string' ? [arrivalNote] : [];
+  return paragraphs([taskLine(task), MCP_COPY.stateLine(task.state), ...arrival, ...notes]);
 }
 
 function historyLineOf(entry: HistoryEntry): string {
