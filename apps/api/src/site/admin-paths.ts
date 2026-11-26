@@ -11,6 +11,7 @@ export enum AdminPath {
   MetricsExport = '/admin/metrics.csv',
   Usage = '/admin/usage',
   Suspensions = '/admin/suspensions',
+  StoredTextResets = '/admin/stored-text-resets',
 }
 
 export enum AdminField {

@@ -102,6 +102,8 @@ export const ADMIN_COPY = {
     suspended: 'Suspended',
     suspend: 'Suspend',
     restore: 'Restore',
+    resetStoredText: 'Reset stored text',
+    mebibyteUnit: 'MB',
     empty: 'Nobody has written this week.',
   },
   empty: {

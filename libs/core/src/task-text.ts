@@ -3,7 +3,7 @@ import {
   IDEMPOTENCY_KEY_MAX_LENGTH,
   NAME_MAX_LENGTH,
   RuleIssue,
-  TASK_NOTES_MAX_BYTES,
+  TASK_NOTES_MAX_LENGTH,
   TASK_TITLE_MAX_LENGTH,
 } from '@todz/types';
 import { RuleViolation } from './errors';
@@ -42,14 +42,6 @@ function normalizeSingleLine({ text, maxLength, issues }: { text: string; maxLen
   return collapsed;
 }
 
-function byteLengthOf(text: string): number {
-  return new TextEncoder().encode(text).byteLength;
-}
-
-function exceedsByteLimit({ text, maxBytes }: { text: string; maxBytes: number }): boolean {
-  return byteLengthOf(text) > maxBytes;
-}
-
 function normalizeMultiline({
   text,
   maxLength,
@@ -85,8 +77,8 @@ export function normalizeTitle(text: string): string {
 export function normalizeNotes(text: string | null): string | null {
   return normalizeMultiline({
     text,
-    maxLength: TASK_NOTES_MAX_BYTES,
-    exceeds: (lineFeedText) => exceedsByteLimit({ text: lineFeedText, maxBytes: TASK_NOTES_MAX_BYTES }),
+    maxLength: TASK_NOTES_MAX_LENGTH,
+    exceeds: (lineFeedText) => exceedsCodePointLimit({ text: lineFeedText, maxLength: TASK_NOTES_MAX_LENGTH }),
     issues: { tooLong: RuleIssue.NotesTooLong, invalid: RuleIssue.NotesInvalid },
   });
 }

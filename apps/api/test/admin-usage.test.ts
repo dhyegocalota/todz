@@ -83,6 +83,7 @@ describe('the admin usage view', () => {
     const response = await serveAdminUsage({ request: usageRequest(cookie), env: adminEnv(), executionContext: createExecutionContext() });
     const html = await response.text();
     expect(html).toContain(busy);
+    expect(html).toContain('/admin/stored-text-resets');
     expect(html).not.toContain(stale);
   });
 });

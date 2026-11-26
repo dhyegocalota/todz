@@ -1,4 +1,4 @@
-import { BYTES_PER_MEBIBYTE, MILLISECONDS_PER_DAY } from '@todz/types';
+import { BYTES_PER_MEBIBYTE, FORMATTER_LOCALE, MILLISECONDS_PER_DAY } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
 import { HttpStatus } from '../http-status';
 import { siteKeyOf } from '../turnstile-page';
@@ -17,8 +17,8 @@ import type { SiteContext } from './site-endpoint';
 
 const ADMIN_USAGE_DAYS = 7;
 const ADMIN_USAGE_ROWS_MAX = 25;
-const COUNT_FORMAT = new Intl.NumberFormat('en-US');
-const MEBIBYTE_FORMAT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+const COUNT_FORMAT = new Intl.NumberFormat(FORMATTER_LOCALE);
+const MEBIBYTE_FORMAT = new Intl.NumberFormat(FORMATTER_LOCALE, { maximumFractionDigits: 2 });
 
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
@@ -42,7 +42,7 @@ function suspensionFormHtml(owner: OwnerUsageRecord): string {
   const state = owner.isSuspended ? usage.suspended : usage.active;
   const choice = owner.isSuspended ? SuspensionChoice.Restore : SuspensionChoice.Suspend;
   const label = owner.isSuspended ? usage.restore : usage.suspend;
-  return `<td>${escapedHtml(state)}</td><td><form method="post" action="${AdminPath.Suspensions}"><input type="hidden" name="${AdminField.Owner}" value="${escapedHtml(owner.ownerId)}"><button class="nav-link nav-button" name="${AdminField.Choice}" value="${choice}" type="submit">${escapedHtml(label)}</button></form></td>`;
+  return `<td>${escapedHtml(state)}</td><td><form method="post" action="${AdminPath.Suspensions}"><input type="hidden" name="${AdminField.Owner}" value="${escapedHtml(owner.ownerId)}"><button class="nav-link nav-button" name="${AdminField.Choice}" value="${choice}" type="submit">${escapedHtml(label)}</button></form><form method="post" action="${AdminPath.StoredTextResets}"><input type="hidden" name="${AdminField.Owner}" value="${escapedHtml(owner.ownerId)}"><button class="nav-link nav-button" type="submit">${escapedHtml(usage.resetStoredText)}</button></form></td>`;
 }
 
 function rowsHtml(owners: OwnerUsageRecord[]): string {
@@ -50,7 +50,7 @@ function rowsHtml(owners: OwnerUsageRecord[]): string {
   if (owners.length === 0) return `<p class="empty-body">${escapedHtml(usage.empty)}</p>`;
   const rows = owners.map(
     (owner) =>
-      `<tr><td>${accountHtml(owner)}</td><td>${COUNT_FORMAT.format(owner.writes)}</td><td>${MEBIBYTE_FORMAT.format(owner.bytes / BYTES_PER_MEBIBYTE)} MB</td>${suspensionFormHtml(owner)}</tr>`,
+      `<tr><td>${accountHtml(owner)}</td><td>${COUNT_FORMAT.format(owner.writes)}</td><td>${MEBIBYTE_FORMAT.format(owner.bytes / BYTES_PER_MEBIBYTE)} ${usage.mebibyteUnit}</td>${suspensionFormHtml(owner)}</tr>`,
   );
   return `<table class="usage-table"><thead><tr><th>${escapedHtml(usage.columns.account)}</th><th>${escapedHtml(usage.columns.writes)}</th><th>${escapedHtml(usage.columns.bytes)}</th><th>${escapedHtml(usage.columns.state)}</th><th>${escapedHtml(usage.columns.action)}</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
 }

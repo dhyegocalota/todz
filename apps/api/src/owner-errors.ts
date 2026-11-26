@@ -1,4 +1,4 @@
-import { FairUseLimit, MINIMUM_APP_VERSION, MILLISECONDS_PER_DAY } from '@todz/types';
+import { FairUseLimit, MILLISECONDS_PER_DAY, MILLISECONDS_PER_SECOND, MINIMUM_APP_VERSION } from '@todz/types';
 import { FAIR_USE_COPY } from './fair-use-copy';
 import type { FairUseLimits } from './fair-use-limits';
 import { HttpHeader, NO_STORE } from './http-header';
@@ -71,7 +71,7 @@ export function signUpRefusedResponse(): Response {
 }
 
 export function secondsUntilNextUtcDay(now: number): number {
-  return Math.ceil((utcDayStartOf(now) + MILLISECONDS_PER_DAY - now) / 1_000);
+  return Math.ceil((utcDayStartOf(now) + MILLISECONDS_PER_DAY - now) / MILLISECONDS_PER_SECOND);
 }
 
 export function limitResponse({ limit, limits, now }: { limit: FairUseLimit; limits: FairUseLimits; now: number }): Response {

@@ -105,13 +105,8 @@ export async function setOwnerSuspension({
   return result.meta.changes > 0;
 }
 
-export async function findOwnerSuspension({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<boolean> {
-  const row = await directory
-    .prepare('SELECT suspended_at FROM owners WHERE id = ?')
-    .bind(ownerId)
-    .first<{ suspended_at: number | null }>();
-  if (row === null) throw new Error('a session names an owner with no row');
-  return row.suspended_at !== null;
+export async function resetOwnerStoredBytes({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<void> {
+  await directory.prepare('UPDATE owner_usage SET bytes = 0 WHERE owner_id = ?').bind(ownerId).run();
 }
 
 export async function topOwnerUsage({
