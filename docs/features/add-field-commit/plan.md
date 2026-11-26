@@ -23,16 +23,16 @@ G1, then G2, then G3.
 
 ### G1
 
-- [ ] **Step 1:** Pin: the live suite seeds three workspaces through the owner API and checks the real client's union against a local Worker.
+- [x] **Step 1:** Pin: the live suite seeds three workspaces through the owner API and checks the real client's union against a local Worker.
 
 ### G2
 
-- [ ] **Step 2:** Red: `AddFieldSubmissionTests` with a stub that ignores every title, committed alone.
-- [ ] **Step 3:** Green: `AddFieldSubmission.of(title:)`; the field submits through it on Return and on the "Add" accessibility action.
+- [x] **Step 2:** Red: `AddFieldSubmissionTests` with a stub that ignores every title, committed alone.
+- [x] **Step 3:** Green: `AddFieldSubmission.of(title:)`; the field submits through it on Return and on the "Add" accessibility action.
 
 ### G3
 
-- [ ] **Step 4:** Feature folder and index row; the status flips to Shipped in the last commit.
+- [x] **Step 4:** Feature folder and index row; the status flips to Shipped in the last commit.
 
 ## Failure modes
 
