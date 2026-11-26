@@ -12,7 +12,7 @@ const DEPLOY_RUNBOOK = 'deploy-the-api.md';
 const DEPLOY_STEP = 8;
 const DEPLOY_WORKER_SCRIPT = 'scripts/deploy-worker.sh';
 const AGENT_EXCEPTION_SENTENCE =
-  "agents never run them, except `deploy-the-api`, the loop's steps of `mintlify-publish`, the loop's steps of `performance` and the loop's steps of `release-the-mac-app`";
+  "agents never run them, except `deploy-the-api`, the loop's steps of `mintlify-publish`, the loop's steps of `performance`, the loop's steps of `release-the-mac-app` and the loop's steps of `production-smoke-walk`";
 const MINTLIFY_RUNBOOK = 'mintlify-publish.md';
 const PERFORMANCE_RUNBOOK = 'performance.md';
 const LOG_SHOW_WORDS = 'log show';
@@ -112,6 +112,7 @@ const WRONG_SESSION_BODY = 'scripts/deploy-bodies/wrong-session.json';
 const JUNK_LINK_BODY = 'scripts/deploy-bodies/junk-turnstile-link.json';
 const JUNK_WAITLIST_BODY = 'scripts/deploy-bodies/junk-turnstile-waitlist.txt';
 const JUNK_ADMIN_BODY = 'scripts/deploy-bodies/junk-turnstile-admin.txt';
+const MISSING_TOKEN_WAITLIST_BODY = 'scripts/deploy-bodies/missing-token-waitlist.txt';
 const WAITLIST_ADDRESS_FIELD = 'email';
 const WAITLIST_TOKEN_FIELD = 'cf-turnstile-response';
 const PROBE_ADDRESS = 'nobody@example.com';
@@ -447,6 +448,12 @@ describe('runbooks', () => {
     expect(fields.get(WAITLIST_ADDRESS_FIELD)).toBe(PROBE_ADDRESS);
     expect(fields.get(WAITLIST_TOKEN_FIELD)).toMatch(TURNSTILE_TOKEN_PATTERN);
     expect(fields.get(WAITLIST_TOKEN_FIELD)).not.toBe(TURNSTILE_DUMMY_TOKEN);
+  });
+
+  test('the missing token waitlist body carries an address and no token, so only the in-place join refuses it', () => {
+    const fields = new URLSearchParams(readRepositoryFile(MISSING_TOKEN_WAITLIST_BODY));
+    expect(fields.get(WAITLIST_ADDRESS_FIELD)).toBe(PROBE_ADDRESS);
+    expect(fields.has(WAITLIST_TOKEN_FIELD)).toBe(false);
   });
 
   test('the junk admin body reaches siteverify byte for byte, so only Turnstile refuses it', () => {
