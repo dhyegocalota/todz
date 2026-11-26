@@ -108,6 +108,11 @@ describe('the macOS release settings', () => {
     expect(appTarget()).toContain(`SUScheduledCheckInterval: ${ONE_DAY_SECONDS}`);
   });
 
+  test('the app updates itself by default, and the Settings switch changes that default', () => {
+    expect(appTarget()).toContain('SUAutomaticallyUpdate: YES');
+    expect(readRepositoryFile(APP_INFO_PLIST)).toMatch(/<key>SUAutomaticallyUpdate<\/key>\s*<true\/>/);
+  });
+
   test('the app refuses an appcast that is not signed, and verifies an update before extracting it', () => {
     expect(appTarget()).toContain('SURequireSignedFeed: YES');
     expect(appTarget()).toContain('SUVerifyUpdateBeforeExtraction: YES');
