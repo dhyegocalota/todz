@@ -3,7 +3,7 @@ import { TaskState } from '@todz/types';
 import type { ProjectResult } from './project-result';
 import type { ProjectStore } from './project-store';
 
-const MOVE_KEY_PREFIX = 'move:';
+export const MOVE_KEY_PREFIX = 'move:';
 
 export type MovedTask = { task: Task; arrived: Task };
 

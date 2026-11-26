@@ -3,10 +3,11 @@ import { RuleIssue, TaskState } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { MCP_COPY, McpToolName } from '../src/mcp-copy';
+import { MOVE_KEY_PREFIX } from '../src/move-task';
 import { issueProjectKey } from '../src/project-keys';
 import { issuedKeyOf, seedIssuedKey, seedSiblingProject } from './directory-seed';
 import { ClientEra, callTool, connectClient } from './mcp-client';
-import { CLOCK_NOW } from './task-fixtures';
+import { AGENT_ACTOR, CLOCK_NOW } from './task-fixtures';
 
 type ConnectedProject = { client: Client; projectId: string };
 
@@ -202,6 +203,22 @@ describe('the move tool', () => {
     expect(same).toEqual({ text: MCP_COPY.projectNotInWorkspace, isError: true });
     expect((await listIn({ client, state: 'open' })).text).toContain('Stay');
     expect((await listIn({ client: await clientOfProject(foreignId), state: 'open' })).text).not.toContain('Stay');
+  });
+
+  test('a move whose first run stopped after the add finishes on a retry without a second copy', async () => {
+    const { client, projectId } = await connectedProject();
+    const siblingId = await seedSiblingProject({ projectId, name: 'Side' });
+    await addTitled({ client, title: 'Carry' });
+    const destination = env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(siblingId));
+    const stopped = await destination.addTasks({
+      actor: AGENT_ACTOR,
+      drafts: [{ title: 'Carry', notes: null, dueDate: null, idempotencyKey: `${MOVE_KEY_PREFIX}${projectId}:1` }],
+    });
+    expect(stopped.ok).toBe(true);
+    const moved = await callTool({ client, name: McpToolName.Move, args: { id: 'T-1', project: siblingId } });
+    expect(moved.isError).toBeUndefined();
+    expect((await listIn({ client, state: 'open' })).text).not.toContain('Carry');
+    expect((await listIn({ client: await clientOfProject(siblingId), state: 'open' })).text).toBe('Open tasks: 1 of 1\nT-1 Carry');
   });
 
   test('a missing task is not found and nothing is added to the destination', async () => {
