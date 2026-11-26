@@ -3,7 +3,7 @@
 - [x] 1. Red tests: `apps/api/test/waitlist-removed.test.ts`, `tools/repository-shape/src/waitlist-removed.test.ts` and the limiter list in `tools/repository-shape/src/api-source.test.ts`. (ecafc7d8)
 - [x] 2. Delete the join route, the waitlist store, the closed answer, the mails, their templates and copy, the Turnstile action, the limiter bindings, the constants and the email slots; regenerate the email templates. (77a11637)
 - [x] 3. The admin: no list, no export, no failed confirmations; `GET /admin` redirects to the metrics; `AdminNotice` moves to `admin-notice.ts`. (77a11637)
-- [x] 4. Migration `0013_drop_waitlist.sql`. (77a11637)
+- [x] 4. Migration `0014_drop_waitlist.sql`. (77a11637)
 - [x] 5. Renumber the limiter namespaces to `8604` to `8615`; the self-host guide and the READMEs. (77a11637)
 - [x] 6. Update the tests and the end-to-end specs that named the waitlist. (77a11637)
 - [x] 7. The deploy runbook (export step before the migration, the join check, the rollback bullets), the smoke walk and the runbooks index. (77a11637, 62c93f36)

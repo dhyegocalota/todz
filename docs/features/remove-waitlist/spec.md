@@ -28,7 +28,7 @@
 
 ### Data flow
 
-`/join` has no route, so the site dispatcher answers 404. `GET /admin` with a session answers 303 to `/admin/metrics`; without one it answers the sign-in card as before. Migration `0013_drop_waitlist.sql` drops the index and the table. The deploy runbook's step 6 writes `SELECT address, joined_at, confirmation_claimed_at, confirmation_failed_at FROM waitlist` as JSON to `~/Projects/todz/todz-loop/notes/waitlist-export-2026-11-26.json` before step 7 applies the migration.
+`/join` has no route, so the site dispatcher answers 404. `GET /admin` with a session answers 303 to `/admin/metrics`; without one it answers the sign-in card as before. Migration `0014_drop_waitlist.sql` drops the index and the table. The deploy runbook's step 6 writes `SELECT address, joined_at, confirmation_claimed_at, confirmation_failed_at FROM waitlist` as JSON to `~/Projects/todz/todz-loop/notes/waitlist-export-2026-11-26.json` before step 7 applies the migration.
 
 ### Interfaces
 
@@ -44,8 +44,8 @@ An export that does not match its count stops the deploy before the migration. A
 |----------|---------|----------------|------|
 | Keep the 410 on `/join`? | 410 or 404 | The loop's call: 404 ("it just 404s") | 2026-11-26 |
 | Where does the admin land? | metrics at `/admin` or a redirect | The loop's call: a redirect to `/admin/metrics` | 2026-11-26 |
-| The migration number | `0012` or `0013` | The loop's call: `0013`, because `fair-use` holds `0012` | 2026-11-26 |
+| The migration number | `0012` or `0014` | The lead assigned `0014`: `fair-use` holds `0012` and `signin-polish` `0013` | 2026-11-26 |
 
 ## Test strategy summary
 
-Red-first: the join route answers 404, the admin has no export and redirects to the metrics, migration 0013 leaves no waitlist table or index, the wrangler configuration holds no waitlist limiter, no current source, script, end-to-end test, doc or constant names the waitlist, and no test touches the dropped table. The cron dispatch, the metrics and the admin sign-in tests keep passing.
+Red-first: the join route answers 404, the admin has no export and redirects to the metrics, migration 0014 leaves no waitlist table or index, the wrangler configuration holds no waitlist limiter, no current source, script, end-to-end test, doc or constant names the waitlist, and no test touches the dropped table. The cron dispatch, the metrics and the admin sign-in tests keep passing.

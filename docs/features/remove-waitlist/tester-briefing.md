@@ -8,7 +8,7 @@ Written by the developer. The developer does not run `test-plan.md` and does not
 - `apps/api/src/site/admin-routes.ts`, `admin-answer.ts`, `admin-page.ts`, `admin-store.ts`, `admin-copy.ts`, `admin-paths.ts`, `admin-metrics.ts` — no list, no export, no failed confirmations; `GET /admin` redirects a signed-in owner to the metrics; `AdminNotice` lives in `admin-notice.ts`.
 - `apps/api/src/emails`, `apps/api/scripts/emails`, `email-slot.ts`, `generated/email-templates.ts` — the confirmation and digest mails and their slots are gone; the templates were regenerated.
 - `apps/api/wrangler.jsonc`, `src/env.ts`, `src/turnstile.ts`, `libs/types/src/constants.ts` — three limiters, their constants, the Turnstile action and the join cap are gone; the remaining limiters take `8604` to `8615`.
-- `apps/api/migrations/0013_drop_waitlist.sql` — drops the index and the table.
+- `apps/api/migrations/0014_drop_waitlist.sql` — drops the index and the table.
 - `docs/runbooks/deploy-the-api.md` step 6 — the one-time export before the migration; `production-smoke-walk.md` steps 6, 12, 13 and 16.
 - `docs/adr/0097-…`, the status lines of 0049, 0050, 0051, 0052, 0060, 0061, 0067, 0073 and the ADR index.
 
@@ -28,7 +28,7 @@ pnpm verify
 | `…::GET /admin sends a signed-in owner to the metrics` | `expected 200 to be 303` | the panel path redirects |
 | `…::GET /admin/export.csv answers 404 even with a session` | `expected 200 to be 404` | the export route is deleted |
 | `…::the metrics page keeps working and names no waitlist` | the page matched `/waitlist/` through its back link and title | the copy and the link are gone |
-| `…::the migration that drops the waitlist` | `no migration named 0013_drop_waitlist.sql` | the migration exists |
+| `…::the migration that drops the waitlist` | `no migration named 0014_drop_waitlist.sql` | the migration exists |
 | `tools/repository-shape/src/waitlist-removed.test.ts` | 22 failures: the files existed, the sources named the waitlist, the wrangler file held `WAITLIST_*` | the files are deleted and nothing names it |
 | `tools/repository-shape/src/api-source.test.ts::the wrangler configuration limits …` | the file still listed three waitlist limiters | the list is fifteen limiters |
 
@@ -42,6 +42,6 @@ pnpm verify
 ## Known gaps
 
 - The admin stylesheet still holds the table, badge and empty-card rules the list used; they match no element now. Left for a styling pass, because the page tests pin the stylesheet hash only through the whole string.
-- Migration `0013` is the number after `0011`; `fair-use` holds `0012`, so `main` has a gap until it lands.
+- Migration `0014` follows the numbers the lead assigned to `fair-use` (`0012`) and `signin-polish` (`0013`); `main` has a gap until they land.
 - The `fair-use` lane's links to "Top usage" from the admin panel will need a home on the metrics page: the panel is now a redirect.
 - Production was not touched: the loop's deploy runs the export and the migration.
