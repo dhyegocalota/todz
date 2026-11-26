@@ -147,7 +147,7 @@ describe('the self-host guide', () => {
   test('says the official app updates itself whatever its server, and links the install page updates', () => {
     const page = pageText(GUIDE_PAGE);
     expect(page).toContain('## App updates');
-    expect(page).toContain('[Install on Mac › Updates](/install-on-mac#4-updates)');
+    expect(page).toContain('[Install on Mac › Updates](https://docs.todz.app/install-on-mac#4-updates)');
     expect(pageText('install-on-mac')).toContain('## 4. Updates');
   });
 });
