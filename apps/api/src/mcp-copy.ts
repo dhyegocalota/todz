@@ -37,6 +37,8 @@ export enum McpOwnerToolName {
   CreateProject = 'create_project',
   RenameProject = 'rename_project',
   DeleteProject = 'delete_project',
+  Settings = 'settings',
+  UpdateSettings = 'update_settings',
 }
 
 export enum McpPromptName {
@@ -72,8 +74,14 @@ export const MCP_COPY = {
     [McpOwnerToolName.RenameProject]: 'Rename a project. The Inbox cannot be renamed.',
     [McpOwnerToolName.DeleteProject]:
       'Delete a project for good with its tasks and keys. Give its current name as confirm; nothing is deleted when it differs. The Inbox cannot be deleted.',
+    [McpOwnerToolName.Settings]: 'Show the account settings: time zone, agent nudge and day email.',
+    [McpOwnerToolName.UpdateSettings]: 'Change the account settings. Give only what changes.',
   } satisfies Record<McpOwnerToolName, string>,
   ownerFields: {
+    timeZone: 'Time zone name, like America/Sao_Paulo.',
+    agentNudge: 'Whether next adds a line about the tasks due today.',
+    dayEmail: 'Whether the day email is sent.',
+    dayEmailMinutes: 'Minutes after midnight, in your time zone, when the day email is sent: 0 to 1439.',
     workspace: 'Id of the workspace, from workspaces.',
     project: 'Id of the project, from workspaces.',
     name: `Name, up to ${NAME_MAX_LENGTH} characters.`,
@@ -162,6 +170,15 @@ export const MCP_COPY = {
   historyOwner: 'the owner',
   historyFields: (fields: string) => ` (${fields})`,
   historyNote: (note: string) => `: ${note}`,
+  settingsOn: 'on',
+  settingsOff: 'off',
+  timeZoneLine: (timeZone: string) => `Time zone: ${timeZone}`,
+  agentNudgeLine: (state: string) => `Agent nudge: ${state}`,
+  dayEmailOnLine: (time: string) => `Day email: on at ${time}`,
+  dayEmailOffLine: 'Day email: off',
+  settingsUpdated: 'Updated',
+  timeZoneInvalid: 'That is not a time zone name: use one like America/Sao_Paulo.',
+  nothingToUpdateSettings: 'Nothing to update: give a time zone, agent nudge, day email or day email minutes.',
   noWorkspaces: 'No workspaces.',
   workspaceCreated: ({ id, name, inboxId }: { id: string; name: string; inboxId: string }) =>
     `Created workspace ${id} ${name} with its Inbox ${inboxId}`,

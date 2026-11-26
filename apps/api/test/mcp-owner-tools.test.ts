@@ -42,7 +42,7 @@ function workspacesOf(client: Client) {
 }
 
 describe.each([ClientEra.Legacy, ClientEra.Modern])('the owner key, %s client', (era) => {
-  test('lists exactly the seven account tools and none of the project tools', async () => {
+  test('lists exactly the nine account tools and none of the project tools', async () => {
     const { client } = await connectedOwner(era);
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name).sort()).toEqual(Object.values(McpOwnerToolName).sort());
@@ -174,6 +174,67 @@ describe('the account tools', () => {
       text: MCP_COPY.workspacesLimit(OWNER_WORKSPACES_MAX),
       isError: true,
     });
+  });
+});
+
+describe('the settings tools', () => {
+  test('settings shows the time zone, the agent nudge and the day email of the owner of the key', async () => {
+    const ownerId = await seedOwner('Pacific/Kiritimati');
+    const client = await connectClient({ era: ClientEra.Modern, key: await seedOwnerKey({ ownerId }) });
+    const { text } = await callTool({ client, name: McpOwnerToolName.Settings, args: {} });
+    expect(text.split('\n')).toEqual(
+      expect.arrayContaining([
+        MCP_COPY.timeZoneLine('Pacific/Kiritimati'),
+        expect.stringMatching(/^Agent nudge: (on|off)$/),
+        expect.stringMatching(/^Day email: /),
+      ]),
+    );
+  });
+
+  test('update_settings changes only what is given, validates the time zone and shows the result', async () => {
+    const { client } = await connectedOwner();
+    const updated = await callTool({
+      client,
+      name: McpOwnerToolName.UpdateSettings,
+      args: { time_zone: 'America/Sao_Paulo', agent_nudge: false, day_email: true, day_email_minutes: 450 },
+    });
+    expect(updated).toEqual({
+      text: [
+        MCP_COPY.settingsUpdated,
+        MCP_COPY.timeZoneLine('America/Sao_Paulo'),
+        MCP_COPY.agentNudgeLine(MCP_COPY.settingsOff),
+        MCP_COPY.dayEmailOnLine('07:30'),
+      ].join('\n'),
+      isError: undefined,
+    });
+    const only = await callTool({ client, name: McpOwnerToolName.UpdateSettings, args: { day_email: false } });
+    expect(only.text.split('\n')).toEqual([
+      MCP_COPY.settingsUpdated,
+      MCP_COPY.timeZoneLine('America/Sao_Paulo'),
+      MCP_COPY.agentNudgeLine(MCP_COPY.settingsOff),
+      MCP_COPY.dayEmailOffLine,
+    ]);
+  });
+
+  test('a bad time zone, an empty call and minutes out of range change nothing', async () => {
+    const { client } = await connectedOwner();
+    expect(await callTool({ client, name: McpOwnerToolName.UpdateSettings, args: { time_zone: 'Mars/Base' } })).toEqual({
+      text: MCP_COPY.timeZoneInvalid,
+      isError: true,
+    });
+    expect(await callTool({ client, name: McpOwnerToolName.UpdateSettings, args: {} })).toEqual({
+      text: MCP_COPY.nothingToUpdateSettings,
+      isError: true,
+    });
+    expect((await callTool({ client, name: McpOwnerToolName.UpdateSettings, args: { day_email_minutes: 1440 } })).isError).toBe(true);
+  });
+
+  test('a key changes the settings of its own owner and no other', async () => {
+    const { client } = await connectedOwner();
+    const otherOwnerId = await seedOwner('Asia/Tokyo');
+    await callTool({ client, name: McpOwnerToolName.UpdateSettings, args: { time_zone: 'Europe/Lisbon' } });
+    const row = await env.DIRECTORY.prepare('SELECT time_zone FROM owners WHERE id = ?').bind(otherOwnerId).first<{ time_zone: string }>();
+    expect(row).toEqual({ time_zone: 'Asia/Tokyo' });
   });
 });
 
