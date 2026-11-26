@@ -7,6 +7,12 @@
 - [x] ADR 0098 and 0076 marked superseded, both indexes.
 - [x] Screenshots rendered offscreen, light and dark.
 - [x] `pnpm verify` foreground.
+- [x] Fix round: the store name is checked before the write commits and the throttle lives in the store's storage (red ebd39f16, green 90fe9fed); `deploy-worker.sh` refuses pending remote migrations (41916d9e); the calm banner, the loading phase and the required `lastActivityAt` (red 4d5df92c, green 6770cc88).
+
+## v1.1 (parked)
+
+- The stamp's directory statement runs inside the Durable Object, so the Worker-side statement counters and budgets do not see it (ADR 0098 Consequences).
+- The picker row says "Active just now" until it is redrawn; a `TimelineView` would keep it current.
 
 ## File map
 
