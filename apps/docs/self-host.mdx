@@ -87,7 +87,7 @@ The admin at `https://example.com/admin`, where you read and export the list of 
 pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
 ```
 
-New accounts are capped per network per day (see [Fair use](/fair-use)), and the cap keys each address with a secret. Generate it once and store it the same way; until you do, new accounts cannot sign up and existing ones still can:
+New accounts are capped per network per day (see [Fair use](https://docs.todz.app/fair-use)), and the cap keys each address with a secret. Generate it once and store it the same way; until you do, new accounts cannot sign up and existing ones still can:
 
 ```bash
 openssl rand -hex 32 | pnpm --filter @todz/api exec wrangler secret put SIGN_UP_KEY_SECRET

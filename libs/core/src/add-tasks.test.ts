@@ -9,7 +9,7 @@ import { CLOCK_NOW, captureViolation, fixedClock, itemAt, markTaskDone } from '.
 const SENTINEL = 'SENTINEL-CONTENT';
 const CLAUDE_CODE = 'Claude Code';
 const TITLE_LIMIT_OVERFLOW = 501;
-const NOTES_LIMIT_OVERFLOW = 10_241;
+const NOTES_LIMIT_OVERFLOW = 20_001;
 const KEY_LIMIT_OVERFLOW = 129;
 const SECOND_INSERT = 2;
 const FIRST_INDEX = 0;

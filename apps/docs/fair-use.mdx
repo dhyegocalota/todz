@@ -40,4 +40,4 @@ The counts are Worker variables. Leave one out to keep its default; set it to a 
 - `FAIR_USE_STORED_BYTES_MAX` (in bytes)
 - `FAIR_USE_SIGN_UPS_PER_CLIENT_DAY_MAX`
 
-The cap on new accounts also needs the secret `SIGN_UP_KEY_SECRET` (see [Server setup](/self-host)); without it, new accounts cannot sign up. A value that is not a positive whole number stops the server with an error that names the variable. Title and note sizes are fixed, because the app and the agent tools state them.
+The cap on new accounts also needs the secret `SIGN_UP_KEY_SECRET` (see [Server setup](/self-host#6-turnstile)); without it, new accounts cannot sign up. A value that is not a positive whole number stops the server with an error that names the variable. Title and note sizes are fixed, because the app and the agent tools state them.
