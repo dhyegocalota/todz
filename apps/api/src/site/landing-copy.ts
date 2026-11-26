@@ -7,6 +7,7 @@ import { MCP_URL } from './site-urls';
 
 const EXAMPLE_TASK_NUMBER = 12;
 const EXAMPLE_TASK_TITLE = 'Review PR';
+const SERVER_DEPLOY_SCRIPT = 'server:deploy';
 
 export const LANDING_COPY = {
   meta: {
@@ -51,7 +52,7 @@ export const LANDING_COPY = {
     cloud: {
       title: 'todz cloud',
       badge: 'Free',
-      body: 'Sign in with your email. Synced across your Macs and agents. Nothing to run.',
+      points: ['Sign in with your email.', 'Synced across your Macs and agents.', 'Nothing to run.'],
       cta: 'Download for Mac',
     },
     selfHost: {
@@ -59,6 +60,12 @@ export const LANDING_COPY = {
       badge: 'Open source',
       body: 'Run the server on your own Cloudflare account. Same app: switch the server in Settings.',
       cta: 'Server setup guide',
+      terminal: {
+        label: 'The deploy step of the self-host guide',
+        command: `pnpm --filter @todz/api ${SERVER_DEPLOY_SCRIPT}`,
+        ready: 'todz server ready: https://api.example.com',
+        next: '→ paste it in todz › Settings › Server',
+      },
     },
     note: 'The app is the same either way, and updates itself.',
   },
