@@ -35,7 +35,10 @@ const TRAILING_DOT_PATTERN = /\.$/;
 const LABEL_SEPARATOR = '.';
 
 export function isDisposableEmailAddress(address: string): boolean {
-  const domain = address.slice(address.lastIndexOf('@') + 1).toLowerCase().replace(TRAILING_DOT_PATTERN, '');
+  const domain = address
+    .slice(address.lastIndexOf('@') + 1)
+    .toLowerCase()
+    .replace(TRAILING_DOT_PATTERN, '');
   const labels = domain.split(LABEL_SEPARATOR);
   return labels.some((_label, index) => DISPOSABLE_EMAIL_DOMAINS.has(labels.slice(index).join(LABEL_SEPARATOR)));
 }

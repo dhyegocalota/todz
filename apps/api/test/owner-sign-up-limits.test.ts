@@ -1,6 +1,7 @@
 import { SIGN_UPS_PER_CLIENT_DAY_MAX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
+import { digestCredential } from '../src/credential-digest';
 import { findIdentityOwner, insertOwnerWithIdentity } from '../src/directory-owners';
 import { isDisposableEmailAddress } from '../src/disposable-email-domains';
 import { SignInProviderKind } from '../src/sign-in-provider';
@@ -14,6 +15,12 @@ const SERVICE_ORIGIN = 'https://api.todz.app/owner/sessions';
 function randomClientAddress(): string {
   const octet = () => String(Math.floor(Math.random() * 250) + 1);
   return `203.0.${octet()}.${octet()}`;
+}
+
+async function signUpKeyCount(): Promise<number> {
+  const row = await env.DIRECTORY.prepare('SELECT COUNT(*) AS keys FROM sign_up_usage').first<{ keys: number }>();
+  if (row === null) throw new Error('a count always answers');
+  return row.keys;
 }
 
 function signUpRequest(clientAddress: string): Request {
@@ -56,6 +63,37 @@ describe('the daily sign-up cap per client', () => {
       await attemptNewAccount({ clientAddress, subject: `fill.${crypto.randomUUID()}@example.com` });
     }
     expect(await attemptNewAccount({ clientAddress, subject: knownSubject })).toBeNull();
+  });
+
+  test('the stored client key is a keyed digest: not the digest of the address, and another secret makes another key', async () => {
+    const clientAddress = randomClientAddress();
+    const keysBefore = await signUpKeyCount();
+    await attemptNewAccount({ clientAddress, subject: `first.${crypto.randomUUID()}@example.com` });
+    await signUpRefusalOf({
+      request: signUpRequest(clientAddress),
+      env: { ...env, SIGN_UP_KEY_SECRET: 'another-secret' },
+      kind: SignInProviderKind.Email,
+      subject: `second.${crypto.randomUUID()}@example.com`,
+      now: NOW,
+    });
+    expect(await signUpKeyCount()).toBe(keysBefore + 2);
+    const unkeyed = await env.DIRECTORY.prepare('SELECT client_key FROM sign_up_usage WHERE client_key = ?')
+      .bind(await digestCredential(clientAddress))
+      .first();
+    expect(unkeyed).toBeNull();
+  });
+
+  test('a sign-up with no keying secret is refused as unavailable and counts nothing', async () => {
+    const keysBefore = await signUpKeyCount();
+    const response = await signUpRefusalOf({
+      request: signUpRequest(randomClientAddress()),
+      env: { ...env, SIGN_UP_KEY_SECRET: undefined },
+      kind: SignInProviderKind.Email,
+      subject: `nobody.${crypto.randomUUID()}@example.com`,
+      now: NOW,
+    });
+    expect(response?.status).toBe(503);
+    expect(await signUpKeyCount()).toBe(keysBefore);
   });
 
   test('a sign-up with no client address is refused as unavailable', async () => {

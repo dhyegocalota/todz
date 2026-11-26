@@ -26,6 +26,7 @@ export type Env = {
   REPOSITORY_API_ORIGIN?: string;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
+  SIGN_UP_KEY_SECRET?: string;
   TELEMETRY?: string;
   USAGE_LIMITER?: RateLimit;
   USAGE_INSTALL_LIMITER?: RateLimit;
