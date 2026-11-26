@@ -70,7 +70,8 @@ struct SettingsView: View {
                 LabeledContent {
                     Button(SettingsCopy.openFocusSettings, action: openFocusSettings)
                 } label: {
-                    detail(SettingsCopy.respectFocusHelper)
+                    Text(SettingsCopy.respectFocusHelper)
+                        .settingsDetail()
                 }
             }
         } header: {
@@ -160,11 +161,6 @@ struct SettingsView: View {
         } footer: {
             VersionLine()
         }
-    }
-
-    private func detail(_ text: String) -> some View {
-        Text(text)
-            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var agentNudge: Binding<Bool> {

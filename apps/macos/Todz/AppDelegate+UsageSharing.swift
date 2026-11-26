@@ -2,7 +2,6 @@ import AppKit
 import TodzKit
 
 private let successStatus = 204
-private let escapeKeyEquivalent = "\u{1b}"
 
 extension AppDelegate {
     @MainActor private static var isSendingUsage = false
@@ -37,11 +36,18 @@ extension AppDelegate {
         alert.messageText = UsageSharingCopy.askTitle
         alert.informativeText = UsageSharingCopy.askBody
         UsageSharingPrompt.buttonsInOrder.forEach { answer in
-            let button = alert.addButton(withTitle: UsageSharingCopy.title(of: answer))
-            if answer == UsageSharingPrompt.escapeAnswer { button.keyEquivalent = escapeKeyEquivalent }
+            alert.addButton(withTitle: UsageSharingCopy.title(of: answer))
         }
-        let responseIndex = alert.runModal().rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
-        usageSharingPreference.answer(isSharing: UsageSharingPrompt.answer(forButtonIndex: responseIndex) == .share)
+        let escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard UsageSharingPrompt.isEscape(keyCode: event.keyCode) else { return event }
+            MainActor.assumeIsolated { alert.buttons.first?.performClick(nil) }
+            return nil
+        }
+        let response = alert.runModal()
+        if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor) }
+        let responseIndex = response.rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
+        guard let answer = UsageSharingPrompt.answer(forButtonIndex: responseIndex) else { return }
+        usageSharingPreference.answer(isSharing: answer == .share)
     }
 
     private func sendDueUsageRollup() {

@@ -21,8 +21,8 @@ Settings is one long grouped form in a fixed 420-point window, its descriptions 
 | Option | Pros | Cons | Why not |
 |--------|------|------|---------|
 | One form of sections (chosen) | keeps the native grouped look, one scroll, no new window model | a long scroll on a small screen | smallest change that fixes the cut text and the cramped window |
-| Tabbed Settings | short panes | seven panes split across tabs, and a new layout for the owner to learn | more change than the report asks for |
-| Sidebar Settings | the most Apple-native for many panes | needs a split view inside the Settings scene | more change, and seven panes do not need a sidebar |
+| Tabbed Settings | short panes | six sections split across tabs, and a new layout for the owner to learn | more change than the report asks for |
+| Sidebar Settings | the most Apple-native for many panes | needs a split view inside the Settings scene | more change, and six sections do not need a sidebar |
 | Keep "Share" first and only relabel it | no code change in the prompt | the stray Return still opts the owner in | the owner asked for Not Now as the default |
 | Count only named projects, show "Inbox only" when empty | keeps the old meaning | a second copy and a second rule | the owner asked for a truthful count; the Inbox is a project |
 

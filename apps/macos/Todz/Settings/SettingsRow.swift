@@ -10,10 +10,11 @@ struct SettingsRow<Control: View>: View {
             VStack(alignment: .leading) {
                 Text(title)
                 Text(detail)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .settingsDetail()
             }
             Spacer(minLength: 0)
             control()
+                .accessibilityHint(detail)
         }
     }
 }

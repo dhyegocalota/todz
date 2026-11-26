@@ -25,7 +25,7 @@ struct ServerAddressForm: View {
                 cloudButton
             } label: {
                 Text(SettingsCopy.serverDetail)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .settingsDetail()
             }
             editor
         case .column:
@@ -70,6 +70,7 @@ struct ServerAddressForm: View {
     private var field: some View {
         TextField(SettingsCopy.serverAddressLabel, text: $text, prompt: Text(SettingsCopy.serverPlaceholder))
             .textFieldStyle(.roundedBorder)
+            .multilineTextAlignment(.leading)
             .labelsHidden()
             .autocorrectionDisabled()
             .focused($isFieldFocused)

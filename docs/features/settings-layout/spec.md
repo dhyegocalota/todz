@@ -29,7 +29,7 @@
 
 ## Design
 
-- **Sections.** One `Form` with a `Section` per group, each with a header. Settings already reads as a grouped list, so sections keep the native look; a sidebar would have needed a new window model for seven panes. The Workspaces and Workspace shortcuts sections keep their own views.
+- **Sections.** One `Form` with a `Section` per group, each with a header. Settings already reads as a grouped list, so sections keep the native look; a sidebar would have needed a new window model for six sections. The Workspaces and Workspace shortcuts sections keep their own views.
 - **Rows.** `SettingsRow` puts a title and a full-width detail on the left and the control on the right, top-aligned, so the switch sits on the first line of the title. Details wrap with `fixedSize(horizontal: false, vertical: true)`; no `lineLimit` remains in Settings.
 - **Window.** The scene uses a 520 by 640 default, a 460 by 420 minimum, and `.contentMinSize` resizability. The form no longer forces its own height.
 - **Grey pill.** The Server address field is the rounded text field with its label hidden. The row now shows a "Server address" label, so the field reads as a control.
