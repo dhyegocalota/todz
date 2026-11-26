@@ -33,7 +33,7 @@ import { HttpStatus } from './http-status';
 import { applyProjectSchema } from './project-schema';
 import { ProjectFailureKind, type ProjectResult, resultOf } from './project-result';
 import { type ActivityCounts, SqliteTaskStore } from './sqlite-task-store';
-import { isActivityWriteDue } from './workspace-activity';
+import { ACTIVITY_WRITTEN_AT_KEY, isActivityWriteDue } from './workspace-activity';
 
 export const CHANGE_PAGE_SIZE = 100;
 const NO_CHANGE_NUMBER = 0;
@@ -76,7 +76,6 @@ function trustedToday(today: string): CalendarDate {
 
 export class ProjectStore extends DurableObject<Env> {
   private readonly store: SqliteTaskStore;
-  private activityWrittenAt: number | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -156,23 +155,24 @@ export class ProjectStore extends DurableObject<Env> {
   }
 
   private runWrite<Value>(useCase: () => Value): ProjectResult<Value> {
+    const projectId = this.ctx.id.name;
+    if (projectId === undefined) throw new Error('the project store was opened without its project name');
     const changeNumberBefore = this.store.lastChangeNumber();
     const result = this.run(useCase);
     const hasMovedChangeNumber = result.ok && this.store.lastChangeNumber() !== changeNumberBefore;
     if (!hasMovedChangeNumber) return result;
     this.ctx.getWebSockets().forEach(sendChanged);
-    this.recordActivity();
+    this.recordActivity(projectId);
     return result;
   }
 
-  private recordActivity(): void {
+  private recordActivity(projectId: string): void {
     const now = SYSTEM_CLOCK.now();
-    if (!isActivityWriteDue({ writtenAt: this.activityWrittenAt, now })) return;
-    const projectId = this.ctx.id.name;
-    if (projectId === undefined) throw new Error('the project store was opened without its project name');
-    this.activityWrittenAt = now;
+    const writtenAt = this.ctx.storage.kv.get<number>(ACTIVITY_WRITTEN_AT_KEY);
+    if (!isActivityWriteDue({ writtenAt: writtenAt === undefined ? null : writtenAt, now })) return;
+    this.ctx.storage.kv.put(ACTIVITY_WRITTEN_AT_KEY, now);
     const write = touchWorkspaceActivity({ directory: this.env.DIRECTORY, projectId, now }).catch(() => {
-      this.activityWrittenAt = null;
+      this.ctx.storage.kv.delete(ACTIVITY_WRITTEN_AT_KEY);
     });
     this.ctx.waitUntil(write);
   }
