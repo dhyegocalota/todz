@@ -1,7 +1,5 @@
 import SwiftUI
 
-private let insertedScale = 0.92
-
 private struct TodzAnimationModifier<Value: Equatable>: ViewModifier {
     let token: MotionToken
     let value: Value
@@ -56,18 +54,6 @@ private struct TodzEntranceModifier: ViewModifier {
     }
 }
 
-private struct TodzInsertionModifier: ViewModifier {
-    @Environment(\.accessibilityReduceMotion) private var isReduceMotionOn
-
-    func body(content: Content) -> some View {
-        content.transition(isCrossfaded ? .opacity : .opacity.combined(with: .scale(scale: insertedScale)))
-    }
-
-    private var isCrossfaded: Bool {
-        MotionRule.token(.settle, isReduceMotionOn: isReduceMotionOn) == .crossfade
-    }
-}
-
 extension View {
     public func todzAnimation(_ token: MotionToken, value: some Equatable) -> some View {
         modifier(TodzAnimationModifier(token: token, value: value))
@@ -83,9 +69,5 @@ extension View {
 
     public func todzEntrance() -> some View {
         modifier(TodzEntranceModifier())
-    }
-
-    public func todzInsertion() -> some View {
-        modifier(TodzInsertionModifier())
     }
 }

@@ -22,7 +22,6 @@ struct TaskRows: View {
                         ForEach(section.tasks, id: \.key) { task in
                             TaskRow(task: task, item: item)
                                 .tag(task.key)
-                                .todzInsertion()
                         }
                         .onMove(perform: section.hasManualOrder ? { move(section: section, source: $0, offset: $1) } : nil)
                         ForEach(section.pendingTasks, id: \.idempotencyKey) { pendingTask in
