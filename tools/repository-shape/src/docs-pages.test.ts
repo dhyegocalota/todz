@@ -135,6 +135,21 @@ describe('the quickstart', () => {
     expect(anchors.length).toBeGreaterThan(0);
     expect(anchors.filter((anchor) => !slugs.includes(anchor))).toEqual([]);
   });
+
+  test('gets the app from the download, not a waitlist', () => {
+    const page = pageText(QUICKSTART_PAGE);
+    expect(page).toContain('[todz.app/download](https://todz.app/download)');
+    expect(page).not.toMatch(/coming soon/i);
+  });
+});
+
+describe('the self-host guide', () => {
+  test('says the official app updates itself whatever its server, and links the install page updates', () => {
+    const page = pageText(GUIDE_PAGE);
+    expect(page.indexOf('## App updates')).toBeGreaterThan(page.indexOf('wrangler secret delete TURNSTILE_SECRET_KEY'));
+    expect(page).toContain('[Install on Mac › Updates](https://docs.todz.app/install-on-mac#4-updates)');
+    expect(pageText('install-on-mac')).toContain('## 4. Updates');
+  });
 });
 
 describe('the install page', () => {
@@ -163,11 +178,11 @@ describe('the install page', () => {
     expect(REQUIRED_PHRASES.filter((phrase) => !page.includes(phrase))).toEqual([]);
   });
 
-  test('says the download exists only once todz.app shows the button, and points to the source build until then', () => {
+  test('says the download is live behind the button, and keeps the source build as the other way', () => {
     const page = pageText('install-on-mac');
-    expect(page).toContain('When todz.app shows **Download for Mac**');
-    expect(page).toContain('until then, build it from source (section 5)');
-    expect(page).not.toMatch(/^Download todz for Mac from /m);
+    expect(page).toContain('**Download for Mac** on todz.app leads to [todz.app/download](https://todz.app/download)');
+    expect(page).toContain('To build it yourself instead, see section 5.');
+    expect(page).not.toMatch(/until then|Once todz.app shows/);
   });
 
   test('no longer says the download is not there yet', () => {

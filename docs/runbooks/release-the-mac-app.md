@@ -133,3 +133,4 @@ Every command runs from the repository root, one command per call. Cloudflare ca
 
 | Date | Version | Build | Commit | SHA-256 |
 |------|---------|-------|--------|---------|
+| 2026-11-26 | 0.2.0 | 2063 | c4d3eb9 | `89544e285796233d7642a1682d91044368ca24c413196edf1efd73d86c9cca44` |
