@@ -13,7 +13,7 @@ describe('the site urls', () => {
     });
   });
 
-  test('the discovery paths are the seven files agents and crawlers look for', () => {
+  test('the discovery paths are the nine files agents and crawlers look for', () => {
     expect(Object.values(DiscoveryPath)).toEqual([
       '/robots.txt',
       '/sitemap.xml',
@@ -22,6 +22,8 @@ describe('the site urls', () => {
       '/site.webmanifest',
       '/.well-known/ard.json',
       '/.well-known/mcp/server-card.json',
+      '/.well-known/api-catalog',
+      '/index.md',
     ]);
   });
 });
