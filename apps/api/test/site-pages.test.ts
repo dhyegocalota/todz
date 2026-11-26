@@ -11,6 +11,8 @@ const OK_STATUS = 200;
 const STARS = 1234;
 const STARS_TEXT = '1.2k';
 const STAR_GLYPH = '★';
+const LINK_ARROW = '→';
+const SIGNATURE_DASH = '—';
 const LINKED_LINE_PIECES = [
   `${LANDING_COPY.signature.line} —`,
   'Free on todz cloud — or',
@@ -202,7 +204,7 @@ describe('the landing', () => {
 
   test('every word it shows or reads aloud comes from the copy module', async () => {
     const { html } = await landingPage();
-    const copy = [...copyStrings(LANDING_COPY), STARS_TEXT, STAR_GLYPH, ...LINKED_LINE_PIECES];
+    const copy = [...copyStrings(LANDING_COPY), STARS_TEXT, STAR_GLYPH, LINK_ARROW, SIGNATURE_DASH, ...LINKED_LINE_PIECES];
     const readable = [
       ...textNodes(html),
       ...captures({ html, pattern: READABLE_ATTRIBUTE_PATTERN }).map(decoded),

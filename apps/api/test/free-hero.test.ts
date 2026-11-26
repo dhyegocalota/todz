@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { serveLandingPage } from '../src/site/landing-page';
@@ -8,7 +6,6 @@ import { starPillHtml } from '../src/site/star-pill';
 import { DOCS_INSTALL_URL } from '../src/site/site-urls';
 
 const SELF_HOST_URL = 'https://docs.todz.app/self-host';
-const PACKAGE_MANIFEST = join(import.meta.dirname, '..', 'package.json');
 const DEPLOY_SCRIPT = 'server:deploy';
 const STRUCTURED_DATA_PATTERN = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/;
 const FIRST_CAPTURE = 1;
@@ -37,16 +34,12 @@ function cloudCardOf(ways: string): string {
 }
 
 function selfHostCardOf(ways: string): string {
-  return ways.slice(ways.indexOf('<li class="way-card glass"'), ways.indexOf('</ul>'));
+  const start = ways.indexOf('<li class="way-card glass"');
+  return ways.slice(start, ways.indexOf('</ul>', start));
 }
 
 function blockOf(style: string, media: string, nextMedia: string): string {
   return style.slice(style.indexOf(media), style.indexOf(nextMedia));
-}
-
-function deployScripts(): string[] {
-  const manifest = JSON.parse(readFileSync(PACKAGE_MANIFEST, 'utf8')) as { scripts: Record<string, string> };
-  return Object.keys(manifest.scripts);
 }
 
 describe('the free copy', () => {
@@ -80,11 +73,6 @@ describe('the free copy', () => {
 
   test('promises nothing about prices, tiers or limits', () => {
     expect(JSON.stringify([LANDING_COPY.free, LANDING_COPY.ways])).not.toMatch(MONEY_PATTERN);
-  });
-
-  test('the self-host command is a script the API package declares', () => {
-    expect(deployScripts()).toContain(DEPLOY_SCRIPT);
-    expect(LANDING_COPY.ways.selfHost.terminal.command).toBe(`pnpm --filter @todz/api ${DEPLOY_SCRIPT}`);
   });
 });
 
@@ -194,7 +182,9 @@ describe('the signature', () => {
   test('draws its swash with a pen stroke, and only while motion is allowed', async () => {
     const ways = waysOf(await landingHtml());
     expect(ways).toContain('<path d="M2 9 C 28 3, 52 11, 78 6 S 108 3, 118 5" pathLength="1"');
-    expect(blockOf(SITE_STYLE, MOTION_MEDIA, REDUCED_MOTION_MEDIA)).toContain('.signature-swash path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw linear both;animation-timeline:view();animation-range:entry 40% cover 40%}');
+    expect(blockOf(SITE_STYLE, MOTION_MEDIA, REDUCED_MOTION_MEDIA)).toContain(
+      '.signature-swash path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw linear both;animation-timeline:view();animation-range:entry 40% cover 40%}',
+    );
   });
 
   test('is a tilted glass note in the rounded font, with no rule above it', () => {

@@ -1,5 +1,7 @@
 # Design: the final panel of todz.app (`#ways`, "Get todz on your Mac.")
 
+**Decision: Option A**, chosen by the loop (ADR 0096 records the `--glow-mint` token; the owner may overturn it).
+
 Read: `apps/api/src/site/landing-page.ts` (`finalCallHtml`, `waysHtml`, `signatureHtml`, `downloadHtml`, `howItWorksHtml`), `landing-copy.ts`, `site-style.ts` (`SITE_STYLE`), `star-pill.ts`, `star-count-script.ts`, `repository-stars.ts`, `site-glyphs.ts`, `site-shell.ts` (footer pill), `apps/api/test/free-hero.test.ts` (the pins this redesign moves), `apps/docs/self-host.mdx` (step 4), `apps/api/package.json` (`server:deploy`), `docs/features/open-source-surfaces/design.md`, `docs/features/landing/design.md`.
 
 **Before screenshots: not taken.** This designer session had no Playwright MCP and no shell, so the live panel at https://todz.app could not be opened. The "today" description below comes from the source. The recorder must take these before the developer starts, at `.pr-media/landing-final-panel/design/`: `before-1280-light.png`, `before-1280-dark.png`, `before-390-light.png`, `before-390-dark.png`. Each one is a full-element screenshot of `#ways` plus the footer, with dark set through `emulateMedia({ colorScheme: 'dark' })`.
