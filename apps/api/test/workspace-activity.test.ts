@@ -1,4 +1,4 @@
-import { WORKSPACE_ACTIVITY_WRITE_INTERVAL_MS } from '@todz/types';
+import { PROJECT_OPEN_TASKS_MAX, WORKSPACE_ACTIVITY_WRITE_INTERVAL_MS } from '@todz/types';
 import { OWNER_ACTOR } from '@todz/core';
 import { runInDurableObject } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
@@ -102,7 +102,7 @@ describe('workspace last activity', () => {
     const stub = env.PROJECT_STORE.get(env.PROJECT_STORE.newUniqueId());
     const outcome = await runInDurableObject(stub, (instance) => {
       try {
-        instance.addTasks({ actor: OWNER_ACTOR, drafts: [draftOf('Nameless')] });
+        instance.addTasks({ actor: OWNER_ACTOR, drafts: [draftOf('Nameless')], openTasksMax: PROJECT_OPEN_TASKS_MAX });
       } catch (refusal) {
         const listed = instance.listTasks({ today: TODAY, filter: openTasksFilter() });
         return { message: String(refusal), committed: listed.ok ? listed.value.totalMatched : null };
