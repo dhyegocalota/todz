@@ -12,7 +12,7 @@ const DEPLOY_RUNBOOK = 'deploy-the-api.md';
 const DEPLOY_STEP = 8;
 const DEPLOY_WORKER_SCRIPT = 'scripts/deploy-worker.sh';
 const AGENT_EXCEPTION_SENTENCE =
-  "agents never run them, except `deploy-the-api`, the loop's steps of `mintlify-publish`, the loop's steps of `performance`, the loop's steps of `release-the-mac-app` and the loop's steps of `production-smoke-walk`";
+  "agents never run them, except `deploy-the-api`, the loop's steps of `mintlify-publish`, the loop's steps of `performance`, the loop's steps of `release-the-mac-app`, the loop's steps of `production-smoke-walk` and the loop's steps of `open-source`";
 const MINTLIFY_RUNBOOK = 'mintlify-publish.md';
 const PERFORMANCE_RUNBOOK = 'performance.md';
 const LOG_SHOW_WORDS = 'log show';

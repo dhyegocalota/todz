@@ -1,6 +1,6 @@
 # Multi workspace
 
-**Status:** Building
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡 (app-side only: a selection model, a union of projects, a widget snapshot field and a request field; no server, no schema, no deploy)
 **Owner approval:** approved 2026-11-26 by the owner's request, "posso selecionar múltiplos workspaces pra aparecer? … corre, paraleliza ao máximo", recorded in `todz-loop/PROMPT.md` "Workspaces, more"; product scope inherited from [docs/product/README.md](../../product/README.md).
 **ADRs:** [0080](../../adr/0080-the-workspace-picker-selects-several-workspaces-or-all-and-every-surface-shows-their-union-tagged-by-workspace.md)
