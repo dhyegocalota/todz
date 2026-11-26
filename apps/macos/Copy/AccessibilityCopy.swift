@@ -5,6 +5,7 @@ enum AccessibilityCopy {
     static let rowValueDone = "Done"
     static let refreshing = "Refreshing"
     static let addProject = "New Project"
+    static let addTask = "Add"
     static let rowOpensWindow = "Shows it in the todz window."
     static let disclosureCollapsed = "Collapsed"
     static let disclosureExpanded = "Expanded"
