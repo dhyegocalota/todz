@@ -313,6 +313,7 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
             sourceProjectId: scope.workspace.projectId,
             sourceProjectName: sourceProject.name,
             destination: sibling.project,
+            isDestinationListed: async () => (await scope.workspace.openSibling(destinationId)) !== null,
             actor,
             number,
           });

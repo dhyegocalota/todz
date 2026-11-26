@@ -2,6 +2,7 @@ import { RuleIssue } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { deleteTask } from './delete-task';
 import { InMemoryTaskStore } from './in-memory-task-store';
+import type { Task } from './task';
 import { CLOCK_NOW, captureNotFound, captureViolation, fixedClock, seedTasks } from './test-support';
 
 const LATER = CLOCK_NOW + 60_000;
@@ -10,8 +11,8 @@ const MISSING_NUMBER = 9;
 function setup() {
   const store = new InMemoryTaskStore();
   seedTasks({ store, count: 2 });
-  function remove({ number, confirmation }: { number: number; confirmation: string }) {
-    return deleteTask({ store, clock: fixedClock(LATER), number, confirmation });
+  function remove({ number, confirmation, unchangedFrom }: { number: number; confirmation: string; unchangedFrom?: Task }) {
+    return deleteTask({ store, clock: fixedClock(LATER), number, confirmation, unchangedFrom });
   }
   return { store, remove };
 }
@@ -37,6 +38,24 @@ describe('deleteTask', () => {
     expect(captureViolation(() => remove({ number: 1, confirmation: 'task 1' })).issue).toBe(RuleIssue.ConfirmationMismatch);
     expect(captureViolation(() => remove({ number: 1, confirmation: 'Task 2' })).issue).toBe(RuleIssue.ConfirmationMismatch);
     expect(captureViolation(() => remove({ number: 1, confirmation: '' })).issue).toBe(RuleIssue.ConfirmationMismatch);
+    expect(store.findTask(1)).not.toBeNull();
+    expect(store.removals).toEqual([]);
+  });
+
+  test('a task equal to the one it was read as is removed', () => {
+    const { store, remove } = setup();
+    const readAs = store.findTask(1);
+    if (readAs === null) throw new Error('T-1 should exist');
+    remove({ number: 1, confirmation: 'Task 1', unchangedFrom: readAs });
+    expect(store.findTask(1)).toBeNull();
+  });
+
+  test('a task edited since it was read is TaskChanged and removes nothing', () => {
+    const { store, remove } = setup();
+    const readAs = store.findTask(1);
+    if (readAs === null) throw new Error('T-1 should exist');
+    store.replaceTask({ ...readAs, notes: 'edited', updatedAt: readAs.updatedAt });
+    expect(captureViolation(() => remove({ number: 1, confirmation: 'Task 1', unchangedFrom: readAs })).issue).toBe(RuleIssue.TaskChanged);
     expect(store.findTask(1)).not.toBeNull();
     expect(store.removals).toEqual([]);
   });

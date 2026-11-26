@@ -1,4 +1,4 @@
-import { PROJECT_OPEN_TASKS_MAX, RuleIssue, TaskPlacement, TaskState } from '@todz/types';
+import { MILLISECONDS_PER_DAY, PROJECT_OPEN_TASKS_MAX, RuleIssue, TaskPlacement, TaskState } from '@todz/types';
 import { runInDurableObject } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
 import { ProjectFailureKind } from '../src/project-result';
@@ -119,6 +119,17 @@ describe('ProjectStore deleteTask', () => {
     unwrap(await stub.deleteTask({ number: 1, confirmation: 'Done one' }));
     const list = unwrap(await stub.listTasks({ today: TODAY, filter: { ...openTasksFilter(), state: TaskState.Done } }));
     expect(list.tasks).toEqual([]);
+  });
+});
+
+describe('ProjectStore countActivity', () => {
+  test('a tombstone counts as neither an added nor a completed task', async () => {
+    const stub = await projectWith({ titles: ['Keep', 'Finished then removed', 'Removed'] });
+    unwrap(await stub.completeTasks({ actor: AGENT_ACTOR, numbers: [2], note: null }));
+    unwrap(await stub.deleteTask({ number: 2, confirmation: 'Finished then removed' }));
+    unwrap(await stub.deleteTask({ number: 3, confirmation: 'Removed' }));
+    const counts = await stub.countActivity({ since: 0, until: Date.now() + MILLISECONDS_PER_DAY });
+    expect(counts).toMatchObject({ added: 1, completed: 0 });
   });
 });
 

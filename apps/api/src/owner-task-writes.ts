@@ -10,7 +10,7 @@ import { ownedProjectOf } from './owner-project';
 import { type SessionContext, parsedBody, routeParam } from './owner-request';
 import { RouteParam } from './owner-routes';
 import { fieldPatchOf } from './task-field-patch';
-import { fairUseRefusalResponse, reserveWrites, textBytesOf } from './owner-write-quota';
+import { refusalOf, textBytesOf } from './owner-write-quota';
 import { batchFailureOf, completionFailureOf, draftsFailureOf, fieldsFailureOf } from './write-rules';
 
 const TaskNumberSchema = z.number().int().positive();
@@ -37,13 +37,6 @@ function patchOf(body: z.output<typeof UpdateBodySchema>): TaskPatch {
 
 function taskNumberOf(context: SessionContext): number {
   return Number(routeParam({ context, name: RouteParam.Number }));
-}
-
-async function refusalOf({ context, writes, bytes }: { context: SessionContext; writes: number; bytes: number }): Promise<Response | null> {
-  const { env, owner, now } = context;
-  const refusal = await reserveWrites({ env, ownerId: owner.ownerId, now, writes, bytes });
-  if (refusal === null) return null;
-  return fairUseRefusalResponse({ refusal, limits: fairUseLimitsOf(env), now });
 }
 
 export async function addTasks(context: SessionContext): Promise<Response> {
