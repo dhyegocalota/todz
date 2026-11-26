@@ -24,7 +24,6 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 
 | Feature | Delivers | Status |
 |---------|----------|--------|
-| [`workspace-select`](workspace-select/) | On sign-in, an account with several workspaces and no remembered choice gets a picker of names and project counts; Settings and the Workspace menu list and switch them; last activity is v1.1 | Building |
 | [`task-core`](task-core/) | The task and project rules in `libs/core` behind ports, with their enums in `libs/types` | Shipped 2026-11-23 ([PR #3](https://github.com/dhyegocalota/todz/pull/3)) |
 | [`project-store`](project-store/) | The Worker, the D1 directory, one SQLite Durable Object per project, routing from a credential and the isolation suite | Shipped 2026-11-23 ([PR #4](https://github.com/dhyegocalota/todz/pull/4)) |
 | [`mcp-server`](mcp-server/) | MCP over Streamable HTTP on the Worker: keys, the five tools, the `next` prompt, compact text, both protocol eras | Shipped 2026-11-23 ([PR #5](https://github.com/dhyegocalota/todz/pull/5)) |
@@ -83,3 +82,5 @@ One row per folder, in the order the features ship; a row that turns `Shipped <d
 | [`smoke-walk`](smoke-walk/) | The production smoke walk as a runbook: the sign-in mail, the app, an MCP client, the menu bar and widget, the limits, the waitlist, the headers and the budgets, with a dated run log | Shipped 2026-11-25 ([PR #62](https://github.com/dhyegocalota/todz/pull/62)) |
 | [`owner-settings-refresh`](owner-settings-refresh/) | The app reads the owner's agent nudge and day email again when it becomes active and when Settings opens, and a read never overwrites a save | Shipped 2026-11-26 ([PR #64](https://github.com/dhyegocalota/todz/pull/64)) |
 | [`auto-update`](auto-update/) | The Mac app updates itself through Sparkle by default, behind a Settings switch; "Check for Updates…" and a quiet "Updated to x.y" note sit in the popover; the first release's gate is a local check on this Mac | Shipped 2026-11-26 ([PR #65](https://github.com/dhyegocalota/todz/pull/65)) |
+| [`motion`](motion/) | One motion token set in TodzKit, every effect under 350 ms: the check draws in with a mint sparkle, the popover blooms, sign-in fades in, the glance and day close enter, the widget counts transition, and Reduce Motion crossfades everything | Shipped 2026-11-26 ([PR #66](https://github.com/dhyegocalota/todz/pull/66)) |
+| [`workspace-select`](workspace-select/) | On sign-in, an account with several workspaces and no remembered choice gets a picker of names and project counts; Settings and the Workspace menu list and switch them; last activity is v1.1 | Building |
