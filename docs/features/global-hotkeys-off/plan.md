@@ -4,7 +4,7 @@ Steps are checked off by the developer as each commit lands. Red commits come fi
 
 ## Steps
 
-- [ ] 1. ADR 0086 and this folder (docs only, committed with the red tests).
+- [ ] 1. ADR 0091 and this folder (docs only, committed with the red tests).
 - [ ] 2. Red: `GlobalWorkspaceChordsTests`, `WorkspaceShortcutsPreferenceTests` (new cases), `GlobalChordPlanTests`, `SymbolicHotKeysTests`, `ChordModifiersTests` reference the new API and fail to compile.
 - [ ] 3. Green TodzKit: `WorkspaceAction` scopes, `GlobalWorkspaceChords` (rename), `ChordModifiers.canBeGlobal`, `GlobalChordPlan`, `SymbolicHotKeys`, preference default off and read-time filter.
 - [ ] 4. Green app: `WorkspaceHotKeys` returns refused actions, `WorkspaceShortcutController` uses the plan, `inAppChord` for the menu, Settings rows and in-use line, Copy strings.

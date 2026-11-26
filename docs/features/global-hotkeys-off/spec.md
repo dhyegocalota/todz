@@ -3,7 +3,7 @@
 **Status:** Building
 **Tier:** 🟡 (a default change, a second chord scope, a Settings change; no server, no schema, no deploy)
 **Owner approval:** approved by inheritance from [docs/product/README.md](../../product/README.md) (2026-11-23) and the owner's report of 2026-11-26: the global ⌃1…⌃9 hot keys steal Dia's profile switching system-wide.
-**ADRs:** [0086](../../adr/0086-global-workspace-hot-keys-are-off-by-default-and-take-control-option-command-digits-and-yield-to-a-chord-another-app-holds.md) (amends [0079](../../adr/0079-workspaces-switch-by-chord-with-carbon-hot-keys-and-a-stored-rebindable-binding-table.md))
+**ADRs:** [0091](../../adr/0091-global-workspace-hot-keys-are-off-by-default-and-take-control-option-command-digits-and-yield-to-a-chord-another-app-holds.md) (amends [0079](../../adr/0079-workspaces-switch-by-chord-with-carbon-hot-keys-and-a-stored-rebindable-binding-table.md))
 **Not changing:** the popover's ⌘1–⌘9, the workspace picker, the server, the selection model, the widgets
 
 ## Problem

@@ -1,4 +1,4 @@
-# 0086. Global workspace hot keys are off by default and take ⌃⌥⌘1…9, and a chord another app holds shows as in use
+# 0091. Global workspace hot keys are off by default and take ⌃⌥⌘1…9, and a chord another app holds shows as in use
 
 - Status: Accepted
 - Date: 2026-11-26
