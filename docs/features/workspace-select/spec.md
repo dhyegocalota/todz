@@ -1,6 +1,6 @@
 # Workspace select
 
-**Status:** Approved
+**Status:** Building
 **Tier:** 🟡 (a new app phase and a picker screen, a Settings list; no server, no schema, no deploy)
 **Owner approval:** approved 2026-11-26 by the owner's request to the loop, "workspace select para selecionar existentes da conta", recorded in `todz-loop/PROMPT.md` "Tonight's last three", item 2. The lead confirmed the scope on 2026-11-26: name and project count only, last activity as v1.1.
 **ADRs:** [0076](../../adr/0076-an-account-with-several-workspaces-and-no-remembered-choice-opens-a-picker-of-names-and-project-counts.md)
