@@ -41,6 +41,7 @@ extension AppModel {
         guard canChangeDayEmail, let lastEnabled = dayEmail, let lastMinutes = dayEmailMinutes, let savingSession = session else { return }
         change()
         isSavingDayEmail = true
+        dayEmailSavesStarted += 1
         isDayEmailNotSaved = false
         do {
             let saved = try await request(send)

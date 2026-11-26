@@ -132,6 +132,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)
+        .onAppear { Task { await model.refreshOwnerSettings() } }
         .onChange(of: model.agentNudgeNotice) { _, notice in announce(notice) }
         .onChange(of: model.dayEmailNotice) { _, notice in announce(notice) }
         .onDisappear {
