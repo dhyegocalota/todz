@@ -16,6 +16,7 @@ enum SettingsCopy {
     static let proactive = "Proactive"
     static let privacyAndUpdates = "Privacy & updates"
     static let workspaces = "Workspaces"
+    static let workspaceActions = "Workspace actions"
     static let focusQuietNow = "Quiet now, until this Focus ends."
     static let openFocusSettings = "Open Focus Settings"
     static let closeTheDay = "Close the day"
