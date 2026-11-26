@@ -17,12 +17,12 @@ The app's motion is ad hoc: some views animate with literal numbers, many do not
 - Reduce Motion everywhere: each token becomes a crossfade.
 - Signature moments:
   - Completing a task: the check draws in and a mint sparkle burst plays once, in the task list.
-  - Adding a task: its row springs in.
+  - Adding a task: its row springs in. (v1.1: List ignores the row transition, see known gaps)
   - The popover opens with a glass bloom.
   - Sign-in success: the signed-in window replaces the sign-in screen with a short reveal.
   - The day close and the morning glance enter with a bloom.
   - The widgets' counts use a content transition.
-  - List and sidebar: the sidebar item's title matches the list header's, so the header lands from the sidebar. (see known gaps: sidebar matched geometry)
+  - List and sidebar: the sidebar item's title flies into the list header. (v1.1: reverted in 56679e55, see known gaps)
 
 ## Non-goals
 
@@ -59,6 +59,8 @@ The app's motion is ad hoc: some views animate with literal numbers, many do not
 
 ## Known gaps
 
+- Adding a task does not spring in. The `List` ignores a row's `transition`, so the row insertion was removed (9f795c1a); an `onAppear` entrance would replay as cells are reused on scroll. Listed for v1.1.
+- The sidebar flight (matched geometry between the sidebar row and the list header) is reverted (56679e55): on the walked head the selected sidebar row lost its icon, title and count, and the header was empty on first launch. Listed for v1.1 with its fix.
 - The menu bar count does not roll, with or without the day temperature. The `MenuBarExtra` status item drops SwiftUI animation (ADR 0065), so the roll is listed for v1.1.
 - The sign-in success reveal crossfades the whole screen (`AppPhase` change); the brand logo itself does not get its own reveal.
 - The check is a trimmed path drawn over an accent disc (`SF Symbols` `drawOn` needs macOS 15, and the target is 14), so the done glyph is drawn, not the system's `checkmark.circle.fill`.

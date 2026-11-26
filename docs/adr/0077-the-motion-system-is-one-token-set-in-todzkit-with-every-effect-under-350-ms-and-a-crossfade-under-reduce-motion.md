@@ -14,7 +14,7 @@ The app has motion in three places, each with its own numbers: the ribbon's fold
 1. One token set, `MotionToken` in TodzKit, shared by the app and the widget extension: `snap`, `settle`, `bloom`, `reveal`, `draw`, `sparkle` and `crossfade`. Each has a curve (a spring with a response and damping, or an ease-out) and a duration in milliseconds. The SwiftUI `Animation` is read from the token in TodzKit, so no view picks its own numbers.
 2. Every effect lasts at most `MotionTiming.ceilingMilliseconds`, 350 ms. This is a token rule: a unit test fails when a token's duration is above it, so a new token cannot exceed it without the test and this ADR changing.
 3. Reduce Motion is decided by `MotionRule.token(_:isReduceMotionOn:)` in TodzKit: with Reduce Motion on, every token becomes `crossfade`, so no spring, scale or offset plays. The view modifiers read `accessibilityReduceMotion` and pass it through this rule; no view checks the setting itself.
-4. The modifiers live in TodzKit (`TodzMotion.swift`): `todzAnimation(_:value:)`, `todzCountTransition()`, `todzBloom(trigger:)`, `todzEntrance()` and `todzInsertion()`. The app and the widgets use the same modifiers. The popover's bloom rests fully visible and dims only while it enters (`MotionBloom`).
+4. The modifiers live in TodzKit (`TodzMotion.swift`): `todzAnimation(_:value:)`, `todzCountTransition()`, `todzBloom(trigger:)`, `todzEntrance()`. The app and the widgets use the same modifiers. The popover's bloom rests fully visible and dims only while it enters (`MotionBloom`).
 5. The task completion burst is six mint dots at `#8CF7D0`, the logo's sparkle colour, and it appears only in the app's task list, never in the widgets. The mint is the only new colour.
 6. The menu bar count does not roll. The `MenuBarExtra` label is a status-item title and image, and ADR 0065's spike found the status item drops SwiftUI animation, so the count changes at once. The roll is listed for a later version; the widgets keep their content transitions.
 
@@ -32,6 +32,7 @@ The app has motion in three places, each with its own numbers: the ribbon's fold
 - Each new animated surface picks a token; a new timing is a new token and passes the ceiling test.
 - Under Reduce Motion the app still changes what it shows, through a crossfade, so no information is lost.
 - The widgets keep their content transitions, now through the shared `todzCountTransition` modifier, so Reduce Motion crossfades them too. They play only when the system animates a widget, so they cost nothing on the timeline.
+- Not shipped in this version, listed for v1.1: a new task springing in (the `List` ignores a row's transition) and the sidebar title flying into the list header (reverted after the walk showed the sidebar row blank). Both need a list-level approach before they return.
 - Supersedes nothing; the ribbon's own fold timing stays in `RibbonMotion` (ADR 0071) because its tests pin it.
 
 ## Evidence

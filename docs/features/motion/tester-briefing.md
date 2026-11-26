@@ -6,9 +6,9 @@ Written by the developer when its steps are done. The developer does not run `te
 
 - `apps/macos/TodzKit/Sources/TodzKit/MotionToken.swift` — the seven tokens (`snap`, `settle`, `bloom`, `reveal`, `draw`, `sparkle`, `crossfade`) with their durations and curves, and the 350 ms ceiling.
 - `apps/macos/TodzKit/Sources/TodzKit/MotionRule.swift` — Reduce Motion turns every token into `crossfade`.
-- `apps/macos/TodzKit/Sources/TodzKit/MotionToken+Animation.swift`, `TodzMotion.swift` — the SwiftUI animations and the modifiers `todzAnimation`, `todzCountTransition`, `todzBloom`, `todzEntrance`, `todzInsertion`. Shared with the widgets.
+- `apps/macos/TodzKit/Sources/TodzKit/MotionToken+Animation.swift`, `TodzMotion.swift` — the SwiftUI animations and the modifiers `todzAnimation`, `todzCountTransition`, `todzBloom`, `todzEntrance`. Shared with the widgets.
 - `apps/macos/Todz/Shared/TaskCheckbox.swift`, `CheckmarkMark.swift`, `SparkleBurst.swift` — the check is a trimmed path drawn over an accent disc on completion; six mint dots burst once. Undo clears at once.
-- `apps/macos/Todz/MainWindow/TaskList/TaskRows.swift` — rows spring in when the shown tasks change.
+- `apps/macos/Todz/MainWindow/TaskList/TaskRows.swift` — the list animates when the shown tasks change. The row spring-in was removed (v1.1).
 - `apps/macos/Todz/MenuBar/MenuBarLabel.swift` — the count roll was removed: the status item drops SwiftUI animation (see gaps).
 - `apps/macos/Todz/MenuBar/MenuBarPopover.swift` — the popover blooms on each show.
 - `apps/macos/Todz/RootView.swift` — the screen change on sign-in is a reveal.
@@ -35,7 +35,6 @@ Debug app against a local `wrangler dev` Worker, as in `docs/features/menu-bar-o
 
 - Completing a task with the space key or the checkbox plays the draw and the burst once; undo clears without a burst.
 - A rapid complete then undo then complete does not leave a stuck burst (the burst is keyed to the done state, reset on undo).
-- Adding a task (a new row in the open section) springs in; a moved row does not spring in again on every reorder beyond the settle.
 - The popover bloom replays on each open and does not break the focus on the add field.
 - With Reduce Motion on, no row scales, no burst appears and the count changes by crossfade.
 - The day temperature image count is unchanged: no roll, same text.
@@ -44,6 +43,8 @@ Debug app against a local `wrangler dev` Worker, as in `docs/features/menu-bar-o
 ## Known gaps
 
 - The menu bar count does not roll (the status item drops SwiftUI animation, ADR 0065); listed for v1.1.
+- Adding a task does not spring in (List ignores the row transition); listed for v1.1.
+- The sidebar flight is reverted (56679e55); listed for v1.1.
 - `MotionTokenTests::theCeilingIs350Milliseconds` is a pin: it passes at the red commit, so it guards the number rather than new behaviour.
 - The sign-in reveal fades the screen; the logo has no own reveal.
 - The GIF for the PR and the README is recorded later.
