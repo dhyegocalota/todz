@@ -1,5 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
-import { readRepositoryFile } from './repository-files';
+import { readRepositoryFile, repositoryPath } from './repository-files';
 
 const MACOS_PROJECT = 'apps/macos/project.yml';
 const APP_ENTITLEMENTS = 'apps/macos/Todz/Todz.entitlements';
@@ -30,6 +31,17 @@ const FIRST_VERSION_PATTERN = /^first_version="([^"]+)"$/m;
 const MINIMUM_APP_VERSION_PATTERN = /MINIMUM_APP_VERSION = '([^']+)'/;
 const MARKETING_VERSION_PATTERN = /MARKETING_VERSION: "([^"]+)"/g;
 const ONE_DAY_SECONDS = '86400';
+const DISK_IMAGE_LAYOUT = 'apps/macos/release/dmg-layout.dsstore';
+const ICON_VIEW_KEYS_FINDER_REQUIRES = [
+  'backgroundType',
+  'backgroundImageAlias',
+  'backgroundColorRed',
+  'backgroundColorGreen',
+  'backgroundColorBlue',
+  'iconSize',
+  'textSize',
+  'axTextSize',
+];
 
 function section({ text, from, until }: { text: string; from: string; until: string }): string {
   return text.slice(text.indexOf(from), text.indexOf(until));
@@ -154,5 +166,12 @@ describe('the macOS release settings', () => {
   test('the generated Info.plist carries the update keys', () => {
     const plist = readRepositoryFile(APP_INFO_PLIST);
     expect(plist).toMatch(/<key>SUFeedURL<\/key>\s*<string>\$\(TODZ_UPDATE_FEED_URL\)<\/string>/);
+  });
+});
+
+describe('the disk image layout', () => {
+  test('the icon view record carries every key Finder needs to honour the background picture', () => {
+    const layout = readFileSync(repositoryPath(DISK_IMAGE_LAYOUT));
+    ICON_VIEW_KEYS_FINDER_REQUIRES.forEach((key) => expect(layout.includes(key)).toBe(true));
   });
 });
