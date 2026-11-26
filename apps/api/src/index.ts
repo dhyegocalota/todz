@@ -19,6 +19,7 @@ import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
 import { SELF_HOST_PATH, redirectToDocs } from './site/self-host-redirect';
 import { serveSite } from './site/site-endpoint';
 import { DiscoveryPath, SERVER_CARD_PATH } from './site/site-urls';
+import { USAGE_PATH, serveUsageRollup } from './telemetry/usage-rollup';
 
 export { ProjectStore } from './project-store';
 
@@ -36,6 +37,7 @@ const ROUTE_OF_PATH: Record<string, Route> = {
   [DAY_EMAIL_STOP_PATH]: ({ request, env }) => dayEmailStopResponse({ request, env }),
   [SIGN_IN_PAGE_PATH]: ({ request, env }) => serveSignInPage({ request, env }),
   [SIGN_IN_CHALLENGE_PAGE_PATH]: ({ request, env }) => serveSignInChallengePage({ request, env }),
+  [USAGE_PATH]: ({ request, env }) => serveUsageRollup({ request, env }),
 };
 
 function isOwnerPath(pathname: string): boolean {

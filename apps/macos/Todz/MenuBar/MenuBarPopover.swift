@@ -35,6 +35,7 @@ struct MenuBarPopover: View {
     private func showPopover() {
         bloomCount += 1
         panel.onShown?()
+        panel.onOpened?()
         dayClose.popoverShown()
         morningGlance.popoverShown()
         ribbon.end()
