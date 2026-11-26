@@ -6,6 +6,7 @@ export enum WriteRefusal {
   Suspended = 'suspended',
   DailyWrites = 'daily_writes',
   StoredBytes = 'stored_bytes',
+  CloudAtCapacity = 'cloud_at_capacity',
 }
 
 export type OwnerUsageRow = { owner_id: string; writes: number; bytes: number; suspended_at: number | null; email: string | null };

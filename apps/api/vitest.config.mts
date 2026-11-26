@@ -41,6 +41,7 @@ export default defineConfig(async () => {
                   TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY,
                   TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET_KEY,
                   SIGN_UP_KEY_SECRET: SIGN_UP_TEST_KEY_SECRET,
+                  CLOUD_ACCOUNTS_MAX: '',
                 },
               },
             }),

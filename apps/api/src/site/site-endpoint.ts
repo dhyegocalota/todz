@@ -11,7 +11,9 @@ import { serveLandingPage } from './landing-page';
 import { repositoryStarsOf } from './repository-stars';
 import { SELF_HOST_PATH, redirectToDocs } from './self-host-redirect';
 import { REPOSITORY_API_URL, REPOSITORY_STARS_CACHE_NAME } from './site-constants';
+import { serveCloudQueueJoin, serveCloudQueuePage } from './cloud-queue-form';
 import { DISCOVERY_FILES } from './site-discovery';
+import { CLOUD_QUEUE_PATH } from './site-urls';
 import { LANDING_PATH } from './site-shell';
 
 export type SiteContext = { request: Request; env: Env; executionContext: ExecutionContext };
@@ -62,6 +64,9 @@ const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
   [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: serveLanding,
   [routeKey({ method: HttpMethod.Get, pathname: APPCAST_PATH })]: serveAppcast,
   [routeKey({ method: HttpMethod.Head, pathname: APPCAST_PATH })]: serveAppcast,
+  [routeKey({ method: HttpMethod.Get, pathname: CLOUD_QUEUE_PATH })]: serveCloudQueuePage,
+  [routeKey({ method: HttpMethod.Head, pathname: CLOUD_QUEUE_PATH })]: serveCloudQueuePage,
+  [routeKey({ method: HttpMethod.Post, pathname: CLOUD_QUEUE_PATH })]: serveCloudQueueJoin,
   [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: redirectToDocs,
   [routeKey({ method: HttpMethod.Head, pathname: SELF_HOST_PATH })]: redirectToDocs,
 };

@@ -70,7 +70,7 @@ export const DISCOVERY_COPY = {
     'todz is a native Mac to-do list that people and their AI agents share: Claude Code, Codex and Cursor read, add and finish tasks over MCP.',
   status: 'todz is out for macOS 14 or later: the app is not yet notarized by Apple.',
   download: `Download todz for Mac at ${DOWNLOAD_URL}. The app updates itself.`,
-  pricing: 'todz is free on todz cloud, or self-host.',
+  pricing: 'todz is free on todz cloud, or self-host. Free todz cloud spots are extremely limited; self-hosting is always open.',
   publisher: `todz is a product of ${COMPANY.tradeName}, made in Brazil.`,
   source: `todz is open source under the ${REPOSITORY.licenseName} license: ${REPOSITORY.url}`,
   connect: {

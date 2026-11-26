@@ -3,6 +3,8 @@ import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { siteKeyOf } from '../turnstile-page';
 import { adminCardAnswerOf, adminClosedAnswerOf, adminPageAnswerOf, adminRedirectAnswerOf } from './admin-answer';
+import { serveAdminCloudAdmissions } from './admin-cloud-admissions';
+import { serveAdminCloudQueue } from './admin-cloud-queue';
 import { serveAdminLinkPage } from './admin-link-page';
 import { serveAdminMetrics, serveAdminMetricsExport } from './admin-metrics';
 import { AdminNotice } from './admin-notice';
@@ -59,6 +61,9 @@ export const ADMIN_ROUTES: AdminRoute[] = [
   { method: HttpMethod.Get, path: AdminPath.MetricsExport, route: serveAdminMetricsExport },
   { method: HttpMethod.Get, path: AdminPath.Usage, route: serveAdminUsage },
   { method: HttpMethod.Head, path: AdminPath.Usage, route: serveAdminUsage },
+  { method: HttpMethod.Get, path: AdminPath.CloudQueue, route: serveAdminCloudQueue },
+  { method: HttpMethod.Head, path: AdminPath.CloudQueue, route: serveAdminCloudQueue },
+  { method: HttpMethod.Post, path: AdminPath.CloudAdmissions, route: serveAdminCloudAdmissions },
   { method: HttpMethod.Post, path: AdminPath.Suspensions, route: serveAdminSuspension },
   { method: HttpMethod.Post, path: AdminPath.StoredTextResets, route: serveAdminStoredTextReset },
   { method: HttpMethod.Post, path: AdminPath.SignInLinks, route: serveAdminSignInLink },

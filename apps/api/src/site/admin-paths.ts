@@ -11,6 +11,8 @@ export enum AdminPath {
   Usage = '/admin/usage',
   Suspensions = '/admin/suspensions',
   StoredTextResets = '/admin/stored-text-resets',
+  CloudQueue = '/admin/cloud-queue',
+  CloudAdmissions = '/admin/cloud-queue/admissions',
 }
 
 export enum AdminField {
@@ -18,6 +20,13 @@ export enum AdminField {
   Token = 'token',
   Owner = 'owner',
   Choice = 'choice',
+  Count = 'count',
+}
+
+export const ADMIN_NOTICE_PARAMETER = 'notice';
+
+export enum CloudQueueAdminNotice {
+  NoRoom = 'no-room',
 }
 
 export const ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES = 15;

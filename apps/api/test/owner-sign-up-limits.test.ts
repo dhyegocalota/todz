@@ -63,6 +63,7 @@ describe('the daily sign-up cap per client', () => {
       subject: knownSubject,
       timeZone: 'UTC',
       now: NOW,
+      cap: null,
     });
     for (let index = 0; index < SIGN_UPS_PER_CLIENT_DAY_MAX; index += 1) {
       await attemptNewAccount({ clientAddress, subject: `fill.${crypto.randomUUID()}@example.com` });

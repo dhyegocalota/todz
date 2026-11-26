@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { digestCredential } from '../credential-digest';
 import { generateCredentialSecret } from '../credential-secret';
+import { mailMeterOf } from '../cloud-mail-meter';
 import { normalizedAddress } from '../email-address';
 import { type EmailSender, emailSenderOf } from '../email-sender';
 import { adminSignInMail } from '../emails/admin-sign-in-mail';
@@ -63,7 +64,13 @@ function adminLinkGuardOf({ request, env }: { request: Request; env: Env }): Adm
   if (secret === undefined) return null;
   if (siteKeyOf(env) === null) return null;
   if (isAdminUnguarded({ request, env, limits: Object.values(AdminLimit) })) return null;
-  const sender = emailSenderOf({ configured: env.EMAIL_SENDER, publicOrigin: siteOrigin, requestUrl: request.url, binding: env.EMAIL });
+  const sender = emailSenderOf({
+    configured: env.EMAIL_SENDER,
+    publicOrigin: siteOrigin,
+    requestUrl: request.url,
+    binding: env.EMAIL,
+    meter: mailMeterOf(env),
+  });
   if (sender === null) return null;
   return { adminEmail, siteOrigin, secret, sender };
 }

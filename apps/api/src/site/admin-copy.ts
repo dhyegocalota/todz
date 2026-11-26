@@ -68,6 +68,17 @@ export const ADMIN_COPY = {
       [Metric.UsageEvents]: 'Shared usage events',
     } satisfies Record<Metric, string>,
   },
+  cloudQueue: {
+    title: 'Cloud queue',
+    link: 'Cloud queue',
+    back: 'Metrics',
+    columns: { address: 'Address', joined: 'Joined', action: 'Action' },
+    admit: 'Admit',
+    admitNext: 'Admit next',
+    admitNextLabel: 'How many',
+    empty: 'Nobody is waiting for a spot.',
+    noRoom: 'No free spots.',
+  },
   usage: {
     title: 'Top usage',
     link: 'Usage',
