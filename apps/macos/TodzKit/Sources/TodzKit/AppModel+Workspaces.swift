@@ -18,7 +18,12 @@ extension AppModel {
         await activate(workspace)
     }
 
-    public func chooseWorkspace(identifier: String) async {}
+    public func chooseWorkspace(identifier: String) async {
+        guard phase == .choosing else { return }
+        guard let workspace = workspaces.first(where: { $0.identifier == identifier }) else { return }
+        phase = .ready
+        await activate(workspace)
+    }
 
     public func switchWorkspace(number: Int) async {
         guard let workspace = WorkspaceShortcuts.workspace(number: number, in: workspaces) else { return }
@@ -100,7 +105,7 @@ extension AppModel {
         keepOwner()
         startSending()
         guard let workspace = preferredWorkspace else {
-            phase = .naming
+            phase = workspaces.isEmpty ? .naming : .choosing
             return
         }
         phase = .ready
@@ -108,8 +113,14 @@ extension AppModel {
     }
 
     private var preferredWorkspace: Workspace? {
-        guard let activeWorkspace else { return workspaces.first }
+        guard let activeWorkspace else { return soleWorkspace }
         return activeWorkspace
+    }
+
+    private var soleWorkspace: Workspace? {
+        let isSole = workspaces.count == 1
+        guard isSole else { return nil }
+        return workspaces.first
     }
 
     private func activate(_ workspace: Workspace) async {
