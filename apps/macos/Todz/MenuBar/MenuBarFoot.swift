@@ -6,7 +6,7 @@ private let fewestWorkspacesToSwitch = 2
 struct MenuBarFoot: View {
     let doneCount: Int
     @Environment(AppModel.self) private var model
-    @Environment(\.appUpdater) private var appUpdater
+    @Environment(AppUpdater.self) private var appUpdater: AppUpdater?
 
     var body: some View {
         let isOffline = model.syncStatus != .online

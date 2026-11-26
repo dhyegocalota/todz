@@ -6,7 +6,7 @@ import Testing
     @Test func aFirstLaunchRecordsTheVersionAndShowsNoNote() throws {
         let defaults = try emptyDefaults()
         #expect(UpdateNote.recordLaunch(ofVersion: "0.2.0", defaults: defaults) == nil)
-        #expect(defaults.string(forKey: UpdateNote.lastLaunchedVersionKey) == "0.2.0")
+        #expect(defaults.string(forKey: UpdateNote.lastLaunchedVersionStorageKey) == "0.2.0")
     }
 
     @Test func aTappedNoteDoesNotComeBackOnRelaunch() throws {

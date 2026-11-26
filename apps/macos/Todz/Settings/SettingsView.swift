@@ -10,7 +10,7 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(ProactiveGate.self) private var gate
     @Environment(\.openURL) private var openURL
-    @Environment(\.appUpdater) private var appUpdater
+    @Environment(AppUpdater.self) private var appUpdater: AppUpdater?
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
     @AppStorage(MenuBarOnlyPreference.isOnStorageKey) private var isMenuBarOnlyOn = MenuBarOnlyPreference.isOnByDefault
     @AppStorage(DayClosePreference.isOnStorageKey) private var isDayCloseOn = DayClosePreference.isOnByDefault
