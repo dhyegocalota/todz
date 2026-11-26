@@ -49,8 +49,8 @@ private let cacheFolderName = "Cache"
         closePopover: { [panel] in panel.close() }
     )
     private(set) lazy var workspaceShortcuts = WorkspaceShortcutController(
-        preference: WorkspaceShortcutsPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
-        onAction: { [model] action in Task { await model.switchWorkspace(action: action) } }
+        model: model,
+        preference: WorkspaceShortcutsPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
     private(set) lazy var dayTemperatureClock = DayTemperatureClock(
@@ -133,6 +133,7 @@ private let cacheFolderName = "Cache"
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        workspaceShortcuts.stop()
         model.flushCache()
     }
 

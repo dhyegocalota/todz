@@ -25,7 +25,7 @@ private func hotKeyPressed(_: EventHandlerCallRef?, event: EventRef?, userData: 
         nil,
         &hotKeyIdentifier
     )
-    guard status == noErr else { return status }
+    guard status == noErr, hotKeyIdentifier.signature == hotKeySignature else { return status }
     let pressedIdentifier = hotKeyIdentifier.id
     let hotKeys = Unmanaged<WorkspaceHotKeys>.fromOpaque(userData).takeUnretainedValue()
     Task { @MainActor in hotKeys.press(identifier: pressedIdentifier) }
@@ -36,16 +36,24 @@ private func hotKeyPressed(_: EventHandlerCallRef?, event: EventRef?, userData: 
 @MainActor final class WorkspaceHotKeys {
     private let onAction: (WorkspaceAction) -> Void
     private var registrations: [EventHotKeyRef] = []
-    private var handler: EventHandlerRef?
+    private nonisolated(unsafe) var handler: EventHandlerRef?
+    private var isHandling = false
 
     init(onAction: @escaping (WorkspaceAction) -> Void) {
         self.onAction = onAction
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
-        InstallEventHandler(GetApplicationEventTarget(), hotKeyPressed, 1, &eventType, Unmanaged.passUnretained(self).toOpaque(), &handler)
+        let status = InstallEventHandler(GetApplicationEventTarget(), hotKeyPressed, 1, &eventType, Unmanaged.passUnretained(self).toOpaque(), &handler)
+        isHandling = status == noErr
+    }
+
+    deinit {
+        guard let handler else { return }
+        RemoveEventHandler(handler)
     }
 
     func register(_ bindings: WorkspaceBindings) {
         unregister()
+        guard isHandling else { return }
         registrations = WorkspaceAction.all.enumerated().compactMap { offset, action in
             guard let chord = bindings.chord(for: action) else { return nil }
             return registration(identifier: offset + 1, chord: chord)

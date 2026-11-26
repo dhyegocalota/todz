@@ -3,22 +3,34 @@ import TodzKit
 
 @MainActor @Observable final class WorkspaceShortcutController {
     private(set) var bindings: WorkspaceBindings
+    private let model: AppModel
     private let preference: WorkspaceShortcutsPreference
     private let hotKeys: WorkspaceHotKeys
 
-    init(preference: WorkspaceShortcutsPreference, onAction: @escaping (WorkspaceAction) -> Void) {
+    init(model: AppModel, preference: WorkspaceShortcutsPreference) {
+        self.model = model
         self.preference = preference
         bindings = preference.bindings
-        hotKeys = WorkspaceHotKeys(onAction: onAction)
+        hotKeys = WorkspaceHotKeys(onAction: { action in Task { await model.switchWorkspace(action: action) } })
     }
 
     func start() {
         registerHotKeys()
+        observeEligibility()
+    }
+
+    func stop() {
+        hotKeys.unregister()
     }
 
     func registerHotKeys() {
-        guard preference.isGlobalOn else { return hotKeys.unregister() }
+        let isEligible = WorkspaceShortcuts.shouldRegister(phase: model.phase, workspaceCount: model.workspaces.count, isGlobalOn: preference.isGlobalOn)
+        guard isEligible else { return hotKeys.unregister() }
         hotKeys.register(bindings)
+    }
+
+    func suspendHotKeys() {
+        hotKeys.unregister()
     }
 
     func shortcut(for action: WorkspaceAction) -> KeyboardShortcut? {
@@ -31,8 +43,19 @@ import TodzKit
         case let .success(rebound):
             bindings = rebound
             preference.store(rebound)
-            registerHotKeys()
             return nil
+        }
+    }
+
+    private func observeEligibility() {
+        withObservationTracking {
+            _ = model.phase
+            _ = model.workspaces
+        } onChange: {
+            Task { @MainActor in
+                self.registerHotKeys()
+                self.observeEligibility()
+            }
         }
     }
 }

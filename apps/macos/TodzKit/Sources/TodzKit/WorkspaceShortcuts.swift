@@ -24,7 +24,7 @@ public enum WorkspaceShortcuts {
     }
 
     public static func shouldRegister(phase: AppPhase, workspaceCount: Int, isGlobalOn: Bool) -> Bool {
-        true
+        phase == .ready && workspaceCount > 0 && isGlobalOn
     }
 
     public static func numbered(_ workspaces: [Workspace]) -> [(number: Int, workspace: Workspace)] {

@@ -38,6 +38,7 @@ struct WorkspaceChordRow: View {
     private func toggleRecording() {
         guard !isRecording else { return stopRecording() }
         refusal = nil
+        shortcuts.suspendHotKeys()
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let isEscape = Int(event.keyCode) == escapeKeyCode
             let chord = KeyChord(event: event)
@@ -50,11 +51,12 @@ struct WorkspaceChordRow: View {
         guard let keyMonitor else { return }
         NSEvent.removeMonitor(keyMonitor)
         self.keyMonitor = nil
+        shortcuts.registerHotKeys()
     }
 
     private func capture(chord: KeyChord?) {
-        stopRecording()
-        guard let chord else { return }
+        guard let chord else { return stopRecording() }
         refusal = shortcuts.rebind(action, to: chord)
+        stopRecording()
     }
 }
