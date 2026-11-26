@@ -1,5 +1,6 @@
 import { digestCredential } from './credential-digest';
 import {
+  type KeyProjectRecord,
   type KeyProjectSessionRecord,
   findKeyProject,
   findKeyProjectAndSession,
@@ -8,7 +9,13 @@ import {
   findSessionProject,
 } from './directory';
 import { findCandidateRows, findFirstInboxId } from './day-email/day-email-store';
-import { findOwnedWorkspace, listOwnerProjectIds, listOwnerWorkspaces } from './directory-workspaces';
+import {
+  findOwnedWorkspace,
+  findWorkspaceProject,
+  listOwnerProjectIds,
+  listOwnerWorkspaces,
+  listWorkspaceProjects,
+} from './directory-workspaces';
 import type { Env } from './env';
 import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 import type { ProjectStore } from './project-store';
@@ -16,8 +23,17 @@ import { type RecordWait, measured } from './timed-call';
 
 export type SessionOwner = { readonly ownerId: string } & { readonly sessionOwner: unique symbol };
 
+export type SiblingProject = { record: ProjectRecord; project: DurableObjectStub<ProjectStore> };
+
+export type KeyWorkspace = {
+  projectId: string;
+  listProjects: () => Promise<ProjectRecord[]>;
+  openSibling: (projectId: string) => Promise<SiblingProject | null>;
+};
+
 export type KeyProject = {
   project: DurableObjectStub<ProjectStore>;
+  workspace: KeyWorkspace;
   keyDigest: string;
   timeZone: string;
   agentNudge: boolean;
@@ -67,6 +83,21 @@ export function withTimedProjects({ env, record }: { env: Env; record: RecordWai
   return { ...env, PROJECT_STORE: timedNamespace };
 }
 
+// NB ADR 0101: a key reaches only the projects of its own workspace, found by the workspace id its key row joined to.
+function keyWorkspaceOf({ env, record }: { env: Env; record: KeyProjectRecord }): KeyWorkspace {
+  const { projectId, workspaceId } = record;
+  return {
+    projectId,
+    listProjects: () => listWorkspaceProjects({ directory: env.DIRECTORY, workspaceId }),
+    openSibling: async (siblingId) => {
+      if (siblingId === projectId) return null;
+      const sibling = await findWorkspaceProject({ directory: env.DIRECTORY, workspaceId, projectId: siblingId });
+      if (sibling === null) return null;
+      return { record: sibling, project: openProject({ env, projectId: sibling.id }) };
+    },
+  };
+}
+
 export async function openKeyProject({
   env,
   secret,
@@ -82,6 +113,7 @@ export async function openKeyProject({
   if (keyProject === null) return null;
   return {
     project: openProject({ env, projectId: keyProject.projectId }),
+    workspace: keyWorkspaceOf({ env, record: keyProject }),
     keyDigest,
     timeZone: keyProject.timeZone,
     agentNudge: keyProject.agentNudge,

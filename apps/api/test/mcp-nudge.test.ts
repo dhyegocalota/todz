@@ -109,6 +109,7 @@ describe('next when the due count cannot be read', () => {
     const project: FakeProject = { nextTask: async () => ({ ok: true, value: SHIP_IT }), dueNow };
     const server = buildMcpServer({
       project: project as unknown as DurableObjectStub<ProjectStore>,
+      workspace: { projectId: 'project', listProjects: async () => [], openSibling: async () => null },
       today: calendarDate('2026-11-23'),
       agentNudge: true,
       clientNameOf: () => CLIENT_NAME,

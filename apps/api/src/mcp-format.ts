@@ -1,6 +1,8 @@
-import { type AddedTask, type CompletedTask, type Task, type TaskList, formatShortId } from '@todz/core';
+import { type AddedTask, type CompletedTask, type ReopenedTask, type Task, type TaskList, formatShortId } from '@todz/core';
 import type { TaskState } from '@todz/types';
 import { MCP_COPY } from './mcp-copy';
+import type { MovedTask } from './move-task';
+import type { ProjectRecord } from './owner-records';
 import { type ProjectFailure, ProjectFailureKind } from './project-result';
 
 const LINE_BREAK = '\n';
@@ -29,6 +31,11 @@ function completedLine({ task, alreadyDone }: CompletedTask): string {
   return `${MCP_COPY.done} ${taskLine(task)}`;
 }
 
+function reopenedLine({ task, alreadyOpen }: ReopenedTask): string {
+  if (alreadyOpen) return `${MCP_COPY.alreadyOpen} ${taskLine(task)}`;
+  return `${MCP_COPY.reopened} ${taskLine(task)}`;
+}
+
 export function taskLine(task: Task): string {
   const line = `${formatShortId(task.number)} ${task.title}`;
   if (task.dueDate === null) return line;
@@ -55,6 +62,30 @@ export function updatedAnswer(task: Task): string {
 
 export function completedAnswer(completed: CompletedTask[]): string {
   return lines(completed.map(completedLine));
+}
+
+export function reopenedAnswer(reopened: ReopenedTask[]): string {
+  return lines(reopened.map(reopenedLine));
+}
+
+export function deletedAnswer(task: Task): string {
+  return `${MCP_COPY.deleted} ${taskLine(task)}`;
+}
+
+export function movedAnswer({ moved, projectName }: { moved: MovedTask; projectName: string }): string {
+  const arrival = MCP_COPY.movedTo({ projectName, shortId: formatShortId(moved.arrived.number) });
+  return `${MCP_COPY.moved} ${taskLine(moved.task)} ${arrival}`;
+}
+
+export function projectsAnswer({ projects, currentProjectId }: { projects: ProjectRecord[]; currentProjectId: string }): string {
+  return lines(
+    projects.map((project) => {
+      const line = `${project.id} ${project.name}`;
+      const inboxMark = project.isInbox ? MCP_COPY.inboxProject : '';
+      const currentMark = project.id === currentProjectId ? MCP_COPY.currentProject : '';
+      return `${line}${inboxMark}${currentMark}`;
+    }),
+  );
 }
 
 export function nextAnswer(task: Task | null): string {

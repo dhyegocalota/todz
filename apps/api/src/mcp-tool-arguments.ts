@@ -40,6 +40,20 @@ export const DoneArgumentsSchema = z.object({
   note: z.string().nullable().default(null).describe(MCP_COPY.fields.note),
 });
 
+export const ReopenArgumentsSchema = z.object({
+  ids: z.array(z.string()).describe(MCP_COPY.fields.ids),
+});
+
+export const DeleteArgumentsSchema = z.object({
+  id: z.string().describe(MCP_COPY.fields.id),
+  confirm: z.string().describe(MCP_COPY.fields.confirm),
+});
+
+export const MoveArgumentsSchema = z.object({
+  id: z.string().describe(MCP_COPY.fields.id),
+  project: z.string().describe(MCP_COPY.fields.project),
+});
+
 type AddArguments = z.infer<typeof AddArgumentsSchema>;
 type UpdateArguments = z.infer<typeof UpdateArgumentsSchema>;
 type PlacementArgument = z.infer<typeof PlacementSchema>;

@@ -6,24 +6,33 @@ import { MCP_COPY, McpPromptName, McpToolName } from './mcp-copy';
 import {
   addedAnswer,
   completedAnswer,
+  deletedAnswer,
   failureText,
   listAnswer,
+  movedAnswer,
   nextAnswer,
   nextPromptText,
   nudgeLine,
   nudgedText,
+  projectsAnswer,
+  reopenedAnswer,
   updatedAnswer,
 } from './mcp-format';
 import {
   AddArgumentsSchema,
+  DeleteArgumentsSchema,
   DoneArgumentsSchema,
   ListArgumentsSchema,
+  MoveArgumentsSchema,
+  ReopenArgumentsSchema,
   UpdateArgumentsSchema,
   draftsOf,
   patchOf,
   taskNumbers,
 } from './mcp-tool-arguments';
+import { moveTask } from './move-task';
 import type { ProjectResult } from './project-result';
+import type { KeyWorkspace } from './project-routing';
 import type { ProjectStore } from './project-store';
 
 const MCP_SERVER_NAME = 'todz';
@@ -32,13 +41,20 @@ const TEXT_CONTENT = 'text';
 const USER_ROLE = 'user';
 const READ_ONLY_ANNOTATIONS = { readOnlyHint: true };
 const WRITE_ANNOTATIONS = { destructiveHint: false };
+const DESTRUCTIVE_ANNOTATIONS = { destructiveHint: true };
 const NOTHING_DUE = 0;
 
 const EnvelopeClientSchema = z.object({ [CLIENT_INFO_META_KEY]: z.object({ name: z.string() }) });
 
 export type ClientNameOf = (ctx: ServerContext) => string | null;
 
-export type McpServerScope = { project: DurableObjectStub<ProjectStore>; today: string; agentNudge: boolean; clientNameOf: ClientNameOf };
+export type McpServerScope = {
+  project: DurableObjectStub<ProjectStore>;
+  workspace: KeyWorkspace;
+  today: string;
+  agentNudge: boolean;
+  clientNameOf: ClientNameOf;
+};
 
 export function envelopeClientName(ctx: ServerContext): string | null {
   const envelope = EnvelopeClientSchema.safeParse(ctx.mcpReq.envelope);
@@ -108,6 +124,14 @@ function registerReadTools({ server, scope }: { server: McpServer; scope: McpSer
       return resultAnswer({ result, answer: (list) => listAnswer({ state, list }) });
     },
   );
+  server.registerTool(
+    McpToolName.Projects,
+    { description: MCP_COPY.tools[McpToolName.Projects], annotations: READ_ONLY_ANNOTATIONS },
+    async () => {
+      const projects = await scope.workspace.listProjects();
+      return textAnswer(projectsAnswer({ projects, currentProjectId: scope.workspace.projectId }));
+    },
+  );
 }
 
 function registerWriteTools({ server, scope }: { server: McpServer; scope: McpServerScope }): void {
@@ -147,6 +171,56 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
         clientNameOf,
         ctx,
         write: async (actor) => resultAnswer({ result: await project.completeTasks({ actor, numbers, note }), answer: completedAnswer }),
+      });
+    },
+  );
+  server.registerTool(
+    McpToolName.Reopen,
+    { description: MCP_COPY.tools[McpToolName.Reopen], inputSchema: ReopenArgumentsSchema, annotations: WRITE_ANNOTATIONS },
+    async ({ ids }, ctx) => {
+      const numbers = taskNumbers(ids);
+      if (numbers === null) return errorAnswer(MCP_COPY.taskIdInvalid);
+      return asAgent({
+        clientNameOf,
+        ctx,
+        write: async (actor) => resultAnswer({ result: await project.reopenTasks({ actor, numbers }), answer: reopenedAnswer }),
+      });
+    },
+  );
+  server.registerTool(
+    McpToolName.Delete,
+    { description: MCP_COPY.tools[McpToolName.Delete], inputSchema: DeleteArgumentsSchema, annotations: DESTRUCTIVE_ANNOTATIONS },
+    async ({ id, confirm }, ctx) => {
+      const number = parseShortId(id);
+      if (number === null) return errorAnswer(MCP_COPY.taskIdInvalid);
+      return asAgent({
+        clientNameOf,
+        ctx,
+        write: async () => resultAnswer({ result: await project.deleteTask({ number, confirmation: confirm }), answer: deletedAnswer }),
+      });
+    },
+  );
+  server.registerTool(
+    McpToolName.Move,
+    { description: MCP_COPY.tools[McpToolName.Move], inputSchema: MoveArgumentsSchema, annotations: DESTRUCTIVE_ANNOTATIONS },
+    async ({ id, project: destinationId }, ctx) => {
+      const number = parseShortId(id);
+      if (number === null) return errorAnswer(MCP_COPY.taskIdInvalid);
+      const sibling = await scope.workspace.openSibling(destinationId);
+      if (sibling === null) return errorAnswer(MCP_COPY.projectNotInWorkspace);
+      return asAgent({
+        clientNameOf,
+        ctx,
+        write: async (actor) => {
+          const result = await moveTask({
+            source: project,
+            sourceProjectId: scope.workspace.projectId,
+            destination: sibling.project,
+            actor,
+            number,
+          });
+          return resultAnswer({ result, answer: (moved) => movedAnswer({ moved, projectName: sibling.record.name }) });
+        },
       });
     },
   );

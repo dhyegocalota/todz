@@ -34,6 +34,39 @@ export async function listOwnerWorkspaces({ directory, ownerId }: { directory: D
   }));
 }
 
+export async function listWorkspaceProjects({
+  directory,
+  workspaceId,
+}: {
+  directory: D1Database;
+  workspaceId: string;
+}): Promise<ProjectRecord[]> {
+  const { results } = await directory
+    .prepare(
+      'SELECT id, workspace_id, name, is_inbox, created_at FROM projects WHERE workspace_id = ? ORDER BY is_inbox DESC, created_at, rowid',
+    )
+    .bind(workspaceId)
+    .all<ProjectRow>();
+  return results.map(projectRecordOf);
+}
+
+export async function findWorkspaceProject({
+  directory,
+  workspaceId,
+  projectId,
+}: {
+  directory: D1Database;
+  workspaceId: string;
+  projectId: string;
+}): Promise<ProjectRecord | null> {
+  const row = await directory
+    .prepare('SELECT id, workspace_id, name, is_inbox, created_at FROM projects WHERE id = ? AND workspace_id = ?')
+    .bind(projectId, workspaceId)
+    .first<ProjectRow>();
+  if (row === null) return null;
+  return projectRecordOf(row);
+}
+
 export async function listOwnerProjectIds({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<string[]> {
   const { results } = await directory
     .prepare('SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ?')
