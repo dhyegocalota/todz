@@ -2,7 +2,8 @@ import SwiftUI
 import TodzKit
 
 private let openSymbol = "circle"
-private let doneSymbol = "checkmark.circle.fill"
+private let checkboxDiameter: CGFloat = 14
+private let checkLineWidth: CGFloat = 1.6
 
 struct TaskCheckbox: View {
     let task: BoardTask
@@ -14,8 +15,20 @@ struct TaskCheckbox: View {
         Button {
             windowState.toggleDone(task: task.key, item: item, model: model)
         } label: {
-            Image(systemName: task.isDone ? doneSymbol : openSymbol)
-                .foregroundStyle(task.isDone ? Color.accentColor : Color.secondary)
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor)
+                    .opacity(task.isDone ? 1 : 0)
+                Image(systemName: openSymbol)
+                    .foregroundStyle(Color.secondary)
+                    .opacity(task.isDone ? 0 : 1)
+                CheckmarkMark()
+                    .trim(from: 0, to: task.isDone ? 1 : 0)
+                    .stroke(Color.white, style: StrokeStyle(lineWidth: checkLineWidth, lineCap: .round, lineJoin: .round))
+                SparkleBurst(isBursting: task.isDone)
+            }
+            .frame(width: checkboxDiameter, height: checkboxDiameter)
+            .todzAnimation(.draw, value: task.isDone)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)

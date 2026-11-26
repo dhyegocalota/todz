@@ -76,6 +76,8 @@ struct MenuBarLabel: View {
                 if let badgeText {
                     Text(badgeText)
                         .monospacedDigit()
+                        .todzCountTransition()
+                        .todzAnimation(.snap, value: badgeText)
                 }
             }
         }
