@@ -8,7 +8,8 @@ import { workerEnvWith } from '../owner-client';
 
 const SITE_ORIGIN = 'https://todz.app';
 const SPARKLE_AGENT = 'Todz/0.2.1 Sparkle/2.6.4 macOS/15';
-const CLIENT_ADDRESS = '203.0.113.9';
+const NO_ASSET_STATUS = 404;
+const CLIENT_ADDRESS ='203.0.113.9';
 
 type StoredRow = { day: string; metric: string; dimension: string; count: number };
 
@@ -49,7 +50,7 @@ beforeEach(async () => {
 describe('the appcast request counter', () => {
   test('a Sparkle request is counted per app version and macOS major version, and the asset is still served', async () => {
     const response = await fetched({ userAgent: SPARKLE_AGENT, settings: enabledSettings() });
-    expect(response.status).toBe((await env.ASSETS.fetch(new Request(`${SITE_ORIGIN}${APPCAST_PATH}`))).status);
+    expect(response.status).toBe(NO_ASSET_STATUS);
     const rows = await storedRows();
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ metric: 'appcast_requests', dimension: '0.2.1|15', count: 1 });

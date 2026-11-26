@@ -34,6 +34,8 @@ private let cacheFolderName = "Cache"
     private var engagementObservation: (any NSObjectProtocol)?
     private var isAwaitingEngagement = false
     private var launchReading: Task<Void, Never>?
+    let usageSharingPreference = UsageSharingPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
+    let usageSharing = UsageSharing(defaults: .standard, domainName: AppConfiguration.defaultsDomain, timeZone: .gmt)
     let dayTemperaturePreference = DayTemperaturePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     let menuBarOnlyPreference = MenuBarOnlyPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
     let respectFocusPreference = RespectFocusPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
@@ -82,6 +84,7 @@ private let cacheFolderName = "Cache"
         decideLaunchSurfaceStart(notification)
         observeWidgetRequests()
         observeDayChanges()
+        startUsageSharing()
         observeWindows(LaunchActivation.of(isDefaultLaunch: notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool))
         launchReading = Task {
             await focusSwitch.start()

@@ -15,6 +15,7 @@ struct TodzApp: App {
         DayClosePreference.registerDefaults(in: .standard)
         MorningGlancePreference.registerDefaults(in: .standard)
         DayTemperaturePreference.registerDefaults(in: .standard)
+        UsageSharingPreference.registerDefaults(in: .standard)
         RibbonPreference.registerDefaults(in: .standard)
         MenuBarOnlyPreference.registerDefaults(in: .standard)
         RespectFocusPreference.registerDefaults(in: .standard)
