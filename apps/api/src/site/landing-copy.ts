@@ -132,7 +132,7 @@ export const LANDING_COPY = {
         temperature: { label: 'Day temperature', detail: 'The count fades after noon.' },
         siri: { label: 'Siri', detail: "“What's left today in todz?”" },
       },
-      note: 'Each one is a switch in Settings. Respect Focus keeps your Mac quiet during a Focus.',
+      note: 'Each one but Siri is a switch in Settings. Respect Focus keeps your Mac quiet during a Focus.',
     },
     agents: {
       title: 'Agents add tasks over MCP',

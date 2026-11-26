@@ -71,8 +71,8 @@ describe('the proactive day copy', () => {
     expect(LANDING_COPY.benefits).not.toHaveProperty('glance');
   });
 
-  test('U4. the note says each one is a switch and Respect Focus keeps the Mac quiet, never that it quiets them all', () => {
-    expect(day.note).toBe('Each one is a switch in Settings. Respect Focus keeps your Mac quiet during a Focus.');
+  test('U4. the note says each one but Siri is a switch and Respect Focus keeps the Mac quiet, never that it quiets them all', () => {
+    expect(day.note).toBe('Each one but Siri is a switch in Settings. Respect Focus keeps your Mac quiet during a Focus.');
     expect(day.note).not.toContain(FOCUS_OVERSTATEMENT);
   });
 
@@ -198,7 +198,8 @@ describe('the proactive day in the structured data', () => {
     const structuredData = STRUCTURED_DATA_PATTERN.exec(html)?.[FIRST_CAPTURE];
     if (structuredData === undefined) throw new Error('the landing carries structured data');
     const graph: { '@graph': { featureList?: string[] }[] } = JSON.parse(structuredData);
-    const featureList = graph['@graph'].flatMap((node) => node.featureList ?? []);
+    const featureLists = graph['@graph'].map((node) => node.featureList).filter((list): list is string[] => list !== undefined);
+    const featureList = featureLists.flat();
     expect(featureList).toEqual(LANDING_DAY_LINES);
     PROACTIVE_FACTS.forEach((fact) => expect(featureList.some((feature) => fact.test(feature))).toBe(true));
   });

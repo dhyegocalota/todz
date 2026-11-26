@@ -24,9 +24,9 @@ const DAY_MAIL_ICON_RADIUS = '5px';
 const DAY_GLANCE_RING_SIZE = '10px';
 const DAY_NOTE_MEASURE = '30ch';
 const DAY_DIM_OPACITY = 0.4;
-const DAY_FIRST_DOT_START_PERCENT = 20;
+const DAY_FIRST_DOT_START_PERCENT = 10;
 const DAY_DOT_SPAN_PERCENT = 4;
-const DAY_SEGMENT_SPAN_PERCENT = 7;
+const DAY_SEGMENT_SPAN_PERCENT = 5;
 const DAY_VIGNETTE_EXTRA_PERCENT = 6;
 
 function dayAnimationRules(index: number): string {
@@ -373,7 +373,7 @@ ${CROP_RULES}
 .benefit-list{grid-template-columns:repeat(2, 1fr);gap:var(--space-5)}
 .day-head{flex-direction:row;justify-content:space-between;align-items:flex-end;gap:var(--space-6)}
 .day-note{max-width:${DAY_NOTE_MEASURE};text-align:right}
-.day-rail{grid-template-columns:repeat(4, 1fr);gap:var(--space-4)}
+.day-rail{grid-template-columns:repeat(${DAY_STOP_COUNT}, 1fr);gap:var(--space-4)}
 .day-stop{display:flex;padding-top:var(--space-5)}
 .day-stop:not(:last-child)::before,.day-stop:not(:last-child)::after{left:calc(var(--space-3) + ${DAY_DOT_SIZE} / 2);top:calc(${DAY_DOT_SIZE} / 2 - ${DAY_TRACK_THICKNESS} / 2);width:calc(100% + var(--space-4));height:${DAY_TRACK_THICKNESS};transform-origin:left}
 .day-dot{position:absolute;top:0;left:var(--space-3);margin:0}
@@ -399,7 +399,7 @@ ${CROP_RULES}
 @supports (animation-timeline: view()){
 .reveal{animation:rise linear both;animation-timeline:view();animation-range:entry 0% entry 60%}
 .signature-swash path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw linear both;animation-timeline:view();animation-range:entry 0% entry 100%}
-.day-well{view-timeline-name:--day;timeline-scope:--day}
+.day-well{view-timeline-name:--day}
 .day-dot{animation:light linear both;animation-timeline:--day}
 .day-vignette{animation:lift linear both;animation-timeline:--day}
 .day-stop:not(:last-child)::after{animation:fill-down linear both;animation-timeline:--day}

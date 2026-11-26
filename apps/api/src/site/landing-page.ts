@@ -123,7 +123,7 @@ ${well}
 }
 
 function dayStopHtml({ time, mock, title, body }: { time: string; mock: string; title: string; body: string }): string {
-  return `<li class="day-stop"><span class="day-dot" aria-hidden="true"></span><div class="day-vignette glass"><time class="day-time" datetime="${time}">${escapedHtml(time)}</time><div class="day-mock" aria-hidden="true">${mock}</div><p class="day-stop-title">${escapedHtml(title)}</p><p class="day-stop-body">${escapedHtml(body)}</p></div></li>`;
+  return `<li class="day-stop"><span class="day-dot" aria-hidden="true"></span><div class="day-vignette glass"><time class="day-time" datetime="${escapedHtml(time)}">${escapedHtml(time)}</time><div class="day-mock" aria-hidden="true">${mock}</div><p class="day-stop-title">${escapedHtml(title)}</p><p class="day-stop-body">${escapedHtml(body)}</p></div></li>`;
 }
 
 function dayEmailMockHtml(): string {
@@ -155,7 +155,7 @@ function dayExtrasHtml(): string {
     { label: siri.label, detail: `<span>${escapedHtml(siri.detail)}</span>` },
   ];
   const itemsHtml = extras
-    .map((extra) => `<li class="day-extra"><span class="day-extra-label">${escapedHtml(extra.label)}</span>${extra.detail}</li>`)
+    .map((extra) => `<li class="day-extra"><span class="day-extra-label">${escapedHtml(extra.label)}</span> ${extra.detail}</li>`)
     .join('');
   return `<ul class="day-extras" aria-label="${escapedHtml(label)}">${itemsHtml}</ul>`;
 }
