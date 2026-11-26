@@ -17,13 +17,13 @@
 - With the var unset nothing changes for any account or server, and nothing is metered.
 - At the cap a link request answers 202 alike; a refused address is mailed the full notice and no link is stored.
 - An admitted address passes the cap; Admit next N takes the oldest, at most the free spots.
-- The guard mails the owner once a month at 80% and refuses writes at 95% only from accounts above the month's average per active account, with 429 and `Retry-After` to the first of next month; their reads are throttled.
+- The guard mails the owner once a month at 80% and refuses writes at 95% only from accounts above the month's average per active account, with 429 and `Retry-After` to the first of next month; every owner but the admin's is read-throttled.
 - The queue digest mails only when the queue grew since the last digest that was sent.
 
 ## Gaps
 
 - No client screen (Mac app) for the capacity message; installed apps already pause on the 429 `limit_reached` body.
 - Without the analytics token the read measure is a profile (1,000 read requests per active account a day), not a count.
-- Durable Object duration is not measured or guarded (ADR 0099).
-- A read-only heavy account is not throttled: reads are not counted per account.
+- Durable Object duration is guarded at an assumed 1.25 GB-s per request, not measured (ADR 0099); it may trigger the refusal early in a busy month.
+- At 95% every owner but the admin's is read-throttled, because reads are not counted per account.
 - The `/cloud-queue` page has no recorded visual walk.

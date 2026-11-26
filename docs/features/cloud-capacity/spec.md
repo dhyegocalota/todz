@@ -14,7 +14,7 @@ The todz cloud must not cost more than the Workers Paid base of USD 5 a month, a
 
 - `CLOUD_ACCOUNTS_MAX` (50 on the todz cloud) caps active accounts; above it a new address is not given a link, gets a "full" mail instead, and may join a queue from `todz.app/cloud-queue`.
 - A sign-in link request answers the same for an address that may sign in and one that may not.
-- A nightly budget guard reads the month's real totals from Cloudflare's analytics when the optional `CLOUDFLARE_ANALYTICS_TOKEN` secret is set, estimates them from D1 when not, emails the owner at 80% and, at 95%, refuses new writes from the heaviest accounts (HTTP 429 `limit_reached` with `limit: "cloud_capacity"` with `Retry-After` to the first of next month) and throttles their reads.
+- A nightly budget guard reads the month's real totals from Cloudflare's analytics when the optional `CLOUDFLARE_ANALYTICS_TOKEN` secret is set, estimates them from D1 when not, emails the owner at 80% and, at 95%, refuses new writes from the heaviest accounts (HTTP 429 `limit_reached` with `limit: "cloud_capacity"` with `Retry-After` to the first of next month) and throttles every owner's reads but the admin's.
 - Every mail is metered; link mail is bounded per address per day.
 - The owner gets one email a day when the queue grew, and an admin page admits one address or the next N, at most the free spots.
 - Accounts idle for 90 days (no session, write, signed-in or agent-key request) free their spot, and an admission nobody redeems lapses after seven days. Admissions reserve their spots against strangers.

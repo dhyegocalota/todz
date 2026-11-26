@@ -402,14 +402,14 @@ describe('the 95% refusals', () => {
     );
   });
 
-  test('a heavy account is read-throttled and a light one is not', async () => {
+  test('every owner is read-throttled at 95%, the heavy and the one with no writes alike', async () => {
     const { heavyOwnerId, lightOwnerId } = await refusingMonth();
     const deniedReads = recordingLimiter({ isAllowed: false });
     const readEnv = cloudEnv({ CLOUD_READ_LIMITER: deniedReads.limiter });
     const request = new Request('https://todz.app/owner/workspaces');
     expect(await isReadThrottled({ request, env: readEnv, ownerId: heavyOwnerId, now: FIRST_OF_MONTH_NIGHT })).toBe(true);
-    expect(await isReadThrottled({ request, env: readEnv, ownerId: lightOwnerId, now: FIRST_OF_MONTH_NIGHT })).toBe(false);
-    expect(deniedReads.keys).toEqual([heavyOwnerId]);
+    expect(await isReadThrottled({ request, env: readEnv, ownerId: lightOwnerId, now: FIRST_OF_MONTH_NIGHT })).toBe(true);
+    expect(deniedReads.keys).toEqual([heavyOwnerId, lightOwnerId]);
   });
 
   test('a heavy account reads within the allowed rate, and the admin owner is never throttled', async () => {

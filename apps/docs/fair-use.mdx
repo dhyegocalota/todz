@@ -34,7 +34,7 @@ Free todz cloud spots are extremely limited. todz cloud runs on a fixed monthly 
 
 - Accounts already admitted are never refused because of the limit.
 - When the cloud is full, asking for a sign-in link looks the same for every address: the answer is always that a link is on its way. An address that may not sign in gets a mail that says "todz cloud is full right now", with a personal link to the line at todz.app/cloud-queue, which works for a week and where it confirms its address to be invited when a spot opens, and a link to [self-host](/self-host).
-- When the month's usage nears the plan's included quotas, the operator is emailed. Past 95%, the accounts that write the most this month are refused new writes with "todz cloud is at capacity this month" (HTTP 429, with a `Retry-After` of the seconds to the first of next month, UTC), and their reads slow to a few a minute. Your tasks are not deleted, and the rest of the accounts keep writing and reading as usual.
+- When the month's usage nears the plan's included quotas, the operator is emailed. Past 95%, the accounts that write the most this month are refused new writes with "todz cloud is at capacity this month" (HTTP 429, with a `Retry-After` of the seconds to the first of next month, UTC), and everyone's reads slow to a few a minute. Your tasks are not deleted, and the rest of the accounts keep writing as usual.
 - Every mail todz cloud sends counts toward its monthly mail allowance, so an address gets no more than 10 mails a day.
 
 Self-hosted servers have no account limit unless they set `CLOUD_ACCOUNTS_MAX` to a positive whole number.

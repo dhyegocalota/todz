@@ -9,7 +9,7 @@ import { forgetStampedOwners } from '../src/owner-last-seen';
 import { isHeavyWriterRefusedOnCloud } from '../src/owner-write-quota';
 import { issueProjectKey } from '../src/project-keys';
 import { utcDayOf } from '../src/telemetry/telemetry-day';
-import { issuedKeyOf, seedOwner, seedOwnerKey, seedProject, seedSession } from './directory-seed';
+import { issuedKeyOf, seedEmailIdentity, seedOwner, seedOwnerKey, seedProject, seedSession } from './directory-seed';
 import { recordingLimiter } from './email-sign-in-client';
 import { recordingEnv, serveOwnerCall, workerEnvWith } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
@@ -21,6 +21,7 @@ const SESSION_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const OK_STATUS = 200;
 const TOO_MANY_STATUS = 429;
 const HEAVY_WRITES = 100;
+const ADMIN_ADDRESS = 'admin@example.com';
 
 async function setLevel(level: BudgetLevel): Promise<void> {
   forgetCloudLevel();
@@ -86,15 +87,22 @@ beforeEach(async () => {
 });
 
 describe('the read throttle through the owner API', () => {
-  test('a heavy account is throttled with 429 rate_limited and Retry-After, a light one reads', async () => {
+  test('every owner is throttled with 429 rate_limited and Retry-After at 95%, also one with no writes, but the admin owner reads', async () => {
     await setLevel(BudgetLevel.Refusing);
-    const [heavy, light] = [await seedSessionOf(await seedHeavyOwner()), await seedSessionOf(await seedOwner())];
-    const workerEnv = cloudEnvWith({ isAllowed: false });
+    const adminOwnerId = await seedOwner();
+    await seedEmailIdentity({ ownerId: adminOwnerId, email: ADMIN_ADDRESS });
+    const [heavy, idle, admin] = [
+      await seedSessionOf(await seedHeavyOwner()),
+      await seedSessionOf(await seedOwner()),
+      await seedSessionOf(adminOwnerId),
+    ];
+    const workerEnv = cloudEnvWith({ isAllowed: false, settings: { ADMIN_EMAIL: ADMIN_ADDRESS } });
     const throttled = await ownerRead({ secret: heavy, workerEnv });
     expect(throttled.status).toBe(TOO_MANY_STATUS);
     expect(await throttled.json()).toEqual({ error: 'rate_limited' });
     expect(throttled.headers.get('Retry-After')).toBe('60');
-    expect((await ownerRead({ secret: light, workerEnv })).status).toBe(OK_STATUS);
+    expect((await ownerRead({ secret: idle, workerEnv })).status).toBe(TOO_MANY_STATUS);
+    expect((await ownerRead({ secret: admin, workerEnv })).status).toBe(OK_STATUS);
   });
 
   test('a heavy account within the allowed rate reads, and a normal month throttles nobody', async () => {
@@ -107,7 +115,7 @@ describe('the read throttle through the owner API', () => {
 });
 
 describe('the read throttle through MCP', () => {
-  test('a heavy account key is throttled and a light one is not, for a project key and an owner key', async () => {
+  test('a heavy and an idle account are both throttled, for a project key and an owner key', async () => {
     await setLevel(BudgetLevel.Refusing);
     const heavyOwnerId = await seedHeavyOwner();
     const lightOwnerId = await seedOwner();
@@ -118,8 +126,7 @@ describe('the read throttle through MCP', () => {
     const statuses = await Promise.all(
       [heavyProjectKey, heavyOwnerKey, lightProjectKey].map(async (key) => (await mcpPost({ key, workerEnv })).status),
     );
-    expect(statuses.slice(0, 2)).toEqual([TOO_MANY_STATUS, TOO_MANY_STATUS]);
-    expect(statuses[2]).not.toBe(TOO_MANY_STATUS);
+    expect(statuses).toEqual([TOO_MANY_STATUS, TOO_MANY_STATUS, TOO_MANY_STATUS]);
   });
 });
 

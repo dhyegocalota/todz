@@ -8,6 +8,7 @@ ON CONFLICT (month) DO UPDATE SET level = excluded.level, heavy_writes = exclude
   source = excluded.source, source_reason = excluded.source_reason`;
 const READ_SOURCE = 'SELECT source, source_reason FROM cloud_budget WHERE month = ?1';
 const READ_LEVEL = 'SELECT level FROM cloud_budget WHERE month = ?1';
+const IS_OWNER_OF_ADDRESS = 'SELECT 1 AS owner FROM owner_identities WHERE owner_id = ?1 AND provider = ?2 AND subject = ?3';
 const IS_WARNED = 'SELECT 1 AS warned FROM cloud_budget WHERE month = ?1 AND warned_at IS NOT NULL';
 const STAMP_WARNING = 'UPDATE cloud_budget SET warned_at = ?2 WHERE month = ?1 AND warned_at IS NULL';
 const IS_HEAVY_WRITER = `SELECT 1 AS heavy FROM cloud_budget
@@ -50,6 +51,19 @@ export async function recordedLevelOf({ directory, month }: { directory: D1Datab
   const row = await directory.prepare(READ_LEVEL).bind(month).first<{ level: BudgetLevel }>();
   if (row === null) return null;
   return row.level;
+}
+
+export async function isOwnerOfAddress({
+  directory,
+  ownerId,
+  address,
+}: {
+  directory: D1Database;
+  ownerId: string;
+  address: string;
+}): Promise<boolean> {
+  const row = await directory.prepare(IS_OWNER_OF_ADDRESS).bind(ownerId, SignInProviderKind.Email, address).first();
+  return row !== null;
 }
 
 export async function isWarned({ directory, month }: { directory: D1Database; month: string }): Promise<boolean> {
