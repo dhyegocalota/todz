@@ -43,6 +43,6 @@ G1 then G2, one developer.
 ## Z. Prove and ship
 
 - [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
-- [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict.
+- [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence (0e548b01; claim 3 BLOCKED: the Mac's time zone is the owner's).
+- [x] **Reviewer:** a fresh `reviewer` sub-agent returned NO at 4df55077 (2 IMPORTANT, 6 MINOR, security CLEAR, merge sensitivity LOW); all 8 fixed in a3f04c35..b90b4be3.
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.

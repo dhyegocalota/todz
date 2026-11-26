@@ -23,8 +23,8 @@ Walk a scratch copy of `apps/macos/build/Build/Products/Debug/Todz.app` (it poin
 
 ```bash
 cd apps/api
-pnpm exec wrangler d1 migrations apply directory --local --persist-to <state>
-pnpm exec wrangler dev --var SIGN_IN_PROVIDER:fake --persist-to <state> --port 8787
+pnpm exec wrangler d1 migrations apply DIRECTORY --local --persist-to <state>
+pnpm exec wrangler dev --var SIGN_IN_PROVIDER:fake --var PUBLIC_ORIGIN:http://localhost:8787 --infer-origin-from-routes false --persist-to <state> --port 8787
 ```
 
 Sign in to the app with a fictional identity, and read the owner's session token for the API calls by signing in once more from a terminal:
