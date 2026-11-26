@@ -1,6 +1,6 @@
 # Motion
 
-**Status:** Building
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡 (one shared token set in TodzKit and modifiers on existing views; no server, no schema, no new entitlement)
 **Owner approval:** approved 2026-11-26 by the owner's request to the loop: "aquele 'tchã' cinematográfico de motion e animation … não faça verificações demais, só faz tudo logo, rápido com qualidade", recorded in `todz-loop/PROMPT.md` "Tonight's last three", item 3.
 **ADRs:** [0077](../../adr/0077-the-motion-system-is-one-token-set-in-todzkit-with-every-effect-under-350-ms-and-a-crossfade-under-reduce-motion.md)
