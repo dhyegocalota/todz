@@ -43,8 +43,9 @@ Each moment is one checkbox. The walk runs with Orca on a scratch copy, keeps po
 - [ ] Open the popover — expected: the content fades in with no scale — evidence:
 - [ ] Change the count — expected: the number changes with a crossfade, no roll — evidence:
 - [ ] Sign in — expected: a crossfade, no reveal motion — evidence:
+- [ ] Select a sidebar item (Inbox, then a project) — expected: the item's title in the sidebar flies to the list header's title within about 320 ms, and the header's text is the same string and font after the move — evidence:
+- [ ] Reduce Motion on, select a sidebar item — expected: the header changes with a crossfade, no flight — evidence:
 
 ## Known gaps, not walked
 
-- [ ] Sidebar matched geometry — NOT SHIPPED in this build, see `spec.md` "Known gaps"
 - [ ] The GIF for the PR and the README — recorded later by the recorder

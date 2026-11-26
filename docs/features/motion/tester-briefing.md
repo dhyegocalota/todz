@@ -42,7 +42,6 @@ Debug app against a local `wrangler dev` Worker, as in `docs/features/menu-bar-o
 
 ## Known gaps
 
-- Sidebar matched geometry is not shipped (see `spec.md`).
 - The image-drawn count does not roll.
 - The sign-in reveal fades the screen; the logo has no own reveal.
 - The GIF for the PR and the README is recorded later.

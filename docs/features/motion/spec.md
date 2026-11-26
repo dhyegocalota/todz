@@ -61,7 +61,6 @@ The app's motion is ad hoc: some views animate with literal numbers, many do not
 ## Known gaps
 
 - The menu bar count drawn as an image (day temperature on) does not roll. Only the text count rolls.
-- Sidebar matched geometry is not shipped: the list header title does not fly from the sidebar row. Wiring it needs a namespace shared by the sidebar and the main window, which touches the workspace-select lane's files.
 - The sign-in success reveal crossfades the whole screen (`AppPhase` change); the brand logo itself does not get its own reveal.
 - The check is a trimmed path drawn over an accent disc (`SF Symbols` `drawOn` needs macOS 15, and the target is 14), so the done glyph is drawn, not the system's `checkmark.circle.fill`.
 - Reduce Motion is verified through the unit rule and a manual toggle; the GIF recorder runs later.
