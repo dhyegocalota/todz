@@ -1,6 +1,6 @@
 # Auto update
 
-**Status:** Building
+**Status:** Shipped 2026-11-26
 **Tier:** 🔴 (the update channel, the release gate and the signing trust path; an installed copy replaces its own bundle)
 **Owner approval:** approved 2026-11-26 by the owner's words in `todz-loop/PROMPT.md` "Tonight's last three", item 1: "auto update… pode desativar mas por padrão on.. não pode rely on na App Store", and "quero finalizar ainda hoje nas próximas horas", with "não faça verificações demais, só faz tudo logo, rápido com qualidade, pode merge e deploy".
 **ADRs:** [0075](../../adr/0075-the-mac-app-updates-itself-by-default-through-sparkle-and-the-release-gate-is-a-local-check.md), [0072](../../adr/0072-the-mac-app-downloads-from-todz-app-as-a-development-signed-dmg-with-an-ssh-signature-and-updates-through-sparkle.md) (amended for the gate), [0068](../../adr/0068-one-respect-focus-switch-decides-for-every-proactive-surface-and-untouched-settings-follow-the-defaults.md), [0074](../../adr/0074-closing-the-window-keeps-todz-in-the-menu-bar-as-an-accessory-app-behind-a-setting-on-by-default.md)
