@@ -1,0 +1,51 @@
+---
+title: Workspaces
+description: Switch between workspaces, show several at once and rebind the keys.
+---
+
+A workspace holds one company's projects and starts with an Inbox. Each workspace is isolated from the others.
+
+## Switch
+
+Pick a workspace in the workspace menu of the window, or use the keys:
+
+| Keys | Action |
+| --- | --- |
+| ⌃1 … ⌃9 | Go to workspace 1 … 9, in the order of the workspace menu |
+| ⌃⌘[ | **Previous Workspace**, wrapping at the first |
+| ⌃⌘] | **Next Workspace**, wrapping at the last |
+
+A workspace past the ninth has no key of its own; step to it with **Previous Workspace** and **Next Workspace**. The same keys sit in the **Switch With Control** submenu of the workspace menu. The ⌘1 … ⌘9 keys of the list stay as they are.
+
+## Rebind the keys
+
+Open **Workspace shortcuts** in todz › Settings. Each workspace, **Previous Workspace** and **Next Workspace** have a row with their keys. Press **Record**, then the new keys; Escape cancels (**Cancel**).
+
+- Hold ⌃, ⌥ or ⌘ with the key, or todz refuses it.
+- Keys that another workspace shortcut already uses are refused.
+- A row you never changed follows the defaults.
+
+## Switch from any app
+
+**Switch from any app** is on by default: the same keys work while another app is in front, and they need no extra permission. Turn it off to leave these keys to other apps. A key that macOS or another app already holds may not register; the menu key still works while todz is in front.
+
+<Note>
+  ⌃1–⌃9 can clash with Mission Control's Switch to Desktop keys. If both are on, the system wins; turn those off in System Settings, or rebind the workspace keys.
+</Note>
+
+## Show several workspaces
+
+The workspace menu lists your workspaces as toggles, with **All Workspaces** first. Choose several, or all of them; todz remembers the choice on this Mac.
+
+- **All Workspaces** includes a workspace you create later. A set you chose by hand never grows by itself.
+- Turning off the last chosen workspace changes nothing.
+- A workspace that disappears leaves the selection.
+- A workspace key or the first-run picker selects exactly one workspace.
+
+With two or more shown, Today, Upcoming, Inbox and Done are one sorted list across them. The menu bar count, the popover, the widgets, the day close, the morning glance and the ribbon show the same union.
+
+Each row is tagged with its workspace before its project, as in `Acme · Launch`. With one workspace shown nothing is tagged. A widget draws the same tag, and ticking a task in a widget completes it in its own workspace.
+
+## Where a new task goes
+
+In the union, a task you add without naming a project (from the menu bar, a shortcut or the day close) goes to the Inbox of the primary workspace: the one that was shown before when it still is, else the first in the list. A new project and the keys of **Connect an agent** go to the primary workspace too. Changing a task always writes to the project the task belongs to.
