@@ -13,7 +13,7 @@ An owner can create and rename workspaces and projects but cannot remove them, a
 ## Goals
 
 - Delete a workspace from the Workspace menu and from Settings › Workspaces. The workspace's projects, their MCP keys and their storage go with it.
-- Delete a project from the sidebar project context menu and from Settings › Workspaces.
+- Delete a project from the sidebar project context menu only.
 - Rename a workspace from the Workspace menu and from Settings › Workspaces, through the existing `NameSheet` with a new `.renameWorkspace` kind.
 - Both deletions ask the owner to type the name of the workspace or project before they run.
 - Deleting the last workspace leaves the owner with none: the app offers to create one.
@@ -42,7 +42,11 @@ An owner can create and rename workspaces and projects but cannot remove them, a
 
 - A failed delete leaves the item in place and shows the existing banner path; nothing is removed locally.
 - A delete that answers 404 means the item is already gone: the app reloads the list instead of showing an error.
-- A socket that closes after a wipe reopens into a 404, which reloads the list; no retry loop beyond the existing backoff.
+- After a wipe the server sends `changed` and closes the socket. The app's next pull answers 404, which reloads the workspace list. The reconnect that follows the close is answered 404 as well and reloads again; both use the existing reconnect backoff.
+
+## Rollback
+
+Reverting the change restores the routes and the screens, but a revert cannot restore deleted data: the rows, the keys and the project storage are gone, and the revoked keys stay revoked, so the owner issues new keys. The schema is unchanged, so a revert needs no migration.
 
 ## Open questions
 
