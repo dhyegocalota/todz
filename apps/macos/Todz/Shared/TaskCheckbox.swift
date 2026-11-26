@@ -15,27 +15,23 @@ struct TaskCheckbox: View {
         Button {
             windowState.toggleDone(task: task.key, item: item, model: model)
         } label: {
-            Image(systemName: openSymbol)
-                .foregroundStyle(Color.secondary)
-                .opacity(task.isDone ? 0 : 1)
-                .background {
-                    Circle()
-                        .fill(Color.accentColor)
-                        .opacity(task.isDone ? 1 : 0)
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor)
+                    .opacity(task.isDone ? 1 : 0)
+                Image(systemName: openSymbol)
+                    .foregroundStyle(Color.secondary)
+                    .opacity(task.isDone ? 0 : 1)
+                CheckmarkMark()
+                    .trim(from: 0, to: task.isDone ? 1 : 0)
+                    .stroke(Color.white, style: StrokeStyle(lineWidth: checkLineWidth, lineCap: .round, lineJoin: .round))
+                    .transaction { if isReduceMotionOn { $0.animation = nil } }
+                    .opacity(task.isDone ? 1 : 0)
+                if !isReduceMotionOn {
+                    SparkleBurst(isBursting: task.isDone)
                 }
-                .overlay {
-                    CheckmarkMark()
-                        .trim(from: 0, to: task.isDone ? 1 : 0)
-                        .stroke(Color.white, style: StrokeStyle(lineWidth: checkLineWidth, lineCap: .round, lineJoin: .round))
-                        .transaction { if isReduceMotionOn { $0.animation = nil } }
-                        .opacity(task.isDone ? 1 : 0)
-                }
-                .overlay {
-                    if !isReduceMotionOn {
-                        SparkleBurst(isBursting: task.isDone)
-                    }
-                }
-                .todzAnimation(.draw, value: task.isDone)
+            }
+            .todzAnimation(.draw, value: task.isDone)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
