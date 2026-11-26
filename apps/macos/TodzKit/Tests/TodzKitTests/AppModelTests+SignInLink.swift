@@ -185,7 +185,7 @@ extension AppModelTests {
         #expect(harness.pendingLinks.link == nil)
     }
 
-    @Test func aLinkWhileSignedInIsDroppedWithNothingSentOrShown() async throws {
+    @Test func aLinkWhileSignedInSendsNothingAndSaysTheOwnerIsAlreadySignedIn() async throws {
         let harness = try harnessWithAPendingLink()
         harness.seedWorkspace(name: "acme")
         await harness.signedIn()
@@ -193,20 +193,53 @@ extension AppModelTests {
         #expect(harness.service.calls == [])
         #expect(harness.model.signInError == nil)
         #expect(harness.model.phase == .ready)
+        #expect(harness.model.banner == .alreadySignedIn)
+        #expect(harness.model.canRedeemAgain == false)
     }
 
-    @Test func anIncomingLinkIsShownOnlyWhileTheOwnerIsNotSignedIn() async throws {
-        let harness = try harnessWithAPendingLink()
-        #expect(harness.model.showsIncomingSignInLink)
-        await harness.model.launch()
-        #expect(harness.model.showsIncomingSignInLink)
-    }
-
-    @Test func anIncomingLinkIsNotShownOnceTheOwnerIsSignedIn() async throws {
+    @Test func aLinkWhileSignedInKeepsAnErrorBannerAlreadyShowing() async throws {
         let harness = try harnessWithAPendingLink()
         harness.seedWorkspace(name: "acme")
         await harness.signedIn()
-        #expect(harness.model.showsIncomingSignInLink == false)
+        harness.model.raise(.network)
+        await harness.model.redeem(signInLink: try incomingLink())
+        #expect(harness.model.banner == .network)
+    }
+
+    @Test func theAlreadySignedInLineGoesWhenTheOwnerDismissesIt() async throws {
+        let harness = try harnessWithAPendingLink()
+        harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        await harness.model.redeem(signInLink: try incomingLink())
+        harness.model.dismissBanner()
+        #expect(harness.model.banner == nil)
+    }
+
+    @Test func aLinkOpenedWhileThePickerShowsSaysTheOwnerIsAlreadySignedIn() async throws {
+        let harness = try harnessWithAPendingLink()
+        harness.seedWorkspace(name: "acme")
+        harness.seedWorkspace(name: "side")
+        await harness.signedIn()
+        #expect(harness.model.phase == .choosing)
+        await harness.model.redeem(signInLink: try incomingLink())
+        #expect(harness.model.banner == .alreadySignedIn)
+    }
+
+    @Test func aLinkHeldUntilTheLaunchSettlesSaysTheOwnerIsAlreadySignedIn() async throws {
+        let harness = try harnessWithAPendingLink()
+        harness.seedWorkspace(name: "acme")
+        harness.vault.secret = harness.session
+        await harness.model.redeem(signInLink: try incomingLink())
+        #expect(harness.model.banner == nil)
+        await harness.model.launch()
+        #expect(harness.model.banner == .alreadySignedIn)
+    }
+
+    @Test func aLinkWhileSignedOutRaisesNoBanner() async throws {
+        let harness = try harnessWithAPendingLink()
+        await harness.model.launch()
+        await harness.model.redeem(signInLink: try incomingLink())
+        #expect(harness.model.banner == nil)
     }
 
     @Test func aRejectedLinkKeepsAnUnexpiredPendingLinkAndSaysTheLinkWasRejected() async throws {

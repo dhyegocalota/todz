@@ -31,8 +31,9 @@ enum OwnerFixtures {
         "{\"id\":\"\(identifier)\",\"name\":\"\(name)\",\"is_inbox\":\(isInbox),\"created_at\":\(createdAtMilliseconds)}"
     }
 
-    static func workspaceJSON(identifier: String, name: String, projects: [String]) -> String {
-        "{\"id\":\"\(identifier)\",\"name\":\"\(name)\",\"created_at\":\(createdAtMilliseconds),\"projects\":[\(projects.joined(separator: ","))]}"
+    static func workspaceJSON(identifier: String, name: String, projects: [String], lastActivityAtMilliseconds: Int64? = nil) -> String {
+        let lastActivityAt = lastActivityAtMilliseconds.map(String.init) ?? "null"
+        return "{\"id\":\"\(identifier)\",\"name\":\"\(name)\",\"created_at\":\(createdAtMilliseconds),\"last_activity_at\":\(lastActivityAt),\"projects\":[\(projects.joined(separator: ","))]}"
     }
 
     static let ownerActorJSON = "{\"kind\":\"owner\",\"client_name\":null}"

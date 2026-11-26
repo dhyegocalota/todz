@@ -37,6 +37,7 @@ public struct Workspace: Codable, Sendable, Equatable {
     public let name: String
     public let createdAt: Date
     public let projects: [Project]
+    public var lastActivityAt: Date? = nil
 
     public var namedProjectCount: Int {
         projects.filter { !$0.isInbox }.count
