@@ -17,6 +17,7 @@ extension AppBanner {
         case .waitingChangesLost: ErrorCopy.waitingChangesLost
         case .signOutFailed: ErrorCopy.signOutFailed
         case .updateNeeded: ErrorCopy.updateNeededTitle
+        case .alreadySignedIn: ErrorCopy.alreadySignedIn
         }
     }
 
@@ -27,7 +28,7 @@ extension AppBanner {
         case .changesRefused: ErrorCopy.changeNotSavedBody
         case .updateNeeded: ErrorCopy.updateNeededBody
         case .someProjectsFailed, .changeNotSaved, .sessionNotSaved, .inboxIsFixed, .taskGone, .projectGone, .workspaceGone, .cacheNotSaved,
-            .waitingChangesLost, .signOutFailed:
+            .waitingChangesLost, .signOutFailed, .alreadySignedIn:
             nil
         }
     }
