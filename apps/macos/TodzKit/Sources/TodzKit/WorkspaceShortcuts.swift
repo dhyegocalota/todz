@@ -23,6 +23,10 @@ public enum WorkspaceShortcuts {
         return workspaces[(activePosition + step + workspaces.count) % workspaces.count]
     }
 
+    public static func shouldRegister(phase: AppPhase, workspaceCount: Int, isGlobalOn: Bool) -> Bool {
+        true
+    }
+
     public static func numbered(_ workspaces: [Workspace]) -> [(number: Int, workspace: Workspace)] {
         zip(numbers, workspaces).map { (number: $0, workspace: $1) }
     }

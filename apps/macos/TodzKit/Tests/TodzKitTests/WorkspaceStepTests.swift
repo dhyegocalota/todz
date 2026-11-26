@@ -49,6 +49,15 @@ private func workspaces(count: Int) -> [Workspace] {
         #expect(WorkspaceShortcuts.workspace(action: .previous, activeIdentifier: nil, in: listed) == listed[2])
     }
 
+    @Test func hotKeysRegisterOnlyWhenReadyWithWorkspacesAndTheSwitchOn() {
+        #expect(WorkspaceShortcuts.shouldRegister(phase: .ready, workspaceCount: 2, isGlobalOn: true))
+        #expect(!WorkspaceShortcuts.shouldRegister(phase: .ready, workspaceCount: 2, isGlobalOn: false))
+        #expect(!WorkspaceShortcuts.shouldRegister(phase: .ready, workspaceCount: 0, isGlobalOn: true))
+        #expect(!WorkspaceShortcuts.shouldRegister(phase: .signedOut(notice: nil), workspaceCount: 2, isGlobalOn: true))
+        #expect(!WorkspaceShortcuts.shouldRegister(phase: .choosing, workspaceCount: 2, isGlobalOn: true))
+        #expect(!WorkspaceShortcuts.shouldRegister(phase: .loading, workspaceCount: 2, isGlobalOn: true))
+    }
+
     @Test func anEmptyListStepsNowhere() {
         #expect(WorkspaceShortcuts.workspace(action: .next, activeIdentifier: nil, in: []) == nil)
     }
