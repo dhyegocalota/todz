@@ -24,9 +24,8 @@ struct ServerAddressForm: View {
             LabeledContent {
                 cloudButton
             } label: {
-                Text(SettingsCopy.server)
                 Text(SettingsCopy.serverDetail)
-                    .lineLimit(subtitleLines, reservesSpace: true)
+                    .settingsDetail()
             }
             editor
         case .column:
@@ -38,9 +37,11 @@ struct ServerAddressForm: View {
         VStack(alignment: layout == .row ? .leading : .center) {
             switch layout {
             case .row:
-                HStack {
-                    field
-                    action
+                LabeledContent(SettingsCopy.serverAddressLabel) {
+                    HStack {
+                        field
+                        action
+                    }
                 }
             case .column:
                 field
@@ -69,6 +70,7 @@ struct ServerAddressForm: View {
     private var field: some View {
         TextField(SettingsCopy.serverAddressLabel, text: $text, prompt: Text(SettingsCopy.serverPlaceholder))
             .textFieldStyle(.roundedBorder)
+            .multilineTextAlignment(.leading)
             .labelsHidden()
             .autocorrectionDisabled()
             .focused($isFieldFocused)
