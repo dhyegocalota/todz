@@ -43,7 +43,7 @@ struct AppCommands: Commands {
                 .keyboardShortcut(inspectorKey, modifiers: [.command, .option])
                 .disabled(!canToggleInspector)
             Divider()
-            WorkspaceMenuItems(model: model, shortcuts: shortcuts)
+            WorkspaceMenuItems(model: model, shortcuts: shortcuts, windowState: windowState)
         }
         CommandMenu(MainWindowCopy.taskMenu) {
             TaskMenuItems(model: model, windowState: windowState)

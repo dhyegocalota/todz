@@ -11,6 +11,10 @@ private let currentSessionPath = "/owner/sessions/current"
 private let workspacesPath = "/owner/workspaces"
 private let cursorParameter = "cursor"
 
+private func workspacePath(_ workspaceIdentifier: String) -> String {
+    "\(workspacesPath)/\(workspaceIdentifier)"
+}
+
 private func projectsPath(workspaceIdentifier: String) -> String {
     "\(workspacesPath)/\(workspaceIdentifier)/projects"
 }
@@ -63,8 +67,11 @@ public protocol OwnerService: Sendable {
     func updateDayEmailMinutes(session: String, minutes: Int) async throws -> Owner
     func listWorkspaces(session: String) async throws -> [Workspace]
     func createWorkspace(session: String, name: String) async throws -> Workspace
+    func renameWorkspace(session: String, workspaceIdentifier: String, name: String) async throws -> Workspace
+    func deleteWorkspace(session: String, workspaceIdentifier: String) async throws
     func createProject(session: String, workspaceIdentifier: String, name: String) async throws -> Project
     func renameProject(session: String, projectIdentifier: String, name: String) async throws -> Project
+    func deleteProject(session: String, projectIdentifier: String) async throws
     func addTasks(session: String, projectIdentifier: String, drafts: [TaskDraft]) async throws -> [AddedTask]
     func updateTask(session: String, projectIdentifier: String, number: Int, patch: TaskPatch) async throws -> TaskRecord
     func completeTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [CompletedTask]
@@ -177,6 +184,19 @@ public struct OwnerAPI: OwnerService {
     public func createWorkspace(session: String, name: String) async throws -> Workspace {
         let request = try OwnerRequest(method: .post, path: workspacesPath, session: session, body: NameBody(name: name))
         return try await answer(WorkspaceAnswer.self, to: request).workspace
+    }
+
+    public func renameWorkspace(session: String, workspaceIdentifier: String, name: String) async throws -> Workspace {
+        let request = try OwnerRequest(method: .patch, path: workspacePath(workspaceIdentifier), session: session, body: NameBody(name: name))
+        return try await answer(WorkspaceAnswer.self, to: request).workspace
+    }
+
+    public func deleteWorkspace(session: String, workspaceIdentifier: String) async throws {
+        _ = try await send(OwnerRequest(method: .delete, path: workspacePath(workspaceIdentifier), session: session))
+    }
+
+    public func deleteProject(session: String, projectIdentifier: String) async throws {
+        _ = try await send(OwnerRequest(method: .delete, path: projectPath(projectIdentifier), session: session))
     }
 
     public func createProject(session: String, workspaceIdentifier: String, name: String) async throws -> Project {
