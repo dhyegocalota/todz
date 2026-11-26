@@ -1,5 +1,5 @@
 import { type CallToolResult, McpServer } from '@modelcontextprotocol/server';
-import { OWNER_WORKSPACES_MAX, WORKSPACE_PROJECTS_MAX } from '@todz/types';
+import { MINUTES_PER_HOUR, OWNER_WORKSPACES_MAX, WORKSPACE_PROJECTS_MAX } from '@todz/types';
 import { type WorkspaceListing, listOwnerWorkspaces } from './directory-workspaces';
 import type { Env } from './env';
 import { MCP_COPY, McpOwnerToolName } from './mcp-copy';
@@ -11,12 +11,12 @@ import {
   NameArgumentsSchema,
   RenameProjectArgumentsSchema,
   RenameWorkspaceArgumentsSchema,
+  UpdateSettingsArgumentsSchema,
 } from './mcp-owner-arguments';
-import type { ProjectRecord } from './owner-records';
+import { type ActionFailure, ActionFailureKind, type ActionResult } from './owner-action-result';
+import type { OwnerRecord, ProjectRecord } from './owner-records';
+import { readSettings, updateSettings } from './owner-settings-actions';
 import {
-  type ActionFailure,
-  ActionFailureKind,
-  type ActionResult,
   createProject,
   createWorkspace,
   deleteProject,
@@ -33,6 +33,7 @@ const MCP_SERVER_VERSION = '0.1.0';
 const TEXT_CONTENT = 'text';
 const LINE_BREAK = '\n';
 const PROJECT_INDENT = '  ';
+const TIME_PART_WIDTH = 2;
 const READ_ONLY_ANNOTATIONS = { readOnlyHint: true };
 const WRITE_ANNOTATIONS = { destructiveHint: false };
 const DESTRUCTIVE_ANNOTATIONS = { destructiveHint: true };
@@ -47,21 +48,27 @@ function errorAnswer(text: string): CallToolResult {
   return { content: [{ type: TEXT_CONTENT, text }], isError: true };
 }
 
-function failureTextOf({ failure, limitText }: { failure: ActionFailure; limitText: string }): string {
+const TEXT_OF_FIXED_FAILURE: Record<Exclude<ActionFailureKind, ActionFailureKind.RuleViolated | ActionFailureKind.LimitReached>, string> = {
+  [ActionFailureKind.NotFound]: MCP_COPY.accountNotFound,
+  [ActionFailureKind.InboxIsFixed]: MCP_COPY.inboxIsFixed,
+  [ActionFailureKind.TimeZoneInvalid]: MCP_COPY.timeZoneInvalid,
+};
+
+function failureTextOf({ failure, limitText }: { failure: ActionFailure; limitText: string | null }): string {
   if (failure.kind === ActionFailureKind.RuleViolated) return failureText(failure.failure);
-  if (failure.kind === ActionFailureKind.NotFound) return MCP_COPY.accountNotFound;
-  if (failure.kind === ActionFailureKind.InboxIsFixed) return MCP_COPY.inboxIsFixed;
+  if (failure.kind !== ActionFailureKind.LimitReached) return TEXT_OF_FIXED_FAILURE[failure.kind];
+  if (limitText === null) throw new Error('only an action with a limit reaches it');
   return limitText;
 }
 
 function answerOf<Value>({
   result,
   answer,
-  limitText,
+  limitText = null,
 }: {
   result: ActionResult<Value>;
   answer: (value: Value) => string;
-  limitText: string;
+  limitText?: string | null;
 }): CallToolResult {
   if (!result.ok) return errorAnswer(failureTextOf({ failure: result.failure, limitText }));
   return textAnswer(answer(result.value));
@@ -85,11 +92,53 @@ function inboxOf(listing: WorkspaceListing): ProjectRecord {
   return inbox;
 }
 
+function dayEmailTimeOf(minutes: number): string {
+  const hours = Math.floor(minutes / MINUTES_PER_HOUR);
+  const remainder = minutes % MINUTES_PER_HOUR;
+  return `${String(hours).padStart(TIME_PART_WIDTH, '0')}:${String(remainder).padStart(TIME_PART_WIDTH, '0')}`;
+}
+
+function settingsLines(settings: OwnerRecord): string[] {
+  const nudgeState = settings.agentNudge ? MCP_COPY.settingsOn : MCP_COPY.settingsOff;
+  const dayEmailLine = settings.dayEmail ? MCP_COPY.dayEmailOnLine(dayEmailTimeOf(settings.dayEmailMinutes)) : MCP_COPY.dayEmailOffLine;
+  return [MCP_COPY.timeZoneLine(settings.timeZone), MCP_COPY.agentNudgeLine(nudgeState), dayEmailLine];
+}
+
 function registerReadTools({ server, scope }: { server: McpServer; scope: OwnerMcpScope }): void {
+  const { env, owner } = scope;
   server.registerTool(
     McpOwnerToolName.Workspaces,
     { description: MCP_COPY.ownerTools[McpOwnerToolName.Workspaces], annotations: READ_ONLY_ANNOTATIONS },
-    async () => textAnswer(workspacesAnswer(await listOwnerWorkspaces({ directory: scope.env.DIRECTORY, ownerId: scope.owner.ownerId }))),
+    async () => textAnswer(workspacesAnswer(await listOwnerWorkspaces({ directory: env.DIRECTORY, ownerId: owner.ownerId }))),
+  );
+  server.registerTool(
+    McpOwnerToolName.Settings,
+    { description: MCP_COPY.ownerTools[McpOwnerToolName.Settings], annotations: READ_ONLY_ANNOTATIONS },
+    async () => textAnswer(settingsLines(await readSettings({ env, owner })).join(LINE_BREAK)),
+  );
+}
+
+function registerSettingsTool({ server, scope }: { server: McpServer; scope: OwnerMcpScope }): void {
+  const { env, owner, now } = scope;
+  server.registerTool(
+    McpOwnerToolName.UpdateSettings,
+    {
+      description: MCP_COPY.ownerTools[McpOwnerToolName.UpdateSettings],
+      inputSchema: UpdateSettingsArgumentsSchema,
+      annotations: WRITE_ANNOTATIONS,
+    },
+    async (args) => {
+      const input = {
+        timeZone: args.time_zone,
+        agentNudge: args.agent_nudge,
+        dayEmail: args.day_email,
+        dayEmailMinutes: args.day_email_minutes,
+      };
+      const isEmpty = Object.values(input).every((value) => value === undefined);
+      if (isEmpty) return errorAnswer(MCP_COPY.nothingToUpdateSettings);
+      const result = await updateSettings({ env, owner, now, input });
+      return answerOf({ result, answer: (settings) => [MCP_COPY.settingsUpdated, ...settingsLines(settings)].join(LINE_BREAK) });
+    },
   );
 }
 
@@ -193,5 +242,6 @@ export function buildOwnerMcpServer(scope: OwnerMcpScope): McpServer {
   registerReadTools({ server, scope });
   registerWorkspaceTools({ server, scope });
   registerProjectTools({ server, scope });
+  registerSettingsTool({ server, scope });
   return server;
 }

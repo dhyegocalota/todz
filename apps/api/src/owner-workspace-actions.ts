@@ -12,30 +12,12 @@ import {
 } from './directory-workspaces';
 import type { WorkspaceListing } from './directory-workspaces';
 import type { Env } from './env';
+import { ActionFailureKind, type ActionResult, failed } from './owner-action-result';
 import type { ProjectRecord } from './owner-records';
-import { type ProjectFailure, ProjectFailureKind, resultOf } from './project-result';
+import { ProjectFailureKind, resultOf } from './project-result';
 import { type SessionOwner, findOwnedProjectId, findOwnedWorkspaceId, wipeProjectStorage } from './project-routing';
 
-export enum ActionFailureKind {
-  NotFound = 'not_found',
-  LimitReached = 'limit_reached',
-  InboxIsFixed = 'inbox_is_fixed',
-  RuleViolated = 'rule_violated',
-}
-
-export type ActionFailure =
-  | { kind: ActionFailureKind.NotFound }
-  | { kind: ActionFailureKind.LimitReached }
-  | { kind: ActionFailureKind.InboxIsFixed }
-  | { kind: ActionFailureKind.RuleViolated; failure: ProjectFailure };
-
-export type ActionResult<Value> = { ok: true; value: Value } | { ok: false; failure: ActionFailure };
-
 type Acting = { env: Env; owner: SessionOwner };
-
-function failed(kind: Exclude<ActionFailureKind, ActionFailureKind.RuleViolated>): ActionResult<never> {
-  return { ok: false, failure: { kind } };
-}
 
 function nameOf(name: string): ActionResult<string> {
   const nameResult = resultOf(() => normalizeName(name));

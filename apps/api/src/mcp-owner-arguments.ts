@@ -1,3 +1,4 @@
+import { DAY_EMAIL_MINUTES_MAX } from '@todz/types';
 import { z } from 'zod';
 import { MCP_COPY } from './mcp-copy';
 
@@ -23,6 +24,13 @@ export const CreateProjectArgumentsSchema = z.object({
 export const RenameProjectArgumentsSchema = z.object({
   project: z.string().describe(ownerFields.project),
   name: z.string().describe(ownerFields.name),
+});
+
+export const UpdateSettingsArgumentsSchema = z.object({
+  time_zone: z.string().optional().describe(ownerFields.timeZone),
+  agent_nudge: z.boolean().optional().describe(ownerFields.agentNudge),
+  day_email: z.boolean().optional().describe(ownerFields.dayEmail),
+  day_email_minutes: z.number().int().min(0).max(DAY_EMAIL_MINUTES_MAX).optional().describe(ownerFields.dayEmailMinutes),
 });
 
 export const DeleteProjectArgumentsSchema = z.object({

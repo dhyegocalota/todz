@@ -24,7 +24,7 @@ const SCHEMA_KEY_PATTERN = /\b(\w+): (?:z|\w+Schema)\./g;
 const PLACEMENT_SCHEMA_NAME = 'Placement';
 const SCHEMA_END_MARKERS = ['});', '\n]);'];
 const SCHEMA_TOOLS = ['add', 'list', 'show', 'history', 'update', 'done', 'reopen', 'delete', 'move'];
-const ARGUMENTLESS_TOOLS = ['next', 'projects', 'workspaces'];
+const ARGUMENTLESS_TOOLS = ['next', 'projects', 'workspaces', 'settings'];
 const PROJECT_SCOPE_LINE = '**Scope:** project key.';
 const OWNER_SCOPE_LINE = '**Scope:** owner key.';
 const OWNER_SCHEMA_OF_TOOL: Record<string, string> = {
@@ -34,6 +34,7 @@ const OWNER_SCHEMA_OF_TOOL: Record<string, string> = {
   create_project: 'CreateProject',
   rename_project: 'RenameProject',
   delete_project: 'DeleteProject',
+  update_settings: 'UpdateSettings',
 };
 
 type Section = { heading: string; body: string };

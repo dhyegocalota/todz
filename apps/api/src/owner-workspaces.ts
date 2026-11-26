@@ -2,20 +2,12 @@ import { OWNER_WORKSPACES_MAX, WORKSPACE_PROJECTS_MAX } from '@todz/types';
 import { z } from 'zod';
 import { listOwnerWorkspaces } from './directory-workspaces';
 import { HttpStatus } from './http-status';
-import { OwnerErrorCode, errorResponse, failureResponse } from './owner-errors';
+import { failedResponse } from './owner-action-response';
+import { OwnerErrorCode, errorResponse } from './owner-errors';
 import { projectJson, workspaceJson } from './owner-json';
 import { type SessionContext, type SessionHandler, parsedBody, routeParam } from './owner-request';
 import { OwnerRoute, RouteParam } from './owner-routes';
-import {
-  type ActionFailure,
-  ActionFailureKind,
-  createProject,
-  createWorkspace,
-  deleteProject,
-  deleteWorkspace,
-  renameProject,
-  renameWorkspace,
-} from './owner-workspace-actions';
+import { createProject, createWorkspace, deleteProject, deleteWorkspace, renameProject, renameWorkspace } from './owner-workspace-actions';
 
 const NameBodySchema = z.object({ name: z.string() });
 
@@ -27,17 +19,6 @@ type WorkspaceRoute =
   | OwnerRoute.CreateProject
   | OwnerRoute.RenameProject
   | OwnerRoute.DeleteProject;
-
-const ERROR_CODE_OF_FAILURE: Record<Exclude<ActionFailureKind, ActionFailureKind.RuleViolated>, OwnerErrorCode> = {
-  [ActionFailureKind.NotFound]: OwnerErrorCode.NotFound,
-  [ActionFailureKind.LimitReached]: OwnerErrorCode.LimitReached,
-  [ActionFailureKind.InboxIsFixed]: OwnerErrorCode.InboxIsFixed,
-};
-
-function failedResponse(failure: ActionFailure): Response {
-  if (failure.kind === ActionFailureKind.RuleViolated) return failureResponse(failure.failure);
-  return errorResponse(ERROR_CODE_OF_FAILURE[failure.kind]);
-}
 
 async function listWorkspaces({ env, owner }: SessionContext): Promise<Response> {
   const listings = await listOwnerWorkspaces({ directory: env.DIRECTORY, ownerId: owner.ownerId });

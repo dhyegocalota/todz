@@ -9,7 +9,7 @@ const OWNER_TOOL_ENUM_PATTERN = /export enum McpOwnerToolName \{([\s\S]*?)\}/;
 const ROUTE_ENUM_PATTERN = /export enum OwnerRoute \{([\s\S]*?)\}/;
 const ENUM_VALUE_PATTERN = /\w+ = '(\w+)'/g;
 const FIRST_CAPTURE = 1;
-const DEFERRED_ACTIONS = ['Read the account settings', 'Change the account settings'];
+const DEFERRED_ACTIONS: string[] = [];
 
 function enumValues({ path, pattern }: { path: string; pattern: RegExp }): string[] {
   const body = pattern.exec(readRepositoryFile(path))?.[FIRST_CAPTURE];

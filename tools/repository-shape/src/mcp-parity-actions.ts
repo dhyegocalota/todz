@@ -11,7 +11,6 @@ export type AppAction = { action: string; ownerRoute: string | null; tool: strin
 const CREDENTIAL_REASON = 'a credential: an agent able to issue or revoke keys could widen its own access';
 const IDENTITY_REASON = 'a person proves who they are: an agent never signs in for them';
 const SYNC_REASON = 'sync transport between a Mac and the server; an agent reads tasks with list and show';
-const SETTINGS_REASON = 'account settings (time zone, agent nudge, day email) are not over MCP in this version';
 
 function projectKeyAction({ action, ownerRoute, tool }: { action: string; ownerRoute: string | null; tool: string }): AppAction {
   return { action, ownerRoute, tool, scope: ParityScope.ProjectKey, reason: null };
@@ -76,6 +75,6 @@ export const APP_ACTIONS: AppAction[] = [
     reason: IDENTITY_REASON,
   }),
   withoutTool({ action: 'Sign out', ownerRoute: 'sign_out', scope: ParityScope.NotOverMcp, reason: IDENTITY_REASON }),
-  withoutTool({ action: 'Read the account settings', ownerRoute: 'read_owner', scope: ParityScope.Deferred, reason: SETTINGS_REASON }),
-  withoutTool({ action: 'Change the account settings', ownerRoute: 'update_owner', scope: ParityScope.Deferred, reason: SETTINGS_REASON }),
+  ownerKeyAction({ action: 'Read the account settings', ownerRoute: 'read_owner', tool: 'settings' }),
+  ownerKeyAction({ action: 'Change the account settings', ownerRoute: 'update_owner', tool: 'update_settings' }),
 ];

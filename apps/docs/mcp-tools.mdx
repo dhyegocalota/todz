@@ -205,6 +205,27 @@ Delete a project for good with its tasks and keys. Give its current name as conf
 | `project` | text   | Id of the project, from workspaces.                                                 |
 | `confirm` | text   | The current name of the project, typed exactly. Nothing is deleted when it differs. |
 
+## settings
+
+**Scope:** owner key.
+
+Show the account settings: time zone, agent nudge and day email.
+
+It takes no arguments.
+
+## update_settings
+
+**Scope:** owner key.
+
+Change the account settings. Give only what changes.
+
+| Argument            | Type            | Description                                                                              |
+| ------------------- | --------------- | ---------------------------------------------------------------------------------------- |
+| `time_zone`         | text            | Time zone name, like America/Sao_Paulo.                                                  |
+| `agent_nudge`       | true or false   | Whether next adds a line about the tasks due today.                                      |
+| `day_email`         | true or false   | Whether the day email is sent.                                                           |
+| `day_email_minutes` | whole number    | Minutes after midnight, in your time zone, when the day email is sent: 0 to 1439.        |
+
 ## Prompts
 
 The server offers one prompt, `next`: Start working on the next task of this project.
