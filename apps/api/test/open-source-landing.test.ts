@@ -38,17 +38,19 @@ afterEach(() => {
 });
 
 describe('the star pill', () => {
-  test('sits in the hero and the footer, each linking the repository and labelled Star on GitHub', async () => {
+  test('sits in the hero, the self-host card of the final panel and the footer, each linking the repository and labelled Star on GitHub', async () => {
     const { html } = await landing(STARS);
     const pills = [...html.matchAll(STAR_PILL_PATTERN)].map(([pill]) => pill);
-    expect(pills).toHaveLength(2);
+    expect(pills).toHaveLength(3);
     pills.forEach((pill) => {
       expect(pill).toContain(`href="${REPOSITORY.url}"`);
       expect(pill).toContain(LANDING_COPY.openSource.starLabel);
       expect(pill).toContain('<svg');
     });
-    const [heroPill, footerPill] = [...html.matchAll(STAR_PILL_PATTERN)].map((match) => match.index);
+    const [heroPill, panelPill, footerPill] = [...html.matchAll(STAR_PILL_PATTERN)].map((match) => match.index);
     expect(heroPill).toBeLessThan(html.indexOf('<section class="benefits'));
+    expect(panelPill).toBeGreaterThan(html.indexOf('<section id="ways"'));
+    expect(panelPill).toBeLessThan(html.indexOf('<footer class="site-footer'));
     expect(footerPill).toBeGreaterThan(html.indexOf('<footer class="site-footer'));
   });
 
@@ -64,6 +66,7 @@ describe('the star pill', () => {
     expect([...html.matchAll(new RegExp(STAR_COUNT_PATTERN, 'g'))].map((match) => match[FIRST_CAPTURE])).toEqual([
       String(STARS),
       String(STARS),
+      String(STARS),
     ]);
     expect(html).toContain(`<span class="star-count-final">${STARS_TEXT}</span>`);
     expect(html).toContain('<span class="star-glyph" aria-hidden="true">★</span>');
@@ -72,7 +75,7 @@ describe('the star pill', () => {
 
   test('shows the label and no number when GitHub gave none', async () => {
     const { html } = await landing(null);
-    expect([...html.matchAll(STAR_PILL_PATTERN)]).toHaveLength(2);
+    expect([...html.matchAll(STAR_PILL_PATTERN)]).toHaveLength(3);
     expect(html).not.toContain('class="star-count"');
     expect(html).not.toContain('class="star-glyph"');
     expect(html).toContain(LANDING_COPY.openSource.starLabel);

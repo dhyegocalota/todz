@@ -7,7 +7,9 @@ const COLUMN_TOLERANCE = 1;
 
 test.describe('the two ways section', () => {
   ['light', 'dark'].forEach((colorScheme) => {
-    test(`shows two equal cards, the badges, the buttons and the note in ${colorScheme}`, async ({ page }) => {
+    test(`shows the wider cloud card beside the self-host card, the badges, the buttons and the note in ${colorScheme}`, async ({
+      page,
+    }) => {
       await page.emulateMedia({ colorScheme: colorScheme === 'dark' ? 'dark' : 'light' });
       await page.goto('/');
       await expect(page.locator('#ways')).toBeVisible();
@@ -20,7 +22,9 @@ test.describe('the two ways section', () => {
       await expect(page.locator('.ways-note')).toHaveText(LANDING_COPY.ways.note);
       const [first, second] = await Promise.all([cards.nth(0).boundingBox(), cards.nth(1).boundingBox()]);
       if (first === null || second === null) throw new Error('both cards are laid out');
-      expect(Math.abs(first.width - second.width)).toBeLessThanOrEqual(COLUMN_TOLERANCE);
+      const isDesktop = test.info().project.name === ProjectName.Desktop;
+      if (isDesktop) expect(first.width).toBeGreaterThan(second.width);
+      if (!isDesktop) expect(Math.abs(first.width - second.width)).toBeLessThanOrEqual(COLUMN_TOLERANCE);
     });
   });
 
