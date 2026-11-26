@@ -22,13 +22,13 @@ G1 then G2, one developer.
 
 ### G1
 
-- [ ] **Step 1:** Red: the spec's model tests in `AppModelTests+OwnerSettingsRefresh.swift`, with a stub `refreshOwnerSettings()` that does nothing, committed alone.
-- [ ] **Step 2:** Green: `refreshOwnerSettings()` and the per-setting save counts (`swift test` green).
+- [x] **Step 1:** Red: the spec's model tests in `AppModelTests+OwnerSettingsRefresh.swift`, with a stub `refreshOwnerSettings()` that reads and discards (a no-op stub hung the held-read tests), committed alone — cb201781
+- [x] **Step 2:** Green: `refreshOwnerSettings()` and the per-setting save counts (`swift test` green) — 22d3a4ff
 
 ### G2
 
-- [ ] **Step 3:** The app calls the refresh on activation and when Settings appears (`xcodebuild` build green).
-- [ ] **Step 4:** Tester briefing.
+- [x] **Step 3:** The app calls the refresh on activation and when Settings appears (`xcodebuild` build green) — 76cb966d
+- [x] **Step 4:** Tester briefing — tester-briefing.md
 
 ## Failure modes
 
@@ -42,7 +42,7 @@ G1 then G2, one developer.
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
 - [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
 - [ ] **Reviewer:** a fresh `reviewer` sub-agent returned a verdict.
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
