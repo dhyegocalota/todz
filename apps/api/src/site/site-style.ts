@@ -176,6 +176,19 @@ a{color:var(--color-link);text-underline-offset:0.12em}
 .star-count-live{visibility:hidden}
 .star-count[data-counting] .star-count-final{visibility:hidden}
 .star-count[data-counting] .star-count-live{visibility:visible}
+.hero-free{margin-top:var(--space-3);font-size:var(--text-lead);font-weight:600;color:var(--color-text)}
+.free-chip{display:inline-flex;align-items:center;justify-content:center;min-height:var(--size-tap);padding:0 var(--space-4);border-radius:var(--radius-pill);font-size:0.9375rem;font-weight:600;line-height:1;color:var(--color-text);box-shadow:var(--glass-edge), var(--shadow-card)}
+.ways{margin-top:var(--space-section);text-align:center}
+.way-list{display:grid;gap:var(--space-4);margin:var(--space-6) 0 0;padding:0;list-style:none;text-align:left}
+.way-card{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-3);padding:var(--space-5);border-radius:var(--radius-card)}
+.way-head{display:flex;align-items:center;gap:var(--space-3)}
+.way-title{font-size:var(--text-title);font-weight:650}
+.way-badge{padding:4px var(--space-3);border-radius:var(--radius-pill);font-size:var(--text-eyebrow);font-weight:600;line-height:1;color:var(--color-text);background:var(--color-chip)}
+.way-body{flex:1;color:var(--color-text-muted)}
+.way-cta{margin-top:var(--space-2)}
+.way-cta-secondary{display:inline-flex;align-items:center;justify-content:center;height:var(--size-capsule);padding:0 var(--space-6);border-radius:var(--radius-pill);font-weight:600;color:var(--color-text);text-decoration:none;background:var(--color-chip);box-shadow:var(--glass-edge)}
+.way-cta-secondary:hover{background:var(--color-hairline)}
+.ways-note{margin-top:var(--space-5);color:var(--color-text-muted)}
 .open-source-line{margin-top:var(--space-2);font-size:var(--text-small);color:var(--color-text-muted)}
 .open-source-link{color:inherit;text-decoration:underline;text-underline-offset:0.2em}
 .open-source-link:hover{color:var(--color-text)}
@@ -263,6 +276,7 @@ ${CROP_RULES}
 .join-button{height:100%}
 .download-button{width:auto}
 .download{max-width:none}
+.way-list{grid-template-columns:repeat(2, 1fr)}
 .hero-buttons{flex-direction:row;justify-content:center;align-items:center}
 .desk-stage{aspect-ratio:1152 / 600}
 .shot-window{display:block}

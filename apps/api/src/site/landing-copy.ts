@@ -42,6 +42,26 @@ export const LANDING_COPY = {
     note: 'Not notarized by Apple yet: the first time, open it from System Settings › Privacy & Security.',
     noteLink: 'Install steps',
   },
+  free: {
+    line: 'Free on todz cloud — or run your own.',
+    chip: 'Free',
+  },
+  ways: {
+    title: 'Two ways to use todz',
+    cloud: {
+      title: 'todz cloud',
+      badge: 'Free',
+      body: 'Sign in with your email. Synced across your Macs and agents. Nothing to run.',
+      cta: 'Download for Mac',
+    },
+    selfHost: {
+      title: 'Self-host',
+      badge: 'Open source',
+      body: 'Run the server on your own Cloudflare account. Same app: switch the server in Settings.',
+      cta: 'Server setup guide',
+    },
+    note: 'The app is the same either way, and updates itself.',
+  },
   openSource: {
     starLabel: 'Star on GitHub',
     line: 'Open source · AGPL-3.0',
