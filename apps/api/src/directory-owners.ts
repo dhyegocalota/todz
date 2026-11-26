@@ -1,7 +1,18 @@
 import { AGENT_NUDGE_BY_DEFAULT, DAY_EMAIL_BY_DEFAULT } from '@todz/types';
+import type { CloudCap } from './cloud-admission';
+import { activeOwnerSql, outstandingAdmissionSql } from './cloud-queue-store';
 import type { OwnerRecord } from './owner-records';
+import { SignInProviderKind } from './sign-in-provider';
 
 const OWNER_COLUMNS = 'id, time_zone, agent_nudge, day_email, day_email_minutes';
+
+const INSERT_OWNER = 'INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at) VALUES (?1, ?2, ?3, ?4, ?5)';
+const INSERT_OWNER_WITHIN_CAP = `INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at)
+SELECT ?1, ?2, ?3, ?4, ?5
+WHERE (SELECT COUNT(*) FROM owners WHERE ${activeOwnerSql({ sinceMilliseconds: '?6', sinceDay: '?7' })})
+  + (SELECT COUNT(*) FROM cloud_queue WHERE ${outstandingAdmissionSql({ sinceMilliseconds: '?6', sinceDay: '?7', admissionSince: '?9', provider: '?10' })}) < ?8`;
+const INSERT_IDENTITY_OF_OWNER = `INSERT INTO owner_identities (provider, subject, owner_id, created_at)
+SELECT ?1, ?2, ?3, ?4 WHERE EXISTS (SELECT 1 FROM owners WHERE id = ?3)`;
 
 const UPDATE_OWNER_STATEMENT = `UPDATE owners SET time_zone = COALESCE(?1, time_zone),
   agent_nudge = COALESCE(?2, agent_nudge),
@@ -38,6 +49,7 @@ export async function insertOwnerWithIdentity({
   subject,
   timeZone,
   now,
+  cap,
 }: {
   directory: D1Database;
   ownerId: string;
@@ -45,15 +57,21 @@ export async function insertOwnerWithIdentity({
   subject: string;
   timeZone: string;
   now: number;
-}): Promise<void> {
-  await directory.batch([
-    directory
-      .prepare('INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at) VALUES (?, ?, ?, ?, ?)')
-      .bind(ownerId, timeZone, Number(AGENT_NUDGE_BY_DEFAULT), Number(DAY_EMAIL_BY_DEFAULT), now),
-    directory
-      .prepare('INSERT INTO owner_identities (provider, subject, owner_id, created_at) VALUES (?, ?, ?, ?)')
-      .bind(provider, subject, ownerId, now),
+  cap: CloudCap | null;
+}): Promise<boolean> {
+  const ownerValues = [ownerId, timeZone, Number(AGENT_NUDGE_BY_DEFAULT), Number(DAY_EMAIL_BY_DEFAULT), now];
+  const isCapped = cap !== null && !cap.isExempt;
+  const insertOwner = isCapped
+    ? directory
+        .prepare(INSERT_OWNER_WITHIN_CAP)
+        .bind(...ownerValues, cap.sinceMilliseconds, cap.sinceDay, cap.accountsMax, cap.admissionSince, SignInProviderKind.Email)
+    : directory.prepare(INSERT_OWNER).bind(...ownerValues);
+  const [insertedOwner] = await directory.batch([
+    insertOwner,
+    directory.prepare(INSERT_IDENTITY_OF_OWNER).bind(provider, subject, ownerId, now),
   ]);
+  if (insertedOwner === undefined) throw new Error('a batch answers one result per statement');
+  return insertedOwner.meta.changes === 1;
 }
 
 function flagOf(flag: boolean | null): number | null {

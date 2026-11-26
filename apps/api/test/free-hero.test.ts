@@ -9,7 +9,7 @@ const SELF_HOST_URL = 'https://docs.todz.app/self-host';
 const DEPLOY_SCRIPT = 'server:deploy';
 const STRUCTURED_DATA_PATTERN = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/;
 const FIRST_CAPTURE = 1;
-const MONEY_PATTERN = /\$|€|per month|\/mo|pricing|tier|limit/i;
+const MONEY_PATTERN = /\$|€|per month|\/mo|pricing|tier/i;
 const POINT_PATTERN = /<li class="way-point">([^<]*)<\/li>/g;
 const TERMINAL_WORD_PATTERN = /<span class="terminal-word">([^<]*)<\/span>/g;
 const WIDE_MEDIA = '@media (min-width: 64rem){';
@@ -54,6 +54,7 @@ describe('the free copy', () => {
       title: 'todz cloud',
       badge: 'Free',
       points: ['Sign in with your email.', 'Synced across your Macs and agents.', 'Nothing to run.'],
+      limit: 'Free todz cloud spots are extremely limited. Self-hosting is always open.',
       cta: 'Download for Mac',
     });
     expect(ways.selfHost).toEqual({
@@ -71,8 +72,10 @@ describe('the free copy', () => {
     expect(ways.note).toBe('The app is the same either way, and updates itself.');
   });
 
-  test('promises nothing about prices, tiers or limits', () => {
+  test('promises nothing about prices or tiers, and says plainly that free cloud spots are extremely limited', () => {
     expect(JSON.stringify([LANDING_COPY.free, LANDING_COPY.ways])).not.toMatch(MONEY_PATTERN);
+    expect(LANDING_COPY.ways.cloud.limit).toContain('extremely limited');
+    expect(LANDING_COPY.ways.cloud.limit).toContain('Self-hosting is always open');
   });
 });
 
@@ -112,6 +115,7 @@ describe('the final panel', () => {
     expect(cloud).toContain('<use href="#todz-icon"/>');
     expect(cloud).toContain(`<span class="way-badge way-badge-free">${LANDING_COPY.ways.cloud.badge}</span>`);
     expect([...cloud.matchAll(POINT_PATTERN)].map(([, point]) => point)).toEqual(LANDING_COPY.ways.cloud.points);
+    expect(cloud).toContain(`<p class="download-note">${LANDING_COPY.ways.cloud.limit}</p>`);
     expect(cloud).toContain(`<a class="download-button way-cta" href="/download" download>${LANDING_COPY.ways.cloud.cta}</a>`);
   });
 

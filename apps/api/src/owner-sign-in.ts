@@ -1,11 +1,13 @@
 import { AGENT_NUDGE_BY_DEFAULT, DAY_EMAIL_BY_DEFAULT, DAY_EMAIL_MINUTES_DEFAULT } from '@todz/types';
 import { z } from 'zod';
+import { type CloudCap, cloudCapOf, cloudFullRefusalOf } from './cloud-admission';
+import { mailMeterOf } from './cloud-mail-meter';
 import { findIdentityOwner, insertOwnerWithIdentity, storeOwnerChanges } from './directory-owners';
 import { emailSenderOf } from './email-sender';
 import { welcomeMail } from './emails/welcome-mail';
 import type { Env } from './env';
 import { HttpStatus } from './http-status';
-import { OwnerErrorCode, errorResponse } from './owner-errors';
+import { OwnerErrorCode, cloudFullResponse, errorResponse } from './owner-errors';
 import { ownerJson } from './owner-json';
 import type { OwnerRecord } from './owner-records';
 import { type OwnerContext, parsedPublicBody } from './owner-request';
@@ -65,12 +67,14 @@ async function identityOwner({
   subject,
   timeZone,
   now,
-}: OwnerIdentity & { timeZone: string; now: number }): Promise<IdentityOwner> {
+  cap,
+}: OwnerIdentity & { timeZone: string; now: number; cap: CloudCap | null }): Promise<IdentityOwner | null> {
   const knownOwnerId = await findIdentityOwner({ directory, provider: kind, subject });
   if (knownOwnerId !== null) return retimedOwner({ directory, ownerId: knownOwnerId, timeZone, now });
   const ownerId = crypto.randomUUID();
   try {
-    await insertOwnerWithIdentity({ directory, ownerId, provider: kind, subject, timeZone, now });
+    const isInserted = await insertOwnerWithIdentity({ directory, ownerId, provider: kind, subject, timeZone, now, cap });
+    if (!isInserted) return null;
     return {
       owner: {
         id: ownerId,
@@ -91,7 +95,13 @@ async function identityOwner({
 async function sendWelcome({ request, env, address }: { request: Request; env: Env; address: string }): Promise<void> {
   const publicOrigin = publicOriginOf(env.PUBLIC_ORIGIN);
   if (publicOrigin === null) return;
-  const sender = emailSenderOf({ configured: env.EMAIL_SENDER, publicOrigin, requestUrl: request.url, binding: env.EMAIL });
+  const sender = emailSenderOf({
+    configured: env.EMAIL_SENDER,
+    publicOrigin,
+    requestUrl: request.url,
+    binding: env.EMAIL,
+    meter: mailMeterOf(env),
+  });
   if (sender === null) return;
   await sender.send(welcomeMail({ to: address, origin: publicOrigin }));
 }
@@ -118,9 +128,14 @@ export async function signIn({ request, env, now, executionContext }: OwnerConte
     now,
   });
   if (subject === null) return errorResponse(OwnerErrorCode.IdentityRejected);
+  const cloudRefusal = await cloudFullRefusalOf({ env, address: subject, now });
+  if (cloudRefusal !== null) return cloudRefusal;
   const signUpRefusal = await signUpRefusalOf({ request, env, kind, subject, now });
   if (signUpRefusal !== null) return signUpRefusal;
-  const { owner, isNewOwner } = await identityOwner({ directory: env.DIRECTORY, kind, subject, timeZone, now });
+  const cap = await cloudCapOf({ env, address: subject, now });
+  const identity = await identityOwner({ directory: env.DIRECTORY, kind, subject, timeZone, now, cap });
+  if (identity === null) return cloudFullResponse();
+  const { owner, isNewOwner } = identity;
   const sessionToken = await openOwnerSession({ directory: env.DIRECTORY, ownerId: owner.id, now });
   const isWelcomedOwner = isNewOwner && kind === SignInProviderKind.Email;
   if (isWelcomedOwner) executionContext.waitUntil(sendWelcome({ request, env, address: subject }).catch(() => undefined));

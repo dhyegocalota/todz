@@ -12,7 +12,7 @@ import type { Env } from './env';
 
 export type FairUseLimits = Record<FairUseLimit, number>;
 
-const POSITIVE_WHOLE_NUMBER_PATTERN = /^[1-9]\d*$/;
+export const POSITIVE_WHOLE_NUMBER_PATTERN = /^[1-9]\d*$/;
 
 const VAR_OF_LIMIT = {
   [FairUseLimit.Workspaces]: 'FAIR_USE_WORKSPACES_MAX',

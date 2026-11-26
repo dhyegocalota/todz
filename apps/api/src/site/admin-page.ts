@@ -9,14 +9,14 @@ import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
 import { CONTENT_ID, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE } from './site-style';
 
-const JOIN_FORM_CLASS = 'join-form';
-const JOIN_BUTTON_CLASS = 'join-button';
+export const JOIN_FORM_CLASS = 'join-form';
+export const JOIN_BUTTON_CLASS = 'join-button';
 const ARIA_DISABLED = 'aria-disabled';
-const ANSWER_ATTRIBUTE = 'data-answer';
-const WIDGET_APPEARANCE = 'interaction-only';
-const WIDGET_THEME = 'auto';
-const WIDGET_CLASS = 'cf-turnstile';
-const TOKEN_CALLBACK = 'adminTokenReady';
+export const ANSWER_ATTRIBUTE = 'data-answer';
+export const WIDGET_APPEARANCE = 'interaction-only';
+export const WIDGET_THEME = 'auto';
+export const WIDGET_CLASS = 'cf-turnstile';
+export const TOKEN_CALLBACK = 'adminTokenReady';
 const TITLE_ID = 'admin-title';
 const EMAIL_ID = 'admin-email';
 
@@ -28,7 +28,7 @@ type SignInPage = { hasForm: boolean; available: (siteKey: string) => string; un
 
 const NO_CHALLENGE: Challenge = { widget: '', scriptTag: '' };
 
-const PAGE_SCRIPT = `{
+export const PAGE_SCRIPT = `{
   const waitingForToken = new Set();
   const hasToken = (form) => {
     const token = form.querySelector('[name="${TURNSTILE_RESPONSE_FIELD}"]');
@@ -87,7 +87,7 @@ ${content}
 </main>`;
 }
 
-function answerTitleHtml(title: string): string {
+export function answerTitleHtml(title: string): string {
   return `<h1 id="${TITLE_ID}" class="admin-title" ${ANSWER_ATTRIBUTE} tabindex="-1">${escapedHtml(title)}</h1>`;
 }
 
@@ -103,7 +103,7 @@ function challengeOf(siteKey: string): Challenge {
   };
 }
 
-function noticeHtml(text: string | null): string {
+export function noticeHtml(text: string | null): string {
   if (text === null) return '';
   return `<p class="join-notice" role="status" tabindex="-1" ${ANSWER_ATTRIBUTE}><span class="notice-dot" aria-hidden="true"></span>${escapedHtml(text)}</p>\n`;
 }

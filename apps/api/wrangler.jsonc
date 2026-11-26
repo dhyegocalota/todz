@@ -20,6 +20,8 @@
     "SITE_ORIGIN": "https://todz.app",
     "TURNSTILE_SITE_KEY": "0x4AAAAAAGSI2K7Qe9Vad2nL",
     "TELEMETRY": "on",
+    "CLOUD_ACCOUNTS_MAX": "50",
+    "CLOUDFLARE_ACCOUNT_ID": "e2035d8e0b7173d520ccf643f6f4661c",
   },
   "d1_databases": [
     {
@@ -51,6 +53,7 @@
     { "name": "USAGE_GLOBAL_LIMITER", "namespace_id": "8613", "simple": { "limit": 60, "period": 60 } },
     { "name": "APPCAST_LIMITER", "namespace_id": "8614", "simple": { "limit": 60, "period": 60 } },
     { "name": "APPCAST_ADDRESS_LIMITER", "namespace_id": "8615", "simple": { "limit": 1, "period": 60 } },
+    { "name": "CLOUD_READ_LIMITER", "namespace_id": "8616", "simple": { "limit": 10, "period": 60 } },
   ],
   "assets": {
     "directory": "./public",

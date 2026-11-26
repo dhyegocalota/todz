@@ -1,4 +1,6 @@
-import { FairUseLimit, MILLISECONDS_PER_DAY, MILLISECONDS_PER_SECOND, MINIMUM_APP_VERSION } from '@todz/types';
+import { CloudLimit, FairUseLimit, MILLISECONDS_PER_DAY, MILLISECONDS_PER_SECOND, MINIMUM_APP_VERSION } from '@todz/types';
+import { CLOUD_COPY } from './cloud-copy';
+import { secondsUntilNextMonth } from './cloud-month';
 import { FAIR_USE_COPY } from './fair-use-copy';
 import type { FairUseLimits } from './fair-use-limits';
 import { HttpHeader, NO_STORE } from './http-header';
@@ -22,6 +24,7 @@ export enum OwnerErrorCode {
   RateLimited = 'rate_limited',
   AccountSuspended = 'account_suspended',
   SignUpRefused = 'sign_up_refused',
+  CloudFull = 'cloud_full',
 }
 
 const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
@@ -40,6 +43,7 @@ const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
   [OwnerErrorCode.RateLimited]: HttpStatus.TooManyRequests,
   [OwnerErrorCode.AccountSuspended]: HttpStatus.Forbidden,
   [OwnerErrorCode.SignUpRefused]: HttpStatus.Forbidden,
+  [OwnerErrorCode.CloudFull]: HttpStatus.Forbidden,
 };
 
 const STATUS_OF_LIMIT: Record<FairUseLimit, HttpStatus> = {
@@ -68,6 +72,18 @@ export function suspendedResponse(): Response {
 
 export function signUpRefusedResponse(): Response {
   return messageErrorResponse({ code: OwnerErrorCode.SignUpRefused, message: FAIR_USE_COPY.signUpRefused });
+}
+
+export function cloudFullResponse(): Response {
+  return messageErrorResponse({ code: OwnerErrorCode.CloudFull, message: CLOUD_COPY.full });
+}
+
+// NB ADR 0099: the 95% refusal is a 429 limit_reached with a message, the one body every installed app already reads as a fair-use pause that keeps its queue.
+export function cloudAtCapacityResponse(now: number): Response {
+  const body = { error: OwnerErrorCode.LimitReached, limit: CloudLimit.Capacity, message: CLOUD_COPY.atCapacity };
+  const response = Response.json(body, { status: HttpStatus.TooManyRequests });
+  response.headers.set(HttpHeader.RetryAfter, String(secondsUntilNextMonth(now)));
+  return response;
 }
 
 export function secondsUntilNextUtcDay(now: number): number {

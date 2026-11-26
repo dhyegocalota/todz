@@ -49,6 +49,7 @@ const USAGE_INSTALL_RATE_LIMIT_NAMESPACE_ID = '8612';
 const USAGE_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8613';
 const APPCAST_RATE_LIMIT_NAMESPACE_ID = '8614';
 const APPCAST_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8615';
+const CLOUD_READ_RATE_LIMIT_NAMESPACE_ID = '8616';
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -159,6 +160,8 @@ describe('the api source', () => {
       SITE_ORIGIN,
       TURNSTILE_SITE_KEY,
       TELEMETRY: 'on',
+      CLOUD_ACCOUNTS_MAX: '50',
+      CLOUDFLARE_ACCOUNT_ID: ACCOUNT_ID,
     });
   });
 
@@ -284,6 +287,11 @@ describe('the api source', () => {
         name: 'APPCAST_ADDRESS_LIMITER',
         namespace_id: APPCAST_ADDRESS_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('APPCAST_ADDRESS_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'CLOUD_READ_LIMITER',
+        namespace_id: CLOUD_READ_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('CLOUD_READ_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
   });

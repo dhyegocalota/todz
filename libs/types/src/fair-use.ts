@@ -7,3 +7,7 @@ export enum FairUseLimit {
   StoredBytes = 'stored_bytes',
   DailySignUps = 'daily_sign_ups',
 }
+
+export enum CloudLimit {
+  Capacity = 'cloud_capacity',
+}

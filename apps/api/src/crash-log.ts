@@ -7,6 +7,10 @@ function crashEventOf(error: unknown): CrashEvent {
   return { event: CRASH_EVENT, name: error.name, message: error.message };
 }
 
+export function logNotice(notice: string): void {
+  console.warn(notice);
+}
+
 export function logCrash(error: unknown): void {
   console.error(JSON.stringify(crashEventOf(error)));
 }

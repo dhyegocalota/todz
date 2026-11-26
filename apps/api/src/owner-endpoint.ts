@@ -8,6 +8,8 @@ import { OwnerErrorCode, appTooOldResponse, errorResponse, noRouteResponse, susp
 import { OWNER_KEY_HANDLERS } from './owner-key-routes';
 import { KEY_HANDLERS } from './owner-keys';
 import type { OwnerContext, PublicHandler, PublicRoute, SessionHandler, SessionRoute } from './owner-request';
+import { isReadThrottled } from './cloud-read-throttle';
+import { stampOwnerSeen } from './owner-last-seen';
 import { OwnerRoute, RouteParam, matchOwnerRoute } from './owner-routes';
 import { signIn } from './owner-sign-in';
 import { signInLimitRefusal } from './sign-in-limiter';
@@ -76,5 +78,8 @@ export async function serveOwner({
   const isChanging = match.route !== OwnerRoute.SignOut && request.method !== HttpMethod.Get;
   const isSuspendedChange = isChanging && owner.isSuspended;
   if (isSuspendedChange) return suspendedResponse();
+  executionContext.waitUntil(stampOwnerSeen({ env, ownerId: owner.ownerId, now }).catch(() => undefined));
+  const isThrottledRead = !isChanging && (await isReadThrottled({ request, env, ownerId: owner.ownerId, now }));
+  if (isThrottledRead) return withRetryAfter(errorResponse(OwnerErrorCode.RateLimited));
   return SESSION_HANDLERS[match.route]({ ...context, owner, secret });
 }
