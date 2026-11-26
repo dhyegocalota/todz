@@ -78,7 +78,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "SELECT COUNT(*) AS waitlist_rows FROM waitlist"
    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --json --command "SELECT address, joined_at, confirmation_claimed_at, confirmation_failed_at FROM waitlist ORDER BY joined_at" > ~/Projects/todz/todz-loop/notes/waitlist-export-2026-11-26.json
    chmod 600 ~/Projects/todz/todz-loop/notes/waitlist-export-2026-11-26.json
-   jq '.[0].results | length' ~/Projects/todz/todz-loop/notes/waitlist-export-2026-11-26.json
+   jq 'first | .results | length' ~/Projects/todz/todz-loop/notes/waitlist-export-2026-11-26.json
    ```
 
    Expected: the first count and the length `jq` prints are the same number, and the file holds one object per row with its `address`, `joined_at`, `confirmation_claimed_at` and `confirmation_failed_at`. The file lives in the loop's notes, outside the repository, and is never committed, attached or pasted anywhere; write its path and the row count in the run log, never an address. Run it once: when the first count answers `no such table: waitlist`, the table is already dropped; write `already dropped` in the run log and go on.
