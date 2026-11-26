@@ -75,7 +75,7 @@ Two public identifiers are no finding: the Cloudflare account id and the Turnsti
    git grep -c 'workers.dev' HEAD -- docs
    ```
 
-   Expected: the account id and the site key, the two public identifiers named above and no secret. The deploy runbook names the account's `workers.dev` subdomain once; it is a public DNS name, kept, and recorded here so the owner can decide to drop it.
+   Expected: the account id and the site key, the two public identifiers named above and no secret. No tracked file names the account's `workers.dev` subdomain: the owner had it removed on 2026-11-26, a repository-shape test keeps it out, and it stays only in the history, by his decision.
    If it fails: a value that looks like a secret, a `secret` or a token, is a finding: stop.
 
 8. **Audit the dependencies.**
@@ -132,3 +132,13 @@ Two public identifiers are no finding: the Cloudflare account id and the Turnsti
 | 2026-11-26 | 85545da1 | 7 | `account_id` and `TURNSTILE_SITE_KEY` are the two public identifiers; the deploy runbook names the account's `workers.dev` subdomain once, and earlier rows of the deploy run log in the history named it; a public DNS name, kept |
 | 2026-11-26 | 85545da1 | 8 | `pnpm security:audit`: `No known vulnerabilities found`, exit 0 |
 | 2026-11-26 | 85545da1 | 9 | Done by the lead at about 11:45 UTC through `scripts/todz-cloudflare.sh`: rule `todz security`, id `be5f5e1e52c24367a9547eda3bcdbf4e`, forwarding like `hello@`; the destination is not recorded here |
+| 2026-11-26 | 4c4b5fcd | 1 | Re-check before the flip: gitleaks over the full history, 2105 commits, exit 0 |
+| 2026-11-26 | 4c4b5fcd | 2 | Personal-data greps: 0 hits; the only `sk-ant-` match is this runbook's own grep pattern |
+| 2026-11-26 | 4c4b5fcd | 5 | Only `.env.example` was ever added; every governance file present; `LICENSE` is AGPL-3.0 |
+| 2026-11-26 | 4c4b5fcd | 10 | Visibility `PUBLIC` |
+| 2026-11-26 | 4c4b5fcd | 11 | Private vulnerability reporting enabled |
+| 2026-11-26 | 4c4b5fcd | 12 | Secret scanning and push protection enabled |
+| 2026-11-26 | 4c4b5fcd | 13 | Dependabot alerts enabled; no `dependabot.yml` |
+| 2026-11-26 | 4c4b5fcd | 14 | Branch protection on `main`: a pull request required (0 approvals), no force push, no deletion, admins not enforced. No required status check yet: the `verify` workflow had not run on a pull request; it is added as required once it has |
+| 2026-11-26 | 4c4b5fcd | 15 | Description and topics unchanged |
+| 2026-11-26 | 4c4b5fcd | 16 | The repository, `LICENSE` and the security policy answer `200` anonymously |
