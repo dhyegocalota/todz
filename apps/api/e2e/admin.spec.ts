@@ -8,7 +8,8 @@ import { JAVASCRIPT_CONTENT_TYPE, TURNSTILE_SCRIPT_URL, TURNSTILE_STUB } from '.
 enum AdminPath {
   Panel = '/admin',
   LinkPage = '/admin/sign-in',
-  Export = '/admin/export.csv',
+  Metrics = '/admin/metrics',
+  MetricsExport = '/admin/metrics.csv',
 }
 
 const OTHER_ADDRESS = 'someone.else@example.com';
@@ -19,16 +20,15 @@ const LOGGED_MESSAGE_START = '{"to":';
 const SIGN_IN_TITLE = 'Sign in to the admin';
 const INBOX_TITLE = 'Check your inbox';
 const REFUSED_TITLE = "This link can't be used.";
-const PANEL_TITLE = 'Waitlist';
-const STAT_LABELS = ['On the list', 'Last 24 hours', 'Failed confirmations'];
+const METRICS_TITLE = 'Metrics';
 const DOWNLOAD_LABEL = 'Download CSV';
 const SIGN_OUT_LABEL = 'Sign out';
 const GET_NEW_LINK_LABEL = 'Get a new link';
 const WORKING_COPY = 'Signing you in…';
 const NO_SCRIPT_TITLE = 'Finish signing in';
 const LINK_STATUS_TEXT_SELECTOR = '#link-title, #link-body';
-const CSV_FILE_NAME = 'todz-waitlist.csv';
-const CSV_HEADER = '"address","joined_at","confirmation"';
+const CSV_FILE_NAME = 'todz-metrics.csv';
+const CSV_HEADER = '"day","metric","dimension","count"';
 const UNKNOWN_LINK_TOKEN = 'A'.repeat(43);
 const LINK_POLL_TIMEOUT_MS = 15_000;
 
@@ -119,24 +119,23 @@ test.describe('the admin walk', () => {
     await freshContext.close();
   });
 
-  test('the same link pasted into a tab that shows a refusal lands on the panel', async () => {
+  test('the same link pasted into a tab that shows a refusal lands on the metrics', async () => {
     const linkPage = await adminContext.newPage();
     await linkPage.goto(`${AdminPath.LinkPage}#token=${UNKNOWN_LINK_TOKEN}`);
     await expect(linkPage.getByRole('heading', { level: 1, name: REFUSED_TITLE })).toBeVisible();
     await linkPage.goto(mailedLink);
-    await expect(linkPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
-    await expect(linkPage.getByRole('heading', { level: 1, name: PANEL_TITLE })).toBeVisible();
+    await expect(linkPage).toHaveURL(new RegExp(`${AdminPath.Metrics}$`));
+    await expect(linkPage.getByRole('heading', { level: 1, name: METRICS_TITLE })).toBeVisible();
     expect(linkPage.url()).not.toContain('token=');
     adminPage = linkPage;
   });
 
-  test('the panel shows the three counts and the two actions', async () => {
-    await Promise.all(STAT_LABELS.map((label) => expect(adminPage.getByText(label, { exact: true })).toBeVisible()));
+  test('the metrics page shows the two actions', async () => {
     await expect(adminPage.getByRole('link', { name: DOWNLOAD_LABEL })).toBeVisible();
     await expect(adminPage.getByRole('button', { name: SIGN_OUT_LABEL })).toBeVisible();
   });
 
-  test('Download CSV saves every row under its file name, starting with the header', async () => {
+  test('Download CSV saves every metric under its file name, starting with the header', async () => {
     const downloading = adminPage.waitForEvent('download');
     await adminPage.getByRole('link', { name: DOWNLOAD_LABEL }).click();
     const download = await downloading;
@@ -145,21 +144,21 @@ test.describe('the admin walk', () => {
     expect(csv.startsWith(`${CSV_HEADER}\r\n`)).toBe(true);
   });
 
-  test('Sign out returns to the sign-in card and closes the export', async () => {
+  test('Sign out returns to the sign-in card and closes the metrics export', async () => {
     await adminPage.getByRole('button', { name: SIGN_OUT_LABEL }).click();
     await expect(adminPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
     await expect(adminPage.getByRole('heading', { level: 1, name: SIGN_IN_TITLE })).toBeVisible();
-    await adminPage.goto(AdminPath.Export);
+    await adminPage.goto(AdminPath.MetricsExport);
     await expect(adminPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
     await expect(adminPage.getByRole('heading', { level: 1, name: SIGN_IN_TITLE })).toBeVisible();
   });
 
-  test('a new link clicked from a mail page in the browser that asked lands on the panel', async () => {
+  test('a new link clicked from a mail page in the browser that asked lands on the metrics', async () => {
     await askForLink({ page: adminPage, address: ADMIN_ADDRESS });
     await expect.poll(() => messagesTo(ADMIN_ADDRESS).length, { timeout: LINK_POLL_TIMEOUT_MS }).toBe(2);
     const mailPage = await openFromMailPage({ context: adminContext, link: mailedLinkTo(ADMIN_ADDRESS) });
-    await expect(mailPage).toHaveURL(new RegExp(`${AdminPath.Panel}$`));
-    await expect(mailPage.getByRole('heading', { level: 1, name: PANEL_TITLE })).toBeVisible();
+    await expect(mailPage).toHaveURL(new RegExp(`${AdminPath.Metrics}$`));
+    await expect(mailPage.getByRole('heading', { level: 1, name: METRICS_TITLE })).toBeVisible();
     expect(mailPage.url()).not.toContain('token=');
   });
 });

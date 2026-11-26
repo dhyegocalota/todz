@@ -1,4 +1,4 @@
-import { APP_VERSION_HEADER, MILLISECONDS_PER_DAY, MINIMUM_APP_VERSION } from '@todz/types';
+import { APP_VERSION_HEADER, MINIMUM_APP_VERSION } from '@todz/types';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, test } from 'vitest';
@@ -6,12 +6,11 @@ import { digestCredential } from '../src/credential-digest';
 import type { Env } from '../src/env';
 import worker from '../src/index';
 import { serveAdminLinkPage } from '../src/site/admin-link-page';
-import { serveAdminPanel, serveAdminSignInPage } from '../src/site/admin-page';
+import { AdminNotice } from '../src/site/admin-notice';
+import { serveAdminSignInPage } from '../src/site/admin-page';
 import { ADMIN_RESPONSE_HEADERS, AdminPath } from '../src/site/admin-paths';
 import { ADMIN_SESSION_LIFETIME_MS, AdminCookie } from '../src/site/admin-session';
 import { openAdminSession } from '../src/site/admin-store';
-import { AdminNotice, ConfirmationState } from '../src/site/admin-waitlist';
-import { joinWaitlistWithinLimit } from '../src/site/waitlist-store';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
 import { adminSessionRows } from './admin-client';
 import { CLIENT_ADDRESS, CLIENT_ADDRESS_HEADER, TURNSTILE_TEST_SECRET, consoleOutput, mailSent } from './email-sign-in-client';
@@ -30,7 +29,6 @@ const MOVED_PERMANENTLY_STATUS = 301;
 const SEE_OTHER_STATUS = 303;
 const FORBIDDEN_STATUS = 403;
 const NOT_FOUND_STATUS = 404;
-const GONE_STATUS = 410;
 const UNAVAILABLE_STATUS = 503;
 const SCRIPT_PAYLOAD = '<script>alert(1)</script>';
 const FORM_BODY = `email=${SCRIPT_PAYLOAD}`;
@@ -114,51 +112,16 @@ describe('the site host', () => {
     expect(await response.text()).toBe('');
   });
 
-  test('GET /join answers 303 to the landing', async () => {
-    const response = await serve(requestOf({ url: `${SITE_ORIGIN}/join` }));
-    expect(response.status).toBe(SEE_OTHER_STATUS);
-    expect(response.headers.get('Location')).toBe('/');
-  });
-
-  test('POST /join answers 410, never echoes the body and never reads it', async () => {
+  test.each(['GET', 'POST'])('%s /join answers 404, never echoes the body and never reads it', async (method) => {
     const request = new Request(`${SITE_ORIGIN}/join`, {
-      method: 'POST',
+      method,
       headers: { 'Content-Type': FORM_CONTENT_TYPE, 'Content-Length': String(FORM_BODY.length), [CLIENT_ADDRESS_HEADER]: CLIENT_ADDRESS },
-      body: FORM_BODY,
+      body: method === 'POST' ? FORM_BODY : undefined,
     });
     const response = await serve(request);
-    expect(response.status).toBe(GONE_STATUS);
-    expect(await response.text()).not.toContain(SCRIPT_PAYLOAD);
-    expect(request.bodyUsed).toBe(false);
-  });
-});
-
-describe('the API host', () => {
-  test.each(['/', '/self-host'])('GET %s answers 404', async (path) => {
-    const response = await serve(requestOf({ url: `${API_ORIGIN}${path}` }));
-    expect(response.status).toBe(NOT_FOUND_STATUS);
-  });
-
-  test.each([
-    ['GET', '/admin'],
-    ['HEAD', '/admin'],
-    ['GET', '/admin/sign-in'],
-    ['GET', '/admin/export.csv'],
-    ['POST', '/admin/sign-in-links'],
-    ['POST', '/admin/sessions'],
-    ['POST', '/admin/sign-out'],
-  ])('%s %s answers 404, never serving the admin', async (method, path) => {
-    const settings = { ADMIN_EMAIL: 'hello@todz.app' };
-    const response = await serveWith({ request: requestOf({ url: `${API_ORIGIN}${path}`, method }), settings });
     expect(response.status).toBe(NOT_FOUND_STATUS);
     expect(await response.text()).toBe('');
-  });
-
-  test('GET /owner/sign-in-method answers as it did before the site', async () => {
-    const response = await serve(
-      requestOf({ url: `${API_ORIGIN}/owner/sign-in-method`, headers: { [APP_VERSION_HEADER]: MINIMUM_APP_VERSION } }),
-    );
-    expect(response.status).toBe(UNAVAILABLE_STATUS);
+    expect(request.bodyUsed).toBe(false);
   });
 });
 
@@ -246,7 +209,6 @@ describe('the admin routes on the site host', () => {
 
   beforeEach(async () => {
     await env.DIRECTORY.batch([
-      env.DIRECTORY.prepare('DELETE FROM waitlist'),
       env.DIRECTORY.prepare('DELETE FROM admin_sessions'),
       env.DIRECTORY.prepare('DELETE FROM admin_sign_in_links'),
     ]);
@@ -266,22 +228,14 @@ describe('the admin routes on the site host', () => {
       expect(await response.text()).toBe(await cardOf({ notice: AdminNotice.None, siteKey: null }));
     });
 
-    test('with a session answers the panel of the waitlist summary', async () => {
+    test('with a session answers 303 to the metrics with the admin headers', async () => {
       await signIn();
-      const joinedAt = Date.now() - 2 * MILLISECONDS_PER_DAY;
-      await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: 'maria@example.com', now: joinedAt });
-      const summary = {
-        total: 1,
-        joinedLastDay: 0,
-        failedConfirmations: 0,
-        rows: [{ address: 'maria@example.com', joinedAt, confirmation: ConfirmationState.Sent }],
-      };
       const response = await serveWith({
         request: adminRequest({ path: AdminPath.Panel, headers: { Cookie: SIGNED_IN_COOKIE } }),
         settings: ADMIN_SETTINGS,
       });
-      expect(response.status).toBe(OK_STATUS);
-      expect(await response.text()).toBe(await (await serveAdminPanel({ summary })).text());
+      expect(response.status).toBe(SEE_OTHER_STATUS);
+      expect(response.headers.get('Location')).toBe(AdminPath.Metrics);
       expectAdminHeaders(response);
     });
 
@@ -454,21 +408,11 @@ describe('the admin routes on the site host', () => {
   });
 
   describe('GET /admin/export.csv', () => {
-    test('with a session answers the CSV through the route', async () => {
+    test.each([[SIGNED_IN_COOKIE], [undefined]])('answers 404 with the cookie %s', async (cookie) => {
       await signIn();
-      await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: 'maria@example.com', now: Date.now() });
-      const request = adminRequest({ path: AdminPath.Export, headers: { Cookie: SIGNED_IN_COOKIE } });
-      const response = await serveWith({ request, settings: ADMIN_SETTINGS });
-      expect(response.status).toBe(OK_STATUS);
-      expect(response.headers.get('Content-Type')).toBe('text/csv; charset=utf-8');
-      expect(await response.text()).toContain('"maria@example.com"');
-      expectAdminHeaders(response);
-    });
-
-    test('without a session answers 303 to the panel', async () => {
-      const response = await serveWith({ request: adminRequest({ path: AdminPath.Export }), settings: ADMIN_SETTINGS });
-      expect(response.status).toBe(SEE_OTHER_STATUS);
-      expect(response.headers.get('Location')).toBe(AdminPath.Panel);
+      const headers: Record<string, string> = cookie === undefined ? {} : { Cookie: cookie };
+      const response = await serveWith({ request: adminRequest({ path: '/admin/export.csv', headers }), settings: ADMIN_SETTINGS });
+      expect(response.status).toBe(NOT_FOUND_STATUS);
     });
   });
 
@@ -551,17 +495,15 @@ describe('the admin routes on the site host', () => {
       expect(opened.status).toBe(CREATED_STATUS);
       const sessionCookie = cookiePairOf({ response: opened, name: AdminCookie.Session });
       const panel = await serveWith({
-        request: new Request(`${LOCAL_SITE_ORIGIN}${AdminPath.Panel}`, { headers: { Cookie: sessionCookie } }),
+        request: new Request(`${LOCAL_SITE_ORIGIN}${AdminPath.Panel}`, { headers: { Cookie: sessionCookie }, redirect: 'manual' }),
         settings: LOCAL_SETTINGS,
       });
-      expect(await panel.text()).toBe(
-        await (await serveAdminPanel({ summary: { total: 0, joinedLastDay: 0, failedConfirmations: 0, rows: [] } })).text(),
-      );
-      const csv = await serveWith({
-        request: new Request(`${LOCAL_SITE_ORIGIN}${AdminPath.Export}`, { headers: { Cookie: sessionCookie } }),
+      expect(panel.status).toBe(SEE_OTHER_STATUS);
+      const metrics = await serveWith({
+        request: new Request(`${LOCAL_SITE_ORIGIN}${AdminPath.Metrics}`, { headers: { Cookie: sessionCookie } }),
         settings: LOCAL_SETTINGS,
       });
-      expect(csv.status).toBe(OK_STATUS);
+      expect(metrics.status).toBe(OK_STATUS);
       const signedOut = await serveWith({
         request: new Request(`${LOCAL_SITE_ORIGIN}${AdminPath.SignOut}`, {
           method: 'POST',

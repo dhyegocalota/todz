@@ -2,8 +2,8 @@ import { escapedHtml } from '../escaped-html';
 import { TurnstileAction } from '../turnstile';
 import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
 import { ADMIN_COPY } from './admin-copy';
+import { AdminNotice } from './admin-notice';
 import { AdminField, AdminPath } from './admin-paths';
-import { AdminNotice, ConfirmationState, type WaitlistRow, type WaitlistSummary } from './admin-waitlist';
 import { SiteGlyph, glyphHtml } from './site-glyphs';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
 import { CONTENT_ID, SitePageKind, siteDocumentHtml } from './site-shell';
@@ -19,11 +19,6 @@ const WIDGET_CLASS = 'cf-turnstile';
 const TOKEN_CALLBACK = 'adminTokenReady';
 const TITLE_ID = 'admin-title';
 const EMAIL_ID = 'admin-email';
-const COUNT_LOCALE = 'en-US';
-const ISO_DATE_END = 10;
-const ISO_TIME_START = 11;
-const ISO_MINUTE_END = 16;
-const COUNT_FORMAT = new Intl.NumberFormat(COUNT_LOCALE);
 
 type Challenge = { widget: string; scriptTag: string };
 
@@ -31,14 +26,7 @@ type Card = { documentTitle: string; content: string };
 
 type SignInPage = { hasForm: boolean; available: (siteKey: string) => string; unavailable: string };
 
-type Badge = { className: string; label: string };
-
 const NO_CHALLENGE: Challenge = { widget: '', scriptTag: '' };
-
-const BADGE_OF_CONFIRMATION: Record<ConfirmationState, Badge> = {
-  [ConfirmationState.Sent]: { className: 'badge badge-sent', label: ADMIN_COPY.table.sent },
-  [ConfirmationState.Failed]: { className: 'badge badge-failed', label: ADMIN_COPY.table.failed },
-};
 
 const PAGE_SCRIPT = `{
   const waitingForToken = new Set();
@@ -90,14 +78,6 @@ const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   connectsToSelf: false,
   declaresManifest: false,
 });
-const PANEL_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
-  style: SITE_STYLE,
-  scripts: [],
-  widgetOrigin: null,
-  connectsToSelf: false,
-  declaresManifest: false,
-});
-
 export function adminCardMainHtml(content: string): string {
   return `<main id="${CONTENT_ID}">
 <section class="admin-card glass rise">
@@ -200,87 +180,4 @@ export async function serveAdminSignInPage({ notice, siteKey }: { notice: AdminN
   const usableSiteKey = page.hasForm ? usableSiteKeyOf(siteKey) : null;
   if (usableSiteKey === null) return adminPageResponse({ html: page.unavailable, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
   return adminPageResponse({ html: page.available(usableSiteKey), contentSecurityPolicy: CHALLENGE_CONTENT_SECURITY_POLICY });
-}
-
-function joinedLabelOf(joinedAt: number): string {
-  const iso = new Date(joinedAt).toISOString();
-  return `${iso.slice(0, ISO_DATE_END)} ${iso.slice(ISO_TIME_START, ISO_MINUTE_END)} ${ADMIN_COPY.table.timeZone}`;
-}
-
-function statTileHtml({ label, count }: { label: string; count: number }): string {
-  return `<div class="stat-tile glass"><dt>${escapedHtml(label)}</dt><dd>${COUNT_FORMAT.format(count)}</dd></div>`;
-}
-
-function badgeHtml(confirmation: ConfirmationState): string {
-  const { className, label } = BADGE_OF_CONFIRMATION[confirmation];
-  return `<span class="${className}"><span class="badge-dot" aria-hidden="true"></span>${escapedHtml(label)}</span>`;
-}
-
-function rowHtml({ address, joinedAt, confirmation }: WaitlistRow): string {
-  return `<tr role="row"><th scope="row" role="rowheader">${escapedHtml(address)}</th><td role="cell"><time datetime="${new Date(joinedAt).toISOString()}">${joinedLabelOf(joinedAt)}</time></td><td role="cell">${badgeHtml(confirmation)}</td></tr>`;
-}
-
-function columnHeaderHtml(heading: string): string {
-  return `<th scope="col" role="columnheader">${escapedHtml(heading)}</th>`;
-}
-
-function capNoteHtml(summary: WaitlistSummary): string {
-  if (summary.total <= summary.rows.length) return '';
-  const note = ADMIN_COPY.table.capNote({ shown: COUNT_FORMAT.format(summary.rows.length), total: COUNT_FORMAT.format(summary.total) });
-  return `\n<p class="table-note">${escapedHtml(note)}</p>`;
-}
-
-function tableCardHtml(summary: WaitlistSummary): string {
-  const { table } = ADMIN_COPY;
-  return `<div class="table-card glass">
-<table class="admin-table" role="table">
-<caption class="visually-hidden">${escapedHtml(table.caption)}</caption>
-<thead role="rowgroup"><tr role="row">${[table.address, table.joined, table.confirmation].map(columnHeaderHtml).join('')}</tr></thead>
-<tbody role="rowgroup">
-${summary.rows.map(rowHtml).join('\n')}
-</tbody>
-</table>${capNoteHtml(summary)}
-</div>`;
-}
-
-function emptyCardHtml(): string {
-  return `<div class="empty-card glass">
-<h2 class="empty-title">${escapedHtml(ADMIN_COPY.empty.title)}</h2>
-<p class="empty-body">${escapedHtml(ADMIN_COPY.empty.body)}</p>
-</div>`;
-}
-
-function panelHtml(summary: WaitlistSummary): string {
-  const { panel, stats } = ADMIN_COPY;
-  const listing = summary.rows.length === 0 ? emptyCardHtml() : tableCardHtml(summary);
-  return siteDocumentHtml({
-    kind: SitePageKind.Private,
-    title: ADMIN_COPY.meta.panelTitle,
-    description: ADMIN_COPY.meta.description,
-    main: `<main id="${CONTENT_ID}">
-<div class="admin-panel rise">
-<div class="panel-head">
-<h1 class="panel-title">${escapedHtml(panel.title)}</h1>
-<nav class="panel-actions" aria-label="${escapedHtml(ADMIN_COPY.shell.navLabel)}">
-<a class="admin-action" href="${AdminPath.Metrics}">${escapedHtml(ADMIN_COPY.metrics.link)}</a>
-<a class="admin-action" href="${AdminPath.Export}" download>${escapedHtml(panel.download)}</a>
-<form method="post" action="${AdminPath.SignOut}"><button class="nav-link nav-button" type="submit">${escapedHtml(panel.signOut)}</button></form>
-</nav>
-</div>
-<h2 class="visually-hidden">${escapedHtml(panel.summaryHeading)}</h2>
-<dl class="stat-list">
-${statTileHtml({ label: stats.total, count: summary.total })}
-${statTileHtml({ label: stats.recent, count: summary.joinedLastDay })}
-${statTileHtml({ label: stats.failed, count: summary.failedConfirmations })}
-</dl>
-<h2 class="visually-hidden">${escapedHtml(panel.tableHeading)}</h2>
-${listing}
-</div>
-</main>`,
-    scripts: [],
-  });
-}
-
-export async function serveAdminPanel({ summary }: { summary: WaitlistSummary }): Promise<Response> {
-  return adminPageResponse({ html: panelHtml(summary), contentSecurityPolicy: PANEL_CONTENT_SECURITY_POLICY });
 }

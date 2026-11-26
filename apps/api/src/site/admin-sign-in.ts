@@ -21,6 +21,7 @@ import {
   adminGlobalRefusal,
   isAdminUnguarded,
 } from './admin-limiter';
+import { AdminNotice } from './admin-notice';
 import { AdminField, AdminPath } from './admin-paths';
 import {
   ADMIN_SESSION_LIFETIME_MS,
@@ -33,7 +34,6 @@ import {
   isSameOriginPost,
 } from './admin-session';
 import { deleteAdminLink, insertAdminLinkWithinLimit, openAdminSession, spendAdminLink } from './admin-store';
-import { AdminNotice } from './admin-waitlist';
 import type { SiteContext } from './site-endpoint';
 
 const ADMIN_LINKS_PER_WINDOW_MAX = 5;

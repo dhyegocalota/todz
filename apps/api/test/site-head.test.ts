@@ -1,9 +1,9 @@
 import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
-import { LANDING_COPY } from '../src/site/landing-copy';
 import { serveAdminLinkPage } from '../src/site/admin-link-page';
+import { AdminNotice } from '../src/site/admin-notice';
 import { serveAdminSignInPage } from '../src/site/admin-page';
-import { AdminNotice } from '../src/site/admin-waitlist';
+import { LANDING_COPY } from '../src/site/landing-copy';
 import { OPEN_GRAPH_IMAGE, SITE_ICONS, SiteIcon } from '../src/site/site-icons';
 import { DiscoveryPath, SITE_URL } from '../src/site/site-urls';
 

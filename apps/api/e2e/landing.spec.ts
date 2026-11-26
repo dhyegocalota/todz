@@ -16,7 +16,7 @@ enum ColorScheme {
 
 const BRAND_ASSET_PATH = '/brand/todz-lockup.png';
 const OK_STATUS = 200;
-const GONE_STATUS = 410;
+const NOT_FOUND_STATUS = 404;
 const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
 const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
 const MOVED_PERMANENTLY_STATUS = 301;
@@ -40,7 +40,7 @@ const CREDIT_LINK = '.site-footer .footer-credit-link';
 const CREDIT_TEXT = '© todz · todz is a product of Logic Bit, made in Brazil';
 const CREDIT_WEBSITE = 'https://logicbit.com.br';
 const SCRIPT_OWNED_TRANSITION_PROPERTIES = ['color', 'background-color', 'opacity'];
-const SITE_PAGES = [SitePath.Landing, SitePath.Join];
+const SITE_PAGES = [SitePath.Landing];
 
 function webpPathsOf(shot: LandingShot): string[] {
   return LANDING_SHOTS[shot].webp.map(({ path }) => path);
@@ -198,17 +198,14 @@ test.describe('reduced motion', () => {
   });
 });
 
-test.describe('the waitlist is off', () => {
-  test('the landing has no form and the join path answers 410', async ({ page, request }) => {
+test.describe('the join path is gone', () => {
+  test('the landing has no form and the join path answers 404 to a post and to a get', async ({ page, request }) => {
     await page.goto(SitePath.Landing);
     await expect(page.locator('form')).toHaveCount(0);
-    const response = await request.post(SitePath.Join, { form: { email: 'maria@example.com' } });
-    expect(response.status()).toBe(GONE_STATUS);
-  });
-
-  test('GET /join returns to the landing', async ({ page }) => {
-    await page.goto(SitePath.Join);
-    await expect(page).toHaveURL(new RegExp(`${SitePath.Landing}$`));
+    const posted = await request.post(SitePath.Join, { form: { email: 'maria@example.com' } });
+    expect(posted.status()).toBe(NOT_FOUND_STATUS);
+    const fetched = await request.get(SitePath.Join);
+    expect(fetched.status()).toBe(NOT_FOUND_STATUS);
   });
 });
 

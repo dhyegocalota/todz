@@ -1,9 +1,9 @@
 import { describe, expect, test, vi } from 'vitest';
 import { ADMIN_COPY } from '../src/site/admin-copy';
 import { serveAdminLinkPage } from '../src/site/admin-link-page';
-import { serveAdminPanel, serveAdminSignInPage } from '../src/site/admin-page';
+import { serveAdminSignInPage } from '../src/site/admin-page';
+import { AdminNotice } from '../src/site/admin-notice';
 import { AdminField, AdminPath } from '../src/site/admin-paths';
-import { AdminNotice, ConfirmationState, type WaitlistRow, type WaitlistSummary } from '../src/site/admin-waitlist';
 import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
 
 const OK_STATUS = 200;
@@ -28,13 +28,6 @@ const TITLE_PATTERN = /<title>([^<]*)<\/title>/;
 const SCRIPT_TAG_PATTERN = /<script[\s>]/g;
 const TOKEN = 'A'.repeat(43);
 const OTHER_TOKEN = 'B'.repeat(43);
-const FIRST_ADDRESS = 'ana@example.com';
-const HOSTILE_ADDRESS = '"><img src=x onerror=alert(1)>@example.com';
-const HOSTILE_ADDRESS_ESCAPED = '&quot;&gt;&lt;img src=x onerror=alert(1)&gt;@example.com';
-const JOINED_AT = Date.UTC(2026, 10, 25, 14, 3, 27);
-const JOINED_AT_DATETIME = '2026-11-25T14:03:27.000Z';
-const JOINED_AT_LABEL = '2026-11-25 14:03 UTC';
-const ROWS_CAP = 200;
 const LINK_STATUS_ID = 'link-status';
 const LINK_TITLE_ID = 'link-title';
 const LINK_BODY_ID = 'link-body';
@@ -61,23 +54,6 @@ async function pageOf(response: Promise<Response>): Promise<AdminPage> {
 
 function signInPage({ notice, siteKey }: { notice: AdminNotice; siteKey: string | null }): Promise<AdminPage> {
   return pageOf(serveAdminSignInPage({ notice, siteKey }));
-}
-
-function rowsOf(count: number): WaitlistRow[] {
-  return Array.from({ length: count }, (_, index) => ({
-    address: `member.${index}@example.com`,
-    joinedAt: JOINED_AT - index * 1_000,
-    confirmation: ConfirmationState.Sent,
-  }));
-}
-
-function summaryOf(overrides: Partial<WaitlistSummary>): WaitlistSummary {
-  const rows = overrides.rows === undefined ? rowsOf(3) : overrides.rows;
-  return { total: rows.length, joinedLastDay: 0, failedConfirmations: 0, rows, ...overrides };
-}
-
-function panelPage(overrides: Partial<WaitlistSummary>): Promise<AdminPage> {
-  return pageOf(serveAdminPanel({ summary: summaryOf(overrides) }));
 }
 
 function linkPage(): Promise<AdminPage> {
@@ -181,8 +157,6 @@ describe('every admin page', () => {
       () => signInPage({ notice, siteKey: null }),
     ]),
     ['the sign-in page with the widget', () => signInPage({ notice: AdminNotice.None, siteKey: TEST_SITE_KEY })],
-    ['the panel', () => panelPage({})],
-    ['the empty panel', () => panelPage({ total: 0, rows: [] })],
     ['the link page', linkPage],
   ];
 
@@ -330,12 +304,12 @@ describe('the sign-in page', () => {
     expect(policyOf(page)).not.toContain(TURNSTILE_ORIGIN);
   });
 
-  test('its script is the same for the widget and without it, and its callback name is not the waitlist one', async () => {
+  test('its script is the same for the widget and without it, and its callback name is the admin one', async () => {
     const withoutWidget = await signInPage({ notice: AdminNotice.None, siteKey: null });
     const withWidget = await signInPage({ notice: AdminNotice.None, siteKey: TEST_SITE_KEY });
     const script = onlyInlineSource({ html: withWidget.html, pattern: SCRIPT_PATTERN });
     expect(script).toBe(onlyInlineSource({ html: withoutWidget.html, pattern: SCRIPT_PATTERN }));
-    expect(script).not.toContain('waitlistTokenReady');
+    expect(script).toContain('adminTokenReady');
     expect(withWidget.html).toMatch(/data-callback="adminTokenReady"/);
     expect(script).toContain('adminTokenReady');
   });
@@ -343,117 +317,6 @@ describe('the sign-in page', () => {
   test('allows no connection of its own', async () => {
     const page = await signInPage({ notice: AdminNotice.None, siteKey: TEST_SITE_KEY });
     expect(policyOf(page)).not.toContain('connect-src');
-  });
-});
-
-describe('the panel', () => {
-  test('shows the three counts, grouped, under their labels', async () => {
-    const { html } = await panelPage({ total: 1284, joinedLastDay: 37, failedConfirmations: 2 });
-    const tiles = [...mainOf(html).matchAll(/<div class="stat-tile[^"]*"><dt>([^<]*)<\/dt><dd>([^<]*)<\/dd><\/div>/g)].map(
-      ([, label, value]) => [label, value],
-    );
-    expect(tiles).toEqual([
-      [ADMIN_COPY.stats.total, '1,284'],
-      [ADMIN_COPY.stats.recent, '37'],
-      [ADMIN_COPY.stats.failed, '2'],
-    ]);
-  });
-
-  test('has one h1 and two hidden headings, for the summary and the addresses', async () => {
-    const { html } = await panelPage({});
-    const main = mainOf(html);
-    expect(main.match(HEADING_ONE_PATTERN)).toHaveLength(1);
-    expect(main).toContain(`>${ADMIN_COPY.panel.title}</h1>`);
-    expect(main).toContain(`<h2 class="visually-hidden">${ADMIN_COPY.panel.summaryHeading}</h2>`);
-    expect(main).toContain(`<h2 class="visually-hidden">${ADMIN_COPY.panel.tableHeading}</h2>`);
-  });
-
-  test('offers the CSV as a download link and sign out as a post', async () => {
-    const { html } = await panelPage({});
-    const main = mainOf(html);
-    expect(main).toMatch(new RegExp(`<a [^>]*href="${AdminPath.Export}"[^>]* download[^>]*>${ADMIN_COPY.panel.download}</a>`));
-    const form = onlyOf(formsOf(html));
-    expect(form).toMatch(new RegExp(`^<form [^>]*method="post" action="${AdminPath.SignOut}"`));
-    expect(form).toContain(`>${ADMIN_COPY.panel.signOut}</button>`);
-  });
-
-  test('lists each row as a table row with its address, its time and its confirmation, newest first as given', async () => {
-    const rows: WaitlistRow[] = [
-      { address: FIRST_ADDRESS, joinedAt: JOINED_AT, confirmation: ConfirmationState.Sent },
-      { address: 'bo@example.org', joinedAt: JOINED_AT - 60_000, confirmation: ConfirmationState.Failed },
-    ];
-    const { html } = await panelPage({ rows, total: 2, failedConfirmations: 1 });
-    const bodyRows = [...mainOf(html).matchAll(/<tr [^>]*>[\s\S]*?<\/tr>/g)]
-      .map(([row]) => row)
-      .filter((row) => row.includes('scope="row"'));
-    expect(bodyRows).toHaveLength(2);
-    expect(bodyRows[0]).toContain(`>${FIRST_ADDRESS}</th>`);
-    expect(bodyRows[0]).toContain(`<time datetime="${JOINED_AT_DATETIME}">${JOINED_AT_LABEL}</time>`);
-    expect(bodyRows[0]).toContain(ADMIN_COPY.table.sent);
-    expect(bodyRows[0]).not.toContain(ADMIN_COPY.table.failed);
-    expect(bodyRows[1]).toContain('>bo@example.org</th>');
-    expect(bodyRows[1]).toContain('2026-11-25 14:02 UTC');
-    expect(bodyRows[1]).toContain(ADMIN_COPY.table.failed);
-  });
-
-  test('marks Sent and Failed by their word and a differently shaped badge, never by colour alone', async () => {
-    const rows: WaitlistRow[] = [
-      { address: FIRST_ADDRESS, joinedAt: JOINED_AT, confirmation: ConfirmationState.Sent },
-      { address: 'bo@example.org', joinedAt: JOINED_AT, confirmation: ConfirmationState.Failed },
-    ];
-    const { html } = await panelPage({ rows, total: 2 });
-    const badges = [
-      ...mainOf(html).matchAll(/<span class="(badge[^"]*)">(?:<span class="badge-dot" aria-hidden="true"><\/span>)([^<]*)<\/span>/g),
-    ].map(([, className, label]) => [className, label]);
-    expect(badges).toEqual([
-      ['badge badge-sent', ADMIN_COPY.table.sent],
-      ['badge badge-failed', ADMIN_COPY.table.failed],
-    ]);
-  });
-
-  test('gives the table a caption, column headers, and explicit roles that survive the stacked layout', async () => {
-    const { html } = await panelPage({});
-    const main = mainOf(html);
-    expect(main).toContain(`<caption class="visually-hidden">${ADMIN_COPY.table.caption}</caption>`);
-    [ADMIN_COPY.table.address, ADMIN_COPY.table.joined, ADMIN_COPY.table.confirmation].forEach((heading) =>
-      expect(main).toContain(`<th scope="col" role="columnheader">${heading}</th>`),
-    );
-    ['table', 'rowgroup', 'row', 'rowheader', 'cell'].forEach((role) => expect(main).toContain(`role="${role}"`));
-  });
-
-  test('escapes every address, so a hostile one is text and never markup', async () => {
-    const rows: WaitlistRow[] = [{ address: HOSTILE_ADDRESS, joinedAt: JOINED_AT, confirmation: ConfirmationState.Sent }];
-    const { html } = await panelPage({ rows, total: 1 });
-    expect(html).toContain(HOSTILE_ADDRESS_ESCAPED);
-    expect(html).not.toContain(HOSTILE_ADDRESS);
-    expect(html).not.toMatch(/<img /);
-  });
-
-  test('shows no note when every row is shown', async () => {
-    const { html } = await panelPage({ rows: rowsOf(ROWS_CAP), total: ROWS_CAP });
-    expect(html).not.toContain('The CSV has all.');
-  });
-
-  test('says "Showing the newest 200 of 1,284. The CSV has all." above the cap', async () => {
-    const { html } = await panelPage({ rows: rowsOf(ROWS_CAP), total: 1284 });
-    expect(mainOf(html)).toContain('Showing the newest 200 of 1,284. The CSV has all.');
-  });
-
-  test('with no rows shows the empty card, the zero counts, no table and still the download', async () => {
-    const { html } = await panelPage({ total: 0, rows: [] });
-    const main = mainOf(html);
-    expect(main).not.toContain('<table');
-    expect(main).toContain(`>${ADMIN_COPY.empty.title}</h2>`);
-    expect(main).toContain(ADMIN_COPY.empty.body);
-    expect(main).toContain(`<dd>0</dd>`);
-    expect(main).toContain(`href="${AdminPath.Export}"`);
-  });
-
-  test('runs no script of its own and calls no other origin', async () => {
-    const page = await panelPage({});
-    expect([...page.html.matchAll(SCRIPT_TAG_PATTERN)]).toHaveLength(0);
-    expect(policyOf(page)).not.toContain('connect-src');
-    expect(policyOf(page)).not.toContain(TURNSTILE_ORIGIN);
   });
 });
 

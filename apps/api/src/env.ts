@@ -12,9 +12,6 @@ export type Env = {
   SIGN_IN_LIMITER?: RateLimit;
   SIGN_IN_ADDRESS_LIMITER?: RateLimit;
   SIGN_IN_GLOBAL_LIMITER?: RateLimit;
-  WAITLIST_LIMITER?: RateLimit;
-  WAITLIST_ADDRESS_LIMITER?: RateLimit;
-  WAITLIST_GLOBAL_LIMITER?: RateLimit;
   ADMIN_EMAIL?: string;
   ADMIN_LIMITER?: RateLimit;
   ADMIN_ADDRESS_LIMITER?: RateLimit;

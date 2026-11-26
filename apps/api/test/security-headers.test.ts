@@ -27,7 +27,6 @@ const WEBSOCKET_UPGRADE = 'websocket';
 const ADMIN_ADDRESS = 'hello@todz.app';
 const SESSION_SECRET = 'a-security-headers-session-secret';
 const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
-const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const WWW_PREFIX = 'www.';
 const UNKNOWN_ORIGIN = 'https://unknown.example';
 const CRASH_BEARER = 'todz_a-crash-bearer-never-logged';
@@ -67,17 +66,6 @@ function expectSecurityHeaders({ response, policy }: { response: Response; polic
   expect(response.headers.get(CONTENT_SECURITY_POLICY)).toBe(policy);
 }
 
-function joinRequest(method: string): Request {
-  const body = new URLSearchParams({ email: 'maria@example.com' }).toString();
-  if (method === 'GET') return new Request(`${SITE_ORIGIN}/join`, { redirect: 'manual' });
-  return new Request(`${SITE_ORIGIN}/join`, {
-    method,
-    headers: { 'Content-Type': FORM_CONTENT_TYPE, 'Content-Length': String(body.length) },
-    body,
-    redirect: 'manual',
-  });
-}
-
 function wwwOrigin(): string {
   const { protocol, host } = new URL(SITE_ORIGIN);
   return `${protocol}//${WWW_PREFIX}${host}`;
@@ -91,8 +79,7 @@ describe('the answers of the worker on every host kind', () => {
     ['GET /sign-in/challenge', () => new Request(`${API_ORIGIN}/sign-in/challenge`), HttpStatus.Ok, null],
     ['GET /health on the api host', () => new Request(`${API_ORIGIN}/health`), HttpStatus.Ok, DEFAULT_POLICY],
     ['an unknown path on the site host', () => new Request(`${SITE_ORIGIN}/unknown`), HttpStatus.NotFound, DEFAULT_POLICY],
-    ['GET /join', () => joinRequest('GET'), HttpStatus.SeeOther, DEFAULT_POLICY],
-    ['POST /join', () => joinRequest('POST'), HttpStatus.Gone, DEFAULT_POLICY],
+    ['GET /join', () => new Request(`${SITE_ORIGIN}/join`), HttpStatus.NotFound, DEFAULT_POLICY],
     ['the www host', () => new Request(`${wwwOrigin()}/`, { redirect: 'manual' }), HttpStatus.MovedPermanently, DEFAULT_POLICY],
     ['GET /self-host', () => new Request(`${SITE_ORIGIN}/self-host`, { redirect: 'manual' }), HttpStatus.MovedPermanently, DEFAULT_POLICY],
     [
@@ -108,7 +95,7 @@ describe('the answers of the worker on every host kind', () => {
     expectSecurityHeaders({ response, policy });
   });
 
-  test('the admin export answers its CSV with the four headers', async () => {
+  test('the admin metrics export answers its CSV with the four headers', async () => {
     await openAdminSession({
       database: env.DIRECTORY,
       digest: await digestCredential(SESSION_SECRET),
@@ -116,7 +103,9 @@ describe('the answers of the worker on every host kind', () => {
       now: Date.now(),
       expiresAt: Date.now() + ADMIN_SESSION_LIFETIME_MS,
     });
-    const request = new Request(`${SITE_ORIGIN}${AdminPath.Export}`, { headers: { Cookie: `${AdminCookie.Session}=${SESSION_SECRET}` } });
+    const request = new Request(`${SITE_ORIGIN}${AdminPath.MetricsExport}`, {
+      headers: { Cookie: `${AdminCookie.Session}=${SESSION_SECRET}` },
+    });
     const response = await answerOf({ request, settings: ADMIN_SETTINGS });
     expect(response.status).toBe(HttpStatus.Ok);
     expect(response.headers.get(HttpHeader.CacheControl)).toBe(NO_STORE);

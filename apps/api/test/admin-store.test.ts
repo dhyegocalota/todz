@@ -3,20 +3,13 @@ import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import {
-  ADMIN_WAITLIST_ROWS_MAX,
-  DIGEST_ADDRESSES_MAX,
   adminSessionEmail,
   deleteAdminLink,
   deleteAdminSession,
   insertAdminLinkWithinLimit,
   openAdminSession,
   spendAdminLink,
-  waitlistDigestFacts,
-  waitlistRowsOf,
-  waitlistSummaryOf,
 } from '../src/site/admin-store';
-import { ConfirmationState } from '../src/site/admin-waitlist';
-import { joinWaitlistWithinLimit, recordConfirmationFailure } from '../src/site/waitlist-store';
 import { adminLinkRows, adminSessionRows } from './admin-client';
 import { CLOCK_NOW } from './task-fixtures';
 
@@ -26,7 +19,6 @@ const OTHER_DIGEST = 'f'.repeat(64);
 const LINK_LIFETIME = 15 * MILLISECONDS_PER_MINUTE;
 const SESSION_LIFETIME = 12 * MILLISECONDS_PER_HOUR;
 const LINKS_PER_WINDOW_MAX = 5;
-const ROWS_ABOVE_CAP = ADMIN_WAITLIST_ROWS_MAX + 1;
 
 type LinkOverrides = { digest?: string; email?: string; challenge?: string; now?: number; windowStart?: number };
 
@@ -53,19 +45,8 @@ function insertLink({
   });
 }
 
-async function insertWaitlistRows({ count, firstJoinedAt }: { count: number; firstJoinedAt: number }): Promise<void> {
-  const statements = Array.from({ length: count }, (_, index) =>
-    env.DIRECTORY.prepare('INSERT INTO waitlist (address, joined_at, confirmation_claimed_at) VALUES (?1, ?2, ?2)').bind(
-      `person-${index}@example.com`,
-      firstJoinedAt + index,
-    ),
-  );
-  await env.DIRECTORY.batch(statements);
-}
-
 beforeEach(async () => {
   await env.DIRECTORY.batch([
-    env.DIRECTORY.prepare('DELETE FROM waitlist'),
     env.DIRECTORY.prepare('DELETE FROM admin_sign_in_links'),
     env.DIRECTORY.prepare('DELETE FROM admin_sessions'),
   ]);
@@ -209,138 +190,5 @@ describe('the admin sessions', () => {
     await openAdminSession({ database: env.DIRECTORY, digest: second, email: ADMIN_ADDRESS, ...lifetime });
     await deleteAdminSession({ database: env.DIRECTORY, digest: first });
     expect((await adminSessionRows()).map((row) => row.digest)).toEqual([second]);
-  });
-});
-
-describe('the waitlist summary', () => {
-  test('an empty waitlist counts nothing and has no rows', async () => {
-    expect(await waitlistSummaryOf({ database: env.DIRECTORY, now: CLOCK_NOW })).toEqual({
-      total: 0,
-      joinedLastDay: 0,
-      failedConfirmations: 0,
-      rows: [],
-    });
-  });
-
-  test('it counts the total, the joins of the last 24 hours and the failed confirmations, newest rows first', async () => {
-    const oldest = 'oldest@example.com';
-    const failed = 'failed@example.com';
-    const newest = 'newest@example.com';
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: oldest, now: CLOCK_NOW - MILLISECONDS_PER_DAY - 1 });
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: failed, now: CLOCK_NOW - MILLISECONDS_PER_HOUR });
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: newest, now: CLOCK_NOW - MILLISECONDS_PER_MINUTE });
-    await recordConfirmationFailure({ database: env.DIRECTORY, address: failed, now: CLOCK_NOW });
-    expect(await waitlistSummaryOf({ database: env.DIRECTORY, now: CLOCK_NOW })).toEqual({
-      total: 3,
-      joinedLastDay: 2,
-      failedConfirmations: 1,
-      rows: [
-        { address: newest, joinedAt: CLOCK_NOW - MILLISECONDS_PER_MINUTE, confirmation: ConfirmationState.Sent },
-        { address: failed, joinedAt: CLOCK_NOW - MILLISECONDS_PER_HOUR, confirmation: ConfirmationState.Failed },
-        { address: oldest, joinedAt: CLOCK_NOW - MILLISECONDS_PER_DAY - 1, confirmation: ConfirmationState.Sent },
-      ],
-    });
-  });
-
-  test('it returns the newest 200 rows and still counts every row', async () => {
-    await insertWaitlistRows({ count: ROWS_ABOVE_CAP, firstJoinedAt: CLOCK_NOW - MILLISECONDS_PER_HOUR });
-    const summary = await waitlistSummaryOf({ database: env.DIRECTORY, now: CLOCK_NOW });
-    expect(summary.total).toBe(ROWS_ABOVE_CAP);
-    expect(summary.rows).toHaveLength(ADMIN_WAITLIST_ROWS_MAX);
-    expect(summary.rows[0]?.address).toBe(`person-${ADMIN_WAITLIST_ROWS_MAX}@example.com`);
-    expect(summary.rows.map((row) => row.address)).not.toContain('person-0@example.com');
-  });
-});
-
-describe('the waitlist export', () => {
-  test('it reads every row, newest first, past the panel cap', async () => {
-    await insertWaitlistRows({ count: ROWS_ABOVE_CAP, firstJoinedAt: CLOCK_NOW - MILLISECONDS_PER_HOUR });
-    const rows = await waitlistRowsOf({ database: env.DIRECTORY });
-    expect(rows).toHaveLength(ROWS_ABOVE_CAP);
-    expect(rows[0]?.address).toBe(`person-${ADMIN_WAITLIST_ROWS_MAX}@example.com`);
-    expect(rows.at(-1)?.address).toBe('person-0@example.com');
-  });
-
-  test('it marks a recorded failure as failed and the rest as sent', async () => {
-    const failed = 'failed@example.com';
-    const sent = 'sent@example.com';
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: sent, now: CLOCK_NOW - MILLISECONDS_PER_MINUTE });
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: failed, now: CLOCK_NOW });
-    await recordConfirmationFailure({ database: env.DIRECTORY, address: failed, now: CLOCK_NOW });
-    expect(await waitlistRowsOf({ database: env.DIRECTORY })).toEqual([
-      { address: failed, joinedAt: CLOCK_NOW, confirmation: ConfirmationState.Failed },
-      { address: sent, joinedAt: CLOCK_NOW - MILLISECONDS_PER_MINUTE, confirmation: ConfirmationState.Sent },
-    ]);
-  });
-});
-
-describe('the waitlist digest facts', () => {
-  const since = CLOCK_NOW - MILLISECONDS_PER_DAY;
-  const until = CLOCK_NOW;
-
-  function digestFacts(): ReturnType<typeof waitlistDigestFacts> {
-    return waitlistDigestFacts({ database: env.DIRECTORY, since, until });
-  }
-
-  test('an empty waitlist counts nothing and lists no address', async () => {
-    expect(await digestFacts()).toEqual({ joined: 0, total: 0, failedConfirmations: 0, addresses: [], moreAddresses: 0 });
-  });
-
-  test('a join counts inside the window and at its end, never at its start, and a later join counts in neither the window nor the total', async () => {
-    const atStart = 'at-start@example.com';
-    const afterStart = 'after-start@example.com';
-    const atEnd = 'at-end@example.com';
-    const afterEnd = 'after-end@example.com';
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: atStart, now: since });
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: afterStart, now: since + 1 });
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: atEnd, now: until });
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: afterEnd, now: until + 1 });
-    expect(await digestFacts()).toEqual({
-      joined: 2,
-      total: 3,
-      failedConfirmations: 0,
-      addresses: [atEnd, afterStart],
-      moreAddresses: 0,
-    });
-  });
-
-  test('a failed confirmation counts only when it was recorded inside the window', async () => {
-    const before = 'before@example.com';
-    const inside = 'inside@example.com';
-    const after = 'after@example.com';
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: before, now: since - MILLISECONDS_PER_HOUR });
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: inside, now: since + MILLISECONDS_PER_HOUR });
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: after, now: since + MILLISECONDS_PER_HOUR });
-    await recordConfirmationFailure({ database: env.DIRECTORY, address: before, now: since });
-    await recordConfirmationFailure({ database: env.DIRECTORY, address: inside, now: until });
-    await recordConfirmationFailure({ database: env.DIRECTORY, address: after, now: until + 1 });
-    expect((await digestFacts()).failedConfirmations).toBe(1);
-  });
-
-  test('it lists the newest addresses first and breaks a tie by the later row', async () => {
-    const older = 'older@example.com';
-    const first = 'first@example.com';
-    const second = 'second@example.com';
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: older, now: since + 1 });
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: first, now: since + 2 });
-    await joinWaitlistWithinLimit({ database: env.DIRECTORY, address: second, now: since + 2 });
-    expect((await digestFacts()).addresses).toEqual([second, first, older]);
-  });
-
-  test('it lists fifty addresses and counts one more past fifty', async () => {
-    await insertWaitlistRows({ count: DIGEST_ADDRESSES_MAX + 1, firstJoinedAt: since + 1 });
-    const facts = await digestFacts();
-    expect(facts.joined).toBe(DIGEST_ADDRESSES_MAX + 1);
-    expect(facts.addresses).toHaveLength(DIGEST_ADDRESSES_MAX);
-    expect(facts.addresses[0]).toBe(`person-${DIGEST_ADDRESSES_MAX}@example.com`);
-    expect(facts.addresses).not.toContain('person-0@example.com');
-    expect(facts.moreAddresses).toBe(1);
-  });
-
-  test('exactly fifty addresses leave nothing more', async () => {
-    await insertWaitlistRows({ count: DIGEST_ADDRESSES_MAX, firstJoinedAt: since + 1 });
-    const facts = await digestFacts();
-    expect(facts.addresses).toHaveLength(DIGEST_ADDRESSES_MAX);
-    expect(facts.moreAddresses).toBe(0);
   });
 });

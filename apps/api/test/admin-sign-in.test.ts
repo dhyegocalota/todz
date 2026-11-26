@@ -4,13 +4,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import type { Env } from '../src/env';
 import { serveAdminSession, serveAdminSignInLink } from '../src/site/admin-sign-in';
-import { ADMIN_SESSION_LIFETIME_MS, ADMIN_SIGN_IN_LINK_LIFETIME_MS, AdminCookie, hasAdminSession } from '../src/site/admin-session';
+import { AdminNotice } from '../src/site/admin-notice';
 import { ADMIN_RESPONSE_HEADERS, AdminField, AdminPath } from '../src/site/admin-paths';
+import { ADMIN_SESSION_LIFETIME_MS, ADMIN_SIGN_IN_LINK_LIFETIME_MS, AdminCookie, hasAdminSession } from '../src/site/admin-session';
 import { adminSignInMail } from '../src/emails/admin-sign-in-mail';
 import { serveAdminSignInPage } from '../src/site/admin-page';
-import { AdminNotice } from '../src/site/admin-waitlist';
 import { TURNSTILE_DUMMY_TOKEN, TurnstileAction } from '../src/turnstile';
-import { AdminLimiterBinding, adminLinkRows, adminSessionRows, recordedAdminLimiters } from './admin-client';
+import { AdminLimiterBinding, adminLinkRows, adminSessionRows, recordedAdminLimiters, throwingLimiter } from './admin-client';
 import {
   CLIENT_ADDRESS_HEADER,
   type RecordingBinding,
@@ -23,7 +23,6 @@ import {
   sentMail,
 } from './email-sign-in-client';
 import { workerEnvWith } from './owner-client';
-import { throwingLimiter } from './waitlist-client';
 
 const SITE_ORIGIN = 'https://todz.app';
 const SITE_HOSTNAME = 'todz.app';
@@ -41,7 +40,7 @@ const JSON_CONTENT_TYPE = 'application/json';
 const EMAIL_FIELD = 'email';
 const TURNSTILE_FIELD = 'cf-turnstile-response';
 const ADMIN_TOKEN = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.AdminSignIn];
-const WAITLIST_TOKEN = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.Waitlist];
+const SIGN_IN_TOKEN = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.SignIn];
 const BODY_LENGTH_MAX = 4096;
 const OVERSIZED_BODY_LENGTH = 5 * 1024;
 const OK_STATUS = 200;
@@ -459,7 +458,7 @@ describe('a refused link request keeps nothing, mails nothing and sets no cookie
   test.each([
     ['siteverify refuses the token', { success: false, 'error-codes': ['invalid-input-response'] }],
     ['siteverify answers timeout-or-duplicate', { success: false, 'error-codes': ['timeout-or-duplicate'] }],
-    ['the action differs', { success: true, hostname: SITE_HOSTNAME, action: TurnstileAction.Waitlist }],
+    ['the action differs', { success: true, hostname: SITE_HOSTNAME, action: TurnstileAction.SignIn }],
     ['the hostname differs', { success: true, hostname: API_HOSTNAME, action: TurnstileAction.AdminSignIn }],
   ])('%s', async (_name, answer) => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json(answer));
@@ -469,7 +468,7 @@ describe('a refused link request keeps nothing, mails nothing and sets no cookie
   });
 
   test('a token solved for another action', async () => {
-    const run = await askForLink({ token: WAITLIST_TOKEN });
+    const run = await askForLink({ token: SIGN_IN_TOKEN });
     await expectRefusedAlike({ run, notice: AdminNotice.TryAgain, status: TOO_MANY_STATUS });
   });
 

@@ -4,8 +4,8 @@ import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
 import { LimitRefusal, limitRefusal } from '../limit-refusal';
 import { isLocalSiteHost } from '../local-origin';
+import { AdminNotice } from './admin-notice';
 import { AdminPath } from './admin-paths';
-import { AdminNotice } from './admin-waitlist';
 import { isSiteUnguarded } from './site-limiter';
 
 export enum AdminLimit {

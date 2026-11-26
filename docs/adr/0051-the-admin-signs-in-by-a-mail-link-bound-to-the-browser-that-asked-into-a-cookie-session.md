@@ -1,6 +1,6 @@
 # 0051. The admin signs in by a mail link bound to the browser that asked, into a cookie session
 
-- Status: Accepted (the build loop's call, the owner may overturn it); amends [0049](0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md) §3.3: the cookie is a `__Host-` cookie on path `/`, and the digest ships as its own feature, `landing-digest`
+- Status: Accepted (the build loop's call, the owner may overturn it); amends [0049](0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md) §3.3: the cookie is a `__Host-` cookie on path `/`, and the digest ships as its own feature, `landing-digest`; amended by [0097](0097-the-waitlist-is-removed-the-join-route-its-mails-its-admin-list-and-its-table-are-deleted.md) (§7: the panel no longer lists a waitlist)
 - Date: 2026-11-25
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) asked for "painel admin, digest etc igual zapbip … pra ser um prod ready mesmo", that "the admin authenticates as the owner", and for a rate limit and Turnstile on every public endpoint, failing closed (PROMPT.md "Landing" and "Security"), and may overturn the details
 - Inspired by: the run-15 spike below, zapbip's `backoffice/` (read-only), [ADR 0040](0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md), [ADR 0045](0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md), [ADR 0050](0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md)

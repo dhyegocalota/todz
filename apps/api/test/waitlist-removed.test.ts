@@ -20,7 +20,7 @@ const SEE_OTHER_STATUS = 303;
 const OK_STATUS = 200;
 const LAST_NUMBER_BEFORE = '0011';
 const MIGRATION_NAME = '0013_drop_waitlist.sql';
-const WAITLIST_PATTERN = /waitlist|wait list|failed confirmations|download csv/i;
+const WAITLIST_PATTERN = /waitlist|wait list|failed confirmations/i;
 const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const ADMIN_SETTINGS: Partial<Env> = {
   SITE_ORIGIN,

@@ -3,10 +3,9 @@ import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { siteKeyOf } from '../turnstile-page';
 import { adminCardAnswerOf, adminClosedAnswerOf, adminPageAnswerOf, adminRedirectAnswerOf } from './admin-answer';
-import { serveAdminExport } from './admin-export';
 import { serveAdminLinkPage } from './admin-link-page';
 import { serveAdminMetrics, serveAdminMetricsExport } from './admin-metrics';
-import { serveAdminPanel } from './admin-page';
+import { AdminNotice } from './admin-notice';
 import { AdminPath } from './admin-paths';
 import {
   AdminCookie,
@@ -17,8 +16,7 @@ import {
   isSameOriginPost,
 } from './admin-session';
 import { serveAdminSession, serveAdminSignInLink } from './admin-sign-in';
-import { deleteAdminSession, waitlistSummaryOf } from './admin-store';
-import { AdminNotice } from './admin-waitlist';
+import { deleteAdminSession } from './admin-store';
 import type { SiteContext, SiteRoute } from './site-endpoint';
 
 export type AdminRoute = { method: HttpMethod; path: AdminPath; route: SiteRoute };
@@ -28,9 +26,7 @@ async function servePanel({ request, env }: SiteContext): Promise<Response> {
   const isSignedIn = await hasAdminSession({ request, env, now: Date.now() }).catch(() => null);
   if (isSignedIn === null) return adminClosedAnswerOf({ env });
   if (!isSignedIn) return adminCardAnswerOf({ notice: AdminNotice.None, siteKey: siteKeyOf(env) });
-  const summary = await waitlistSummaryOf({ database: env.DIRECTORY, now: Date.now() }).catch(() => null);
-  if (summary === null) return adminClosedAnswerOf({ env });
-  return adminPageAnswerOf({ page: await serveAdminPanel({ summary }), status: HttpStatus.Ok });
+  return adminRedirectAnswerOf({ location: AdminPath.Metrics });
 }
 
 async function serveLinkPage(): Promise<Response> {
@@ -55,7 +51,6 @@ export const ADMIN_ROUTES: AdminRoute[] = [
   { method: HttpMethod.Head, path: AdminPath.Panel, route: servePanel },
   { method: HttpMethod.Get, path: AdminPath.LinkPage, route: serveLinkPage },
   { method: HttpMethod.Head, path: AdminPath.LinkPage, route: serveLinkPage },
-  { method: HttpMethod.Get, path: AdminPath.Export, route: serveAdminExport },
   { method: HttpMethod.Get, path: AdminPath.Metrics, route: serveAdminMetrics },
   { method: HttpMethod.Head, path: AdminPath.Metrics, route: serveAdminMetrics },
   { method: HttpMethod.Get, path: AdminPath.MetricsExport, route: serveAdminMetricsExport },
