@@ -16,4 +16,11 @@ enum SheetCopy {
     static let cancel = "Cancel"
     static let create = "Create"
     static let rename = "Rename"
+    static let creating = "Creating…"
+    static let renaming = "Renaming…"
+    static let deleting = "Deleting…"
+    static let renameUnchanged = "Type a new name to rename."
+    static let deleteMismatch = "Type the name exactly as shown."
+    static let newWorkspaceDetail = "A workspace keeps its own projects and tasks."
+    static let newProjectDetail = "A project groups tasks, and agents connect to it with their own keys."
 }

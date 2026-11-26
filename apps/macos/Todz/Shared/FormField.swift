@@ -24,6 +24,7 @@ struct FormField: View {
             TextField(label, text: $text, prompt: Text(prompt))
                 .textFieldStyle(.plain)
                 .labelsHidden()
+                .multilineTextAlignment(.leading)
                 .focused(isFocused)
                 .disabled(isBusy)
                 .accessibilityLabel(label)

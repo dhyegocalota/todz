@@ -1,9 +1,11 @@
 import SwiftUI
 
 struct FormPanel<Content: View>: View {
+    private let width: CGFloat
     private let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    init(width: CGFloat, @ViewBuilder content: () -> Content) {
+        self.width = width
         self.content = content()
     }
 
@@ -11,6 +13,7 @@ struct FormPanel<Content: View>: View {
         VStack {
             content
         }
+        .frame(width: width)
         .padding()
         .padding()
         .modifier(GlassSurface(cornerRadius: FormMetrics.panelCornerRadius))
