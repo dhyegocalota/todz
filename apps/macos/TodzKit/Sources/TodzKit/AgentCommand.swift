@@ -38,13 +38,14 @@ public enum AgentCommand: Equatable, Sendable {
     // NB ADR 0034: a secret is todz_ plus base64url, so single quotes hold it without escaping.
     public static func of(client: AgentClient, serverURL: URL, key: String, server: AgentServer = .project) -> AgentCommand {
         let address = serverURL.absoluteString
+        let name = server.rawValue
         switch client {
         case .claudeCode:
-            return .claudeCode(line: "claude mcp add --transport http \(server.rawValue) '\(address)' --header 'Authorization: Bearer \(key)'")
+            return .claudeCode(line: "claude mcp add --transport http \(name) '\(address)' --header 'Authorization: Bearer \(key)'")
         case .codex:
-            return .codex(configuration: codexConfiguration(server: address, name: server.rawValue), shellLine: "export \(keyVariable)='\(key)'")
+            return .codex(configuration: codexConfiguration(server: address, name: name), shellLine: "export \(keyVariable)='\(key)'")
         case .cursor:
-            return .cursor(json: cursorJSON(server: address, name: server.rawValue, key: key))
+            return .cursor(json: cursorJSON(server: address, name: name, key: key))
         }
     }
 
