@@ -1,6 +1,6 @@
 # Key list after a revoke
 
-**Status:** In review
+**Status:** Shipped 2026-11-26
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-26 as the loop's call under the owner's 2026-11-24 instruction to decide every call (todz-loop/PROMPT.md), from the production smoke walk's step 11 deviation in STATE.md
 **ADRs:** none
@@ -15,7 +15,7 @@ In the production smoke walk (2026-11-26, step 11), the owner revoked a key in t
 ## Change
 
 - A revoke the server confirms removes the key from the list, and from every later list answer, whenever the key screen still shows the same project, even when the visit changed while the request was out.
-- A revoke answer for another project, or after the owner left Connect an Agent, changes nothing.
+- A revoke answer for another project, or after the owner left Connect an Agent and did not come back to the same project, changes nothing.
 - A failed revoke still says so, and its spinner still stops, only in the visit that started it: an earlier visit's answer never touches a revoke the current visit started.
 
 ## Test list
