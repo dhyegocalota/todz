@@ -32,11 +32,12 @@ Unit tests run with Swift Testing in `apps/macos/TodzKit` (`swift test`). The ap
 
 ## In use
 
-- [ ] A chord the system holds (an enabled `AppleSymbolicHotKeys` entry with the same key and modifiers) is in the plan's in-use set and not in its registrations.
-- [ ] A disabled system entry with the same chord does not hold it.
-- [ ] A system entry with a different modifier set does not hold it.
-- [ ] System modifier flags map to ⌃, ⌥, ⇧ and ⌘ exactly.
-- [ ] A chord not held by the system is registered.
+- [ ] A registration status of 0 (no error) is `available`.
+- [ ] The status `eventHotKeyExistsErr` (-9878) is `inUse`, and nothing else is.
+- [ ] Any other status (for example -50) is `failed`, not `inUse`.
+- [ ] `GlobalChordPlan` plans every global default chord and no in-app chord, even when a global override holds an in-app chord.
+
+Not tested here, and not claimed: another app's ordinary (non-exclusive) shortcut, and macOS's system symbolic hot keys. The system table is not read (ADR 0091, decision 5).
 
 ## Chord modifiers
 
@@ -47,6 +48,8 @@ Unit tests run with Swift Testing in `apps/macos/TodzKit` (`swift test`). The ap
 - [ ] Settings with the switch off shows no number rows.
 - [ ] Settings with the switch on shows ⌃⌥⌘1…9 per workspace, in light and dark.
 - [ ] A chord marked in use shows "In use by another app" beside it.
+- [ ] A chord that failed for another reason shows "todz could not register this shortcut." beside it.
+- [ ] Settings with the switch on shows the Mission Control line in the section footer.
 - [ ] The Workspace menu still shows ⌃1…⌃9 and ⌃⌘[ ⌃⌘].
 
 ## Coverage honesty

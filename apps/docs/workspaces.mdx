@@ -24,7 +24,8 @@ A workspace past the ninth has no key of its own; step to it with **Previous Wor
 - Press **Record** on a workspace's row, then the new keys; Escape cancels (**Cancel**).
 - Hold two of ⌃, ⌥ or ⌘ with the key, or todz refuses it. Keys that another workspace or one of the in-app keys above already uses are refused.
 - A row you never changed follows the defaults.
-- If another app already holds a chord, its row shows **In use by another app**; todz does not register it, and the other app keeps the keys.
+- todz can't see other apps' shortcuts. It registers each key exclusively: if another app already holds that key exclusively, the row shows **In use by another app** and todz does not register it. If another app uses the same key in an ordinary way, both may respond, so pick keys other apps don't use; the ⌃⌥⌘ default avoids the common ones.
+- Previous Workspace and Next Workspace, and the in-app keys above, can't be changed in this version; rebinding them returns in a later release.
 
 <Note>
   The in-app keys ⌃1–⌃9 can clash with Mission Control's Switch to Desktop keys while todz is in front. If both are on, the system wins; turn those off in System Settings.

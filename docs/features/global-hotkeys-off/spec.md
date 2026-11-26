@@ -20,17 +20,17 @@ ADR 0079 registers ⌃1…⌃9 and ⌃⌘[ ⌃⌘] as global hot keys, on by def
 ## Non-goals
 
 - Global Previous and Next chords.
-- Rebinding the in-app chords.
+- Rebinding the in-app chords and Previous/Next: deferred to 0.2.4 by the owner's decision.
 - Re-checking an in-use chord while todz runs (it is checked when the hot keys are registered: at launch, on a change, and on becoming ready).
 
 ## Design
 
-- TodzKit: `WorkspaceAction` gives each action an `inAppChord` and a `globalDefaultChord`; `GlobalWorkspaceChords` (renamed from `WorkspaceBindings`) holds the global overrides, refuses chords with fewer than two of ⌃⌥⌘ or equal to an in-app chord, and refuses non-number actions; `ChordModifiers.canBeGlobal`; `WorkspaceShortcutsPreference` reads the switch (default off) and drops stored overrides that are no longer valid; `GlobalChordPlan` decides which global chords to register and which are held by the system; `SymbolicHotKeys` reads a system entry's key and modifiers.
+- TodzKit: `WorkspaceAction` gives each action an `inAppChord` and a `globalDefaultChord`; `GlobalWorkspaceChords` (renamed from `WorkspaceBindings`) holds the global overrides, refuses chords with fewer than two of ⌃⌥⌘ or equal to an in-app chord, and refuses non-number actions; `ChordModifiers.canBeGlobal`; `WorkspaceShortcutsPreference` reads the switch (default off) and drops stored overrides that are no longer valid; `GlobalChordPlan` plans the global chords and filters in-app chords out; `GlobalChordAvailability` maps a registration status to available, in use (`eventHotKeyExistsErr` only) or failed. The system's symbolic hot keys are not read (ADR 0091, decision 5).
 - App: `WorkspaceHotKeys` registers the plan and returns the actions Carbon refused; `WorkspaceShortcutController` keeps the in-use set; the Workspace menu keeps the in-app chords; `SettingsWorkspaceShortcuts` shows number rows only while the switch is on, with the in-use line; `WorkspaceShortcutsCopy` carries the new strings.
 
 ## Failure handling
 
-- A chord held by the system or refused by Carbon is marked in use, not registered, and its row says so.
+- Carbon refuses a chord another app holds exclusively with `eventHotKeyExistsErr`: the chord is marked in use and its row says so. Any other refusal is marked failed. Neither is registered.
 - A stored override that is not valid globally is dropped at read; the action uses its default.
 - A global chord with one modifier, or equal to an in-app chord, is refused at rebind.
 
