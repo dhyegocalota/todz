@@ -2,6 +2,9 @@ import { INBOX_PROJECT_NAME } from '@todz/types';
 import { env, exports } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
+import { digestCredential } from '../src/credential-digest';
+import { deleteOwnerProject, deleteOwnerWorkspace } from '../src/directory-workspaces';
+import { openMcpSession } from '../src/mcp-sessions';
 import { countingEnv } from './counting-namespace';
 import { ownerCall, serveOwnerCall, signInOwner } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
@@ -33,6 +36,12 @@ async function createProject({ token, workspaceId, name }: { token: string; work
   return (await response.json<{ project: ProjectBody }>()).project;
 }
 
+function inboxOf(workspace: WorkspaceBody): ProjectBody {
+  const inbox = workspace.projects.find((project) => project.is_inbox);
+  if (inbox === undefined) throw new Error('a workspace has an Inbox');
+  return inbox;
+}
+
 async function issueKey({ token, projectId }: { token: string; projectId: string }): Promise<string> {
   const response = await ownerCall({ method: 'POST', path: `/owner/projects/${projectId}/keys`, token });
   if (response.status !== CREATED_STATUS) throw new Error(`issue key answered ${response.status}`);
@@ -55,6 +64,13 @@ function deleteProject({ token, projectId }: { token: string; projectId: string 
 
 function mcpCall(secret: string): Promise<Response> {
   return exports.default.fetch(MCP_URL, { method: 'POST', headers: { Authorization: `Bearer ${secret}` } });
+}
+
+function mcpSessionCall({ secret, sessionId }: { secret: string; sessionId: string }): Promise<Response> {
+  return exports.default.fetch(MCP_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${secret}`, 'Mcp-Session-Id': sessionId },
+  });
 }
 
 async function countRows({ sql, bindings }: { sql: string; bindings: string[] }): Promise<number> {
@@ -108,7 +124,7 @@ describe('DELETE /owner/workspaces/:workspaceId', () => {
   test('revokes every MCP key of the deleted projects at once: the key answers 401 right after', async () => {
     const { token } = await signInOwner();
     const workspace = await createWorkspace({ token, name: 'Keyed' });
-    const secret = await issueKey({ token, projectId: workspace.projects[0]?.id ?? '' });
+    const secret = await issueKey({ token, projectId: inboxOf(workspace).id });
     expect((await mcpCall(secret)).status).not.toBe(UNAUTHORIZED_STATUS);
     await deleteWorkspace({ token, workspaceId: workspace.id });
     const refused = await mcpCall(secret);
@@ -119,7 +135,7 @@ describe('DELETE /owner/workspaces/:workspaceId', () => {
   test('wipes the storage of every deleted project', async () => {
     const { token } = await signInOwner();
     const workspace = await createWorkspace({ token, name: 'Wiped' });
-    const inboxId = workspace.projects[0]?.id ?? '';
+    const inboxId = inboxOf(workspace).id;
     expect(await projectStoreTableCount(inboxId)).toBeGreaterThan(0);
     await deleteWorkspace({ token, workspaceId: workspace.id });
     expect(await projectStoreTableCount(inboxId)).toBe(0);
@@ -195,7 +211,7 @@ describe('DELETE /owner/projects/:projectId', () => {
   test('the Inbox answers 409 inbox_is_fixed and is kept', async () => {
     const { token } = await signInOwner();
     const workspace = await createWorkspace({ token, name: 'Work' });
-    const inboxId = workspace.projects[0]?.id ?? '';
+    const inboxId = inboxOf(workspace).id;
     const response = await deleteProject({ token, projectId: inboxId });
     expect(response.status).toBe(CONFLICT_STATUS);
     expect(await response.json()).toEqual(INBOX_IS_FIXED);
@@ -223,6 +239,56 @@ describe('DELETE /owner/projects/:projectId', () => {
     expect(await storedKeyRows(project.id)).toBe(1);
     expect((await mcpCall(secret)).status).not.toBe(UNAUTHORIZED_STATUS);
     expect(await projectStoreTableCount(project.id)).toBeGreaterThan(0);
+  });
+});
+
+describe('another owner deleting a project that has no key', () => {
+  test('answers 404 and the project stays', async () => {
+    const alice = await signInOwner();
+    const bob = await signInOwner();
+    const workspace = await createWorkspace({ token: alice.token, name: 'Alice' });
+    const project = await createProject({ token: alice.token, workspaceId: workspace.id, name: 'Alice project' });
+    const response = await deleteProject({ token: bob.token, projectId: project.id });
+    expect(response.status).toBe(NOT_FOUND_STATUS);
+    expect(await response.json()).toEqual(NOT_FOUND);
+    expect(await storedProjectRows([project.id])).toBe(1);
+  });
+});
+
+describe('a deleted project with an MCP session open', () => {
+  test('the session answers 401 right after the workspace is deleted', async () => {
+    const { token } = await signInOwner();
+    const workspace = await createWorkspace({ token, name: 'Open session' });
+    const secret = await issueKey({ token, projectId: inboxOf(workspace).id });
+    const sessionId = await openMcpSession({
+      directory: env.DIRECTORY,
+      keyDigest: await digestCredential(secret),
+      clientName: 'Claude Code',
+      now: Date.now(),
+    });
+    expect((await mcpSessionCall({ secret, sessionId })).status).not.toBe(UNAUTHORIZED_STATUS);
+    await deleteWorkspace({ token, workspaceId: workspace.id });
+    expect((await mcpSessionCall({ secret, sessionId })).status).toBe(UNAUTHORIZED_STATUS);
+  });
+});
+
+describe('the directory deletions called for another owner', () => {
+  test('deleteOwnerWorkspace answers null and keeps the workspace and its projects', async () => {
+    const { token } = await signInOwner();
+    const workspace = await createWorkspace({ token, name: 'Mine' });
+    const answer = await deleteOwnerWorkspace({ directory: env.DIRECTORY, ownerId: crypto.randomUUID(), workspaceId: workspace.id });
+    expect(answer).toBeNull();
+    expect(await storedWorkspaceRows(workspace.id)).toBe(1);
+    expect(await storedProjectRows(workspace.projects.map((project) => project.id))).toBe(1);
+  });
+
+  test('deleteOwnerProject answers false and keeps the project', async () => {
+    const { token } = await signInOwner();
+    const workspace = await createWorkspace({ token, name: 'Mine' });
+    const project = await createProject({ token, workspaceId: workspace.id, name: 'Launch' });
+    const isDeleted = await deleteOwnerProject({ directory: env.DIRECTORY, ownerId: crypto.randomUUID(), projectId: project.id });
+    expect(isDeleted).toBe(false);
+    expect(await storedProjectRows([project.id])).toBe(1);
   });
 });
 
