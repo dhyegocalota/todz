@@ -1,5 +1,5 @@
 import { normalizeName } from '@todz/core';
-import { INBOX_PROJECT_NAME, OWNER_WORKSPACES_MAX, WORKSPACE_PROJECTS_MAX } from '@todz/types';
+import { FairUseLimit, INBOX_PROJECT_NAME } from '@todz/types';
 import { z } from 'zod';
 import {
   deleteOwnerProject,
@@ -12,8 +12,9 @@ import {
   updateProjectName,
   updateWorkspaceName,
 } from './directory-workspaces';
+import { fairUseLimitsOf } from './fair-use-limits';
 import { HttpStatus } from './http-status';
-import { OwnerErrorCode, errorResponse, failureResponse } from './owner-errors';
+import { OwnerErrorCode, errorResponse, failureResponse, limitResponse } from './owner-errors';
 import { projectJson, workspaceJson } from './owner-json';
 import { type SessionContext, type SessionHandler, parsedBody, routeParam } from './owner-request';
 import { OwnerRoute, RouteParam } from './owner-routes';
@@ -39,9 +40,10 @@ async function listWorkspaces({ env, owner }: SessionContext): Promise<Response>
 async function createWorkspace({ request, env, owner, now }: SessionContext): Promise<Response> {
   const body = await parsedBody({ request, schema: NameBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
+  const limits = fairUseLimitsOf(env);
   const nameResult = resultOf(() => normalizeName(body.name));
   if (!nameResult.ok) return failureResponse(nameResult.failure);
-  const workspace = { id: crypto.randomUUID(), name: nameResult.value, createdAt: now };
+  const workspace = { id: crypto.randomUUID(), name: nameResult.value, createdAt: now, lastActivityAt: null };
   const inbox = { id: crypto.randomUUID(), name: INBOX_PROJECT_NAME, isInbox: true, createdAt: now };
   const isInserted = await insertWorkspaceWithInbox({
     directory: env.DIRECTORY,
@@ -51,9 +53,9 @@ async function createWorkspace({ request, env, owner, now }: SessionContext): Pr
     name: workspace.name,
     inboxName: inbox.name,
     now,
-    workspacesPerOwnerMax: OWNER_WORKSPACES_MAX,
+    workspacesPerOwnerMax: limits[FairUseLimit.Workspaces],
   });
-  if (!isInserted) return errorResponse(OwnerErrorCode.LimitReached);
+  if (!isInserted) return limitResponse({ limit: FairUseLimit.Workspaces, limits, now });
   return Response.json({ workspace: workspaceJson({ workspace, projects: [inbox] }) }, { status: HttpStatus.Created });
 }
 
@@ -78,6 +80,7 @@ async function createProject(context: SessionContext): Promise<Response> {
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const workspaceId = await findOwnedWorkspaceId({ env, owner, workspaceId: routeParam({ context, name: RouteParam.WorkspaceId }) });
   if (workspaceId === null) return errorResponse(OwnerErrorCode.NotFound);
+  const limits = fairUseLimitsOf(env);
   const nameResult = resultOf(() => normalizeName(body.name));
   if (!nameResult.ok) return failureResponse(nameResult.failure);
   const project = { id: crypto.randomUUID(), name: nameResult.value, isInbox: false, createdAt: now };
@@ -88,9 +91,9 @@ async function createProject(context: SessionContext): Promise<Response> {
     workspaceId,
     name: project.name,
     now,
-    projectsPerWorkspaceMax: WORKSPACE_PROJECTS_MAX,
+    projectsPerWorkspaceMax: limits[FairUseLimit.Projects],
   });
-  if (!isInserted) return errorResponse(OwnerErrorCode.LimitReached);
+  if (!isInserted) return limitResponse({ limit: FairUseLimit.Projects, limits, now });
   return Response.json({ project: projectJson(project) }, { status: HttpStatus.Created });
 }
 

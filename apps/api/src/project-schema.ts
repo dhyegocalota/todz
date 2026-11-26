@@ -44,12 +44,18 @@ const VERSION_THREE_STATEMENTS = [
   'CREATE INDEX task_history_task ON task_history (task_number, id)',
 ];
 
+export const VERSION_FOUR_STATEMENTS = [
+  'CREATE TABLE open_counter (open_tasks INTEGER NOT NULL) STRICT',
+  "INSERT INTO open_counter (open_tasks) SELECT count(*) FROM tasks WHERE state = 'open'",
+];
+
 type Migration = { version: number; statements: string[] };
 
 export const MIGRATIONS: Migration[] = [
   { version: 1, statements: VERSION_ONE_STATEMENTS },
   { version: 2, statements: VERSION_TWO_STATEMENTS },
   { version: 3, statements: VERSION_THREE_STATEMENTS },
+  { version: 4, statements: VERSION_FOUR_STATEMENTS },
 ];
 
 export const PROJECT_SCHEMA_VERSION = MIGRATIONS.length;

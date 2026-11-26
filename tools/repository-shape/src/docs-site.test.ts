@@ -32,6 +32,7 @@ const NAVIGATION_GROUPS = [
   },
   { group: 'Reference', pages: ['mcp-tools', 'releases'] },
   { group: 'Self-host', pages: ['self-host'] },
+  { group: 'Fair use', pages: ['fair-use'] },
 ];
 const REPOSITORY_COLUMN = 'Open source';
 const REPOSITORY_BLOB = 'https://github.com/dhyegocalota/todz/blob/main';

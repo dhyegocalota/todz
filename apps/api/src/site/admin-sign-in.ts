@@ -69,7 +69,7 @@ function adminLinkGuardOf({ request, env }: { request: Request; env: Env }): Adm
 }
 
 async function linkFormOf(request: Request): Promise<z.output<typeof LinkFormSchema> | null> {
-  const isReadableForm = isBoundedRequest(request) && hasMediaType({ request, mediaType: MediaType.Form });
+  const isReadableForm = isBoundedRequest({ request }) && hasMediaType({ request, mediaType: MediaType.Form });
   if (!isReadableForm) return null;
   const parsed = LinkFormSchema.safeParse(Object.fromEntries(new URLSearchParams(await request.text())));
   if (!parsed.success) return null;
@@ -157,7 +157,7 @@ export async function serveAdminSignInLink({ request, env, executionContext }: S
 }
 
 async function sessionTokenOf(request: Request): Promise<string | null> {
-  const isReadableJson = isBoundedRequest(request) && hasMediaType({ request, mediaType: MediaType.Json });
+  const isReadableJson = isBoundedRequest({ request }) && hasMediaType({ request, mediaType: MediaType.Json });
   if (!isReadableJson) return null;
   const parsed = SessionBodySchema.safeParse(parsedJson(await request.text()));
   if (!parsed.success) return null;

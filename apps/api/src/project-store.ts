@@ -1,6 +1,7 @@
 import {
   type Actor,
   type AddedTask,
+  LimitViolation,
   type CalendarDate,
   type Clock,
   type CompletedTask,
@@ -24,14 +25,16 @@ import {
   reopenTasks,
   updateTask,
 } from '@todz/core';
-import { ActorKind, LAST_INDEX } from '@todz/types';
+import { ActorKind, FairUseLimit, LAST_INDEX } from '@todz/types';
 import { DurableObject } from 'cloudflare:workers';
+import { touchWorkspaceActivity } from './directory-workspaces';
 import type { Env } from './env';
 import { HttpHeader } from './http-header';
 import { HttpStatus } from './http-status';
 import { applyProjectSchema } from './project-schema';
 import { ProjectFailureKind, type ProjectResult, resultOf } from './project-result';
 import { type ActivityCounts, SqliteTaskStore } from './sqlite-task-store';
+import { ACTIVITY_WRITTEN_AT_KEY, isActivityWriteDue } from './workspace-activity';
 
 export const CHANGE_PAGE_SIZE = 100;
 const NO_CHANGE_NUMBER = 0;
@@ -81,8 +84,11 @@ export class ProjectStore extends DurableObject<Env> {
     ctx.blockConcurrencyWhile(async () => applyProjectSchema(ctx.storage));
   }
 
-  addTasks({ actor, drafts }: { actor: Actor; drafts: TaskDraft[] }): ProjectResult<AddedTask[]> {
-    return this.runWrite(() => addTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), drafts }));
+  addTasks({ actor, drafts, openTasksMax }: { actor: Actor; drafts: TaskDraft[]; openTasksMax: number }): ProjectResult<AddedTask[]> {
+    return this.runWrite(() => {
+      this.requireOpenTaskRoom({ incoming: drafts.length, openTasksMax });
+      return addTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), drafts });
+    });
   }
 
   updateTask({ actor, number, patch }: { actor: Actor; number: number; patch: TaskPatch }): ProjectResult<Task> {
@@ -93,8 +99,11 @@ export class ProjectStore extends DurableObject<Env> {
     return this.runWrite(() => completeTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers, note }));
   }
 
-  reopenTasks({ actor, numbers }: { actor: Actor; numbers: number[] }): ProjectResult<ReopenedTask[]> {
-    return this.runWrite(() => reopenTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers }));
+  reopenTasks({ actor, numbers, openTasksMax }: { actor: Actor; numbers: number[]; openTasksMax: number }): ProjectResult<ReopenedTask[]> {
+    return this.runWrite(() => {
+      this.requireOpenTaskRoom({ incoming: numbers.length, openTasksMax });
+      return reopenTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers });
+    });
   }
 
   listTasks({ today, filter }: { today: string; filter: TaskFilter }): ProjectResult<TaskList> {
@@ -154,15 +163,35 @@ export class ProjectStore extends DurableObject<Env> {
     return this.store.countActivity({ since, until });
   }
 
+  private requireOpenTaskRoom({ incoming, openTasksMax }: { incoming: number; openTasksMax: number }): void {
+    if (this.store.countOpenTasks() + incoming > openTasksMax)
+      throw new LimitViolation({ limit: FairUseLimit.OpenTasks, max: openTasksMax });
+  }
+
   private run<Value>(useCase: () => Value): ProjectResult<Value> {
     return resultOf(() => this.ctx.storage.transactionSync(useCase));
   }
 
   private runWrite<Value>(useCase: () => Value): ProjectResult<Value> {
+    const projectId = this.ctx.id.name;
+    if (projectId === undefined) throw new Error('the project store was opened without its project name');
     const changeNumberBefore = this.store.lastChangeNumber();
     const result = this.run(useCase);
     const hasMovedChangeNumber = result.ok && this.store.lastChangeNumber() !== changeNumberBefore;
-    if (hasMovedChangeNumber) this.ctx.getWebSockets().forEach(sendChanged);
+    if (!hasMovedChangeNumber) return result;
+    this.ctx.getWebSockets().forEach(sendChanged);
+    this.recordActivity(projectId);
     return result;
+  }
+
+  private recordActivity(projectId: string): void {
+    const now = SYSTEM_CLOCK.now();
+    const writtenAt = this.ctx.storage.kv.get<number>(ACTIVITY_WRITTEN_AT_KEY);
+    if (!isActivityWriteDue({ writtenAt: writtenAt === undefined ? null : writtenAt, now })) return;
+    this.ctx.storage.kv.put(ACTIVITY_WRITTEN_AT_KEY, now);
+    const write = touchWorkspaceActivity({ directory: this.env.DIRECTORY, projectId, now }).catch(() => {
+      this.ctx.storage.kv.delete(ACTIVITY_WRITTEN_AT_KEY);
+    });
+    this.ctx.waitUntil(write);
   }
 }

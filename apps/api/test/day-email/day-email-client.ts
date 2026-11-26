@@ -1,3 +1,4 @@
+import { PROJECT_OPEN_TASKS_MAX } from '@todz/types';
 import { OWNER_ACTOR } from '@todz/core';
 import { env } from 'cloudflare:workers';
 import { createScheduledController } from 'cloudflare:test';
@@ -95,7 +96,11 @@ export async function seedDayOwner({
 
 export async function addTask({ projectId, title, dueDate }: { projectId: string; title: string; dueDate: string | null }): Promise<void> {
   const project = env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(projectId));
-  await project.addTasks({ actor: OWNER_ACTOR, drafts: [{ title, notes: null, dueDate, idempotencyKey: null }] });
+  await project.addTasks({
+    openTasksMax: PROJECT_OPEN_TASKS_MAX,
+    actor: OWNER_ACTOR,
+    drafts: [{ title, notes: null, dueDate, idempotencyKey: null }],
+  });
 }
 
 export function tick({

@@ -66,6 +66,7 @@ const FENCED_BLOCK_PATTERN = /```[\s\S]*?```/g;
 const CODE_FENCE = '```';
 const WRAPPER_PATH = 'scripts/todz-cloudflare.sh';
 const KEYCHAIN_TURNSTILE_READ = 'security find-generic-password -s todz-turnstile -w';
+const GENERATED_SECRET_READ = 'openssl rand -hex 32';
 const WRAPPED_WRANGLER = `${WRAPPER_PATH} pnpm --filter @todz/api exec wrangler `;
 const GUARD_HOOK = '.agents/hooks/guard-secrets.sh';
 const BLOCKED_EXIT_CODE = 2;
@@ -363,7 +364,9 @@ describe('runbooks', () => {
   test('every wrangler call of the deploy runbook goes through the wrapper, and no line calls the Cloudflare API directly', () => {
     const lines = commandLines(readRunbook(DEPLOY_RUNBOOK).text);
     const isWrapped = (line: string): boolean =>
-      line.startsWith(WRAPPED_WRANGLER) || line.startsWith(`${KEYCHAIN_TURNSTILE_READ} | ${WRAPPED_WRANGLER}`);
+      line.startsWith(WRAPPED_WRANGLER) ||
+      line.startsWith(`${KEYCHAIN_TURNSTILE_READ} | ${WRAPPED_WRANGLER}`) ||
+      line.startsWith(`${GENERATED_SECRET_READ} | ${WRAPPED_WRANGLER}`);
     expect(lines.filter((line) => line.includes('wrangler ') && !isWrapped(line))).toEqual([]);
     expect(lines.filter((line) => line.includes(CLOUDFLARE_API_HOST))).toEqual([]);
   });

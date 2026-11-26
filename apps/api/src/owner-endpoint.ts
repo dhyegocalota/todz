@@ -3,7 +3,8 @@ import { isAppVersionAccepted } from './app-version';
 import { bearerSecret, unauthorized } from './bearer-secret';
 import type { Env } from './env';
 import { ACCOUNT_HANDLERS } from './owner-account';
-import { OwnerErrorCode, appTooOldResponse, errorResponse, noRouteResponse } from './owner-errors';
+import { HttpMethod } from './http-method';
+import { OwnerErrorCode, appTooOldResponse, errorResponse, noRouteResponse, suspendedResponse } from './owner-errors';
 import { KEY_HANDLERS } from './owner-keys';
 import type { OwnerContext, PublicHandler, PublicRoute, SessionHandler, SessionRoute } from './owner-request';
 import { OwnerRoute, RouteParam, matchOwnerRoute } from './owner-routes';
@@ -70,5 +71,8 @@ export async function serveOwner({
   if (versionRefusal !== null) return versionRefusal;
   const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.OWNER_LIMITER, key: owner.ownerId });
   if (isRateLimited) return withRetryAfter(errorResponse(OwnerErrorCode.RateLimited));
+  const isChanging = match.route !== OwnerRoute.SignOut && request.method !== HttpMethod.Get;
+  const isSuspendedChange = isChanging && owner.isSuspended;
+  if (isSuspendedChange) return suspendedResponse();
   return SESSION_HANDLERS[match.route]({ ...context, owner, secret });
 }

@@ -17,6 +17,9 @@ import {
 } from './admin-session';
 import { serveAdminSession, serveAdminSignInLink } from './admin-sign-in';
 import { deleteAdminSession } from './admin-store';
+import { serveAdminStoredTextReset } from './admin-stored-text-reset';
+import { serveAdminSuspension } from './admin-suspension';
+import { serveAdminUsage } from './admin-usage';
 import type { SiteContext, SiteRoute } from './site-endpoint';
 
 export type AdminRoute = { method: HttpMethod; path: AdminPath; route: SiteRoute };
@@ -54,6 +57,10 @@ export const ADMIN_ROUTES: AdminRoute[] = [
   { method: HttpMethod.Get, path: AdminPath.Metrics, route: serveAdminMetrics },
   { method: HttpMethod.Head, path: AdminPath.Metrics, route: serveAdminMetrics },
   { method: HttpMethod.Get, path: AdminPath.MetricsExport, route: serveAdminMetricsExport },
+  { method: HttpMethod.Get, path: AdminPath.Usage, route: serveAdminUsage },
+  { method: HttpMethod.Head, path: AdminPath.Usage, route: serveAdminUsage },
+  { method: HttpMethod.Post, path: AdminPath.Suspensions, route: serveAdminSuspension },
+  { method: HttpMethod.Post, path: AdminPath.StoredTextResets, route: serveAdminStoredTextReset },
   { method: HttpMethod.Post, path: AdminPath.SignInLinks, route: serveAdminSignInLink },
   { method: HttpMethod.Post, path: AdminPath.Sessions, route: serveAdminSession },
   { method: HttpMethod.Post, path: AdminPath.SignOut, route: serveSignOut },

@@ -115,6 +115,7 @@ function metricsHtml(series: MetricSeries[]): string {
 <div class="panel-head">
 <h1 class="panel-title">${escapedHtml(metrics.title)}</h1>
 <nav class="panel-actions" aria-label="${escapedHtml(ADMIN_COPY.shell.navLabel)}">
+<a class="admin-action" href="${AdminPath.Usage}">${escapedHtml(ADMIN_COPY.usage.link)}</a>
 <a class="admin-action" href="${AdminPath.MetricsExport}" download>${escapedHtml(metrics.download)}</a>
 <form method="post" action="${AdminPath.SignOut}"><button class="nav-link nav-button" type="submit">${escapedHtml(panel.signOut)}</button></form>
 </nav>

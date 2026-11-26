@@ -53,7 +53,8 @@
         ]
       },
       { "group": "Reference", "pages": ["mcp-tools", "releases"] },
-      { "group": "Self-host", "pages": ["self-host"] }
+      { "group": "Self-host", "pages": ["self-host"] },
+      { "group": "Fair use", "pages": ["fair-use"] }
     ]
   }
 }

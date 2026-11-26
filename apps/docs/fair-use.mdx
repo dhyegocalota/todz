@@ -1,0 +1,43 @@
+---
+title: Fair use
+---
+
+todz is free to use. So that one account cannot take the service down or push its bill past the plan, every account has the limits below. They are generous: a personal to-do list does not come near them.
+
+## The limits
+
+| Limit | Default | What happens past it |
+|---|---|---|
+| Workspaces per account | 20 | Creating a workspace is refused |
+| Projects per workspace | 100 | Creating a project is refused |
+| Open tasks per project | 5,000 | Adding or reopening tasks is refused; completing one frees a slot |
+| Title | 500 characters | The task is refused |
+| Notes | 20,000 characters | The task is refused |
+| Agent keys per project | 10 | Issuing a key is refused; revoke one to make room |
+| Task changes per day | 1,000 (UTC day) | Counts adding, editing, completing and reopening tasks, including a task added by replying to the day email, and nothing else (creating a workspace, a project or a key is not counted). Changes are refused until midnight UTC; reading keeps working |
+| Stored task text | 50 MB | Writes are refused; reading keeps working. The count is an upper bound: it adds every title, note and edit as written and does not go down when you edit or delete, so the operator can reset it for an account |
+| New accounts per network per day | 5 | Signing up is refused until the next day |
+
+A refusal tells you what happened. The server answers with a code and a plain sentence; for an agent the tool answers with the same sentence.
+
+## Disposable email addresses
+
+New accounts cannot be opened with the address of a disposable mail service. Existing accounts are not affected.
+
+## Suspension
+
+If an account is abused, the operator can suspend it. A suspended account can still read its tasks and sign out. It cannot change anything, and its agents stop answering until the account is restored. Nothing is deleted.
+
+## Self-hosted servers
+
+The counts are Worker variables. Leave one out to keep its default; set it to a positive whole number to change it:
+
+- `FAIR_USE_WORKSPACES_MAX`
+- `FAIR_USE_PROJECTS_PER_WORKSPACE_MAX`
+- `FAIR_USE_OPEN_TASKS_PER_PROJECT_MAX`
+- `FAIR_USE_LIVE_KEYS_PER_PROJECT_MAX`
+- `FAIR_USE_WRITES_PER_DAY_MAX`
+- `FAIR_USE_STORED_BYTES_MAX` (in bytes)
+- `FAIR_USE_SIGN_UPS_PER_CLIENT_DAY_MAX`
+
+The cap on new accounts also needs the secret `SIGN_UP_KEY_SECRET` (see [Server setup](/self-host#6-turnstile)); without it, new accounts cannot sign up. A value that is not a positive whole number stops the server with an error that names the variable. Title and note sizes are fixed, because the app and the agent tools state them.

@@ -1,4 +1,4 @@
-import { DueWindow, MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@todz/types';
+import { DueWindow, MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE, PROJECT_LIVE_KEYS_MAX } from '@todz/types';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env, exports } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -29,6 +29,7 @@ import { ownerCall, serveOwnerCall, signInCall, signInOwner, workerEnvWith } fro
 import { CLOCK_NOW } from './task-fixtures';
 
 const SESSION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+const WELCOME_SIGN_UPS_PER_CLIENT = '1000';
 const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
 const KIRITIMATI_TIME_ZONE = 'Pacific/Kiritimati';
 const PAGO_PAGO_TIME_ZONE = 'Pacific/Pago_Pago';
@@ -786,7 +787,9 @@ describe('the owner time zone and the MCP today', () => {
   test('switching between Kiritimati and Pago Pago moves a task due on the Kiritimati date in and out of today', async () => {
     const { token, ownerId } = await signInOwner({ timeZone: KIRITIMATI_TIME_ZONE });
     const projectId = await seedProject({ ownerId });
-    const { secret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+    const { secret } = await issuedKeyOf(
+      issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }),
+    );
     const client = await connectClient({ era: ClientEra.Modern, key: secret });
     const dueDate = calendarDateInTimeZone({ timeZone: KIRITIMATI_TIME_ZONE, now: Date.now() });
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'Due on the Kiritimati date', due_date: dueDate }] } });
@@ -812,7 +815,12 @@ describe('the welcome mail', () => {
   });
 
   function welcomeEnv({ binding, settings = {} }: { binding: SendEmail; settings?: Partial<Env> }): Env {
-    return emailEnv({ ...guardedSettings(), EMAIL: binding, ...settings });
+    return emailEnv({
+      ...guardedSettings(),
+      EMAIL: binding,
+      FAIR_USE_SIGN_UPS_PER_CLIENT_DAY_MAX: WELCOME_SIGN_UPS_PER_CLIENT,
+      ...settings,
+    });
   }
 
   test('a new owner by link gets exactly one welcome to the address, with the lockup of the public origin', async () => {
@@ -901,7 +909,7 @@ describe('the welcome mail', () => {
     const response = await redeemLink({
       ...link,
       turnstileToken: SIGN_IN_TOKEN,
-      workerEnv: emailEnv({ ...guardedSettings(), EMAIL: undefined }),
+      workerEnv: emailEnv({ ...guardedSettings(), EMAIL: undefined, FAIR_USE_SIGN_UPS_PER_CLIENT_DAY_MAX: WELCOME_SIGN_UPS_PER_CLIENT }),
     });
     expect(response.status).toBe(CREATED_STATUS);
   });

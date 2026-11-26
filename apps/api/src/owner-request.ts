@@ -3,7 +3,7 @@ import type { Env } from './env';
 import type { OwnerRoute, RouteParam } from './owner-routes';
 import { parsedJson } from './parsed-json';
 import type { SessionOwner } from './project-routing';
-import { MediaType, hasMediaType, isBoundedRequest } from './request-body';
+import { MediaType, OWNER_BODY_LENGTH_MAX, hasMediaType, isBoundedRequest } from './request-body';
 
 export type PublicRoute = OwnerRoute.SignIn | OwnerRoute.ReadSignInMethod | OwnerRoute.RequestSignInLink;
 
@@ -29,17 +29,29 @@ export function routeParam({ context, name }: { context: OwnerContext; name: Rou
   return value;
 }
 
-export async function parsedBody<Schema extends z.ZodType>({
+async function boundedJson<Schema extends z.ZodType>({
+  request,
+  schema,
+  maxLength,
+}: {
+  request: Request;
+  schema: Schema;
+  maxLength?: number;
+}): Promise<z.output<Schema> | null> {
+  if (!isBoundedRequest({ request, maxLength })) return null;
+  const parsed = schema.safeParse(parsedJson(await request.text()));
+  if (!parsed.success) return null;
+  return parsed.data;
+}
+
+export function parsedBody<Schema extends z.ZodType>({
   request,
   schema,
 }: {
   request: Request;
   schema: Schema;
 }): Promise<z.output<Schema> | null> {
-  if (!isBoundedRequest(request)) return null;
-  const parsed = schema.safeParse(parsedJson(await request.text()));
-  if (!parsed.success) return null;
-  return parsed.data;
+  return boundedJson({ request, schema, maxLength: OWNER_BODY_LENGTH_MAX });
 }
 
 export async function parsedPublicBody<Schema extends z.ZodType>({
@@ -50,5 +62,5 @@ export async function parsedPublicBody<Schema extends z.ZodType>({
   schema: Schema;
 }): Promise<z.output<Schema> | null> {
   if (!hasMediaType({ request, mediaType: MediaType.Json })) return null;
-  return parsedBody({ request, schema });
+  return boundedJson({ request, schema });
 }

@@ -55,7 +55,13 @@ extension AppModel {
             heldSignInLink = signInLink
             return
         }
-        guard case .signedOut = phase, !isSigningIn else { return }
+        guard case .signedOut = phase else {
+            heldSignInLink = nil
+            let isLineFree = phase != .loading && banner == nil
+            if isLineFree { raise(.alreadySignedIn) }
+            return
+        }
+        guard !isSigningIn else { return }
         heldSignInLink = nil
         guard signInLink.origin == serverURL.origin else {
             signInError = .linkNotRequested
@@ -80,10 +86,6 @@ extension AppModel {
 
     public var canRedeemAgain: Bool {
         heldSignInLink != nil
-    }
-
-    public var showsIncomingSignInLink: Bool {
-        phase != .naming && phase != .choosing && phase != .ready
     }
 
     public func useDifferentEmail() {

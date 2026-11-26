@@ -1,5 +1,5 @@
 import { OWNER_ACTOR, agentActor } from '@todz/core';
-import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_HOUR } from '@todz/types';
+import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_HOUR, PROJECT_OPEN_TASKS_MAX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { Metric, NO_DIMENSION } from '../../src/telemetry/metric';
@@ -97,9 +97,17 @@ describe('the nightly aggregates', () => {
     const projectId = await seedProjectAt({ ownerId: await seedOwnerAt(todayStart), createdAt: todayStart });
     const project = env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(projectId));
     const draft = { title: 'Pay the rent', notes: null, dueDate: null, idempotencyKey: null };
-    const added = await project.addTasks({ actor: OWNER_ACTOR, drafts: [draft, { ...draft, title: 'Call Maria' }] });
+    const added = await project.addTasks({
+      openTasksMax: PROJECT_OPEN_TASKS_MAX,
+      actor: OWNER_ACTOR,
+      drafts: [draft, { ...draft, title: 'Call Maria' }],
+    });
     if (!added.ok) throw new Error('the seeded tasks should be added');
-    await project.addTasks({ actor: agentActor('claude-code'), drafts: [{ ...draft, title: 'Draft the report' }] });
+    await project.addTasks({
+      openTasksMax: PROJECT_OPEN_TASKS_MAX,
+      actor: agentActor('claude-code'),
+      drafts: [{ ...draft, title: 'Draft the report' }],
+    });
     await project.completeTasks({ actor: OWNER_ACTOR, numbers: [added.value[0]!.task.number], note: null });
     await runMetricsNightly({ scheduledTime: todayStart + MILLISECONDS_PER_DAY + 3 * MILLISECONDS_PER_HOUR, env: nightlyEnv('on') });
     const day = utcDayOf(todayStart);

@@ -7,6 +7,8 @@ import { MCP_URL } from './site-urls';
 
 const EXAMPLE_TASK_NUMBER = 12;
 const EXAMPLE_TASK_TITLE = 'Review PR';
+const EXAMPLE_SECOND_TASK_TITLE = 'Ship the beta';
+const EXAMPLE_DUE_COUNT = 3;
 const SERVER_DEPLOY_SCRIPT = 'server:deploy';
 
 export const LANDING_COPY = {
@@ -84,13 +86,57 @@ export const LANDING_COPY = {
   },
   benefits: {
     heading: 'Why todz',
+    day: {
+      eyebrow: 'It comes to you',
+      title: "todz doesn't wait to be opened.",
+      railLabel: 'A day with todz, from 07:00 to 18:00',
+      email: {
+        time: '07:00',
+        subject: `Your day: ${EXAMPLE_DUE_COUNT} due`,
+        title: 'Your day, by email',
+        body: 'Reply to add a task.',
+      },
+      glance: {
+        time: '09:00',
+        heading: 'Today',
+        count: `${EXAMPLE_DUE_COUNT} left`,
+        rows: [EXAMPLE_TASK_TITLE, EXAMPLE_SECOND_TASK_TITLE],
+        title: 'Morning glance',
+        body: 'Wake your Mac: Today shows for a few seconds.',
+      },
+      agent: {
+        time: '10:30',
+        ask: "What's next in todz?",
+        toolCall: `todz - ${McpToolName.Next} (MCP)`,
+        toolResult: MCP_COPY.agentNudge.line({
+          summary: MCP_COPY.agentNudge.due(EXAMPLE_DUE_COUNT),
+          taskId: formatShortId(EXAMPLE_TASK_NUMBER),
+        }),
+        title: 'Your agents know',
+        body: "Ask what's next: they start with today.",
+      },
+      close: {
+        time: '18:00',
+        count: `${EXAMPLE_DUE_COUNT} left`,
+        task: `${formatShortId(EXAMPLE_TASK_NUMBER)} ${EXAMPLE_TASK_TITLE}`,
+        actions: ['Done', 'Tomorrow', 'No date'],
+        title: 'Close the day',
+        body: 'Each task: Done, Tomorrow or No date.',
+      },
+      extras: {
+        label: 'Also on your Mac',
+        ribbon: {
+          label: 'Menu bar ribbon',
+          detail: `${EXAMPLE_DUE_COUNT} left · next: ${formatShortId(EXAMPLE_TASK_NUMBER)} ${EXAMPLE_TASK_TITLE}`,
+        },
+        temperature: { label: 'Day temperature', detail: 'The count fades after noon.' },
+        siri: { label: 'Siri', detail: "“What's left today in todz?”" },
+      },
+      note: 'Each one but Siri is a switch in Settings. Respect Focus keeps your Mac quiet during a Focus.',
+    },
     agents: {
       title: 'Agents add tasks over MCP',
       body: 'Claude Code, Codex and Cursor read, add and finish tasks with one key per project. Every change says who made it.',
-    },
-    glance: {
-      title: 'Your menu bar and widgets',
-      body: 'Today is one click away, and widgets check tasks off without opening the app.',
     },
     offline: {
       title: 'Works offline, syncs everywhere',
@@ -121,7 +167,13 @@ export const LANDING_COPY = {
     windowDark: 'The todz main window in dark mode: three tasks added via Claude Code',
     popover: "The todz menu bar popover: today's tasks and an Add a task field",
     widgetMedium: 'The medium Today widget with three open tasks',
-    widgetRing: 'The Today widget: 2 of 7 done',
     agentTasks: "A project's tasks in todz, the newest added via Claude Code",
   },
 };
+
+const { day } = LANDING_COPY.benefits;
+
+export const LANDING_DAY_LINES = [
+  ...[day.email, day.glance, day.agent, day.close].map(({ time, title, body }) => `${time} ${title}: ${body}`),
+  ...[day.extras.ribbon, day.extras.temperature, day.extras.siri].map(({ label, detail }) => `${label}: ${detail}`),
+];

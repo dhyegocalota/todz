@@ -1,3 +1,4 @@
+import { PROJECT_OPEN_TASKS_MAX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
@@ -9,6 +10,7 @@ import {
   openOwnedProject,
   resolveSessionOwner,
 } from '../src/project-routing';
+import { setOwnerSuspension } from '../src/owner-usage-store';
 import { countingEnv } from './counting-namespace';
 import { seedKey, seedLiveOwner, seedOwner, seedProject, seedSession, seedWorkspace } from './directory-seed';
 import { AGENT_ACTOR, CLOCK_NOW, TODAY, draftOf, openTasksFilter, unwrap } from './task-fixtures';
@@ -30,7 +32,9 @@ describe('openKeyProject', () => {
     await seedKey({ projectId, secret });
     const keyProject = await openKeyProject({ env, secret });
     if (keyProject === null) throw new Error('the key should open its project');
-    unwrap(await keyProject.project.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Through the key')] }));
+    unwrap(
+      await keyProject.project.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [draftOf('Through the key')] }),
+    );
     const ownerStub = await openOwnedProject({ env, owner: await seedLiveOwner({ ownerId }), projectId });
     if (ownerStub === null) throw new Error('the owner should open the project');
     const listed = unwrap(await ownerStub.listTasks({ today: TODAY, filter: openTasksFilter() }));
@@ -76,6 +80,18 @@ describe('resolveSessionOwner', () => {
     const secret = newSecret();
     await seedSession({ ownerId, secret, expiresAt: CLOCK_NOW + 1 });
     expect(await resolveSessionOwner({ env, secret, now: CLOCK_NOW })).toMatchObject({ ownerId });
+  });
+
+  test('a session owner knows in the same statement whether the account is suspended', async () => {
+    const ownerId = await seedOwner();
+    const secret = newSecret();
+    await seedSession({ ownerId, secret, expiresAt: CLOCK_NOW + 1 });
+    await setOwnerSuspension({ directory: env.DIRECTORY, ownerId, suspendedAt: CLOCK_NOW });
+    expect(await resolveSessionOwner({ env, secret, now: CLOCK_NOW })).toMatchObject({ ownerId, isSuspended: true });
+    expect(await resolveSessionOwner({ env, secret, now: CLOCK_NOW, projectId: crypto.randomUUID() })).toMatchObject({
+      ownerId,
+      isSuspended: true,
+    });
   });
 
   test('an expired session resolves to nothing', async () => {

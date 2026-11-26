@@ -11,6 +11,7 @@ import type { OwnerRecord } from './owner-records';
 import { type OwnerContext, parsedPublicBody } from './owner-request';
 import { OwnerRoute } from './owner-routes';
 import { openOwnerSession } from './owner-sessions';
+import { signUpRefusalOf } from './sign-up-limiter';
 import { type SignInChallenge, signInChallengeOf } from './sign-in-challenge';
 import { globalLimitRefusal } from './sign-in-limiter';
 import { publicOriginOf } from './sign-in-links';
@@ -117,6 +118,8 @@ export async function signIn({ request, env, now, executionContext }: OwnerConte
     now,
   });
   if (subject === null) return errorResponse(OwnerErrorCode.IdentityRejected);
+  const signUpRefusal = await signUpRefusalOf({ request, env, kind, subject, now });
+  if (signUpRefusal !== null) return signUpRefusal;
   const { owner, isNewOwner } = await identityOwner({ directory: env.DIRECTORY, kind, subject, timeZone, now });
   const sessionToken = await openOwnerSession({ directory: env.DIRECTORY, ownerId: owner.id, now });
   const isWelcomedOwner = isNewOwner && kind === SignInProviderKind.Email;

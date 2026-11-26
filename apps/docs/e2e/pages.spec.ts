@@ -20,6 +20,7 @@ const SIDEBAR_TITLES = [
   'MCP tools',
   'Releases',
   'Server setup',
+  'Fair use',
 ];
 const pages = docsPages();
 

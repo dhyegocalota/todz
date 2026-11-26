@@ -28,7 +28,7 @@ struct FirstWorkspaceScreen: View {
             }
             if let banner = model.banner {
                 Text(banner.title)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(banner.lineStyle)
                 BannerActionButton()
             }
             if isCreating {

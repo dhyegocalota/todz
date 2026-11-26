@@ -1,6 +1,6 @@
 # Remove waitlist
 
-**Status:** In review
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-26 by the owner's words to the loop ("pode retirar as métricas da waitlist, etc. já não precisamos de código de waitlist nem nada"), inheriting the product scope of [docs/product/README.md](../../product/README.md) approved 2026-11-23
 **ADRs:** [0097](../../adr/0097-the-waitlist-is-removed-the-join-route-its-mails-its-admin-list-and-its-table-are-deleted.md), superseding [0050](../../adr/0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md), [0052](../../adr/0052-the-waitlist-digest-goes-to-the-admin-address-once-a-day-from-a-cron.md) and [0067](../../adr/0067-the-waitlist-joins-in-place-over-fetch-behind-a-visible-check-a-honeypot-and-a-signed-render-time.md)

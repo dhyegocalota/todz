@@ -93,6 +93,7 @@ Where a step says `<commit>`, use the short hash step 1 prints; `<version-id>` i
    ```
 
    Expected: the first list names `0001_directory.sql` to `0008_day_email.sql` on a first deploy, and only the migrations that are new since the last run after it (`0008_day_email.sql` for the day email's first deploy, `0014_drop_waitlist.sql` for the removal of the waitlist, which runs only after the export of step 6 exists); the apply prints each migration as applied; the second list says there is nothing to apply. Migrations only move forward and must keep working with the Worker that is live.
+   `scripts/deploy-worker.sh` lists the remote migrations again before it deploys and refuses while any is pending, so a Worker never runs ahead of its schema.
    If it fails: a failed migration changes nothing from that file on; read the error, fix the migration in a pull request and start over. An authentication error names D1 Edit. To undo a bad migration, ask the owner; on their word, restore the bookmark of step 5 with `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 time-travel restore todz-directory --bookmark <bookmark>`, because it discards the writes made since. Never restore without that word.
 
 8. **Deploy the Worker.** Deploy alone through the script that stamps the version ([ADR 0069](../adr/0069-the-api-states-its-build-version-and-the-oldest-app-it-accepts-and-the-app-shows-one-compatibility-line.md)): no variable override and no environment. `scripts/deploy-worker.sh` stages `git archive HEAD apps/api/public` and the released downloads of `~/.todz-release/site/` into a new folder, then runs that stamping script with `--assets` and `HEAD`'s sha as the deployment message, and records the new version id. A bare `wrangler deploy` serves no version and every app then shows "Server needs an update":
@@ -368,6 +369,16 @@ Steps 19 to 24 ship a setting that is on by default (the agent nudge and the day
 
     Expected: the statement changes no row, because it reaches only owners with an email identity whose day email was never chosen, and step 22 counted none; an owner with no email address is never touched. The call and the row count go in the run log.
     If it fails: an owner mailed by mistake is stopped by `UPDATE owners SET day_email = 0 WHERE day_email_chosen_at IS NULL` run through `wrangler d1 execute todz-directory --remote --command` before the next quarter-hour tick; the owner is told.
+
+25. **Put the sign-up key secret, once, before the Worker that reads it.** The daily cap on new accounts per client keys each client address with a secret, so the stored counters cannot be turned back into addresses ([ADR 0089](../adr/0089-sign-up-abuse-is-capped-per-client-per-day-and-disposable-email-domains-are-refused-for-new-accounts.md)). Generate 32 random bytes and pipe them in, so no file, shell history or screen holds the value:
+
+    ```bash
+    openssl rand -hex 32 | scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret put SIGN_UP_KEY_SECRET
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret list
+    ```
+
+    Expected: the put says it uploaded the secret `SIGN_UP_KEY_SECRET` for `todz-api`; the list names `SIGN_UP_KEY_SECRET` and prints no value. Put it once and never rotate it casually: a new value starts every client's daily count again.
+    If it fails: until the secret exists, a sign-up of a new account answers 503 `sign_in_unavailable` (an existing owner still signs in), which is the safe state; put it and try again.
 
 ## Rollback
 

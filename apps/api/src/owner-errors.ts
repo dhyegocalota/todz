@@ -1,7 +1,10 @@
-import { MINIMUM_APP_VERSION } from '@todz/types';
+import { FairUseLimit, MILLISECONDS_PER_DAY, MILLISECONDS_PER_SECOND, MINIMUM_APP_VERSION } from '@todz/types';
+import { FAIR_USE_COPY } from './fair-use-copy';
+import type { FairUseLimits } from './fair-use-limits';
 import { HttpHeader, NO_STORE } from './http-header';
 import { HttpStatus } from './http-status';
 import { type ProjectFailure, ProjectFailureKind } from './project-result';
+import { utcDayStartOf } from './telemetry/telemetry-day';
 
 export enum OwnerErrorCode {
   InvalidRequest = 'invalid_request',
@@ -17,6 +20,8 @@ export enum OwnerErrorCode {
   AppTooOld = 'app_too_old',
   LimitReached = 'limit_reached',
   RateLimited = 'rate_limited',
+  AccountSuspended = 'account_suspended',
+  SignUpRefused = 'sign_up_refused',
 }
 
 const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
@@ -33,10 +38,51 @@ const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
   [OwnerErrorCode.AppTooOld]: HttpStatus.UpgradeRequired,
   [OwnerErrorCode.LimitReached]: HttpStatus.Conflict,
   [OwnerErrorCode.RateLimited]: HttpStatus.TooManyRequests,
+  [OwnerErrorCode.AccountSuspended]: HttpStatus.Forbidden,
+  [OwnerErrorCode.SignUpRefused]: HttpStatus.Forbidden,
 };
+
+const STATUS_OF_LIMIT: Record<FairUseLimit, HttpStatus> = {
+  [FairUseLimit.Workspaces]: HttpStatus.Conflict,
+  [FairUseLimit.Projects]: HttpStatus.Conflict,
+  [FairUseLimit.OpenTasks]: HttpStatus.Conflict,
+  [FairUseLimit.LiveKeys]: HttpStatus.Conflict,
+  [FairUseLimit.DailyWrites]: HttpStatus.TooManyRequests,
+  [FairUseLimit.StoredBytes]: HttpStatus.Conflict,
+  [FairUseLimit.DailySignUps]: HttpStatus.TooManyRequests,
+};
+
+const DAILY_LIMITS: FairUseLimit[] = [FairUseLimit.DailyWrites, FairUseLimit.DailySignUps];
 
 export function errorResponse(code: OwnerErrorCode): Response {
   return Response.json({ error: code }, { status: STATUS_OF_CODE[code] });
+}
+
+export function messageErrorResponse({ code, message }: { code: OwnerErrorCode; message: string }): Response {
+  return Response.json({ error: code, message }, { status: STATUS_OF_CODE[code] });
+}
+
+export function suspendedResponse(): Response {
+  return messageErrorResponse({ code: OwnerErrorCode.AccountSuspended, message: FAIR_USE_COPY.suspended });
+}
+
+export function signUpRefusedResponse(): Response {
+  return messageErrorResponse({ code: OwnerErrorCode.SignUpRefused, message: FAIR_USE_COPY.signUpRefused });
+}
+
+export function secondsUntilNextUtcDay(now: number): number {
+  return Math.ceil((utcDayStartOf(now) + MILLISECONDS_PER_DAY - now) / MILLISECONDS_PER_SECOND);
+}
+
+export function limitResponse({ limit, limits, now }: { limit: FairUseLimit; limits: FairUseLimits; now: number }): Response {
+  const body = {
+    error: OwnerErrorCode.LimitReached,
+    limit,
+    message: FAIR_USE_COPY.limitMessageOf({ limit, max: limits[limit] }),
+  };
+  const response = Response.json(body, { status: STATUS_OF_LIMIT[limit] });
+  if (DAILY_LIMITS.includes(limit)) response.headers.set(HttpHeader.RetryAfter, String(secondsUntilNextUtcDay(now)));
+  return response;
 }
 
 export function appTooOldResponse(): Response {
@@ -56,6 +102,16 @@ export function failureResponse(failure: ProjectFailure): Response {
     return Response.json(
       { error: OwnerErrorCode.TaskNotFound, number: failure.number },
       { status: STATUS_OF_CODE[OwnerErrorCode.TaskNotFound] },
+    );
+  }
+  if (failure.kind === ProjectFailureKind.LimitReached) {
+    return Response.json(
+      {
+        error: OwnerErrorCode.LimitReached,
+        limit: failure.limit,
+        message: FAIR_USE_COPY.limitMessageOf({ limit: failure.limit, max: failure.max }),
+      },
+      { status: STATUS_OF_CODE[OwnerErrorCode.LimitReached] },
     );
   }
   return Response.json(

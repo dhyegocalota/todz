@@ -122,8 +122,14 @@ describe('normalizeNotes', () => {
     expect(violationMessageOf(() => normalizeNotes(tooLong))).not.toContain(SENTINEL);
   });
 
-  test('exactly the limit is accepted', () => {
+  test('exactly the limit is accepted and one character more is NotesTooLong', () => {
     expect(normalizeNotes('a'.repeat(TASK_NOTES_MAX_LENGTH))).toHaveLength(TASK_NOTES_MAX_LENGTH);
+    expect(violationIssueOf(() => normalizeNotes('a'.repeat(TASK_NOTES_MAX_LENGTH + 1)))).toBe(RuleIssue.NotesTooLong);
+  });
+
+  test('the limit counts code points, not bytes, so 20000 emoji fit and 20001 do not', () => {
+    expect(normalizeNotes(EMOJI.repeat(TASK_NOTES_MAX_LENGTH))).toHaveLength(EMOJI.length * TASK_NOTES_MAX_LENGTH);
+    expect(violationIssueOf(() => normalizeNotes(EMOJI.repeat(TASK_NOTES_MAX_LENGTH + 1)))).toBe(RuleIssue.NotesTooLong);
   });
 });
 
