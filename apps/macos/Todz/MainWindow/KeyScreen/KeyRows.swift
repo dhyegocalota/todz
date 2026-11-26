@@ -38,7 +38,7 @@ struct KeyRows: View {
 
     private var failure: some View {
         VStack(alignment: .leading) {
-            KeyScreenFailureLine(text: KeyScreenCopy.listFailed)
+            ValidationLine(text: KeyScreenCopy.listFailed, tone: .issue)
             Button(MainWindowCopy.tryAgain) {
                 Task { await model.loadKeys() }
             }

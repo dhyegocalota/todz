@@ -50,7 +50,7 @@ struct SettingsOwnerKeys: View {
                 .disabled(!canCreate)
                 .disabled(because: model.keyActionDisabledReason)
             if let failure = model.ownerKeyFailure {
-                KeyScreenFailureLine(text: SettingsCopy.ownerKeyFailure(failure))
+                ValidationLine(text: SettingsCopy.ownerKeyFailure(failure), tone: .issue)
             }
             if isAtLimit {
                 Text(SettingsCopy.ownerKeysAtLimit)

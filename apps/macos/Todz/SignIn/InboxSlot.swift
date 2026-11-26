@@ -10,15 +10,8 @@ struct InboxSlot: View {
     var body: some View {
         VStack {
             ChallengeView()
-            if model.isRequestingLink {
-                ProgressView(SignInCopy.sendingLink)
-                    .controlSize(.small)
-            }
-            if !model.isRequestingLink {
-                sendAgainButton
-            }
-            Button(SignInCopy.useDifferentEmail, action: model.useDifferentEmail)
-                .buttonStyle(.plain)
+            sendAgainButton
+            FormButton(title: SignInCopy.useDifferentEmail, busyTitle: nil, kind: .quiet, isBusy: false, disabledReason: nil, action: model.useDifferentEmail)
             if let signInError = model.signInError {
                 SignInErrorLine(signInError: signInError, tryAgain: tryAgain)
             }
@@ -31,9 +24,8 @@ struct InboxSlot: View {
 
     private var sendAgainButton: some View {
         TimelineView(.periodic(from: .now, by: 1)) { timeline in
-            Button(SignInCopy.sendAgain, action: sendAgain)
+            FormButton(title: SignInCopy.sendAgain, busyTitle: SignInCopy.sendingLink, kind: .secondary, isBusy: model.isRequestingLink, disabledReason: sendAgainReason(at: timeline.date), action: sendAgain)
                 .keyboardShortcut(.defaultAction)
-                .disabled(because: sendAgainReason(at: timeline.date))
         }
     }
 

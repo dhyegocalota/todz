@@ -11,6 +11,7 @@ enum WorkspaceShortcutsCopy {
     static let record = "Record"
     static let cancel = "Cancel"
     static let recording = "Press the new keys"
+    static let recordingHint = "Press the new shortcut, or Esc to keep the old one."
     static let missionControl = "⌃1–⌃9 can clash with Mission Control's Switch to Desktop keys. If both are on, the system wins."
     static let needsTwoModifiers = "Hold two of ⌃, ⌥ or ⌘ with the key."
     static let inAppChord = "That is a workspace key inside todz."

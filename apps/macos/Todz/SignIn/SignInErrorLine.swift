@@ -7,10 +7,9 @@ struct SignInErrorLine: View {
 
     var body: some View {
         VStack {
-            Text(signInError.copy)
-                .foregroundStyle(.red)
+            ValidationLine(text: signInError.copy, tone: .issue)
             if signInError.canTryAgain {
-                Button(MainWindowCopy.tryAgain, action: tryAgain)
+                FormButton(title: MainWindowCopy.tryAgain, busyTitle: nil, kind: .secondary, isBusy: false, disabledReason: nil, action: tryAgain)
             }
         }
         .accessibilityElement(children: .contain)

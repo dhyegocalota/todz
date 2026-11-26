@@ -9,35 +9,35 @@ struct WorkspacePickerScreen: View {
     @State private var isNamingWorkspace = false
 
     var body: some View {
-        CenteredColumn(width: columnWidth) {
-            Text(WorkspacePickerCopy.title)
-                .font(.title)
-                .bold()
-            Text(WorkspacePickerCopy.body)
-                .foregroundStyle(.secondary)
-            ForEach(model.workspaces, id: \.identifier) { workspace in
-                Button {
-                    Task { await model.chooseWorkspace(identifier: workspace.identifier) }
-                } label: {
-                    WorkspaceSummary(workspace: workspace)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 4)
+        CenteredColumn {
+            FormPanel(width: columnWidth) {
+                Text(WorkspacePickerCopy.title)
+                    .font(.title)
+                    .bold()
+                Text(WorkspacePickerCopy.body)
+                    .foregroundStyle(.secondary)
+                ForEach(model.workspaces, id: \.identifier) { workspace in
+                    Button {
+                        Task { await model.chooseWorkspace(identifier: workspace.identifier) }
+                    } label: {
+                        WorkspaceSummary(workspace: workspace)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical)
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
+                if let banner = model.banner {
+                    Text(banner.title)
+                        .foregroundStyle(banner.lineStyle)
+                    BannerActionButton()
+                }
+                FormButton(title: MainWindowCopy.newWorkspace, busyTitle: nil, kind: .quiet, isBusy: false, disabledReason: nil) {
+                    isNamingWorkspace = true
+                }
+                FormButton(title: MainWindowCopy.signOut, busyTitle: nil, kind: .quiet, isBusy: false, disabledReason: nil) {
+                    windowState.requestSignOut(model: model)
+                }
             }
-            if let banner = model.banner {
-                Text(banner.title)
-                    .foregroundStyle(banner.lineStyle)
-                BannerActionButton()
-            }
-            Button(MainWindowCopy.newWorkspace) {
-                isNamingWorkspace = true
-            }
-            .buttonStyle(.link)
-            Button(MainWindowCopy.signOut) {
-                windowState.requestSignOut(model: model)
-            }
-            .buttonStyle(.link)
         }
         .multilineTextAlignment(.center)
         .sheet(isPresented: $isNamingWorkspace) {

@@ -13,35 +13,44 @@ struct SignInScreen: View {
     @AccessibilityFocusState private var isTitleFocused: Bool
 
     var body: some View {
-        CenteredColumn(width: columnWidth) {
-            Image(nsImage: NSApplication.shared.applicationIconImage)
-                .resizable()
-                .frame(width: iconSize, height: iconSize)
-                .accessibilityHidden(true)
-            Text(title)
-                .font(.title)
-                .bold()
-                .accessibilityAddTraits(.isHeader)
-                .accessibilityFocused($isTitleFocused)
-            Text(subtitle)
-                .foregroundStyle(.secondary)
-            if let pendingLink = awaitedLink {
-                Text(pendingLink.email)
+        CenteredColumn {
+            FormPanel(width: columnWidth) {
+                Image(nsImage: NSApplication.shared.applicationIconImage)
+                    .resizable()
+                    .frame(width: iconSize, height: iconSize)
+                    .accessibilityHidden(true)
+                Text(title)
+                    .font(.title)
                     .bold()
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .help(pendingLink.email)
-            }
-            if let noticeLine {
-                Text(noticeLine)
-            }
-            slot
-            if let footnote {
-                Text(footnote)
-                    .font(.footnote)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityFocused($isTitleFocused)
+                Text(subtitle)
                     .foregroundStyle(.secondary)
+                if let pendingLink = awaitedLink {
+                    Text(pendingLink.email)
+                        .bold()
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(pendingLink.email)
+                }
+                if let noticeLine {
+                    Text(noticeLine)
+                }
+                slot
+                if let footnote {
+                    Text(footnote)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                if isCloudSpotsLineShown {
+                    Text(SignInCopy.cloudSpotsLine)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
+            .todzAnimation(.settle, value: stage)
             ServerDisclosure(isExpanded: $isServerFormOpen)
+                .frame(width: columnWidth)
         }
         .multilineTextAlignment(.center)
         .task(id: model.serverURL) {
@@ -67,6 +76,10 @@ struct SignInScreen: View {
 
     private var subtitle: String {
         stage == .awaitingLink ? SignInCopy.inboxSubtitle : SignInCopy.subtitle
+    }
+
+    private var isCloudSpotsLineShown: Bool {
+        stage == .address || stage == .sending
     }
 
     private var footnote: String? {
