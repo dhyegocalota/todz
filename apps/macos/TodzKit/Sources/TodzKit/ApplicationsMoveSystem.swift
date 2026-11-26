@@ -13,13 +13,13 @@ public struct RunningTodz: Equatable, Sendable {
 }
 
 public protocol ApplicationsMoveSystem {
-    func canonicalURL(of url: URL) throws -> URL
     func runningApplications() -> [RunningTodz]
     func itemExists(at url: URL) -> Bool
     func originalURL(of bundle: URL) -> URL?
-    func trash(_ url: URL) throws -> URL
+    func trash(_ url: URL) throws
+    func remove(_ url: URL) throws
     func copy(from source: URL, to destination: URL) throws
-    func restore(_ trashed: URL, to destination: URL) throws
+    func rename(_ staging: URL, to destination: URL) throws
     func hasMatchingDesignatedRequirement(copy: URL) -> Bool
     func removeQuarantine(from bundle: URL) throws
 }

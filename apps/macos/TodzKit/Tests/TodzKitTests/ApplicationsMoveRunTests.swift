@@ -5,31 +5,30 @@ import Testing
 private let ownBundleIdentifier = "app.todz.mac"
 private let ownProcessIdentifier: Int32 = 100
 private let otherProcessIdentifier: Int32 = 200
-private let bundleName = "Todz.app"
 private let bundleContentName = "version.txt"
 private let newContent = "new"
 private let previousContent = "previous"
+private let dataVolumePrefix = "/System/Volumes/Data"
+private let privateRootPrefix = "/private"
 
 @Suite struct ApplicationsMoveRunTests {
     private let scratchFolder: URL
     private let source: URL
     private let destinationFolder: URL
     private let destination: URL
+    private let staging: URL
     private let system: ScratchApplicationsMoveSystem
 
     init() throws {
         scratchFolder = URL.temporaryDirectory.appending(path: UUID().uuidString)
-        source = scratchFolder.appending(path: "downloads").appending(path: bundleName)
+        source = scratchFolder.appending(path: "downloads").appending(path: ApplicationsMove.bundleFileName)
         destinationFolder = scratchFolder.appending(path: "applications")
-        destination = destinationFolder.appending(path: bundleName)
+        destination = destinationFolder.appending(path: ApplicationsMove.bundleFileName)
+        staging = destinationFolder.appending(path: ApplicationsMove.stagingFileName)
         system = ScratchApplicationsMoveSystem(trashFolder: scratchFolder.appending(path: "trash"))
         system.originalBundle = source
         try writeBundle(at: source, content: newContent)
         try FileManager.default.createDirectory(at: destinationFolder, withIntermediateDirectories: true)
-    }
-
-    private var resolvedDestination: URL {
-        destinationFolder.resolvingSymlinksInPath().appending(path: bundleName)
     }
 
     private func writeBundle(at url: URL, content: String) throws {
@@ -41,140 +40,69 @@ private let previousContent = "previous"
         try String(contentsOf: bundle.appending(path: bundleContentName), encoding: .utf8)
     }
 
-    private func move() -> ApplicationsMoveOutcome {
+    private func exists(_ url: URL) -> Bool {
+        system.itemExists(at: url)
+    }
+
+    private func move(bundle: URL, into folder: URL) -> ApplicationsMoveOutcome {
         ApplicationsMoveRun(
             system: system,
             bundleIdentifier: ownBundleIdentifier,
             processIdentifier: ownProcessIdentifier,
-            destinationFolder: destinationFolder
-        ).move(bundle: source)
+            destinationFolder: folder
+        ).move(bundle: bundle)
     }
 
-    private func runningTodz(processIdentifier: Int32, bundleIdentifier: String?, bundleURL: URL?) -> RunningTodz {
-        RunningTodz(processIdentifier: processIdentifier, bundleIdentifier: bundleIdentifier, bundleURL: bundleURL)
+    private func move(bundle: URL) -> ApplicationsMoveOutcome {
+        move(bundle: bundle, into: destinationFolder)
     }
 
-    @Test func aMoveIntoAnEmptyFolderCopiesTheBundleAndTrashesTheOriginal() throws {
-        #expect(move() == .moved(destination: resolvedDestination))
+    private func move(into folder: URL) -> ApplicationsMoveOutcome {
+        move(bundle: source, into: folder)
+    }
+
+    private func move() -> ApplicationsMoveOutcome {
+        move(bundle: source, into: destinationFolder)
+    }
+
+    private func runningTodz(processIdentifier: Int32, bundleURL: URL?) -> RunningTodz {
+        RunningTodz(processIdentifier: processIdentifier, bundleIdentifier: ownBundleIdentifier, bundleURL: bundleURL)
+    }
+
+    @Test func aMoveIntoAnEmptyFolderInstallsTheVerifiedCopyAndTrashesTheOriginal() throws {
+        #expect(move() == .moved(destination: destination))
         #expect(try content(of: destination) == newContent)
-        #expect(!FileManager.default.fileExists(atPath: source.path))
-        #expect(system.strippedBundles == [resolvedDestination])
+        #expect(!exists(source))
+        #expect(!exists(staging))
+        #expect(system.strippedBundles == [staging])
     }
 
-    @Test func aMoveReplacesAStoppedTodzAtTheDestination() throws {
+    @Test func anythingAtTheDestinationRefusesTheMoveAndChangesNothing() throws {
         try writeBundle(at: destination, content: previousContent)
-        #expect(move() == .moved(destination: resolvedDestination))
-        #expect(try content(of: destination) == newContent)
-    }
-
-    @Test func thisProcessRunningFromTheSourceDoesNotBlockTheMove() {
-        system.running = [runningTodz(processIdentifier: ownProcessIdentifier, bundleIdentifier: ownBundleIdentifier, bundleURL: source)]
-        #expect(move() == .moved(destination: resolvedDestination))
-    }
-
-    @Test func anotherTodzRunningAnywhereRefusesTheMove() throws {
-        try writeBundle(at: destination, content: previousContent)
-        let elsewhere = scratchFolder.appending(path: "elsewhere").appending(path: bundleName)
-        system.running = [runningTodz(processIdentifier: otherProcessIdentifier, bundleIdentifier: ownBundleIdentifier, bundleURL: elsewhere)]
-        #expect(move() == .refused(.otherTodzRunning))
+        #expect(move() == .refused(.destinationOccupied))
         #expect(try content(of: destination) == previousContent)
         #expect(try content(of: source) == newContent)
+        #expect(!exists(staging))
     }
 
-    @Test func aRunningTodzAtTheDestinationRefusesTheMove() throws {
-        try writeBundle(at: destination, content: previousContent)
-        system.running = [runningTodz(processIdentifier: otherProcessIdentifier, bundleIdentifier: nil, bundleURL: destination)]
-        #expect(move() == .refused(.destinationRunning))
-        #expect(try content(of: destination) == previousContent)
-        #expect(try content(of: source) == newContent)
-    }
-
-    @Test func aRunningTodzReachedThroughASymbolicLinkToTheDestinationRefusesTheMove() throws {
-        try writeBundle(at: destination, content: previousContent)
-        let link = scratchFolder.appending(path: "link")
-        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: destinationFolder)
-        system.running = [runningTodz(processIdentifier: otherProcessIdentifier, bundleIdentifier: nil, bundleURL: link.appending(path: bundleName))]
-        #expect(move() == .refused(.destinationRunning))
-        #expect(try content(of: destination) == previousContent)
-    }
-
-    @Test func aCopyThatFailsLeavesThePreviousCopyAndTheOriginalWhereTheyWere() throws {
-        try writeBundle(at: destination, content: previousContent)
-        system.failingSteps = [.copy]
-        #expect(move() == .refused(.copyFailed))
-        #expect(try content(of: destination) == previousContent)
-        #expect(try content(of: source) == newContent)
-        #expect(system.strippedBundles.isEmpty)
-    }
-
-    @Test func aCopyThatFailsIntoAnEmptyFolderLeavesNothingBehind() throws {
-        system.failingSteps = [.copy]
-        #expect(move() == .refused(.copyFailed))
-        #expect(!FileManager.default.fileExists(atPath: destination.path))
-        #expect(try content(of: source) == newContent)
-    }
-
-    @Test func aSignatureMismatchRemovesTheCopyAndBringsThePreviousOneBack() throws {
-        try writeBundle(at: destination, content: previousContent)
-        system.hasMatchingRequirement = false
-        #expect(move() == .refused(.signatureMismatch))
-        #expect(try content(of: destination) == previousContent)
-        #expect(try content(of: source) == newContent)
-        #expect(system.strippedBundles.isEmpty)
-    }
-
-    @Test func aSignatureMismatchIntoAnEmptyFolderLeavesNothingBehind() throws {
-        system.hasMatchingRequirement = false
-        #expect(move() == .refused(.signatureMismatch))
-        #expect(!FileManager.default.fileExists(atPath: destination.path))
-        #expect(try content(of: source) == newContent)
-    }
-
-    @Test func aQuarantineThatCannotBeStrippedRemovesTheCopyAndBringsThePreviousOneBack() throws {
-        try writeBundle(at: destination, content: previousContent)
-        system.failingSteps = [.quarantine]
-        #expect(move() == .refused(.quarantineNotStripped))
-        #expect(try content(of: destination) == previousContent)
-        #expect(try content(of: source) == newContent)
-    }
-
-    @Test func aPreviousCopyThatCannotBeTrashedStopsTheMoveBeforeAnyCopy() throws {
-        try writeBundle(at: destination, content: previousContent)
-        system.untrashableBundles = [destination.resolvingSymlinksInPath()]
-        #expect(move() == .refused(.previousCopyNotTrashed))
-        #expect(try content(of: destination) == previousContent)
-        #expect(try content(of: source) == newContent)
-    }
-
-    @Test func aPreviousCopyThatCannotBeBroughtBackIsReported() throws {
-        try writeBundle(at: destination, content: previousContent)
-        system.failingSteps = [.copy, .restore]
-        #expect(move() == .refused(.rollbackFailed))
-    }
-
-    @Test func anOriginalThatCannotBeTrashedStaysAndTheMoveStillSucceeds() throws {
-        system.untrashableBundles = [source.resolvingSymlinksInPath()]
-        #expect(move() == .movedLeavingOriginal(destination: resolvedDestination))
-        #expect(try content(of: source) == newContent)
-    }
-
-    @Test func anOriginalThatCannotBeLocatedStaysAndTheMoveStillSucceeds() throws {
-        system.originalBundle = nil
-        #expect(move() == .movedLeavingOriginal(destination: resolvedDestination))
-        #expect(try content(of: source) == newContent)
+    @Test func aBrokenSymbolicLinkAtTheDestinationRefusesTheMove() throws {
+        try FileManager.default.createSymbolicLink(at: destination, withDestinationURL: scratchFolder.appending(path: "missing"))
+        #expect(move() == .refused(.destinationOccupied))
+        #expect(!exists(staging))
     }
 
     @Test func aBundleAlreadyAtTheDestinationThroughASymbolicLinkIsRefused() throws {
         let link = scratchFolder.appending(path: "link")
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: destinationFolder)
         try writeBundle(at: destination, content: previousContent)
-        let run = ApplicationsMoveRun(
-            system: system,
-            bundleIdentifier: ownBundleIdentifier,
-            processIdentifier: ownProcessIdentifier,
-            destinationFolder: destinationFolder
-        )
-        #expect(run.move(bundle: link.appending(path: bundleName)) == .refused(.alreadyInPlace))
+        #expect(move(bundle: link.appending(path: ApplicationsMove.bundleFileName)) == .refused(.alreadyInPlace))
+        #expect(try content(of: destination) == previousContent)
+    }
+
+    @Test func aBundleAlreadyAtTheDestinationThroughTheDataVolumeIsRefused() throws {
+        try writeBundle(at: destination, content: previousContent)
+        let throughDataVolume = URL(filePath: dataVolumePrefix + privateRootPrefix + destination.path)
+        #expect(move(bundle: throughDataVolume) == .refused(.alreadyInPlace))
         #expect(try content(of: destination) == previousContent)
     }
 
@@ -185,13 +113,94 @@ private let previousContent = "previous"
         #expect(try content(of: destination) == previousContent)
     }
 
+    @Test func aTranslocatedBundleWhoseOriginalIsUnknownIsRefused() throws {
+        system.originalBundle = nil
+        #expect(move() == .refused(.originalUnknown))
+        #expect(!exists(destination))
+        #expect(!exists(staging))
+        #expect(try content(of: source) == newContent)
+    }
+
+    @Test func anotherTodzRunningAnywhereRefusesTheMove() throws {
+        system.running = [runningTodz(processIdentifier: otherProcessIdentifier, bundleURL: scratchFolder.appending(path: "elsewhere"))]
+        #expect(move() == .refused(.otherTodzRunning))
+        #expect(!exists(destination))
+        #expect(!exists(staging))
+        #expect(try content(of: source) == newContent)
+    }
+
+    @Test func thisProcessRunningFromTheSourceDoesNotBlockTheMove() {
+        system.running = [runningTodz(processIdentifier: ownProcessIdentifier, bundleURL: source)]
+        #expect(move() == .moved(destination: destination))
+    }
+
+    @Test func aStagingBundleLeftByAnEarlierKillIsRemovedBeforeTheCopy() throws {
+        try writeBundle(at: staging, content: previousContent)
+        #expect(move() == .moved(destination: destination))
+        #expect(try content(of: destination) == newContent)
+        #expect(!exists(staging))
+    }
+
+    @Test func aStagingBundleThatCannotBeRemovedRefusesTheMove() throws {
+        try writeBundle(at: staging, content: previousContent)
+        system.failingSteps = [.removeStaging]
+        #expect(move() == .refused(.stagingNotCleared))
+        #expect(!exists(destination))
+        #expect(try content(of: source) == newContent)
+    }
+
+    @Test func aCopyThatFailsLeavesNothingBehindAndTheOriginalWhereItWas() throws {
+        system.failingSteps = [.copy]
+        #expect(move() == .refused(.copyFailed))
+        #expect(!exists(staging))
+        #expect(!exists(destination))
+        #expect(system.strippedBundles.isEmpty)
+        #expect(try content(of: source) == newContent)
+    }
+
+    @Test func aCopyThatFailsAndCannotBeCleanedUpIsReported() {
+        system.failingSteps = [.copy, .removeStaging]
+        #expect(move() == .refused(.rollbackFailed))
+    }
+
+    @Test func aSignatureMismatchRemovesTheStagingBundleAndInstallsNothing() throws {
+        system.hasMatchingRequirement = false
+        #expect(move() == .refused(.signatureMismatch))
+        #expect(!exists(staging))
+        #expect(!exists(destination))
+        #expect(system.strippedBundles.isEmpty)
+        #expect(try content(of: source) == newContent)
+    }
+
+    @Test func aQuarantineThatCannotBeStrippedRemovesTheStagingBundleAndInstallsNothing() throws {
+        system.failingSteps = [.quarantine]
+        #expect(move() == .refused(.quarantineNotStripped))
+        #expect(!exists(staging))
+        #expect(!exists(destination))
+        #expect(try content(of: source) == newContent)
+    }
+
+    @Test func aRenameThatFailsRemovesTheStagingBundleAndInstallsNothing() throws {
+        system.failingSteps = [.rename]
+        #expect(move() == .refused(.installFailed))
+        #expect(!exists(staging))
+        #expect(!exists(destination))
+        #expect(try content(of: source) == newContent)
+    }
+
+    @Test func anOriginalThatCannotBeTrashedStaysAndTheMoveStillSucceeds() throws {
+        let sourceIdentity = try #require(FileIdentity.of(source))
+        system.untrashableBundles = [sourceIdentity]
+        #expect(move() == .movedLeavingOriginal(destination: destination))
+        #expect(try content(of: source) == newContent)
+        #expect(try content(of: destination) == newContent)
+    }
+
     @Test func aDestinationFolderThatDoesNotExistIsRefused() {
-        let run = ApplicationsMoveRun(
-            system: system,
-            bundleIdentifier: ownBundleIdentifier,
-            processIdentifier: ownProcessIdentifier,
-            destinationFolder: scratchFolder.appending(path: "missing")
-        )
-        #expect(run.move(bundle: source) == .refused(.unresolvedPath))
+        #expect(move(into: scratchFolder.appending(path: "missing")) == .refused(.unresolvedPath))
+    }
+
+    @Test func aBundleThatDoesNotExistIsRefused() {
+        #expect(move(bundle: scratchFolder.appending(path: "missing")) == .refused(.unresolvedPath))
     }
 }

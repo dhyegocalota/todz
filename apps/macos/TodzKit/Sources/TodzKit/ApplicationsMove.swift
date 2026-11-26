@@ -6,6 +6,7 @@ public enum ApplicationsMove {
     public static let declinedVersionStorageKey = "declinedApplicationsMoveVersion"
     public static let destinationFolderPath = "/Applications"
     public static let bundleFileName = "Todz.app"
+    public static let stagingFileName = ".Todz.app.moving"
 
     // NB ADR 0105: only a Release build that starts Sparkle is ever asked, once per version, and never when it already runs from an Applications folder.
     public static func shouldOffer(

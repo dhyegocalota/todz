@@ -3,12 +3,14 @@ import Foundation
 public enum ApplicationsMoveRefusal: Error, Equatable, Sendable {
     case unresolvedPath
     case alreadyInPlace
+    case destinationOccupied
+    case originalUnknown
     case otherTodzRunning
-    case destinationRunning
-    case previousCopyNotTrashed
+    case stagingNotCleared
     case copyFailed
     case signatureMismatch
     case quarantineNotStripped
+    case installFailed
     case rollbackFailed
 }
 

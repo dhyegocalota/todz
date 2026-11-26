@@ -3,7 +3,8 @@ import Foundation
 
 enum ScratchStep: Hashable {
     case copy
-    case restore
+    case removeStaging
+    case rename
     case quarantine
 }
 
@@ -12,7 +13,7 @@ struct ScratchFailure: Error {}
 final class ScratchApplicationsMoveSystem: ApplicationsMoveSystem {
     var running: [RunningTodz] = []
     var failingSteps: Set<ScratchStep> = []
-    var untrashableBundles: Set<URL> = []
+    var untrashableBundles: Set<FileIdentity> = []
     var hasMatchingRequirement = true
     var originalBundle: URL?
     private(set) var strippedBundles: [URL] = []
@@ -23,39 +24,41 @@ final class ScratchApplicationsMoveSystem: ApplicationsMoveSystem {
         self.trashFolder = trashFolder
     }
 
-    func canonicalURL(of url: URL) throws -> URL {
-        guard manager.fileExists(atPath: url.path) else { throw ScratchFailure() }
-        return url.resolvingSymlinksInPath()
-    }
-
     func runningApplications() -> [RunningTodz] {
         running
     }
 
     func itemExists(at url: URL) -> Bool {
-        manager.fileExists(atPath: url.path)
+        (try? manager.attributesOfItem(atPath: url.path)) != nil
     }
 
     func originalURL(of bundle: URL) -> URL? {
         originalBundle
     }
 
-    func trash(_ url: URL) throws -> URL {
-        guard !untrashableBundles.contains(url.resolvingSymlinksInPath()) else { throw ScratchFailure() }
+    func trash(_ url: URL) throws {
+        guard let identity = FileIdentity.of(url), !untrashableBundles.contains(identity) else { throw ScratchFailure() }
         let trashed = trashFolder.appending(path: UUID().uuidString).appending(path: url.lastPathComponent)
         try manager.createDirectory(at: trashed.deletingLastPathComponent(), withIntermediateDirectories: true)
         try manager.moveItem(at: url, to: trashed)
-        return trashed
+    }
+
+    func remove(_ url: URL) throws {
+        guard !failingSteps.contains(.removeStaging) else { throw ScratchFailure() }
+        try manager.removeItem(at: url)
     }
 
     func copy(from source: URL, to destination: URL) throws {
-        guard !failingSteps.contains(.copy) else { throw ScratchFailure() }
+        guard !failingSteps.contains(.copy) else {
+            try manager.createDirectory(at: destination, withIntermediateDirectories: true)
+            throw ScratchFailure()
+        }
         try manager.copyItem(at: source, to: destination)
     }
 
-    func restore(_ trashed: URL, to destination: URL) throws {
-        guard !failingSteps.contains(.restore) else { throw ScratchFailure() }
-        try manager.moveItem(at: trashed, to: destination)
+    func rename(_ staging: URL, to destination: URL) throws {
+        guard !failingSteps.contains(.rename) else { throw ScratchFailure() }
+        try manager.moveItem(at: staging, to: destination)
     }
 
     func hasMatchingDesignatedRequirement(copy: URL) -> Bool {

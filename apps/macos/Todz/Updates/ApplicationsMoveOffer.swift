@@ -38,14 +38,20 @@ private let isDebugBuild = false
         guard shouldOffer else { return }
         let alert = makeAlert(message: UpdateCopy.moveToApplications)
         alert.informativeText = UpdateCopy.moveToApplicationsDetail
-        alert.addButton(withTitle: UpdateCopy.moveToApplicationsConfirm)
-        alert.addButton(withTitle: UpdateCopy.moveToApplicationsDecline)
-        NSApp.activate()
-        guard alert.runModal() == .alertFirstButtonReturn else {
+        ApplicationsMoveChoice.alertButtonOrder.forEach { alert.addButton(withTitle: Self.title(for: $0)) }
+        let buttonIndex = alert.runModal().rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
+        guard ApplicationsMoveChoice.of(alertButtonIndex: buttonIndex) == .move else {
             ApplicationsMove.decline(version: currentVersion, defaults: defaults)
             return
         }
         move()
+    }
+
+    private static func title(for choice: ApplicationsMoveChoice) -> String {
+        switch choice {
+        case .notNow: UpdateCopy.moveToApplicationsDecline
+        case .move: UpdateCopy.moveToApplicationsConfirm
+        }
     }
 
     private func move() {
@@ -87,10 +93,10 @@ private let isDebugBuild = false
 
     private static func line(for refusal: ApplicationsMoveRefusal) -> String {
         switch refusal {
-        case .otherTodzRunning, .destinationRunning: UpdateCopy.quitTheOtherTodzFirst
-        case .alreadyInPlace: UpdateCopy.alreadyInApplications
+        case .otherTodzRunning: UpdateCopy.quitTheOtherTodzFirst
+        case .alreadyInPlace, .destinationOccupied: UpdateCopy.alreadyInApplications
         case .rollbackFailed: UpdateCopy.moveToApplicationsRollbackFailed
-        case .unresolvedPath, .previousCopyNotTrashed, .copyFailed, .signatureMismatch, .quarantineNotStripped: UpdateCopy.moveToApplicationsFailed
+        case .unresolvedPath, .originalUnknown, .stagingNotCleared, .copyFailed, .signatureMismatch, .quarantineNotStripped, .installFailed: UpdateCopy.moveToApplicationsFailed
         }
     }
 }

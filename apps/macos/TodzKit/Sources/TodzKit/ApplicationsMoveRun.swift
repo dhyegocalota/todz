@@ -13,74 +13,74 @@ public struct ApplicationsMoveRun {
         self.destinationFolder = destinationFolder
     }
 
-    // NB ADR 0105: nothing is trashed while any other todz runs, the copy must pass the running bundle's designated requirement, and any failure puts everything back.
+    // NB ADR 0105: nothing at the destination is ever displaced; the copy is built under a staging name, verified, then renamed into place.
     public func move(bundle: URL) -> ApplicationsMoveOutcome {
-        guard let source = try? system.canonicalURL(of: bundle) else { return .refused(.unresolvedPath) }
-        guard let folder = try? system.canonicalURL(of: destinationFolder) else { return .refused(.unresolvedPath) }
-        let destination = folder.appending(path: ApplicationsMove.bundleFileName)
-        let resolvedDestination = try? system.canonicalURL(of: destination)
-        let original = system.originalURL(of: bundle)
-        let resolvedOriginal = original.flatMap { try? system.canonicalURL(of: $0) }
-        let sourcePaths = [source, resolvedOriginal].compactMap { $0 }
-        let isInPlace = sourcePaths.contains { $0 == resolvedDestination }
+        guard let sourceIdentity = FileIdentity.of(bundle) else { return .refused(.unresolvedPath) }
+        guard FileIdentity.of(destinationFolder) != nil else { return .refused(.unresolvedPath) }
+        guard let original = system.originalURL(of: bundle) else { return .refused(.originalUnknown) }
+        guard let originalIdentity = FileIdentity.of(original) else { return .refused(.unresolvedPath) }
+        let destination = destinationFolder.appending(path: ApplicationsMove.bundleFileName)
+        let staging = destinationFolder.appending(path: ApplicationsMove.stagingFileName)
+        let isInPlace = FileIdentity.of(destination).map { [sourceIdentity, originalIdentity].contains($0) } == true
         guard !isInPlace else { return .refused(.alreadyInPlace) }
-        let otherProcesses = system.runningApplications().filter { $0.processIdentifier != processIdentifier }
-        let destinationPaths = [destination, resolvedDestination].compactMap { $0 }
-        guard !otherProcesses.contains(where: { isRunning($0, atAnyOf: destinationPaths) }) else { return .refused(.destinationRunning) }
-        guard !otherProcesses.contains(where: { $0.bundleIdentifier == bundleIdentifier }) else { return .refused(.otherTodzRunning) }
+        guard !system.itemExists(at: destination) else { return .refused(.destinationOccupied) }
+        let isOtherTodzRunning = system.runningApplications().contains { $0.processIdentifier != processIdentifier && $0.bundleIdentifier == bundleIdentifier }
+        guard !isOtherTodzRunning else { return .refused(.otherTodzRunning) }
         do {
-            try install(source: source, destination: destination)
+            try clearStaging(at: staging)
+            try install(source: bundle, staging: staging, destination: destination)
         } catch {
             return .refused(error)
         }
-        guard let original, (try? system.trash(original)) != nil else { return .movedLeavingOriginal(destination: destination) }
+        guard (try? system.trash(original)) != nil else { return .movedLeavingOriginal(destination: destination) }
         return .moved(destination: destination)
     }
 
-    private func isRunning(_ process: RunningTodz, atAnyOf paths: [URL]) -> Bool {
-        guard let bundleURL = process.bundleURL else { return false }
-        guard let resolvedBundleURL = try? system.canonicalURL(of: bundleURL) else { return false }
-        return paths.contains(resolvedBundleURL)
+    private func clearStaging(at staging: URL) throws(ApplicationsMoveRefusal) {
+        guard system.itemExists(at: staging) else { return }
+        do {
+            try system.remove(staging)
+        } catch {
+            throw .stagingNotCleared
+        }
     }
 
-    private func install(source: URL, destination: URL) throws(ApplicationsMoveRefusal) {
-        let previous = try displacePrevious(at: destination)
+    private func install(source: URL, staging: URL, destination: URL) throws(ApplicationsMoveRefusal) {
         do {
-            try copyVerified(from: source, to: destination)
+            try buildVerifiedCopy(from: source, at: staging)
+            try rename(staging, to: destination)
         } catch {
-            try rollBack(destination: destination, previous: previous)
+            try discard(staging)
             throw error
         }
     }
 
-    private func displacePrevious(at destination: URL) throws(ApplicationsMoveRefusal) -> URL? {
-        guard system.itemExists(at: destination) else { return nil }
+    private func buildVerifiedCopy(from source: URL, at staging: URL) throws(ApplicationsMoveRefusal) {
         do {
-            return try system.trash(destination)
-        } catch {
-            throw .previousCopyNotTrashed
-        }
-    }
-
-    private func copyVerified(from source: URL, to destination: URL) throws(ApplicationsMoveRefusal) {
-        do {
-            try system.copy(from: source, to: destination)
+            try system.copy(from: source, to: staging)
         } catch {
             throw .copyFailed
         }
-        guard system.hasMatchingDesignatedRequirement(copy: destination) else { throw .signatureMismatch }
+        guard system.hasMatchingDesignatedRequirement(copy: staging) else { throw .signatureMismatch }
         do {
-            try system.removeQuarantine(from: destination)
+            try system.removeQuarantine(from: staging)
         } catch {
             throw .quarantineNotStripped
         }
     }
 
-    private func rollBack(destination: URL, previous: URL?) throws(ApplicationsMoveRefusal) {
+    private func rename(_ staging: URL, to destination: URL) throws(ApplicationsMoveRefusal) {
         do {
-            if system.itemExists(at: destination) { _ = try system.trash(destination) }
-            guard let previous else { return }
-            try system.restore(previous, to: destination)
+            try system.rename(staging, to: destination)
+        } catch {
+            throw .installFailed
+        }
+    }
+
+    private func discard(_ staging: URL) throws(ApplicationsMoveRefusal) {
+        guard system.itemExists(at: staging) else { return }
+        do {
+            try system.remove(staging)
         } catch {
             throw .rollbackFailed
         }

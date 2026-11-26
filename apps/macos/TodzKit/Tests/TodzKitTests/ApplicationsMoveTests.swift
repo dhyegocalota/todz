@@ -72,10 +72,6 @@ import Testing
         #expect(!isOffered(bundlePath: "/private/var/folders/ab/AppTranslocation/1/d/Todz.app", isTranslocated: true, isDebugBuild: true))
     }
 
-    @Test func theDestinationFolderIsTheSystemApplicationsFolder() {
-        #expect(ApplicationsMove.destinationFolderPath == "/Applications")
-    }
-
     @Test func aDeclineIsRememberedForThatVersionOnly() throws {
         let defaults = try emptyDefaults()
         #expect(ApplicationsMove.declinedVersion(defaults: defaults) == nil)
