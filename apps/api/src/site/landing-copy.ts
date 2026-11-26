@@ -33,8 +33,7 @@ export const LANDING_COPY = {
     creditTail: ', made in Brazil',
   },
   hero: {
-    eyebrow: 'macOS · Coming soon',
-    eyebrowReleased: 'macOS 14 or later',
+    eyebrow: 'macOS 14 or later',
     title: 'Your tasks, shared with your agents.',
     lead: 'A native Mac to-do list that Claude Code, Codex and Cursor work over MCP.',
   },
@@ -46,22 +45,6 @@ export const LANDING_COPY = {
   stage: {
     label: 'The todz app on a Mac desktop',
     menuCount: '2',
-  },
-  join: {
-    emailLabel: 'Email address',
-    emailPlaceholder: 'you@example.com',
-    submit: 'Join the waitlist',
-    submitting: 'Joining…',
-    note: 'Only to tell you when todz opens.',
-    opensSoon: 'The waitlist opens soon.',
-    joined: "You're on the list. Check your inbox.",
-    tryAgain: "Couldn't add you right now. Try again in a minute.",
-    waitingForCheck: 'Finish the check below to join.',
-    invalid: "That address doesn't look right.",
-    checkFailed: "The check didn't pass. Try it again.",
-    unreachable: "Couldn't reach todz. Check your connection and try again.",
-    checkError: "The check couldn't load. Reload the page to try again.",
-    honeypotLabel: 'Leave this field empty',
   },
   benefits: {
     heading: 'Why todz',
@@ -95,8 +78,8 @@ export const LANDING_COPY = {
     toolResult: `${MCP_COPY.added} ${formatShortId(EXAMPLE_TASK_NUMBER)} ${EXAMPLE_TASK_TITLE}`,
   },
   final: {
-    title: 'Be first on the list.',
-    body: 'Join the waitlist and get todz when it opens.',
+    title: 'Get todz on your Mac.',
+    body: 'Download it, connect your agent and add the first task.',
   },
   alt: {
     window: "The todz main window: a project's tasks, one added via Claude Code, with its notes and history in the inspector",

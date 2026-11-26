@@ -89,8 +89,8 @@ const APPLICATION: Node = {
     '@type': 'Offer',
     price: 0,
     priceCurrency: 'USD',
-    availability: 'https://schema.org/PreOrder',
-    url: `${SITE_URL}/#join`,
+    availability: 'https://schema.org/InStock',
+    url: `${SITE_URL}/download`,
   },
 };
 

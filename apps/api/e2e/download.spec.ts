@@ -3,7 +3,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type APIResponse, expect, test } from '@playwright/test';
 import { LANDING_COPY } from '../src/site/landing-copy';
-import { JAVASCRIPT_CONTENT_TYPE, TURNSTILE_SCRIPT_URL, TURNSTILE_STUB } from './turnstile-stub';
 
 enum ColorScheme {
   Light = 'light',
@@ -27,7 +26,6 @@ const INSTALL_STEPS_URL = 'https://docs.todz.app/install-on-mac';
 const COLOR_SCHEMES = [ColorScheme.Light, ColorScheme.Dark];
 const DOWNLOAD_BUTTON = '.hero .download-button';
 const DOWNLOAD_NOTE = '.hero .download-note';
-const HERO_FORM = '.hero .join-form';
 
 test.use({ baseURL: STAGED_SITE_ORIGIN });
 
@@ -127,12 +125,8 @@ test.describe('the staged downloads', () => {
 });
 
 test.describe('the landing with a released version', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route(TURNSTILE_SCRIPT_URL, (route) => route.fulfill({ contentType: JAVASCRIPT_CONTENT_TYPE, body: TURNSTILE_STUB }));
-  });
-
   for (const colorScheme of COLOR_SCHEMES) {
-    test(`in ${colorScheme}, shows the button and the note above the waitlist form without scrolling sideways`, async ({ page }) => {
+    test(`in ${colorScheme}, shows the button and the note and no form without scrolling sideways`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });
       await page.goto('/');
       const button = page.locator(DOWNLOAD_BUTTON);
@@ -140,12 +134,8 @@ test.describe('the landing with a released version', () => {
       await expect(button).toHaveText(LANDING_COPY.download.button);
       await expect(page.locator(DOWNLOAD_NOTE)).toContainText(LANDING_COPY.download.note);
       await expect(page.locator(`${DOWNLOAD_NOTE} a`)).toHaveAttribute('href', INSTALL_STEPS_URL);
-      await expect(page.locator('.hero .eyebrow-pill')).toHaveText(LANDING_COPY.hero.eyebrowReleased);
-      const buttonBox = await button.boundingBox();
-      const formBox = await page.locator(HERO_FORM).boundingBox();
-      expect(buttonBox).not.toBeNull();
-      expect(formBox).not.toBeNull();
-      expect(buttonBox!.y + buttonBox!.height).toBeLessThanOrEqual(formBox!.y);
+      await expect(page.locator('.hero .eyebrow-pill')).toHaveText(LANDING_COPY.hero.eyebrow);
+      await expect(page.locator('form')).toHaveCount(0);
       const hasSidewaysScroll = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
       expect(hasSidewaysScroll).toBe(false);
     });

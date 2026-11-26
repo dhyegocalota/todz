@@ -5,12 +5,11 @@ import { HttpStatus } from '../http-status';
 import { noRouteResponse } from '../owner-errors';
 import { ADMIN_ROUTES } from './admin-routes';
 import { discoveryResponse } from './discovery-response';
-import { isDownloadReleased } from './download-release';
-import { LandingNotice, landingChallengeKeysOf, serveLandingPage } from './landing-page';
+import { serveLandingPage } from './landing-page';
 import { SELF_HOST_PATH, redirectToDocs } from './self-host-redirect';
 import { DISCOVERY_FILES } from './site-discovery';
 import { JOIN_PATH, LANDING_PATH } from './site-shell';
-import { serveWaitlistJoin } from './waitlist-join';
+import { serveWaitlistClosed } from './waitlist-closed';
 
 export type SiteContext = { request: Request; env: Env; executionContext: ExecutionContext };
 
@@ -18,14 +17,6 @@ export type SiteRoute = (context: SiteContext) => Promise<Response> | Response;
 
 function routeKey({ method, pathname }: { method: string; pathname: string }): string {
   return `${method} ${pathname}`;
-}
-
-async function serveLanding({ env }: SiteContext): Promise<Response> {
-  return serveLandingPage({
-    notice: LandingNotice.None,
-    challenge: landingChallengeKeysOf(env),
-    isReleased: await isDownloadReleased(env),
-  });
 }
 
 function redirectToLanding(): Response {
@@ -48,11 +39,11 @@ const DISCOVERY_ROUTE_OF_REQUEST: Record<string, SiteRoute> = Object.fromEntries
 const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
   ...ADMIN_ROUTE_OF_REQUEST,
   ...DISCOVERY_ROUTE_OF_REQUEST,
-  [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: serveLanding,
-  [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: serveLanding,
+  [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: serveLandingPage,
+  [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: serveLandingPage,
   [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: redirectToDocs,
   [routeKey({ method: HttpMethod.Head, pathname: SELF_HOST_PATH })]: redirectToDocs,
-  [routeKey({ method: HttpMethod.Post, pathname: JOIN_PATH })]: serveWaitlistJoin,
+  [routeKey({ method: HttpMethod.Post, pathname: JOIN_PATH })]: serveWaitlistClosed,
   [routeKey({ method: HttpMethod.Get, pathname: JOIN_PATH })]: redirectToLanding,
 };
 

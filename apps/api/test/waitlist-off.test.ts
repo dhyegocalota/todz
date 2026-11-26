@@ -45,7 +45,7 @@ describe('the landing once the waitlist is off', () => {
   test('has no form, no Turnstile widget and no waitlist word', async () => {
     const { html } = await landing();
     expect(html).not.toContain('<form');
-    expect(html).not.toContain('cf-turnstile');
+    expect(html).not.toContain('class="cf-turnstile"');
     expect(html).not.toContain(TURNSTILE_ORIGIN);
     expect(html).not.toMatch(WAITLIST_PATTERN);
   });

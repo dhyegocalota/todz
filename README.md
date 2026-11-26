@@ -53,7 +53,7 @@ The approved design is in [docs/product](docs/product/); how each piece was buil
 | ![Settings: todz stays quiet during a Focus with its filter](docs/screenshots/focus-aware/01-settings-focus-row.png)<br>Quiet during Focus, in Settings | ![The todz Focus filter in System Settings](docs/screenshots/focus-aware/02-focus-filter-sheet.png)<br>The todz Focus filter, added to any Focus mode |
 | ![Settings: todz mails Today to your sign-in address at the time you pick; reply to add a task](docs/screenshots/day-email/01-settings-email-my-day.png)<br>Email me my day, in Settings | |
 | ![The sign-in mail](docs/screenshots/transactional-email/01-sign-in-mail.png)<br>The sign-in mail | ![The welcome mail](docs/screenshots/transactional-email/02-welcome-mail.png)<br>The welcome mail |
-| ![todz.app, the landing with its waitlist form](docs/screenshots/landing/01-landing-light.png)<br>todz.app, the landing | ![todz.app on a phone, in dark](docs/screenshots/landing/02-landing-phone-dark.png)<br>todz.app on a phone, in dark |
+| ![todz.app, the landing with its download](docs/screenshots/landing/01-landing-light.png)<br>todz.app, the landing | ![todz.app on a phone, in dark](docs/screenshots/landing/02-landing-phone-dark.png)<br>todz.app on a phone, in dark |
 
 The widget shots are rendered from the widgets' own views until a desktop capture replaces them.
 
