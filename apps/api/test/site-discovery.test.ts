@@ -32,12 +32,15 @@ const HEADING_PATTERN = /^## .+$/;
 const LINK_LINE_PATTERN = /^- \[[^\]]+\]\(https:\/\/[^)]+\)(: .+)?$/;
 const TOOL_LINE_PATTERN = /^- `(next|add|list|update|done)`: .+$/;
 const LINK_URL_PATTERN = /\]\((https:\/\/[^)]+)\)/;
-const SECTIONS = ['## Connect an agent', '## MCP tools', '## Docs', '## Optional'];
+const SECTIONS = ['## Connect an agent', '## MCP tools', '## Docs', '## Docs MCP', '## Optional'];
 const FACTS = [
-  'in development',
+  'is out for macOS 14 or later',
   'not yet notarized by Apple',
-  'Pricing has not been announced',
-  'Joining the waitlist is free',
+  'free on todz cloud, or self-host',
+  'https://todz.app/download',
+  'The app updates itself',
+  'https://github.com/dhyegocalota/todz',
+  'AGPL-3.0',
   'Logic Bit',
 ];
 const CRAWLERS = [
@@ -53,6 +56,7 @@ const CRAWLERS = [
   'Perplexity-User',
   'Google-Extended',
   'Applebot-Extended',
+  'CCBot',
 ];
 const DOCS_LINKS = [
   `${DOCS_URL}/`,
@@ -61,6 +65,7 @@ const DOCS_LINKS = [
   `${DOCS_URL}/connect-an-agent`,
   `${DOCS_URL}/mcp-tools`,
   `${DOCS_URL}/self-host`,
+  `${DOCS_URL}/privacy`,
 ];
 const ROBOTS_LINES = [
   'User-agent: *',
@@ -153,7 +158,7 @@ describe('the discovery files', () => {
     });
   });
 
-  test('robots.txt allows everyone, names the twelve crawlers and lists both sitemaps, with no Disallow', async () => {
+  test('robots.txt allows everyone, names the thirteen crawlers and lists both sitemaps, with no Disallow', async () => {
     const body = await bodyOf(DiscoveryPath.Robots);
     expect(body).toBe(ROBOTS_TEXT);
     expect(body).not.toContain('Disallow');
@@ -201,11 +206,15 @@ describe('llms.txt', () => {
     FACTS.forEach((fact) => expect(body).toContain(fact));
   });
 
+  test('holds the docs MCP command', async () => {
+    expect(await bodyOf(DiscoveryPath.Llms)).toContain('claude mcp add --transport http todz-docs https://docs.todz.app/mcp');
+  });
+
   test('never says the app is a download: the file is static and a release may not be staged', async () => {
     expect(await bodyOf(DiscoveryPath.Llms)).not.toContain('is a download');
   });
 
-  test('holds the four sections in order', async () => {
+  test('holds the five sections in order', async () => {
     const body = await bodyOf(DiscoveryPath.Llms);
     expect(body.split('\n').filter((line) => HEADING_PATTERN.test(line))).toEqual(SECTIONS);
   });

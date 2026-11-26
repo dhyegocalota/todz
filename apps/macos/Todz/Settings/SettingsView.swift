@@ -17,6 +17,7 @@ struct SettingsView: View {
     @AppStorage(DayClosePreference.timeStorageKey) private var dayCloseMinutes = DayClosePreference.minutesAfterMidnightByDefault
     @AppStorage(MorningGlancePreference.isOnStorageKey) private var isMorningGlanceOn = MorningGlancePreference.isOnByDefault
     @AppStorage(DayTemperaturePreference.isOnStorageKey) private var isDayTemperatureOn = DayTemperaturePreference.isOnByDefault
+    @AppStorage(UsageSharingPreference.isOnStorageKey) private var isUsageSharingOn = UsageSharingPreference.isOnByDefault
     @AppStorage(RibbonPreference.isOnStorageKey) private var isRibbonOn = RibbonPreference.isOnByDefault
     @AppStorage(RespectFocusPreference.isOnStorageKey) private var isRespectFocusOn = RespectFocusPreference.isOnByDefault
     @AppStorage(RibbonPreference.cadenceStorageKey) private var ribbonCadenceName = RibbonPreference.cadenceByDefault.rawValue
@@ -124,12 +125,21 @@ struct SettingsView: View {
                 }
                 .toggleStyle(.switch)
             }
+            Toggle(isOn: $isUsageSharingOn) {
+                Text(UsageSharingCopy.toggle)
+                Text(UsageSharingCopy.toggleDetail)
+                    .lineLimit(subtitleLines, reservesSpace: true)
+            }
+            .toggleStyle(.switch)
             SettingsWorkspaceRows()
             SettingsWorkspaceShortcuts()
             Section {
                 ServerAddressForm(layout: .row, exit: {})
             } footer: {
                 VersionLine()
+            }
+            Section {
+                OpenSourceLink()
             }
         }
         .formStyle(.grouped)

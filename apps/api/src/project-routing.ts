@@ -217,6 +217,14 @@ export async function listScheduledWorkspaces({ env, owner }: { env: Env; owner:
   }));
 }
 
+// NB ADR 0082: only the nightly metrics run lists projects across owners, and it reads counts from them, never a title or a note.
+export async function listMetricsProjects({ env, limit }: { env: Env; limit: number }): Promise<DurableObjectStub<ProjectStore>[]> {
+  const { results } = await env.DIRECTORY.prepare('SELECT id FROM projects ORDER BY created_at, id LIMIT ?')
+    .bind(limit)
+    .all<{ id: string }>();
+  return results.map(({ id }) => openProject({ env, projectId: id }));
+}
+
 export type ReplyOwner = { readonly ownerId: string } & { readonly replyOwner: unique symbol };
 
 const replyOwners = new WeakSet<ReplyOwner>();

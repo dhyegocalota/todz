@@ -1,16 +1,50 @@
 name: verify
 
 on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: verify-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      server: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.server == 'true' }}
+      docs: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.docs == 'true' }}
+      macos: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.macos == 'true' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3
+        with:
+          filters: |
+            shared:
+              - .github/**
+              - scripts/**
+              - package.json
+              - pnpm-lock.yaml
+            server:
+              - apps/api/**
+              - libs/**
+              - tools/perf/**
+            docs:
+              - apps/docs/**
+            macos:
+              - apps/macos/**
+
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -44,6 +78,71 @@ jobs:
         env:
           FILTER: ${{ matrix.filter }}
 
+  unit-server:
+    needs: changes
+    if: needs.changes.outputs.server == 'true' && github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: api, filter: "@todz/api" }
+          - { name: core, filter: "@todz/core" }
+          - { name: perf, filter: "@todz/perf" }
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/install
+      - run: pnpm --filter "$FILTER" test:unit
+        env:
+          FILTER: ${{ matrix.filter }}
+
+  e2e:
+    needs: changes
+    if: needs.changes.outputs.server == 'true' && github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/install
+      - id: playwright
+        run: echo "version=$(pnpm --filter @todz/api exec playwright --version)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - run: pnpm --filter @todz/api exec playwright install --with-deps chromium
+      - run: pnpm --filter @todz/api test:e2e
+
+  docs:
+    needs: changes
+    if: needs.changes.outputs.docs == 'true' && github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/install
+      - run: pnpm --filter @todz/docs run broken-links
+
+  macos:
+    needs: changes
+    if: needs.changes.outputs.macos == 'true' && github.event.pull_request.draft != true
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: apps/macos/TodzKit/.build
+          key: swiftpm-${{ runner.os }}-${{ hashFiles('apps/macos/TodzKit/Package.swift', 'apps/macos/TodzKit/Package.resolved') }}
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: apps/macos/build
+          key: derived-data-${{ runner.os }}-${{ github.sha }}
+          restore-keys: derived-data-${{ runner.os }}-
+      - run: brew install xcodegen
+      - run: scripts/verify-macos.sh CODE_SIGNING_ALLOWED=NO
+
   security:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -68,3 +167,21 @@ jobs:
         run: ./gitleaks dir --no-banner --redact --exit-code 1 .
       - uses: ./.github/actions/install
       - run: pnpm security:audit
+
+  ci-ok:
+    if: always()
+    needs:
+      - changes
+      - checks
+      - unit
+      - security
+      - unit-server
+      - e2e
+      - docs
+      - macos
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo "$NEEDS" | jq -e 'all(.[]; .result == "success" or .result == "skipped")'
+        env:
+          NEEDS: ${{ toJSON(needs) }}

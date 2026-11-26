@@ -126,7 +126,7 @@ refuse_unserved_files() {
 refuse_oversized_files() {
   local version=$1 name
   for name in $(served_names_of "$version"); do
-    [[ "$(stat -f %z "$site/download/$version/$name")" -le "$size_limit_bytes" ]] || fail "$name is over $size_limit_label: ADR 0072's R2 fallback applies"
+    [[ "$(wc -c < "$site/download/$version/$name")" -le "$size_limit_bytes" ]] || fail "$name is over $size_limit_label: ADR 0072's R2 fallback applies"
   done
 }
 

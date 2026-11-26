@@ -15,9 +15,10 @@ const BRAND_ICON = 'docs/brand/todz-icon.svg';
 const FAVICON = 'apps/docs/favicon.svg';
 const PAGE_EXTENSION = '.mdx';
 const NAVIGATION_GROUPS = [
-  { group: 'Get started', pages: ['index', 'quickstart', 'install-on-mac', 'connect-an-agent'] },
+  { group: 'Get started', pages: ['index', 'quickstart', 'install-on-mac', 'connect-an-agent', 'tour'] },
   { group: 'Reference', pages: ['mcp-tools'] },
   { group: 'Self-host', pages: ['self-host'] },
+  { group: 'Privacy', pages: ['privacy'] },
 ];
 const NOT_FOUND_TITLE = 'Page not found';
 const HOME_LINK = '](/)';
@@ -162,7 +163,7 @@ describe('docs.json', () => {
     expect(configuration.errors?.['404']?.description).toContain(HOME_LINK);
   });
 
-  test('lists the six pages in their groups, in order', () => {
+  test('lists the eight pages in their groups, in order', () => {
     expect(configuration.navigation?.groups).toEqual(NAVIGATION_GROUPS);
   });
 });

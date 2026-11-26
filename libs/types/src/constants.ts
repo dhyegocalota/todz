@@ -52,12 +52,29 @@ export const DAY_EMAIL_STOP_LINK_LIFETIME_MS = 30 * MILLISECONDS_PER_DAY;
 export const DAY_EMAIL_STOP_TOKEN_LENGTH = 64;
 export const DAY_EMAIL_STOP_RATE_LIMIT_MAX = 10;
 export const DAY_EMAIL_STOP_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;
+export const USAGE_ADDRESS_RATE_LIMIT_MAX = 1;
+export const USAGE_INSTALL_RATE_LIMIT_MAX = 1;
+export const USAGE_GLOBAL_RATE_LIMIT_MAX = 60;
+export const USAGE_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;
+export const APPCAST_RATE_LIMIT_MAX = 60;
+export const APPCAST_ADDRESS_RATE_LIMIT_MAX = 1;
 export const COMPANY = {
   tradeName: 'Logic Bit',
   legalName: 'Logic Bit AI Software Boutique Ltda',
   website: 'https://logicbit.com.br',
   logo: 'https://www.logicbit.com.br/favicon/apple-touch-icon.png',
 } as const;
+const REPOSITORY_PATH = 'dhyegocalota/todz';
+const REPOSITORY_URL = `https://github.com/${REPOSITORY_PATH}`;
+export const REPOSITORY = {
+  path: REPOSITORY_PATH,
+  url: REPOSITORY_URL,
+  licenseName: 'AGPL-3.0',
+  licenseUrl: `${REPOSITORY_URL}/blob/main/LICENSE`,
+  licenseSpdxUrl: 'https://spdx.org/licenses/AGPL-3.0-only.html',
+  contributingUrl: `${REPOSITORY_URL}/blob/main/.github/CONTRIBUTING.md`,
+} as const;
+export const AUTHOR = { name: 'Dhyego', url: 'https://github.com/dhyegocalota' } as const;
 export const REPLY_SECRET_LENGTH = 32;
 export const REPLY_ADDRESS_DOMAIN = 'todz.app';
 export const MAIL_SENDER_ADDRESS = `noreply@${REPLY_ADDRESS_DOMAIN}`;

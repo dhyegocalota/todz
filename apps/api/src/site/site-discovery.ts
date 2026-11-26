@@ -4,12 +4,16 @@ import { AgentClient, agentSetupOf } from './agent-setup';
 import { DISCOVERY_COPY, DOCS_PAGES, TOOL_PARAMETERS } from './discovery-copy';
 import { type DiscoveryFile, NO_HEADERS, OPEN_READ_HEADERS } from './discovery-response';
 import { LANDING_COPY } from './landing-copy';
+import { LANDING_MARKDOWN_FILE } from './landing-markdown';
+import { fenced, linesOf } from './markdown-lines';
 import { DARK_THEME_COLOR, KEY_PLACEHOLDER } from './site-constants';
 import { SITE_ICONS, SiteIcon } from './site-icons';
-import { DOCS_URL, DiscoveryPath, MCP_URL, SERVER_CARD_PATH, SITE_URL } from './site-urls';
+import { DOCS_MCP_URL, DOCS_URL, DiscoveryPath, MCP_URL, SERVER_CARD_PATH, SITE_URL } from './site-urls';
 
-const FENCE = '```';
-const TEXT_TYPE = 'text/plain; charset=utf-8';
+const PLAIN_TYPE = 'text/plain';
+const HTML_TYPE = 'text/html';
+const TEXT_TYPE = `${PLAIN_TYPE}; charset=utf-8`;
+const LINKSET_TYPE = 'application/linkset+json';
 const XML_TYPE = 'application/xml; charset=utf-8';
 const MANIFEST_TYPE = 'application/manifest+json';
 const SITEMAP_NAMESPACE = 'http://www.sitemaps.org/schemas/sitemap/0.9';
@@ -29,15 +33,8 @@ const CRAWLERS = [
   'Perplexity-User',
   'Google-Extended',
   'Applebot-Extended',
+  'CCBot',
 ];
-
-function linesOf(lines: string[]): string {
-  return `${lines.join('\n')}\n`;
-}
-
-function fenced({ language, text }: { language: string; text: string }): string[] {
-  return [`${FENCE}${language}`, text, FENCE, ''];
-}
 
 function setupOf(client: AgentClient): string {
   return agentSetupOf({ client, serverUrl: MCP_URL, key: KEY_PLACEHOLDER });
@@ -86,14 +83,30 @@ const CATALOG_JSON = JSON.stringify({
   ],
 });
 
+const API_CATALOG_JSON = JSON.stringify({
+  linkset: [
+    {
+      anchor: MCP_URL,
+      'service-desc': [{ href: `${SITE_URL}${DiscoveryPath.ServerCard}`, type: SERVER_CARD_MEDIA_TYPE }],
+      'service-doc': [
+        { href: DOCS_URL, type: HTML_TYPE },
+        { href: `${SITE_URL}${DiscoveryPath.Llms}`, type: PLAIN_TYPE },
+      ],
+    },
+    { anchor: DOCS_MCP_URL, 'service-doc': [{ href: DOCS_URL, type: HTML_TYPE }] },
+  ],
+});
+
 const HEAD_LINES = [
   `# ${LANDING_COPY.meta.siteName}`,
   '',
   `> ${DISCOVERY_COPY.summary}`,
   '',
   DISCOVERY_COPY.status,
+  DISCOVERY_COPY.download,
   DISCOVERY_COPY.pricing,
   DISCOVERY_COPY.publisher,
+  DISCOVERY_COPY.source,
   '',
 ];
 
@@ -139,13 +152,21 @@ const DOCS_LINES = [
   '',
 ];
 
+const DOCS_MCP_LINES = [
+  `## ${DISCOVERY_COPY.docsMcp.heading}`,
+  '',
+  DISCOVERY_COPY.docsMcp.lead,
+  '',
+  ...fenced({ language: 'bash', text: DISCOVERY_COPY.docsMcp.command }),
+];
+
 const OPTIONAL_LINES = [
   `## ${DISCOVERY_COPY.optional.heading}`,
   '',
   `- [${DISCOVERY_COPY.optional.fullLink}](${SITE_URL}${DiscoveryPath.LlmsFull}): ${DISCOVERY_COPY.optional.fullNote}`,
 ];
 
-const LLMS_TEXT = linesOf([...HEAD_LINES, ...CONNECT_LINES, ...TOOL_LINES, ...DOCS_LINES, ...OPTIONAL_LINES]);
+const LLMS_TEXT = linesOf([...HEAD_LINES, ...CONNECT_LINES, ...TOOL_LINES, ...DOCS_LINES, ...DOCS_MCP_LINES, ...OPTIONAL_LINES]);
 
 const LLMS_FULL_TEXT = linesOf([
   ...HEAD_LINES,
@@ -154,6 +175,7 @@ const LLMS_FULL_TEXT = linesOf([
   ...TOOL_LINES,
   ...PARAMETER_LINES,
   ...DOCS_LINES,
+  ...DOCS_MCP_LINES,
   ...OPTIONAL_LINES,
 ]);
 
@@ -165,4 +187,6 @@ export const DISCOVERY_FILES: DiscoveryFile[] = [
   { path: DiscoveryPath.Manifest, contentType: MANIFEST_TYPE, body: MANIFEST_JSON, headers: NO_HEADERS },
   { path: DiscoveryPath.Catalog, contentType: JSON_TYPE, body: CATALOG_JSON, headers: OPEN_READ_HEADERS },
   { path: DiscoveryPath.ServerCard, ...SERVER_CARD_FILE },
+  { path: DiscoveryPath.ApiCatalog, contentType: LINKSET_TYPE, body: API_CATALOG_JSON, headers: OPEN_READ_HEADERS },
+  { path: DiscoveryPath.LandingMarkdown, ...LANDING_MARKDOWN_FILE, headers: NO_HEADERS },
 ];

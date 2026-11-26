@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   ABSENT_INDEX,
+  AUTHOR,
   AGENT_NUDGE_BY_DEFAULT,
   API_VERSION_HEADER,
   APP_VERSION_HEADER,
@@ -18,6 +19,12 @@ import {
   DAY_EMAIL_STOP_RATE_LIMIT_MAX,
   DAY_EMAIL_STOP_RATE_LIMIT_PERIOD_SECONDS,
   DAY_EMAIL_STOP_TOKEN_LENGTH,
+  APPCAST_ADDRESS_RATE_LIMIT_MAX,
+  APPCAST_RATE_LIMIT_MAX,
+  USAGE_ADDRESS_RATE_LIMIT_MAX,
+  USAGE_GLOBAL_RATE_LIMIT_MAX,
+  USAGE_INSTALL_RATE_LIMIT_MAX,
+  USAGE_RATE_LIMIT_PERIOD_SECONDS,
   FORMATTER_LOCALE,
   HEALTH_SERVICE_NAME,
   HOURS_PER_DAY,
@@ -35,6 +42,7 @@ import {
   REPLY_RATE_LIMIT_MAX,
   REPLY_RATE_LIMIT_PERIOD_SECONDS,
   REPLY_SIZE_MAX_BYTES,
+  REPOSITORY,
 } from './index';
 
 const MILLISECONDS_IN_A_DAY = 86_400_000;
@@ -84,6 +92,25 @@ describe('company constants', () => {
       website: 'https://logicbit.com.br',
       logo: 'https://www.logicbit.com.br/favicon/apple-touch-icon.png',
     });
+  });
+});
+
+describe('repository constants', () => {
+  test('the public repository, its license and its contributing guide live at one address (pin)', () => {
+    expect(REPOSITORY).toEqual({
+      path: 'dhyegocalota/todz',
+      url: 'https://github.com/dhyegocalota/todz',
+      licenseName: 'AGPL-3.0',
+      licenseUrl: 'https://github.com/dhyegocalota/todz/blob/main/LICENSE',
+      licenseSpdxUrl: 'https://spdx.org/licenses/AGPL-3.0-only.html',
+      contributingUrl: 'https://github.com/dhyegocalota/todz/blob/main/.github/CONTRIBUTING.md',
+    });
+  });
+});
+
+describe('author constants', () => {
+  test('the maker signs with a first name and the GitHub profile (pin)', () => {
+    expect(AUTHOR).toEqual({ name: 'Dhyego', url: 'https://github.com/dhyegocalota' });
   });
 });
 
@@ -149,6 +176,15 @@ describe('day email constants', () => {
   test('the stop link answers ten requests a minute to one client (pin)', () => {
     expect(DAY_EMAIL_STOP_RATE_LIMIT_MAX).toBe(10);
     expect(DAY_EMAIL_STOP_RATE_LIMIT_PERIOD_SECONDS).toBe(60);
+  });
+
+  test('the usage report answers one a minute to one client, one to one install and sixty to the world, and the appcast counts one a minute to one client and sixty to the world (pin)', () => {
+    expect(USAGE_ADDRESS_RATE_LIMIT_MAX).toBe(1);
+    expect(USAGE_INSTALL_RATE_LIMIT_MAX).toBe(1);
+    expect(USAGE_GLOBAL_RATE_LIMIT_MAX).toBe(60);
+    expect(USAGE_RATE_LIMIT_PERIOD_SECONDS).toBe(60);
+    expect(APPCAST_ADDRESS_RATE_LIMIT_MAX).toBe(1);
+    expect(APPCAST_RATE_LIMIT_MAX).toBe(60);
   });
 
   test('a reply comes to the reply local part, is at most a mebibyte, and an owner adds at most five a minute and twenty a day (pin)', () => {
