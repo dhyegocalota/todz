@@ -10,5 +10,5 @@ How todz is built and run.
 | [brand](brand/) | The owner's logo as SVGs, the sources of the app icon and its glass layers, the menu bar glyph and the README header |
 | [learnings](learnings/) | Dated traps that cost time, and the move that avoids them |
 | [runbooks](runbooks/) | Step-by-step procedures a person follows by hand |
-| [screenshots](screenshots/) | The product screenshots the root README walks, one folder per visible feature |
+| [screenshots](screenshots/) | The product screenshots the root README and the landing show, one folder per visible feature |
 | [scenarios](scenarios/) | Agentic walks of the product core in real browsers, one file per flow |

@@ -1,72 +1,63 @@
 <p align="center">
-  <img src="docs/brand/todz-lockup.png" alt="todz" width="360">
+  <a href="https://todz.app">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="apps/docs/logo/dark.svg">
+      <img src="apps/docs/logo/light.svg" alt="todz" width="240">
+    </picture>
+  </a>
 </p>
 
 <p align="center">
-  <strong>A to-do list that AI agents and their owner share.</strong>
+  <strong>Your to-do list, shared with your AI agents.</strong><br>
+  Claude Code, Codex and Cursor add, plan and finish tasks in the same list you use on your Mac.
 </p>
 
 <p align="center">
 
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/dhyegocalota/todz?style=flat&cacheSeconds=3600)](https://github.com/dhyegocalota/todz)
 [![docs](https://img.shields.io/badge/docs-docs.todz.app-blue)](https://docs.todz.app)
 [![download](https://img.shields.io/badge/download-macOS-black)](https://todz.app/download)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-blue)](.github/CONTRIBUTING.md)
 
 </p>
 
 <p align="center">
-  <img src="docs/brand/todz-icon.svg" alt="The todz app icon" width="128">
+  <img src="docs/screenshots/mac-app-shell/04-inspector-notes-and-history.png" width="820" alt="The todz window: Claude Code added a task, wrote its notes, and every change shows in its history">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/mac-app-shell/04-inspector-notes-and-history.png" width="820" alt="The todz main window with a task's notes and history in the inspector">
+  <sub>Claude Code found the broken links, wrote down why, and left the task for you.</sub>
 </p>
-
----
-
-todz is a product of Logic Bit, made in Brazil: [logicbit.com.br](https://logicbit.com.br)
-
-todz is a to-do list that AI agents and their owner share. MCP-first and agentic-first: every action a person takes in the app, an agent can take through the MCP server (Claude Code, Codex, Cursor, any MCP client).
-
-- **Multi-tenant.** Each workspace is isolated; projects live inside a workspace.
-- **Cloud sync** across devices.
-- **A native macOS app** with a menu bar extra and interactive WidgetKit widgets, simple and polished.
-- **For AI enthusiasts and programmers.**
-
-The approved design is in [docs/product](docs/product/); how each piece was built is in [docs/features](docs/features/) and the [ADRs](docs/adr/). To run your own server, read [Self-host todz](https://docs.todz.app/self-host).
-
-## A walk through todz
 
 | | |
 | --- | --- |
-| ![Today across projects](docs/screenshots/mac-app-shell/03-today-two-projects.png)<br>Today across projects | ![An agent's task appears live](docs/screenshots/mac-sync/01-agent-add-live.png)<br>An agent's task appears live |
-| ![Today from the menu bar](docs/screenshots/menu-bar/01-today-popover.png)<br>Today from the menu bar | ![Today's open tasks on the menu bar icon](docs/screenshots/menu-bar-count/01-count.png)<br>Today's open tasks on the menu bar icon |
-| ![Today ring](docs/screenshots/widgets/01-today-ring.png)<br>Today ring (rendered) | ![Next up](docs/screenshots/widgets/02-next-up.png)<br>Next up (rendered) |
-| ![Medium Today list](docs/screenshots/widgets/03-medium-today.png)<br>Medium Today list (rendered) | ![Large Today list](docs/screenshots/widgets/04-large-today.png)<br>Large Today list (rendered) |
-| ![Connect an agent](docs/screenshots/connect-an-agent/01-key-screen.png)<br>Connect an agent | ![An agent's tasks in a project, via Claude Code](docs/screenshots/v1-walk/01-agent-tasks-in-a-project.png)<br>An agent's tasks in a project, via Claude Code |
-| ![Settings, with agents allowed to mention today's tasks](docs/screenshots/agent-nudge/01-settings-light.png)<br>Let agents mention today's tasks | ![An agent's next opens with what is due today](docs/screenshots/agent-nudge/02-agent-next.png)<br>An agent's `next` opens with what is due today |
-| ![The menu bar popover closing the day: Done, Tomorrow or No date for each task left](docs/screenshots/day-close/01-day-close-popover.png)<br>Close the day from the menu bar | ![Settings: close the day at a time you pick](docs/screenshots/day-close/02-settings-close-the-day.png)<br>Close the day, in Settings |
-| ![A medium widget: overdue rows washed faintly red, deeper the older they are](docs/screenshots/day-temperature/01-overdue-widget.png)<br>Overdue rows age in the widgets (rendered) | ![Settings: the day temperature switch](docs/screenshots/day-temperature/02-settings-day-temperature.png)<br>Day temperature, in Settings |
-| ![The menu bar unfolding what is next beside the glyph, on a light and a dark bar](docs/screenshots/menu-bar-ribbon/01-ribbon-hold.png)<br>The menu bar ribbon, now and then (rendered) | ![Completing a task: the check draws in and a mint sparkle spreads](docs/screenshots/motion/01-complete-a-task.png)<br>Completing a task (animated) |
-| ![Choose a workspace: each of the account's workspaces with its project count](docs/screenshots/workspace-select/01-picker.png)<br>Signing in to an account with workspaces | ![Settings: every workspace, the active one checked](docs/screenshots/workspace-select/02-settings-workspaces.png)<br>Switch workspaces, in Settings |
-| ![Settings: todz stays quiet during a Focus with its filter](docs/screenshots/focus-aware/01-settings-focus-row.png)<br>Quiet during Focus, in Settings | ![The todz Focus filter in System Settings](docs/screenshots/focus-aware/02-focus-filter-sheet.png)<br>The todz Focus filter, added to any Focus mode |
-| ![Settings: todz mails Today to your sign-in address at the time you pick; reply to add a task](docs/screenshots/day-email/01-settings-email-my-day.png)<br>Email me my day, in Settings | |
-| ![The sign-in mail](docs/screenshots/transactional-email/01-sign-in-mail.png)<br>The sign-in mail | ![The welcome mail](docs/screenshots/transactional-email/02-welcome-mail.png)<br>The welcome mail |
-| ![todz.app, the landing with its waitlist form](docs/screenshots/landing/01-landing-light.png)<br>todz.app, the landing | ![todz.app on a phone, in dark](docs/screenshots/landing/02-landing-phone-dark.png)<br>todz.app on a phone, in dark |
+| <img src="docs/screenshots/mac-app-shell/03-today-two-projects.png" width="400" alt="Today across two projects"><br>**Today**, across every project. | <img src="docs/screenshots/menu-bar-count/01-count.png" width="90" alt="The menu bar icon with the count of what is left"> <img src="docs/screenshots/menu-bar/01-today-popover.png" width="300" alt="The menu bar popover with today's tasks"><br>**The menu bar** counts what is left; add a task without leaving your work. |
+| <img src="docs/screenshots/widgets/03-medium-today.png" width="400" alt="A medium widget listing today's tasks"><br>**Widgets** on your desktop; tick a task right there. | <img src="docs/screenshots/connect-an-agent/01-key-screen.png" width="400" alt="Connect an Agent: a key and the command to paste"><br>**Connect an Agent**: one key, one `claude mcp add`. |
 
-The widget shots are rendered from the widgets' own views until a desktop capture replaces them.
+## Install
 
-## How the work happens
+**[Download for Mac — Free](https://todz.app/download)** · or [run your own server](https://docs.todz.app/self-host).
 
-One process for people and for coding agents alike, in [HARNESS.md](.claude/HARNESS.md); conventions and layout in [AGENTS.md](AGENTS.md).
+## Connect an agent
 
-## Community
+1. Open todz and sign in with your email.
+2. Open **Connect an Agent**, pick a project, and copy your client's command.
+3. Paste it in your terminal, then ask your agent for the next task:
 
-- [Contributing](.github/CONTRIBUTING.md)
-- [Security policy](.github/SECURITY.md)
-- [Code of conduct](.github/CODE_OF_CONDUCT.md)
+   ```bash
+   claude mcp add --transport http todz 'https://api.todz.app/mcp' --header 'Authorization: Bearer <key>'
+   ```
+
+Codex, Cursor and every MCP tool: [docs.todz.app](https://docs.todz.app/connect-an-agent). More of the app: [a tour](https://docs.todz.app/tour).
+
+## Contributing
+
+Built by people and coding agents under one process: [HARNESS.md](.claude/HARNESS.md), [AGENTS.md](AGENTS.md).
+
+[Contributing](.github/CONTRIBUTING.md) · [Security](.github/SECURITY.md) · [Code of conduct](.github/CODE_OF_CONDUCT.md)
 
 ## License
 
 [AGPL-3.0](LICENSE). Contributions come under the [Contributor License Agreement](.github/CLA.md).
+
+todz is a product of Logic Bit, made in Brazil: [logicbit.com.br](https://logicbit.com.br)

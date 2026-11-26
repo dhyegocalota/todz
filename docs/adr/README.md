@@ -67,7 +67,7 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0044](0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md) | The Wrangler configuration is production on api.todz.app, and development overrides it | Proposed | 2026-11-24 |
 | [0045](0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md) | The public sign-in routes are limited three ways and Turnstile-guarded, failing closed | Proposed | 2026-11-24 |
 | [0046](0046-the-app-solves-the-challenge-in-a-web-view-and-the-link-page-solves-it-for-the-sign-in.md) | The app solves the challenge in a web view, and the link page solves it for the sign-in | Proposed | 2026-11-24 |
-| [0047](0047-the-readme-walk-shows-only-the-shots-that-tell-the-product-s-story.md) | The README walk shows only the shots that tell the product's story | Proposed | 2026-11-24 |
+| [0047](0047-the-readme-walk-shows-only-the-shots-that-tell-the-product-s-story.md) | The README walk shows only the shots that tell the product's story | Superseded by [0085](0085-the-readme-is-a-six-shot-showcase-and-the-docs-hold-the-tour.md) | 2026-11-24 |
 | [0048](0048-the-self-host-guide-is-one-markdown-file-that-the-landing-serves.md) | The self-host guide is one Markdown file that the landing serves | Proposed | 2026-11-24 |
 | [0049](0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md) | todz.app is served by the same Worker, dispatched by host, and built in three features | Accepted | 2026-11-24 |
 | [0050](0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md) | The waitlist answers alike for every address, mails once, and is guarded like sign-in | Accepted | 2026-11-25 |
@@ -100,3 +100,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0079](0079-workspaces-switch-by-chord-with-carbon-hot-keys-and-a-stored-rebindable-binding-table.md) | Workspaces switch by chord, with global Carbon hot keys and a stored, rebindable binding table | Accepted | 2026-11-26 |
 | [0081](0081-the-whole-repository-is-agpl-3-0-only-and-going-public-follows-a-pre-flight-runbook.md) | The whole repository is AGPL-3.0-only, and going public follows a pre-flight runbook | Accepted | 2026-11-26 |
 | [0083](0083-the-release-dmg-opens-on-a-committed-background-and-a-committed-ds-store-layout-copied-into-the-image-folder.md) | The release DMG opens on a committed background and a committed .DS_Store layout, copied into the image folder | Accepted | 2026-11-26 |
+| [0085](0085-the-readme-is-a-six-shot-showcase-and-the-docs-hold-the-tour.md) | The README is a six-shot showcase and the docs hold the tour | Proposed | 2026-11-26 |
