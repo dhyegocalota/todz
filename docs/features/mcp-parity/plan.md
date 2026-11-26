@@ -51,6 +51,7 @@ One developer, in this order: G1, G2, G3 (project tools), G4 (owner keys and acc
 
 - A delete leaves no attribution: nobody can tell which agent deleted a task.
 - `countActivity` counts tombstones and a move twice (added in the destination, and the source's earlier add).
+- A rename or create against a foreign id reserves one write before answering not-found (the owner REST routes do the same).
 - Owner-key traffic is limited per key, not per owner; the fair-use wiring bounds it.
 
 ## Review round
