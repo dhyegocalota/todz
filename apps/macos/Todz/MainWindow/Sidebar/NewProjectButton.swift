@@ -21,6 +21,7 @@ struct NewProjectButton: View {
                     .foregroundStyle(Color.accentColor)
             }
             .lineLimit(1)
+            .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
         }
@@ -30,6 +31,5 @@ struct NewProjectButton: View {
         .accessibilityHint(MainWindowCopy.newProjectHelp(workspaceName: workspace.name))
         .onHover { isHovering = $0 }
         .todzAnimation(.snap, value: isHovering)
-        .padding()
     }
 }
