@@ -15,7 +15,7 @@ The owner asked for the UI to look better, forms included. Every form drew its o
 2. Buttons stay native: `.borderedProminent`, `.bordered` and `.link` through one `FormButton`, whose busy state keeps the button's place.
 3. The three centred screens sit in one glass panel (`FormPanel`); a sheet never does, because the system already draws sheets in glass.
 4. `FormMetrics` holds four values: field corner radius 8, panel corner radius 18, field padding 10 by 7 and ring widths 1 and 2, each scaled with text where it is a padding, plus one point under Increase Contrast.
-5. If a glass pair fails contrast, that screen's panel uses `.regularMaterial`; no colour is hand-picked.
+5. If a glass pair fails contrast, that screen's panel was to use `.regularMaterial`; no colour is hand-picked. Measured, the material is worse on every pair (see the design's § 9), so the panel stays glass and the one failing pair, system red on light, is left to the system.
 6. The sign-in label is the placeholder with the label spoken, the primary button fills the panel, the confirmation dialogs stay system dialogs, and Settings keeps the sections of 0092.
 7. A write refused with `cloud_at_capacity` is a pause, not a refusal: the queue stays and sending waits, as for a daily cap.
 

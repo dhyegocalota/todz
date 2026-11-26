@@ -2,19 +2,20 @@
 
 ## Unit (TodzKit, `swift test --package-path apps/macos/TodzKit --filter "FieldStateTests|OwnerAPITests|AppModelTests"`)
 
-- [ ] All sixteen combinations of focus, issue, disabled and busy resolve to the state of the precedence busy, disabled, invalid, focused, rest. — evidence: `FieldStateTests`
-- [ ] A `cloud_at_capacity` answer decodes to a pause carrying the server's message. — evidence: `OwnerAPITests`
-- [ ] A queue that meets it is kept, sending pauses and the banner shows the message. — evidence: `AppModelTests+Outbox`
+- [x] All sixteen combinations of focus, issue, disabled and busy resolve to the state of the precedence busy, disabled, invalid, focused, rest. — evidence: `FieldStateTests`, red as a compile failure before `FieldState` existed, green after
+- [x] A `cloud_at_capacity` answer decodes to a pause carrying the server's message. — evidence: `OwnerAPITests` error table row, red before the code, green after
+- [x] A queue that meets a pause is kept, sending pauses and the banner shows the message. — evidence: the existing `aDailyCapKeepsEveryQueuedChangePausesSendingAndResumesOnTheNextRefresh`, since the new code decodes to the same `fairUsePaused` error
+- [x] The self-host guide address. — evidence: `SelfHostAddressTests`
 
 ## Offscreen renders (the app's in-process renderer, light and dark)
 
-- [ ] Name sheet: rest, focused, invalid, busy.
-- [ ] First workspace and picker inside the panel.
-- [ ] Delete confirmation: disabled, enabled.
-- [ ] Sign-in: email, inbox, error, with the limited-spots line.
-- [ ] Server field in Settings and in the sign-in column.
-- [ ] Settings chord row recording and its refusal line.
-- [ ] Connect an Agent: rounded blocks, Revoke, Create Key busy.
+- [x] Name sheet: rest, focused, invalid, busy.
+- [x] First workspace and picker inside the panel.
+- [x] Delete confirmation: disabled, enabled, busy.
+- [x] Sign-in: email, invalid, sending, inbox, error, with the limited-spots line.
+- [x] Server field in Settings and in the sign-in column.
+- [x] Settings chord row recording and its refusal line.
+- [x] Connect an Agent: rounded blocks, Revoke, Create Key busy.
 
 ## User-visible walk (tester)
 

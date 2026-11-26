@@ -426,5 +426,6 @@ Answered 2026-11-26 by the loop, under the owner's instruction to decide every c
 - D1 (O1): B, native plus a glass panel and drawn fields.
 - D2 (§ 3): the four `FormMetrics` values as written in § 3.
 - D3 (§ 8): if a glass-panel contrast pair fails, that screen's panel uses `.regularMaterial` instead of glass; no colour is hand-picked.
+- D3 outcome, measured from offscreen renders of the real views (WCAG ratio of the text's darkest pixel against the panel): on glass, `.red` subheadline 3.79 light and 5.08 dark, `.secondary` footnote 5.00 light and 6.53 dark; on `.regularMaterial`, 3.39 and 3.86, 4.46 and 5.91. Material is worse on all four pairs (and dims the title), so the panel stays glass; the one failing pair, `.red` on light, is the system red, which is 3.4 on the window background it replaces. The issue line also carries a symbol, so colour is not the only signal.
 - D4 (O2, O3, O4, O5): O2 A (placeholder, label spoken), O3 A (the primary button fills the panel), O4 A (the confirmation dialogs stay), O5 the Settings sections as ADR 0092 already shipped them, so § 5.6's regrouping and the reserved-space change (T1, T2) are dropped.
 - Moving ground resolved: PR #89 and PR #96 are on `main`, so the typed-name confirmation is `DeleteConfirmSheet` and § 7 steps 3 and 4 run now.

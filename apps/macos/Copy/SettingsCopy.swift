@@ -57,7 +57,7 @@ enum SettingsCopy {
     static let serverPlaceholder = "https://todz.example.com"
     static let switchServer = "Switch…"
     static let useTodzCloud = "Use todz cloud"
-    static let checkingServer = "Checking the server…"
+    static let checkingServer = "Checking…"
     static let switchingServer = "Switching…"
     static let serverEmpty = "Enter a server address."
     static let serverInUse = "todz already uses this server."
