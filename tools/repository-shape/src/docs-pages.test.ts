@@ -173,4 +173,17 @@ describe('the install page', () => {
   test('no longer says the download is not there yet', () => {
     expect(pageText('install-on-mac')).not.toMatch(/no download or notarized build yet/);
   });
+
+  test('verifies the download before the first step opens it', () => {
+    const page = pageText('install-on-mac');
+    expect(page).toContain('Verify the download with section 2 before you open it.');
+    expect(page.indexOf('Verify the download with section 2')).toBeLessThan(page.indexOf('drag `Todz.app` into Applications'));
+  });
+
+  test('says the app updates itself in the background and names the Settings switch', () => {
+    const page = pageText('install-on-mac');
+    expect(page).toContain('The app updates itself. By default it checks once a day through Sparkle');
+    expect(page).toContain('installs it when you quit or reopen todz');
+    expect(page).toContain('**Update todz automatically** in todz › Settings');
+  });
 });

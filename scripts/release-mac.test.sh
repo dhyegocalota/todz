@@ -206,6 +206,7 @@ echo "plist $*" >> "$CALLS"
 case "$2" in
   "Print :SUFeedURL") echo "${FAKE_FEED:-https://todz.app/download/appcast.xml}" ;;
   "Print :SUPublicEDKey") echo "${FAKE_PUBLIC_KEY:-BYXfy/qfQvJmxxD6JPs8gelvFwACXZ8xhhcG2p/fpYY=}" ;;
+  "Print :SUAutomaticallyUpdate") echo "${FAKE_AUTOMATIC_UPDATES:-YES}" ;;
 esac
 FAKE
 
@@ -456,6 +457,11 @@ FAKE_PUBLIC_KEY=AAAA run_release
 expect_refused "a built public key that is not generate_keys' is refused" "SUPublicEDKey does not match generate_keys -p"
 
 new_world
+FAKE_AUTOMATIC_UPDATES=NO run_release
+expect_refused "a built app that does not update itself is refused" "SUAutomaticallyUpdate is NO, not YES"
+expect_equal "a build without automatic updates never reaches hdiutil" "$(call_count '^hdiutil')" "0"
+
+new_world
 run_release --dry-run
 nested_order_ok=$(
   installer=$(line_of "codesign --force --options runtime .*--sign Apple Development .*Installer.xpc")
@@ -480,6 +486,7 @@ expect_equal "the build folder is private" "$(stat -f %Lp "$build_directory")" "
 expect_contains "xcodebuild gets the version" "$(cat "$CALLS")" "MARKETING_VERSION=$version"
 expect_contains "xcodebuild gets the build number" "$(cat "$CALLS")" "CURRENT_PROJECT_VERSION=$commit_count"
 expect_contains "xcodebuild builds Release into the build folder" "$(cat "$CALLS")" "-configuration Release -derivedDataPath $build_directory/derived"
+expect_contains "xcodebuild turns automatic updates on, only for the release command" "$(cat "$CALLS")" "TODZ_AUTOMATICALLY_UPDATES=YES"
 expect_contains "the disk image is signed" "$(cat "$CALLS")" "codesign --force --sign Apple Development $build_directory/$disk_image_name"
 appcast=$(cat "$build_directory/appcast.xml")
 expect_contains "the appcast names the build" "$appcast" "<sparkle:version>$commit_count</sparkle:version>"

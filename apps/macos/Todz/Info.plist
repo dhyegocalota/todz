@@ -34,6 +34,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<string>$(TODZ_ALLOWS_LOCAL_NETWORKING)</string>
 	</dict>
+	<key>SUAutomaticallyUpdate</key>
+	<string>$(TODZ_AUTOMATICALLY_UPDATES)</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUEnableInstallerLauncherService</key>

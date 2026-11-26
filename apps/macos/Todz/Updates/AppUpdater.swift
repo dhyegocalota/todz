@@ -5,21 +5,41 @@ import TodzKit
 
 @MainActor @Observable final class AppUpdater {
     private(set) var canCheckForUpdates = false
+    private(set) var automaticallyUpdates = false
+    private(set) var updatedToVersion: String?
     private let reminders = UpdateReminders()
     private let controller: SPUStandardUpdaterController
-    private var observation: NSKeyValueObservation?
+    private var observations: [NSKeyValueObservation] = []
 
     // NB ADR 0072: only a build whose Info.plist carries a feed starts Sparkle, so Debug never updates itself.
     init?(bundle: Bundle) {
         guard let info = bundle.infoDictionary, UpdateFeed(info: info) != nil else { return nil }
+        guard let currentVersion = AppVersion.of(info: info) else { return nil }
         controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: reminders)
-        observation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] _, change in
-            guard let canCheck = change.newValue else { return }
-            Task { @MainActor in self?.canCheckForUpdates = canCheck }
-        }
+        automaticallyUpdates = controller.updater.automaticallyDownloadsUpdates
+        updatedToVersion = UpdateNote.recordLaunch(ofVersion: currentVersion, defaults: .standard)
+        observations = [
+            controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] _, change in
+                guard let canCheck = change.newValue else { return }
+                Task { @MainActor in self?.canCheckForUpdates = canCheck }
+            },
+            controller.updater.observe(\.automaticallyDownloadsUpdates, options: [.initial, .new]) { [weak self] _, change in
+                guard let isOn = change.newValue else { return }
+                Task { @MainActor in self?.automaticallyUpdates = isOn }
+            },
+        ]
     }
 
     func checkForUpdates() {
         controller.checkForUpdates(nil)
+    }
+
+    func setAutomaticallyUpdates(_ isOn: Bool) {
+        controller.updater.automaticallyDownloadsUpdates = isOn
+    }
+
+    func acknowledgeUpdate() {
+        UpdateNote.clearPendingVersion(defaults: .standard)
+        updatedToVersion = nil
     }
 }
