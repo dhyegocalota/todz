@@ -12,6 +12,7 @@ settings:
       TODZ_URL_SCHEME: todz-dev
       TODZ_ALLOWS_LOCAL_NETWORKING: "YES"
       TODZ_UPDATE_FEED_URL: ""
+      TODZ_AUTOMATICALLY_UPDATES: "NO"
     Release:
       TODZ_APP_BUNDLE_IDENTIFIER: dev.todz.Todz
       TODZ_WIDGETS_BUNDLE_IDENTIFIER: dev.todz.Todz.widgets
@@ -19,6 +20,7 @@ settings:
       TODZ_URL_SCHEME: todz
       TODZ_ALLOWS_LOCAL_NETWORKING: "YES"
       TODZ_UPDATE_FEED_URL: https://todz.app/download/appcast.xml
+      TODZ_AUTOMATICALLY_UPDATES: "NO"
 packages:
   TodzKit:
     path: TodzKit
@@ -77,6 +79,7 @@ targets:
         TodzLinkScheme: $(TODZ_URL_SCHEME)
         SUFeedURL: $(TODZ_UPDATE_FEED_URL)
         SUEnableInstallerLauncherService: YES
+        SUAutomaticallyUpdate: $(TODZ_AUTOMATICALLY_UPDATES)
         SUEnableAutomaticChecks: YES
         SUScheduledCheckInterval: 86400
         SURequireSignedFeed: YES

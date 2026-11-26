@@ -5,6 +5,8 @@ const MACOS_PROJECT = 'apps/macos/project.yml';
 const APP_ENTITLEMENTS = 'apps/macos/Todz/Todz.entitlements';
 const WIDGETS_ENTITLEMENTS = 'apps/macos/TodzWidgets/TodzWidgets.entitlements';
 const APP_INFO_PLIST = 'apps/macos/Todz/Info.plist';
+const RELEASE_RUNBOOK = 'docs/runbooks/release-the-mac-app.md';
+const AUTOMATIC_UPDATES_SETTING = 'TODZ_AUTOMATICALLY_UPDATES';
 const APP_TARGET_MARKER = '\n  Todz:\n';
 const WIDGETS_TARGET_MARKER = '\n  TodzWidgets:\n';
 const SCHEMES_MARKER = '\nschemes:\n';
@@ -108,6 +110,16 @@ describe('the macOS release settings', () => {
     expect(appTarget()).toContain(`SUScheduledCheckInterval: ${ONE_DAY_SECONDS}`);
   });
 
+  test('automatic updates are a build setting that only the release command turns on', () => {
+    expect(appTarget()).toContain(`SUAutomaticallyUpdate: $(${AUTOMATIC_UPDATES_SETTING})`);
+    expect(project()).toMatch(new RegExp(`Debug:\\n(?:      .*\\n)*?      ${AUTOMATIC_UPDATES_SETTING}: "NO"\\n`));
+    expect(project()).toMatch(new RegExp(`Release:\\n(?:      .*\\n)*?      ${AUTOMATIC_UPDATES_SETTING}: "NO"\\n`));
+    expect(readRepositoryFile(APP_INFO_PLIST)).toMatch(
+      new RegExp(`<key>SUAutomaticallyUpdate<\\/key>\\s*<string>\\$\\(${AUTOMATIC_UPDATES_SETTING}\\)<\\/string>`),
+    );
+    expect(readRepositoryFile(RELEASE_SCRIPT)).toContain(`${AUTOMATIC_UPDATES_SETTING}=YES`);
+  });
+
   test('the app refuses an appcast that is not signed, and verifies an update before extracting it', () => {
     expect(appTarget()).toContain('SURequireSignedFeed: YES');
     expect(appTarget()).toContain('SUVerifyUpdateBeforeExtraction: YES');
@@ -130,6 +142,13 @@ describe('the macOS release settings', () => {
     expect(readRepositoryFile(APP_ENTITLEMENTS)).toContain(MACH_LOOKUP_KEY);
     expect(widgetsTarget()).not.toContain(MACH_LOOKUP_KEY);
     expect(readRepositoryFile(WIDGETS_ENTITLEMENTS)).not.toContain(MACH_LOOKUP_KEY);
+  });
+
+  test('the first public release is gated by a local check on this Mac: a quarantined download, Open Anyway and a Sparkle update', () => {
+    const runbook = readRepositoryFile(RELEASE_RUNBOOK);
+    ['xattr -w com.apple.quarantine', 'Open Anyway', 'Check for Updates…', 'Updated to <version>'].forEach((mention) =>
+      expect(runbook).toContain(mention),
+    );
   });
 
   test('the generated Info.plist carries the update keys', () => {

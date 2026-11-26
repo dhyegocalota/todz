@@ -295,11 +295,13 @@ require_plain_entitlements() {
 }
 
 require_built_configuration() {
-  local feed public_key
+  local feed public_key automatic_updates
   feed=$("$plist_binary" -c "Print :SUFeedURL" "$app_path/Contents/Info.plist")
   [[ "$feed" == "$feed_address" ]] || fail "SUFeedURL is $feed, not $feed_address"
   public_key=$("$plist_binary" -c "Print :SUPublicEDKey" "$app_path/Contents/Info.plist")
   [[ "$public_key" == "$(bounded "$security_seconds" "generate_keys" "$generate_keys_binary" --account "$sparkle_account" -p)" ]] || fail "SUPublicEDKey does not match generate_keys -p"
+  automatic_updates=$("$plist_binary" -c "Print :SUAutomaticallyUpdate" "$app_path/Contents/Info.plist")
+  [[ "$automatic_updates" == YES ]] || fail "SUAutomaticallyUpdate is $automatic_updates, not YES"
 }
 
 require_built_app() {
@@ -320,7 +322,7 @@ build_app() {
   mkdir -p "$build_directory"
   chmod 700 "$build_directory"
   bounded "$xcodebuild_seconds" "xcodegen" "$xcodegen_binary" generate --spec apps/macos/project.yml > /dev/null
-  bounded "$xcodebuild_seconds" "xcodebuild" "$xcodebuild_binary" -project apps/macos/Todz.xcodeproj -scheme "$scheme_name" -configuration Release -derivedDataPath "$build_directory/derived" -clonedSourcePackagesDirPath "$release_home/packages" MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$build" build > "$build_directory/xcodebuild.log" 2>&1 || fail "xcodebuild failed; see $build_directory/xcodebuild.log"
+  bounded "$xcodebuild_seconds" "xcodebuild" "$xcodebuild_binary" -project apps/macos/Todz.xcodeproj -scheme "$scheme_name" -configuration Release -derivedDataPath "$build_directory/derived" -clonedSourcePackagesDirPath "$release_home/packages" MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$build" TODZ_AUTOMATICALLY_UPDATES=YES build > "$build_directory/xcodebuild.log" 2>&1 || fail "xcodebuild failed; see $build_directory/xcodebuild.log"
   resign_nested_code
   require_built_app
 }
