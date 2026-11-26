@@ -2,7 +2,7 @@
 
 ## What changed
 
-- `workspaces.last_activity_at` (migration 0012) is stamped from the project store after a task write, throttled to one directory write per project every five minutes, and listed by `GET /owner/workspaces`.
+- `workspaces.last_activity_at` (migration 0013) is stamped from the project store after a task write, throttled to one directory write per project every five minutes, and listed by `GET /owner/workspaces`.
 - The picker and Settings rows show "Active ..." under the project count when a stamp exists.
 - A sign-in link handled while the app is signed in shows "You're already signed in." in the existing banner and brings the main window forward.
 

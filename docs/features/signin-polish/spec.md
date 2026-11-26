@@ -39,7 +39,7 @@ flowchart LR
 
 ### Interfaces
 
-- Migration `0012_workspace_last_activity.sql`: `ALTER TABLE workspaces ADD COLUMN last_activity_at INTEGER`.
+- Migration `0013_workspace_last_activity.sql`: `ALTER TABLE workspaces ADD COLUMN last_activity_at INTEGER`.
 - `WORKSPACE_ACTIVITY_WRITE_INTERVAL_MS` in `libs/types`; `isActivityWriteDue` in `apps/api/src/workspace-activity.ts`.
 - `touchWorkspaceActivity` in `apps/api/src/directory-workspaces.ts`: only moves the stamp forward.
 - `Workspace.lastActivityAt: Date?` in TodzKit; `ActivityRecency` decides the wording class; `WorkspacePickerCopy.activity(recency:)` words it.

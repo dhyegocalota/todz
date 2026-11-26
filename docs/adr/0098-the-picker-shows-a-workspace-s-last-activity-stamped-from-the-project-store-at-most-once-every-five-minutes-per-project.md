@@ -12,7 +12,7 @@
 ## Decision
 
 1. Decisions 1 to 5 of 0076 stand. Decision 6 is replaced by this record.
-2. `workspaces.last_activity_at` (nullable, epoch milliseconds, migration `0012_workspace_last_activity.sql`) holds the last time a task write moved a project store's change number in that workspace. A workspace nobody wrote to holds `null`.
+2. `workspaces.last_activity_at` (nullable, epoch milliseconds, migration `0013_workspace_last_activity.sql`) holds the last time a task write moved a project store's change number in that workspace. A workspace nobody wrote to holds `null`.
 3. The project store stamps it after a write that moved its change number, through `ctx.waitUntil`, so the write never waits on D1 and a failed stamp never fails the task write.
 4. The stamp is throttled per project store instance: at most one directory write every `WORKSPACE_ACTIVITY_WRITE_INTERVAL_MS` (five minutes, `libs/types`). The throttle is memory only: an evicted instance may stamp once more, and a failed stamp clears the throttle so the next write retries. The stamp only moves forward.
 5. The owner API lists `last_activity_at` on every workspace, `null` when there is none. A new workspace answers `null`.
