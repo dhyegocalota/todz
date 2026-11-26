@@ -1,6 +1,6 @@
 # Agentic site
 
-**Status:** Approved
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-26 by the owner's request to the loop ("deixa o site bem agentic supported, llms.txt e tudo mais"), inheriting the product scope of [docs/product/README.md](../../product/README.md)
 **ADRs:** none; [0059](../../adr/0059-the-docs-are-a-mintlify-site-on-docs-todz-app-built-from-apps-docs-and-the-self-host-guide-moves-into-it.md) and [0060](../../adr/0060-the-landing-describes-itself-from-the-copy-modules-and-offers-webmcp-tools-over-its-own-turnstile-form.md) stay as history
