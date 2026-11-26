@@ -26,7 +26,8 @@ No soft delete, no restore window and no migration. Because nothing is kept as a
 ## Consequences
 
 - Owner-scoped queries join `workspaces.owner_id` in every statement of the batch, so a foreign id deletes nothing and answers the same 404 an absent id answers.
-- If a project is created between listing its ids and the batch, its directory row is deleted but its storage is not wiped. Storage without a directory row is unreachable, because routing starts from the directory.
+- The ids to wipe come from `RETURNING` on the batch itself, so exactly the projects whose rows went are wiped, including one created while the request ran.
+- The batch has committed when a wipe runs, so a wipe that throws does not fail the request: the answer stays 204, because the directory rows are gone and a 500 would tell the Mac the change was not saved. The residue is Durable Object storage nobody can reach, since routing starts from the directory; nothing retries it and no cron sweeps it.
 - Other Macs learn through the existing `changed` signal and the existing 404 reload; no new wire message.
 
 ## Accepted risk
@@ -35,7 +36,7 @@ A stolen owner session can erase every workspace and project in one request sequ
 
 ## Evidence
 
-- `apps/api/test/owner-delete.test.ts` (13 tests): 204, keys answer 401 right after, storage tables gone, Inbox 409, another owner answers the same as an absent id.
+- `apps/api/test/owner-delete.test.ts` (19 tests): 204, keys answer 401 right after, storage tables gone, 204 when a wipe throws, Inbox 409, another owner answers the same as an absent id.
 
 ## Revisit when
 
