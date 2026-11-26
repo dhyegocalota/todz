@@ -2,7 +2,6 @@ import SwiftUI
 import TodzKit
 
 let morningGlanceWidth: CGFloat = 280
-private let cornerRadius: CGFloat = 18
 
 struct MorningGlanceView: View {
     let content: MorningGlanceContent
@@ -12,7 +11,7 @@ struct MorningGlanceView: View {
         TodayDigest(openCount: content.openCount, subtitle: nil, rows: content.rows, restCount: content.restCount)
             .padding()
             .frame(width: morningGlanceWidth, alignment: .leading)
-            .modifier(MorningGlanceSurface())
+            .modifier(GlassSurface(cornerRadius: FormMetrics.panelCornerRadius))
             .todzEntrance()
             .help(MorningGlanceCopy.openToday)
             .accessibilityElement(children: .ignore)
@@ -21,15 +20,5 @@ struct MorningGlanceView: View {
             .accessibilityHint(AccessibilityCopy.glanceOpensToday)
             .accessibilityAddTraits(.isButton)
             .accessibilityAction(.default, open)
-    }
-}
-
-private struct MorningGlanceSurface: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            content.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
-        } else {
-            content.background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
-        }
     }
 }
