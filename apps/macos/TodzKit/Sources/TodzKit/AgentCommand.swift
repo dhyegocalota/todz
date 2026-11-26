@@ -1,26 +1,25 @@
 import Foundation
 
-private let serverName = "todz"
 private let keyVariable = "TODZ_API_KEY"
 private let serverPath = "mcp"
 private let cursorBundleIdentifier = "com.todesktop.230313mzl4w4u92"
-private let cursorInstallAddress = "cursor://anysphere.cursor-deeplink/mcp/install?name=\(serverName)&config="
+private let cursorInstallAddress = "cursor://anysphere.cursor-deeplink/mcp/install?name=\(AgentServer.project.rawValue)&config="
 private let linkFailure = "base64 percent-encodes into an install link always"
 private let unreservedCharacters = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
 
-private func codexConfiguration(server: String) -> String {
+private func codexConfiguration(server: String, name: String) -> String {
     """
-    [mcp_servers.\(serverName)]
+    [mcp_servers.\(name)]
     url = "\(server)"
     bearer_token_env_var = "\(keyVariable)"
     """
 }
 
-private func cursorJSON(server: String, key: String) -> String {
+private func cursorJSON(server: String, name: String, key: String) -> String {
     """
     {
       "mcpServers": {
-        "\(serverName)": {
+        "\(name)": {
           "url": "\(server)",
           "headers": {
             "Authorization": "Bearer \(key)"
@@ -37,15 +36,15 @@ public enum AgentCommand: Equatable, Sendable {
     case cursor(json: String)
 
     // NB ADR 0034: a secret is todz_ plus base64url, so single quotes hold it without escaping.
-    public static func of(client: AgentClient, serverURL: URL, key: String) -> AgentCommand {
-        let server = serverURL.absoluteString
+    public static func of(client: AgentClient, serverURL: URL, key: String, server: AgentServer = .project) -> AgentCommand {
+        let address = serverURL.absoluteString
         switch client {
         case .claudeCode:
-            return .claudeCode(line: "claude mcp add --transport http \(serverName) '\(server)' --header 'Authorization: Bearer \(key)'")
+            return .claudeCode(line: "claude mcp add --transport http \(server.rawValue) '\(address)' --header 'Authorization: Bearer \(key)'")
         case .codex:
-            return .codex(configuration: codexConfiguration(server: server), shellLine: "export \(keyVariable)='\(key)'")
+            return .codex(configuration: codexConfiguration(server: address, name: server.rawValue), shellLine: "export \(keyVariable)='\(key)'")
         case .cursor:
-            return .cursor(json: cursorJSON(server: server, key: key))
+            return .cursor(json: cursorJSON(server: address, name: server.rawValue, key: key))
         }
     }
 

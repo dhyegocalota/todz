@@ -60,6 +60,11 @@ private func serverURL() throws -> URL {
         #expect(command == .claudeCode(line: "claude mcp add --transport http todz '\(serverText)' --header 'Authorization: Bearer \(secret)'"))
     }
 
+    @Test func theOwnerServerHasItsOwnNameSoItNeverReplacesTheProjectServer() throws {
+        let command = AgentCommand.of(client: .claudeCode, serverURL: try serverURL(), key: secret, server: .owner)
+        #expect(command == .claudeCode(line: "claude mcp add --transport http todz-account '\(serverText)' --header 'Authorization: Bearer \(secret)'"))
+    }
+
     @Test func codexIsAConfigurationTableAndAShellLine() throws {
         let command = AgentCommand.of(client: .codex, serverURL: try serverURL(), key: secret)
         #expect(command == .codex(configuration: codexConfiguration(), shellLine: "export TODZ_API_KEY='\(secret)'"))

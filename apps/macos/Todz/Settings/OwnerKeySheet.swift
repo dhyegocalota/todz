@@ -44,7 +44,7 @@ struct OwnerKeySheet: View {
 
     private var claudeCodeLine: String? {
         let serverURL = AgentCommand.serverURL(apiBase: model.serverURL.url)
-        guard case let .claudeCode(line) = AgentCommand.of(client: .claudeCode, serverURL: serverURL, key: issuedKey.secret) else { return nil }
+        guard case let .claudeCode(line) = AgentCommand.of(client: .claudeCode, serverURL: serverURL, key: issuedKey.secret, server: .owner) else { return nil }
         return line
     }
 }
