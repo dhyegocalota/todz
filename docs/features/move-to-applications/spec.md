@@ -1,6 +1,6 @@
 # Move to Applications
 
-**Status:** Approved, moved to v1.1 on 2026-11-26 (the owner's deadline)
+**Status:** Approved
 **Tier:** 🟡
 **Owner approval:** the owner asked for it on 2026-11-26 through todz-6f, after the release local check: "when todz runs outside /Applications (translocated or any folder), show one friendly sheet … Move / Not now"; inside `docs/product/README.md` (approved 2026-11-23) by inheritance
 **ADRs:** [0078](../../adr/0078-a-released-app-outside-applications-offers-once-per-version-to-move-itself-there.md)

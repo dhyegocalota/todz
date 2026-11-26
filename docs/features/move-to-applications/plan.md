@@ -17,7 +17,7 @@ G1, one developer. Red commit (the tests), then green.
 
 ## Steps
 
-1. Red: `ApplicationsMoveTests` for `shouldOffer(bundlePath:isTranslocated:homeDirectory:currentVersion:declinedVersion:hasUpdateFeed:)`, the destination path, and the declined-version record and read in `UserDefaults(suiteName:)`.
-2. Green: `ApplicationsMove` in TodzKit, matching `UpdateNote`'s shape (an enum of static functions and storage keys).
-3. `ApplicationsMover` (MainActor): at launch, if `ApplicationsMove.shouldOffer`, an `NSAlert` with `UpdateCopy` strings; Move copies, strips quarantine, trashes the original (translocation original through `SecTranslocateCreateOriginalPathForURL`, loaded with `dlsym`), opens the new copy with `NSWorkspace.openApplication(at:configuration:)` with `createsNewApplicationInstance`, then `NSApp.terminate`; Not now records the version.
-4. Build the app (`xcodegen` + `xcodebuild`), run TodzKit tests, `pnpm verify`.
+- [x] 1. Red (8e97d049): `ApplicationsMoveTests` for `shouldOffer(bundlePath:isTranslocated:homeDirectory:currentVersion:declinedVersion:hasUpdateFeed:)`, the destination path, and the declined-version record and read in `UserDefaults(suiteName:)`.
+- [x] 2. Green (3a1ff84c, `ApplicationsMoveTests` 12 of 12): `ApplicationsMove` in TodzKit, matching `UpdateNote`'s shape (an enum of static functions and storage keys).
+- [x] 3. `ApplicationsMover` (MainActor): at launch, if `ApplicationsMove.shouldOffer`, an `NSAlert` with `UpdateCopy` strings; Move copies, strips quarantine, trashes the original (translocation original through `SecTranslocateCreateOriginalPathForURL`, loaded with `dlsym`), opens the new copy with `NSWorkspace.openApplication(at:configuration:)` with `createsNewApplicationInstance`, then `NSApp.terminate`; Not now records the version.
+- [x] 4. Build the app (`xcodegen` + `xcodebuild`), run TodzKit tests, `pnpm verify`.

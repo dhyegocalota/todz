@@ -8,12 +8,12 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 
 ## Unit
 
-- [ ] A released bundle at `/Applications/Todz.app` or `~/Applications/Todz.app` — expected: not offered
-- [ ] A released bundle in `~/Downloads`, on `/Volumes/Todz` or translocated — expected: offered
-- [ ] The current version declined — expected: not offered; a newer version — expected: offered
-- [ ] No update feed (Debug) — expected: never offered
-- [ ] The destination — expected: `/Applications/Todz.app`
-- [ ] The whole TodzKit suite — expected: every test passes
+- [x] A released bundle at `/Applications/Todz.app` or `~/Applications/Todz.app` — expected: not offered — evidence: `ApplicationsMoveTests`, 12 of 12 pass
+- [x] A released bundle in `~/Downloads`, on `/Volumes/Todz` or translocated — expected: offered — evidence: `ApplicationsMoveTests`, 12 of 12 pass
+- [x] The current version declined — expected: not offered; a newer version — expected: offered — evidence: `ApplicationsMoveTests`, 12 of 12 pass
+- [x] No update feed (Debug) — expected: never offered — evidence: `ApplicationsMoveTests`, 12 of 12 pass
+- [x] The destination — expected: `/Applications/Todz.app` — evidence: `ApplicationsMoveTests`, 12 of 12 pass
+- [x] The whole TodzKit suite — expected: every test passes — evidence: 1370 tests in 108 suites passed
 
 ## By hand (tester, one pass)
 
