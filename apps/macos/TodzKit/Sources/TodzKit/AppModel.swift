@@ -63,15 +63,12 @@ import Observation
     var isOwnerConfirmed = false
     public internal(set) var agentNudge: Bool?
     var isSavingAgentNudge = false
-    var agentNudgeSavesStarted = 0
-    var isReadingOwnerSettings = false
     var isAgentNudgeNotSaved = false
     public internal(set) var showsDayTemperature = false
     public internal(set) var compatibility: VersionCompatibility
     public internal(set) var dayEmail: Bool?
     public internal(set) var dayEmailMinutes: Int?
     var isSavingDayEmail = false
-    var dayEmailSavesStarted = 0
     var isDayEmailNotSaved = false
 
     @ObservationIgnored var hasLaunched = false
@@ -89,6 +86,9 @@ import Observation
     @ObservationIgnored var workspaceReloadIdentifier: UUID?
     @ObservationIgnored var ownerConfirmationRetry: Task<Void, Never>?
     @ObservationIgnored var ownerConfirmationFailures = 0
+    @ObservationIgnored var ownerSettingsReadIdentifier: UUID?
+    @ObservationIgnored var agentNudgeSavesStarted = 0
+    @ObservationIgnored var dayEmailSavesStarted = 0
     @ObservationIgnored var sendLoop: Task<Void, Never>?
     @ObservationIgnored var sendingSession: String?
     @ObservationIgnored var sendWait: Task<Void, any Error>?
@@ -382,6 +382,7 @@ import Observation
         session = nil
         ownerIdentifier = nil
         isOwnerConfirmed = false
+        ownerSettingsReadIdentifier = nil
         forgetAgentNudge()
         forgetDayEmail()
         forgetWindow()

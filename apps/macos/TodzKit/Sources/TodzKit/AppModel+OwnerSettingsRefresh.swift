@@ -1,18 +1,20 @@
+import Foundation
+
 extension AppModel {
     public func refreshOwnerSettings() async {
-        let canRead = session != nil && isOwnerConfirmed && !isReadingOwnerSettings
-        guard canRead else { return }
-        isReadingOwnerSettings = true
-        defer { isReadingOwnerSettings = false }
+        guard session != nil, isOwnerConfirmed, ownerSettingsReadIdentifier == nil else { return }
+        let readIdentifier = UUID()
+        ownerSettingsReadIdentifier = readIdentifier
+        defer { if ownerSettingsReadIdentifier == readIdentifier { ownerSettingsReadIdentifier = nil } }
         let wasSavingAgentNudge = isSavingAgentNudge
         let wasSavingDayEmail = isSavingDayEmail
         let agentNudgeSavesBefore = agentNudgeSavesStarted
         let dayEmailSavesBefore = dayEmailSavesStarted
         guard let owner = try? await request({ try await service.readOwner(session: $0) }) else { return }
-        let isAgentNudgeSaved = wasSavingAgentNudge || agentNudgeSavesStarted != agentNudgeSavesBefore
-        let isDayEmailSaved = wasSavingDayEmail || dayEmailSavesStarted != dayEmailSavesBefore
-        if !isAgentNudgeSaved { agentNudge = owner.agentNudge }
-        guard !isDayEmailSaved else { return }
+        let isAgentNudgeSaveRacing = wasSavingAgentNudge || agentNudgeSavesStarted != agentNudgeSavesBefore
+        let isDayEmailSaveRacing = wasSavingDayEmail || dayEmailSavesStarted != dayEmailSavesBefore
+        if !isAgentNudgeSaveRacing { agentNudge = owner.agentNudge }
+        guard !isDayEmailSaveRacing else { return }
         dayEmail = owner.dayEmail
         dayEmailMinutes = owner.dayEmailMinutes
     }
