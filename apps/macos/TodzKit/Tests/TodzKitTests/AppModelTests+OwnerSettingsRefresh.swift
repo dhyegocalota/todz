@@ -157,6 +157,21 @@ extension AppModelTests {
         #expect(harness.model.dayEmail == false)
     }
 
+    @Test func aReadHeldFromASessionThatEndedDoesNotBlockTheNextSessionsRead() async throws {
+        let harness = try await harnessOfConfirmedOwner()
+        harness.service.suspend(.readOwner)
+        let refreshing = Task { await harness.model.refreshOwnerSettings() }
+        await harness.service.held(.readOwner)
+        await harness.model.signOut()
+        harness.service.unsuspend(.readOwner)
+        await harness.model.signIn(identity: "dhyego")
+        harness.service.calls = []
+        await harness.model.refreshOwnerSettings()
+        harness.service.resume(.readOwner)
+        await refreshing.value
+        #expect(readOwnerCount(harness) == 1)
+    }
+
     @Test func aReadThatCannotReachTodzKeepsEveryValueAndShowsNoNotSavedNotice() async throws {
         let harness = try await harnessOfConfirmedOwner()
         changeOwnerOnTheServer(harness, agentNudge: false, dayEmail: false, dayEmailMinutes: readMinutes)
