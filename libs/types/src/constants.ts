@@ -58,6 +58,17 @@ export const COMPANY = {
   website: 'https://logicbit.com.br',
   logo: 'https://www.logicbit.com.br/favicon/apple-touch-icon.png',
 } as const;
+const REPOSITORY_PATH = 'dhyegocalota/todz';
+const REPOSITORY_URL = `https://github.com/${REPOSITORY_PATH}`;
+export const REPOSITORY = {
+  path: REPOSITORY_PATH,
+  url: REPOSITORY_URL,
+  licenseName: 'AGPL-3.0',
+  licenseUrl: `${REPOSITORY_URL}/blob/main/LICENSE`,
+  licenseSpdxUrl: 'https://spdx.org/licenses/AGPL-3.0-only.html',
+  contributingUrl: `${REPOSITORY_URL}/blob/main/.github/CONTRIBUTING.md`,
+} as const;
+export const AUTHOR = { name: 'Dhyego', url: 'https://github.com/dhyegocalota' } as const;
 export const REPLY_SECRET_LENGTH = 32;
 export const REPLY_ADDRESS_DOMAIN = 'todz.app';
 export const MAIL_SENDER_ADDRESS = `noreply@${REPLY_ADDRESS_DOMAIN}`;

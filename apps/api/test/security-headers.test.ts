@@ -92,7 +92,7 @@ describe('the answers of the worker on every host kind', () => {
     ['GET /health on the api host', () => new Request(`${API_ORIGIN}/health`), HttpStatus.Ok, DEFAULT_POLICY],
     ['an unknown path on the site host', () => new Request(`${SITE_ORIGIN}/unknown`), HttpStatus.NotFound, DEFAULT_POLICY],
     ['GET /join', () => joinRequest('GET'), HttpStatus.SeeOther, DEFAULT_POLICY],
-    ['POST /join', () => joinRequest('POST'), HttpStatus.Unavailable, null],
+    ['POST /join', () => joinRequest('POST'), HttpStatus.Gone, DEFAULT_POLICY],
     ['the www host', () => new Request(`${wwwOrigin()}/`, { redirect: 'manual' }), HttpStatus.MovedPermanently, DEFAULT_POLICY],
     ['GET /self-host', () => new Request(`${SITE_ORIGIN}/self-host`, { redirect: 'manual' }), HttpStatus.MovedPermanently, DEFAULT_POLICY],
     [

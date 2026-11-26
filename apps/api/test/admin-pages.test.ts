@@ -1,5 +1,4 @@
 import { describe, expect, test, vi } from 'vitest';
-import { LANDING_COPY } from '../src/site/landing-copy';
 import { ADMIN_COPY } from '../src/site/admin-copy';
 import { serveAdminLinkPage } from '../src/site/admin-link-page';
 import { serveAdminPanel, serveAdminSignInPage } from '../src/site/admin-page';
@@ -255,8 +254,8 @@ describe('the sign-in page', () => {
     expect(form).toMatch(new RegExp(`^<form [^>]*method="post" action="${AdminPath.SignInLinks}"`));
     expect(form).toMatch(new RegExp(`<input [^>]*name="${AdminField.Email}"[^>]*type="email"[^>]* required`));
     expect(form).toContain(`>${ADMIN_COPY.signIn.submit}</button>`);
-    expect(form).toContain(`placeholder="${LANDING_COPY.join.emailPlaceholder}"`);
-    expect(form).toContain(`>${LANDING_COPY.join.emailLabel}</label>`);
+    expect(form).toContain(`placeholder="${ADMIN_COPY.signIn.emailPlaceholder}"`);
+    expect(form).toContain(`>${ADMIN_COPY.signIn.emailLabel}</label>`);
     expect(html).not.toContain('class="join-notice"');
     expect(decoded(mainOf(html))).toContain(ADMIN_COPY.signIn.lead);
   });

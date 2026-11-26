@@ -71,7 +71,7 @@ pnpm --filter @todz/api exec wrangler email sending dns get example.com --zone-i
 
 ## 6. Turnstile
 
-Sign-in, the waitlist and the admin stay closed (`sign_in_unavailable`, "The waitlist opens soon." and "The admin is closed right now.") until Turnstile is set up. In the Cloudflare dashboard, create a Turnstile widget for `example.com` in Managed mode. Put its site key in `vars.TURNSTILE_SITE_KEY` in `apps/api/wrangler.jsonc`, deploy again with `pnpm --filter @todz/api server:deploy`, and store its secret:
+Sign-in and the admin stay closed (`sign_in_unavailable` and "The admin is closed right now.") until Turnstile is set up. In the Cloudflare dashboard, create a Turnstile widget for `example.com` in Managed mode. Put its site key in `vars.TURNSTILE_SITE_KEY` in `apps/api/wrangler.jsonc`, deploy again with `pnpm --filter @todz/api server:deploy`, and store its secret:
 
 ```bash
 pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
@@ -79,13 +79,11 @@ pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
 
 Wrangler asks for the value, which keeps it out of your shell history. Never pipe it in, never export it, and never write it into `wrangler.jsonc`.
 
-The admin at `https://example.com/admin`, where you read and export the waitlist, signs in only the address you store the same way; until you do, it stays closed:
+The admin at `https://example.com/admin`, where you read and export the list of those who joined before the waitlist closed, signs in only the address you store the same way; until you do, it stays closed:
 
 ```bash
 pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
 ```
-
-The same address gets the waitlist digest every day at 11:00 UTC, from the cron in `triggers` in `apps/api/wrangler.jsonc`; without the secret the cron sends nothing and each run fails in the Worker's Cron Events; set `"crons": []` there to turn the digest off.
 
 ## 7. Build the macOS app and point it at your server
 

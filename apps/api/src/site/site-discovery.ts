@@ -94,6 +94,7 @@ const HEAD_LINES = [
   DISCOVERY_COPY.status,
   DISCOVERY_COPY.pricing,
   DISCOVERY_COPY.publisher,
+  DISCOVERY_COPY.source,
   '',
 ];
 
