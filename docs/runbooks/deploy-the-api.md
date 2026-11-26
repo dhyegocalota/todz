@@ -688,3 +688,10 @@ The owner rotates the Keychain token after a run that went wrong, when it may ha
 | 2026-11-26 | c4d3eb9 | 8 | Current Version ID `12c381b9-0e01-4182-9697-797af02025be`; ready line `server 2026.11.26+c4d3eb9 · accepts app 0.2.0 or later` |
 | 2026-11-26 | c4d3eb9 | 14 | Same answers as the 98ed052 run with version `2026.11.26+c4d3eb9` |
 | 2026-11-26 | c4d3eb9 | 18 | This file. `pnpm release:mac` 0.2.0 followed (the releases table of the release runbook): Current Version ID `48062362-9a9d-4034-ad9d-de803d106b9f`; `/download` and `/download/latest` `302` to `/download/0.2.0/Todz-0.2.0.dmg`; the DMG `200` with `attachment` and `immutable`; sum `OK`; signature `Good`; the appcast names 0.2.0, build 2063, with `sparkle:edSignature`; tag `mac-v0.2.0` on c4d3eb94 |
+| 2026-11-26 | 3ecdab2 | 1 | `pnpm verify all` 9 gates green at 3ecdab23 (PR #70, docs only) |
+| 2026-11-26 | 3ecdab2 | 5 | Bookmark `00000073-00000000-0000512f-9d1cecd308e06ea34efbed0bb511750d` |
+| 2026-11-26 | 3ecdab2 | 6 | Exported `before-3ecdab23.sql` into the private folder; deleted after step 14 |
+| 2026-11-26 | 3ecdab2 | 7 | No migrations to apply |
+| 2026-11-26 | 3ecdab2 | 8 | Staged 33 files (0.2.0 kept served); Current Version ID `649dd31c-ff61-4238-97a9-c6f8a6c5b8ac`; ready line `server 2026.11.26+3ecdab2 · accepts app 0.2.0 or later` |
+| 2026-11-26 | 3ecdab2 | 14 | Same answers as the c4d3eb9 run with version `2026.11.26+3ecdab2`; `/download` and `/download/latest` `302` to 0.2.0, the appcast `200` |
+| 2026-11-26 | 3ecdab2 | 18 | This file. `pnpm release:mac` 0.2.1 (the second try, after a missed `generate_keys` prompt) followed: Current Version ID `36e12103-58fe-4870-81f8-8900cab277de`; `/download` and `/download/latest` `302` to `/download/0.2.1/Todz-0.2.1.dmg`; 0.2.0 still `200`; sum `OK`; signature `Good`; the appcast names 0.2.1, build 2069, with `sparkle:edSignature`; tag `mac-v0.2.1` on 3ecdab23 |
