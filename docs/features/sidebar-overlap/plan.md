@@ -23,16 +23,16 @@ G1 (red) → G2 (green) → G3.
 
 ### G1
 
-- [ ] **Step 1:** Red: `sidebar-overlap.test.ts` pins the stack `WorkspaceSwitcher`, `list`, `NewProjectButton` and no `.safeAreaInset(edge: .top)`.
+- [x] **Step 1:** (red, test commit) Red: `sidebar-overlap.test.ts` pins the stack `WorkspaceSwitcher`, `list`, `NewProjectButton` and no `.safeAreaInset(edge: .top)`.
 
 ### G2
 
-- [ ] **Step 2:** `SidebarView` stacks the switcher above the list; the top inset goes; the footer test's pattern follows.
-- [ ] **Step 3:** `pnpm verify`.
+- [x] **Step 2:** (fix commit) `SidebarView` stacks the switcher above the list; the top inset goes; the footer test's pattern follows.
+- [x] **Step 3:** (pnpm verify green) `pnpm verify`.
 
 ### G3
 
-- [ ] **Step 4:** In-process renders (light, dark, top, middle, end, overloaded) attached to the PR.
+- [x] **Step 4:** (renders attached to the PR) In-process renders (light, dark, top, middle, end, overloaded) attached to the PR.
 
 ## Failure modes
 

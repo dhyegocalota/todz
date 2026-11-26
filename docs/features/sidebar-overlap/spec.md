@@ -1,6 +1,6 @@
 # Sidebar overlap
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-26 by inheritance of the owner's words "o nome do workspace tá ficando overlapped com o nome do projeto na lateral do scroll; fix it", product scope of [docs/product/README.md](../../product/README.md)
 **ADRs:** none
