@@ -26,12 +26,14 @@ import {
 } from '@todz/core';
 import { ActorKind, LAST_INDEX } from '@todz/types';
 import { DurableObject } from 'cloudflare:workers';
+import { touchWorkspaceActivity } from './directory-workspaces';
 import type { Env } from './env';
 import { HttpHeader } from './http-header';
 import { HttpStatus } from './http-status';
 import { applyProjectSchema } from './project-schema';
 import { ProjectFailureKind, type ProjectResult, resultOf } from './project-result';
 import { type ActivityCounts, SqliteTaskStore } from './sqlite-task-store';
+import { isActivityWriteDue } from './workspace-activity';
 
 export const CHANGE_PAGE_SIZE = 100;
 const NO_CHANGE_NUMBER = 0;
@@ -74,6 +76,7 @@ function trustedToday(today: string): CalendarDate {
 
 export class ProjectStore extends DurableObject<Env> {
   private readonly store: SqliteTaskStore;
+  private activityWrittenAt: number | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -156,7 +159,21 @@ export class ProjectStore extends DurableObject<Env> {
     const changeNumberBefore = this.store.lastChangeNumber();
     const result = this.run(useCase);
     const hasMovedChangeNumber = result.ok && this.store.lastChangeNumber() !== changeNumberBefore;
-    if (hasMovedChangeNumber) this.ctx.getWebSockets().forEach(sendChanged);
+    if (!hasMovedChangeNumber) return result;
+    this.ctx.getWebSockets().forEach(sendChanged);
+    this.recordActivity();
     return result;
+  }
+
+  private recordActivity(): void {
+    const now = SYSTEM_CLOCK.now();
+    if (!isActivityWriteDue({ writtenAt: this.activityWrittenAt, now })) return;
+    const projectId = this.ctx.id.name;
+    if (projectId === undefined) throw new Error('the project store was opened without its project name');
+    this.activityWrittenAt = now;
+    const write = touchWorkspaceActivity({ directory: this.env.DIRECTORY, projectId, now }).catch(() => {
+      this.activityWrittenAt = null;
+    });
+    this.ctx.waitUntil(write);
   }
 }

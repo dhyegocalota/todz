@@ -65,7 +65,7 @@ describe('workspace last activity', () => {
 
   test('a read does not stamp the workspace', async () => {
     const project = await createOwnedProject();
-    const response = await projectCall({ project, method: 'GET', path: '/tasks' });
+    const response = await projectCall({ project, method: 'GET', path: '/changes?cursor=0' });
     expect(response.status).toBe(HttpStatus.Ok);
     expect(await storedActivity(project)).toBeNull();
   });

@@ -20,7 +20,7 @@ const NAME_TOO_LONG = { error: 'rule_violated', issue: RuleIssue.NameTooLong, in
 const NAME_INVALID = { error: 'rule_violated', issue: RuleIssue.NameInvalid, index: null };
 
 type ProjectBody = { id: string; name: string; is_inbox: boolean; created_at: number };
-type WorkspaceBody = { id: string; name: string; created_at: number; projects: ProjectBody[] };
+type WorkspaceBody = { id: string; name: string; created_at: number; last_activity_at: number | null; projects: ProjectBody[] };
 type CountRow = { total: number };
 type ProjectRow = { name: string; is_inbox: number };
 type WorkspaceRow = { name: string };
@@ -134,6 +134,7 @@ describe('POST /owner/workspaces', () => {
       id: workspace.id,
       name: 'Logic Bit',
       created_at: workspace.created_at,
+      last_activity_at: null,
       projects: [{ id: workspace.projects[0]?.id, name: INBOX_PROJECT_NAME, is_inbox: true, created_at: workspace.created_at }],
     });
     expect(await storedWorkspaceName(workspace.id)).toBe('Logic Bit');
