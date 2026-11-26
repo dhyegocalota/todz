@@ -38,5 +38,6 @@ Process: `.claude/HARNESS.md` §11 (a deploy is public and costs money: the owne
 
 - The skill stops at the first failure: it pastes the failing command, its output and the runbook's `If it fails` line, and goes no further.
 - A failed release or check leaves the previous release live: `pnpm release:mac` rolls the Worker back to the version id it recorded, takes the version out of the release folder and leaves the list of released versions unchanged. The skill never retries a deploy blindly, never edits `~/.todz-release` by hand and never runs a bare `wrangler rollback`.
+- Every Keychain prompt of `pnpm release:mac` (`generate_keys`, `sign_update`, `security`, `codesign`) gets 120 seconds for the owner to answer; a time limit naming one of them is the owner's missing answer, never a reason to loosen the limit.
 - No key, token or Keychain value is printed, copied or passed on a command line: the release goes through `pnpm release:mac` and Cloudflare calls through `scripts/todz-cloudflare.sh` only, and the secrets guard hook refuses the rest.
 - The report says what ran, what each check printed and what is live.

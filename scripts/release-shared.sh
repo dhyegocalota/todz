@@ -4,6 +4,7 @@ readonly TIMEOUT_EXIT_STATUS=142
 readonly INTERRUPT_EXIT_STATUS=130
 readonly TERMINATE_EXIT_STATUS=143
 readonly HANGUP_EXIT_STATUS=129
+readonly KEYCHAIN_PROMPT_SECONDS=120
 
 readonly PERL_BINARY=/usr/bin/perl
 readonly BASE64_BINARY=/usr/bin/base64
