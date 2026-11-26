@@ -67,9 +67,9 @@ extension AppModel {
         failedRevokeIdentifiers.remove(key.identifier)
         let isGoneFromServer = await isRevoked(keyIdentifier: key.identifier, projectIdentifier: projectIdentifier)
         guard keyProjectIdentifier == projectIdentifier else { return }
-        revokingKeyIdentifiers.remove(key.identifier)
+        let isSameVisit = keyScreenIdentifier == visit
+        if isSameVisit { revokingKeyIdentifiers.remove(key.identifier) }
         guard isGoneFromServer else {
-            let isSameVisit = keyScreenIdentifier == visit
             if isSameVisit { failedRevokeIdentifiers.insert(key.identifier) }
             return
         }
