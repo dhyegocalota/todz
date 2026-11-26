@@ -32,6 +32,7 @@
       { "group": "Get started", "pages": ["index", "quickstart", "install-on-mac", "connect-an-agent", "tour"] },
       { "group": "Reference", "pages": ["mcp-tools"] },
       { "group": "Self-host", "pages": ["self-host"] },
+      { "group": "Fair use", "pages": ["fair-use"] },
       { "group": "Privacy", "pages": ["privacy"] }
     ]
   }

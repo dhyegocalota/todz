@@ -20,14 +20,22 @@ const LIMITS = {
 
 type UsageRow = { writes: number; bytes: number };
 
-function reserve({ ownerId, day, writes, bytes }: { ownerId: string; day: string; writes: number; bytes: number }): Promise<WriteRefusal | null> {
+function reserve({
+  ownerId,
+  day,
+  writes,
+  bytes,
+}: {
+  ownerId: string;
+  day: string;
+  writes: number;
+  bytes: number;
+}): Promise<WriteRefusal | null> {
   return reserveOwnerWrites({ directory: env.DIRECTORY, ownerId, day, writes, bytes, limits: LIMITS });
 }
 
 async function usageOf({ ownerId, day }: { ownerId: string; day: string }): Promise<UsageRow | null> {
-  return env.DIRECTORY.prepare('SELECT writes, bytes FROM owner_usage WHERE owner_id = ? AND day = ?')
-    .bind(ownerId, day)
-    .first<UsageRow>();
+  return env.DIRECTORY.prepare('SELECT writes, bytes FROM owner_usage WHERE owner_id = ? AND day = ?').bind(ownerId, day).first<UsageRow>();
 }
 
 describe('the write reservation', () => {
@@ -54,7 +62,9 @@ describe('the write reservation', () => {
   test('concurrent reservations at the last unit accept exactly the units left', async () => {
     const { ownerId } = await signInOwner();
     await reserve({ ownerId, day: DAY, writes: DAILY_WRITES_CAP - 5, bytes: 0 });
-    const outcomes = await Promise.all(Array.from({ length: CONCURRENT_RESERVATIONS }, () => reserve({ ownerId, day: DAY, writes: 1, bytes: 0 })));
+    const outcomes = await Promise.all(
+      Array.from({ length: CONCURRENT_RESERVATIONS }, () => reserve({ ownerId, day: DAY, writes: 1, bytes: 0 })),
+    );
     expect(outcomes.filter((outcome) => outcome === null)).toHaveLength(5);
     expect(await usageOf({ ownerId, day: DAY })).toEqual({ writes: DAILY_WRITES_CAP, bytes: 0 });
   });

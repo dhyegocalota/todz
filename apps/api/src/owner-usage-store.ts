@@ -31,7 +31,9 @@ const DIAGNOSIS = `SELECT owners.suspended_at AS suspended_at,
   (${STORED_BYTES_SUM.replace('?1', 'owners.id')}) AS stored_bytes
 FROM owners WHERE owners.id = ?1`;
 
-const USAGE_SINCE = (ranking: UsageRanking): string => `SELECT usage.owner_id AS owner_id, SUM(usage.writes) AS writes, SUM(usage.bytes) AS bytes,
+const USAGE_SINCE = (
+  ranking: UsageRanking,
+): string => `SELECT usage.owner_id AS owner_id, SUM(usage.writes) AS writes, SUM(usage.bytes) AS bytes,
   owners.suspended_at AS suspended_at,
   (SELECT owner_identities.subject FROM owner_identities WHERE owner_identities.owner_id = usage.owner_id AND owner_identities.provider = ?2) AS email
 FROM owner_usage AS usage JOIN owners ON owners.id = usage.owner_id
@@ -104,7 +106,10 @@ export async function setOwnerSuspension({
 }
 
 export async function findOwnerSuspension({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<boolean> {
-  const row = await directory.prepare('SELECT suspended_at FROM owners WHERE id = ?').bind(ownerId).first<{ suspended_at: number | null }>();
+  const row = await directory
+    .prepare('SELECT suspended_at FROM owners WHERE id = ?')
+    .bind(ownerId)
+    .first<{ suspended_at: number | null }>();
   if (row === null) throw new Error('a session names an owner with no row');
   return row.suspended_at !== null;
 }
@@ -120,10 +125,7 @@ export async function topOwnerUsage({
   ranking: UsageRanking;
   limit: number;
 }): Promise<OwnerUsageRecord[]> {
-  const { results } = await directory
-    .prepare(USAGE_SINCE(ranking))
-    .bind(sinceDay, SignInProviderKind.Email, limit)
-    .all<OwnerUsageRow>();
+  const { results } = await directory.prepare(USAGE_SINCE(ranking)).bind(sinceDay, SignInProviderKind.Email, limit).all<OwnerUsageRow>();
   return results.map((row) => ({
     ownerId: row.owner_id,
     writes: row.writes,

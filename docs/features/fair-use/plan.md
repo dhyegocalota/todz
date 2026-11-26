@@ -80,6 +80,9 @@ No step is without a backout.
 ## Deviations and v1.1
 
 - v1.1 (IMPORTANT or below, not fixed here): the app's `OwnerErrorCode` does not decode `limit_reached`, `account_suspended` or `sign_up_refused`, so the app shows its generic "change not saved" banner. A follow-up in `apps/macos` decodes the codes and shows `message`. Not part of this lane (the owner's brief excludes `apps/macos`).
+- v1.1 (app follow-up, `apps/macos`): decode `limit_reached` (with `limit` and `message`), `account_suspended` and `sign_up_refused` in `OwnerErrorCode`, and show `message` in the banner instead of the generic "change not saved". Not in this lane.
+- v1.1: day-email replies add tasks through the open-task cap but are not counted against the daily write cap; replies are already capped at 20 a day per owner by `REPLY_DAILY_MAX`.
+- v1.1: an MCP write over the open-task cap has no test of its own; the cap is the same Durable Object check the owner API tests exercise.
 - v1.1: the MCP `next` tool and the day email read paths are not quota-checked (reads are never counted).
 - v1.1: the admin Top usage page's screenshots are not recorded in this lane; the page is server-rendered HTML and is covered by `admin-usage.test.ts`.
 - v1.1: stored text overcounts edits (an edit counts its new text); exact accounting needs a byte ledger in the Durable Object.

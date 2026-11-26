@@ -18,6 +18,7 @@ const NAVIGATION_GROUPS = [
   { group: 'Get started', pages: ['index', 'quickstart', 'install-on-mac', 'connect-an-agent', 'tour'] },
   { group: 'Reference', pages: ['mcp-tools'] },
   { group: 'Self-host', pages: ['self-host'] },
+  { group: 'Fair use', pages: ['fair-use'] },
   { group: 'Privacy', pages: ['privacy'] },
 ];
 const NOT_FOUND_TITLE = 'Page not found';
@@ -163,7 +164,7 @@ describe('docs.json', () => {
     expect(configuration.errors?.['404']?.description).toContain(HOME_LINK);
   });
 
-  test('lists the eight pages in their groups, in order', () => {
+  test('lists the pages in their groups, in order', () => {
     expect(configuration.navigation?.groups).toEqual(NAVIGATION_GROUPS);
   });
 });

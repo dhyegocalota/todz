@@ -40,7 +40,7 @@ const HISTORY_COLUMNS = 'at, actor_kind, actor_client, action, fields, note';
 const ADDED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE created_at >= ? AND created_at < ?';
 const OPEN_COUNT_QUERY = 'SELECT open_tasks AS total FROM open_counter';
 const ADJUST_OPEN_COUNT = 'UPDATE open_counter SET open_tasks = open_tasks + ?';
-const COMPLETED_COUNT_QUERY ='SELECT count(*) AS total FROM tasks WHERE completed_at >= ? AND completed_at < ?';
+const COMPLETED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE completed_at >= ? AND completed_at < ?';
 const AGENT_WRITES_QUERY =
   'SELECT actor_client, count(*) AS total FROM task_history WHERE actor_kind = ? AND actor_client IS NOT NULL AND at >= ? AND at < ? GROUP BY actor_client';
 const FIRST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? ORDER BY order_key LIMIT 1';

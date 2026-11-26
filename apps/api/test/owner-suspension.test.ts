@@ -52,7 +52,7 @@ describe('a suspended owner', () => {
     await suspend({ ownerId, suspendedAt: Date.now() });
     const owner = await ownerCall({ method: 'GET', path: '/owner', token });
     expect(owner.status).toBe(OK_STATUS);
-    expect((await owner.json<{ id: string }>()).id).toBe(ownerId);
+    expect((await owner.json<{ owner: { id: string } }>()).owner.id).toBe(ownerId);
   });
 
   test('sign-out still answers, so the owner can leave', async () => {

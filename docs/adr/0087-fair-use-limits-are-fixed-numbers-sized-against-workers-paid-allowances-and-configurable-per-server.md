@@ -15,7 +15,7 @@ The limits, per owner unless noted:
 
 | Limit | Value | Was | Counted as |
 |---|---|---|---|
-| Workspaces | 20 | 20 | live workspaces owned; a workspace that is deleted (see the delete-workspace feature) stops counting |
+| Workspaces | 20 | 20 | workspaces owned; a deleted workspace is hard-deleted, so it is no longer a row and no longer counts |
 | Projects per workspace | 100 | 50 | projects in the workspace |
 | Open tasks per project | 5,000 | none | open tasks; an add or a reopen over the cap is refused |
 | Task title | 500 characters | 200 | code points, as today |
@@ -27,7 +27,7 @@ The limits, per owner unless noted:
 
 Every value is a default. A self-hosted server sets it with a Worker var, named `FAIR_USE_<LIMIT>` (`FAIR_USE_WORKSPACES_MAX`, `FAIR_USE_PROJECTS_PER_WORKSPACE_MAX`, `FAIR_USE_OPEN_TASKS_PER_PROJECT_MAX`, `FAIR_USE_LIVE_KEYS_PER_PROJECT_MAX`, `FAIR_USE_WRITES_PER_DAY_MAX`, `FAIR_USE_STORED_BYTES_MAX`, `FAIR_USE_SIGN_UPS_PER_CLIENT_DAY_MAX`). An unset var keeps the default; a set var that is not a positive whole number stops the Worker with an error instead of falling back. Title and notes sizes stay fixed: they are the text rules the app and the MCP copy both state, so changing them per server would make the copy lie.
 
-The workspace count is taken over live workspaces only. Until the delete-workspace feature adds a deletion marker, every workspace is live and the count is the existing count; that feature's migration changes the count's `WHERE` clause in the same release.
+The workspace count is the number of workspace rows the owner has. The delete-workspace feature deletes rows (hard delete), so the count needs no deleted-row filter. Deleting a workspace or a project is a write: a suspended owner is refused before the handler runs, like every other write.
 
 ### Sizing
 
@@ -54,6 +54,7 @@ Open tasks at 5,000 per project keeps `listTasks`, `nextTask` and the change fee
 
 - `libs/types` holds the defaults and the enum of limits; `apps/api` reads the vars once per request through one function.
 - No existing row is rewritten; an edit to an old note longer than 10 KB is refused until it fits.
+- The open-task cap keeps a one-row counter in each project (schema version 4). An add reads that row once, so the add row budget of ADR 0061's work-count budgets moves from 10 to 11 rows read; the counter is what keeps the cap from reading every open task.
 - The MCP and app copy for these limits is generated from the same constants.
 
 ## Evidence

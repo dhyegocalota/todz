@@ -75,7 +75,15 @@ function serveScope({ request, scope, era }: { request: Request; scope: McpServe
   return createMcpHandler(() => buildMcpServer(scope), HANDLER_OPTIONS_OF_ERA[era]).fetch(request);
 }
 
-function quotaFieldsOf({ env, keyProject, now }: { env: Env; keyProject: KeyProject; now: number }): Pick<McpServerScope, 'limits' | 'refusalTextOf'> {
+function quotaFieldsOf({
+  env,
+  keyProject,
+  now,
+}: {
+  env: Env;
+  keyProject: KeyProject;
+  now: number;
+}): Pick<McpServerScope, 'limits' | 'refusalTextOf'> {
   return {
     limits: fairUseLimitsOf(env),
     refusalTextOf: ({ writes, bytes }) => writeRefusalTextOf({ env, ownerId: keyProject.ownerId, now, writes, bytes }),

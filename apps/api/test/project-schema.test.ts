@@ -14,7 +14,7 @@ const VERSION_TWO_MIGRATIONS = MIGRATIONS.filter(({ version }) => version <= VER
 const VERSION_THREE_INDEXES = ['task_history_task', 'tasks_order', 'tasks_state_order'];
 const READ_ONLY_STATEMENT = /^(SELECT|CREATE TABLE IF NOT EXISTS)/;
 const SCENARIO_CLOCK = { now: () => CLOCK_NOW };
-const TABLES_TO_DROP = ['task_history', 'tasks', 'task_counter', 'change_counter', 'schema_version'];
+const TABLES_TO_DROP = ['task_history', 'tasks', 'task_counter', 'change_counter', 'open_counter', 'schema_version'];
 
 type ColumnRow = { name: string };
 type ChangeRow = { number: number; change_number: number };
@@ -122,8 +122,17 @@ function changeCounterRows(sql: SqlStorage): number[] {
 }
 
 describe('applyProjectSchema', () => {
-  test('the schema version is 3', () => {
+  test('the schema version is 4', () => {
     expect(PROJECT_SCHEMA_VERSION).toBe(LATEST_VERSION);
+  });
+
+  test('an upgraded store counts its open tasks from the first write', async () => {
+    const openCount = await runInDurableObject(newProjectStub(), (_instance, state) => {
+      versionOneStore({ sql: state.storage.sql, taskCount: 2 });
+      applyProjectSchema(state.storage);
+      return new SqliteTaskStore(state.storage.sql).countOpenTasks();
+    });
+    expect(openCount).toBe(2);
   });
 
   test('a new store is at version 3 with a change number column and an empty counter', async () => {
@@ -295,16 +304,15 @@ describe('applyProjectSchema', () => {
     expect(observed.counter).toEqual(observed.before.counter);
   });
 
-  test('every use case answers on a version 3 store exactly as on a version 2 store', async () => {
-    const onVersionTwo = await runInDurableObject(newProjectStub(), (_instance, state) => {
-      versionTwoStore({ storage: state.storage, taskCount: 0 });
-      return scenarioAnswers(new SqliteTaskStore(state.storage.sql));
-    });
-    const onVersionThree = await runInDurableObject(newProjectStub(), (_instance, state) => {
+  test('every use case answers on an upgraded store exactly as on a fresh one', async () => {
+    const onFresh = await runInDurableObject(newProjectStub(), (_instance, state) =>
+      scenarioAnswers(new SqliteTaskStore(state.storage.sql)),
+    );
+    const onUpgraded = await runInDurableObject(newProjectStub(), (_instance, state) => {
       versionTwoStore({ storage: state.storage, taskCount: 0 });
       applyProjectSchema(state.storage);
       return scenarioAnswers(new SqliteTaskStore(state.storage.sql));
     });
-    expect(onVersionThree).toEqual(onVersionTwo);
+    expect(onUpgraded).toEqual(onFresh);
   });
 });

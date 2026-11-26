@@ -443,11 +443,23 @@ describe('SqliteTaskStore change numbers', () => {
     const stub = newProjectStub();
     const lastChangeNumber = () =>
       runInDurableObject(stub, (_instance, state) => new SqliteTaskStore(state.storage.sql).lastChangeNumber());
-    unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [{ ...draftOf('Once'), idempotencyKey: 'run-1' }] }));
+    unwrap(
+      await stub.addTasks({
+        openTasksMax: PROJECT_OPEN_TASKS_MAX,
+        actor: AGENT_ACTOR,
+        drafts: [{ ...draftOf('Once'), idempotencyKey: 'run-1' }],
+      }),
+    );
     expect(await lastChangeNumber()).toBe(1);
-    await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draftOf('  ')] });
+    await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [draftOf('  ')] });
     expect(await lastChangeNumber()).toBe(1);
-    unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [{ ...draftOf('Once'), idempotencyKey: 'run-1' }] }));
+    unwrap(
+      await stub.addTasks({
+        openTasksMax: PROJECT_OPEN_TASKS_MAX,
+        actor: AGENT_ACTOR,
+        drafts: [{ ...draftOf('Once'), idempotencyKey: 'run-1' }],
+      }),
+    );
     expect(await lastChangeNumber()).toBe(1);
   });
 });

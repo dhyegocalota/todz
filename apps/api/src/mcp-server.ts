@@ -152,7 +152,10 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
             bytes: textBytesOf(drafts.flatMap((draft) => [draft.title, draft.notes])),
           });
           if (refusal !== null) return refusal;
-          return resultAnswer({ result: await project.addTasks({ actor, drafts, openTasksMax: limits[FairUseLimit.OpenTasks] }), answer: addedAnswer });
+          return resultAnswer({
+            result: await project.addTasks({ actor, drafts, openTasksMax: limits[FairUseLimit.OpenTasks] }),
+            answer: addedAnswer,
+          });
         },
       }),
   );

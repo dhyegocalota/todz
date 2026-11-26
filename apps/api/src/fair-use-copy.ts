@@ -6,7 +6,8 @@ const LIMIT_MESSAGE_OF: Record<FairUseLimit, (max: number) => string> = {
   [FairUseLimit.OpenTasks]: (max) => `A project holds at most ${max} open tasks. Complete some to add more.`,
   [FairUseLimit.LiveKeys]: (max) => `A project holds at most ${max} agent keys. Revoke one to issue another.`,
   [FairUseLimit.DailyWrites]: (max) => `You have reached the limit of ${max} task changes today. Changes resume at midnight UTC.`,
-  [FairUseLimit.StoredBytes]: (max) => `You have reached the storage limit of ${max / BYTES_PER_MEBIBYTE} MB of task text. Reading still works.`,
+  [FairUseLimit.StoredBytes]: (max) =>
+    `You have reached the storage limit of ${max / BYTES_PER_MEBIBYTE} MB of task text. Reading still works.`,
   [FairUseLimit.DailySignUps]: () => 'Too many new accounts from this network today. Try again tomorrow.',
 };
 

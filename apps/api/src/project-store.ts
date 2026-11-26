@@ -156,7 +156,8 @@ export class ProjectStore extends DurableObject<Env> {
   }
 
   private requireOpenTaskRoom({ incoming, openTasksMax }: { incoming: number; openTasksMax: number }): void {
-    if (this.store.countOpenTasks() + incoming > openTasksMax) throw new LimitViolation({ limit: FairUseLimit.OpenTasks, max: openTasksMax });
+    if (this.store.countOpenTasks() + incoming > openTasksMax)
+      throw new LimitViolation({ limit: FairUseLimit.OpenTasks, max: openTasksMax });
   }
 
   private run<Value>(useCase: () => Value): ProjectResult<Value> {

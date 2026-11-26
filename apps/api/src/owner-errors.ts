@@ -106,7 +106,11 @@ export function failureResponse(failure: ProjectFailure): Response {
   }
   if (failure.kind === ProjectFailureKind.LimitReached) {
     return Response.json(
-      { error: OwnerErrorCode.LimitReached, limit: failure.limit, message: FAIR_USE_COPY.limitMessageOf({ limit: failure.limit, max: failure.max }) },
+      {
+        error: OwnerErrorCode.LimitReached,
+        limit: failure.limit,
+        message: FAIR_USE_COPY.limitMessageOf({ limit: failure.limit, max: failure.max }),
+      },
       { status: STATUS_OF_CODE[OwnerErrorCode.LimitReached] },
     );
   }

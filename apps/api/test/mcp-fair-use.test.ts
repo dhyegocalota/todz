@@ -29,7 +29,9 @@ async function exhaustToday(ownerId: string): Promise<void> {
 describe('fair use over MCP', () => {
   test('a suspended key is refused on every call, reads included', async () => {
     const { projectId, key } = await seedIssuedKey();
-    await env.DIRECTORY.prepare('UPDATE owners SET suspended_at = ? WHERE id = ?').bind(Date.now(), await ownerOfProject(projectId)).run();
+    await env.DIRECTORY.prepare('UPDATE owners SET suspended_at = ? WHERE id = ?')
+      .bind(Date.now(), await ownerOfProject(projectId))
+      .run();
     const response = await exports.default.fetch(
       new Request(`${WORKER_ORIGIN}/mcp`, {
         method: 'POST',
