@@ -1,8 +1,6 @@
 import SwiftUI
 import TodzKit
 
-private let sheetWidth: CGFloat = 320
-
 struct DeleteConfirmSheet: View {
     let kind: DeletionKind
     @Environment(AppModel.self) private var model
@@ -14,36 +12,31 @@ struct DeleteConfirmSheet: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(kind.title)
-                .font(.headline)
+                .font(.title3)
+                .bold()
             Text(kind.message)
+                .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(SheetCopy.typeNamePrompt(name: kind.name))
-            TextField(SheetCopy.nameLabel, text: $typedName)
-                .textFieldStyle(.roundedBorder)
-                .focused($isNameFocused)
-                .disabled(isDeleting)
+            FormField(label: SheetCopy.typeNamePrompt(name: kind.name), prompt: SheetCopy.nameLabel, text: $typedName, issue: nil, isLabelShown: true, isBusy: isDeleting, isFocused: $isNameFocused)
                 .onSubmit(submit)
             if let failure {
-                Text(failure.title)
-                    .foregroundStyle(.red)
+                ValidationLine(text: failure.title, tone: .issue)
             }
             HStack {
                 Spacer()
-                Button(SheetCopy.cancel, role: .cancel) { dismiss() }
+                FormButton(title: SheetCopy.cancel, busyTitle: nil, kind: .cancel, isBusy: false, disabledReason: nil) { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                if isDeleting {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-                if !isDeleting {
-                    Button(SheetCopy.delete, role: .destructive, action: submit)
-                        .disabled(!isConfirmed)
-                }
+                FormButton(title: SheetCopy.delete, busyTitle: SheetCopy.deleting, kind: .destructive, isBusy: isDeleting, disabledReason: mismatchReason, action: submit)
             }
         }
         .padding()
-        .frame(width: sheetWidth)
+        .frame(minWidth: FormMetrics.sheetMinimumWidth)
         .task { isNameFocused = true }
+    }
+
+    private var mismatchReason: String? {
+        guard !isConfirmed else { return nil }
+        return SheetCopy.deleteMismatch
     }
 
     private var isDeleting: Bool {
