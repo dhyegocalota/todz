@@ -36,9 +36,6 @@ const PRODUCTION_ORIGIN = `https://${PRODUCTION_HOST}`;
 const RATE_LIMIT_NAMESPACE_ID = '8601';
 const ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8602';
 const GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8603';
-const WAITLIST_RATE_LIMIT_NAMESPACE_ID = '8604';
-const WAITLIST_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8605';
-const WAITLIST_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8606';
 const ADMIN_RATE_LIMIT_NAMESPACE_ID = '8607';
 const ADMIN_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8608';
 const ADMIN_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8609';
@@ -211,7 +208,7 @@ describe('the api source', () => {
     expect(wranglerConfiguration().observability).toEqual(PRODUCTION_OBSERVABILITY);
   });
 
-  test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally, a reply per owner, and signed-in owners and keys, with the shared limits', () => {
+  test('the wrangler configuration limits sign-in and the admin per client, per address and globally, a reply per owner, and signed-in owners and keys, with the shared limits', () => {
     expect(wranglerConfiguration().ratelimits).toEqual([
       {
         name: 'SIGN_IN_LIMITER',
@@ -227,21 +224,6 @@ describe('the api source', () => {
         name: 'SIGN_IN_GLOBAL_LIMITER',
         namespace_id: GLOBAL_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('SIGN_IN_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
-      },
-      {
-        name: 'WAITLIST_LIMITER',
-        namespace_id: WAITLIST_RATE_LIMIT_NAMESPACE_ID,
-        simple: { limit: sharedLimit('WAITLIST_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
-      },
-      {
-        name: 'WAITLIST_ADDRESS_LIMITER',
-        namespace_id: WAITLIST_ADDRESS_RATE_LIMIT_NAMESPACE_ID,
-        simple: { limit: sharedLimit('WAITLIST_ADDRESS_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
-      },
-      {
-        name: 'WAITLIST_GLOBAL_LIMITER',
-        namespace_id: WAITLIST_GLOBAL_RATE_LIMIT_NAMESPACE_ID,
-        simple: { limit: sharedLimit('WAITLIST_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
       {
         name: 'ADMIN_LIMITER',
