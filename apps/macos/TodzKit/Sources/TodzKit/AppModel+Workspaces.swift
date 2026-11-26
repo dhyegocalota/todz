@@ -117,9 +117,18 @@ extension AppModel {
         }
         guard isDeleted != nil else { return }
         workspaces = workspaces.filter { $0.identifier != identifier }
+        keepOwner()
         await reloadWorkspacesQuietly()
-        guard wasShown, phase == .choosing, let first = workspaces.first else { return }
-        await chooseWorkspace(identifier: first.identifier)
+        let isShownWorkspaceMissing = wasShown && activeWorkspace == nil
+        guard isShownWorkspaceMissing else { return }
+        guard let first = workspaces.first else {
+            forgetActiveWorkspace()
+            phase = .naming
+            return
+        }
+        phase = .ready
+        guard let selectionToShow else { return await show(.chosen([first.identifier])) }
+        await show(selectionToShow)
     }
 
     public func deleteProject(projectIdentifier: String) async {
@@ -131,6 +140,7 @@ extension AppModel {
         workspaces.forEach { workspace in
             replaceProjects(workspaceIdentifier: workspace.identifier) { projects in projects.filter { $0.identifier != projectIdentifier } }
         }
+        followActiveProjects()
         await reloadWorkspacesQuietly()
     }
 
