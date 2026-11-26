@@ -65,7 +65,7 @@ desktop
   │          The app is the same either way, and updates itself.      │
   │                              ───                                  │
   │      Built by a developer, for developers and AI tinkerers.       │
-  │                           — Dhyego                                │
+  │                           — Dhyego Calota                                │
   └───────────────────────────────────────────────────────────────────┘
 390 px
   ┌ wallpaper ─────────────────┐
@@ -86,7 +86,7 @@ desktop
   │            ───             │
   │  Built by a developer, for │
   │ developers and AI tinkerers│
-  │          — Dhyego          │
+  │          — Dhyego Calota          │
   └────────────────────────────┘
 ```
 
@@ -98,11 +98,11 @@ desktop
 
 ## The maker's signature (all options)
 
-- Copy, ready for `LANDING_COPY.signature`: `line` "Built by a developer, for developers and AI tinkerers." and `name` "Dhyego", with the em dash as fixed markup before the link. The link goes to the owner's GitHub profile, `https://github.com/dhyegocalota`, as a constant beside `REPOSITORY`, `rel="noopener"`. It makes no claim beyond who made todz and for whom.
+- Copy, ready for `LANDING_COPY.signature`: `line` "Built by a developer, for developers and AI tinkerers." and `name` "Dhyego Calota", with the em dash as fixed markup before the link. The link goes to the owner's GitHub profile, `https://github.com/dhyegocalota`, as a constant beside `REPOSITORY`, `rel="noopener"`. It makes no claim beyond who made todz and for whom.
 - Placement: it closes the final panel, below the note, like a sign-off at the end of a letter. It is the last thing read before the footer, and it sits on the warmest surface on the page. The footer keeps the Logic Bit credit as the company line. Putting the signature there too would make it read as legal small print, not as a note from a person.
 - Look: a 32 px `--color-hairline` rule, `--space-6` above it. The line in `--font-rounded`, `--text-body`, `--color-text-muted`. The name in `--font-rounded`, weight 600, `--color-text`, no underline until hover (`text-underline-offset:0.2em`, like `.footer-credit-link`). It needs no new token and no avatar: an external image would widen the CSP.
 - Motion: none of its own; it arrives with the panel's `.reveal`.
-- Accessibility: a `<p>`, then a link whose name is "Dhyego". Muted text on the wallpaper meets 4.5:1 in both schemes, as `.final-body` does today.
+- Accessibility: a `<p>`, then a link whose name is "Dhyego Calota". Muted text on the wallpaper meets 4.5:1 in both schemes, as `.final-body` does today.
 - In A and C the final panel stays as it is on the branch, and the signature closes it the same way, under the Download button.
 
 ## Option C: hero only, no section
@@ -133,7 +133,7 @@ desktop                                        390 px
 2. Hero: eyebrow pill · title · lead · "Free on todz cloud — or run your own." (link to #ways) · [Download for Mac] (Free) · star pill · notarization note · desk stage
 3. Benefits: three glass cards (agents over MCP, menu bar and widgets, offline sync)
 4. How it works: steps and the Claude Code terminal
-5. Final panel `#ways`: icon · "Get todz on your Mac." · todz cloud | Self-host tiles · note · signature "Built by a developer, for developers and AI tinkerers. — Dhyego"
+5. Final panel `#ways`: icon · "Get todz on your Mac." · todz cloud | Self-host tiles · note · signature "Built by a developer, for developers and AI tinkerers. — Dhyego Calota"
 6. Footer: brand · © · credit · star pill · License · Contributing · Self-host guide · Install on Mac
 
 ## Owner decisions

@@ -67,6 +67,11 @@ export const DISCOVERY_COPY = {
     setupsLink: 'Codex and Cursor setups',
   },
   tools: { heading: 'MCP tools', parametersHeading: 'MCP tool parameters' },
+  selfHost: {
+    heading: 'Self-host',
+    linkText: 'Server setup',
+    note: 'run your own todz server on Cloudflare, then paste its URL in todz › Settings › Server.',
+  },
   docs: { heading: 'Docs' },
   docsMcp: {
     heading: 'Docs MCP',

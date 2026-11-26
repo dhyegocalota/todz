@@ -6,6 +6,7 @@ import { type DiscoveryFile, NO_HEADERS, OPEN_READ_HEADERS } from './discovery-r
 import { LANDING_COPY } from './landing-copy';
 import { LANDING_MARKDOWN_FILE } from './landing-markdown';
 import { fenced, linesOf } from './markdown-lines';
+import { DOCS_SELF_HOST_URL } from './self-host-redirect';
 import { DARK_THEME_COLOR, KEY_PLACEHOLDER } from './site-constants';
 import { SITE_ICONS, SiteIcon } from './site-icons';
 import { DOCS_MCP_URL, DOCS_URL, DiscoveryPath, MCP_URL, SERVER_CARD_PATH, SITE_URL } from './site-urls';
@@ -145,6 +146,13 @@ const PARAMETER_LINES = [
   '',
 ];
 
+const SELF_HOST_LINES = [
+  `## ${DISCOVERY_COPY.selfHost.heading}`,
+  '',
+  `- [${DISCOVERY_COPY.selfHost.linkText}](${DOCS_SELF_HOST_URL}): ${DISCOVERY_COPY.selfHost.note}`,
+  '',
+];
+
 const DOCS_LINES = [
   `## ${DISCOVERY_COPY.docs.heading}`,
   '',
@@ -166,7 +174,15 @@ const OPTIONAL_LINES = [
   `- [${DISCOVERY_COPY.optional.fullLink}](${SITE_URL}${DiscoveryPath.LlmsFull}): ${DISCOVERY_COPY.optional.fullNote}`,
 ];
 
-const LLMS_TEXT = linesOf([...HEAD_LINES, ...CONNECT_LINES, ...TOOL_LINES, ...DOCS_LINES, ...DOCS_MCP_LINES, ...OPTIONAL_LINES]);
+const LLMS_TEXT = linesOf([
+  ...HEAD_LINES,
+  ...CONNECT_LINES,
+  ...TOOL_LINES,
+  ...SELF_HOST_LINES,
+  ...DOCS_LINES,
+  ...DOCS_MCP_LINES,
+  ...OPTIONAL_LINES,
+]);
 
 const LLMS_FULL_TEXT = linesOf([
   ...HEAD_LINES,
@@ -174,6 +190,7 @@ const LLMS_FULL_TEXT = linesOf([
   ...SETUP_LINES,
   ...TOOL_LINES,
   ...PARAMETER_LINES,
+  ...SELF_HOST_LINES,
   ...DOCS_LINES,
   ...DOCS_MCP_LINES,
   ...OPTIONAL_LINES,

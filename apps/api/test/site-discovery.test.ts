@@ -32,7 +32,7 @@ const HEADING_PATTERN = /^## .+$/;
 const LINK_LINE_PATTERN = /^- \[[^\]]+\]\(https:\/\/[^)]+\)(: .+)?$/;
 const TOOL_LINE_PATTERN = /^- `(next|add|list|update|done)`: .+$/;
 const LINK_URL_PATTERN = /\]\((https:\/\/[^)]+)\)/;
-const SECTIONS = ['## Connect an agent', '## MCP tools', '## Docs', '## Docs MCP', '## Optional'];
+const SECTIONS = ['## Connect an agent', '## MCP tools', '## Self-host', '## Docs', '## Docs MCP', '## Optional'];
 const FACTS = [
   'is out for macOS 14 or later',
   'not yet notarized by Apple',
@@ -214,7 +214,7 @@ describe('llms.txt', () => {
     expect(await bodyOf(DiscoveryPath.Llms)).not.toContain('is a download');
   });
 
-  test('holds the five sections in order', async () => {
+  test('holds the six sections in order', async () => {
     const body = await bodyOf(DiscoveryPath.Llms);
     expect(body.split('\n').filter((line) => HEADING_PATTERN.test(line))).toEqual(SECTIONS);
   });
@@ -231,6 +231,13 @@ describe('llms.txt', () => {
     expect(sectionOf({ body, heading: '## MCP tools' }).filter((line) => line.startsWith('- '))).toEqual(
       Object.values(McpToolName).map((name) => `- \`${name}\`: ${MCP_COPY.tools[name]}`),
     );
+  });
+
+  test('holds a Self-host section linking the server setup guide on docs.todz.app', async () => {
+    const body = await bodyOf(DiscoveryPath.Llms);
+    expect(sectionOf({ body, heading: '## Self-host' }).filter((line) => line.startsWith('- '))).toEqual([
+      '- [Server setup](https://docs.todz.app/self-host): run your own todz server on Cloudflare, then paste its URL in todz › Settings › Server.',
+    ]);
   });
 
   test('links every docs page, the self-host guide on docs.todz.app included, and never todz.app/self-host', async () => {

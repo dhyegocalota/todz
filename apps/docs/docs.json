@@ -53,7 +53,7 @@
         ]
       },
       { "group": "Reference", "pages": ["mcp-tools", "releases"] },
-      { "group": "Run your own", "pages": ["self-host"] }
+      { "group": "Self-host", "pages": ["self-host"] }
     ]
   }
 }
