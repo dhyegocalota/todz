@@ -1,3 +1,4 @@
+import { REPOSITORY } from '@todz/types';
 import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
 import { HttpMethod } from '../http-method';
@@ -6,7 +7,9 @@ import { noRouteResponse } from '../owner-errors';
 import { ADMIN_ROUTES } from './admin-routes';
 import { discoveryResponse } from './discovery-response';
 import { serveLandingPage } from './landing-page';
+import { repositoryStarsOf } from './repository-stars';
 import { SELF_HOST_PATH, redirectToDocs } from './self-host-redirect';
+import { REPOSITORY_API_URL, REPOSITORY_STARS_CACHE_NAME } from './site-constants';
 import { DISCOVERY_FILES } from './site-discovery';
 import { JOIN_PATH, LANDING_PATH } from './site-shell';
 import { serveWaitlistClosed } from './waitlist-closed';
@@ -17,6 +20,20 @@ export type SiteRoute = (context: SiteContext) => Promise<Response> | Response;
 
 function routeKey({ method, pathname }: { method: string; pathname: string }): string {
   return `${method} ${pathname}`;
+}
+
+function repositoryApiUrlOf({ REPOSITORY_API_ORIGIN: apiOrigin }: Env): string {
+  if (apiOrigin === undefined) return REPOSITORY_API_URL;
+  return `${apiOrigin}/repos/${REPOSITORY.path}`;
+}
+
+async function serveLanding({ env }: SiteContext): Promise<Response> {
+  const stars = await repositoryStarsOf({
+    fetchImplementation: fetch,
+    cache: await caches.open(REPOSITORY_STARS_CACHE_NAME),
+    apiUrl: repositoryApiUrlOf(env),
+  });
+  return serveLandingPage({ stars });
 }
 
 function redirectToLanding(): Response {
@@ -39,8 +56,8 @@ const DISCOVERY_ROUTE_OF_REQUEST: Record<string, SiteRoute> = Object.fromEntries
 const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
   ...ADMIN_ROUTE_OF_REQUEST,
   ...DISCOVERY_ROUTE_OF_REQUEST,
-  [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: () => serveLandingPage({ stars: null }),
-  [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: () => serveLandingPage({ stars: null }),
+  [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: serveLanding,
+  [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: serveLanding,
   [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: redirectToDocs,
   [routeKey({ method: HttpMethod.Head, pathname: SELF_HOST_PATH })]: redirectToDocs,
   [routeKey({ method: HttpMethod.Post, pathname: JOIN_PATH })]: serveWaitlistClosed,

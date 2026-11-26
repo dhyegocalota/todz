@@ -1,3 +1,4 @@
+import { REPOSITORY } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
 import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
@@ -6,6 +7,8 @@ import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
 import { LANDING_STRUCTURED_DATA } from './site-json-ld';
 import { CONTENT_ID, LANDING_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE, cropClassOf } from './site-style';
+import { STAR_COUNT_SCRIPT } from './star-count-script';
+import { starPillHtml } from './star-pill';
 import { DOCS_INSTALL_URL, DOWNLOAD_PATH } from './site-urls';
 import { WEBMCP_SCRIPT } from './webmcp-script';
 
@@ -13,7 +16,7 @@ const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const SRCSET_LIST_SEPARATOR = ', ';
 const WORD_SEPARATOR = ' ';
 
-const PAGE_SCRIPTS = [WEBMCP_SCRIPT];
+const PAGE_SCRIPTS = [STAR_COUNT_SCRIPT, WEBMCP_SCRIPT];
 
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
@@ -39,22 +42,27 @@ function windowPicture(): string {
   return `<picture><source media="${DARK_SCHEME_MEDIA}" ${webpSourceAttributes(LandingShot.WindowDark)} width="${width}" height="${height}">${shotImage({ shot: LandingShot.Window, alt: LANDING_COPY.alt.window })}</picture>`;
 }
 
-function downloadHtml(): string {
+function downloadHtml(stars: number | null): string {
   const { button, note, noteLink } = LANDING_COPY.download;
-  return `<div class="download rise delay-3">
+  const { line } = LANDING_COPY.openSource;
+  return `<div class="download hero-actions rise delay-3">
+<div class="hero-buttons">
 <a class="download-button" href="${DOWNLOAD_PATH}" download>${escapedHtml(button)}</a>
+${starPillHtml(stars)}
+</div>
 <p class="download-note">${escapedHtml(note)} <a class="download-note-link" href="${DOCS_INSTALL_URL}">${escapedHtml(noteLink)}</a></p>
+<p class="open-source-line"><a class="open-source-link" href="${REPOSITORY.url}" rel="noopener">${escapedHtml(line)}</a></p>
 </div>
 `;
 }
 
-function heroHtml(): string {
+function heroHtml(stars: number | null): string {
   return `<section class="hero page-width" aria-labelledby="hero-title">
 <div class="hero-copy">
 <p class="eyebrow-pill glass rise"><span class="eyebrow-dot" aria-hidden="true"></span>${escapedHtml(LANDING_COPY.hero.eyebrow)}</p>
 <h1 id="hero-title" class="hero-title rise delay-1">${escapedHtml(LANDING_COPY.hero.title)}</h1>
 <p class="hero-lead rise delay-2">${escapedHtml(LANDING_COPY.hero.lead)}</p>
-${downloadHtml()}</div>
+${downloadHtml(stars)}</div>
 <figure class="desk-stage arrive delay-3">
 <figcaption class="visually-hidden">${escapedHtml(LANDING_COPY.stage.label)}</figcaption>
 <div class="menu-strip" aria-hidden="true"><span class="menu-strip-item">${MENU_BAR_GLYPH}<span>${escapedHtml(LANDING_COPY.stage.menuCount)}</span></span></div>
@@ -120,21 +128,24 @@ ${glyphHtml({ glyph: SiteGlyph.Icon, className: 'final-icon' })}
 </section>`;
 }
 
-const LANDING_HTML = siteDocumentHtml({
-  kind: SitePageKind.Public,
-  path: LANDING_PATH,
-  structuredData: LANDING_STRUCTURED_DATA,
-  title: LANDING_COPY.meta.title,
-  description: LANDING_COPY.meta.description,
-  main: `<main id="${CONTENT_ID}">
-${heroHtml()}
+function landingHtml(stars: number | null): string {
+  return siteDocumentHtml({
+    kind: SitePageKind.Public,
+    path: LANDING_PATH,
+    structuredData: LANDING_STRUCTURED_DATA,
+    stars,
+    title: LANDING_COPY.meta.title,
+    description: LANDING_COPY.meta.description,
+    main: `<main id="${CONTENT_ID}">
+${heroHtml(stars)}
 ${benefitsHtml()}
 ${howItWorksHtml()}
 ${finalCallHtml()}
 </main>`,
-  scripts: PAGE_SCRIPTS,
-});
+    scripts: PAGE_SCRIPTS,
+  });
+}
 
-export function serveLandingPage(_options: { stars: number | null }): Response {
-  return sitePageResponse({ html: LANDING_HTML, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+export function serveLandingPage({ stars }: { stars: number | null }): Response {
+  return sitePageResponse({ html: landingHtml(stars), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
 }

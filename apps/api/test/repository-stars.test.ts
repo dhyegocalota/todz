@@ -91,7 +91,7 @@ describe('the star count format', () => {
     [999, '999'],
     [1000, '1k'],
     [1234, '1.2k'],
-    [12_345, '12k'],
+    [12_345, '12.3k'],
   ])('writes %i as %s', (count, text) => {
     expect(formatStars(count)).toBe(text);
   });

@@ -1,5 +1,5 @@
 import { exports } from 'cloudflare:workers';
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { serveLandingPage } from '../src/site/landing-page';
@@ -256,7 +256,12 @@ describe('the landing', () => {
 });
 
 describe('the site host through the Worker', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   test.each(['GET', 'HEAD'])('%s / answers the page this module renders, with its headers', async (method) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({ stargazers_count: STARS }));
     const response = await exports.default.fetch(`${LOCAL_SITE_ORIGIN}/`, { method });
     const expected = await landingPage();
     expect(response.status).toBe(OK_STATUS);

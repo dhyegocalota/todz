@@ -1,4 +1,4 @@
-import { COMPANY } from '@todz/types';
+import { COMPANY, REPOSITORY } from '@todz/types';
 import { LANDING_COPY } from './landing-copy';
 import { scriptJson } from './site-constants';
 import { OPEN_GRAPH_IMAGE } from './site-icons';
@@ -54,6 +54,8 @@ const APPLICATION = {
   applicationCategory: APPLICATION_CATEGORY,
   applicationSubCategory: APPLICATION_SUB_CATEGORY,
   publisher: PUBLISHER,
+  codeRepository: REPOSITORY.url,
+  license: REPOSITORY.licenseSpdxUrl,
   offers: {
     '@type': SchemaType.Offer,
     price: FREE_PRICE,

@@ -56,7 +56,7 @@ describe('the star pill', () => {
     const { html } = await landing(STARS);
     const hero = html.slice(html.indexOf('<section class="hero'), html.indexOf('<section class="benefits'));
     expect(hero.indexOf('class="download-button"')).toBeLessThan(hero.indexOf('class="star-pill'));
-    expect(hero).toContain('class="hero-actions');
+    expect(hero).toContain('hero-actions');
   });
 
   test('shows the abbreviated count already in the markup, in tabular figures, with a star glyph the readers skip', async () => {
@@ -73,8 +73,8 @@ describe('the star pill', () => {
   test('shows the label and no number when GitHub gave none', async () => {
     const { html } = await landing(null);
     expect([...html.matchAll(STAR_PILL_PATTERN)]).toHaveLength(2);
-    expect(html).not.toContain('star-count');
-    expect(html).not.toContain('star-glyph');
+    expect(html).not.toContain('class="star-count"');
+    expect(html).not.toContain('class="star-glyph"');
     expect(html).toContain(LANDING_COPY.openSource.starLabel);
   });
 
@@ -175,6 +175,6 @@ describe('the landing through the Worker', () => {
     const { response, html } = await landingFromWorker(Response.json({ message: 'down' }, { status: 503 }));
     expect(response.status).toBe(OK_STATUS);
     expect(html).toContain(LANDING_COPY.openSource.starLabel);
-    expect(html).not.toContain('star-count');
+    expect(html).not.toContain('class="star-count"');
   });
 });

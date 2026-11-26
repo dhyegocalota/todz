@@ -1,9 +1,12 @@
 import Foundation
 
 public enum RepositoryAddress {
-    public static let text = ""
+    public static let text = "https://github.com/dhyegocalota/todz"
 
     public static var url: URL {
-        fatalError("RepositoryAddress.url is not implemented")
+        guard let address = URL(string: text) else {
+            preconditionFailure("\(text) is not a URL")
+        }
+        return address
     }
 }

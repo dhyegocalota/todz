@@ -9,6 +9,7 @@
 <p align="center">
 
 [![license](https://img.shields.io/github/license/dhyegocalota/todz)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/dhyegocalota/todz?style=flat)](https://github.com/dhyegocalota/todz)
 [![docs](https://img.shields.io/badge/docs-docs.todz.app-blue)](https://docs.todz.app)
 [![download](https://img.shields.io/badge/download-macOS-black)](https://todz.app/download)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-blue)](.github/CONTRIBUTING.md)

@@ -17,6 +17,7 @@ struct AppCommands: Commands {
                 Button(UpdateCopy.checkForUpdates) { updater.checkForUpdates() }
                     .disabled(!updater.canCheckForUpdates)
             }
+            StarRepositoryButton()
             Divider()
             Button(MainWindowCopy.signOut) { windowState.requestSignOut(model: model) }
                 .disabled(!model.isSignedIn)
