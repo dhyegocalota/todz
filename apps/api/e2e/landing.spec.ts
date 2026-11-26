@@ -270,9 +270,9 @@ test.describe('keyboard', () => {
 });
 
 test.describe('keyboard in the footer', () => {
-  test('shift-tab from the guide link reaches the credit link with a visible focus ring', async ({ page }) => {
+  test('shift-tab from the footer star pill reaches the credit link with a visible focus ring', async ({ page }) => {
     await page.goto(SitePath.Landing);
-    await page.locator(FOOTER_GUIDE_LINK).focus();
+    await page.locator('.site-footer .star-pill').focus();
     await page.keyboard.press('Shift+Tab');
     await expect(page.locator(CREDIT_LINK)).toBeFocused();
     expect(await hasFocusRing(page.locator(CREDIT_LINK))).toBe(true);
