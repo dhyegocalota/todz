@@ -8,7 +8,7 @@
 
 <p align="center">
 
-[![license](https://img.shields.io/github/license/dhyegocalota/todz)](LICENSE)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 [![docs](https://img.shields.io/badge/docs-docs.todz.app-blue)](https://docs.todz.app)
 [![download](https://img.shields.io/badge/download-macOS-black)](https://todz.app/download)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-blue)](.github/CONTRIBUTING.md)

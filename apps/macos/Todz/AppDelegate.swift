@@ -50,6 +50,10 @@ private let cacheFolderName = "Cache"
         openPopover: { [panel] in await panel.open() },
         closePopover: { [panel] in panel.close() }
     )
+    private(set) lazy var workspaceShortcuts = WorkspaceShortcutController(
+        model: model,
+        preference: WorkspaceShortcutsPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
+    )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
     private(set) lazy var dayTemperatureClock = DayTemperatureClock(
         now: Date.init,
@@ -82,6 +86,7 @@ private let cacheFolderName = "Cache"
     func applicationDidFinishLaunching(_ notification: Notification) {
         PerfProbe.shared?.start(model: model)
         decideLaunchSurfaceStart(notification)
+        workspaceShortcuts.start()
         observeWidgetRequests()
         observeDayChanges()
         startUsageSharing()
@@ -131,6 +136,7 @@ private let cacheFolderName = "Cache"
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        workspaceShortcuts.stop()
         model.flushCache()
     }
 
