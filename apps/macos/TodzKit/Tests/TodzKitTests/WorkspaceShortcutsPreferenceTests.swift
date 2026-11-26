@@ -60,6 +60,16 @@ private let controlOption: ChordModifiers = [.control, .option]
         #expect(chords.chord(for: .number(1)) == GlobalWorkspaceChords().chord(for: .number(1)))
     }
 
+    @Test func aStoredOverrideThatCollidesWithAnotherWorkspaceDefaultIsDropped() throws {
+        let domain = try EmptyDomain()
+        let collidingChord = try #require(WorkspaceAction.number(2).globalDefaultChord)
+        let stored = try JSONEncoder().encode([WorkspaceAction.number(1).storageName: collidingChord])
+        domain.defaults.set(stored, forKey: WorkspaceShortcutsPreference.bindingsStorageKey)
+        let chords = WorkspaceShortcutsPreference(defaults: domain.defaults, domainName: domain.name).globalChords
+        #expect(chords.chord(for: .number(1)) == WorkspaceAction.number(1).globalDefaultChord)
+        #expect(chords.overrides.isEmpty)
+    }
+
     @Test func aStoredOverrideForPreviousIsDropped() throws {
         let domain = try EmptyDomain()
         let chord = KeyChord(keyCode: 0, key: "a", modifiers: controlOption)
