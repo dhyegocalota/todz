@@ -7,7 +7,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         harness.seedWorkspace(name: "side")
-        await harness.signedIn()
+        await harness.signedInChoosing()
         #expect(harness.model.phase == .choosing)
         #expect(harness.model.activeWorkspace == nil)
         #expect(harness.model.workspaces.map(\.identifier) == ["acme", "side"])
@@ -52,7 +52,7 @@ extension AppModelTests {
         harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "side", projectNames: ["garden"])
         harness.seedTasks(projectIdentifier: "side-garden", count: 1)
-        await harness.signedIn()
+        await harness.signedInChoosing()
         await harness.model.chooseWorkspace(identifier: side.identifier)
         let pulls = side.projects.map { FakeCall.readChanges(session: harness.session, projectIdentifier: $0.identifier, cursor: 0) }
         #expect(harness.model.phase == .ready)
@@ -65,7 +65,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         harness.seedWorkspace(name: "side")
-        await harness.signedIn()
+        await harness.signedInChoosing()
         await harness.model.chooseWorkspace(identifier: "unknown")
         #expect(harness.model.phase == .choosing)
         #expect(harness.model.activeWorkspace == nil)
@@ -95,7 +95,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         harness.seedWorkspace(name: "side")
-        await harness.signedIn()
+        await harness.signedInChoosing()
         #expect(harness.model.widgetSnapshot == .absent)
     }
 }

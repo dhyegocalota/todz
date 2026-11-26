@@ -11,6 +11,7 @@ extension AppModelTests {
         harness.seedWorkspace(name: "acme", projectNames: ["launch"])
         harness.seedWorkspace(name: "side")
         harness.seedTasks(projectIdentifier: inboxIdentifier, count: 2)
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         harness.store.calls = []
         return harness

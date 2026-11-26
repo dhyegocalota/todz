@@ -186,6 +186,14 @@ final class HarnessClock {
     }
 
     func signedIn() async {
+        let hasSeveralWorkspaces = service.workspaces.count > 1
+        if hasSeveralWorkspaces, store.owner?.activeWorkspaceIdentifier == nil, let first = service.workspaces.first {
+            rememberWorkspace(identifier: first.identifier)
+        }
+        await signedInChoosing()
+    }
+
+    func signedInChoosing() async {
         vault.secret = session
         await model.launch()
         service.calls = []

@@ -14,6 +14,7 @@ private let inboxTask = TaskKey(projectIdentifier: inboxIdentifier, number: 1)
     harness.seedWorkspace(name: "side")
     harness.seedTasks(projectIdentifier: inboxIdentifier, count: 1)
     harness.service.keysOfProject[launchIdentifier] = [launchKey]
+    harness.rememberWorkspace(identifier: "acme")
     await harness.signedIn()
     return harness
 }
