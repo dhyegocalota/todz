@@ -13,6 +13,7 @@ extension AppModel {
     }
 
     public func switchWorkspace(identifier: String) async {
+        guard phase == .ready else { return }
         guard identifier != activeWorkspaceIdentifier else { return }
         guard let workspace = workspaces.first(where: { $0.identifier == identifier }) else { return }
         await activate(workspace)
@@ -105,6 +106,7 @@ extension AppModel {
         keepOwner()
         startSending()
         guard let workspace = preferredWorkspace else {
+            forgetActiveWorkspace()
             phase = workspaces.isEmpty ? .naming : .choosing
             return
         }

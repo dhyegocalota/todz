@@ -3,6 +3,6 @@ enum WorkspacePickerCopy {
     static let body = "Pick the workspace to open on this Mac. You can switch later from the Workspace menu."
 
     static func projectCount(count: Int) -> String {
-        InflectedCopy.text("\(count) projects")
+        InflectedCopy.text("^[\(count) project](inflect: true)")
     }
 }

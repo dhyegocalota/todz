@@ -4,6 +4,7 @@ import TodzKit
 enum ShortcutRefusal: Error, CustomLocalizedStringResourceConvertible {
     case signedOut
     case noWorkspace
+    case choosing
     case loading
     case taskGone
     case noMatch(text: String, workspaceName: String)
@@ -15,6 +16,7 @@ enum ShortcutRefusal: Error, CustomLocalizedStringResourceConvertible {
         case .ready: return nil
         case .signedOut: self = .signedOut
         case .noWorkspace: self = .noWorkspace
+        case .choosing: self = .choosing
         case .loading: self = .loading
         }
     }
@@ -27,6 +29,7 @@ enum ShortcutRefusal: Error, CustomLocalizedStringResourceConvertible {
         switch self {
         case .signedOut: ShortcutsCopy.signedOut
         case .noWorkspace: ShortcutsCopy.noWorkspace
+        case .choosing: ShortcutsCopy.choosing
         case .loading: ShortcutsCopy.loading
         case .taskGone: ShortcutsCopy.taskGone
         case let .noMatch(text, workspaceName): ShortcutsCopy.noMatch(text: text, workspaceName: workspaceName)

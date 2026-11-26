@@ -83,7 +83,8 @@ extension AppModel {
     private var currentShortcutReadiness: ShortcutReadiness {
         switch phase {
         case .signedOut: .signedOut
-        case .naming, .choosing: .noWorkspace
+        case .naming: .noWorkspace
+        case .choosing: .choosing
         case .loading: .loading
         case .ready: isActiveTodayKnown ? .ready : .loading
         }
