@@ -107,3 +107,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0086](0086-an-owner-route-checks-the-credential-before-the-app-version.md) | An owner route checks the credential before the app version | Accepted | 2026-11-26 |
 | [0091](0091-global-workspace-hot-keys-are-off-by-default-and-take-control-option-command-digits-and-yield-to-a-chord-another-app-holds.md) | Global workspace hot keys are off by default and take ⌃⌥⌘1…9, and a chord another app holds shows as in use | Accepted | 2026-11-26 |
 | [0095](0095-the-committed-dmg-layout-carries-the-whole-icon-view-record-finder-writes-or-finder-drops-it.md) | The committed DMG layout carries the whole icon view record Finder writes, or Finder drops it | Accepted | 2026-11-26 |
+| [0096](0096-the-final-panel-glows-mint-through-a-glow-mint-token.md) | The final panel glows mint through a `--glow-mint` token | Accepted | 2026-11-26 |
