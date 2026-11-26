@@ -106,3 +106,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0085](0085-the-readme-is-a-six-shot-showcase-and-the-docs-hold-the-tour.md) | The README is a six-shot showcase and the docs hold the tour | Accepted | 2026-11-26 |
 | [0086](0086-an-owner-route-checks-the-credential-before-the-app-version.md) | An owner route checks the credential before the app version | Accepted | 2026-11-26 |
 | [0091](0091-global-workspace-hot-keys-are-off-by-default-and-take-control-option-command-digits-and-yield-to-a-chord-another-app-holds.md) | Global workspace hot keys are off by default and take ⌃⌥⌘1…9, and a chord another app holds shows as in use | Accepted | 2026-11-26 |
+| [0095](0095-the-committed-dmg-layout-carries-the-whole-icon-view-record-finder-writes-or-finder-drops-it.md) | The committed DMG layout carries the whole icon view record Finder writes, or Finder drops it | Accepted | 2026-11-26 |
