@@ -109,6 +109,21 @@ struct StatusFailure: Sendable {
         return workspace
     }
 
+    func renameWorkspace(session: String, workspaceIdentifier: String, name: String) async throws -> Workspace {
+        try await record(.renameWorkspace(session: session, workspaceIdentifier: workspaceIdentifier, name: name))
+        guard let index = workspaces.firstIndex(where: { $0.identifier == workspaceIdentifier }) else { throw OwnerAPIError.notFound }
+        let workspace = workspaces[index]
+        let renamed = Workspace(identifier: workspace.identifier, name: name, createdAt: workspace.createdAt, projects: workspace.projects)
+        workspaces[index] = renamed
+        return renamed
+    }
+
+    func deleteWorkspace(session: String, workspaceIdentifier: String) async throws {
+        try await record(.deleteWorkspace(session: session, workspaceIdentifier: workspaceIdentifier))
+        guard workspaces.contains(where: { $0.identifier == workspaceIdentifier }) else { throw OwnerAPIError.notFound }
+        workspaces.removeAll { $0.identifier == workspaceIdentifier }
+    }
+
     func createProject(session: String, workspaceIdentifier: String, name: String) async throws -> Project {
         try await record(.createProject(session: session, workspaceIdentifier: workspaceIdentifier, name: name))
         return Project(identifier: "\(workspaceIdentifier)-\(name)", name: name, isInbox: false, createdAt: tick())
@@ -119,6 +134,15 @@ struct StatusFailure: Sendable {
         let project = workspaces.flatMap(\.projects).first { $0.identifier == projectIdentifier }
         guard let project else { throw OwnerAPIError.notFound }
         return Project(identifier: project.identifier, name: name, isInbox: project.isInbox, createdAt: project.createdAt)
+    }
+
+    func deleteProject(session: String, projectIdentifier: String) async throws {
+        try await record(.deleteProject(session: session, projectIdentifier: projectIdentifier))
+        guard workspaces.flatMap(\.projects).contains(where: { $0.identifier == projectIdentifier }) else { throw OwnerAPIError.notFound }
+        workspaces = workspaces.map { workspace in
+            let projects = workspace.projects.filter { $0.identifier != projectIdentifier }
+            return Workspace(identifier: workspace.identifier, name: workspace.name, createdAt: workspace.createdAt, projects: projects)
+        }
     }
 
     func addTasks(session: String, projectIdentifier: String, drafts: [TaskDraft]) async throws -> [AddedTask] {

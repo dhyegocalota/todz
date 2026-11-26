@@ -82,6 +82,7 @@ extension AppModel {
 
     func forgetProject(identifier: String) {
         board.reset(projectIdentifier: identifier)
+        projectLoads[identifier] = nil
         cacheWriter.discard(projectIdentifier: identifier)
         keepInCache { try store.eraseProject(identifier: identifier) }
     }

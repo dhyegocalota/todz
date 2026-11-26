@@ -42,6 +42,9 @@ struct MainWindow: View {
         .sheet(item: $windowState.sheet) { kind in
             NameSheet(kind: kind)
         }
+        .sheet(item: $windowState.deletion) { kind in
+            DeleteConfirmSheet(kind: kind)
+        }
         .onChange(of: windowState.focusRequest) { _, request in
             guard let request else { return }
             windowState.focusRequest = nil
