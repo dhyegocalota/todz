@@ -12,10 +12,10 @@ The server now deletes and moves tasks for agents, refuses writes past a fair-us
 
 ## Change
 
-1. The change feed's `deleted_numbers` removes those tasks from the board, which feeds the cache and the widgets snapshot. The server's `MINIMUM_APP_VERSION` is 0.2.4, so an older app is refused with the existing "Update todz to keep syncing" line.
+1. The change feed's `deleted_numbers` removes those tasks from the board, which feeds the cache and the widgets snapshot. Raising the server's `MINIMUM_APP_VERSION` to 0.2.4 is a separate pull request that merges only after 0.2.4 is live, so a deploy never refuses installed apps before the update is downloadable.
 2. `limit_reached`, `account_suspended` and `sign_up_refused` carrying a `message` decode to one refusal that the banner and the sign-in error show verbatim. A queued change that meets one is dropped like any refusal, never retried. `limit_reached` without a message (the five-key cap) is its own case. The title limit is 500, as on the server.
 3. Settings has an "Account keys" section, as written in the mcp-parity spec: none exist until the owner creates one; create shows the secret once in a sheet with Copy key and the `claude mcp add` line; the list shows the hint and the created date; revoke asks first. Connect an Agent keeps listing project keys only.
 
 ## Test list
 
-TodzKit: the feed's pages join their deleted numbers; a pull drops deleted tasks from the board, the cache file and the widgets snapshot; the error table decodes the three codes and the bare cap; the send outcome drops a refusal once; a refused write and a refused sign-in show the message; the owner key routes and the model's create, list, revoke, failure and forget paths; the issued-key decoder accepts the `todz-owner_` prefix only with a base64url body. Server: the `/health` pin and the version gate at 0.2.4. Repository shape: the first release may be older than the oldest app accepted.
+TodzKit: the feed's pages join their deleted numbers; a pull drops deleted tasks from the board, the cache file and the widgets snapshot; the error table decodes the three codes and the bare cap; the send outcome drops a refusal once; a refused write and a refused sign-in show the message; the owner key routes and the model's create, list, revoke, failure and forget paths; the issued-key decoder accepts the `todz-owner_` prefix only with a base64url body.
