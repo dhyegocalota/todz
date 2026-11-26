@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
+import { parsedBinaryPropertyList, type PropertyListValue } from './binary-property-list';
 import { readRepositoryFile, repositoryPath } from './repository-files';
 
 const MACOS_PROJECT = 'apps/macos/project.yml';
@@ -32,16 +33,31 @@ const MINIMUM_APP_VERSION_PATTERN = /MINIMUM_APP_VERSION = '([^']+)'/;
 const MARKETING_VERSION_PATTERN = /MARKETING_VERSION: "([^"]+)"/g;
 const ONE_DAY_SECONDS = '86400';
 const DISK_IMAGE_LAYOUT = 'apps/macos/release/dmg-layout.dsstore';
+const ICON_VIEW_RECORD_MARKER = Buffer.from('icvpblob', 'latin1');
+const RECORD_LENGTH_BYTES = 4;
+const ICON_VIEW_COLOUR_KEYS = ['backgroundColorRed', 'backgroundColorGreen', 'backgroundColorBlue'];
 const ICON_VIEW_KEYS_FINDER_REQUIRES = [
-  'backgroundType',
+  ...ICON_VIEW_COLOUR_KEYS,
+  'axTextSize',
   'backgroundImageAlias',
-  'backgroundColorRed',
-  'backgroundColorGreen',
-  'backgroundColorBlue',
+  'backgroundType',
   'iconSize',
   'textSize',
-  'axTextSize',
 ];
+const ICON_SIZE = 128;
+const PICTURE_BACKGROUND_TYPE = 2;
+const BACKGROUND_PICTURE_PATH = '/.background/dmg-background.tiff';
+const VOLUME_NAME = 'Todz';
+
+function iconViewRecord(): Record<string, PropertyListValue> {
+  const layout = readFileSync(repositoryPath(DISK_IMAGE_LAYOUT));
+  const marker = layout.indexOf(ICON_VIEW_RECORD_MARKER);
+  if (marker < 0) throw new Error('the layout has no icon view record');
+  const lengthStart = marker + ICON_VIEW_RECORD_MARKER.length;
+  const recordStart = lengthStart + RECORD_LENGTH_BYTES;
+  const record = layout.subarray(recordStart, recordStart + layout.readUInt32BE(lengthStart));
+  return parsedBinaryPropertyList(record) as Record<string, PropertyListValue>;
+}
 
 function section({ text, from, until }: { text: string; from: string; until: string }): string {
   return text.slice(text.indexOf(from), text.indexOf(until));
@@ -171,7 +187,19 @@ describe('the macOS release settings', () => {
 
 describe('the disk image layout', () => {
   test('the icon view record carries every key Finder needs to honour the background picture', () => {
-    const layout = readFileSync(repositoryPath(DISK_IMAGE_LAYOUT));
-    ICON_VIEW_KEYS_FINDER_REQUIRES.forEach((key) => expect(layout.includes(key)).toBe(true));
+    expect(Object.keys(iconViewRecord())).toEqual(expect.arrayContaining(ICON_VIEW_KEYS_FINDER_REQUIRES));
+  });
+
+  test('the icon view record asks for 128 point icons on a picture background with its colours present', () => {
+    const record = iconViewRecord();
+    expect(record.iconSize).toBe(ICON_SIZE);
+    expect(record.backgroundType).toBe(PICTURE_BACKGROUND_TYPE);
+    ICON_VIEW_COLOUR_KEYS.forEach((key) => expect(typeof record[key]).toBe('number'));
+  });
+
+  test('the background alias names the picture in the hidden folder on the volume Todz', () => {
+    const alias = (iconViewRecord().backgroundImageAlias as Buffer).toString('latin1');
+    expect(alias).toContain(BACKGROUND_PICTURE_PATH);
+    expect(alias).toContain(VOLUME_NAME);
   });
 });
