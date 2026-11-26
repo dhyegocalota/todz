@@ -10,13 +10,13 @@ private let endY = 0.34
 struct CheckmarkMark: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        path.move(to: point(startX, startY, in: rect))
-        path.addLine(to: point(turnX, turnY, in: rect))
-        path.addLine(to: point(endX, endY, in: rect))
+        path.move(to: point(x: startX, y: startY, in: rect))
+        path.addLine(to: point(x: turnX, y: turnY, in: rect))
+        path.addLine(to: point(x: endX, y: endY, in: rect))
         return path
     }
 
-    private func point(_ fractionX: Double, _ fractionY: Double, in rect: CGRect) -> CGPoint {
-        CGPoint(x: rect.minX + rect.width * fractionX, y: rect.minY + rect.height * fractionY)
+    private func point(x: Double, y: Double, in rect: CGRect) -> CGPoint {
+        CGPoint(x: rect.minX + rect.width * x, y: rect.minY + rect.height * y)
     }
 }
