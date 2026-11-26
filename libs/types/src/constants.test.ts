@@ -35,6 +35,7 @@ import {
   REPLY_RATE_LIMIT_MAX,
   REPLY_RATE_LIMIT_PERIOD_SECONDS,
   REPLY_SIZE_MAX_BYTES,
+  REPOSITORY,
 } from './index';
 
 const MILLISECONDS_IN_A_DAY = 86_400_000;
@@ -83,6 +84,19 @@ describe('company constants', () => {
       legalName: 'Logic Bit AI Software Boutique Ltda',
       website: 'https://logicbit.com.br',
       logo: 'https://www.logicbit.com.br/favicon/apple-touch-icon.png',
+    });
+  });
+});
+
+describe('repository constants', () => {
+  test('the public repository, its license and its contributing guide live at one address (pin)', () => {
+    expect(REPOSITORY).toEqual({
+      path: 'dhyegocalota/todz',
+      url: 'https://github.com/dhyegocalota/todz',
+      licenseName: 'AGPL-3.0',
+      licenseUrl: 'https://github.com/dhyegocalota/todz/blob/main/LICENSE',
+      licenseSpdxUrl: 'https://spdx.org/licenses/AGPL-3.0-only.html',
+      contributingUrl: 'https://github.com/dhyegocalota/todz/blob/main/.github/CONTRIBUTING.md',
     });
   });
 });

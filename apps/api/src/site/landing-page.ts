@@ -135,6 +135,6 @@ ${finalCallHtml()}
   scripts: PAGE_SCRIPTS,
 });
 
-export function serveLandingPage(): Response {
+export function serveLandingPage(_options: { stars: number | null }): Response {
   return sitePageResponse({ html: LANDING_HTML, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
 }

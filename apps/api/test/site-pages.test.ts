@@ -8,6 +8,9 @@ import { SITE_STYLE } from '../src/site/site-style';
 import { inlineSources, onlyInlineSource, sourceHash } from './page-script';
 
 const OK_STATUS = 200;
+const STARS = 1234;
+const STARS_TEXT = '1.2k';
+const STAR_GLYPH = '★';
 const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
@@ -63,7 +66,7 @@ async function pageOf(response: Response | Promise<Response>): Promise<SitePage>
 }
 
 function landingPage(): Promise<SitePage> {
-  return pageOf(serveLandingPage());
+  return pageOf(serveLandingPage({ stars: STARS }));
 }
 
 function decoded(text: string): string {
@@ -193,7 +196,7 @@ describe('the landing', () => {
 
   test('every word it shows or reads aloud comes from the copy module', async () => {
     const { html } = await landingPage();
-    const copy = copyStrings(LANDING_COPY);
+    const copy = [...copyStrings(LANDING_COPY), STARS_TEXT, STAR_GLYPH];
     const readable = [
       ...textNodes(html),
       ...captures({ html, pattern: READABLE_ATTRIBUTE_PATTERN }).map(decoded),

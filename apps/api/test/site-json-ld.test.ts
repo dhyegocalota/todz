@@ -1,6 +1,6 @@
 import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
-import { COMPANY } from '@todz/types';
+import { COMPANY, REPOSITORY } from '@todz/types';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { OPEN_GRAPH_IMAGE } from '../src/site/site-icons';
 import { SITE_URL } from '../src/site/site-urls';
@@ -47,6 +47,8 @@ const SHAPES: Record<string, Shape> = {
       'applicationSubCategory',
       'publisher',
       'offers',
+      'codeRepository',
+      'license',
     ],
   },
   Offer: {
@@ -85,6 +87,8 @@ const APPLICATION: Node = {
   applicationCategory: 'BusinessApplication',
   applicationSubCategory: 'Productivity',
   publisher: { '@id': ORGANIZATION_ID },
+  codeRepository: REPOSITORY.url,
+  license: REPOSITORY.licenseSpdxUrl,
   offers: {
     '@type': 'Offer',
     price: 0,

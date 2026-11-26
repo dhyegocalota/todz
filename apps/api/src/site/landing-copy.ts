@@ -42,6 +42,12 @@ export const LANDING_COPY = {
     note: 'Not notarized by Apple yet: the first time, open it from System Settings › Privacy & Security.',
     noteLink: 'Install steps',
   },
+  openSource: {
+    starLabel: 'Star on GitHub',
+    line: 'Open source · AGPL-3.0',
+    license: 'License',
+    contributing: 'Contributing',
+  },
   stage: {
     label: 'The todz app on a Mac desktop',
     menuCount: '2',

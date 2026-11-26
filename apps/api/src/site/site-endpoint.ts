@@ -39,8 +39,8 @@ const DISCOVERY_ROUTE_OF_REQUEST: Record<string, SiteRoute> = Object.fromEntries
 const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
   ...ADMIN_ROUTE_OF_REQUEST,
   ...DISCOVERY_ROUTE_OF_REQUEST,
-  [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: serveLandingPage,
-  [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: serveLandingPage,
+  [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: () => serveLandingPage({ stars: null }),
+  [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: () => serveLandingPage({ stars: null }),
   [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: redirectToDocs,
   [routeKey({ method: HttpMethod.Head, pathname: SELF_HOST_PATH })]: redirectToDocs,
   [routeKey({ method: HttpMethod.Post, pathname: JOIN_PATH })]: serveWaitlistClosed,
