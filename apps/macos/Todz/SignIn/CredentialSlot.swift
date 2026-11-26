@@ -13,24 +13,11 @@ struct CredentialSlot: View {
 
     var body: some View {
         VStack {
-            TextField(SignInCopy.identityPlaceholder, text: $identity)
-                .textFieldStyle(.roundedBorder)
-                .focused($isIdentityFocused)
-                .disabled(model.isSigningIn)
+            FormField(label: SignInCopy.identityPlaceholder, prompt: SignInCopy.identityPlaceholder, text: $identity, issue: formatIssue, isLabelShown: false, isBusy: model.isSigningIn, isFocused: $isIdentityFocused)
                 .onSubmit(submit)
-            if isFormatRefused {
-                Text(SignInCopy.identityFormat)
-                    .foregroundStyle(.red)
-            }
-            if model.isSigningIn {
-                ProgressView(SignInCopy.signingIn)
-                    .controlSize(.small)
-            }
-            if !model.isSigningIn {
-                Button(SignInCopy.signIn, action: submit)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(because: missingIdentityReason)
-            }
+                .onChange(of: identity) { isFormatRefused = false }
+            FormButton(title: SignInCopy.signIn, busyTitle: SignInCopy.signingIn, kind: .primary, isBusy: model.isSigningIn, disabledReason: missingIdentityReason, isFullWidth: true, action: submit)
+                .keyboardShortcut(.defaultAction)
             if let signInError = model.signInError {
                 SignInErrorLine(signInError: signInError, tryAgain: submit)
             }
@@ -50,6 +37,11 @@ struct CredentialSlot: View {
     private func focusIdentity() {
         guard !isServerFormOpen else { return }
         isIdentityFocused = true
+    }
+
+    private var formatIssue: String? {
+        guard isFormatRefused else { return nil }
+        return SignInCopy.identityFormat
     }
 
     private var missingIdentityReason: String? {

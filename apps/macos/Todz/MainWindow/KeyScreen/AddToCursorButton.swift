@@ -18,7 +18,7 @@ struct AddToCursorButton: View {
             .buttonStyle(.bordered)
             .disabled(because: disabledReason)
             if didNotOpen {
-                KeyScreenFailureLine(text: KeyScreenCopy.cursorDidNotOpen)
+                ValidationLine(text: KeyScreenCopy.cursorDidNotOpen, tone: .issue)
             }
         }
         .onChange(of: secret) { didNotOpen = false }

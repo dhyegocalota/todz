@@ -11,43 +11,33 @@ struct FirstWorkspaceScreen: View {
     @FocusState private var isNameFocused: Bool
 
     var body: some View {
-        CenteredColumn(width: columnWidth) {
-            Text(FirstWorkspaceCopy.title)
-                .font(.title)
-                .bold()
-            Text(FirstWorkspaceCopy.body)
-                .foregroundStyle(.secondary)
-            TextField(FirstWorkspaceCopy.namePlaceholder, text: $name)
-                .textFieldStyle(.roundedBorder)
-                .focused($isNameFocused)
-                .disabled(isCreating)
-                .onSubmit(create)
-            if let issue = NameIssue.shown(name: name, serverIssue: model.ruleIssues[.newWorkspace]) {
-                Text(issue.copy)
-                    .foregroundStyle(.red)
-            }
-            if let banner = model.banner {
-                Text(banner.title)
-                    .foregroundStyle(banner.lineStyle)
-                BannerActionButton()
-            }
-            if isCreating {
-                ProgressView()
-                    .controlSize(.small)
-            }
-            if !isCreating {
-                Button(FirstWorkspaceCopy.create, action: create)
-                    .buttonStyle(.borderedProminent)
+        CenteredColumn {
+            FormPanel(width: columnWidth) {
+                Text(FirstWorkspaceCopy.title)
+                    .font(.title)
+                    .bold()
+                Text(FirstWorkspaceCopy.body)
+                    .foregroundStyle(.secondary)
+                FormField(label: FirstWorkspaceCopy.namePlaceholder, prompt: FirstWorkspaceCopy.namePlaceholder, text: $name, issue: shownIssue?.copy, isLabelShown: false, isBusy: isCreating, isFocused: $isNameFocused)
+                    .onSubmit(create)
+                if let banner = model.banner {
+                    Text(banner.title)
+                        .foregroundStyle(banner.lineStyle)
+                    BannerActionButton()
+                }
+                FormButton(title: FirstWorkspaceCopy.create, busyTitle: SheetCopy.creating, kind: .primary, isBusy: isCreating, disabledReason: NameIssue.disabledReason(name: name), isFullWidth: true, action: create)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(because: NameIssue.disabledReason(name: name))
+                FormButton(title: FirstWorkspaceCopy.signOut, busyTitle: nil, kind: .quiet, isBusy: false, disabledReason: nil) {
+                    windowState.requestSignOut(model: model)
+                }
             }
-            Button(FirstWorkspaceCopy.signOut) {
-                windowState.requestSignOut(model: model)
-            }
-            .buttonStyle(.link)
         }
         .multilineTextAlignment(.center)
         .task { isNameFocused = true }
+    }
+
+    private var shownIssue: RuleIssue? {
+        NameIssue.shown(name: name, serverIssue: model.ruleIssues[.newWorkspace])
     }
 
     private var isCreating: Bool {

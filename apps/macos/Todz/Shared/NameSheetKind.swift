@@ -28,6 +28,21 @@ enum NameSheetKind: Identifiable, Hashable {
         }
     }
 
+    var busyTitle: String {
+        switch self {
+        case .newWorkspace, .newProject: SheetCopy.creating
+        case .renameWorkspace, .renameProject: SheetCopy.renaming
+        }
+    }
+
+    var detail: String? {
+        switch self {
+        case .newWorkspace: SheetCopy.newWorkspaceDetail
+        case .newProject: SheetCopy.newProjectDetail
+        case .renameWorkspace, .renameProject: nil
+        }
+    }
+
     var initialName: String {
         switch self {
         case .newWorkspace, .newProject: newName

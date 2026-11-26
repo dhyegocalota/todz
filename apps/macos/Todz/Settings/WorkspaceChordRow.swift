@@ -12,11 +12,17 @@ struct WorkspaceChordRow: View {
 
     var body: some View {
         LabeledContent(title) {
-            HStack {
-                chordText
-                Button(isRecording ? WorkspaceShortcutsCopy.cancel : WorkspaceShortcutsCopy.record, action: toggleRecording)
+            VStack(alignment: .trailing) {
+                HStack {
+                    chordText
+                    FormButton(title: isRecording ? WorkspaceShortcutsCopy.cancel : WorkspaceShortcutsCopy.record, busyTitle: nil, kind: .secondary, isBusy: false, disabledReason: nil, action: toggleRecording)
+                }
+                if isRecording {
+                    ValidationLine(text: WorkspaceShortcutsCopy.recordingHint, tone: .note)
+                }
             }
         }
+        .todzAnimation(.snap, value: isRecording)
         .onDisappear(perform: stopRecording)
     }
 
@@ -24,6 +30,7 @@ struct WorkspaceChordRow: View {
         if isRecording {
             Text(WorkspaceShortcutsCopy.recording)
                 .foregroundStyle(.secondary)
+                .modifier(FieldChrome(state: .focused))
         }
         if !isRecording, let chord = shortcuts.globalChords.chord(for: action) {
             Text(chord.label)

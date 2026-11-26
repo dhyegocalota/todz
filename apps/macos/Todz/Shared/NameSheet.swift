@@ -1,8 +1,6 @@
 import SwiftUI
 import TodzKit
 
-private let sheetWidth: CGFloat = 320
-
 struct NameSheet: View {
     let kind: NameSheetKind
     @Environment(AppModel.self) private var model
@@ -19,39 +17,39 @@ struct NameSheet: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(kind.title)
-                .font(.headline)
-            TextField(SheetCopy.nameLabel, text: $name)
-                .textFieldStyle(.roundedBorder)
-                .focused($isNameFocused)
-                .disabled(isSaving)
-                .onSubmit(submit)
-            if let issue = NameIssue.shown(name: name, serverIssue: model.ruleIssues[kind.target]) {
-                Text(issue.copy)
-                    .foregroundStyle(.red)
+                .font(.title3)
+                .bold()
+            if let detail = kind.detail {
+                Text(detail)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            FormField(label: SheetCopy.nameLabel, prompt: SheetCopy.nameLabel, text: $name, issue: shownIssue?.copy, isLabelShown: true, isBusy: isSaving, isFocused: $isNameFocused)
+                .onSubmit(submit)
             if let failure {
-                Text(failure.title)
-                    .foregroundStyle(.red)
+                ValidationLine(text: failure.title, tone: .issue)
             }
             HStack {
                 Spacer()
-                Button(SheetCopy.cancel, role: .cancel) { dismiss() }
+                FormButton(title: SheetCopy.cancel, busyTitle: nil, kind: .cancel, isBusy: false, disabledReason: nil) { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                if isSaving {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-                if !isSaving {
-                    Button(kind.actionTitle, action: submit)
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(because: NameIssue.disabledReason(name: name))
-                        .disabled(isUnchanged)
-                }
+                FormButton(title: kind.actionTitle, busyTitle: kind.busyTitle, kind: .primary, isBusy: isSaving, disabledReason: actionReason, action: submit)
+                    .keyboardShortcut(.defaultAction)
             }
         }
         .padding()
-        .frame(width: sheetWidth)
+        .frame(minWidth: FormMetrics.sheetMinimumWidth)
         .task { isNameFocused = true }
+    }
+
+    private var shownIssue: RuleIssue? {
+        NameIssue.shown(name: name, serverIssue: model.ruleIssues[kind.target])
+    }
+
+    private var actionReason: String? {
+        if let issueReason = NameIssue.disabledReason(name: name) { return issueReason }
+        guard isUnchanged else { return nil }
+        return SheetCopy.renameUnchanged
     }
 
     private var isSaving: Bool {
@@ -63,8 +61,7 @@ struct NameSheet: View {
     }
 
     private func submit() {
-        let isRefused = NameIssue.disabledReason(name: name) != nil || isUnchanged
-        guard !isRefused, !isSaving else { return }
+        guard actionReason == nil, !isSaving else { return }
         failure = nil
         Task {
             let isSaved = await save()

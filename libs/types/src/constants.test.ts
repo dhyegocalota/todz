@@ -132,8 +132,8 @@ describe('health constants', () => {
 });
 
 describe('version constants', () => {
-  test('the oldest app the server accepts is 0.2.0 (pin)', () => {
-    expect(MINIMUM_APP_VERSION).toBe('0.2.0');
+  test('the oldest app the server accepts is 0.2.4 (pin)', () => {
+    expect(MINIMUM_APP_VERSION).toBe('0.2.4');
   });
 
   test('the server and the app name their versions in these headers (pin)', () => {

@@ -38,7 +38,7 @@ struct CommandBlock: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
-            .background(.fill.quaternary)
+            .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: FormMetrics.fieldCornerRadius, style: .continuous))
             .accessibilityLabel(name)
             .accessibilityValue(text)
     }

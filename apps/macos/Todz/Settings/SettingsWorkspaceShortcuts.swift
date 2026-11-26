@@ -21,8 +21,7 @@ struct SettingsWorkspaceShortcuts: View {
                         WorkspaceChordRow(action: .number(number), title: workspace.name, refusal: $refusal)
                     }
                 }
-                Text(footnote)
-                    .foregroundStyle(.secondary)
+                ValidationLine(text: footnote, tone: refusal == nil ? .note : .issue)
             } header: {
                 Text(WorkspaceShortcutsCopy.header)
             }

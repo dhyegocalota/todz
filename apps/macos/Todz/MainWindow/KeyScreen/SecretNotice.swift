@@ -25,7 +25,7 @@ struct SecretNotice: View {
                 .accessibilityHint(KeyScreenCopy.hideKeyHint)
         }
         .padding()
-        .background(.fill.quaternary)
+        .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: FormMetrics.fieldCornerRadius, style: .continuous))
         .onAppear { AccessibilityNotification.Announcement(KeyScreenCopy.secretTitle).post() }
     }
 }
