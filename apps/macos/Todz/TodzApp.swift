@@ -55,6 +55,7 @@ struct TodzApp: App {
                 .environment(dayTemperatureClock)
                 .environment(ribbon)
                 .environment(ribbonStrips)
+                .environment(appDelegate.updater)
         }
         .menuBarExtraStyle(.window)
         Settings {
@@ -62,6 +63,7 @@ struct TodzApp: App {
                 .frame(width: settingsWidth)
                 .environment(model)
                 .environment(gate)
+                .environment(appDelegate.updater)
         }
         .windowResizability(.contentSize)
     }

@@ -10,6 +10,7 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(ProactiveGate.self) private var gate
     @Environment(\.openURL) private var openURL
+    @Environment(AppUpdater.self) private var appUpdater: AppUpdater?
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
     @AppStorage(MenuBarOnlyPreference.isOnStorageKey) private var isMenuBarOnlyOn = MenuBarOnlyPreference.isOnByDefault
     @AppStorage(DayClosePreference.isOnStorageKey) private var isDayCloseOn = DayClosePreference.isOnByDefault
@@ -115,6 +116,14 @@ struct SettingsView: View {
                     Text(SettingsCopy.respectFocusHelper)
                 }
             }
+            if let appUpdater {
+                Toggle(isOn: automaticUpdates(appUpdater)) {
+                    Text(UpdateCopy.automaticUpdates)
+                    Text(UpdateCopy.automaticUpdatesDetail)
+                        .lineLimit(subtitleLines, reservesSpace: true)
+                }
+                .toggleStyle(.switch)
+            }
             SettingsWorkspaceRows()
             Section {
                 ServerAddressForm(layout: .row, exit: {})
@@ -138,6 +147,14 @@ struct SettingsView: View {
             model.agentNudge == true
         } set: { isEnabled in
             Task { await model.changeAgentNudge(isEnabled: isEnabled) }
+        }
+    }
+
+    private func automaticUpdates(_ updater: AppUpdater) -> Binding<Bool> {
+        Binding {
+            updater.automaticallyUpdates
+        } set: { isOn in
+            updater.setAutomaticallyUpdates(isOn)
         }
     }
 
