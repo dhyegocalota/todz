@@ -18,8 +18,13 @@ public struct ProjectFeed: Sendable {
     private func changes(session: String, projectIdentifier: String, cursor: Int, isFromStart: Bool) async throws -> ProjectChanges {
         try Task.checkCancellation()
         let page = try await service.readChanges(session: session, projectIdentifier: projectIdentifier, cursor: cursor)
-        guard page.hasMore else { return ProjectChanges(tasks: page.tasks, cursor: page.cursor, isFromStart: isFromStart) }
+        guard page.hasMore else { return ProjectChanges(tasks: page.tasks, deletedNumbers: page.deletedNumbers, cursor: page.cursor, isFromStart: isFromStart) }
         let rest = try await changes(session: session, projectIdentifier: projectIdentifier, cursor: page.cursor, isFromStart: isFromStart)
-        return ProjectChanges(tasks: page.tasks + rest.tasks, cursor: rest.cursor, isFromStart: isFromStart)
+        return ProjectChanges(
+            tasks: page.tasks + rest.tasks,
+            deletedNumbers: page.deletedNumbers + rest.deletedNumbers,
+            cursor: rest.cursor,
+            isFromStart: isFromStart
+        )
     }
 }

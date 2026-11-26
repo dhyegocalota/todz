@@ -103,9 +103,15 @@ private let agentActorsWithoutAClientName = [
     }
 
     @Test func decodesAChangePage() throws {
-        let json = "{\"tasks\":[\(OwnerFixtures.openTaskJSON(number: 1))],\"cursor\":7,\"has_more\":true}"
+        let json = "{\"tasks\":[\(OwnerFixtures.openTaskJSON(number: 1))],\"deleted_numbers\":[2],\"cursor\":7,\"has_more\":true}"
         let page = try OwnerFixtures.decoded(ChangePage.self, from: json)
-        #expect(page == ChangePage(tasks: [OwnerFixtures.openTask(number: 1)], cursor: 7, hasMore: true))
+        #expect(page == ChangePage(tasks: [OwnerFixtures.openTask(number: 1)], deletedNumbers: [2], cursor: 7, hasMore: true))
+    }
+
+    @Test func aChangePageWithoutDeletedNumbersComesFromAServerThatCannotDelete() throws {
+        let json = "{\"tasks\":[\(OwnerFixtures.openTaskJSON(number: 1))],\"cursor\":7,\"has_more\":false}"
+        let page = try OwnerFixtures.decoded(ChangePage.self, from: json)
+        #expect(page == ChangePage(tasks: [OwnerFixtures.openTask(number: 1)], deletedNumbers: [], cursor: 7, hasMore: false))
     }
 
     @Test func decodesTheSignInAnswer() throws {
@@ -117,7 +123,7 @@ private let agentActorsWithoutAClientName = [
     }
 
     @Test func holdsTheLimitsOfLibsCore() {
-        #expect(TaskLimits.titleMaxLength == 200)
+        #expect(TaskLimits.titleMaxLength == 500)
         #expect(TaskLimits.notesMaxLength == 20_000)
         #expect(TaskLimits.nameMaxLength == 80)
     }

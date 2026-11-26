@@ -3,6 +3,7 @@ import Testing
 @testable import TodzKit
 
 private let keyIdentifier = "key-1"
+private let ownerSecret = "todz-owner_yMnKy8zNzs_Q0dLT1NXW19jZ2tvc3d7f4OHi4-Tl5uc"
 private let keysWithoutAField = [
     "{\"hint\":\"\(OwnerFixtures.keyHint)\",\"created_at\":\(OwnerFixtures.createdAtMilliseconds)}",
     "{\"id\":\"\(keyIdentifier)\",\"created_at\":\(OwnerFixtures.createdAtMilliseconds)}",
@@ -24,6 +25,18 @@ private let issuedKeysWithoutAField = [
     @Test func decodesAnIssuedKeyWithItsSecret() throws {
         let issued = try OwnerFixtures.decoded(IssuedKey.self, from: OwnerFixtures.issuedKeyJSON(identifier: keyIdentifier))
         #expect(issued == IssuedKey(key: OwnerFixtures.projectKey(identifier: keyIdentifier), secret: OwnerFixtures.keySecret))
+    }
+
+    @Test func decodesAnIssuedOwnerKeyWithItsSecret() throws {
+        let json = "{\"key\":\(OwnerFixtures.projectKeyJSON(identifier: keyIdentifier)),\"secret\":\"\(ownerSecret)\"}"
+        let issued = try OwnerFixtures.decoded(IssuedKey.self, from: json)
+        #expect(issued == IssuedKey(key: OwnerFixtures.projectKey(identifier: keyIdentifier), secret: ownerSecret))
+    }
+
+    @Test(arguments: ["todz-owner_", "todz-admin_abc", "todz-owner_a b", "owner_abc"])
+    func refusesASecretThatIsNeitherAProjectNorAnOwnerKey(secret: String) {
+        let json = "{\"key\":\(OwnerFixtures.projectKeyJSON(identifier: keyIdentifier)),\"secret\":\"\(secret)\"}"
+        #expect(throws: DecodingError.self) { try OwnerFixtures.decoded(IssuedKey.self, from: json) }
     }
 
     @Test(arguments: keysWithoutAField)

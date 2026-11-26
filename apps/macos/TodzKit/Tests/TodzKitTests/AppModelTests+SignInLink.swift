@@ -63,6 +63,7 @@ extension AppModelTests {
         (.signInUnavailable, .signInUnavailable),
         (.unreachable, .unreachable),
         (.invalidRequest, .invalidAddress),
+        (.fairUseRefused(message: "No new accounts."), .fairUseRefused(message: "No new accounts.")),
     ])
     func aRefusedAskKeepsNoPendingLinkAndShowsItsError(failure: OwnerAPIError, expected: SignInError) async throws {
         let harness = try AppModelHarness()

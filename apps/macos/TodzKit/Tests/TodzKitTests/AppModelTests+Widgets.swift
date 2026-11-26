@@ -103,6 +103,14 @@ extension AppModelTests {
         #expect(harness.widgets.calls == [])
     }
 
+    @Test func aTaskDeletedByAnAgentLeavesTheSnapshot() async throws {
+        let harness = try await launchedWidgetHarness()
+        harness.service.changeScripts[inboxIdentifier] = [.success(ChangePage(tasks: [], deletedNumbers: [2], cursor: 3, hasMore: false))]
+        await harness.model.refresh()
+        await harness.published()
+        #expect(harness.widgets.snapshot?.open.map(\.title) == ["Task 1"])
+    }
+
     @Test func aWorkspaceSwitchWritesTheNewWorkspacesToday() async throws {
         let harness = try widgetHarness()
         let side = harness.seedWorkspace(name: "side")

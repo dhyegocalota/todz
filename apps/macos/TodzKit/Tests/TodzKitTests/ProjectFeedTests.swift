@@ -4,8 +4,10 @@ import Testing
 
 private let projectIdentifier = "launch"
 
-private func page(numbers: [Int], cursor: Int, hasMore: Bool) -> Result<ChangePage, OwnerAPIError> {
-    .success(ChangePage(tasks: numbers.map { MutableTask(number: $0).record }, cursor: cursor, hasMore: hasMore))
+private func page(numbers: [Int], deleted: [Int] = [], cursor: Int, hasMore: Bool) -> Result<ChangePage, OwnerAPIError> {
+    .success(
+        ChangePage(tasks: numbers.map { MutableTask(number: $0).record }, deletedNumbers: deleted, cursor: cursor, hasMore: hasMore)
+    )
 }
 
 @MainActor @Suite struct ProjectFeedTests {
@@ -26,10 +28,19 @@ private func page(numbers: [Int], cursor: Int, hasMore: Bool) -> Result<ChangePa
         #expect(service.calls.allSatisfy { $0.projectIdentifier == projectIdentifier })
     }
 
+    @Test func collectsTheDeletedNumbersOfEveryPage() async throws {
+        service.changeScripts[projectIdentifier] = [
+            page(numbers: [1], deleted: [4], cursor: 5, hasMore: true),
+            page(numbers: [], deleted: [6], cursor: 7, hasMore: false),
+        ]
+        let changes = try await ProjectFeed(service: service).pull(session: session, projectIdentifier: projectIdentifier, cursor: 0)
+        #expect(changes.deletedNumbers == [4, 6])
+    }
+
     @Test func aSinglePageEndsThePull() async throws {
         service.changeScripts[projectIdentifier] = [page(numbers: [1], cursor: 1, hasMore: false)]
         let changes = try await ProjectFeed(service: service).pull(session: session, projectIdentifier: projectIdentifier, cursor: 0)
-        #expect(changes == ProjectChanges(tasks: [MutableTask(number: 1).record], cursor: 1, isFromStart: false))
+        #expect(changes == ProjectChanges(tasks: [MutableTask(number: 1).record], deletedNumbers: [], cursor: 1, isFromStart: false))
         #expect(service.calls == [.readChanges(session: session, projectIdentifier: projectIdentifier, cursor: 0)])
     }
 
@@ -45,7 +56,7 @@ private func page(numbers: [Int], cursor: Int, hasMore: Bool) -> Result<ChangePa
     @Test func aPullFromACursorWithNothingNewKeepsThatCursor() async throws {
         service.changeScripts[projectIdentifier] = [page(numbers: [], cursor: 7, hasMore: false)]
         let changes = try await ProjectFeed(service: service).pull(session: session, projectIdentifier: projectIdentifier, cursor: 7)
-        #expect(changes == ProjectChanges(tasks: [], cursor: 7, isFromStart: false))
+        #expect(changes == ProjectChanges(tasks: [], deletedNumbers: [], cursor: 7, isFromStart: false))
     }
 
     @Test func restartsOnceFromZeroWhenTheCursorIsAhead() async throws {

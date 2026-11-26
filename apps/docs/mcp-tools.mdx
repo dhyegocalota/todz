@@ -6,7 +6,7 @@ description: The tools and the prompt an agent gets from the todz MCP server, an
 The todz MCP server speaks to two kinds of key, and each tool below names the scope it needs.
 
 - A **project key** holds the to-do list of one project: the project of the key the agent connected with. It can also list and move tasks inside the workspace of that project. It never creates, renames or deletes a workspace or a project. Task ids look like `T-12`.
-- An **owner key** manages the account: its workspaces and projects. It is off until you create one (today through the owner API, and in Settings from the next app release), it is shown once, you can revoke it there, and it is listed apart from the project keys. It reaches no task and no other account.
+- An **owner key** manages the account: its workspaces and projects. It is off until you create one (today through the owner API, and in Settings from the next app release), it is shown once, you can revoke it there, and it is listed apart from the project keys. It reaches no task and no other account. Add it to your agent under its own name, `todz-account`, so it sits beside the `todz` server of a project key instead of replacing it.
 
 An agent holding a project key does not see the owner tools, and an agent holding an owner key does not see the task tools. Every delete asks for a `confirm` argument holding the current name (a task's current title); when it differs, nothing is deleted.
 

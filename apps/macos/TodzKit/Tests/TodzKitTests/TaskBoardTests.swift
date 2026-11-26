@@ -68,6 +68,23 @@ private func task(number: Int, title: String, updatedAt: Date) -> TaskRecord {
         #expect(board.tasks(projectIdentifier: launchIdentifier).map(\.title) == ["Launch"])
     }
 
+    @Test func aWriteAnswerLandingAfterTheDeletingPullDoesNotResurrectTheTask() {
+        var board = TaskBoard()
+        board.replace(projectIdentifier: inboxIdentifier, task: task(number: 1, title: "One", updatedAt: older))
+        board.remove(projectIdentifier: inboxIdentifier, numbers: [1])
+        board.replace(projectIdentifier: inboxIdentifier, task: task(number: 1, title: "One", updatedAt: newer))
+        #expect(board.tasks(projectIdentifier: inboxIdentifier) == [])
+        #expect(board.task(projectIdentifier: inboxIdentifier, number: 1) == nil)
+    }
+
+    @Test func resetForgetsWhichNumbersWereDeleted() {
+        var board = TaskBoard()
+        board.remove(projectIdentifier: inboxIdentifier, numbers: [1])
+        board.reset(projectIdentifier: inboxIdentifier)
+        board.replace(projectIdentifier: inboxIdentifier, task: task(number: 1, title: "One", updatedAt: older))
+        #expect(board.tasks(projectIdentifier: inboxIdentifier).map(\.number) == [1])
+    }
+
     @Test func resetDropsOneProjectsTasks() {
         var board = TaskBoard()
         board.merge(projectIdentifier: inboxIdentifier, tasks: [task(number: 1, title: "Inbox", updatedAt: newer)])
