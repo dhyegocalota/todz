@@ -8,9 +8,9 @@ Ownership is by group, not by developer: one lead works the groups in order, so 
 
 ### Group A: the numbers and the text rules (red, then code)
 
-- [x] A1. Red: `libs/types/src/constants.test.ts` pins the new defaults (projects 100, open tasks 5,000, writes 1,000 a day (first 5,000, lowered in the fix round), stored bytes 50 MiB, sign-ups 5 a client a day, notes 10,240 bytes, title 500), `FairUseLimit` values. Commit "test(types): pin fair use limits (red)".
-- [x] A2. Red: `libs/core/src/task-text.test.ts` pins notes at exactly 10,240 bytes accepted, 10,241 bytes refused with `notes_too_long`, multi-byte notes counted in bytes, titles at 500 accepted and 501 refused. Commit "test(core): pin the note byte limit (red)".
-- [x] A3. Code: `libs/types/src/constants.ts`, `libs/types/src/fair-use.ts` (new enum `FairUseLimit`), `libs/types/src/task.ts`; `libs/core/src/task-text.ts` measures notes in bytes; `LimitViolation` in `libs/core/src/errors.ts`; `mcp-copy.ts` notes copy says "10 KB".
+- [x] A1. Red: `libs/types/src/constants.test.ts` pins the new defaults (projects 100, open tasks 5,000, writes 1,000 a day (first 5,000, lowered in the fix round), stored bytes 50 MiB, sign-ups 5 a client a day, notes 20,000 code points, title 500), `FairUseLimit` values. Commit "test(types): pin fair use limits (red)".
+- [x] A2. Red: `libs/core/src/task-text.test.ts` pins notes at exactly 20,000 code points accepted, 20,001 refused with `notes_too_long`, each emoji counted as one, titles at 500 accepted and 501 refused. Commit "test(core): pin the note byte limit (red)".
+- [x] A3. Code: `libs/types/src/constants.ts`, `libs/types/src/fair-use.ts` (new enum `FairUseLimit`), `libs/types/src/task.ts`; `libs/core/src/task-text.ts` measures notes in code points; `LimitViolation` in `libs/core/src/errors.ts`; `mcp-copy.ts` notes copy says "10 KB".
 
 ### Group B: configuration
 
@@ -85,6 +85,10 @@ No step is without a backout.
 - v1.1: an MCP write over the open-task cap has no test of its own; the cap is the same Durable Object check the owner API tests exercise.
 - v1.1: the MCP `next` tool and the day email read paths are not quota-checked (reads are never counted).
 - v1.1: the admin Top usage page's screenshots are not recorded in this lane; the page is server-rendered HTML and is covered by `admin-usage.test.ts`.
+- v1.1: the Mac app limits a title to 200 characters while the server allows 500.
+- v1.1: a duplicate day-email reply or an idempotent MCP replay still reserves one write; the count is an upper bound ([ADR 0088](../../adr/0088-daily-writes-and-stored-text-are-counted-in-d1-by-one-conditional-statement-per-write.md)).
+- v1.1: JSON `\uXXXX` escapes can exceed the 4-bytes-per-code-point body bound for third-party clients.
+- Fix round: a write is validated (batch size and text rules from `libs/core`) before its quota is reserved; `write-validation-before-reservation.test.ts`.
 - v1.1: stored text overcounts edits (an edit counts its new text); exact accounting needs a byte ledger in the Durable Object.
 
 ## Evidence

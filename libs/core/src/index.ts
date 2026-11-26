@@ -1,5 +1,6 @@
 export { OWNER_ACTOR, agentActor } from './actor';
-export { addTasks, type AddedTask } from './add-tasks';
+export { addTasks, validateDrafts, type AddedTask } from './add-tasks';
+export { assertBatchSize } from './batch-size';
 export { dueWindowOf, normalizeDueDate, parseCalendarDate } from './calendar-date';
 export { completeTasks, type CompletedTask } from './complete-tasks';
 export { dueNow, type DueNow } from './due-now';

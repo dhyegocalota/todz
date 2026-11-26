@@ -27,6 +27,7 @@ import {
 } from './mcp-tool-arguments';
 import type { ProjectResult } from './project-result';
 import type { ProjectStore } from './project-store';
+import { completionFailureOf, draftsFailureOf, fieldsFailureOf } from './write-rules';
 
 const MCP_SERVER_NAME = 'todz';
 export const MCP_SERVER_VERSION = '0.1.0';
@@ -146,6 +147,8 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
         ctx,
         write: async (actor) => {
           const drafts = draftsOf(args);
+          const draftsFailure = draftsFailureOf(drafts);
+          if (draftsFailure !== null) return errorAnswer(failureText(draftsFailure));
           const refusal = await refusedAnswer({
             refusalTextOf,
             writes: drafts.length,
@@ -171,6 +174,8 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
         clientNameOf,
         ctx,
         write: async (actor) => {
+          const fieldsFailure = fieldsFailureOf(args);
+          if (fieldsFailure !== null) return errorAnswer(failureText(fieldsFailure));
           const refusal = await refusedAnswer({ refusalTextOf, writes: 1, bytes: textBytesOf([args.title, args.notes]) });
           if (refusal !== null) return refusal;
           return resultAnswer({ result: await project.updateTask({ actor, number, patch }), answer: updatedAnswer });
@@ -188,6 +193,8 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
         clientNameOf,
         ctx,
         write: async (actor) => {
+          const completionFailure = completionFailureOf({ size: numbers.length, note });
+          if (completionFailure !== null) return errorAnswer(failureText(completionFailure));
           const refusal = await refusedAnswer({ refusalTextOf, writes: numbers.length, bytes: textBytesOf([note]) });
           if (refusal !== null) return refusal;
           return resultAnswer({ result: await project.completeTasks({ actor, numbers, note }), answer: completedAnswer });

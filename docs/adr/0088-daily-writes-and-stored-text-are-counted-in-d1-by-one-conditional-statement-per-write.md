@@ -32,6 +32,7 @@ Reads are never counted and never refused for quota. A suspended owner's reads p
 ## Consequences
 
 - Each write costs one D1 statement plus one read on refusal. D1 rows written grow by one per write request, inside the allowance of [ADR 0087](0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md).
+- The daily count is an upper bound: a duplicate day-email reply or an idempotent MCP replay still reserves one write. A request the rules reject is validated first and reserves nothing.
 - The storage sum reads the owner's rows by primary key; rows are one per active day, so the sum stays small for years.
 - `owner_usage` is also the source of the admin's Top usage view ([ADR 0090](0090-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md)).
 

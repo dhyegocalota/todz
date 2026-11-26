@@ -52,7 +52,7 @@ Admin:
 
 ### Interfaces
 
-- `libs/types`: the limit defaults (`OWNER_WORKSPACES_MAX`, `WORKSPACE_PROJECTS_MAX` = 100, `PROJECT_OPEN_TASKS_MAX`, `PROJECT_LIVE_KEYS_MAX`, `OWNER_WRITES_PER_DAY_MAX`, `OWNER_STORED_BYTES_MAX`, `SIGN_UPS_PER_CLIENT_DAY_MAX`, `BYTES_PER_KIBIBYTE`), `TASK_TITLE_MAX_LENGTH` = 500, `TASK_NOTES_MAX_BYTES` = 10 KB, and the enum `FairUseLimit`.
+- `libs/types`: the limit defaults (`OWNER_WORKSPACES_MAX`, `WORKSPACE_PROJECTS_MAX` = 100, `PROJECT_OPEN_TASKS_MAX`, `PROJECT_LIVE_KEYS_MAX`, `OWNER_WRITES_PER_DAY_MAX`, `OWNER_STORED_BYTES_MAX`, `SIGN_UPS_PER_CLIENT_DAY_MAX`, `BYTES_PER_KIBIBYTE`), `TASK_TITLE_MAX_LENGTH` = 500, `TASK_NOTES_MAX_LENGTH` = 20,000 code points, and the enum `FairUseLimit`.
 - `libs/core`: notes keep the 20,000 code point limit; `LimitViolation` carries a `FairUseLimit`.
 - `apps/api`: `fairUseLimitsOf(env)`; the `FAIR_USE_*` Worker vars (optional strings, positive whole numbers, a bad value stops the Worker); `reserveOwnerWrites`; `findOwnerSuspension`; `setOwnerSuspension`; `signUpAllowance`; `isDisposableEmailAddress`; the admin usage page and the suspension route.
 - Error bodies (owner API): `{ error: 'limit_reached', limit, message }` with the status of the limit (409 for counts, 429 for the two daily limits, which also carry `Retry-After` to the next UTC midnight); `{ error: 'account_suspended', message }` (403); `{ error: 'sign_up_refused', message }` (403).

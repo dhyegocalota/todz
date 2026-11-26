@@ -11,6 +11,7 @@ import { type SessionContext, parsedBody, routeParam } from './owner-request';
 import { RouteParam } from './owner-routes';
 import { fieldPatchOf } from './task-field-patch';
 import { fairUseRefusalResponse, reserveWrites, textBytesOf } from './owner-write-quota';
+import { batchFailureOf, completionFailureOf, draftsFailureOf, fieldsFailureOf } from './write-rules';
 
 const TaskNumberSchema = z.number().int().positive();
 
@@ -51,6 +52,8 @@ export async function addTasks(context: SessionContext): Promise<Response> {
   const project = await ownedProjectOf(context);
   if (project === null) return errorResponse(OwnerErrorCode.NotFound);
   const drafts = draftsOf(body);
+  const draftsFailure = draftsFailureOf(drafts);
+  if (draftsFailure !== null) return failureResponse(draftsFailure);
   const refusal = await refusalOf({
     context,
     writes: drafts.length,
@@ -69,6 +72,8 @@ export async function updateTask(context: SessionContext): Promise<Response> {
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const project = await ownedProjectOf(context);
   if (project === null) return errorResponse(OwnerErrorCode.NotFound);
+  const fieldsFailure = fieldsFailureOf(body);
+  if (fieldsFailure !== null) return failureResponse(fieldsFailure);
   const refusal = await refusalOf({ context, writes: 1, bytes: textBytesOf([body.title, body.notes]) });
   if (refusal !== null) return refusal;
   const result = await project.updateTask({ actor: OWNER_ACTOR, number: taskNumberOf(context), patch: patchOf(body) });
@@ -81,6 +86,8 @@ export async function completeTasks(context: SessionContext): Promise<Response> 
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const project = await ownedProjectOf(context);
   if (project === null) return errorResponse(OwnerErrorCode.NotFound);
+  const completionFailure = completionFailureOf({ size: body.numbers.length, note: body.note });
+  if (completionFailure !== null) return failureResponse(completionFailure);
   const refusal = await refusalOf({ context, writes: body.numbers.length, bytes: textBytesOf([body.note]) });
   if (refusal !== null) return refusal;
   const result = await project.completeTasks({ actor: OWNER_ACTOR, numbers: body.numbers, note: body.note });
@@ -94,6 +101,8 @@ export async function reopenTasks(context: SessionContext): Promise<Response> {
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const project = await ownedProjectOf(context);
   if (project === null) return errorResponse(OwnerErrorCode.NotFound);
+  const batchFailure = batchFailureOf(body.numbers.length);
+  if (batchFailure !== null) return failureResponse(batchFailure);
   const refusal = await refusalOf({ context, writes: body.numbers.length, bytes: 0 });
   if (refusal !== null) return refusal;
   const limits = fairUseLimitsOf(context.env);
