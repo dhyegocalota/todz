@@ -106,5 +106,7 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0085](0085-the-readme-is-a-six-shot-showcase-and-the-docs-hold-the-tour.md) | The README is a six-shot showcase and the docs hold the tour | Accepted | 2026-11-26 |
 | [0086](0086-an-owner-route-checks-the-credential-before-the-app-version.md) | An owner route checks the credential before the app version | Accepted | 2026-11-26 |
 | [0091](0091-global-workspace-hot-keys-are-off-by-default-and-take-control-option-command-digits-and-yield-to-a-chord-another-app-holds.md) | Global workspace hot keys are off by default and take ⌃⌥⌘1…9, and a chord another app holds shows as in use | Accepted | 2026-11-26 |
+| [0092](0092-settings-is-one-scrolling-form-of-sections-with-a-resizable-window-and-usage-sharing-asks-with-not-now-as-the-default.md) | Settings is one scrolling form of sections in a resizable window, and the usage prompt defaults to Not Now | Accepted | 2026-11-26 |
+| [0093](0093-deleting-a-workspace-or-project-is-a-hard-delete-behind-a-typed-name-confirmation.md) | Deleting a workspace or project is a hard delete behind a typed-name confirmation | Accepted | 2026-11-26 |
 | [0095](0095-the-committed-dmg-layout-carries-the-whole-icon-view-record-finder-writes-or-finder-drops-it.md) | The committed DMG layout carries the whole icon view record Finder writes, or Finder drops it | Accepted | 2026-11-26 |
 | [0096](0096-the-final-panel-glows-mint-through-a-glow-mint-token.md) | The final panel glows mint through a `--glow-mint` token | Accepted | 2026-11-26 |

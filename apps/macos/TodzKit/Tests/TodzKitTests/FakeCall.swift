@@ -12,8 +12,11 @@ enum FakeRoute: Hashable, Sendable {
     case updateDayEmailMinutes
     case listWorkspaces
     case createWorkspace
+    case renameWorkspace
+    case deleteWorkspace
     case createProject
     case renameProject
+    case deleteProject
     case addTasks
     case updateTask
     case completeTasks
@@ -37,8 +40,11 @@ enum FakeCall: Equatable, Sendable {
     case updateDayEmailMinutes(session: String, minutes: Int)
     case listWorkspaces(session: String)
     case createWorkspace(session: String, name: String)
+    case renameWorkspace(session: String, workspaceIdentifier: String, name: String)
+    case deleteWorkspace(session: String, workspaceIdentifier: String)
     case createProject(session: String, workspaceIdentifier: String, name: String)
     case renameProject(session: String, projectIdentifier: String, name: String)
+    case deleteProject(session: String, projectIdentifier: String)
     case addTasks(session: String, projectIdentifier: String, drafts: [TaskDraft])
     case updateTask(session: String, projectIdentifier: String, number: Int, patch: TaskPatch)
     case completeTasks(session: String, projectIdentifier: String, numbers: [Int])
@@ -62,8 +68,11 @@ enum FakeCall: Equatable, Sendable {
         case .updateDayEmailMinutes: .updateDayEmailMinutes
         case .listWorkspaces: .listWorkspaces
         case .createWorkspace: .createWorkspace
+        case .renameWorkspace: .renameWorkspace
+        case .deleteWorkspace: .deleteWorkspace
         case .createProject: .createProject
         case .renameProject: .renameProject
+        case .deleteProject: .deleteProject
         case .addTasks: .addTasks
         case .updateTask: .updateTask
         case .completeTasks: .completeTasks
@@ -79,6 +88,7 @@ enum FakeCall: Equatable, Sendable {
     var projectIdentifier: String? {
         switch self {
         case let .renameProject(_, projectIdentifier, _),
+            let .deleteProject(_, projectIdentifier),
             let .addTasks(_, projectIdentifier, _),
             let .updateTask(_, projectIdentifier, _, _),
             let .completeTasks(_, projectIdentifier, _),
@@ -89,7 +99,7 @@ enum FakeCall: Equatable, Sendable {
             let .issueKey(_, projectIdentifier),
             let .revokeKey(_, projectIdentifier, _):
             projectIdentifier
-        case .signInMethod, .requestSignInLink, .signIn, .signOut, .readOwner, .updateOwner, .updateAgentNudge, .updateDayEmail, .updateDayEmailMinutes, .listWorkspaces, .createWorkspace, .createProject:
+        case .signInMethod, .requestSignInLink, .signIn, .signOut, .readOwner, .updateOwner, .updateAgentNudge, .updateDayEmail, .updateDayEmailMinutes, .listWorkspaces, .createWorkspace, .renameWorkspace, .deleteWorkspace, .createProject:
             nil
         }
     }
