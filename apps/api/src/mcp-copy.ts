@@ -75,6 +75,8 @@ export const MCP_COPY = {
     [RuleIssue.NameTooLong]: `The name is longer than ${NAME_MAX_LENGTH} characters.`,
     [RuleIssue.NameInvalid]: 'The name holds a control character.',
     [RuleIssue.OrderKeyTooLong]: 'The order cannot take this move: move the task first or last.',
+    [RuleIssue.ConfirmationMismatch]:
+      'The confirmation is not the current name of the target: nothing was deleted. Send the name exactly as it is now.',
   } satisfies Record<RuleIssue, string>,
   taskIdInvalid: `Not a task id: use one like ${EXAMPLE_TASK_ID}.`,
   sessionRequired: 'Bad Request: Mcp-Session-Id header is required',

@@ -40,7 +40,7 @@ const WEBSOCKET_UPGRADE = 'websocket';
 const NORMAL_CLOSURE_CODE = 1000;
 const SESSION_ENDED_REASON = 'session ended';
 
-export type TaskChanges = { tasks: Task[]; cursor: number; hasMore: boolean };
+export type TaskChanges = { tasks: Task[]; deletedNumbers: number[]; cursor: number; hasMore: boolean };
 
 const SYSTEM_CLOCK: Clock = { now: () => Date.now() };
 
@@ -97,6 +97,14 @@ export class ProjectStore extends DurableObject<Env> {
     return this.runWrite(() => reopenTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers }));
   }
 
+  deleteTask(_removal: { number: number; confirmation: string }): ProjectResult<Task> {
+    throw new Error('deleteTask is not implemented');
+  }
+
+  readTask(_lookup: { number: number }): ProjectResult<Task> {
+    throw new Error('readTask is not implemented');
+  }
+
   listTasks({ today, filter }: { today: string; filter: TaskFilter }): ProjectResult<TaskList> {
     return this.run(() => listTasks({ store: this.store, today: trustedToday(today), filter }));
   }
@@ -134,7 +142,10 @@ export class ProjectStore extends DurableObject<Env> {
     const page = changes.slice(0, CHANGE_PAGE_SIZE);
     const lastOnPage = page.at(LAST_INDEX);
     const nextCursor = lastOnPage === undefined ? cursor : lastOnPage.changeNumber;
-    return { ok: true, value: { tasks: page.map(({ task }) => task), cursor: nextCursor, hasMore: changes.length > CHANGE_PAGE_SIZE } };
+    return {
+      ok: true,
+      value: { tasks: page.map(({ task }) => task), deletedNumbers: [], cursor: nextCursor, hasMore: changes.length > CHANGE_PAGE_SIZE },
+    };
   }
 
   readHistory({ number }: { number: number }): ProjectResult<HistoryEntry[]> {
