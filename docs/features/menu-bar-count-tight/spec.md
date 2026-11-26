@@ -20,11 +20,11 @@ The status item reads `✓   12`: 12 points of empty bar between the checkmark's
 
 ## Non-goals
 
-- A new glyph, a new font size, a different status item width at rest.
+- A new glyph, a new font size, a different status item width with no count.
 
 ## Design
 
-`MenuBarLayout` in TodzKit holds the numbers: the glyph artwork's right margin inside its 18-point box (2.5), the gap from the glyph's ink to the count's frame (1.5), the spacing they give (−1, the count tucks into the glyph's margin) and the count's rise (0.5). `MenuBarCountImage`, the switch-off label and `MenuBarRibbonImage` take the spacing and the rise from it, so the count, the toned count and the ribbon share one origin and the glyph never moves.
+`MenuBarLayout` in TodzKit holds the numbers: the glyph artwork's right margin inside its 18-point box (2.5), the gap from the glyph's ink to the count's frame (1.5), the spacing they give (−1, the count tucks into the glyph's margin) and the count's rise (0.5). `MenuBarCountImage` draws every count, with the day temperature on or off, because the status item drops the spacing of a live stack; it and `MenuBarRibbonImage` take the spacing and the rise from it, so the count, the toned count and the ribbon share one origin and the glyph never moves.
 
 ## Open questions → answers
 

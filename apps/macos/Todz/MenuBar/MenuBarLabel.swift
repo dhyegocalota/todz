@@ -65,25 +65,13 @@ struct MenuBarLabel: View {
 
     @ViewBuilder
     private func countContent(badgeText: String?, countOpacity: Double) -> some View {
-        switch toneBadgeText(badgeText) {
-        case let toneBadgeText?:
-            MenuBarCountLabel(badgeText: toneBadgeText, opacity: countOpacity, displayScale: displayScale)
+        switch badgeText {
+        case let badgeText?:
+            MenuBarCountLabel(badgeText: badgeText, opacity: countOpacity, displayScale: displayScale)
                 .equatable()
         case nil:
-            HStack(spacing: MenuBarLayout.glyphSpacing) {
-                Image(menuBarGlyphName)
-                if let badgeText {
-                    Text(badgeText)
-                        .monospacedDigit()
-                        .offset(y: -MenuBarLayout.countRise)
-                }
-            }
+            Image(menuBarGlyphName)
         }
-    }
-
-    private func toneBadgeText(_ badgeText: String?) -> String? {
-        guard dayTemperatureClock.isOn else { return nil }
-        return badgeText
     }
 
     private func accessibilityLabel(badgeText: String?, openCount: Int?, presentation: RibbonPresentation?) -> String {

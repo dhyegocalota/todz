@@ -4,7 +4,7 @@ Lighter gates for a 🟢 fix: no plan review; reviewer findings below IMPORTANT 
 
 - [x] (gap 12, 12, 11 points for 1, 12, 99+) Render the status item's image in-process from `origin/main`'s code at 2x on a light and a dark bar, and measure the gap (before)
 - [x] (79dc1175) Red test: `MenuBarLayoutTests` pins the glyph margin, the count gap, the spacing, the text origin and the rise, against a stub that carries today's layout
-- [x] (the fix commit) `MenuBarLayout` takes the tight numbers; `MenuBarCountImage`, the switch-off label in `MenuBarLabel` and `MenuBarRibbonImage` read the spacing and the rise from it, and `menuBarLabelSpacing` goes
+- [x] (the fix commit) `MenuBarLayout` takes the tight numbers; `MenuBarCountImage` (the one path for every count; `MenuBarLabel` keeps the bare glyph for no count) and `MenuBarRibbonImage` read the spacing and the rise from it, and `menuBarLabelSpacing` goes
 - [x] (gap 3, 3, 2 points; digits bottom row meets the checkmark, glyph alone identical; sets in the PR media per ADR 0047) Render again with the same harness (after), replace the README's menu bar count shot
 - [x] (swift test 1448 tests passed, pnpm verify 6 gates green) `swift test`, `xcodebuild`, `/verify`, reviewer, PR
 
