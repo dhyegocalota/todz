@@ -1,0 +1,24 @@
+---
+title: Troubleshooting
+description: The sign-in link, Gatekeeper, an older server and updates that will not install.
+---
+
+## The sign-in link does nothing, or says it could not sign you in
+
+Open the link from the email on the same Mac that asked for it. A link opened on another Mac, or after you asked for a newer one, is refused with "Couldn't sign in with that link. Wait a minute, then open it from the email again." Ask for a new one with **Send Link** and open the newest mail.
+
+## Too many tries
+
+"Too many tries. Wait a minute, then try again." means the server limited the link requests. Wait a minute, then press **Send Link** once.
+
+## macOS will not open the app
+
+todz is not notarized, so macOS refuses it the first time. Open todz once and dismiss the warning, then go to **System Settings** › **Privacy & Security**, click **Open Anyway** and confirm with your password or Touch ID. See [Install on Mac](/install-on-mac#1-download-and-open-it).
+
+## Server older
+
+**Server older** in the app means "This server is older than this app expects. Whoever runs it can update it." On your own server, deploy the current release; see [Self-hosting](/self-host).
+
+## An update will not install
+
+If Sparkle says todz cannot be updated from the location it was downloaded to, drag `Todz.app` into Applications, open it from there, and check again. See [Updates](/updates).

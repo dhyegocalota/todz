@@ -1,0 +1,14 @@
+---
+title: Use these docs from your agent
+description: Give an agent these docs through MCP or a plain text file.
+---
+
+These docs have their own MCP server. In Claude Code:
+
+```bash
+claude mcp add --transport http todz-docs https://docs.todz.app/mcp
+```
+
+For an agent that reads plain text, [todz.app/llms.txt](https://todz.app/llms.txt) lists the pages and [todz.app/llms-full.txt](https://todz.app/llms-full.txt) holds them in full.
+
+To let an agent work your tasks instead, see [Connect an agent](/connect-an-agent).

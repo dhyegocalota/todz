@@ -142,3 +142,4 @@ Two public identifiers are no finding: the Cloudflare account id and the Turnsti
 | 2026-11-26 | 4c4b5fcd | 14 | Branch protection on `main`: a pull request required (0 approvals), no force push, no deletion, admins not enforced. No required status check yet: the `verify` workflow had not run on a pull request; it is added as required once it has |
 | 2026-11-26 | 4c4b5fcd | 15 | Description and topics unchanged |
 | 2026-11-26 | 4c4b5fcd | 16 | The repository, `LICENSE` and the security policy answer `200` anonymously |
+| 2026-11-26 | 407f8c81 | 14 | Branch protection on `main` now requires the `ci-ok` check (strict false), plus a pull request (0 approvals), no force push and no deletion; admins not enforced |
