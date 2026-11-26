@@ -6,7 +6,12 @@ import Testing
         #expect(NameConfirmation.isConfirmed(typed: "Acme", name: "Acme"))
     }
 
-    @Test(arguments: ["", "acme", "Acm", "Acme ", " Acme", "Acme Inc"])
+    @Test(arguments: ["Acme ", " Acme", "\tAcme\n"])
+    func surroundingWhitespaceIsIgnored(typed: String) {
+        #expect(NameConfirmation.isConfirmed(typed: typed, name: "Acme"))
+    }
+
+    @Test(arguments: ["", "acme", "Acm", "Acme Inc"])
     func anythingElseDoesNotConfirm(typed: String) {
         #expect(!NameConfirmation.isConfirmed(typed: typed, name: "Acme"))
     }
