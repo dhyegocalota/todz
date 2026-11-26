@@ -13,6 +13,7 @@ struct TaskListHeader: View {
                     .font(.title)
                     .bold()
                     .lineLimit(1)
+                    .titleFlightDestination(item: item)
             }
             Spacer()
             if item == .today {

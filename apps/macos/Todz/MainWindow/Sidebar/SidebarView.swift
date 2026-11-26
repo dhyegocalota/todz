@@ -20,6 +20,7 @@ struct SidebarView: View {
                     if let title = item.title(in: workspace) {
                         Label(title, systemImage: item.symbol)
                             .openCountBadge(model.openCount(of: item))
+                            .titleFlightSource(item: item)
                             .tag(item)
                     }
                 }

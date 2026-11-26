@@ -22,11 +22,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/mac-app-shell/04-inspector-notes-and-history.png" width="820" alt="The todz window: Claude Code added a task, wrote its notes, and every change shows in its history">
+  <img src="docs/screenshots/motion/01-add-and-complete.gif" width="820" alt="The todz window: a task is added and springs into Today, then it is completed">
 </p>
 
 <p align="center">
-  <sub>Claude Code found the broken links, wrote down why, and left the task for you.</sub>
+  <sub>A task springs into Today, and one tick completes it.</sub>
 </p>
 
 | | |

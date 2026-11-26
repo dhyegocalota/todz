@@ -43,7 +43,11 @@ private struct TodzBloomModifier: ViewModifier {
 
 private struct TodzEntranceModifier: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var isReduceMotionOn
-    @State private var isPresented = false
+    @State private var isPresented: Bool
+
+    init(isEntering: Bool) {
+        _isPresented = State(initialValue: !isEntering)
+    }
 
     func body(content: Content) -> some View {
         content
@@ -67,7 +71,7 @@ extension View {
         modifier(TodzBloomModifier(trigger: trigger))
     }
 
-    public func todzEntrance() -> some View {
-        modifier(TodzEntranceModifier())
+    public func todzEntrance(isEntering: Bool = true) -> some View {
+        modifier(TodzEntranceModifier(isEntering: isEntering))
     }
 }

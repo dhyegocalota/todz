@@ -24,6 +24,14 @@ enum TaskListState {
         return .rows(sections)
     }
 
+    var rowIdentities: Set<RowIdentity>? {
+        switch self {
+        case .loading, .failed: nil
+        case .empty: []
+        case let .rows(sections): Set(sections.flatMap { $0.tasks.map(\.rowIdentity) + $0.pendingTasks.map(\.rowIdentity) })
+        }
+    }
+
     var isFailed: Bool {
         guard case .failed = self else { return false }
         return true
