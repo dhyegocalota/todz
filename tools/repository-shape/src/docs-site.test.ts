@@ -15,10 +15,10 @@ const BRAND_ICON = 'docs/brand/todz-icon.svg';
 const FAVICON = 'apps/docs/favicon.svg';
 const PAGE_EXTENSION = '.mdx';
 const NAVIGATION_GROUPS = [
-  { group: 'Get started', pages: ['index', 'quickstart', 'install-on-mac', 'workspaces', 'connect-an-agent'] },
+  { group: 'Get started', pages: ['index', 'quickstart', 'install-on-mac', 'connect-an-agent'] },
+  { group: 'Guides', pages: ['workspaces', 'updates', 'privacy', 'open-source'] },
   { group: 'Reference', pages: ['mcp-tools'] },
-  { group: 'Self-host', pages: ['self-host'] },
-  { group: 'About', pages: ['privacy', 'open-source'] },
+  { group: 'Run your own', pages: ['self-host'] },
 ];
 const NOT_FOUND_TITLE = 'Page not found';
 const HOME_LINK = '](/)';

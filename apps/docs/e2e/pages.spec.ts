@@ -7,12 +7,13 @@ const SIDEBAR_TITLES = [
   'Introduction',
   'Quickstart',
   'Install on Mac',
-  'Workspaces',
   'Connect an agent',
-  'MCP tools',
-  'Self-host todz',
+  'Workspaces',
+  'Updates',
   'Privacy',
   'Open source',
+  'MCP tools',
+  'Server setup',
 ];
 const pages = docsPages();
 

@@ -195,8 +195,12 @@ describe('the install page', () => {
     expect(page.indexOf('Verify the download with section 2')).toBeLessThan(page.indexOf('drag `Todz.app` into Applications'));
   });
 
-  test('says the app updates itself in the background and names the Settings switch', () => {
-    const page = pageText('install-on-mac');
+  test('points its updates section at the Updates page', () => {
+    expect(pageText('install-on-mac')).toContain('[Updates](/updates)');
+  });
+
+  test('the Updates page says the app updates itself in the background and names the Settings switch', () => {
+    const page = pageText('updates');
     expect(page).toContain('The app updates itself. By default it checks once a day through Sparkle');
     expect(page).toContain('installs it when you quit or reopen todz');
     expect(page).toContain('**Update todz automatically** in todz › Settings');
