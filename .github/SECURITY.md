@@ -4,7 +4,10 @@ todz will carry people's task lists and the keys of their agents, so we take rep
 
 ## Reporting a vulnerability
 
-Report privately, never in a public issue or pull request, through GitHub's **Report a vulnerability** button on the Security tab of this repository.
+Report privately, never in a public issue or pull request:
+
+- through GitHub's **Report a vulnerability** button on the Security tab of this repository, or
+- by email to security@todz.app with "todz security" in the subject.
 
 Include what you found, how to reproduce it and what an attacker could do with it. We answer within three business days, keep you informed while we fix it, and credit you when the fix ships, unless you prefer otherwise.
 
