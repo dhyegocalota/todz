@@ -24,16 +24,37 @@
       {
         "header": "todz is a product of",
         "items": [{ "label": "Logic Bit", "href": "https://logicbit.com.br" }]
+      },
+      {
+        "header": "Open source",
+        "items": [
+          { "label": "Contributing", "href": "https://github.com/dhyegocalota/todz/blob/main/.github/CONTRIBUTING.md" },
+          { "label": "Security", "href": "https://github.com/dhyegocalota/todz/blob/main/.github/SECURITY.md" },
+          { "label": "License", "href": "https://github.com/dhyegocalota/todz/blob/main/LICENSE" }
+        ]
       }
     ]
   },
   "navigation": {
     "groups": [
-      { "group": "Get started", "pages": ["index", "quickstart", "install-on-mac", "connect-an-agent", "tour"] },
-      { "group": "Reference", "pages": ["mcp-tools"] },
+      { "group": "Get started", "pages": ["index", "quickstart", "install-on-mac", "connect-an-agent"] },
+      {
+        "group": "Guides",
+        "pages": [
+          "tour",
+          "workspaces",
+          "keyboard-shortcuts",
+          "updates",
+          "privacy",
+          "troubleshooting",
+          "uninstall",
+          "use-these-docs-from-your-agent",
+          "open-source"
+        ]
+      },
+      { "group": "Reference", "pages": ["mcp-tools", "releases"] },
       { "group": "Self-host", "pages": ["self-host"] },
-      { "group": "Fair use", "pages": ["fair-use"] },
-      { "group": "Privacy", "pages": ["privacy"] }
+      { "group": "Fair use", "pages": ["fair-use"] }
     ]
   }
 }

@@ -36,6 +36,8 @@ function isPublicRoute(route: OwnerRoute): route is PublicRoute {
 }
 
 async function servePublic({ context, route }: { context: OwnerContext; route: PublicRoute }): Promise<Response> {
+  const versionRefusal = appVersionRefusal(context.request);
+  if (versionRefusal !== null) return versionRefusal;
   const limitRefusal = await signInLimitRefusal({ request: context.request, env: context.env, route });
   if (limitRefusal !== null) return limitRefusal;
   return PUBLIC_HANDLERS[route](context);
@@ -60,14 +62,14 @@ export async function serveOwner({
 }): Promise<Response> {
   const match = matchOwnerRoute(request);
   if (match === null) return noRouteResponse();
-  const versionRefusal = appVersionRefusal(request);
-  if (versionRefusal !== null) return versionRefusal;
   const context = { request, env, now, executionContext, params: match.params };
   if (isPublicRoute(match.route)) return servePublic({ context, route: match.route });
   const secret = bearerSecret(request);
   if (secret === null) return unauthorized();
   const owner = await resolveSessionOwner({ env, secret, now, projectId: match.params[RouteParam.ProjectId] });
   if (owner === null) return unauthorized();
+  const versionRefusal = appVersionRefusal(request);
+  if (versionRefusal !== null) return versionRefusal;
   const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.OWNER_LIMITER, key: owner.ownerId });
   if (isRateLimited) return withRetryAfter(errorResponse(OwnerErrorCode.RateLimited));
   const isChanging = match.route !== OwnerRoute.SignOut && request.method !== HttpMethod.Get;

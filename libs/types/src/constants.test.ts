@@ -118,8 +118,8 @@ describe('repository constants', () => {
 });
 
 describe('author constants', () => {
-  test('the maker signs with a first name and the GitHub profile (pin)', () => {
-    expect(AUTHOR).toEqual({ name: 'Dhyego', url: 'https://github.com/dhyegocalota' });
+  test('the maker signs with the full name and the personal website (pin)', () => {
+    expect(AUTHOR).toEqual({ name: 'Dhyego Calota', url: 'https://dhyegocalota.com.br' });
   });
 });
 
