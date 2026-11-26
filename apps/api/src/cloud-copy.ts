@@ -7,7 +7,7 @@ export const CLOUD_COPY = {
     textOf: ({ queueUrl }: { queueUrl: string }): string =>
       `todz cloud is full right now: free todz cloud spots are extremely limited. Leave your email and you'll get in when a spot opens: ${queueUrl}\n\nOr run your own server, which is always open: ${DOCS_SELF_HOST_URL}`,
   },
-  atCapacity: `todz cloud is at capacity this month. Your tasks are safe and writing resumes next month, or run your own server: ${DOCS_SELF_HOST_URL}`,
+  atCapacity: `todz cloud is at capacity this month. Your changes are kept and sync next month, or run your own server: ${DOCS_SELF_HOST_URL}`,
   queued: "You're on the list. We'll email you when a spot opens.",
   queuePage: {
     title: 'Get in line for todz cloud',

@@ -298,7 +298,8 @@ describe('the 95% refusals', () => {
     expect(await response.json()).toEqual({
       error: 'limit_reached',
       limit: 'cloud_capacity',
-      message: CLOUD_COPY.atCapacity,
+      message:
+        'todz cloud is at capacity this month. Your changes are kept and sync next month, or run your own server: https://docs.todz.app/self-host',
     });
     expect(response.headers.get('Retry-After')).toBe(String((NEXT_MONTH_START - FIRST_OF_MONTH_NIGHT) / 1000));
     expect(CLOUD_COPY.atCapacity).toContain('todz cloud is at capacity this month');
