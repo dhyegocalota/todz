@@ -8,6 +8,7 @@ import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
 import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
 import { LANDING_STRUCTURED_DATA } from './site-json-ld';
 import { CONTENT_ID, LANDING_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
+import { DOCS_SELF_HOST_URL } from './self-host-redirect';
 import { SITE_STYLE, cropClassOf } from './site-style';
 import { STAR_COUNT_SCRIPT } from './star-count-script';
 import { starPillHtml } from './star-pill';
@@ -52,6 +53,7 @@ function downloadHtml(stars: number | null): string {
   return `<div class="download hero-actions rise delay-3">
 <div class="hero-buttons">
 <a class="download-button" href="${DOWNLOAD_PATH}" download>${escapedHtml(button)}</a>
+<span class="free-chip glass">${escapedHtml(LANDING_COPY.free.chip)}</span>
 ${starPillHtml(stars)}
 </div>
 <p class="download-note">${escapedHtml(note)} <a class="download-note-link" href="${DOCS_INSTALL_URL}">${escapedHtml(noteLink)}</a></p>
@@ -60,12 +62,25 @@ ${starPillHtml(stars)}
 `;
 }
 
+function waysHtml(): string {
+  const { title, cloud, selfHost, note } = LANDING_COPY.ways;
+  return `<section class="ways page-width" aria-labelledby="ways-title">
+<h2 id="ways-title" class="section-title">${escapedHtml(title)}</h2>
+<ul class="way-list">
+<li class="way-card glass reveal"><div class="way-head"><h3 class="way-title">${escapedHtml(cloud.title)}</h3><span class="way-badge">${escapedHtml(cloud.badge)}</span></div><p class="way-body">${escapedHtml(cloud.body)}</p><a class="download-button way-cta" href="${DOWNLOAD_PATH}" download>${escapedHtml(cloud.cta)}</a></li>
+<li class="way-card glass reveal"><div class="way-head"><h3 class="way-title">${escapedHtml(selfHost.title)}</h3><span class="way-badge">${escapedHtml(selfHost.badge)}</span></div><p class="way-body">${escapedHtml(selfHost.body)}</p><a class="way-cta way-cta-secondary" href="${DOCS_SELF_HOST_URL}">${escapedHtml(selfHost.cta)}</a></li>
+</ul>
+<p class="ways-note">${escapedHtml(note)}</p>
+</section>`;
+}
+
 function heroHtml(stars: number | null): string {
   return `<section class="hero page-width" aria-labelledby="hero-title">
 <div class="hero-copy">
 <p class="eyebrow-pill glass rise"><span class="eyebrow-dot" aria-hidden="true"></span>${escapedHtml(LANDING_COPY.hero.eyebrow)}</p>
 <h1 id="hero-title" class="hero-title rise delay-1">${escapedHtml(LANDING_COPY.hero.title)}</h1>
 <p class="hero-lead rise delay-2">${escapedHtml(LANDING_COPY.hero.lead)}</p>
+<p class="hero-free rise delay-2">${escapedHtml(LANDING_COPY.free.line)}</p>
 ${downloadHtml(stars)}</div>
 <figure class="desk-stage arrive delay-3">
 <figcaption class="visually-hidden">${escapedHtml(LANDING_COPY.stage.label)}</figcaption>
@@ -142,6 +157,7 @@ function landingHtml(stars: number | null): string {
     description: LANDING_COPY.meta.description,
     main: `<main id="${CONTENT_ID}">
 ${heroHtml(stars)}
+${waysHtml()}
 ${benefitsHtml()}
 ${howItWorksHtml()}
 ${finalCallHtml()}

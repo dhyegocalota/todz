@@ -95,7 +95,7 @@ const APPLICATION: Node = {
   sameAs: [REPOSITORY.url, 'https://docs.todz.app'],
   offers: {
     '@type': 'Offer',
-    price: 0,
+    price: '0',
     priceCurrency: 'USD',
     availability: 'https://schema.org/InStock',
     url: `${SITE_URL}/download`,

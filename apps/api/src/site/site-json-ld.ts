@@ -9,7 +9,7 @@ const LANGUAGE = 'en';
 const OPERATING_SYSTEM = 'macOS 14 or later';
 const APPLICATION_CATEGORY = 'BusinessApplication';
 const APPLICATION_SUB_CATEGORY = 'Productivity';
-const FREE_PRICE = 0;
+const FREE_PRICE = '0';
 const PRICE_CURRENCY = 'USD';
 const IN_STOCK_AVAILABILITY = `${SCHEMA_URL}/InStock`;
 
