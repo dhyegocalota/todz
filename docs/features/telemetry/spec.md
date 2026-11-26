@@ -1,6 +1,6 @@
 # Telemetry
 
-**Status:** Approved
+**Status:** Shipped 2026-11-26
 **Tier:** 🔴 (a schema change, a public write endpoint, a cron, a new Worker path in front of an asset, and what is collected)
 **Owner approval:** approved 2026-11-26 by the owner's request ("telemetria sim, mas de forma leve sem estourar meu billing? e onde vou conferir estes números?", recorded in `todz-loop/PROMPT.md` "Telemetry, light and private") and his limits ("payload leve, pra não acumular gigas e eu ter que pagar"); the rest inherits the approval of [`docs/product/README.md`](../../product/README.md) by inheritance.
 **ADRs:** [0082](../../adr/0082-telemetry-is-daily-rollups-in-d1-counted-by-a-nightly-cron-the-appcast-and-an-opt-in-app-report-with-no-raw-event-and-self-host-off.md)
