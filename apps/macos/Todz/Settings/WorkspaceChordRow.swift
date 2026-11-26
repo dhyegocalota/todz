@@ -25,9 +25,13 @@ struct WorkspaceChordRow: View {
             Text(WorkspaceShortcutsCopy.recording)
                 .foregroundStyle(.secondary)
         }
-        if !isRecording, let chord = shortcuts.bindings.chord(for: action) {
+        if !isRecording, let chord = shortcuts.globalChords.chord(for: action) {
             Text(chord.label)
                 .monospaced()
+        }
+        if !isRecording, shortcuts.isInUse(action) {
+            Text(WorkspaceShortcutsCopy.inUse)
+                .foregroundStyle(.secondary)
         }
     }
 

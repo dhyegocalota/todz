@@ -32,7 +32,7 @@ private func hotKeyPressed(_: EventHandlerCallRef?, event: EventRef?, userData: 
     return noErr
 }
 
-// NB ADR 0079: global chords go through Carbon RegisterEventHotKey, which needs no Accessibility permission.
+// NB ADR 0091: global chords go through Carbon RegisterEventHotKey, which needs no Accessibility permission.
 @MainActor final class WorkspaceHotKeys {
     private let onAction: (WorkspaceAction) -> Void
     private var registrations: [EventHotKeyRef] = []
@@ -51,13 +51,15 @@ private func hotKeyPressed(_: EventHandlerCallRef?, event: EventRef?, userData: 
         RemoveEventHandler(handler)
     }
 
-    func register(_ bindings: WorkspaceBindings) {
+    @discardableResult func register(_ chords: [WorkspaceAction: KeyChord]) -> Set<WorkspaceAction> {
         unregister()
-        guard isHandling else { return }
-        registrations = WorkspaceAction.all.enumerated().compactMap { offset, action in
-            guard let chord = bindings.chord(for: action) else { return nil }
-            return registration(identifier: offset + 1, chord: chord)
+        guard isHandling else { return Set(chords.keys) }
+        let attempts = WorkspaceAction.all.enumerated().compactMap { offset, action -> (action: WorkspaceAction, reference: EventHotKeyRef?)? in
+            guard let chord = chords[action] else { return nil }
+            return (action, registration(identifier: offset + 1, chord: chord))
         }
+        registrations = attempts.compactMap(\.reference)
+        return Set(attempts.filter { $0.reference == nil }.map(\.action))
     }
 
     func unregister() {

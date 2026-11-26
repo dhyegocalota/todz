@@ -17,21 +17,18 @@ struct SettingsWorkspaceShortcuts: View {
                 }
                 .toggleStyle(.switch)
                 .onChange(of: isGlobalOn) { shortcuts.registerHotKeys() }
-                WorkspaceChordRow(action: .previous, title: WorkspaceShortcutsCopy.previous, refusal: $refusal)
-                WorkspaceChordRow(action: .next, title: WorkspaceShortcutsCopy.next, refusal: $refusal)
-                ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
-                    WorkspaceChordRow(action: .number(number), title: workspace.name, refusal: $refusal)
+                if isGlobalOn {
+                    ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
+                        WorkspaceChordRow(action: .number(number), title: workspace.name, refusal: $refusal)
+                    }
                 }
-                Text(footnote)
-                    .foregroundStyle(.secondary)
+                if let refusal {
+                    Text(WorkspaceShortcutsCopy.refusal(refusal))
+                        .foregroundStyle(.secondary)
+                }
             } header: {
                 Text(WorkspaceShortcutsCopy.header)
             }
         }
-    }
-
-    private var footnote: String {
-        guard let refusal else { return WorkspaceShortcutsCopy.missionControl }
-        return WorkspaceShortcutsCopy.refusal(refusal)
     }
 }
