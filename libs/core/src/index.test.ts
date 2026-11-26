@@ -8,6 +8,7 @@ const PUBLIC_EXPORTS = [
   'TaskNotFoundError',
   'addTasks',
   'agentActor',
+  'assertBatchSize',
   'completeTasks',
   'dueNow',
   'dueWindowOf',
@@ -26,6 +27,7 @@ const PUBLIC_EXPORTS = [
   'reopenTasks',
   'textMatches',
   'updateTask',
+  'validateDrafts',
 ];
 
 describe('the package index', () => {
