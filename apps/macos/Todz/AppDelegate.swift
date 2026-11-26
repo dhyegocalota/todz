@@ -48,6 +48,10 @@ private let cacheFolderName = "Cache"
         openPopover: { [panel] in await panel.open() },
         closePopover: { [panel] in panel.close() }
     )
+    private(set) lazy var workspaceShortcuts = WorkspaceShortcutController(
+        preference: WorkspaceShortcutsPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
+        onAction: { [model] action in Task { await model.switchWorkspace(action: action) } }
+    )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
     private(set) lazy var dayTemperatureClock = DayTemperatureClock(
         now: Date.init,
@@ -80,6 +84,7 @@ private let cacheFolderName = "Cache"
     func applicationDidFinishLaunching(_ notification: Notification) {
         PerfProbe.shared?.start(model: model)
         decideLaunchSurfaceStart(notification)
+        workspaceShortcuts.start()
         observeWidgetRequests()
         observeDayChanges()
         observeWindows(LaunchActivation.of(isDefaultLaunch: notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool))
