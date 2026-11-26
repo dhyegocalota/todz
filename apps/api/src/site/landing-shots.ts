@@ -3,7 +3,6 @@ export enum LandingShot {
   WindowDark = 'window-dark',
   Popover = 'popover',
   WidgetMedium = 'widget-medium',
-  WidgetRing = 'widget-ring',
   AgentTasks = 'agent-tasks',
 }
 
@@ -48,15 +47,8 @@ export const LANDING_SHOTS: Record<LandingShot, ShotFile> = {
     path: '/landing/widgets/03-medium-today.png',
     width: 920,
     height: 532,
-    crop: { x: 96, y: 96, width: 728, height: 340 },
+    crop: { x: 96, y: 96, width: 728, height: 256 },
     webpWidths: [408, 816],
-  }),
-  [LandingShot.WidgetRing]: shotOf({
-    path: '/landing/widgets/01-today-ring.png',
-    width: 532,
-    height: 532,
-    crop: { x: 96, y: 96, width: 340, height: 340 },
-    webpWidths: [182, 364],
   }),
   [LandingShot.AgentTasks]: shotOf({
     path: '/landing/mac-sync/01-agent-add-live.png',

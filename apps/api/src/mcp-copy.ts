@@ -133,6 +133,8 @@ export const MCP_COPY = {
       'The confirmation is not the current name of the target: nothing was deleted. Send the name exactly as it is now.',
     [RuleIssue.MoveConflict]:
       'The task was moved once already and has changed since: nothing was moved. Look at the destination project before moving it again.',
+    [RuleIssue.TaskChanged]: 'The task was edited while it was being moved: nothing was moved. Move it again.',
+    [RuleIssue.DestinationGone]: 'The destination project was deleted while the task was being moved: nothing was moved.',
   } satisfies Record<RuleIssue, string>,
   taskIdInvalid: `Not a task id: use one like ${EXAMPLE_TASK_ID}.`,
   sessionRequired: 'Bad Request: Mcp-Session-Id header is required',

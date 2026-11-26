@@ -1,7 +1,7 @@
 import type { Actor, Task } from '@todz/core';
 import { RuleIssue, TaskState } from '@todz/types';
 import { MCP_COPY } from './mcp-copy';
-import { type ProjectResult, ProjectFailureKind } from './project-result';
+import { type ProjectFailure, type ProjectResult, ProjectFailureKind } from './project-result';
 import type { ProjectStore } from './project-store';
 
 export const MOVE_KEY_PREFIX = 'move:';
@@ -14,6 +14,7 @@ export async function moveTask({
   sourceProjectId,
   sourceProjectName,
   destination,
+  isDestinationListed,
   openTasksMax,
   actor,
   number,
@@ -23,6 +24,7 @@ export async function moveTask({
   sourceProjectId: string;
   sourceProjectName: string;
   destination: DurableObjectStub<ProjectStore>;
+  isDestinationListed: () => Promise<boolean>;
   actor: Actor;
   number: number;
 }): Promise<ProjectResult<MovedTask>> {
@@ -38,11 +40,23 @@ export async function moveTask({
   if (addition === undefined) throw new Error('adding one task answers one task');
   const isSameTask = addition.task.title === task.title && addition.task.notes === task.notes;
   if (!isSameTask) return { ok: false, failure: { kind: ProjectFailureKind.RuleViolated, issue: RuleIssue.MoveConflict, index: null } };
+  const isDestinationPresent = await isDestinationListed();
+  if (!isDestinationPresent) {
+    await destination.wipe();
+    return { ok: false, failure: { kind: ProjectFailureKind.RuleViolated, issue: RuleIssue.DestinationGone, index: null } };
+  }
   const arrival = await arrivedAs({ destination, actor, task, arrived: addition.task });
   if (!arrival.ok) return arrival;
-  const deleted = await source.deleteTask({ number, confirmation: task.title });
+  const deleted = await source.deleteTask({ number, confirmation: task.title, unchangedFrom: task });
+  if (!deleted.ok && isEditedSource(deleted.failure)) {
+    await destination.deleteTask({ number: arrival.value.number, confirmation: arrival.value.title, unchangedFrom: arrival.value });
+  }
   if (!deleted.ok) return deleted;
   return { ok: true, value: { task, arrived: arrival.value } };
+}
+
+function isEditedSource(failure: ProjectFailure): boolean {
+  return failure.kind === ProjectFailureKind.RuleViolated && failure.issue === RuleIssue.TaskChanged;
 }
 
 async function arrivedAs({

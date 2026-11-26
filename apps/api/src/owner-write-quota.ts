@@ -3,8 +3,12 @@ import type { Env } from './env';
 import { FAIR_USE_COPY } from './fair-use-copy';
 import { type FairUseLimits, fairUseLimitsOf } from './fair-use-limits';
 import { limitResponse, suspendedResponse } from './owner-errors';
+import type { SessionContext } from './owner-request';
 import { WriteRefusal, reserveOwnerWrites } from './owner-usage-store';
 import { utcDayOf } from './telemetry/telemetry-day';
+
+export const ONE_WRITE = 1;
+export const NO_TEXT_BYTES = 0;
 
 type Text = string | null | undefined;
 
@@ -31,6 +35,21 @@ export function reserveWrites({
   bytes: number;
 }): Promise<WriteRefusal | null> {
   return reserveOwnerWrites({ directory: env.DIRECTORY, ownerId, day: utcDayOf(now), writes, bytes, limits: fairUseLimitsOf(env) });
+}
+
+export async function refusalOf({
+  context,
+  writes,
+  bytes,
+}: {
+  context: SessionContext;
+  writes: number;
+  bytes: number;
+}): Promise<Response | null> {
+  const { env, owner, now } = context;
+  const refusal = await reserveWrites({ env, ownerId: owner.ownerId, now, writes, bytes });
+  if (refusal === null) return null;
+  return fairUseRefusalResponse({ refusal, limits: fairUseLimitsOf(env), now });
 }
 
 export async function writeRefusalTextOf({

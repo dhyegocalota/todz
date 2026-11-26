@@ -264,7 +264,7 @@ Served from `apps/api/public/landing/` under the same relative path as in `docs/
 | Hero window (light) | `mac-app-shell/04-inspector-notes-and-history.png` | full, `--radius-shot` clips the corners | 66% of stage (~760px) at 1280; hidden below 640 |
 | Hero window (dark, option D-B) | `v1-walk/01-agent-tasks-in-a-project.png` | full | same frame, swapped by `<picture><source media="(prefers-color-scheme: dark)">` |
 | Hero popover | `menu-bar/01-today-popover.png` | full | 27% of stage (~310px) at 1280; 280px at 375 |
-| Hero widget | `widgets/03-medium-today.png` | the card: x 96–824, y 96–436 | 28% of stage (~320px); 240px at 375; `--radius-widget` |
+| Hero widget | `widgets/03-medium-today.png` | the card down to its last row: x 96–824, y 96–352 | 28% of stage (~320px); 240px at 375; `--radius-widget` |
 | Benefit "agents" | `mac-sync/01-agent-add-live.png` | the list: x 322–1160, y 150–514 (Add a task and T-1…T-4, T-4 selected, "via Claude Code") | fills the 160px well, top-aligned |
 | Benefit "glance" | `widgets/01-today-ring.png` | the card: x 96–436, y 96–436 | 132px square, centred in the well |
 | Benefit "offline" | none: an inline glyph (a cloud holding the brand check, cobalt on glass) | — | 64px, centred in the well |
