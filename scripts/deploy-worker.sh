@@ -15,6 +15,8 @@ immutable_cache="public, max-age=31536000, immutable"
 appcast_cache="public, max-age=300"
 text_type="text/plain; charset=utf-8"
 appcast_type="application/xml; charset=utf-8"
+directory_database="todz-directory"
+no_pending_migrations="No migrations to apply"
 foreign_names=(_headers _redirects .assetsignore)
 
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -198,6 +200,12 @@ stage_releases() {
   printf '/download /download/%s/Todz-%s.dmg 302\n/download/latest /download/%s/Todz-%s.dmg 302\n' "$newest" "$newest" "$newest" "$newest" > "$stage/_redirects"
 }
 
+refuse_pending_migrations() {
+  local output
+  output=$(bounded "$wrangler_seconds" "wrangler migrations list" "$cloudflare_binary" pnpm --filter @todz/api exec wrangler d1 migrations list "$directory_database" --remote) || fail "wrangler migrations list failed"
+  [[ "$output" == *"$no_pending_migrations"* ]] || fail "the remote directory has pending migrations: apply the migrations first (runbook step 7)"$'\n'"$output"
+}
+
 deploy_stage() {
   local head_sha output version_id
   head_sha=$(git rev-parse HEAD)
@@ -231,4 +239,5 @@ stage_public_files
 stage_releases
 echo "staged $(find "$stage" -type f | wc -l | tr -d ' ') files in $stage"
 [[ -n "$stage_only_directory" ]] && exit 0
+refuse_pending_migrations
 deploy_stage
