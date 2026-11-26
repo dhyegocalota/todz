@@ -27,16 +27,17 @@ struct MenuBarRibbonStrip {
             .lineLimit(1)
             .truncationMode(.tail)
             .frame(maxWidth: maxTextWidth, alignment: .leading)
-        let drawing = HStack(spacing: menuBarLabelSpacing) {
+        let drawing = HStack(spacing: MenuBarLayout.glyphSpacing) {
             Image(menuBarGlyphName)
             line
+                .offset(y: -MenuBarLayout.countRise)
         }
         .foregroundStyle(.black)
         let renderer = ImageRenderer(content: drawing)
         renderer.scale = stripScale
         guard let image = renderer.nsImage else { preconditionFailure(renderFailure) }
         image.isTemplate = true
-        let textOrigin = glyph.size.width + menuBarLabelSpacing
+        let textOrigin = MenuBarLayout.textOrigin(glyphWidth: glyph.size.width)
         return MenuBarRibbonStrip(image: image, textWidth: image.size.width - textOrigin)
     }
 

@@ -17,7 +17,13 @@ export function projectJson(project: ProjectRecord) {
 }
 
 export function workspaceJson({ workspace, projects }: { workspace: WorkspaceRecord; projects: ProjectRecord[] }) {
-  return { id: workspace.id, name: workspace.name, created_at: workspace.createdAt, projects: projects.map(projectJson) };
+  return {
+    id: workspace.id,
+    name: workspace.name,
+    created_at: workspace.createdAt,
+    last_activity_at: workspace.lastActivityAt,
+    projects: projects.map(projectJson),
+  };
 }
 
 export function keyJson(key: KeyRecord) {

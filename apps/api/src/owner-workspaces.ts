@@ -43,7 +43,7 @@ async function createWorkspace({ request, env, owner, now }: SessionContext): Pr
   const limits = fairUseLimitsOf(env);
   const nameResult = resultOf(() => normalizeName(body.name));
   if (!nameResult.ok) return failureResponse(nameResult.failure);
-  const workspace = { id: crypto.randomUUID(), name: nameResult.value, createdAt: now };
+  const workspace = { id: crypto.randomUUID(), name: nameResult.value, createdAt: now, lastActivityAt: null };
   const inbox = { id: crypto.randomUUID(), name: INBOX_PROJECT_NAME, isInbox: true, createdAt: now };
   const isInserted = await insertWorkspaceWithInbox({
     directory: env.DIRECTORY,

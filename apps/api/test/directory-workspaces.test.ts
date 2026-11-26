@@ -157,7 +157,7 @@ describe('findOwnerWorkspace', () => {
     });
     await seedProject({ ownerId });
     const listing = await findOwnerWorkspace({ directory: env.DIRECTORY, ownerId, workspaceId });
-    expect(listing?.workspace).toEqual({ id: workspaceId, name: 'Work', createdAt: CLOCK_NOW });
+    expect(listing?.workspace).toEqual({ id: workspaceId, name: 'Work', createdAt: CLOCK_NOW, lastActivityAt: null });
     expect(listing?.projects.map((project) => project.id)).toEqual([inboxId]);
   });
 

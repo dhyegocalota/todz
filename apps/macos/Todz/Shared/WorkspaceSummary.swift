@@ -11,6 +11,11 @@ struct WorkspaceSummary: View {
             Text(WorkspacePickerCopy.projectCount(count: workspace.projectCount))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if let recency = ActivityRecency(lastActivityAt: workspace.lastActivityAt, now: .now) {
+                Text(WorkspacePickerCopy.activity(recency: recency))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }

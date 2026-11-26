@@ -37,6 +37,15 @@ public struct Workspace: Codable, Sendable, Equatable, Hashable {
     public let name: String
     public let createdAt: Date
     public let projects: [Project]
+    public let lastActivityAt: Date?
+
+    init(identifier: String, name: String, createdAt: Date, projects: [Project], lastActivityAt: Date? = nil) {
+        self.identifier = identifier
+        self.name = name
+        self.createdAt = createdAt
+        self.projects = projects
+        self.lastActivityAt = lastActivityAt
+    }
 
     public var projectCount: Int {
         projects.count
@@ -46,6 +55,7 @@ public struct Workspace: Codable, Sendable, Equatable, Hashable {
         case identifier = "id"
         case name
         case createdAt
+        case lastActivityAt
         case projects
     }
 }
