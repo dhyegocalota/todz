@@ -7,6 +7,7 @@ import { noRouteResponse } from '../owner-errors';
 import { ADMIN_ROUTES } from './admin-routes';
 import { APPCAST_PATH, serveAppcast } from './appcast';
 import { discoveryResponse } from './discovery-response';
+import { LANDING_MARKDOWN_FILE, MARKDOWN_MEDIA_TYPE } from './landing-markdown';
 import { serveLandingPage } from './landing-page';
 import { repositoryStarsOf } from './repository-stars';
 import { SELF_HOST_PATH, redirectToDocs } from './self-host-redirect';
@@ -28,7 +29,13 @@ function repositoryApiUrlOf({ REPOSITORY_API_ORIGIN: apiOrigin }: Env): string {
   return `${apiOrigin}/repos/${REPOSITORY.path}`;
 }
 
-async function serveLanding({ env }: SiteContext): Promise<Response> {
+function serveLandingMarkdown(): Response {
+  return discoveryResponse({ ...LANDING_MARKDOWN_FILE, headers: { [HttpHeader.Vary]: HttpHeader.Accept } });
+}
+
+async function serveLanding({ request, env }: SiteContext): Promise<Response> {
+  const wantsMarkdown = request.headers.get(HttpHeader.Accept)?.includes(MARKDOWN_MEDIA_TYPE) === true;
+  if (wantsMarkdown) return serveLandingMarkdown();
   const stars = await repositoryStarsOf({
     fetchImplementation: fetch,
     cache: await caches.open(REPOSITORY_STARS_CACHE_NAME),

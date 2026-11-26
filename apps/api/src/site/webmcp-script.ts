@@ -49,6 +49,7 @@ export const WEBMCP_TOOLS: WebMcpTool[] = [
 const OVERVIEW_TEXT = [
   DISCOVERY_COPY.summary,
   DISCOVERY_COPY.status,
+  DISCOVERY_COPY.download,
   DISCOVERY_COPY.pricing,
   DISCOVERY_COPY.publisher,
   `Docs: ${DOCS_URL}`,

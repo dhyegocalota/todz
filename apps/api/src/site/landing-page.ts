@@ -1,6 +1,8 @@
 import { AUTHOR } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
+import { HttpHeader } from '../http-header';
 import { LANDING_COPY } from './landing-copy';
+import { MARKDOWN_MEDIA_TYPE } from './landing-markdown';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
 import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
@@ -10,13 +12,15 @@ import { DOCS_SELF_HOST_URL } from './self-host-redirect';
 import { SITE_STYLE, cropClassOf } from './site-style';
 import { STAR_COUNT_SCRIPT } from './star-count-script';
 import { starPillHtml } from './star-pill';
-import { DOCS_INSTALL_URL, DOWNLOAD_PATH } from './site-urls';
+import { DOCS_INSTALL_URL, DOWNLOAD_PATH, DiscoveryPath } from './site-urls';
 import { WEBMCP_SCRIPT } from './webmcp-script';
 
 const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const SRCSET_LIST_SEPARATOR = ', ';
 const WORD_SEPARATOR = ' ';
 const WAYS_ID = 'ways';
+
+const MARKDOWN_ALTERNATE_LINK = `<${DiscoveryPath.LandingMarkdown}>; rel="alternate"; type="${MARKDOWN_MEDIA_TYPE}"`;
 
 const PAGE_SCRIPTS = [STAR_COUNT_SCRIPT, WEBMCP_SCRIPT];
 
@@ -168,5 +172,8 @@ ${finalCallHtml()}
 }
 
 export function serveLandingPage({ stars }: { stars: number | null }): Response {
-  return sitePageResponse({ html: landingHtml(stars), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+  const response = sitePageResponse({ html: landingHtml(stars), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+  response.headers.set(HttpHeader.Link, MARKDOWN_ALTERNATE_LINK);
+  response.headers.set(HttpHeader.Vary, HttpHeader.Accept);
+  return response;
 }
