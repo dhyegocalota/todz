@@ -11,8 +11,8 @@ const OPEN_SOURCE_LINK_FILE = 'apps/macos/Todz/OpenSource/OpenSourceLink.swift';
 const MENU_BAR_FOOT_FILE = 'apps/macos/Todz/MenuBar/MenuBarFoot.swift';
 const APP_COMMANDS_FILE = 'apps/macos/Todz/AppCommands.swift';
 const SETTINGS_FILE = 'apps/macos/Todz/Settings/SettingsView.swift';
-const LICENSE_BADGE = '[![license](https://img.shields.io/github/license/dhyegocalota/todz)](LICENSE)';
-const STARS_BADGE = `[![GitHub stars](https://img.shields.io/github/stars/${REPOSITORY.path}?style=flat)](${REPOSITORY.url})`;
+const LICENSE_BADGE = '[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)';
+const STARS_BADGE = `[![GitHub stars](https://img.shields.io/github/stars/${REPOSITORY.path}?style=flat&cacheSeconds=3600)](${REPOSITORY.url})`;
 const OPEN_WORKSPACE_CALL = 'NSWorkspace.shared.open(RepositoryAddress.url)';
 
 describe('the open source surfaces', () => {
