@@ -7,6 +7,10 @@ public enum WorkspaceShortcuts {
         return workspaces[position]
     }
 
+    public static func workspace(action: WorkspaceAction, activeIdentifier: String?, in workspaces: [Workspace]) -> Workspace? {
+        nil
+    }
+
     public static func numbered(_ workspaces: [Workspace]) -> [(number: Int, workspace: Workspace)] {
         zip(numbers, workspaces).map { (number: $0, workspace: $1) }
     }
