@@ -11,7 +11,12 @@ const OK_STATUS = 200;
 const STARS = 1234;
 const STARS_TEXT = '1.2k';
 const STAR_GLYPH = '★';
-const LINKED_LINE_PIECES = [`${LANDING_COPY.signature.line} —`, 'Free on todz cloud — or', '.'];
+const LINKED_LINE_PIECES = [
+  `${LANDING_COPY.signature.line} —`,
+  'Free on todz cloud — or',
+  '.',
+  `${LANDING_COPY.shell.creditPrefix} ${LANDING_COPY.shell.creditLead}`,
+];
 const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';

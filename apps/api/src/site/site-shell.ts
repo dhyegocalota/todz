@@ -44,8 +44,8 @@ ${brandHtml()}
 }
 
 function creditHtml(): string {
-  const { creditLead, creditName, creditTail } = LANDING_COPY.shell;
-  return `<p class="footer-credit">${escapedHtml(creditLead)} <a class="footer-credit-link" href="${escapedHtml(COMPANY.website)}" rel="noopener noreferrer">${escapedHtml(creditName)}</a>${escapedHtml(creditTail)}</p>`;
+  const { creditPrefix, creditLead, creditName, creditTail } = LANDING_COPY.shell;
+  return `<p class="footer-credit">${escapedHtml(creditPrefix)} ${escapedHtml(creditLead)} <a class="footer-credit-link" href="${escapedHtml(COMPANY.website)}" rel="noopener noreferrer">${escapedHtml(creditName)}</a>${escapedHtml(creditTail)}</p>`;
 }
 
 function starPillFooterHtml(document: SiteDocument): string {
