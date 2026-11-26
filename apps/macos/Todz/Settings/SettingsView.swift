@@ -138,6 +138,9 @@ struct SettingsView: View {
             } footer: {
                 VersionLine()
             }
+            Section {
+                OpenSourceLink()
+            }
         }
         .formStyle(.grouped)
         .fixedSize(horizontal: false, vertical: true)

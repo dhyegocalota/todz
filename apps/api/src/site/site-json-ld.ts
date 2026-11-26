@@ -1,18 +1,17 @@
-import { COMPANY } from '@todz/types';
+import { COMPANY, REPOSITORY } from '@todz/types';
 import { LANDING_COPY } from './landing-copy';
 import { scriptJson } from './site-constants';
 import { OPEN_GRAPH_IMAGE } from './site-icons';
-import { SITE_URL } from './site-urls';
+import { DOWNLOAD_PATH, SITE_URL } from './site-urls';
 
 const SCHEMA_URL = 'https://schema.org';
 const LANGUAGE = 'en';
 const OPERATING_SYSTEM = 'macOS 14 or later';
 const APPLICATION_CATEGORY = 'BusinessApplication';
 const APPLICATION_SUB_CATEGORY = 'Productivity';
-const WAITLIST_PRICE = 0;
+const FREE_PRICE = '0';
 const PRICE_CURRENCY = 'USD';
-const PRE_ORDER_AVAILABILITY = `${SCHEMA_URL}/PreOrder`;
-const JOIN_ANCHOR = '#join';
+const IN_STOCK_AVAILABILITY = `${SCHEMA_URL}/InStock`;
 
 enum SchemaType {
   Organization = 'Organization',
@@ -55,12 +54,14 @@ const APPLICATION = {
   applicationCategory: APPLICATION_CATEGORY,
   applicationSubCategory: APPLICATION_SUB_CATEGORY,
   publisher: PUBLISHER,
+  codeRepository: REPOSITORY.url,
+  license: REPOSITORY.licenseSpdxUrl,
   offers: {
     '@type': SchemaType.Offer,
-    price: WAITLIST_PRICE,
+    price: FREE_PRICE,
     priceCurrency: PRICE_CURRENCY,
-    availability: PRE_ORDER_AVAILABILITY,
-    url: `${SITE_URL}/${JOIN_ANCHOR}`,
+    availability: IN_STOCK_AVAILABILITY,
+    url: `${SITE_URL}${DOWNLOAD_PATH}`,
   },
 };
 

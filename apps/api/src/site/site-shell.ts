@@ -1,4 +1,4 @@
-import { COMPANY } from '@todz/types';
+import { COMPANY, REPOSITORY } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
 import { LANDING_COPY } from './landing-copy';
 import { DOCS_SELF_HOST_URL } from './self-host-redirect';
@@ -6,6 +6,7 @@ import { SITE_GLYPH_SPRITE, SiteGlyph, glyphHtml } from './site-glyphs';
 import { DARK_THEME_COLOR } from './site-constants';
 import { OPEN_GRAPH_IMAGE, SITE_ICONS, SiteIcon } from './site-icons';
 import { SITE_STYLE } from './site-style';
+import { starPillHtml } from './star-pill';
 import { DOCS_INSTALL_URL, DiscoveryPath, SITE_URL } from './site-urls';
 
 export const LANDING_PATH = '/';
@@ -23,7 +24,7 @@ export enum SitePageKind {
 type SiteDocumentContent = { title: string; description: string; main: string; scripts: string[] };
 
 export type SiteDocument =
-  | (SiteDocumentContent & { kind: SitePageKind.Public; path: string; structuredData: string })
+  | (SiteDocumentContent & { kind: SitePageKind.Public; path: string; structuredData: string; stars: number | null })
   | (SiteDocumentContent & { kind: SitePageKind.Private });
 
 function brandHtml(): string {
@@ -43,18 +44,32 @@ ${brandHtml()}
 }
 
 function creditHtml(): string {
-  const { creditLead, creditName, creditTail } = LANDING_COPY.shell;
-  return `<p class="footer-credit">${escapedHtml(creditLead)} <a class="footer-credit-link" href="${escapedHtml(COMPANY.website)}" rel="noopener noreferrer">${escapedHtml(creditName)}</a>${escapedHtml(creditTail)}</p>`;
+  const { creditPrefix, creditLead, creditName, creditTail } = LANDING_COPY.shell;
+  return `<p class="footer-credit">${escapedHtml(creditPrefix)} ${escapedHtml(creditLead)} <a class="footer-credit-link" href="${escapedHtml(COMPANY.website)}" rel="noopener noreferrer">${escapedHtml(creditName)}</a>${escapedHtml(creditTail)}</p>`;
 }
 
-function footerHtml(): string {
+function starPillFooterHtml(document: SiteDocument): string {
+  if (document.kind === SitePageKind.Private) return '';
+  return `${starPillHtml(document.stars)}\n`;
+}
+
+function sourceLinksHtml(document: SiteDocument): string {
+  if (document.kind === SitePageKind.Private) return '';
+  const { license, contributing } = LANDING_COPY.openSource;
+  return `<a class="footer-link footer-open-source" href="${REPOSITORY.licenseUrl}" rel="noopener">${escapedHtml(license)}</a>
+<a class="footer-link footer-open-source" href="${REPOSITORY.contributingUrl}" rel="noopener">${escapedHtml(contributing)}</a>
+`;
+}
+
+function footerHtml(document: SiteDocument): string {
   return `<footer class="site-footer">
 <div class="site-footer-inner page-width">
 ${brandHtml()}
-<p class="footer-copyright">${escapedHtml(LANDING_COPY.shell.copyright)}</p>
 ${creditHtml()}
-<a class="footer-link" href="${DOCS_SELF_HOST_URL}">${escapedHtml(LANDING_COPY.shell.footerSelfHost)}</a>
+${starPillFooterHtml(document)}<div class="footer-links">
+${sourceLinksHtml(document)}<a class="footer-link" href="${DOCS_SELF_HOST_URL}">${escapedHtml(LANDING_COPY.shell.footerSelfHost)}</a>
 <a class="footer-link" href="${DOCS_INSTALL_URL}">${escapedHtml(LANDING_COPY.shell.footerInstall)}</a>
+</div>
 </div>
 </footer>`;
 }
@@ -128,7 +143,7 @@ ${SITE_GLYPH_SPRITE}
 <a class="skip-link" href="#${CONTENT_ID}">${escapedHtml(LANDING_COPY.shell.skipLink)}</a>
 ${headerHtml()}
 ${main}
-${footerHtml()}${scriptsHtml(scripts)}
+${footerHtml(document)}${scriptsHtml(scripts)}
 </body>
 </html>
 `;

@@ -2,8 +2,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { chromium, defineConfig } from '@playwright/test';
+import { REPOSITORY } from '@todz/types';
 import { PERSIST_FOLDER_VARIABLE } from './e2e/persist-folder';
 import { ProjectName } from './e2e/project-name';
+import { FAKE_GITHUB_PORT } from './e2e/fake-github';
 import { ADMIN_ADDRESS, SERVER_LOG_FILE_NAME } from './e2e/site-environment';
 
 const SITE_PORT = 8791;
@@ -17,6 +19,9 @@ const STAGED_STATE_FOLDER_NAME = 'staged-state';
 const STAGED_SERVER_LOG_FILE_NAME = 'staged-server.log';
 const STAGE_SCRIPT = 'e2e/stage-fixture-site.sh';
 const API_ORIGIN = 'http://localhost:8787';
+const FAKE_GITHUB_ORIGIN = `http://localhost:${FAKE_GITHUB_PORT}`;
+const UNREACHABLE_GITHUB_ORIGIN = 'http://localhost:8794';
+const FAKE_GITHUB_COMMAND = 'pnpm exec tsx e2e/fake-github.ts';
 const PERSIST_FOLDER_PREFIX = 'todz-e2e-';
 const DATABASE_NAME = 'todz-directory';
 const SERVER_START_TIMEOUT_MS = 120_000;
@@ -29,12 +34,13 @@ const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
 const MOBILE_VIEWPORT = { width: 375, height: 812 };
 const ADMIN_SPEC_PATTERN = /admin\.spec\.ts$/;
 
-function siteVariablesOf(siteOrigin: string): Record<string, string> {
+function siteVariablesOf({ siteOrigin, githubOrigin }: { siteOrigin: string; githubOrigin: string }): Record<string, string> {
   return {
     SIGN_IN_PROVIDER: 'fake',
     EMAIL_SENDER: 'console',
     PUBLIC_ORIGIN: API_ORIGIN,
     SITE_ORIGIN: siteOrigin,
+    REPOSITORY_API_ORIGIN: githubOrigin,
     ADMIN_EMAIL: ADMIN_ADDRESS,
     TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
     TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
@@ -53,6 +59,7 @@ function siteServerCommand({
   port,
   inspectorPort,
   siteOrigin,
+  githubOrigin,
   stateFolder,
   logFile,
   assetsArguments,
@@ -61,13 +68,14 @@ function siteServerCommand({
   port: number;
   inspectorPort: number;
   siteOrigin: string;
+  githubOrigin: string;
   stateFolder: string;
   logFile: string;
   assetsArguments: string[];
   beforeServing: string[];
 }): string {
   const persistArgument = `--persist-to ${stateFolder}`;
-  const variableArguments = Object.entries(siteVariablesOf(siteOrigin)).map(([name, value]) => `--var ${name}:${value}`);
+  const variableArguments = Object.entries(siteVariablesOf({ siteOrigin, githubOrigin })).map(([name, value]) => `--var ${name}:${value}`);
   const migrate = `pnpm exec wrangler d1 migrations apply ${DATABASE_NAME} --local ${persistArgument}`;
   const serve = [
     'pnpm exec wrangler dev',
@@ -86,6 +94,7 @@ function defaultServerCommand(): string {
     port: SITE_PORT,
     inspectorPort: INSPECTOR_PORT,
     siteOrigin: SITE_ORIGIN,
+    githubOrigin: FAKE_GITHUB_ORIGIN,
     stateFolder: persistFolder(),
     logFile: path.join(persistFolder(), SERVER_LOG_FILE_NAME),
     assetsArguments: [],
@@ -99,6 +108,7 @@ function stagedServerCommand(): string {
     port: STAGED_SITE_PORT,
     inspectorPort: STAGED_INSPECTOR_PORT,
     siteOrigin: STAGED_SITE_ORIGIN,
+    githubOrigin: UNREACHABLE_GITHUB_ORIGIN,
     stateFolder: path.join(persistFolder(), STAGED_STATE_FOLDER_NAME),
     logFile: path.join(persistFolder(), STAGED_SERVER_LOG_FILE_NAME),
     assetsArguments: [`--assets ${stagedFolder}`],
@@ -132,6 +142,12 @@ export default defineConfig({
     { name: ProjectName.Mobile, use: { viewport: MOBILE_VIEWPORT }, testIgnore: ADMIN_SPEC_PATTERN },
   ],
   webServer: [
+    {
+      command: FAKE_GITHUB_COMMAND,
+      url: `${FAKE_GITHUB_ORIGIN}/repos/${REPOSITORY.path}`,
+      reuseExistingServer: false,
+      timeout: SERVER_START_TIMEOUT_MS,
+    },
     { command: defaultServerCommand(), url: SITE_ORIGIN, reuseExistingServer: false, timeout: SERVER_START_TIMEOUT_MS },
     { command: stagedServerCommand(), url: STAGED_SITE_ORIGIN, reuseExistingServer: false, timeout: SERVER_START_TIMEOUT_MS },
   ],

@@ -2,7 +2,6 @@ import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { AgentClient } from '../src/site/agent-setup';
 import { DOCS_PAGES } from '../src/site/discovery-copy';
-import { PAGE_SCRIPT } from '../src/site/landing-page';
 import { WEBMCP_COPY, WebMcpToolName } from '../src/site/webmcp-copy';
 import { WEBMCP_SCRIPT, WEBMCP_TOOLS, type WebMcpTool } from '../src/site/webmcp-script';
 import { inlineSources, sourceHash } from './page-script';
@@ -28,7 +27,7 @@ async function pageOf(path: string): Promise<{ html: string; policy: string | nu
 }
 
 describe('the WebMCP tool definitions', () => {
-  test('hold the four tools, each described by the copy', () => {
+  test('hold the three tools, each described by the copy', () => {
     expect(WEBMCP_TOOLS.map((tool) => tool.name)).toEqual(Object.values(WebMcpToolName));
     WEBMCP_TOOLS.forEach((tool) => {
       expect(tool.description.length).toBeGreaterThan(0);
@@ -50,54 +49,21 @@ describe('the WebMCP tool definitions', () => {
     expect(enumOf({ name: WebMcpToolName.Docs, property: 'page' })).toEqual(DOCS_PAGES.map(({ slug }) => slug));
   });
 
-  test('ask for the waitlist address by its email format', () => {
-    expect(toolNamed(WebMcpToolName.Join).inputSchema.properties.email?.format).toBe('email');
-  });
-
-  test('mark three tools read-only and the waitlist join consequential', () => {
+  test('mark every tool read-only', () => {
     expect(READ_ONLY_TOOLS.map((name) => toolNamed(name).annotations)).toEqual(READ_ONLY_TOOLS.map(() => ({ readOnlyHint: true })));
-    expect(toolNamed(WebMcpToolName.Join).annotations).toEqual({ consequentialHint: true });
   });
 });
 
 describe('the WebMCP copy', () => {
-  const ANSWER_KEYS = [
-    'alreadySubmitting',
-    'checkFailed',
-    'checkTimedOut',
-    'invalid',
-    'joined',
-    'opensSoon',
-    'tryAgain',
-    'unknownClient',
-    'unknownPage',
-    'unreachable',
-  ];
-
-  test('answers once per outcome, the check timing out and the unknowns, and has no sent answer', () => {
-    expect(Object.keys(WEBMCP_COPY.answers).sort()).toEqual(ANSWER_KEYS);
-  });
-
-  test('the join tool says it waits for the human check and answers with the result', () => {
-    const { description } = toolNamed(WebMcpToolName.Join);
-    expect(description).toContain('waits for');
-    expect(description).toContain('answers with the result');
-    expect(description).not.toContain('before it sends');
+  test('answers only for the unknown client and the unknown page', () => {
+    expect(Object.keys(WEBMCP_COPY.answers).sort()).toEqual(['unknownClient', 'unknownPage']);
   });
 });
 
 describe('the scripts the landing ships', () => {
-  const OTHER_NETWORK_CALLS = ['XMLHttpRequest', 'sendBeacon'];
-
   test('WEBMCP_SCRIPT makes no network call of its own, which connect-src self would permit (pin: green when it landed)', () => {
     expect(WEBMCP_SCRIPT.length).toBeGreaterThan(0);
     NETWORK_CALLS.forEach((call) => expect(WEBMCP_SCRIPT).not.toContain(call));
-  });
-
-  test('PAGE_SCRIPT makes one network call, the fetch of the join, and no other', () => {
-    expect(PAGE_SCRIPT.match(/fetch\(/g)).toHaveLength(1);
-    expect(PAGE_SCRIPT).toContain("fetch('/join'");
-    OTHER_NETWORK_CALLS.forEach((call) => expect(PAGE_SCRIPT).not.toContain(call));
   });
 });
 
