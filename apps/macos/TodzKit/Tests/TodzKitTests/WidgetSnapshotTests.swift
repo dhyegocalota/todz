@@ -42,7 +42,7 @@ private func snapshot(_ tasks: [TaskRecord], pendingTasks: [PendingTask] = [], s
     var board = TaskBoard()
     board.merge(projectIdentifier: alpha.identifier, tasks: tasks)
     let views = TaskViews(projects: acme.projects, board: board, pendingTasks: pendingTasks, day: today, timeZone: timeZone)
-    return WidgetSnapshot.of(views: views, workspace: acme, day: today, timeZone: timeZone, showsDayTemperature: showsDayTemperature)
+    return WidgetSnapshot.of(views: views, workspaces: [acme], day: today, timeZone: timeZone, showsDayTemperature: showsDayTemperature)
 }
 
 @Suite struct WidgetSnapshotTests {
@@ -140,6 +140,32 @@ private func snapshot(_ tasks: [TaskRecord], pendingTasks: [PendingTask] = [], s
     @Test func aPendingTaskShowsItsProjectTag() throws {
         let snapshot = try snapshot([], pendingTasks: [pending("Draft", dueDate: today)])
         #expect(snapshot.pending.map(\.isProjectTagShown) == [true])
+    }
+
+    @Test func aSnapshotWrittenBeforeWorkspacesWereTaggedStillDecodes() throws {
+        let legacy = Data(
+            #"""
+            {"workspaceName":"Acme","day":"2026-11-24","timeZoneIdentifier":"UTC","open":[{"projectIdentifier":"alpha","projectName":"Alpha","number":1,"title":"A","creatorLabel":null,"isOverdue":false,"state":"open"}],"pending":[],"doneToday":[],"showsDayTemperature":false}
+            """#.utf8
+        )
+        let decoded = try OwnerCoding.decoder().decode(WidgetSnapshot.self, from: legacy)
+        #expect(decoded.open.first?.workspaceIdentifier == nil)
+        #expect(decoded.open.first?.workspaceName == nil)
+        #expect(decoded.open.first?.title == "A")
+    }
+
+    @Test func aSnapshotOfSeveralWorkspacesTagsEachRowWithItsOwn() throws {
+        let timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
+        let sideInbox = Project(identifier: "side-inbox", name: "Inbox", isInbox: true, createdAt: fixedInstant)
+        let side = Workspace(identifier: "side", name: "Side", createdAt: fixedInstant, projects: [sideInbox])
+        var board = TaskBoard()
+        board.merge(projectIdentifier: alpha.identifier, tasks: [open(1)])
+        board.merge(projectIdentifier: sideInbox.identifier, tasks: [open(1)])
+        let views = TaskViews(projects: acme.projects + side.projects, board: board, day: today, timeZone: timeZone)
+        let snapshot = WidgetSnapshot.of(views: views, workspaces: [acme, side], day: today, timeZone: timeZone, showsDayTemperature: false)
+        #expect(snapshot.open.map(\.workspaceIdentifier) == ["acme", "side"])
+        #expect(snapshot.open.map(\.workspaceName) == ["Acme", "Side"])
+        #expect(snapshot.isMultiWorkspace)
     }
 
     @Test func isCurrentOnlyOnItsOwnDay() throws {

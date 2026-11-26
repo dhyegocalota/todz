@@ -191,6 +191,16 @@ import Observation
         workspaces.first { $0.identifier == activeWorkspaceIdentifier }
     }
 
+    public internal(set) var selection: WorkspaceSelection?
+
+    public var shownWorkspaces: [Workspace] {
+        []
+    }
+
+    public func selectWorkspaces(_ selection: WorkspaceSelection) async {}
+
+    public func toggleWorkspace(identifier: String) async {}
+
     public var today: CalendarDate {
         CalendarDate.today(in: timeZone, at: now())
     }

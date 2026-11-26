@@ -72,6 +72,25 @@ private let mixed = snapshot(open: [task(1), task(2)], pending: [task(nil)], don
         #expect(WidgetToggle.setting(mixed, projectIdentifier: beta, number: 1, to: .done, at: fixedInstant) == nil)
     }
 
+    @Test func aTickCarriesTheWorkspaceOfItsRowAndKeepsItOnTheRedrawnRow() throws {
+        let tagged = WidgetSnapshotTask(
+            projectIdentifier: alpha,
+            projectName: alpha,
+            number: 1,
+            title: "A task",
+            dueDate: today,
+            creatorLabel: nil,
+            isOverdue: false,
+            state: .open,
+            workspaceIdentifier: "acme",
+            workspaceName: "Acme"
+        )
+        let toggled = try #require(WidgetToggle.setting(snapshot(open: [tagged], doneToday: []), projectIdentifier: alpha, number: 1, to: .done, at: fixedInstant))
+        #expect(toggled.request.workspaceIdentifier == "acme")
+        #expect(toggled.snapshot.open.first?.workspaceIdentifier == "acme")
+        #expect(toggled.snapshot.open.first?.workspaceName == "Acme")
+    }
+
     @Test func aPendingAddCannotBeToggled() {
         let pendingOnly = snapshot(open: [], pending: [task(nil, project: beta)], doneToday: [])
         #expect(WidgetToggle.setting(pendingOnly, projectIdentifier: beta, number: 1, to: .done, at: fixedInstant) == nil)

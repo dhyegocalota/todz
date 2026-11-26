@@ -29,11 +29,12 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
 
     public static func of(
         views: TaskViews,
-        workspace: Workspace,
+        workspaces: [Workspace],
         day: CalendarDate,
         timeZone: TimeZone,
         showsDayTemperature: Bool
     ) -> WidgetSnapshot {
+        let workspace = workspaces[0]
         let today = views.today
         let pending = views.pendingTasks(for: .today).compactMap { pendingTask in
             workspace.projects
@@ -49,6 +50,10 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             doneToday: today.doneToday.map { WidgetSnapshotTask.of($0, day: day) },
             showsDayTemperature: showsDayTemperature
         )
+    }
+
+    public var isMultiWorkspace: Bool {
+        false
     }
 
     public func isCurrent(on day: CalendarDate) -> Bool {

@@ -7,6 +7,8 @@ public struct WidgetSnapshotTask: Codable, Equatable, Sendable {
     public let creatorLabel: String?
     public let isOverdue: Bool
     public let state: TaskState
+    public let workspaceIdentifier: String?
+    public let workspaceName: String?
 
     public init(
         projectIdentifier: String,
@@ -16,7 +18,9 @@ public struct WidgetSnapshotTask: Codable, Equatable, Sendable {
         dueDate: CalendarDate?,
         creatorLabel: String?,
         isOverdue: Bool,
-        state: TaskState
+        state: TaskState,
+        workspaceIdentifier: String? = nil,
+        workspaceName: String? = nil
     ) {
         self.projectIdentifier = projectIdentifier
         self.projectName = projectName
@@ -26,6 +30,8 @@ public struct WidgetSnapshotTask: Codable, Equatable, Sendable {
         self.creatorLabel = creatorLabel
         self.isOverdue = isOverdue
         self.state = state
+        self.workspaceIdentifier = workspaceIdentifier
+        self.workspaceName = workspaceName
     }
 
     public var isProjectTagShown: Bool {
