@@ -5,6 +5,7 @@ import { siteKeyOf } from '../turnstile-page';
 import { adminCardAnswerOf, adminClosedAnswerOf, adminPageAnswerOf, adminRedirectAnswerOf } from './admin-answer';
 import { serveAdminExport } from './admin-export';
 import { serveAdminLinkPage } from './admin-link-page';
+import { serveAdminMetrics, serveAdminMetricsExport } from './admin-metrics';
 import { serveAdminPanel } from './admin-page';
 import { AdminPath } from './admin-paths';
 import {
@@ -55,6 +56,9 @@ export const ADMIN_ROUTES: AdminRoute[] = [
   { method: HttpMethod.Get, path: AdminPath.LinkPage, route: serveLinkPage },
   { method: HttpMethod.Head, path: AdminPath.LinkPage, route: serveLinkPage },
   { method: HttpMethod.Get, path: AdminPath.Export, route: serveAdminExport },
+  { method: HttpMethod.Get, path: AdminPath.Metrics, route: serveAdminMetrics },
+  { method: HttpMethod.Head, path: AdminPath.Metrics, route: serveAdminMetrics },
+  { method: HttpMethod.Get, path: AdminPath.MetricsExport, route: serveAdminMetricsExport },
   { method: HttpMethod.Post, path: AdminPath.SignInLinks, route: serveAdminSignInLink },
   { method: HttpMethod.Post, path: AdminPath.Sessions, route: serveAdminSession },
   { method: HttpMethod.Post, path: AdminPath.SignOut, route: serveSignOut },

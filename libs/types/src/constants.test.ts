@@ -19,6 +19,12 @@ import {
   DAY_EMAIL_STOP_RATE_LIMIT_MAX,
   DAY_EMAIL_STOP_RATE_LIMIT_PERIOD_SECONDS,
   DAY_EMAIL_STOP_TOKEN_LENGTH,
+  APPCAST_ADDRESS_RATE_LIMIT_MAX,
+  APPCAST_RATE_LIMIT_MAX,
+  USAGE_ADDRESS_RATE_LIMIT_MAX,
+  USAGE_GLOBAL_RATE_LIMIT_MAX,
+  USAGE_INSTALL_RATE_LIMIT_MAX,
+  USAGE_RATE_LIMIT_PERIOD_SECONDS,
   FORMATTER_LOCALE,
   HEALTH_SERVICE_NAME,
   HOURS_PER_DAY,
@@ -170,6 +176,15 @@ describe('day email constants', () => {
   test('the stop link answers ten requests a minute to one client (pin)', () => {
     expect(DAY_EMAIL_STOP_RATE_LIMIT_MAX).toBe(10);
     expect(DAY_EMAIL_STOP_RATE_LIMIT_PERIOD_SECONDS).toBe(60);
+  });
+
+  test('the usage report answers one a minute to one client, one to one install and sixty to the world, and the appcast counts one a minute to one client and sixty to the world (pin)', () => {
+    expect(USAGE_ADDRESS_RATE_LIMIT_MAX).toBe(1);
+    expect(USAGE_INSTALL_RATE_LIMIT_MAX).toBe(1);
+    expect(USAGE_GLOBAL_RATE_LIMIT_MAX).toBe(60);
+    expect(USAGE_RATE_LIMIT_PERIOD_SECONDS).toBe(60);
+    expect(APPCAST_ADDRESS_RATE_LIMIT_MAX).toBe(1);
+    expect(APPCAST_RATE_LIMIT_MAX).toBe(60);
   });
 
   test('a reply comes to the reply local part, is at most a mebibyte, and an owner adds at most five a minute and twenty a day (pin)', () => {

@@ -5,6 +5,7 @@ import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { noRouteResponse } from '../owner-errors';
 import { ADMIN_ROUTES } from './admin-routes';
+import { APPCAST_PATH, serveAppcast } from './appcast';
 import { discoveryResponse } from './discovery-response';
 import { serveLandingPage } from './landing-page';
 import { repositoryStarsOf } from './repository-stars';
@@ -58,6 +59,8 @@ const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
   ...DISCOVERY_ROUTE_OF_REQUEST,
   [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: serveLanding,
   [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: serveLanding,
+  [routeKey({ method: HttpMethod.Get, pathname: APPCAST_PATH })]: serveAppcast,
+  [routeKey({ method: HttpMethod.Head, pathname: APPCAST_PATH })]: serveAppcast,
   [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: redirectToDocs,
   [routeKey({ method: HttpMethod.Head, pathname: SELF_HOST_PATH })]: redirectToDocs,
   [routeKey({ method: HttpMethod.Post, pathname: JOIN_PATH })]: serveWaitlistClosed,

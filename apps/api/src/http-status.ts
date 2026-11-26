@@ -14,6 +14,7 @@ export enum HttpStatus {
   MethodNotAllowed = 405,
   Conflict = 409,
   Gone = 410,
+  PayloadTooLarge = 413,
   Unprocessable = 422,
   UpgradeRequired = 426,
   TooManyRequests = 429,
