@@ -79,6 +79,7 @@ describe('task enums', () => {
       CompletionNoteInvalid: 'completion_note_invalid',
       NameInvalid: 'name_invalid',
       OrderKeyTooLong: 'order_key_too_long',
+      ConfirmationMismatch: 'confirmation_mismatch',
     });
   });
 });

@@ -254,6 +254,10 @@ export class SqliteTaskStore implements TaskStore {
     );
   }
 
+  removeTask(_removal: { number: number; at: number }): void {
+    throw new Error('removeTask is not implemented');
+  }
+
   appendHistory({ number, entry }: { number: number; entry: HistoryEntry }): void {
     this.sql.exec(
       `INSERT INTO task_history (task_number, ${HISTORY_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?)`,

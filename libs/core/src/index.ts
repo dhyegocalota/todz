@@ -2,6 +2,7 @@ export { OWNER_ACTOR, agentActor } from './actor';
 export { addTasks, type AddedTask } from './add-tasks';
 export { dueWindowOf, normalizeDueDate, parseCalendarDate } from './calendar-date';
 export { completeTasks, type CompletedTask } from './complete-tasks';
+export { deleteTask } from './delete-task';
 export { dueNow, type DueNow } from './due-now';
 export { RuleViolation, TaskNotFoundError } from './errors';
 export { listTasks, type TaskList } from './list-tasks';

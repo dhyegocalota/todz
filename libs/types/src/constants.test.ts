@@ -36,6 +36,8 @@ import {
   MILLISECONDS_PER_MINUTE,
   MILLISECONDS_PER_SECOND,
   MINIMUM_APP_VERSION,
+  OWNER_KEY_PREFIX,
+  OWNER_LIVE_KEYS_MAX,
   PROJECT_KEY_PREFIX,
   REPLY_ADDRESS_LOCAL_PART,
   REPLY_DAILY_MAX,
@@ -134,6 +136,15 @@ describe('version constants', () => {
 describe('mcp constants', () => {
   test('a project key starts with todz_ (pin)', () => {
     expect(PROJECT_KEY_PREFIX).toBe('todz_');
+  });
+
+  test('an owner key starts with todz-owner_, which no project key can start with (pin)', () => {
+    expect(OWNER_KEY_PREFIX).toBe('todz-owner_');
+    expect(OWNER_KEY_PREFIX.startsWith(PROJECT_KEY_PREFIX)).toBe(false);
+  });
+
+  test('an owner holds at most five live owner keys', () => {
+    expect(OWNER_LIVE_KEYS_MAX).toBe(5);
   });
 
   test('a list shows twenty tasks by default, within the list limit (pin)', () => {

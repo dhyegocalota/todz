@@ -8,6 +8,7 @@ const PUBLIC_EXPORTS = [
   'addTasks',
   'agentActor',
   'completeTasks',
+  'deleteTask',
   'dueNow',
   'dueWindowOf',
   'formatShortId',
