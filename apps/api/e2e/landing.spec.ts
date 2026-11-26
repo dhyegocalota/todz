@@ -28,7 +28,14 @@ const HEADER_INSTALL_LINK = `.site-header .nav-link[href="${DOCS_INSTALL_URL}"]`
 const FOOTER_INSTALL_LINK = `.site-footer .footer-link[href="${DOCS_INSTALL_URL}"]`;
 const MAXIMUM_DARK_CHANNEL = 40;
 const SUBPIXEL_TOLERANCE = 0.5;
-const KEYBOARD_ORDER = ['.skip-link', '.site-header .brand', HEADER_GUIDE_LINK, HEADER_INSTALL_LINK, '.hero .download-button'];
+const KEYBOARD_ORDER = [
+  '.skip-link',
+  '.site-header .brand',
+  HEADER_GUIDE_LINK,
+  HEADER_INSTALL_LINK,
+  '.hero-free-link',
+  '.hero .download-button',
+];
 const CREDIT_LINK = '.site-footer .footer-credit-link';
 const CREDIT_TEXT = 'todz is a product of Logic Bit, made in Brazil';
 const CREDIT_WEBSITE = 'https://logicbit.com.br';

@@ -127,12 +127,11 @@ describe('the star count honesty', () => {
   });
 });
 
-describe('the open source line and the footer links', () => {
-  test('the hero says Open source · AGPL-3.0 with the repository link', async () => {
+describe('the footer links', () => {
+  test('the hero no longer repeats the open source line, the pill says it', async () => {
     const { html } = await landing(STARS);
-    expect(html).toContain(`<a class="open-source-link" href="${REPOSITORY.url}"`);
-    expect(html).toContain(LANDING_COPY.openSource.line);
-    expect(LANDING_COPY.openSource.line).toBe('Open source · AGPL-3.0');
+    expect(html).not.toContain('open-source-line');
+    expect(html).not.toContain('Open source · AGPL-3.0');
   });
 
   test('the footer links the license and the contributing guide', async () => {

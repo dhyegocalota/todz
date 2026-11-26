@@ -13,11 +13,11 @@ async function landingHtml(): Promise<string> {
 }
 
 function heroOf(html: string): string {
-  return html.slice(html.indexOf('<section class="hero'), html.indexOf('<section class="ways'));
+  return html.slice(html.indexOf('<section class="hero'), html.indexOf('<section id="ways"'));
 }
 
 function waysOf(html: string): string {
-  return html.slice(html.indexOf('<section class="ways'), html.indexOf('<section class="benefits'));
+  return html.slice(html.indexOf('<section id="ways"'), html.indexOf('<footer class="site-footer'));
 }
 
 describe('the free copy', () => {
@@ -28,7 +28,6 @@ describe('the free copy', () => {
 
   test('words the two ways as the owner asked', () => {
     const { ways } = LANDING_COPY;
-    expect(ways.title).toBe('Two ways to use todz');
     expect(ways.cloud).toEqual({
       title: 'todz cloud',
       badge: 'Free',
@@ -54,7 +53,8 @@ describe('the free hero', () => {
     const hero = heroOf(await landingHtml());
     expect(hero.indexOf('hero-lead')).toBeLessThan(hero.indexOf('hero-free'));
     expect(hero.indexOf('hero-free')).toBeLessThan(hero.indexOf('class="download-button"'));
-    expect(hero).toContain(LANDING_COPY.free.line);
+    expect(hero.replace(/<[^>]*>/g, '')).toContain(LANDING_COPY.free.line);
+    expect(hero).toContain('<a class="hero-free-link" href="#ways">run your own</a>');
   });
 
   test('folds Free into the Download button, with no second button-like chip', async () => {
@@ -67,10 +67,12 @@ describe('the free hero', () => {
 });
 
 describe('the two ways section', () => {
-  test('sits right under the hero, titled, with two equal glass cards and the note under them', async () => {
+  test('closes the page inside the final panel with id ways: two equal glass cards and the note under them', async () => {
     const ways = waysOf(await landingHtml());
-    expect(ways).toContain(`>${LANDING_COPY.ways.title}</h2>`);
+    expect(ways).toContain('>Get todz on your Mac.</h2>');
+    expect(ways).not.toContain('Two ways to use todz');
     expect(ways.match(/<li class="way-card glass/g)).toHaveLength(2);
+    expect(ways.indexOf('>Get todz on your Mac.</h2>')).toBeLessThan(ways.indexOf('way-card'));
     expect(ways.indexOf('way-card')).toBeLessThan(ways.indexOf(LANDING_COPY.ways.note));
     expect(ways).toContain(LANDING_COPY.ways.note);
   });
@@ -94,8 +96,25 @@ describe('the two ways section', () => {
   });
 
   test('styles the section, its cards and the badge, two columns from the narrow breakpoint', () => {
-    ['.ways{', '.way-card{', '.way-badge{'].forEach((rule) => expect(SITE_STYLE).toContain(rule));
+    ['.way-card{', '.way-badge{'].forEach((rule) => expect(SITE_STYLE).toContain(rule));
     expect(SITE_STYLE).toContain('.way-list{grid-template-columns:repeat(2, 1fr)}');
+  });
+});
+
+describe('the signature', () => {
+  test('closes the final panel under the note, with the name linking the GitHub profile', async () => {
+    const ways = waysOf(await landingHtml());
+    expect(ways.indexOf(LANDING_COPY.ways.note)).toBeLessThan(ways.indexOf('class="signature"'));
+    expect(ways).toContain(
+      `<p class="signature">Built by a developer, for developers and AI tinkerers. — <a class="signature-link" href="https://github.com/dhyegocalota" rel="noopener">Dhyego</a></p>`,
+    );
+  });
+
+  test('is styled with the rounded font, a muted line, a bold name and a short rule', () => {
+    expect(SITE_STYLE).toContain('.signature{');
+    expect(SITE_STYLE).toContain('font-family:var(--font-rounded)');
+    expect(SITE_STYLE).toContain('.signature-link{font-weight:600;color:var(--color-text)');
+    expect(SITE_STYLE).toContain('.signature::before{');
   });
 });
 

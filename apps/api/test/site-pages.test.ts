@@ -11,6 +11,7 @@ const OK_STATUS = 200;
 const STARS = 1234;
 const STARS_TEXT = '1.2k';
 const STAR_GLYPH = '★';
+const LINKED_LINE_PIECES = [`${LANDING_COPY.signature.line} —`, 'Free on todz cloud — or', '.'];
 const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
@@ -43,7 +44,7 @@ const SECTION_MARKERS = [
   '<section class="hero',
   '<section class="benefits',
   '<section class="how-it-works',
-  '<section class="final-call',
+  '<section id="ways" class="final-call',
   '<footer class="site-footer',
 ];
 const DOWNLOAD_BUTTON = '<a class="download-button" href="/download" download>Download for Mac — Free</a>';
@@ -196,7 +197,7 @@ describe('the landing', () => {
 
   test('every word it shows or reads aloud comes from the copy module', async () => {
     const { html } = await landingPage();
-    const copy = [...copyStrings(LANDING_COPY), STARS_TEXT, STAR_GLYPH];
+    const copy = [...copyStrings(LANDING_COPY), STARS_TEXT, STAR_GLYPH, ...LINKED_LINE_PIECES];
     const readable = [
       ...textNodes(html),
       ...captures({ html, pattern: READABLE_ATTRIBUTE_PATTERN }).map(decoded),

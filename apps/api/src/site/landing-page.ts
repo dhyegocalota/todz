@@ -1,4 +1,4 @@
-import { REPOSITORY } from '@todz/types';
+import { AUTHOR } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
 import { LANDING_COPY } from './landing-copy';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
@@ -16,6 +16,7 @@ import { WEBMCP_SCRIPT } from './webmcp-script';
 const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const SRCSET_LIST_SEPARATOR = ', ';
 const WORD_SEPARATOR = ' ';
+const WAYS_ID = 'ways';
 
 const PAGE_SCRIPTS = [STAR_COUNT_SCRIPT, WEBMCP_SCRIPT];
 
@@ -44,30 +45,37 @@ function windowPicture(): string {
 }
 
 function downloadHtml(stars: number | null): string {
-  const { button, note, noteLink } = LANDING_COPY.download;
-  const { line } = LANDING_COPY.openSource;
+  const { heroButton, note, noteLink } = LANDING_COPY.download;
   return `<div class="download hero-actions rise delay-3">
 <div class="hero-buttons">
-<a class="download-button" href="${DOWNLOAD_PATH}" download>${escapedHtml(button)}</a>
-<span class="free-chip glass">${escapedHtml(LANDING_COPY.free.chip)}</span>
+<a class="download-button" href="${DOWNLOAD_PATH}" download>${escapedHtml(heroButton)}</a>
 ${starPillHtml(stars)}
 </div>
 <p class="download-note">${escapedHtml(note)} <a class="download-note-link" href="${DOCS_INSTALL_URL}">${escapedHtml(noteLink)}</a></p>
-<p class="open-source-line"><a class="open-source-link" href="${REPOSITORY.url}" rel="noopener">${escapedHtml(line)}</a></p>
 </div>
 `;
 }
 
 function waysHtml(): string {
-  const { title, cloud, selfHost, note } = LANDING_COPY.ways;
-  return `<section class="ways page-width" aria-labelledby="ways-title">
-<h2 id="ways-title" class="section-title">${escapedHtml(title)}</h2>
-<ul class="way-list">
-<li class="way-card glass reveal"><div class="way-head"><h3 class="way-title">${escapedHtml(cloud.title)}</h3><span class="way-badge">${escapedHtml(cloud.badge)}</span></div><p class="way-body">${escapedHtml(cloud.body)}</p><a class="download-button way-cta" href="${DOWNLOAD_PATH}" download>${escapedHtml(cloud.cta)}</a></li>
-<li class="way-card glass reveal"><div class="way-head"><h3 class="way-title">${escapedHtml(selfHost.title)}</h3><span class="way-badge">${escapedHtml(selfHost.badge)}</span></div><p class="way-body">${escapedHtml(selfHost.body)}</p><a class="way-cta way-cta-secondary" href="${DOCS_SELF_HOST_URL}">${escapedHtml(selfHost.cta)}</a></li>
+  const { cloud, selfHost, note } = LANDING_COPY.ways;
+  return `<ul class="way-list">
+<li class="way-card glass"><div class="way-head"><h3 class="way-title">${escapedHtml(cloud.title)}</h3><span class="way-badge">${escapedHtml(cloud.badge)}</span></div><p class="way-body">${escapedHtml(cloud.body)}</p><a class="download-button way-cta" href="${DOWNLOAD_PATH}" download>${escapedHtml(cloud.cta)}</a></li>
+<li class="way-card glass"><div class="way-head"><h3 class="way-title">${escapedHtml(selfHost.title)}</h3><span class="way-badge">${escapedHtml(selfHost.badge)}</span></div><p class="way-body">${escapedHtml(selfHost.body)}</p><a class="way-cta way-cta-secondary" href="${DOCS_SELF_HOST_URL}">${escapedHtml(selfHost.cta)}</a></li>
 </ul>
 <p class="ways-note">${escapedHtml(note)}</p>
-</section>`;
+`;
+}
+
+function signatureHtml(): string {
+  const { line, name } = LANDING_COPY.signature;
+  return `<p class="signature">${escapedHtml(line)} — <a class="signature-link" href="${AUTHOR.url}" rel="noopener">${escapedHtml(name)}</a></p>
+`;
+}
+
+function freeLineHtml(): string {
+  const { line, linkText } = LANDING_COPY.free;
+  const link = `<a class="hero-free-link" href="#${WAYS_ID}">${escapedHtml(linkText)}</a>`;
+  return `<p class="hero-free rise delay-2">${escapedHtml(line).replace(escapedHtml(linkText), link)}</p>`;
 }
 
 function heroHtml(stars: number | null): string {
@@ -76,7 +84,7 @@ function heroHtml(stars: number | null): string {
 <p class="eyebrow-pill glass rise"><span class="eyebrow-dot" aria-hidden="true"></span>${escapedHtml(LANDING_COPY.hero.eyebrow)}</p>
 <h1 id="hero-title" class="hero-title rise delay-1">${escapedHtml(LANDING_COPY.hero.title)}</h1>
 <p class="hero-lead rise delay-2">${escapedHtml(LANDING_COPY.hero.lead)}</p>
-<p class="hero-free rise delay-2">${escapedHtml(LANDING_COPY.free.line)}</p>
+${freeLineHtml()}
 ${downloadHtml(stars)}</div>
 <figure class="desk-stage arrive delay-3">
 <figcaption class="visually-hidden">${escapedHtml(LANDING_COPY.stage.label)}</figcaption>
@@ -135,12 +143,10 @@ ${steps}
 }
 
 function finalCallHtml(): string {
-  return `<section class="final-call page-width reveal" aria-labelledby="final-title">
+  return `<section id="${WAYS_ID}" class="final-call page-width reveal" aria-labelledby="final-title">
 ${glyphHtml({ glyph: SiteGlyph.Icon, className: 'final-icon' })}
 <h2 id="final-title" class="section-title">${escapedHtml(LANDING_COPY.final.title)}</h2>
-<p class="final-body">${escapedHtml(LANDING_COPY.final.body)}</p>
-<a class="download-button final-download" href="${DOWNLOAD_PATH}" download>${escapedHtml(LANDING_COPY.download.button)}</a>
-</section>`;
+${waysHtml()}${signatureHtml()}</section>`;
 }
 
 function landingHtml(stars: number | null): string {
@@ -153,7 +159,6 @@ function landingHtml(stars: number | null): string {
     description: LANDING_COPY.meta.description,
     main: `<main id="${CONTENT_ID}">
 ${heroHtml(stars)}
-${waysHtml()}
 ${benefitsHtml()}
 ${howItWorksHtml()}
 ${finalCallHtml()}
