@@ -47,6 +47,7 @@ public struct Workspace: Codable, Sendable, Equatable {
         case identifier = "id"
         case name
         case createdAt
+        case lastActivityAt
         case projects
     }
 }
