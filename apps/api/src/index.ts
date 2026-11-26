@@ -18,7 +18,7 @@ import { SIGN_IN_CHALLENGE_PAGE_PATH, serveSignInChallengePage } from './sign-in
 import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
 import { SELF_HOST_PATH, redirectToDocs } from './site/self-host-redirect';
 import { serveSite } from './site/site-endpoint';
-import { SERVER_CARD_PATH } from './site/site-urls';
+import { DiscoveryPath, SERVER_CARD_PATH } from './site/site-urls';
 
 export { ProjectStore } from './project-store';
 
@@ -32,6 +32,7 @@ type HostHandler = (context: HostContext) => Promise<Response>;
 const ROUTE_OF_PATH: Record<string, Route> = {
   [MCP_PATH]: ({ request, env }) => serveTimed({ env, serve: (observedEnv) => serveMcp({ request, env: observedEnv, now: Date.now() }) }),
   [SERVER_CARD_PATH]: async ({ request }) => serveServerCard({ request }),
+  [DiscoveryPath.ServerCard]: async ({ request }) => serveServerCard({ request }),
   [DAY_EMAIL_STOP_PATH]: ({ request, env }) => dayEmailStopResponse({ request, env }),
   [SIGN_IN_PAGE_PATH]: ({ request, env }) => serveSignInPage({ request, env }),
   [SIGN_IN_CHALLENGE_PAGE_PATH]: ({ request, env }) => serveSignInChallengePage({ request, env }),

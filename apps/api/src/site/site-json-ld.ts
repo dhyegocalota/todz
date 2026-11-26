@@ -2,7 +2,7 @@ import { COMPANY, REPOSITORY } from '@todz/types';
 import { LANDING_COPY } from './landing-copy';
 import { scriptJson } from './site-constants';
 import { OPEN_GRAPH_IMAGE } from './site-icons';
-import { DOWNLOAD_PATH, SITE_URL } from './site-urls';
+import { DOCS_URL, DOWNLOAD_URL, SITE_URL } from './site-urls';
 
 const SCHEMA_URL = 'https://schema.org';
 const LANGUAGE = 'en';
@@ -56,12 +56,14 @@ const APPLICATION = {
   publisher: PUBLISHER,
   codeRepository: REPOSITORY.url,
   license: REPOSITORY.licenseSpdxUrl,
+  downloadUrl: DOWNLOAD_URL,
+  sameAs: [REPOSITORY.url, DOCS_URL],
   offers: {
     '@type': SchemaType.Offer,
     price: FREE_PRICE,
     priceCurrency: PRICE_CURRENCY,
     availability: IN_STOCK_AVAILABILITY,
-    url: `${SITE_URL}${DOWNLOAD_PATH}`,
+    url: DOWNLOAD_URL,
   },
 };
 

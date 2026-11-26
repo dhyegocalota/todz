@@ -1,5 +1,6 @@
 import { COMPANY, REPOSITORY } from '@todz/types';
 import { MCP_COPY, McpToolName } from '../mcp-copy';
+import { DOCS_MCP_URL, DOWNLOAD_URL } from './site-urls';
 
 export enum DocsPageSlug {
   Introduction = 'introduction',
@@ -8,6 +9,7 @@ export enum DocsPageSlug {
   ConnectAnAgent = 'connect-an-agent',
   McpTools = 'mcp-tools',
   SelfHost = 'self-host',
+  Privacy = 'privacy',
 }
 
 export type DocsPage = { slug: DocsPageSlug; title: string; path: string };
@@ -19,6 +21,7 @@ export const DOCS_PAGES: DocsPage[] = [
   { slug: DocsPageSlug.ConnectAnAgent, title: 'Connect an agent', path: '/connect-an-agent' },
   { slug: DocsPageSlug.McpTools, title: 'MCP tools', path: '/mcp-tools' },
   { slug: DocsPageSlug.SelfHost, title: 'Self-host todz', path: '/self-host' },
+  { slug: DocsPageSlug.Privacy, title: 'Privacy', path: '/privacy' },
 ];
 
 export type ToolParameter = { name: string; text: string };
@@ -54,7 +57,8 @@ export const DISCOVERY_COPY = {
   summary:
     'todz is a native Mac to-do list that people and their AI agents share: Claude Code, Codex and Cursor read, add and finish tasks over MCP.',
   status: 'todz is out for macOS 14 or later: the app is not yet notarized by Apple.',
-  pricing: 'Downloading todz is free. Pricing has not been announced.',
+  download: `Download todz for Mac at ${DOWNLOAD_URL}. The app updates itself.`,
+  pricing: 'todz is free on todz cloud, or self-host.',
   publisher: `todz is a product of ${COMPANY.tradeName}, made in Brazil.`,
   source: `todz is open source under the ${REPOSITORY.licenseName} license: ${REPOSITORY.url}`,
   connect: {
@@ -64,6 +68,11 @@ export const DISCOVERY_COPY = {
   },
   tools: { heading: 'MCP tools', parametersHeading: 'MCP tool parameters' },
   docs: { heading: 'Docs' },
+  docsMcp: {
+    heading: 'Docs MCP',
+    lead: 'Add the docs server to Claude Code to let your agent search the todz docs.',
+    command: `claude mcp add --transport http todz-docs ${DOCS_MCP_URL}`,
+  },
   optional: {
     heading: 'Optional',
     fullLink: 'llms-full.txt',
