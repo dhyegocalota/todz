@@ -146,8 +146,7 @@ test.describe('the proactive day card with scroll-linked motion', () => {
     await scrollWellTopTo({ page, viewportShare: 1 });
     const scaleWhenEntering = await fillScaleOf(page);
     await scrollWellTopTo({ page, viewportShare: SCROLL_SETTLE_PROGRESS });
-    const scaleWhenCentered = await fillScaleOf(page);
-    expect(scaleWhenEntering).toBeLessThan(scaleWhenCentered);
+    await expect.poll(() => fillScaleOf(page)).toBeGreaterThan(scaleWhenEntering);
   });
 });
 

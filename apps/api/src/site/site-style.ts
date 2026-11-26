@@ -399,7 +399,7 @@ ${CROP_RULES}
 @supports (animation-timeline: view()){
 .reveal{animation:rise linear both;animation-timeline:view();animation-range:entry 0% entry 60%}
 .signature-swash path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw linear both;animation-timeline:view();animation-range:entry 0% entry 100%}
-.day-well{view-timeline-name:--day}
+.day-well{view-timeline-name:--day;timeline-scope:--day}
 .day-dot{animation:light linear both;animation-timeline:--day}
 .day-vignette{animation:lift linear both;animation-timeline:--day}
 .day-stop:not(:last-child)::after{animation:fill-down linear both;animation-timeline:--day}
