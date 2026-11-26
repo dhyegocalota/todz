@@ -12,7 +12,7 @@
 	<true/>
 	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
 	<array>
-		<string>/Applications/</string>
+		<string>/Applications/Todz.app/</string>
 	</array>
 	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
 	<array>

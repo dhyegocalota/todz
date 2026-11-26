@@ -10,18 +10,24 @@ private let quarantineAttributeName = "com.apple.quarantine"
 private typealias IsTranslocatedFunction = @convention(c) (CFURL, UnsafeMutablePointer<DarwinBoolean>, UnsafeMutablePointer<Unmanaged<CFError>?>?) -> DarwinBoolean
 private typealias OriginalPathFunction = @convention(c) (CFURL, UnsafeMutablePointer<Unmanaged<CFError>?>?) -> Unmanaged<CFURL>?
 
+private enum ApplicationsMoveFailure: Error {
+    case signature
+    case quarantine
+}
+
 @MainActor final class ApplicationsMover {
     private let bundle: Bundle
     private let defaults: UserDefaults
     private let currentVersion: String
+    private let hasUpdateFeed: Bool
 
     // NB ADR 0078: only a build that starts Sparkle is asked, once per version, and never when it already runs from an Applications folder.
     init?(bundle: Bundle, defaults: UserDefaults = .standard) {
-        guard let info = bundle.infoDictionary, UpdateFeed(info: info) != nil else { return nil }
-        guard let currentVersion = AppVersion.of(info: info) else { return nil }
+        guard let info = bundle.infoDictionary, let currentVersion = AppVersion.of(info: info) else { return nil }
         self.bundle = bundle
         self.defaults = defaults
         self.currentVersion = currentVersion
+        hasUpdateFeed = UpdateFeed(info: info) != nil
     }
 
     func offerIfNeeded() {
@@ -31,7 +37,7 @@ private typealias OriginalPathFunction = @convention(c) (CFURL, UnsafeMutablePoi
             homeDirectory: NSHomeDirectory(),
             currentVersion: currentVersion,
             declinedVersion: ApplicationsMove.declinedVersion(defaults: defaults),
-            hasUpdateFeed: true
+            hasUpdateFeed: hasUpdateFeed
         )
         guard shouldOffer else { return }
         let alert = makeAlert(message: UpdateCopy.moveToApplications)
@@ -47,17 +53,21 @@ private typealias OriginalPathFunction = @convention(c) (CFURL, UnsafeMutablePoi
 
     private func move() {
         let destination = URL(filePath: ApplicationsMove.destinationPath)
-        let isOtherTodzRunning = NSWorkspace.shared.runningApplications.contains { $0.bundleURL?.standardizedFileURL == destination }
+        let isOtherTodzRunning = NSWorkspace.shared.runningApplications.contains { $0.bundleURL?.path == ApplicationsMove.destinationPath }
         guard !isOtherTodzRunning else { return showLine(UpdateCopy.quitTheOtherTodzFirst) }
         let original = originalURL(of: bundle.bundleURL)
         do {
             try trashExisting(destination)
             try FileManager.default.copyItem(at: bundle.bundleURL, to: destination)
+            try verifySignature(of: destination)
+            try removeQuarantine(from: destination)
         } catch {
+            try? trashExisting(destination)
             return showLine(UpdateCopy.moveToApplicationsFailed)
         }
-        removeQuarantine(from: destination)
-        original.map { try? FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
+        if let original {
+            try? FileManager.default.trashItem(at: original, resultingItemURL: nil)
+        }
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.createsNewApplicationInstance = true
         NSWorkspace.shared.openApplication(at: destination, configuration: configuration) { _, _ in
@@ -70,10 +80,24 @@ private typealias OriginalPathFunction = @convention(c) (CFURL, UnsafeMutablePoi
         try FileManager.default.trashItem(at: destination, resultingItemURL: nil)
     }
 
-    private func removeQuarantine(from root: URL) {
-        guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else { return }
-        let descendants = enumerator.compactMap { $0 as? URL }
-        ([root] + descendants).forEach { removexattr($0.path, quarantineAttributeName, XATTR_NOFOLLOW) }
+    private func verifySignature(of copy: URL) throws {
+        var runningCode: SecCode?
+        var requirement: SecRequirement?
+        var copiedCode: SecStaticCode?
+        var runningStaticCode: SecStaticCode?
+        guard SecCodeCopySelf([], &runningCode) == errSecSuccess, let runningCode else { throw ApplicationsMoveFailure.signature }
+        guard SecCodeCopyStaticCode(runningCode, [], &runningStaticCode) == errSecSuccess, let runningStaticCode else { throw ApplicationsMoveFailure.signature }
+        guard SecCodeCopyDesignatedRequirement(runningStaticCode, [], &requirement) == errSecSuccess else { throw ApplicationsMoveFailure.signature }
+        guard SecStaticCodeCreateWithPath(copy as CFURL, [], &copiedCode) == errSecSuccess, let copiedCode else { throw ApplicationsMoveFailure.signature }
+        let flags = SecCSFlags(rawValue: kSecCSCheckNestedCode | kSecCSCheckAllArchitectures)
+        guard SecStaticCodeCheckValidity(copiedCode, flags, requirement) == errSecSuccess else { throw ApplicationsMoveFailure.signature }
+    }
+
+    private func removeQuarantine(from root: URL) throws {
+        guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else { throw ApplicationsMoveFailure.quarantine }
+        let paths = ([root] + enumerator.compactMap { $0 as? URL }).map(\.path)
+        let isStripped = paths.allSatisfy { removexattr($0, quarantineAttributeName, XATTR_NOFOLLOW) == 0 || errno == ENOATTR }
+        guard isStripped else { throw ApplicationsMoveFailure.quarantine }
     }
 
     private func showLine(_ line: String) {

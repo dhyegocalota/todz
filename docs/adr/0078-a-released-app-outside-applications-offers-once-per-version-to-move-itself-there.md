@@ -18,7 +18,8 @@ The 0.2.0 local check ran the downloaded app from an App Translocation path: mac
    - The destination is always `/Applications/Todz.app`.
    - A running todz at the destination stops the move with a line asking to quit it first. A stopped one goes to the Trash.
    - The copy is made with `FileManager`. Then the `com.apple.quarantine` attribute is removed from the copy, recursively. The user already approved this exact signed bundle through Gatekeeper's Open Anyway to get this far, and a programmatic copy keeps the flag that makes macOS translocate it again.
-   - The original goes to the Trash. For a translocated bundle, that is the path `SecTranslocateCreateOriginalPathForURL` reports, not the mirror. A failed trash is not an error.
+   - The sandbox grants write access to `/Applications/Todz.app/` only. The copy must pass a signature check against this app's designated requirement before its quarantine is removed; a copy that fails either step goes to the Trash and the move reports a failure.
+   - The original goes to the Trash when the sandbox allows it. For a translocated bundle, that is the path `SecTranslocateCreateOriginalPathForURL` reports, not the mirror. A failed trash is not an error.
    - The new copy opens as a new instance, and this one terminates.
 5. **In-house, no dependency.** The mover is about forty lines over `FileManager`, `NSWorkspace` and one Security call. The decision logic is a pure TodzKit type with unit tests. The app-side mover is checked by hand in the tester's walk.
 6. **The DMG background with an arrow waits for v1.1.** The release command builds the DMG with `hdiutil` only. A background needs a Finder-written layout that cannot be checked headless, and the alert already fixes the failure that matters.

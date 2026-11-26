@@ -13,7 +13,7 @@ The 0.2.0 release check (2026-11-26, release runbook step 8) opened the download
 ## Change
 
 - A released build (one whose Info.plist carries the update feed, as ADR 0072 starts Sparkle) that runs outside `/Applications` and `~/Applications`, translocated or not, asks once at launch: "Move todz to Applications so it can update itself", with **Move to Applications** and **Not now**.
-- **Move to Applications** copies the app to `/Applications/Todz.app`, makes the copy launchable without translocation, moves the original (the downloaded copy, not its translocated mirror) to the Trash, opens the new copy and quits this one.
+- **Move to Applications** copies the app to `/Applications/Todz.app`, makes the copy launchable without translocation, moves the original (the downloaded copy, not its translocated mirror) to the Trash when it can, opens the new copy and quits this one.
 - A todz already in `/Applications` that is running stops the move with a short line asking to quit it first; one that is not running goes to the Trash before the copy.
 - **Not now** is remembered for this version: the next version asks again.
 - A failed copy says so in one line and leaves this copy running.
@@ -22,4 +22,4 @@ The 0.2.0 release check (2026-11-26, release runbook step 8) opened the download
 ## Test list
 
 - TodzKit `ApplicationsMove` decisions: a released build in `/Applications` or `~/Applications` is not offered; one in Downloads, on a disk image or translocated is offered; a version declined is not offered again; the next version is; a build without a feed is never offered.
-- The destination is `/Applications/Todz.app`; the original of a translocated bundle is what goes to the Trash.
+- The destination is `/Applications/Todz.app`; the original of a translocated bundle is what goes to the Trash, when it can.
