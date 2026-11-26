@@ -1,11 +1,12 @@
 import PostalMime from 'postal-mime';
+import { TASK_TITLE_MAX_LENGTH } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { TitleOutcome, replyTitleOf } from '../../src/day-email/reply-title';
 import { rawMessageOf } from '../fixtures/day-email/raw-message';
 
 const ATTRIBUTION = 'On Wed, Nov 25, 2026 at 7:00 AM todz <noreply@todz.app> wrote:';
 const QUOTED = '> Your day: 2 due\n> T-1 Pay rent';
-const TITLE_MAX_LENGTH = 200;
+const TITLE_MAX_LENGTH = TASK_TITLE_MAX_LENGTH;
 
 function titled(title: string) {
   return { outcome: TitleOutcome.Titled, title };
@@ -93,8 +94,8 @@ describe('replyTitleOf refuses control characters', () => {
 });
 
 describe('replyTitleOf cuts the title', () => {
-  test('a 300 character line is cut to the maximum', () => {
-    expect(replyTitleOf('a'.repeat(300))).toEqual(titled('a'.repeat(TITLE_MAX_LENGTH)));
+  test('a line longer than the maximum is cut to the maximum', () => {
+    expect(replyTitleOf('a'.repeat(TITLE_MAX_LENGTH + 100))).toEqual(titled('a'.repeat(TITLE_MAX_LENGTH)));
   });
 
   test('an emoji at the cut is kept whole or left out, never split', () => {

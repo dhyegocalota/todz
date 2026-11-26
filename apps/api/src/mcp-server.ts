@@ -1,6 +1,8 @@
 import { CLIENT_INFO_META_KEY, type CallToolResult, McpServer, type ServerContext } from '@modelcontextprotocol/server';
 import { type Actor, type DueNow, type Task, parseShortId } from '@todz/core';
-import { ActorKind } from '@todz/types';
+import { ActorKind, FairUseLimit } from '@todz/types';
+import type { FairUseLimits } from './fair-use-limits';
+import { textBytesOf } from './owner-write-quota';
 import { z } from 'zod';
 import { MCP_COPY, McpPromptName, McpToolName } from './mcp-copy';
 import {
@@ -25,6 +27,7 @@ import {
 } from './mcp-tool-arguments';
 import type { ProjectResult } from './project-result';
 import type { ProjectStore } from './project-store';
+import { completionFailureOf, draftsFailureOf, fieldsFailureOf } from './write-rules';
 
 const MCP_SERVER_NAME = 'todz';
 export const MCP_SERVER_VERSION = '0.1.0';
@@ -38,7 +41,16 @@ const EnvelopeClientSchema = z.object({ [CLIENT_INFO_META_KEY]: z.object({ name:
 
 export type ClientNameOf = (ctx: ServerContext) => string | null;
 
-export type McpServerScope = { project: DurableObjectStub<ProjectStore>; today: string; agentNudge: boolean; clientNameOf: ClientNameOf };
+export type WriteRefusalTextOf = (args: { writes: number; bytes: number }) => Promise<string | null>;
+
+export type McpServerScope = {
+  project: DurableObjectStub<ProjectStore>;
+  today: string;
+  agentNudge: boolean;
+  clientNameOf: ClientNameOf;
+  limits: FairUseLimits;
+  refusalTextOf: WriteRefusalTextOf;
+};
 
 export function envelopeClientName(ctx: ServerContext): string | null {
   const envelope = EnvelopeClientSchema.safeParse(ctx.mcpReq.envelope);
@@ -110,8 +122,22 @@ function registerReadTools({ server, scope }: { server: McpServer; scope: McpSer
   );
 }
 
+async function refusedAnswer({
+  refusalTextOf,
+  writes,
+  bytes,
+}: {
+  refusalTextOf: WriteRefusalTextOf;
+  writes: number;
+  bytes: number;
+}): Promise<CallToolResult | null> {
+  const refusal = await refusalTextOf({ writes, bytes });
+  if (refusal === null) return null;
+  return errorAnswer(refusal);
+}
+
 function registerWriteTools({ server, scope }: { server: McpServer; scope: McpServerScope }): void {
-  const { project, clientNameOf } = scope;
+  const { project, clientNameOf, limits, refusalTextOf } = scope;
   server.registerTool(
     McpToolName.Add,
     { description: MCP_COPY.tools[McpToolName.Add], inputSchema: AddArgumentsSchema, annotations: WRITE_ANNOTATIONS },
@@ -119,7 +145,21 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
       asAgent({
         clientNameOf,
         ctx,
-        write: async (actor) => resultAnswer({ result: await project.addTasks({ actor, drafts: draftsOf(args) }), answer: addedAnswer }),
+        write: async (actor) => {
+          const drafts = draftsOf(args);
+          const draftsFailure = draftsFailureOf(drafts);
+          if (draftsFailure !== null) return errorAnswer(failureText(draftsFailure));
+          const refusal = await refusedAnswer({
+            refusalTextOf,
+            writes: drafts.length,
+            bytes: textBytesOf(drafts.flatMap((draft) => [draft.title, draft.notes])),
+          });
+          if (refusal !== null) return refusal;
+          return resultAnswer({
+            result: await project.addTasks({ actor, drafts, openTasksMax: limits[FairUseLimit.OpenTasks] }),
+            answer: addedAnswer,
+          });
+        },
       }),
   );
   server.registerTool(
@@ -133,7 +173,13 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
       return asAgent({
         clientNameOf,
         ctx,
-        write: async (actor) => resultAnswer({ result: await project.updateTask({ actor, number, patch }), answer: updatedAnswer }),
+        write: async (actor) => {
+          const fieldsFailure = fieldsFailureOf(args);
+          if (fieldsFailure !== null) return errorAnswer(failureText(fieldsFailure));
+          const refusal = await refusedAnswer({ refusalTextOf, writes: 1, bytes: textBytesOf([args.title, args.notes]) });
+          if (refusal !== null) return refusal;
+          return resultAnswer({ result: await project.updateTask({ actor, number, patch }), answer: updatedAnswer });
+        },
       });
     },
   );
@@ -146,7 +192,13 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
       return asAgent({
         clientNameOf,
         ctx,
-        write: async (actor) => resultAnswer({ result: await project.completeTasks({ actor, numbers, note }), answer: completedAnswer }),
+        write: async (actor) => {
+          const completionFailure = completionFailureOf({ size: numbers.length, note });
+          if (completionFailure !== null) return errorAnswer(failureText(completionFailure));
+          const refusal = await refusedAnswer({ refusalTextOf, writes: numbers.length, bytes: textBytesOf([note]) });
+          if (refusal !== null) return refusal;
+          return resultAnswer({ result: await project.completeTasks({ actor, numbers, note }), answer: completedAnswer });
+        },
       });
     },
   );

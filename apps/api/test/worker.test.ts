@@ -18,11 +18,13 @@ const DIRECTORY_TABLES = [
   'mcp_sessions',
   'metrics_daily',
   'owner_identities',
+  'owner_usage',
   'owners',
   'project_keys',
   'projects',
   'sessions',
   'sign_in_links',
+  'sign_up_usage',
   'waitlist',
   'workspaces',
 ];
@@ -76,7 +78,7 @@ describe('the handler routes the paths the static assets never answer (the asset
 });
 
 describe('the directory', () => {
-  test('lists exactly the sixteen directory tables', async () => {
+  test('lists exactly the eighteen directory tables', async () => {
     expect(await directoryTables()).toEqual(DIRECTORY_TABLES);
   });
 

@@ -360,6 +360,16 @@ Steps 19 to 24 ship a setting that is on by default (the agent nudge and the day
     Expected: the statement changes no row, because it reaches only owners with an email identity whose day email was never chosen, and step 22 counted none; an owner with no email address is never touched. The call and the row count go in the run log.
     If it fails: an owner mailed by mistake is stopped by `UPDATE owners SET day_email = 0 WHERE day_email_chosen_at IS NULL` run through `wrangler d1 execute todz-directory --remote --command` before the next quarter-hour tick; the owner is told.
 
+25. **Put the sign-up key secret, once, before the Worker that reads it.** The daily cap on new accounts per client keys each client address with a secret, so the stored counters cannot be turned back into addresses ([ADR 0089](../adr/0089-sign-up-abuse-is-capped-per-client-per-day-and-disposable-email-domains-are-refused-for-new-accounts.md)). Generate 32 random bytes and pipe them in, so no file, shell history or screen holds the value:
+
+    ```bash
+    openssl rand -hex 32 | scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret put SIGN_UP_KEY_SECRET
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret list
+    ```
+
+    Expected: the put says it uploaded the secret `SIGN_UP_KEY_SECRET` for `todz-api`; the list names `SIGN_UP_KEY_SECRET` and prints no value. Put it once and never rotate it casually: a new value starts every client's daily count again.
+    If it fails: until the secret exists, a sign-up of a new account answers 503 `sign_in_unavailable` (an existing owner still signs in), which is the safe state; put it and try again.
+
 ## Rollback
 
 - First deploy, and only while no owner exists: run `scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "SELECT COUNT(*) FROM owners"`. If it prints anything but `0`, stop and tell the owner: deleting the Worker deletes its Durable Object storage, which holds every project.

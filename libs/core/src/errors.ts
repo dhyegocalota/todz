@@ -1,4 +1,4 @@
-import type { RuleIssue } from '@todz/types';
+import type { FairUseLimit, RuleIssue } from '@todz/types';
 import { formatShortId } from './short-id';
 
 export class RuleViolation extends Error {
@@ -10,6 +10,18 @@ export class RuleViolation extends Error {
     this.name = 'RuleViolation';
     this.issue = issue;
     this.index = index;
+  }
+}
+
+export class LimitViolation extends Error {
+  readonly limit: FairUseLimit;
+  readonly max: number;
+
+  constructor({ limit, max }: { limit: FairUseLimit; max: number }) {
+    super(limit);
+    this.name = 'LimitViolation';
+    this.limit = limit;
+    this.max = max;
   }
 }
 

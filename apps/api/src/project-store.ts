@@ -1,6 +1,7 @@
 import {
   type Actor,
   type AddedTask,
+  LimitViolation,
   type CalendarDate,
   type Clock,
   type CompletedTask,
@@ -24,7 +25,7 @@ import {
   reopenTasks,
   updateTask,
 } from '@todz/core';
-import { ActorKind, LAST_INDEX } from '@todz/types';
+import { ActorKind, FairUseLimit, LAST_INDEX } from '@todz/types';
 import { DurableObject } from 'cloudflare:workers';
 import { touchWorkspaceActivity } from './directory-workspaces';
 import type { Env } from './env';
@@ -83,8 +84,11 @@ export class ProjectStore extends DurableObject<Env> {
     ctx.blockConcurrencyWhile(async () => applyProjectSchema(ctx.storage));
   }
 
-  addTasks({ actor, drafts }: { actor: Actor; drafts: TaskDraft[] }): ProjectResult<AddedTask[]> {
-    return this.runWrite(() => addTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), drafts }));
+  addTasks({ actor, drafts, openTasksMax }: { actor: Actor; drafts: TaskDraft[]; openTasksMax: number }): ProjectResult<AddedTask[]> {
+    return this.runWrite(() => {
+      this.requireOpenTaskRoom({ incoming: drafts.length, openTasksMax });
+      return addTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), drafts });
+    });
   }
 
   updateTask({ actor, number, patch }: { actor: Actor; number: number; patch: TaskPatch }): ProjectResult<Task> {
@@ -95,8 +99,11 @@ export class ProjectStore extends DurableObject<Env> {
     return this.runWrite(() => completeTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers, note }));
   }
 
-  reopenTasks({ actor, numbers }: { actor: Actor; numbers: number[] }): ProjectResult<ReopenedTask[]> {
-    return this.runWrite(() => reopenTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers }));
+  reopenTasks({ actor, numbers, openTasksMax }: { actor: Actor; numbers: number[]; openTasksMax: number }): ProjectResult<ReopenedTask[]> {
+    return this.runWrite(() => {
+      this.requireOpenTaskRoom({ incoming: numbers.length, openTasksMax });
+      return reopenTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers });
+    });
   }
 
   listTasks({ today, filter }: { today: string; filter: TaskFilter }): ProjectResult<TaskList> {
@@ -154,6 +161,11 @@ export class ProjectStore extends DurableObject<Env> {
 
   countActivity({ since, until }: { since: number; until: number }): ActivityCounts {
     return this.store.countActivity({ since, until });
+  }
+
+  private requireOpenTaskRoom({ incoming, openTasksMax }: { incoming: number; openTasksMax: number }): void {
+    if (this.store.countOpenTasks() + incoming > openTasksMax)
+      throw new LimitViolation({ limit: FairUseLimit.OpenTasks, max: openTasksMax });
   }
 
   private run<Value>(useCase: () => Value): ProjectResult<Value> {

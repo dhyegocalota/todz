@@ -100,7 +100,7 @@ describe('task constants', () => {
       ORDER_KEY_MAX_LENGTH,
     }).toEqual({
       TASK_SHORT_ID_PREFIX: 'T-',
-      TASK_TITLE_MAX_LENGTH: 200,
+      TASK_TITLE_MAX_LENGTH: 500,
       TASK_NOTES_MAX_LENGTH: 20_000,
       COMPLETION_NOTE_MAX_LENGTH: 2_000,
       IDEMPOTENCY_KEY_MAX_LENGTH: 128,

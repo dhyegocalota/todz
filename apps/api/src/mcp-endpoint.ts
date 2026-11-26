@@ -13,6 +13,9 @@ import { bearerSecret, unauthorized } from './bearer-secret';
 import type { Env } from './env';
 import { HttpStatus } from './http-status';
 import { MCP_COPY } from './mcp-copy';
+import { FAIR_USE_COPY } from './fair-use-copy';
+import { fairUseLimitsOf } from './fair-use-limits';
+import { writeRefusalTextOf } from './owner-write-quota';
 import { type McpServerScope, buildMcpServer, envelopeClientName } from './mcp-server';
 import { openMcpSession } from './mcp-sessions';
 import { calendarDateInTimeZone } from './owner-today';
@@ -23,6 +26,7 @@ import { isSignedInRateLimited, withRetryAfter } from './signed-in-limiter';
 
 const SESSION_REQUIRED_CODE = -32000;
 const SESSION_NOT_FOUND_CODE = -32001;
+const ACCOUNT_SUSPENDED_CODE = -32003;
 const SESSION_HEADER = 'Mcp-Session-Id';
 const MCP_METHOD = 'POST';
 const INITIALIZE_METHOD = 'initialize';
@@ -71,9 +75,30 @@ function serveScope({ request, scope, era }: { request: Request; scope: McpServe
   return createMcpHandler(() => buildMcpServer(scope), HANDLER_OPTIONS_OF_ERA[era]).fetch(request);
 }
 
+function quotaFieldsOf({
+  env,
+  keyProject,
+  now,
+}: {
+  env: Env;
+  keyProject: KeyProject;
+  now: number;
+}): Pick<McpServerScope, 'limits' | 'refusalTextOf'> {
+  return {
+    limits: fairUseLimitsOf(env),
+    refusalTextOf: ({ writes, bytes }) => writeRefusalTextOf({ env, ownerId: keyProject.ownerId, now, writes, bytes }),
+  };
+}
+
 function legacyScope({ legacyRequest, clientName }: { legacyRequest: LegacyRequest; clientName: string }): McpServerScope {
-  const { keyProject, today } = legacyRequest;
-  return { project: keyProject.project, today, agentNudge: keyProject.agentNudge, clientNameOf: () => clientName };
+  const { env, keyProject, today, now } = legacyRequest;
+  return {
+    project: keyProject.project,
+    today,
+    agentNudge: keyProject.agentNudge,
+    clientNameOf: () => clientName,
+    ...quotaFieldsOf({ env, keyProject, now }),
+  };
 }
 
 async function initializeSession({
@@ -134,10 +159,19 @@ export async function serveMcp({ request, env, now }: { request: Request; env: E
   if (keyProject === null) return unauthorized();
   const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.MCP_LIMITER, key: keyProject.keyDigest });
   if (isRateLimited) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
+  if (keyProject.isSuspended) {
+    return jsonRpcError({ status: HttpStatus.Forbidden, id: null, code: ACCOUNT_SUSPENDED_CODE, message: FAIR_USE_COPY.suspended });
+  }
   if (request.method !== MCP_METHOD) return methodNotAllowed();
   const today = calendarDateInTimeZone({ timeZone: keyProject.timeZone, now });
   const isLegacy = await isLegacyRequest(request);
   if (isLegacy) return serveLegacy({ request, env, keyProject, today, now });
-  const scope = { project: keyProject.project, today, agentNudge: keyProject.agentNudge, clientNameOf: envelopeClientName };
+  const scope = {
+    project: keyProject.project,
+    today,
+    agentNudge: keyProject.agentNudge,
+    clientNameOf: envelopeClientName,
+    ...quotaFieldsOf({ env, keyProject, now }),
+  };
   return serveScope({ request, scope, era: ProtocolEra.Modern });
 }

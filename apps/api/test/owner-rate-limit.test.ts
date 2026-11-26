@@ -1,4 +1,5 @@
 import { JSONRPC_VERSION, LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/server';
+import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import type { Env } from '../src/env';
@@ -125,6 +126,18 @@ describe('the key limiter', () => {
     const response = await serveMcp({ request: initializeRequest(key), env: ownerEnv({ MCP_LIMITER: limiter }), now: CLOCK_NOW });
     expect(response.status).toBe(TOO_MANY_STATUS);
     expect(response.headers.get(RETRY_AFTER_HEADER)).toBe(RETRY_AFTER_SECONDS);
+  });
+
+  test('a suspended key is rate limited like any other', async () => {
+    const { projectId, key } = await seedIssuedKey();
+    await env.DIRECTORY.prepare(
+      'UPDATE owners SET suspended_at = ? WHERE id = (SELECT workspaces.owner_id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.id = ?)',
+    )
+      .bind(CLOCK_NOW, projectId)
+      .run();
+    const limiter = recordingLimiter({ isAllowed: false }).limiter;
+    const response = await serveMcp({ request: initializeRequest(key), env: ownerEnv({ MCP_LIMITER: limiter }), now: CLOCK_NOW });
+    expect(response.status).toBe(TOO_MANY_STATUS);
   });
 
   test('a key limiter that is down serves /mcp', async () => {

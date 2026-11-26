@@ -25,6 +25,8 @@ describe('findKeyProject', () => {
       projectId,
       timeZone: SAO_PAULO_TIME_ZONE,
       agentNudge: false,
+      ownerId: expect.any(String),
+      isSuspended: false,
     });
   });
 
@@ -60,7 +62,10 @@ describe('findSessionOwner', () => {
     const ownerId = await seedOwner();
     const secret = newSecret();
     await seedSession({ ownerId, secret, expiresAt: CLOCK_NOW + 1 });
-    expect(await findSessionOwner({ directory: env.DIRECTORY, digest: await digestCredential(secret), now: CLOCK_NOW })).toBe(ownerId);
+    expect(await findSessionOwner({ directory: env.DIRECTORY, digest: await digestCredential(secret), now: CLOCK_NOW })).toEqual({
+      ownerId,
+      isSuspended: false,
+    });
   });
 
   test('a session expiring exactly at now resolves to nothing', async () => {
