@@ -58,7 +58,9 @@ function mcpCall(secret: string): Promise<Response> {
 }
 
 async function countRows({ sql, bindings }: { sql: string; bindings: string[] }): Promise<number> {
-  const row = await env.DIRECTORY.prepare(sql).bind(...bindings).first<CountRow>();
+  const row = await env.DIRECTORY.prepare(sql)
+    .bind(...bindings)
+    .first<CountRow>();
   if (row === null) throw new Error('count always answers a row');
   return row.total;
 }

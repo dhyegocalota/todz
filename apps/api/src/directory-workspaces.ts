@@ -258,9 +258,7 @@ export async function deleteOwnerProject({
       )
       .bind(projectId, ownerId),
     directory
-      .prepare(
-        'DELETE FROM projects WHERE id = ? AND is_inbox = 0 AND workspace_id IN (SELECT id FROM workspaces WHERE owner_id = ?)',
-      )
+      .prepare('DELETE FROM projects WHERE id = ? AND is_inbox = 0 AND workspace_id IN (SELECT id FROM workspaces WHERE owner_id = ?)')
       .bind(projectId, ownerId),
   ]);
   if (projectDeletion === undefined) throw new Error('the batch answers one result per statement');
