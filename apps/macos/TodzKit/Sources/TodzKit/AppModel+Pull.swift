@@ -16,7 +16,7 @@ extension AppModel {
     func noteConnection(after failure: any Error) {
         switch SendOutcome.of(failure) {
         case .unreachable, .unexpected: isOffline = true
-        case .refused: noteAnswer()
+        case .refused, .paused: noteAnswer()
         case .updateNeeded:
             noteAnswer()
             recordRefusal(of: failure)

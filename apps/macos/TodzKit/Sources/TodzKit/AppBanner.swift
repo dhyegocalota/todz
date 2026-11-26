@@ -10,6 +10,8 @@ public enum AppBanner: Equatable, Sendable {
     case workspaceGone
     case changesRefused(count: Int)
     case fairUseRefused(message: String)
+    case fairUsePaused(message: String)
+    case changesFairUseRefused(message: String, count: Int)
     case cacheNotSaved
     case waitingChangesLost
     case signOutFailed

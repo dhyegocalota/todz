@@ -16,19 +16,20 @@ struct OwnerErrorBody: Decodable {
     let message: String?
 
     static func failure(status: Int, body: Data) -> OwnerAPIError {
-        let codedFailure = (try? OwnerCoding.decoder().decode(OwnerErrorBody.self, from: body))?.failure
+        let codedFailure = (try? OwnerCoding.decoder().decode(OwnerErrorBody.self, from: body))?.failure(status: status)
         if let codedFailure { return codedFailure }
         let statusFailure = ResponseStatus(rawValue: status).flatMap { errorOfStatus[$0] }
         if let statusFailure { return statusFailure }
         return .unexpected(status: status)
     }
 
-    private var limitFailure: OwnerAPIError {
+    private func limitFailure(status: Int) -> OwnerAPIError {
         guard let message else { return .limitReached }
-        return .fairUseRefused(message: message)
+        guard status == ResponseStatus.tooManyRequests.rawValue else { return .fairUseRefused(message: message) }
+        return .fairUsePaused(message: message)
     }
 
-    var failure: OwnerAPIError? {
+    private func failure(status: Int) -> OwnerAPIError? {
         switch error {
         case .invalidRequest: .invalidRequest
         case .identityRejected: .identityRejected
@@ -41,8 +42,9 @@ struct OwnerErrorBody: Decodable {
         case .signInUnavailable: .signInUnavailable
         case .signInRefused: .signInRefused
         case .appTooOld: .appTooOld(minimum: minimumAppVersion)
-        case .limitReached: limitFailure
-        case .accountSuspended, .signUpRefused: message.map { .fairUseRefused(message: $0) }
+        case .limitReached: limitFailure(status: status)
+        case .accountSuspended: message.map { .fairUsePaused(message: $0) }
+        case .signUpRefused: message.map { .fairUseRefused(message: $0) }
         }
     }
 }

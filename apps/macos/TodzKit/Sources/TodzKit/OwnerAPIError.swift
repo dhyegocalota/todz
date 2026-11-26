@@ -12,6 +12,7 @@ public enum OwnerAPIError: Error, Equatable, Sendable {
     case invalidRequest
     case appTooOld(minimum: String?)
     case fairUseRefused(message: String)
+    case fairUsePaused(message: String)
     case limitReached
     case unreachable
     case unexpected(status: Int)

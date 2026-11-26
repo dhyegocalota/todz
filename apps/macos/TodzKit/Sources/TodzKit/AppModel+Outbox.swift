@@ -3,10 +3,12 @@ extension AppModel {
         guard let session else { return }
         outbox = outbox.appending(change, isHeadSent: headInFlightSession == session)
         keepOutbox()
+        guard !isSendingPaused else { return }
         startSending()
     }
 
     func startSending() {
+        isSendingPaused = false
         sendWait?.cancel()
         guard let session, sendingSession == nil, !isUpdateNeeded else { return }
         guard isOwnerConfirmed else {
@@ -27,6 +29,7 @@ extension AppModel {
         sendFailures = 0
         hasServerAnswered = false
         refusalsInFlush = 0
+        isSendingPaused = false
     }
 
     func countRefusals(_ count: Int) {
@@ -101,8 +104,12 @@ extension AppModel {
         switch SendOutcome.of(error) {
         case .refused:
             refuse(change)
-            raiseFairUseRefusal(of: error)
+            raiseFairUse(of: error)
             return true
+        case .paused:
+            isSendingPaused = true
+            raiseFairUse(of: error)
+            return false
         case .unreachable:
             hasServerAnswered = false
             await waitToSend()
@@ -141,9 +148,12 @@ extension AppModel {
         pullFromStart(projectIdentifier: change.projectIdentifier)
     }
 
-    private func raiseFairUseRefusal(of error: any Error) {
-        guard let failure = error as? OwnerAPIError, case let .fairUseRefused(message) = failure else { return }
-        raise(.fairUseRefused(message: message))
+    private func raiseFairUse(of error: any Error) {
+        switch error as? OwnerAPIError {
+        case let .fairUseRefused(message): raise(.changesFairUseRefused(message: message, count: refusalsInFlush))
+        case let .fairUsePaused(message): raise(.fairUsePaused(message: message))
+        default: return
+        }
     }
 
     private func waitToSend() async {

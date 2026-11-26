@@ -229,15 +229,42 @@ extension AppModelTests {
         #expect(harness.pause.durations == [])
     }
 
-    @Test func aFairUseRefusalIsSentOnceDroppedAndShownWithTheServersMessage() async throws {
+    @Test func aFairUseRefusalIsSentOnceDroppedAndShownWithTheServersMessageAndTheRefusedCount() async throws {
         let harness = try await outboxHarness()
         harness.service.failures[.completeTasks] = .fairUseRefused(message: "You have 500 open tasks.")
         await harness.model.complete(task: firstTask)
         await harness.flushed()
         #expect(harness.service.calls.filter { $0 == .completeTasks(session: harness.session, projectIdentifier: inboxIdentifier, numbers: [1]) }.count == 1)
         #expect(harness.model.waitingChangeCount == 0)
-        #expect(harness.model.banner == .fairUseRefused(message: "You have 500 open tasks."))
+        #expect(harness.model.banner == .changesFairUseRefused(message: "You have 500 open tasks.", count: 1))
         #expect(harness.pause.durations == [])
+    }
+
+    @Test func aPerChangeCapDropsOnlyThatChange() async throws {
+        let harness = try await outboxHarness()
+        harness.service.failures[.completeTasks] = .fairUseRefused(message: "You have 500 open tasks.")
+        await harness.model.complete(task: firstTask)
+        await harness.model.updateTitle(task: secondTask, title: "B")
+        await harness.flushed()
+        #expect(harness.service.routes().contains(.updateTask))
+        #expect(harness.model.waitingChangeCount == 0)
+    }
+
+    @Test func aDailyCapKeepsEveryQueuedChangePausesSendingAndResumesOnTheNextRefresh() async throws {
+        let harness = try await outboxHarness()
+        harness.service.failures[.addTasks] = .fairUsePaused(message: "Changes resume at midnight UTC.")
+        for position in 1...30 {
+            await harness.model.addTask(title: "Task \(position)", projectIdentifier: inboxIdentifier, dueDate: nil)
+        }
+        await harness.flushed()
+        #expect(harness.model.waitingChangeCount == 30)
+        #expect(harness.service.routes().filter { $0 == .addTasks }.count == 1)
+        #expect(harness.model.banner == .fairUsePaused(message: "Changes resume at midnight UTC."))
+        #expect(harness.pause.durations == [])
+        harness.service.failures[.addTasks] = nil
+        await harness.model.refresh()
+        await harness.flushed()
+        #expect(harness.model.waitingChangeCount == 0)
     }
 
     @Test func aRefusalAsksForItsPullFromZeroWithoutWaitingForIt() async throws {
@@ -421,6 +448,7 @@ extension AppModelTests {
         (.identityRejected, .refused),
         (.fairUseRefused(message: "Full"), .refused),
         (.limitReached, .refused),
+        (.fairUsePaused(message: "Tomorrow"), .paused),
         (.unreachable, .unreachable),
         (.unexpected(status: 500), .unexpected),
         (.signInUnavailable, .unexpected),

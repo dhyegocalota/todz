@@ -104,6 +104,7 @@ import Observation
     @ObservationIgnored var sendFailures = 0
     @ObservationIgnored var hasServerAnswered = false
     @ObservationIgnored var refusalsInFlush = 0
+    @ObservationIgnored var isSendingPaused = false
     @ObservationIgnored var selectionsAtAdd: [String: TaskKey?] = [:]
     @ObservationIgnored var projectsToPullFromStart: Set<String> = []
     @ObservationIgnored var pullGates: [String: PullGate] = [:]

@@ -26,7 +26,7 @@ public enum SignInError: Equatable, Sendable {
         case .signInUnavailable: self = .signInUnavailable
         case .signInRefused: self = .signInRefused
         case .appTooOld: self = .appTooOld
-        case let .fairUseRefused(message): self = .fairUseRefused(message: message)
+        case let .fairUseRefused(message), let .fairUsePaused(message): self = .fairUseRefused(message: message)
         case .timeZoneInvalid: self = .timeZoneInvalid
         case .unreachable: self = .unreachable
         case .unauthorized, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead, .ruleViolated, .invalidRequest, .limitReached, .unexpected:

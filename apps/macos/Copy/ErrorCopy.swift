@@ -25,6 +25,7 @@ enum ErrorCopy {
     static let updateNeededTitle = "Update todz to keep syncing"
     static let updateNeededBody = "Your changes wait here until then."
     static let alreadySignedIn = "You're already signed in."
+    static let fairUsePausedBody = "Your changes wait here and are sent when the limit lifts."
     static let signOutFailed = "todz couldn't erase this Mac's copy of your tasks, so you're still signed in. Try again."
 
     static let serverAddressInvalid = "Enter an address like https://todz.example.com."
