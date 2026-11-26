@@ -1,4 +1,4 @@
-# 0086. The committed DMG layout carries the whole icon view record Finder writes, or Finder drops it
+# 0095. The committed DMG layout carries the whole icon view record Finder writes, or Finder drops it
 
 - Status: Accepted
 - Date: 2026-11-26
@@ -28,7 +28,7 @@ The cause, found by mounting images built from the same staging folder and openi
 ## Consequences
 
 - The next release opens on the branded window.
-- A mount made with `-nobrowse` does not honour view settings, so a proof by hand attaches the image normally and detaches it afterwards.
+- A proof by hand attaches the image with `-nobrowse`, opens its one volume window, captures that window with `screencapture -l` and detaches the image.
 
 ## Evidence
 

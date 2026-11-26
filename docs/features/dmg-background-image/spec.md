@@ -1,9 +1,9 @@
 # The released DMG shows its background picture in Finder
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🟢
 **Owner approval:** inherited from docs/product/README.md, approved 2026-11-23 (the loop decides)
-**ADRs:** [0086](../../adr/0086-the-committed-dmg-layout-carries-the-whole-icon-view-record-finder-writes-or-finder-drops-it.md), amends [0083](../../adr/0083-the-release-dmg-opens-on-a-committed-background-and-a-committed-ds-store-layout-copied-into-the-image-folder.md)
+**ADRs:** [0095](../../adr/0095-the-committed-dmg-layout-carries-the-whole-icon-view-record-finder-writes-or-finder-drops-it.md), amends [0083](../../adr/0083-the-release-dmg-opens-on-a-committed-background-and-a-committed-ds-store-layout-copied-into-the-image-folder.md)
 **Not changing:** the release command, the image format, signing, sum, signature and appcast.
 
 ## Problem
@@ -32,7 +32,7 @@ A layout without those keys fails a repository-shape test.
 
 | Question | Options | Owner's answer | Date |
 |----------|---------|----------------|------|
-| How is the layout repaired? | Add the missing keys, commit a Finder-written store, Finder AppleScript | Loop's call: add the keys (ADR 0086) | 2026-11-26 |
+| How is the layout repaired? | Add the missing keys, commit a Finder-written store, Finder AppleScript | Loop's call: add the keys (ADR 0095) | 2026-11-26 |
 
 ## Test strategy summary
 
