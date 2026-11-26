@@ -100,9 +100,17 @@ describe('workspace last activity', () => {
 
   test('a store opened without its project name refuses the write and commits nothing', async () => {
     const stub = env.PROJECT_STORE.get(env.PROJECT_STORE.newUniqueId());
-    await expect(stub.addTasks({ actor: OWNER_ACTOR, drafts: [draftOf('Nameless')] })).rejects.toThrow('without its project name');
-    const listed = await stub.listTasks({ today: TODAY, filter: openTasksFilter() });
-    expect(listed.ok && listed.value.totalMatched).toBe(0);
+    const outcome = await runInDurableObject(stub, (instance) => {
+      try {
+        instance.addTasks({ actor: OWNER_ACTOR, drafts: [draftOf('Nameless')] });
+      } catch (refusal) {
+        const listed = instance.listTasks({ today: TODAY, filter: openTasksFilter() });
+        return { message: String(refusal), committed: listed.ok ? listed.value.totalMatched : null };
+      }
+      throw new Error('the nameless store accepted the write');
+    });
+    expect(outcome.message).toContain('without its project name');
+    expect(outcome.committed).toBe(0);
   });
 
   test('a write after the interval stamps again with the later time', async () => {
