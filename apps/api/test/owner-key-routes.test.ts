@@ -1,7 +1,8 @@
-import { OWNER_LIVE_KEYS_MAX } from '@todz/types';
+import { FairUseLimit, OWNER_LIVE_KEYS_MAX, OWNER_WRITES_PER_DAY_MAX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
+import { utcDayOf } from '../src/telemetry/telemetry-day';
 import { ownerCall, signInOwner } from './owner-client';
 
 const OWNER_KEY_PATTERN = /^todz-owner_[A-Za-z0-9_-]{43}$/;
@@ -15,10 +16,23 @@ const CONFLICT_STATUS = 409;
 const NOT_FOUND = { error: 'not_found' };
 const LIMIT_REACHED = { error: 'limit_reached' };
 const KEYS_PATH = '/owner/keys';
+const TOO_MANY_REQUESTS_STATUS = 429;
 
 type KeyBody = { id: string; hint: string; created_at: number };
 type IssuedBody = { key: KeyBody; secret: string };
 type DigestRow = { digest: string };
+
+function writesOf(ownerId: string): Promise<{ writes: number } | null> {
+  return env.DIRECTORY.prepare('SELECT writes FROM owner_usage WHERE owner_id = ?').bind(ownerId).first<{ writes: number }>();
+}
+
+async function exhaustToday(ownerId: string): Promise<void> {
+  await env.DIRECTORY.prepare(
+    'INSERT INTO owner_usage (owner_id, day, writes, bytes) VALUES (?, ?, ?, 0) ON CONFLICT (owner_id, day) DO UPDATE SET writes = excluded.writes',
+  )
+    .bind(ownerId, utcDayOf(Date.now()), OWNER_WRITES_PER_DAY_MAX)
+    .run();
+}
 
 async function issueOwnerKey(token: string): Promise<IssuedBody> {
   const response = await ownerCall({ method: 'POST', path: KEYS_PATH, token });
@@ -146,5 +160,35 @@ describe('the owner key routes without a session', () => {
       ownerCall({ method: 'POST', path: KEYS_PATH, token: secret }),
     ]);
     expect(answers.map((answer) => answer.status)).toEqual([UNAUTHORIZED_STATUS, UNAUTHORIZED_STATUS, UNAUTHORIZED_STATUS]);
+  });
+});
+
+describe('owner keys and the daily write cap', () => {
+  test('issuing a key at the cap is refused and stores nothing', async () => {
+    const { token, ownerId } = await signInOwner();
+    await exhaustToday(ownerId);
+    const refused = await ownerCall({ method: 'POST', path: KEYS_PATH, token });
+    expect(refused.status).toBe(TOO_MANY_REQUESTS_STATUS);
+    expect((await refused.json<{ limit: string }>()).limit).toBe(FairUseLimit.DailyWrites);
+    expect(await listOwnerKeys(token)).toEqual([]);
+  });
+
+  test('revoking a key is never gated by the cap and spends no write', async () => {
+    const { token, ownerId } = await signInOwner();
+    const { key } = await issueOwnerKey(token);
+    await exhaustToday(ownerId);
+    const revoked = await revokeOwnerKey({ token, keyId: key.id });
+    expect(revoked.status).toBe(NO_CONTENT_STATUS);
+    expect(await listOwnerKeys(token)).toEqual([]);
+    expect(await writesOf(ownerId)).toEqual({ writes: OWNER_WRITES_PER_DAY_MAX });
+  });
+
+  test('an issue spends one write and a refused issue at the key limit spends none', async () => {
+    const { token, ownerId } = await signInOwner();
+    await Promise.all(Array.from({ length: OWNER_LIVE_KEYS_MAX }, () => issueOwnerKey(token)));
+    expect(await writesOf(ownerId)).toEqual({ writes: OWNER_LIVE_KEYS_MAX });
+    const refused = await ownerCall({ method: 'POST', path: KEYS_PATH, token });
+    expect(refused.status).toBe(CONFLICT_STATUS);
+    expect(await writesOf(ownerId)).toEqual({ writes: OWNER_LIVE_KEYS_MAX });
   });
 });

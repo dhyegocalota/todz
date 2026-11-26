@@ -169,7 +169,7 @@ async function serveOwnerKey({
 }): Promise<Response> {
   const access = await openOwnerKey({ env, secret });
   if (access === null) return unauthorized();
-  const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.MCP_LIMITER, key: access.keyDigest });
+  const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.MCP_LIMITER, key: access.owner.ownerId });
   if (isRateLimited) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
   if (access.owner.isSuspended) return suspendedRefusal();
   if (request.method !== MCP_METHOD) return methodNotAllowed();

@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import type { Env } from '../src/env';
 import { serveMcp } from '../src/mcp-endpoint';
-import { seedIssuedKey } from './directory-seed';
+import { seedIssuedKey, seedOwner, seedOwnerKey } from './directory-seed';
 import { recordingLimiter } from './email-sign-in-client';
 import { type OwnerCall, serveOwnerCall, signInOwner, workerEnvWith } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
@@ -118,6 +118,18 @@ describe('the key limiter', () => {
     await response.body?.cancel();
     expect(response.status).toBe(OK_STATUS);
     expect(keys).toEqual([await digestCredential(key)]);
+  });
+
+  test('every owner key of one owner takes the same limiter key, the owner id', async () => {
+    const ownerId = await seedOwner();
+    const { limiter, keys } = recordingLimiter({ isAllowed: true });
+    const workerEnv = ownerEnv({ MCP_LIMITER: limiter });
+    const secrets = await Promise.all([seedOwnerKey({ ownerId }), seedOwnerKey({ ownerId })]);
+    const responses = await Promise.all(
+      secrets.map((secret) => serveMcp({ request: initializeRequest(secret), env: workerEnv, now: CLOCK_NOW })),
+    );
+    await Promise.all(responses.map((response) => response.body?.cancel()));
+    expect(keys).toEqual([ownerId, ownerId]);
   });
 
   test('a refused /mcp answers 429 with Retry-After', async () => {
