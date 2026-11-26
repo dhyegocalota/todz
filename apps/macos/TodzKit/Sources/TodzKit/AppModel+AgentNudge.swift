@@ -16,6 +16,7 @@ extension AppModel {
         guard canChangeAgentNudge, let lastKnown = agentNudge, let savingSession = session else { return }
         agentNudge = isEnabled
         isSavingAgentNudge = true
+        agentNudgeSavesStarted += 1
         isAgentNudgeNotSaved = false
         do {
             let saved = try await request { try await service.updateAgentNudge(session: $0, isEnabled: isEnabled) }

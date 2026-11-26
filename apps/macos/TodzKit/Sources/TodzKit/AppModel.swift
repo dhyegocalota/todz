@@ -86,6 +86,9 @@ import Observation
     @ObservationIgnored var workspaceReloadIdentifier: UUID?
     @ObservationIgnored var ownerConfirmationRetry: Task<Void, Never>?
     @ObservationIgnored var ownerConfirmationFailures = 0
+    @ObservationIgnored var ownerSettingsReadIdentifier: UUID?
+    @ObservationIgnored var agentNudgeSavesStarted = 0
+    @ObservationIgnored var dayEmailSavesStarted = 0
     @ObservationIgnored var sendLoop: Task<Void, Never>?
     @ObservationIgnored var sendingSession: String?
     @ObservationIgnored var sendWait: Task<Void, any Error>?
@@ -379,6 +382,7 @@ import Observation
         session = nil
         ownerIdentifier = nil
         isOwnerConfirmed = false
+        ownerSettingsReadIdentifier = nil
         forgetAgentNudge()
         forgetDayEmail()
         forgetWindow()

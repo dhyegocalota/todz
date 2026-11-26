@@ -134,6 +134,7 @@ private let cacheFolderName = "Cache"
     func applicationDidBecomeActive(_ notification: Notification) {
         ownerEngaged()
         Task { await model.takeWidgetRequests() }
+        Task { await model.refreshOwnerSettings() }
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
