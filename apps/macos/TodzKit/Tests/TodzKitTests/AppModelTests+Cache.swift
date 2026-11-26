@@ -181,6 +181,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         let acme = harness.seedWorkspace(name: "acme", projectNames: ["launch"])
         let side = harness.seedWorkspace(name: "side")
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         #expect(isOwnerFileCurrent(harness))
         harness.store.calls = []
@@ -223,6 +224,7 @@ extension AppModelTests {
         harness.seedWorkspace(name: "side")
         harness.seedTasks(projectIdentifier: inboxIdentifier, count: 2)
         harness.store.failures[route] = .unwritable
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         await harness.model.complete(task: firstTask)
         await harness.flushed()

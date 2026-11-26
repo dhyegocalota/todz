@@ -68,6 +68,8 @@ struct MenuBarPopover: View {
             MenuBarPrompt(line: signedOutLine(notice: notice))
         case .naming:
             MenuBarPrompt(line: MenuBarCopy.naming)
+        case .choosing:
+            MenuBarPrompt(line: MenuBarCopy.choosing)
         case .ready:
             if let workspace = model.activeWorkspace {
                 MenuBarToday(workspace: workspace, focus: $focus)

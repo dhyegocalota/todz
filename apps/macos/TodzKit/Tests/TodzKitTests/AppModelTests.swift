@@ -102,13 +102,15 @@ import Testing
         #expect(harness.model.isSigningIn == false)
     }
 
-    @Test func signInWithWorkspacesOpensTheOldestWithItsInboxSelected() async throws {
+    @Test func signInWithWorkspacesOffersThemThenOpensTheChosenOneWithItsInbox() async throws {
         let harness = try AppModelHarness()
         let oldest = harness.seedWorkspace(name: "acme")
         harness.seedWorkspace(name: "side")
         harness.seedTasks(projectIdentifier: "acme-inbox", count: 1)
         await harness.model.launch()
         await harness.model.signIn(identity: "dhyego")
+        #expect(harness.model.phase == .choosing)
+        await harness.model.chooseWorkspace(identifier: oldest.identifier)
         #expect(harness.model.phase == .ready)
         #expect(harness.model.activeWorkspace == oldest)
         #expect(harness.model.selectedItem == .inbox)

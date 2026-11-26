@@ -124,6 +124,7 @@ struct SettingsView: View {
                 }
                 .toggleStyle(.switch)
             }
+            SettingsWorkspaceRows()
             Section {
                 ServerAddressForm(layout: .row, exit: {})
             } footer: {

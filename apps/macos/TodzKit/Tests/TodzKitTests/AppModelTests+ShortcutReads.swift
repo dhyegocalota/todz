@@ -201,6 +201,7 @@ extension AppModelTests {
         harness.seedWorkspace(name: "acme")
         harness.seedWorkspace(name: "side")
         harness.service.tasksOfProject["side-inbox"] = [MutableTask(number: 1, title: "Water the garden").record]
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         #expect(harness.model.activeWorkspace?.identifier == "acme")
         #expect(harness.model.shortcutTasks(matching: "garden").isEmpty)
@@ -231,6 +232,7 @@ extension AppModelTests {
         harness.seedWorkspace(name: "side")
         harness.service.tasksOfProject[shortcutInboxIdentifier] = [MutableTask(number: 1, title: "Open one").record]
         harness.service.tasksOfProject["side-inbox"] = [MutableTask(number: 1, title: "Water the garden").record]
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         let keys = [
             TaskKey(projectIdentifier: shortcutInboxIdentifier, number: 99),

@@ -14,6 +14,7 @@ extension AppModelTests {
         harness.seedWorkspace(name: "side")
         harness.seedTasks(projectIdentifier: inboxIdentifier, count: 2)
         harness.seedTasks(projectIdentifier: launchIdentifier, count: 1)
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         return harness
     }
@@ -142,7 +143,7 @@ extension AppModelTests {
         await harness.model.signOut()
         await harness.model.signIn(identity: "walker-2")
         await harness.model.refresh()
-        #expect(harness.model.phase == .ready)
+        #expect(harness.model.phase == .choosing)
         #expect(harness.vault.secret == harness.service.issuedSession.sessionToken)
     }
 

@@ -9,6 +9,7 @@ enum ShortcutsCopy {
     static let taskGone = "That task is no longer in this workspace."
     static let signedOut = "Sign in to todz first."
     static let noWorkspace = "Name your first workspace in todz first."
+    static let choosing = "Choose a workspace in todz first."
     static let loading = "todz is still loading Today. Try again in a moment."
 
     static func nothingLeft(workspaceName: String) -> String {

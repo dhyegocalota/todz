@@ -84,6 +84,7 @@ extension AppModel {
         switch phase {
         case .signedOut: .signedOut
         case .naming: .noWorkspace
+        case .choosing: .choosing
         case .loading: .loading
         case .ready: isActiveTodayKnown ? .ready : .loading
         }

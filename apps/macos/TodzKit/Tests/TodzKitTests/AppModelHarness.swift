@@ -181,6 +181,10 @@ final class HarnessClock {
         service.tasksOfProject[projectIdentifier] = (1...count).map { MutableTask(number: $0, title: "Task \($0)").record }
     }
 
+    func rememberWorkspace(identifier: String) {
+        store.owner = OwnerCache(ownerIdentifier: service.issuedSession.owner.identifier, workspaces: [], activeWorkspaceIdentifier: identifier)
+    }
+
     func signedIn() async {
         vault.secret = session
         await model.launch()

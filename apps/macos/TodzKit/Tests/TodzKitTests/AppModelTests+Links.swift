@@ -19,6 +19,7 @@ extension AppModelTests {
             MutableTask(number: 2, title: "Done today", dueDate: today, state: .done, completedAt: fixedInstant).record,
             MutableTask(number: 3, title: "Due tomorrow", dueDate: tomorrow).record,
         ]
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         harness.model.selectedItem = .inbox
         harness.model.selectedTask = dueTomorrowTask
