@@ -4,8 +4,6 @@ import type { GeneratedEmail } from '../../src/emails/generated-email';
 import { generatedAdminSignInEmail } from './admin-sign-in-template';
 import { generatedDayEmailEmpty, generatedDayEmailWithTasks } from './day-email-template';
 import { generatedSignInEmail } from './sign-in-template';
-import { generatedWaitlistDigestEmail, generatedWaitlistDigestEmptyEmail } from './waitlist-digest-template';
-import { generatedWaitlistEmail } from './waitlist-template';
 import { generatedWelcomeEmail } from './welcome-template';
 
 export const GENERATED_EMAILS_PATH = fileURLToPath(new URL('../../src/emails/generated/email-templates.ts', import.meta.url));
@@ -13,10 +11,7 @@ export const GENERATED_EMAILS_PATH = fileURLToPath(new URL('../../src/emails/gen
 export enum EmailTemplateName {
   SignIn = 'sign-in',
   Welcome = 'welcome',
-  Waitlist = 'waitlist',
   AdminSignIn = 'admin-sign-in',
-  WaitlistDigest = 'waitlist-digest',
-  WaitlistDigestEmpty = 'waitlist-digest-empty',
   DayEmail = 'day-email',
   DayEmailEmpty = 'day-email-empty',
 }
@@ -26,10 +21,7 @@ const IMPORTS = "import type { GeneratedEmail } from '../generated-email';";
 const EXPORT_NAMES: Record<EmailTemplateName, string> = {
   [EmailTemplateName.SignIn]: 'SIGN_IN_EMAIL',
   [EmailTemplateName.Welcome]: 'WELCOME_EMAIL',
-  [EmailTemplateName.Waitlist]: 'WAITLIST_EMAIL',
   [EmailTemplateName.AdminSignIn]: 'ADMIN_SIGN_IN_EMAIL',
-  [EmailTemplateName.WaitlistDigest]: 'WAITLIST_DIGEST_EMAIL',
-  [EmailTemplateName.WaitlistDigestEmpty]: 'WAITLIST_DIGEST_EMPTY_EMAIL',
   [EmailTemplateName.DayEmail]: 'DAY_EMAIL',
   [EmailTemplateName.DayEmailEmpty]: 'DAY_EMAIL_EMPTY',
 };
@@ -38,10 +30,7 @@ export async function generatedEmailsOf(): Promise<Record<EmailTemplateName, Gen
   return {
     [EmailTemplateName.SignIn]: await generatedSignInEmail(),
     [EmailTemplateName.Welcome]: await generatedWelcomeEmail(),
-    [EmailTemplateName.Waitlist]: await generatedWaitlistEmail(),
     [EmailTemplateName.AdminSignIn]: await generatedAdminSignInEmail(),
-    [EmailTemplateName.WaitlistDigest]: await generatedWaitlistDigestEmail(),
-    [EmailTemplateName.WaitlistDigestEmpty]: await generatedWaitlistDigestEmptyEmail(),
     [EmailTemplateName.DayEmail]: await generatedDayEmailWithTasks(),
     [EmailTemplateName.DayEmailEmpty]: await generatedDayEmailEmpty(),
   };

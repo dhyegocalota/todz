@@ -1,6 +1,6 @@
 # 0061. Performance has written budgets, a fetch-based load harness behind pnpm perf, and work-count budgets in verify
 
-- Status: Accepted (the build loop's call, the owner may overturn it)
+- Status: Accepted (the build loop's call, the owner may overturn it); amended by [0097](0097-the-waitlist-is-removed-the-join-route-its-mails-its-admin-list-and-its-table-are-deleted.md) (the nine limiters become six without the waitlist ones)
 - Date: 2026-11-25
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) asked on 2026-11-25: "tem que ser performático.. então stress e load test, fix it", `todz-loop/PROMPT.md` → "Performance"
 - Inspired by: [ADR 0005](0005-the-local-gate-runs-what-the-diff-can-break.md) (the local gate), [ADR 0008](0008-runbooks-live-in-the-repository.md) (runbooks), [ADR 0016](0016-the-mcp-server-runs-on-the-sdk-v2-and-serves-both-protocol-eras.md) and [ADR 0017](0017-a-2025-era-client-is-named-by-a-session-in-the-directory.md) (the two MCP eras), [ADR 0027](0027-the-app-caches-each-owner-s-data-as-json-files-in-its-own-container-until-it-has-a-team.md) (the app's cache), [ADR 0044](0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md) (production), ADR 0060 on `feat/landing-seo` (the landing's Lighthouse procedure), the code read under Evidence

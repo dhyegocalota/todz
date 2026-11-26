@@ -26,7 +26,6 @@ const DIRECTORY_TABLES = [
   'sessions',
   'sign_in_links',
   'sign_up_usage',
-  'waitlist',
   'workspaces',
 ];
 const TASK_COLUMNS = ['title', 'notes', 'note', 'due_date', 'order_key'];

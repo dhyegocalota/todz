@@ -6,7 +6,6 @@ export enum AdminPath {
   LinkPage = '/admin/sign-in',
   Sessions = '/admin/sessions',
   SignOut = '/admin/sign-out',
-  Export = '/admin/export.csv',
   Metrics = '/admin/metrics',
   MetricsExport = '/admin/metrics.csv',
   Usage = '/admin/usage',

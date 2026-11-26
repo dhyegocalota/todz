@@ -1,6 +1,6 @@
 # 0049. todz.app is served by the same Worker, dispatched by host, and built in three features
 
-- Status: Accepted (the build loop's call, the owner may overturn it); amends [0044](0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md) (a second public host) and [0048](0048-the-self-host-guide-is-one-markdown-file-that-the-landing-serves.md) §3 (how the guide is rendered)
+- Status: Accepted (the build loop's call, the owner may overturn it); amends [0044](0044-the-wrangler-configuration-is-production-on-api-todz-app-and-development-overrides-it.md) (a second public host) and [0048](0048-the-self-host-guide-is-one-markdown-file-that-the-landing-serves.md) §3 (how the guide is rendered); amended by [0097](0097-the-waitlist-is-removed-the-join-route-its-mails-its-admin-list-and-its-table-are-deleted.md) (the waitlist, its admin list and its digest are removed)
 - Date: 2026-11-24
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) asked for "uma landing page hiper mega simples com fila de espera, painel admin, digest etc igual zapbip … pra ser um prod ready mesmo" and may overturn it
 - Inspired by: zapbip's host dispatch (its ADR 0041, read-only), the run-13 research in `todz-loop/notes/landing-research.md`, [ADR 0045](0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md)

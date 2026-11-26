@@ -64,27 +64,16 @@ Once `version-compat` is deployed, every `/owner/*` request without a `Todz-App-
     Expected: the first ten are `HTTP/2 401`, and from the eleventh on `HTTP/2 429` followed by `retry-after: 60`; at least one of the last four is a 429. Wait at least seventy seconds before step 6 and before any real sign-in, because refused requests count against the window.
     If it fails: a `HTTP/2 426` on every answer means the header was lost or `<minimum>` is wrong; run the command as written, with the value of `MINIMUM_APP_VERSION`. No 429 means run it once more; none again means the binding is not enforcing; tell the owner. A 429 on the first request means another client on this address used the quota; wait a minute.
 
-6. **Re-check the waitlist and the admin guards.** Count the probe address, post unsolved tokens to the join and the admin link, and count again:
+6. **Re-check the admin guard.** Count the unspent admin links, post an unsolved token to the admin link, and count again:
 
     ```bash
-    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "SELECT COUNT(*) AS waitlist_rows FROM waitlist WHERE address = 'nobody@example.com'"
-    curl -sS -o /dev/null -w "%{http_code}\n" -X POST -H "Content-Type: application/x-www-form-urlencoded" --data-binary @scripts/deploy-bodies/junk-turnstile-waitlist.txt https://todz.app/join
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "SELECT COUNT(*) AS admin_links FROM admin_sign_in_links WHERE consumed_at IS NULL"
     curl -sS -o /dev/null -w "%{http_code}\n" -X POST -H "Origin: https://todz.app" -H "Content-Type: application/x-www-form-urlencoded" --data-binary @scripts/deploy-bodies/junk-turnstile-admin.txt https://todz.app/admin/sign-in-links
-    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "SELECT COUNT(*) AS waitlist_rows FROM waitlist WHERE address = 'nobody@example.com'"
+    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "SELECT COUNT(*) AS admin_links FROM admin_sign_in_links WHERE consumed_at IS NULL"
     ```
 
-    Expected: both counts `0`; both posts print `429`.
-    If it fails: a `200` or a count of `1` means a guard let an unsolved token through; detach `todz.app` as the Rollback section of [deploy-the-api.md](deploy-the-api.md) says and tell the owner. A `503` means a Turnstile key is missing.
-
-    Then, once `waitlist-inline` is deployed, post the in-place join without a token and ask for JSON, and count again:
-
-    ```bash
-    curl -sS -D - -X POST -H "Accept: application/json" -H "Content-Type: application/x-www-form-urlencoded" --data-binary @scripts/deploy-bodies/missing-token-waitlist.txt https://todz.app/join
-    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "SELECT COUNT(*) AS waitlist_rows FROM waitlist WHERE address = 'nobody@example.com'"
-    ```
-
-    Expected: `HTTP/2 403`, `content-type: application/json`, `cache-control: no-store` and `{"outcome":"check-failed"}`; the count is `0`. Before the deploy the same post answers the HTML page with `429`; write `not deployed`.
-    If it fails: a `200` with `{"outcome":"joined"}` and a count of `1` means the join kept an address without a token; detach `todz.app` as the Rollback section of [deploy-the-api.md](deploy-the-api.md) says and tell the owner. A `503` with `{"outcome":"opens-soon"}` means a Turnstile key is missing.
+    Expected: both counts equal; the post prints `429`.
+    If it fails: a `200` or a count that grew means the guard let an unsolved token through; detach `todz.app` as the Rollback section of [deploy-the-api.md](deploy-the-api.md) says and tell the owner. A `503` means a Turnstile key is missing.
 
 7. **The owner's session: sign in with a real magic link.** In the Release app, sign out, then ask for a link to the owner's address and open the mail it sends:
 
@@ -128,13 +117,17 @@ Once `version-compat` is deployed, every `/owner/*` request without a `Todz-App-
     Expected: any status but `401` before the revoke (it proves the clipboard holds the live key); `401` after it; `todz` is gone from the list; the key screen no longer lists it. The owner then clears the clipboard.
     If it fails: a `401` before the revoke means the clipboard holds something else than the key; copy it again, or the key was already revoked. Any status but `401` after the revoke means it did not reach the server; repeat it in the app and ask again before the walk is recorded. A key still listed in the app is the same failure.
 
-12. **Superseded by the `waitlist-off` feature.** The waitlist is closed: the landing has no form and `POST /join` answers `410` with no write, so there is no join to make and nothing for the owner to follow up. The `/admin` read and the CSV export of the existing list stay covered by step 7.
-    If it fails: nothing to repair, the step is skipped; a `POST /join` that answers anything but `410` means the deploy is older than `waitlist-off`.
+12. **Check the join path is gone.** Post to it and keep only the status:
 
-13. **Check the waitlist digest is already confirmed.** Read the run log of [deploy-the-api.md](deploy-the-api.md) for the row that records the digest mail and the Cron Events success after 11:00 UTC:
+    ```bash
+    curl -sS -o /dev/null -w "%{http_code}\n" -X POST -H "Content-Type: application/x-www-form-urlencoded" --data-binary "email=nobody@example.com" https://todz.app/join
+    ```
 
-    Expected: a row of the deploy run log names the digest arriving at `ADMIN_EMAIL` and the cron run as a success.
-    If it fails: no such row means step 9 of the deploy runbook has not been completed; the owner checks the mail and the Cron Events, and the walk records `digest unconfirmed`.
+    Expected: `404`; the landing has no form, and the owner has nothing to follow up. The `/admin` metrics and their CSV export stay covered by step 7.
+    If it fails: a `410` means the deploy is older than `remove-waitlist`; a `429` or a `200` means the join route is still live; tell the owner.
+
+13. **Removed by the `remove-waitlist` feature.** The digest cron and its mail are gone, so there is nothing to confirm.
+    If it fails: nothing to repair, the step is skipped.
 
 14. **Re-check the performance budgets.** First complete every `smoke-<short>` task of the walk, because the harness refuses to start when the project holds more than 20 open tasks. Then, unless the table of [performance.md](performance.md) already holds a production run dated today (record those rows in this walk's log instead of running again, since a production run is allowed once a day), run its steps 9 to 13 with a new `todz-perf` key issued from the owner's session, one run only, and add the rows to the table of that runbook:
 
@@ -153,14 +146,10 @@ Once `version-compat` is deployed, every `/owner/*` request without a `Todz-App-
     Expected: the mail arrives at the owner's chosen time and carries `Auto-Submitted: auto-generated` in its original source; the row shows `sent_at` set and `failed_at` empty; the reply adds one task to the first workspace's Inbox and one `day_email_replies` row; the Workers Logs of the mail and the reply show no `rcptTo`, `mailFrom` or address. The forged reply (a message to the same reply address with `From:` the owner's address, sent from elsewhere) is sent only with the owner's explicit OK, and expects no task and a `day_email_reply` log line with `unauthenticated` or `not_owner`. The walk never opens, follows or posts the real stop link in the mail, because confirming it turns the owner's setting off. It only asks for the stop page with an unknown token, a `GET`, which stops nothing: `curl -sS -D - -o /dev/null "https://api.todz.app/day-email/stop?token=smoke-unknown"` expects `HTTP/2 404`, the page for a link that is gone.
     If it fails: a row with `failed_at` set names its `failure`; follow the day email's steps in [deploy-the-api.md](deploy-the-api.md). A `GET` with an unknown token that answers anything but `404` is recorded; the walk never posts to the stop path. A forged reply that adds a task is a security finding: turn the setting off, delete the `reply@` rule as the Rollback section says and tell the owner at once.
 
-16. **Clean up.** Complete by hand, in the app, every open task whose title starts with `smoke-<short>` in `todz-perf`; the performance cleanup never touches them (step 14 ran it already, while its key was still valid). Also complete the task of step 15's reply, whose title starts with `smoke-<short>`, in whatever workspace it landed. Step 12 is superseded, so no join row is left to remove:
+16. **Clean up.** Complete by hand, in the app, every open task whose title starts with `smoke-<short>` in `todz-perf`; the performance cleanup never touches them (step 14 ran it already, while its key was still valid). Also complete the task of step 15's reply, whose title starts with `smoke-<short>`, in whatever workspace it landed.
 
-    ```bash
-    scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler d1 execute todz-directory --remote --command "DELETE FROM waitlist WHERE address = '<joined>'"
-    ```
-
-    Expected: every `smoke-<short>` task is done, in every workspace; the join row is gone only if the owner said so; no key of the walk is left in the app's key screen or the Keychain.
-    If it fails: a task that does not complete from the app is completed by hand; a key left over is revoked in the app. Never complete a task without the `smoke-<short>` prefix, and never delete a row but the one address of step 12.
+    Expected: every `smoke-<short>` task is done, in every workspace; no key of the walk is left in the app's key screen or the Keychain.
+    If it fails: a task that does not complete from the app is completed by hand; a key left over is revoked in the app. Never complete a task without the `smoke-<short>` prefix.
 
 17. **Record the run.** Add one row per step above to the run log, with the date, the commit and the actual result, in a pull request on `docs/`.
     Expected: every row names the real answer (status lines, counts, timings), never `ok`, and a skipped conditional step says `not deployed`.

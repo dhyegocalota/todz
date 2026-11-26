@@ -22,6 +22,14 @@ export function recordedAdminLimiters({ refusing = [] }: { refusing?: AdminLimit
   };
 }
 
+export function throwingLimiter(): RateLimit {
+  return {
+    async limit() {
+      throw new Error('the limiter is down');
+    },
+  };
+}
+
 export type AdminLinkRow = {
   digest: string;
   email: string;

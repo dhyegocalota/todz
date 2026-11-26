@@ -9,9 +9,9 @@ import { ADMIN_METRICS_DAYS, SPARKLINE_HEIGHT, SPARKLINE_WIDTH } from '../teleme
 import { utcDayOf } from '../telemetry/telemetry-day';
 import { adminCardAnswerOf, adminClosedAnswerOf, adminPageAnswerOf, adminRedirectAnswerOf } from './admin-answer';
 import { ADMIN_COPY } from './admin-copy';
+import { AdminNotice } from './admin-notice';
 import { ADMIN_RESPONSE_HEADERS, AdminPath } from './admin-paths';
 import { adminEmailOf, hasAdminSession } from './admin-session';
-import { AdminNotice } from './admin-waitlist';
 import { SiteGlyph, glyphHtml } from './site-glyphs';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
 import { CONTENT_ID, SitePageKind, siteDocumentHtml } from './site-shell';
@@ -115,7 +115,7 @@ function metricsHtml(series: MetricSeries[]): string {
 <div class="panel-head">
 <h1 class="panel-title">${escapedHtml(metrics.title)}</h1>
 <nav class="panel-actions" aria-label="${escapedHtml(ADMIN_COPY.shell.navLabel)}">
-<a class="admin-action" href="${AdminPath.Panel}">${escapedHtml(metrics.back)}</a>
+<a class="admin-action" href="${AdminPath.Usage}">${escapedHtml(ADMIN_COPY.usage.link)}</a>
 <a class="admin-action" href="${AdminPath.MetricsExport}" download>${escapedHtml(metrics.download)}</a>
 <form method="post" action="${AdminPath.SignOut}"><button class="nav-link nav-button" type="submit">${escapedHtml(panel.signOut)}</button></form>
 </nav>

@@ -2,7 +2,6 @@ import { REPOSITORY } from '@todz/types';
 import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
 import { HttpMethod } from '../http-method';
-import { HttpStatus } from '../http-status';
 import { noRouteResponse } from '../owner-errors';
 import { ADMIN_ROUTES } from './admin-routes';
 import { APPCAST_PATH, serveAppcast } from './appcast';
@@ -13,8 +12,7 @@ import { repositoryStarsOf } from './repository-stars';
 import { SELF_HOST_PATH, redirectToDocs } from './self-host-redirect';
 import { REPOSITORY_API_URL, REPOSITORY_STARS_CACHE_NAME } from './site-constants';
 import { DISCOVERY_FILES } from './site-discovery';
-import { JOIN_PATH, LANDING_PATH } from './site-shell';
-import { serveWaitlistClosed } from './waitlist-closed';
+import { LANDING_PATH } from './site-shell';
 
 export type SiteContext = { request: Request; env: Env; executionContext: ExecutionContext };
 
@@ -44,10 +42,6 @@ async function serveLanding({ request, env }: SiteContext): Promise<Response> {
   return serveLandingPage({ stars });
 }
 
-function redirectToLanding(): Response {
-  return new Response(null, { status: HttpStatus.SeeOther, headers: { [HttpHeader.Location]: LANDING_PATH } });
-}
-
 const ADMIN_ROUTE_OF_REQUEST: Record<string, SiteRoute> = Object.fromEntries(
   ADMIN_ROUTES.map(({ method, path, route }) => [routeKey({ method, pathname: path }), route]),
 );
@@ -70,8 +64,6 @@ const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
   [routeKey({ method: HttpMethod.Head, pathname: APPCAST_PATH })]: serveAppcast,
   [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: redirectToDocs,
   [routeKey({ method: HttpMethod.Head, pathname: SELF_HOST_PATH })]: redirectToDocs,
-  [routeKey({ method: HttpMethod.Post, pathname: JOIN_PATH })]: serveWaitlistClosed,
-  [routeKey({ method: HttpMethod.Get, pathname: JOIN_PATH })]: redirectToLanding,
 };
 
 export async function serveSite(context: SiteContext): Promise<Response> {

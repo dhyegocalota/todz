@@ -1,6 +1,6 @@
 # 0052. The waitlist digest goes to the admin address once a day from a cron
 
-- Status: Accepted (the build loop's call, the owner may overturn it); refines [0049](0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md) §3.3 and [0051](0051-the-admin-signs-in-by-a-mail-link-bound-to-the-browser-that-asked-into-a-cookie-session.md) §8
+- Status: Superseded by [0097](0097-the-waitlist-is-removed-the-join-route-its-mails-its-admin-list-and-its-table-are-deleted.md); was: Accepted (the build loop's call, the owner may overturn it); refines [0049](0049-todz-app-is-served-by-the-same-worker-dispatched-by-host-in-three-features.md) §3.3 and [0051](0051-the-admin-signs-in-by-a-mail-link-bound-to-the-browser-that-asked-into-a-cookie-session.md) §8
 - Date: 2026-11-25
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) asked for "fila de espera, painel admin, digest etc igual zapbip … pra ser um prod ready mesmo" and for the digest in the production smoke walk (PROMPT.md "Landing"), and may overturn the details
 - Inspired by: zapbip's `operations/subscriber-digest.ts`, `subscriber-digest-queries.ts` and `emails/subscriber-digest-email.ts` (read-only)

@@ -36,22 +36,19 @@ const PRODUCTION_ORIGIN = `https://${PRODUCTION_HOST}`;
 const RATE_LIMIT_NAMESPACE_ID = '8601';
 const ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8602';
 const GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8603';
-const WAITLIST_RATE_LIMIT_NAMESPACE_ID = '8604';
-const WAITLIST_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8605';
-const WAITLIST_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8606';
-const ADMIN_RATE_LIMIT_NAMESPACE_ID = '8607';
-const ADMIN_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8608';
-const ADMIN_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8609';
-const REPLY_RATE_LIMIT_NAMESPACE_ID = '8610';
+const ADMIN_RATE_LIMIT_NAMESPACE_ID = '8604';
+const ADMIN_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8605';
+const ADMIN_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8606';
+const REPLY_RATE_LIMIT_NAMESPACE_ID = '8607';
 const REPLY_LIMITER_NAME_PATTERN = /REPLY/;
-const OWNER_RATE_LIMIT_NAMESPACE_ID = '8611';
-const MCP_RATE_LIMIT_NAMESPACE_ID = '8612';
-const STOP_RATE_LIMIT_NAMESPACE_ID = '8613';
-const USAGE_RATE_LIMIT_NAMESPACE_ID = '8614';
-const USAGE_INSTALL_RATE_LIMIT_NAMESPACE_ID = '8615';
-const USAGE_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8616';
-const APPCAST_RATE_LIMIT_NAMESPACE_ID = '8617';
-const APPCAST_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8618';
+const OWNER_RATE_LIMIT_NAMESPACE_ID = '8608';
+const MCP_RATE_LIMIT_NAMESPACE_ID = '8609';
+const STOP_RATE_LIMIT_NAMESPACE_ID = '8610';
+const USAGE_RATE_LIMIT_NAMESPACE_ID = '8611';
+const USAGE_INSTALL_RATE_LIMIT_NAMESPACE_ID = '8612';
+const USAGE_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8613';
+const APPCAST_RATE_LIMIT_NAMESPACE_ID = '8614';
+const APPCAST_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8615';
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -211,7 +208,7 @@ describe('the api source', () => {
     expect(wranglerConfiguration().observability).toEqual(PRODUCTION_OBSERVABILITY);
   });
 
-  test('the wrangler configuration limits sign-in, the waitlist and the admin per client, per address and globally, a reply per owner, and signed-in owners and keys, with the shared limits', () => {
+  test('the wrangler configuration limits sign-in and the admin per client, per address and globally, a reply per owner, and signed-in owners and keys, with the shared limits', () => {
     expect(wranglerConfiguration().ratelimits).toEqual([
       {
         name: 'SIGN_IN_LIMITER',
@@ -227,21 +224,6 @@ describe('the api source', () => {
         name: 'SIGN_IN_GLOBAL_LIMITER',
         namespace_id: GLOBAL_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('SIGN_IN_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
-      },
-      {
-        name: 'WAITLIST_LIMITER',
-        namespace_id: WAITLIST_RATE_LIMIT_NAMESPACE_ID,
-        simple: { limit: sharedLimit('WAITLIST_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
-      },
-      {
-        name: 'WAITLIST_ADDRESS_LIMITER',
-        namespace_id: WAITLIST_ADDRESS_RATE_LIMIT_NAMESPACE_ID,
-        simple: { limit: sharedLimit('WAITLIST_ADDRESS_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
-      },
-      {
-        name: 'WAITLIST_GLOBAL_LIMITER',
-        namespace_id: WAITLIST_GLOBAL_RATE_LIMIT_NAMESPACE_ID,
-        simple: { limit: sharedLimit('WAITLIST_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
       {
         name: 'ADMIN_LIMITER',

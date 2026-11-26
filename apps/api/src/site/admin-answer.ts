@@ -3,9 +3,9 @@ import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
 import { siteKeyOf } from '../turnstile-page';
+import { AdminNotice } from './admin-notice';
 import { serveAdminSignInPage } from './admin-page';
 import { ADMIN_RESPONSE_HEADERS, AdminPath } from './admin-paths';
-import { AdminNotice } from './admin-waitlist';
 
 type AdminAnswerParts = { status: HttpStatus; cookies?: string[] };
 

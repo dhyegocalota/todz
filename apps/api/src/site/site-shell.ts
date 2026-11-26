@@ -10,7 +10,6 @@ import { starPillHtml } from './star-pill';
 import { DOCS_INSTALL_URL, DiscoveryPath, SITE_URL } from './site-urls';
 
 export const LANDING_PATH = '/';
-export const JOIN_PATH = '/join';
 export const CONTENT_ID = 'content';
 const LIGHT_THEME_COLOR = '#F2F4FA';
 const OPEN_GRAPH_TYPE = 'website';

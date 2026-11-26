@@ -111,11 +111,9 @@ const HEADER_ANSWERS = [
 ];
 const WRONG_SESSION_BODY = 'scripts/deploy-bodies/wrong-session.json';
 const JUNK_LINK_BODY = 'scripts/deploy-bodies/junk-turnstile-link.json';
-const JUNK_WAITLIST_BODY = 'scripts/deploy-bodies/junk-turnstile-waitlist.txt';
 const JUNK_ADMIN_BODY = 'scripts/deploy-bodies/junk-turnstile-admin.txt';
-const MISSING_TOKEN_WAITLIST_BODY = 'scripts/deploy-bodies/missing-token-waitlist.txt';
-const WAITLIST_ADDRESS_FIELD = 'email';
-const WAITLIST_TOKEN_FIELD = 'cf-turnstile-response';
+const ADDRESS_FIELD = 'email';
+const TOKEN_FIELD = 'cf-turnstile-response';
 const PROBE_ADDRESS = 'nobody@example.com';
 const LINK_VERIFIER_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const LINK_CHALLENGE_PATTERN = /^[0-9a-f]{64}$/;
@@ -446,24 +444,11 @@ describe('runbooks', () => {
     expect(body.turnstile_token).not.toBe(TURNSTILE_DUMMY_TOKEN);
   });
 
-  test('the junk waitlist body reaches siteverify byte for byte, so only Turnstile refuses it', () => {
-    const fields = new URLSearchParams(readRepositoryFile(JUNK_WAITLIST_BODY));
-    expect(fields.get(WAITLIST_ADDRESS_FIELD)).toBe(PROBE_ADDRESS);
-    expect(fields.get(WAITLIST_TOKEN_FIELD)).toMatch(TURNSTILE_TOKEN_PATTERN);
-    expect(fields.get(WAITLIST_TOKEN_FIELD)).not.toBe(TURNSTILE_DUMMY_TOKEN);
-  });
-
-  test('the missing token waitlist body carries an address and no token, so only the in-place join refuses it', () => {
-    const fields = new URLSearchParams(readRepositoryFile(MISSING_TOKEN_WAITLIST_BODY));
-    expect(fields.get(WAITLIST_ADDRESS_FIELD)).toBe(PROBE_ADDRESS);
-    expect(fields.has(WAITLIST_TOKEN_FIELD)).toBe(false);
-  });
-
   test('the junk admin body reaches siteverify byte for byte, so only Turnstile refuses it', () => {
     const fields = new URLSearchParams(readRepositoryFile(JUNK_ADMIN_BODY));
-    expect(fields.get(WAITLIST_ADDRESS_FIELD)).toBe(PROBE_ADDRESS);
-    expect(fields.get(WAITLIST_TOKEN_FIELD)).toMatch(TURNSTILE_TOKEN_PATTERN);
-    expect(fields.get(WAITLIST_TOKEN_FIELD)).not.toBe(TURNSTILE_DUMMY_TOKEN);
+    expect(fields.get(ADDRESS_FIELD)).toBe(PROBE_ADDRESS);
+    expect(fields.get(TOKEN_FIELD)).toMatch(TURNSTILE_TOKEN_PATTERN);
+    expect(fields.get(TOKEN_FIELD)).not.toBe(TURNSTILE_DUMMY_TOKEN);
   });
 
   test('the deploy runbook ends with a run log table whose rows name a date, a commit and a step', () => {

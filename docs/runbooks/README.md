@@ -9,7 +9,7 @@ Every runbook step has an expected result and an `If it fails` line, and agents 
 - [Render the brand assets](render-the-brand-assets.md): the app icon and the menu bar glyph, again from the SVGs in `docs/brand`.
 - [Deploy the API](deploy-the-api.md): the database, the Worker, the custom domain and mail sending on `api.todz.app`, with a smoke check.
 - [Publish the docs on Mintlify](mintlify-publish.md): the owner's Mintlify setup as done, the checks before a merge that touches `apps/docs` and the check of `docs.todz.app` after it.
-- [Production smoke walk](production-smoke-walk.md): the sign-in mail, the app, an MCP client, the menu bar and widget, the limits, the waitlist, the headers and the budgets, walked against `todz.app` once the last deploy lands, with the dated run log.
+- [Production smoke walk](production-smoke-walk.md): the sign-in mail, the app, an MCP client, the menu bar and widget, the limits, the headers and the budgets, walked against `todz.app` once the last deploy lands, with the dated run log.
 - [Measure performance](performance.md): the load, stress and bounded production runs, the app probe walks and the landing check against the budgets of ADR 0061, with the dated results table.
 - [Open source](open-source.md): the pre-flight over the whole history before the repository goes public, the security address, and the settings to turn on after the flip, with the dated run log.
 - [Release the Mac app](release-the-mac-app.md): the keys once, then each release from a tagged `main` to `todz.app/download`, its checks and the releases table.

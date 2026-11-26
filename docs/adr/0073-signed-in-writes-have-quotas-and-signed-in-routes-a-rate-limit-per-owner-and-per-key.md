@@ -1,6 +1,6 @@
 # 0073. Signed-in writes have quotas, and signed-in routes a rate limit per owner and per key
 
-- Status: Accepted (the build loop's call, the owner may overturn it)
+- Status: Accepted (the build loop's call, the owner may overturn it); amended by [0097](0097-the-waitlist-is-removed-the-join-route-its-mails-its-admin-list-and-its-table-are-deleted.md) (the join cap `WAITLIST_DAILY_JOINS_MAX` is removed with the waitlist)
 - Date: 2026-11-25
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) asked for the sweep: "queremos rate limit e captcha nos endpoints públicos como send magic link; e também já faz varredura pra corrigir brechas de segurança"
 - Inspired by: the `security-sweep` finding 1; [ADR 0045](0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md) (the public routes' limiters, failing closed); [ADR 0050](0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md) (the waitlist's guard); [ADR 0061](0061-performance-has-written-budgets-a-fetch-based-load-harness-behind-pnpm-perf-and-work-count-budgets-in-verify.md) (the production run sends at most 50 MCP requests a second)

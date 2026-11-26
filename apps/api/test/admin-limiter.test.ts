@@ -9,12 +9,11 @@ import {
   adminGlobalRefusal,
   isAdminUnguarded,
 } from '../src/site/admin-limiter';
+import { AdminNotice } from '../src/site/admin-notice';
 import { AdminPath } from '../src/site/admin-paths';
-import { AdminNotice } from '../src/site/admin-waitlist';
-import { AdminLimiterBinding, type AdminLimiters, recordedAdminLimiters } from './admin-client';
+import { AdminLimiterBinding, type AdminLimiters, recordedAdminLimiters, throwingLimiter } from './admin-client';
 import { CLIENT_ADDRESS_HEADER } from './email-sign-in-client';
 import { workerEnvWith } from './owner-client';
-import { throwingLimiter } from './waitlist-client';
 
 const PUBLIC_SITE_ORIGIN = 'https://todz.app';
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';

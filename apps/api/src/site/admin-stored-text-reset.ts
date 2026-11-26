@@ -1,9 +1,9 @@
 import { resetOwnerStoredBytes } from '../owner-usage-store';
 import { siteKeyOf } from '../turnstile-page';
 import { adminCardAnswerOf, adminRedirectAnswerOf } from './admin-answer';
+import { AdminNotice } from './admin-notice';
 import { AdminField, AdminPath } from './admin-paths';
 import { hasAdminSession, isSameOriginPost } from './admin-session';
-import { AdminNotice } from './admin-waitlist';
 import type { SiteContext } from './site-endpoint';
 
 export async function serveAdminStoredTextReset({ request, env }: SiteContext): Promise<Response> {

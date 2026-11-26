@@ -3,13 +3,12 @@ import { ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES } from './admin-paths';
 
 export const ADMIN_COPY = {
   meta: {
-    description: 'The todz waitlist, for the owner.',
+    description: 'The todz admin, for the owner.',
     signInTitle: 'Sign in · todz admin',
     inboxTitle: 'Check your inbox · todz admin',
     refusedTitle: 'Request refused · todz admin',
     closedTitle: 'Admin closed · todz admin',
     linkTitle: 'Signing in · todz admin',
-    panelTitle: 'Waitlist · todz admin',
     metricsTitle: 'Metrics · todz admin',
   },
   shell: {
@@ -43,31 +42,10 @@ export const ADMIN_COPY = {
     noScript: 'This page needs JavaScript to finish signing you in. Turn it on, then open the link again.',
   },
   panel: {
-    title: 'Waitlist',
     signOut: 'Sign out',
-    download: 'Download CSV',
-    summaryHeading: 'Summary',
-    tableHeading: 'Addresses',
-  },
-  stats: {
-    total: 'On the list',
-    recent: 'Last 24 hours',
-    failed: 'Failed confirmations',
-  },
-  table: {
-    caption: 'Waitlist, newest first',
-    address: 'Address',
-    joined: 'Joined',
-    confirmation: 'Confirmation',
-    sent: 'Sent',
-    failed: 'Failed',
-    timeZone: 'UTC',
-    capNote: ({ shown, total }: { shown: string; total: string }) => `Showing the newest ${shown} of ${total}. The CSV has all.`,
   },
   metrics: {
     title: 'Metrics',
-    link: 'Metrics',
-    back: 'Waitlist',
     download: 'Download CSV',
     summaryHeading: 'Last 30 days',
     emptyTitle: 'No numbers yet.',
@@ -93,7 +71,7 @@ export const ADMIN_COPY = {
   usage: {
     title: 'Top usage',
     link: 'Usage',
-    back: 'Waitlist',
+    back: 'Metrics',
     writesHeading: 'Most task writes, last 7 days',
     bytesHeading: 'Most stored text written, last 7 days',
     columns: { account: 'Account', writes: 'Writes', bytes: 'Text written', state: 'State', action: 'Action' },
@@ -105,9 +83,5 @@ export const ADMIN_COPY = {
     resetStoredText: 'Reset stored text',
     mebibyteUnit: 'MB',
     empty: 'Nobody has written this week.',
-  },
-  empty: {
-    title: 'No one on the list yet.',
-    body: 'Addresses show up here as soon as someone joins.',
   },
 };
