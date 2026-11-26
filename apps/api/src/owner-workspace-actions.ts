@@ -35,7 +35,7 @@ export async function createWorkspace({
 }: Acting & { name: string; now: number; workspacesPerOwnerMax: number }): Promise<ActionResult<WorkspaceListing>> {
   const normalized = nameOf(name);
   if (!normalized.ok) return normalized;
-  const workspace = { id: crypto.randomUUID(), name: normalized.value, createdAt: now };
+  const workspace = { id: crypto.randomUUID(), name: normalized.value, createdAt: now, lastActivityAt: null };
   const inbox = { id: crypto.randomUUID(), name: INBOX_PROJECT_NAME, isInbox: true, createdAt: now };
   const isInserted = await insertWorkspaceWithInbox({
     directory: env.DIRECTORY,

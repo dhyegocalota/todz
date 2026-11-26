@@ -27,7 +27,7 @@ struct WorkspacePickerScreen: View {
             }
             if let banner = model.banner {
                 Text(banner.title)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(banner.lineStyle)
                 BannerActionButton()
             }
             Button(MainWindowCopy.newWorkspace) {

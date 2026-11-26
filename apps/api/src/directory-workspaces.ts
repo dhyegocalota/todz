@@ -1,6 +1,6 @@
 import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 
-type WorkspaceRow = { id: string; name: string; created_at: number };
+type WorkspaceRow = { id: string; name: string; created_at: number; last_activity_at: number | null };
 type WorkspaceIdRow = { id: string };
 type ProjectIdRow = { id: string };
 type ProjectRow = { id: string; workspace_id: string; name: string; is_inbox: number; created_at: number };
@@ -12,13 +12,13 @@ function projectRecordOf(row: ProjectRow): ProjectRecord {
 }
 
 function workspaceRecordOf(row: WorkspaceRow): WorkspaceRecord {
-  return { id: row.id, name: row.name, createdAt: row.created_at };
+  return { id: row.id, name: row.name, createdAt: row.created_at, lastActivityAt: row.last_activity_at };
 }
 
 export async function listOwnerWorkspaces({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<WorkspaceListing[]> {
   const [workspaceRows, projectRows] = await Promise.all([
     directory
-      .prepare('SELECT id, name, created_at FROM workspaces WHERE owner_id = ? ORDER BY created_at, rowid')
+      .prepare('SELECT id, name, created_at, last_activity_at FROM workspaces WHERE owner_id = ? ORDER BY created_at, rowid')
       .bind(ownerId)
       .all<WorkspaceRow>(),
     directory
@@ -86,7 +86,7 @@ export async function findOwnerWorkspace({
 }): Promise<WorkspaceListing | null> {
   const [workspaceRow, projectRows] = await Promise.all([
     directory
-      .prepare('SELECT id, name, created_at FROM workspaces WHERE id = ? AND owner_id = ?')
+      .prepare('SELECT id, name, created_at, last_activity_at FROM workspaces WHERE id = ? AND owner_id = ?')
       .bind(workspaceId, ownerId)
       .first<WorkspaceRow>(),
     directory
@@ -166,6 +166,23 @@ export async function updateWorkspaceName({
     .bind(name, workspaceId, ownerId)
     .run();
   return result.meta.changes > 0;
+}
+
+export async function touchWorkspaceActivity({
+  directory,
+  projectId,
+  now,
+}: {
+  directory: D1Database;
+  projectId: string;
+  now: number;
+}): Promise<void> {
+  await directory
+    .prepare(
+      'UPDATE workspaces SET last_activity_at = ? WHERE id = (SELECT workspace_id FROM projects WHERE id = ?) AND (last_activity_at IS NULL OR last_activity_at < ?)',
+    )
+    .bind(now, projectId, now)
+    .run();
 }
 
 export async function insertProject({

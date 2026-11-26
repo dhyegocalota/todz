@@ -54,16 +54,24 @@ describe('workspaceJson', () => {
   test('lists its projects in the order given', () => {
     const inbox = { id: 'p-1', name: 'Inbox', isInbox: true, createdAt: CLOCK_NOW };
     const regular = { id: 'p-2', name: 'Launch', isInbox: false, createdAt: CLOCK_NOW + 1 };
-    expect(workspaceJson({ workspace: { id: 'w-1', name: 'Logic Bit', createdAt: CLOCK_NOW }, projects: [inbox, regular] })).toEqual({
+    expect(
+      workspaceJson({
+        workspace: { id: 'w-1', name: 'Logic Bit', createdAt: CLOCK_NOW, lastActivityAt: CLOCK_NOW + 2 },
+        projects: [inbox, regular],
+      }),
+    ).toEqual({
       id: 'w-1',
       name: 'Logic Bit',
       created_at: CLOCK_NOW,
+      last_activity_at: CLOCK_NOW + 2,
       projects: [projectJson(inbox), projectJson(regular)],
     });
   });
 
   test('a workspace without projects answers an empty list', () => {
-    expect(workspaceJson({ workspace: { id: 'w-1', name: 'Empty', createdAt: CLOCK_NOW }, projects: [] })).toMatchObject({ projects: [] });
+    expect(
+      workspaceJson({ workspace: { id: 'w-1', name: 'Empty', createdAt: CLOCK_NOW, lastActivityAt: CLOCK_NOW + 2 }, projects: [] }),
+    ).toMatchObject({ projects: [] });
   });
 });
 
