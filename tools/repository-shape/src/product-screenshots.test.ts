@@ -15,9 +15,12 @@ const README_SCREENSHOT_LIMIT = 6;
 const PICTURE_PATTERN = /<picture>[\s\S]*?<\/picture>/g;
 const PICTURE_SOURCE_PATTERN = /(?:src|srcset)="([^"]+)"/g;
 const DOCS_IMAGE_PATH_PATTERN = /^apps\/docs\/images\/(?<slug>[^/]+)\/\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.png$/;
-const HERO_SCREENSHOT = 'docs/screenshots/mac-app-shell/04-inspector-notes-and-history.png';
+const HERO_SCREENSHOT = 'docs/screenshots/motion/01-add-and-complete.gif';
 const PNG_EXTENSION = '.png';
-const SCREENSHOT_PATH_PATTERN = /^docs\/screenshots\/(?<slug>[^/]+)\/\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.png$/;
+const GIF_EXTENSION = '.gif';
+const GIF_WIDTH_OFFSET = 6;
+const GIF_MAX_BYTES = 2 * 1024 * 1024;
+const SCREENSHOT_PATH_PATTERN = /^docs\/screenshots\/(?<slug>[^/]+)\/\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.(?:png|gif)$/;
 const WIDTH_OFFSET = 16;
 const MAX_WIDTH_PIXELS = 1600;
 const MAX_BYTES = 1024 * 1024;
@@ -35,7 +38,13 @@ function featureSlugs(): string[] {
 }
 
 function pngWidth(path: string): number {
-  return readFileSync(repositoryPath(path)).readUInt32BE(WIDTH_OFFSET);
+  const bytes = readFileSync(repositoryPath(path));
+  if (path.endsWith(GIF_EXTENSION)) return bytes.readUInt16LE(GIF_WIDTH_OFFSET);
+  return bytes.readUInt32BE(WIDTH_OFFSET);
+}
+
+function byteLimit(path: string): number {
+  return path.endsWith(GIF_EXTENSION) ? GIF_MAX_BYTES : MAX_BYTES;
 }
 
 function isNamedForAFeature(path: string): boolean {
@@ -62,13 +71,13 @@ describe('product screenshots', () => {
     expect(SCREENSHOTS.length).toBeGreaterThan(0);
   });
 
-  test('every file under docs/screenshots is a numbered png inside a folder named for a feature', () => {
-    expect(SCREENSHOTS.filter((path) => !path.endsWith(PNG_EXTENSION) || !isNamedForAFeature(path))).toEqual([]);
+  test('every file under docs/screenshots is a numbered png or gif inside a folder named for a feature', () => {
+    expect(SCREENSHOTS.filter((path) => !isNamedForAFeature(path))).toEqual([]);
   });
 
-  test.each(SCREENSHOTS)('%s is at most 1600 pixels wide and 1 MB', (path) => {
+  test.each(SCREENSHOTS)('%s is at most 1600 pixels wide and 1 MB (2 MB for a gif)', (path) => {
     expect(pngWidth(path)).toBeLessThanOrEqual(MAX_WIDTH_PIXELS);
-    expect(statSync(repositoryPath(path)).size).toBeLessThanOrEqual(MAX_BYTES);
+    expect(statSync(repositoryPath(path)).size).toBeLessThanOrEqual(byteLimit(path));
   });
 
   test('every screenshot is shown by the root README or served by the landing', () => {

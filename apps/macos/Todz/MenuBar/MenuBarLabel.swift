@@ -10,6 +10,7 @@ struct MenuBarLabel: View {
     @Environment(DayTemperatureClock.self) private var dayTemperatureClock
     @Environment(RibbonCoordinator.self) private var ribbon
     @Environment(MenuBarRibbonStripCache.self) private var ribbonStrips
+    @Environment(CountRollCoordinator.self) private var countRoll
     @Environment(\.openWindow) private var openWindow
     @Environment(\.displayScale) private var displayScale
     @AppStorage(MenuBarBadge.storageKey) private var isCountEnabled = MenuBarBadge.isEnabledByDefault
@@ -28,6 +29,9 @@ struct MenuBarLabel: View {
         content(badgeText: badgeText, countOpacity: countOpacity)
             .accessibilityLabel(accessibilityLabel(badgeText: badgeText, openCount: openCount, presentation: ribbon.presentation))
             .task { await model.launch() }
+            .onChange(of: badgeText) { previous, next in
+                countRoll.roll(from: previous, to: next)
+            }
             .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification)) { _ in
                 isContrastIncreased = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
             }
@@ -65,11 +69,14 @@ struct MenuBarLabel: View {
 
     @ViewBuilder
     private func countContent(badgeText: String?, countOpacity: Double) -> some View {
-        switch badgeText {
-        case let badgeText?:
+        switch (badgeText, countRoll.presentation) {
+        case let (_, rolling?):
+            MenuBarCountRollLabel(presentation: rolling, opacity: countOpacity, displayScale: displayScale)
+                .equatable()
+        case let (badgeText?, nil):
             MenuBarCountLabel(badgeText: badgeText, opacity: countOpacity, displayScale: displayScale)
                 .equatable()
-        case nil:
+        case (nil, nil):
             Image(menuBarGlyphName)
         }
     }

@@ -35,6 +35,7 @@ struct TodzApp: App {
         let dayTemperatureClock = appDelegate.dayTemperatureClock
         let ribbon = appDelegate.ribbon
         let ribbonStrips = appDelegate.ribbonStrips
+        let countRoll = appDelegate.countRoll
         Window(MainWindowCopy.windowTitle, id: MainWindowScene.identifier) {
             RootView()
                 .environment(model)
@@ -60,6 +61,7 @@ struct TodzApp: App {
                 .environment(dayTemperatureClock)
                 .environment(ribbon)
                 .environment(ribbonStrips)
+                .environment(countRoll)
                 .environment(appDelegate.updater)
         }
         .menuBarExtraStyle(.window)

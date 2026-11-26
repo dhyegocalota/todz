@@ -7,9 +7,11 @@ struct TaskListView: View {
     let focus: FocusState<MainWindowFocus?>.Binding
     @Environment(AppModel.self) private var model
     @Environment(MainWindowState.self) private var windowState
+    @State private var knownRows: ShownRows?
 
     var body: some View {
         let state = TaskListState.of(workspace: workspace, item: item, model: model, lingers: windowState.lingers)
+        let shownRows = ShownRows(item: item, identities: state.rowIdentities)
         VStack(alignment: .leading, spacing: .zero) {
             TaskListHeader(workspace: workspace, item: item)
             if let banner = model.banner, !state.isFailed {
@@ -29,10 +31,13 @@ struct TaskListView: View {
                 }
                 .id(destination)
             }
-            TaskListBody(state: state, item: item, focus: focus)
+            TaskListBody(state: state, item: item, arriving: AddedRows.added(known: knownRows, current: shownRows), focus: focus)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onChange(of: shownRows, initial: true) { _, shown in
+            knownRows = shown
+        }
         .onChange(of: windowState.addFieldArming.isArmed) { _, isArmed in
             guard isArmed else { return }
             Task { focus.wrappedValue = .addField }

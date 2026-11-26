@@ -48,7 +48,7 @@ The app's motion is ad hoc: some views animate with literal numbers, many do not
 
 - No state is stored; the motion is presentation only, so a missed animation changes nothing for the owner.
 - Reduce Motion never removes information: it crossfades the same change.
-- The menu bar count changes at once: the status item drops SwiftUI animation (ADR 0065), so no roll is attempted. Its text and accessibility label are unchanged.
+- The menu bar count rolls in template frames (ADR 0106). Its text and accessibility label are unchanged.
 
 ## Open questions → answers
 
@@ -59,9 +59,7 @@ The app's motion is ad hoc: some views animate with literal numbers, many do not
 
 ## Known gaps
 
-- Adding a task does not spring in. The `List` ignores a row's `transition`, so the row insertion was removed (9f795c1a); an `onAppear` entrance would replay as cells are reused on scroll. Listed for v1.1.
-- The sidebar flight (matched geometry between the sidebar row and the list header) is reverted (56679e55): on the walked head the selected sidebar row lost its icon, title and count, and the header was empty on first launch. Listed for v1.1 with its fix.
-- The menu bar count does not roll, with or without the day temperature. The `MenuBarExtra` status item drops SwiftUI animation (ADR 0065), so the roll is listed for v1.1.
+- Closed by [ADR 0106](../../adr/0106-the-count-rolls-in-template-frames-new-rows-spring-in-by-identity-and-the-title-flies-by-measured-origin.md): new rows spring in by identity, the sidebar title flies by measured origin, and the menu bar count rolls in template frames.
 - The sign-in success reveal crossfades the whole screen (`AppPhase` change); the brand logo itself does not get its own reveal.
 - The check is a trimmed path drawn over an accent disc (`SF Symbols` `drawOn` needs macOS 15, and the target is 14), so the done glyph is drawn, not the system's `checkmark.circle.fill`.
 - Reduce Motion is verified through the unit rule and a manual toggle; the GIF recorder runs later.

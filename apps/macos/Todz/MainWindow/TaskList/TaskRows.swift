@@ -9,6 +9,7 @@ private struct ShownSignature: Equatable {
 struct TaskRows: View {
     let sections: [TaskSection]
     let item: SidebarItem
+    let arriving: Set<RowIdentity>
     let focus: FocusState<MainWindowFocus?>.Binding
     @Environment(AppModel.self) private var model
     @Environment(MainWindowState.self) private var windowState
@@ -21,11 +22,13 @@ struct TaskRows: View {
                     Section {
                         ForEach(section.tasks, id: \.key) { task in
                             TaskRow(task: task, item: item)
+                                .todzEntrance(isEntering: arriving.contains(task.rowIdentity))
                                 .tag(task.key)
                         }
                         .onMove(perform: section.hasManualOrder ? { move(section: section, source: $0, offset: $1) } : nil)
                         ForEach(section.pendingTasks, id: \.idempotencyKey) { pendingTask in
                             PendingTaskRow(task: pendingTask, item: item)
+                                .todzEntrance(isEntering: arriving.contains(pendingTask.rowIdentity))
                                 .selectionDisabled()
                         }
                     } header: {

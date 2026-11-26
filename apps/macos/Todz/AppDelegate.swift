@@ -64,6 +64,10 @@ private let cacheFolderName = "Cache"
     )
     private lazy var dayTemperatureScheduler = DayTemperatureScheduler(clock: dayTemperatureClock)
     let ribbonStrips = MenuBarRibbonStripCache()
+    let countRoll = CountRollCoordinator(
+        pause: { try await Task.sleep(for: $0) },
+        isMotionReduced: { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+    )
     private(set) lazy var ribbon = makeRibbon()
     lazy var ribbonScheduler = RibbonScheduler(coordinator: ribbon, model: model)
     private lazy var morningGlancePresenter: MorningGlancePresenter = {
