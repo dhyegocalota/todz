@@ -45,13 +45,16 @@ sign_update_binary=${TODZ_RELEASE_SIGN_UPDATE_BINARY:-$sparkle_tools/sign_update
 generate_keys_binary=${TODZ_RELEASE_GENERATE_KEYS_BINARY:-$sparkle_tools/generate_keys}
 cloudflare_binary=${TODZ_RELEASE_CLOUDFLARE_BINARY:-$root/scripts/todz-cloudflare.sh}
 deploy_worker_binary=${TODZ_RELEASE_DEPLOY_WORKER_BINARY:-$root/scripts/deploy-worker.sh}
-sign_update_seconds=${TODZ_RELEASE_SIGN_UPDATE_SECONDS:-120}
-codesign_seconds=${TODZ_RELEASE_CODESIGN_SECONDS:-120}
+sign_update_seconds=${TODZ_RELEASE_SIGN_UPDATE_SECONDS:-$KEYCHAIN_PROMPT_SECONDS}
+codesign_seconds=${TODZ_RELEASE_CODESIGN_SECONDS:-$KEYCHAIN_PROMPT_SECONDS}
 hdiutil_seconds=${TODZ_RELEASE_HDIUTIL_SECONDS:-300}
 xcodebuild_seconds=${TODZ_RELEASE_XCODEBUILD_SECONDS:-1800}
 sign_seconds=${TODZ_RELEASE_SIGN_SECONDS:-60}
-security_seconds=${TODZ_RELEASE_SECURITY_SECONDS:-60}
+security_seconds=${TODZ_RELEASE_SECURITY_SECONDS:-$KEYCHAIN_PROMPT_SECONDS}
 curl_seconds=${TODZ_RELEASE_CURL_SECONDS:-60}
+signature_attempts=4
+signature_retry_seconds=${TODZ_RELEASE_SIGNATURE_RETRY_SECONDS:-5}
+rollback_message_prefix="release-mac rollback of"
 wrangler_seconds=${TODZ_RELEASE_WRANGLER_SECONDS:-120}
 deploy_seconds=${TODZ_RELEASE_DEPLOY_SECONDS:-900}
 git_seconds=${TODZ_RELEASE_GIT_SECONDS:-120}
@@ -79,7 +82,7 @@ stop_agent() {
 rollback_release() {
   rollback_pending=false
   rm -rf "$site/download/$version"
-  bounded "$wrangler_seconds" "wrangler rollback" "$cloudflare_binary" pnpm --filter @todz/api exec wrangler rollback "$rollback_version_id" --message "release-mac rollback of $version" -y > /dev/null || echo "release-mac: could not roll back to $rollback_version_id; roll back by hand" >&2
+  bounded "$wrangler_seconds" "wrangler rollback" "$cloudflare_binary" pnpm --filter @todz/api exec wrangler rollback "$rollback_version_id" --message "$rollback_message_prefix $version" -y > /dev/null || echo "release-mac: could not roll back to $rollback_version_id; roll back by hand" >&2
 }
 
 cleanup() {
@@ -254,6 +257,7 @@ read_active_deployment() {
   local status_output message
   status_output=$(bounded "$wrangler_seconds" "wrangler deployments status" "$cloudflare_binary" pnpm --filter @todz/api exec wrangler deployments status --json) || fail "could not read the active deployment"
   message=$(jq -r '[.. | objects | select(has("workers/message")) | ."workers/message"] | first // empty' <<< "$status_output")
+  [[ "$message" != "$rollback_message_prefix"* ]] || fail "the active deployment is a release-mac rollback: run scripts/deploy-worker.sh first"
   [[ "$message" == "$(git rev-parse HEAD)" ]] || fail "the active deployment does not carry HEAD's sha: run the deploy runbook first"
   rollback_version_id=$(jq -r '[.. | objects | select(has("version_id")) | .version_id] | first // empty' <<< "$status_output")
   [[ -n "$rollback_version_id" ]] || fail "the active deployment names no version id"
@@ -468,8 +472,14 @@ check_production_sum() {
 }
 
 check_production_signature() {
-  production_code "/$version/$disk_image_name.sig" "$check_directory/$disk_image_name.sig" > /dev/null
-  verify_signature_of "$check_directory/$disk_image_name.sig" "$check_directory/$disk_image_name" || fail "production check failed: the served signature does not verify"
+  local attempt code=""
+  for attempt in $(seq 1 "$signature_attempts"); do
+    [[ "$attempt" -eq 1 ]] || sleep "$signature_retry_seconds"
+    code=$(production_code "/$version/$disk_image_name.sig" "$check_directory/$disk_image_name.sig")
+    [[ "$code" == 200 ]] && verify_signature_of "$check_directory/$disk_image_name.sig" "$check_directory/$disk_image_name" && return 0
+  done
+  [[ "$code" == 200 ]] || fail "production check failed: the signature answered $code"
+  fail "production check failed: the served signature does not verify"
 }
 
 check_production_appcast() {

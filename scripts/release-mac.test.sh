@@ -37,7 +37,8 @@ export TODZ_RELEASE_CLOUDFLARE_BINARY="$fakes/cloudflare"
 export TODZ_RELEASE_DEPLOY_WORKER_BINARY="$fakes/deploy-worker"
 export TODZ_RELEASE_XCRUN_BINARY="$fakes/xcrun"
 export TODZ_RELEASE_TEST_MODE=1
-unset FAKE_CODESIGN FAKE_CODESIGN_TARGET FAKE_PROVISION FAKE_FEED FAKE_PUBLIC_KEY FAKE_SECURITY_MISSING FAKE_WRONG_SIGNING_KEY FAKE_AGENT_HAS_IDENTITY FAKE_HANG FAKE_BREAK FAKE_DEPLOY_FAIL FAKE_DEPLOYMENT_MESSAGE TODZ_RELEASE_LOCK_HELD
+export TODZ_RELEASE_SIGNATURE_RETRY_SECONDS=0
+unset FAKE_CODESIGN FAKE_CODESIGN_TARGET FAKE_PROVISION FAKE_FEED FAKE_PUBLIC_KEY FAKE_SECURITY_MISSING FAKE_WRONG_SIGNING_KEY FAKE_AGENT_HAS_IDENTITY FAKE_HANG FAKE_BREAK FAKE_DEPLOY_FAIL FAKE_DEPLOYMENT_MESSAGE FAKE_SIGNATURE_MISSES FAKE_SIGNATURE_STATUS TODZ_RELEASE_LOCK_HELD
 export SSH_AUTH_SOCK=/inherited/agent.sock
 
 private_key_value="FAKE-PRIVATE-KEY-VALUE"
@@ -251,8 +252,13 @@ if [[ "$path" == /latest ]]; then
 fi
 served="$PRODUCTION$path"
 [[ -f "$served" ]] || { printf '404 '; exit 0; }
+if [[ "$path" == *.sig ]]; then
+  misses=$(cat "$PRODUCTION/.signature-misses" 2> /dev/null || echo 0)
+  [[ "$misses" -lt "${FAKE_SIGNATURE_MISSES:-0}" ]] && { echo $((misses + 1)) > "$PRODUCTION/.signature-misses"; printf '404 '; exit 0; }
+fi
 cp "$served" "$destination"
 [[ -n "${headers:-}" ]] && cp "$served.headers" "$headers"
+[[ "$path" == *.sig && -n "${FAKE_SIGNATURE_STATUS:-}" ]] && { printf '%s ' "$FAKE_SIGNATURE_STATUS"; exit 0; }
 printf '200 '
 FAKE
 
@@ -437,6 +443,15 @@ mkdir -p "$build_directory/derived"
 run_release --dry-run
 expect_equal "a build folder left without a commit by a stopped run is built again" "$status" "0"
 expect_contains "the stopped build's version is built" "$output" "$disk_image_name"
+
+new_world
+stale_directory="$builds/0.9.9"
+mkdir -p "$stale_directory"
+echo 0000000000000000000000000000000000000000 > "$stale_directory/commit"
+run_release --dry-run
+expect_equal "a build folder whose commit is not HEAD is never reused: exit status" "$status" "0"
+expect_contains "a build folder whose commit is not HEAD is never reused: the version is built" "$output" "$disk_image_name"
+expect_lacks "a build folder whose commit is not HEAD is never reused: its version is not taken" "$output" "0.9.9"
 
 for case_name in "no-runtime:Todz.app:Todz.app: not signed with the hardened runtime" "other-team:TodzWidgets.appex:TodzWidgets.appex: not signed by team XFWR794VS8" "task-allow:TodzWidgets.appex:TodzWidgets.appex: has get-task-allow" "task-allow:Todz.app:Todz.app: has get-task-allow" "developer-entitlement:TodzWidgets.appex:TodzWidgets.appex: carries a com.apple.developer. entitlement" "no-team:Installer.xpc:Installer.xpc: not signed by team XFWR794VS8" "no-team:Autoupdate:Autoupdate: not signed by team XFWR794VS8" "no-runtime:Updater.app:Updater.app: not signed with the hardened runtime" "verify-fail:Sparkle.framework:Sparkle.framework: signature does not verify"; do
   mode=${case_name%%:*}
@@ -628,6 +643,22 @@ for broken in redirect disposition sum signature appcast; do
 done
 
 new_world
+FAKE_SIGNATURE_MISSES=2 run_release
+expect_equal "a signature served late is retried until it answers: exit status" "$status" "0"
+expect_equal "a signature served late is fetched three times" "$(call_count 'curl.*\.sig')" "3"
+new_world
+FAKE_SIGNATURE_MISSES=99 run_release
+expect_refused "a signature that never answers 200 is refused" "production check failed: the signature answered 404"
+expect_equal "a signature that never answers 200 rolls back" "$(events)" "deploy rollback:$rollback_version_id "
+new_world
+FAKE_SIGNATURE_STATUS=500 run_release
+expect_refused "a valid signature served with another status is refused" "production check failed: the signature answered 500"
+
+new_world
+FAKE_DEPLOYMENT_MESSAGE="release-mac rollback of $version" run_release
+expect_refused "a rollback left as the live deployment is refused naming the deploy script" "scripts/deploy-worker.sh"
+
+new_world
 FAKE_DEPLOY_FAIL=1 run_release
 expect_refused "a deploy that fails is refused" "deploy-worker failed"
 expect_equal "a failed deploy removes the version from site" "$(test -e "$site_directory" && echo present || echo absent)" "absent"
@@ -677,6 +708,13 @@ new_world
 FAKE_HANG=deploy-worker TODZ_RELEASE_DEPLOY_SECONDS=1 run_release
 expect_refused "a hanging deploy is killed" "deploy-worker timed out after 1s"
 expect_equal "a hanging deploy rolls back" "$(events)" "deploy rollback:$rollback_version_id "
+
+expect_equal "the Keychain prompt limit is declared once at 120 seconds" "$(grep -c '^readonly KEYCHAIN_PROMPT_SECONDS=120$' "$here/release-shared.sh")" "1"
+expect_equal "sign_update, codesign and security use the Keychain prompt limit" "$(grep -cE '^(sign_update|codesign|security)_seconds=.*:-\$KEYCHAIN_PROMPT_SECONDS}$' "$here/release-mac.sh")" "3"
+expect_equal "no Keychain-gated step keeps another literal" "$(grep -cE '^(sign_update|codesign|security)_seconds=.*:-[0-9]+}$' "$here/release-mac.sh")" "0"
+expect_contains "the runbook names the 120-second Keychain limit" "$(cat "$here/../docs/runbooks/release-the-mac-app.md")" "within 120 seconds"
+expect_lacks "the runbook names no other Keychain limit" "$(cat "$here/../docs/runbooks/release-the-mac-app.md")" "within a minute"
+expect_contains "the deploy skill names the 120-second Keychain limit" "$(cat "$here/../.agents/skills/deploy/SKILL.md")" "120 seconds"
 
 new_world
 mkdir -p "$lock"
