@@ -97,6 +97,15 @@ extension AppModel {
         return renamed
     }
 
+    @discardableResult
+    public func renameWorkspace(identifier: String, name: String) async -> Workspace? {
+        nil
+    }
+
+    public func deleteWorkspace(identifier: String) async {}
+
+    public func deleteProject(projectIdentifier: String) async {}
+
     func loadWorkspaces() async {
         do {
             try await openListedWorkspaces()
