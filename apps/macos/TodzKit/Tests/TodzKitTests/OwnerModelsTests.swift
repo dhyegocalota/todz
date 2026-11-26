@@ -108,6 +108,12 @@ private let agentActorsWithoutAClientName = [
         #expect(page == ChangePage(tasks: [OwnerFixtures.openTask(number: 1)], deletedNumbers: [2], cursor: 7, hasMore: true))
     }
 
+    @Test func aChangePageWithoutDeletedNumbersComesFromAServerThatCannotDelete() throws {
+        let json = "{\"tasks\":[\(OwnerFixtures.openTaskJSON(number: 1))],\"cursor\":7,\"has_more\":false}"
+        let page = try OwnerFixtures.decoded(ChangePage.self, from: json)
+        #expect(page == ChangePage(tasks: [OwnerFixtures.openTask(number: 1)], deletedNumbers: [], cursor: 7, hasMore: false))
+    }
+
     @Test func decodesTheSignInAnswer() throws {
         let sessionToken = UUID().uuidString
         let ownerIdentifier = UUID().uuidString
