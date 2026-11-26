@@ -49,6 +49,8 @@ const SHAPES: Record<string, Shape> = {
       'offers',
       'codeRepository',
       'license',
+      'downloadUrl',
+      'sameAs',
     ],
   },
   Offer: {
@@ -89,6 +91,8 @@ const APPLICATION: Node = {
   publisher: { '@id': ORGANIZATION_ID },
   codeRepository: REPOSITORY.url,
   license: REPOSITORY.licenseSpdxUrl,
+  downloadUrl: `${SITE_URL}/download`,
+  sameAs: [REPOSITORY.url, 'https://docs.todz.app'],
   offers: {
     '@type': 'Offer',
     price: '0',
