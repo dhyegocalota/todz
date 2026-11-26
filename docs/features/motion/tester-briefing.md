@@ -9,14 +9,14 @@ Written by the developer when its steps are done. The developer does not run `te
 - `apps/macos/TodzKit/Sources/TodzKit/MotionToken+Animation.swift`, `TodzMotion.swift` — the SwiftUI animations and the modifiers `todzAnimation`, `todzCountTransition`, `todzBloom`, `todzEntrance`, `todzInsertion`. Shared with the widgets.
 - `apps/macos/Todz/Shared/TaskCheckbox.swift`, `CheckmarkMark.swift`, `SparkleBurst.swift` — the check is a trimmed path drawn over an accent disc on completion; six mint dots burst once. Undo clears at once.
 - `apps/macos/Todz/MainWindow/TaskList/TaskRows.swift` — rows spring in when the shown tasks change.
-- `apps/macos/Todz/MenuBar/MenuBarLabel.swift` — the text count rolls. The image count does not (see gaps).
+- `apps/macos/Todz/MenuBar/MenuBarLabel.swift` — the count roll was removed: the status item drops SwiftUI animation (see gaps).
 - `apps/macos/Todz/MenuBar/MenuBarPopover.swift` — the popover blooms on each show.
 - `apps/macos/Todz/RootView.swift` — the screen change on sign-in is a reveal.
 - `apps/macos/Todz/MorningGlance/MorningGlanceView.swift`, `apps/macos/Todz/MenuBar/MenuBarDayCloseActions.swift` — entrances.
 - `apps/macos/TodzWidgets/Views/TodayRing.swift`, `NextUpView.swift` — count transitions through the shared modifier.
 - ADR 0077, `docs/features/motion/`.
 
-No new dependency. No font, colour or layout change except the mint burst and the checkbox disc, which is 14 pt (the checkbox used the same SF Symbol size before).
+No new dependency. No font, colour or layout change except the mint burst. The checkbox disc is drawn over the open-circle symbol at its own size, with no fixed frame.
 
 ## How to run
 
@@ -26,7 +26,8 @@ Debug app against a local `wrangler dev` Worker, as in `docs/features/menu-bar-o
 
 | Test | Red (before the implementation) | Green |
 |------|---------------------------------|-------|
-| `MotionTokenTests` (6 tests) | `Fatal error: MotionToken.curve is not implemented`, `Fatal error: MotionRule.token is not implemented`, `Fatal error: MotionToken.durationMilliseconds is not implemented` | 6 passed |
+| `MotionTokenTests` (7 tests) | `Fatal error: MotionToken.curve is not implemented`, `Fatal error: MotionRule.token is not implemented`, `Fatal error: MotionToken.durationMilliseconds is not implemented`; then the spring test fails on `overruns.isEmpty` at 66613930 | 7 passed at a72a9b49 |
+| `MotionBloomTests` (5 tests) | `Expectation failed: MotionBloom.opacity(isBloomed: true) == 1`, `Expectation failed: MotionBloom.scale(isBloomed: false, isReduceMotionOn: false) == MotionBloom.dimmedScale` at 510a5591 | 5 passed at f206e8be |
 | `swift test --package-path apps/macos/TodzKit` (full) | not run red | 1307 tests in 103 suites passed |
 | `xcodegen` and `xcodebuild` Debug | not applicable | BUILD SUCCEEDED, no warnings in the touched files |
 
@@ -42,6 +43,7 @@ Debug app against a local `wrangler dev` Worker, as in `docs/features/menu-bar-o
 
 ## Known gaps
 
-- The image-drawn count does not roll.
+- The menu bar count does not roll (the status item drops SwiftUI animation, ADR 0065); listed for v1.1.
+- `MotionTokenTests::theCeilingIs350Milliseconds` is a pin: it passes at the red commit, so it guards the number rather than new behaviour.
 - The sign-in reveal fades the screen; the logo has no own reveal.
 - The GIF for the PR and the README is recorded later.

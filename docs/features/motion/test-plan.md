@@ -12,7 +12,9 @@ The surface is native macOS and the widgets: there is no browser surface, so the
 ## Unit (TodzKit)
 
 - [ ] `MotionTokenTests::everyTokenFitsTheCeiling` — input: every `MotionToken`; expected: `durationMilliseconds <= 350` for all
-- [ ] `MotionTokenTests::theCeilingIs350Milliseconds` — expected: `MotionTiming.ceilingMilliseconds == 350`
+- [ ] `MotionTokenTests::theCeilingIs350Milliseconds` — expected: `MotionTiming.ceilingMilliseconds == 350`. A pin: it passes at the red commit 817ea00a, so it guards the number rather than proving new behaviour
+- [ ] `MotionTokenTests::everySpringSettlesWithinItsOwnDuration` — expected: each spring's `Spring(response:dampingRatio:).settlingDuration` is at most its token's `durationMilliseconds`; red at 66613930, green after a72a9b49
+- [ ] `MotionBloomTests` (5 tests) — expected: a resting bloom is fully visible and unscaled; a dimmed bloom is hidden and scaled to 0.96; Reduce Motion never scales; red at 510a5591, green at f206e8be
 - [ ] `MotionTokenTests::reduceMotionTurnsEveryTokenIntoACrossfade` — input: every token, `isReduceMotionOn: true`; expected: `.crossfade` for all
 - [ ] `MotionTokenTests::withReduceMotionOffEveryTokenIsKept` — input: every token, `isReduceMotionOn: false`; expected: the same token back for all
 - [ ] `MotionTokenTests::theCrossfadeIsAnEaseNotASpring` — expected: `crossfade.curve` is the ease curve, never a spring
@@ -29,7 +31,7 @@ Each moment is one checkbox. The walk runs with Orca on a scratch copy, keeps po
 - [ ] Add a task while the list is empty — expected: the row springs in the same way — evidence:
 - [ ] Open the popover from the menu bar — expected: the content blooms from slightly smaller and dimmed to full size within about 300 ms, every time it opens — evidence:
 - [ ] Open the popover twice in a row — expected: the bloom plays both times; the focus on the add field still works — evidence:
-- [ ] Change the open count (complete a task in the window while the menu bar shows the text count) — expected: the number rolls to the new value within about 200 ms — evidence:
+- [ ] Change the open count (complete a task in the window while the menu bar shows the count) — expected: the number changes at once, no roll (the roll is a known gap); the text and its accessibility label are unchanged — evidence:
 - [ ] Day temperature on (the count drawn as an image) — expected: the count swaps at once with no roll; the text and its accessibility label are unchanged — evidence:
 - [ ] Sign in with a valid link — expected: the sign-in screen gives way to the main window in a short reveal within about 340 ms — evidence:
 - [ ] Morning glance appears at the morning time — expected: the glance enters with a bloom within about 300 ms and its rows are unchanged — evidence:
@@ -41,7 +43,7 @@ Each moment is one checkbox. The walk runs with Orca on a scratch copy, keeps po
 - [ ] Complete a task — expected: no draw and no burst; the check appears with a crossfade under 150 ms — evidence:
 - [ ] Add a task — expected: the row fades in with no spring — evidence:
 - [ ] Open the popover — expected: the content fades in with no scale — evidence:
-- [ ] Change the count — expected: the number changes with a crossfade, no roll — evidence:
+- [ ] Change the count — expected: the number changes at once, as without Reduce Motion (no roll exists) — evidence:
 - [ ] Sign in — expected: a crossfade, no reveal motion — evidence:
 - [ ] Select a sidebar item (Inbox, then a project) — expected: the item's title in the sidebar flies to the list header's title within about 320 ms, and the header's text is the same string and font after the move — evidence:
 - [ ] Reduce Motion on, select a sidebar item — expected: the header changes with a crossfade, no flight — evidence:

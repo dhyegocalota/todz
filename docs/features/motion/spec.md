@@ -18,7 +18,6 @@ The app's motion is ad hoc: some views animate with literal numbers, many do not
 - Signature moments:
   - Completing a task: the check draws in and a mint sparkle burst plays once, in the task list.
   - Adding a task: its row springs in.
-  - The menu bar count rolls when it changes (SwiftUI text only).
   - The popover opens with a glass bloom.
   - Sign-in success: the signed-in window replaces the sign-in screen with a short reveal.
   - The day close and the morning glance enter with a bloom.
@@ -43,24 +42,24 @@ The app's motion is ad hoc: some views animate with literal numbers, many do not
 - `MotionTiming.ceilingMilliseconds`: 350.
 - `MotionRule.token(_:isReduceMotionOn:)`.
 - View modifiers: `todzAnimation(_:value:)`, `todzCountTransition()`, `todzBloom(trigger:)`, `todzEntrance()`.
-- App: `CheckmarkDraw` and `SparkleBurst` next to `TaskCheckbox`.
+- App: `CheckmarkMark` and `SparkleBurst` next to `TaskCheckbox`.
 
 ### Failure handling
 
 - No state is stored; the motion is presentation only, so a missed animation changes nothing for the owner.
 - Reduce Motion never removes information: it crossfades the same change.
-- The count that is drawn as an image cannot roll; it keeps its instant swap, and the count's text and accessibility label are unchanged.
+- The menu bar count changes at once: the status item drops SwiftUI animation (ADR 0065), so no roll is attempted. Its text and accessibility label are unchanged.
 
 ## Open questions → answers
 
 | Question | Options | Owner's answer | Date |
 |----------|---------|----------------|------|
 | Use Lottie or native shapes | Lottie, native | Owner did not choose; native, the loop's call (ADR 0077) | 2026-11-26 |
-| Menu bar count roll on the image branch | Roll the image, keep the instant swap | Keep the instant swap: an NSImage cannot take a SwiftUI content transition | 2026-11-26 |
+| Menu bar count roll | Try a frame roll (ADR 0071 ribbon frames), or drop it | Dropped: the status item drops SwiftUI animation (ADR 0065); listed for v1.1 | 2026-11-26 |
 
 ## Known gaps
 
-- The menu bar count drawn as an image (day temperature on) does not roll. Only the text count rolls.
+- The menu bar count does not roll, with or without the day temperature. The `MenuBarExtra` status item drops SwiftUI animation (ADR 0065), so the roll is listed for v1.1.
 - The sign-in success reveal crossfades the whole screen (`AppPhase` change); the brand logo itself does not get its own reveal.
 - The check is a trimmed path drawn over an accent disc (`SF Symbols` `drawOn` needs macOS 15, and the target is 14), so the done glyph is drawn, not the system's `checkmark.circle.fill`.
 - Reduce Motion is verified through the unit rule and a manual toggle; the GIF recorder runs later.

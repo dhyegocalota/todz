@@ -13,7 +13,7 @@
 | Group | Paths owned | Developer sub-agent |
 |-------|-------------|---------------------|
 | G1 | `apps/macos/TodzKit/Sources/TodzKit/MotionToken.swift`, `MotionToken+Animation.swift`, `MotionRule.swift`, `TodzMotion.swift`, `apps/macos/TodzKit/Tests/TodzKitTests/MotionTokenTests.swift` | `developer` |
-| G2 | `apps/macos/Todz/Shared/TaskCheckbox.swift`, `apps/macos/Todz/Shared/CheckmarkDraw.swift`, `apps/macos/Todz/Shared/SparkleBurst.swift`, `apps/macos/Todz/MainWindow/TaskList/TaskRows.swift`, `apps/macos/Todz/MenuBar/MenuBarLabel.swift`, `apps/macos/Todz/MenuBar/MenuBarPopover.swift`, `apps/macos/Todz/RootView.swift`, `apps/macos/Todz/MorningGlance/MorningGlanceView.swift`, `apps/macos/Todz/MenuBar/MenuBarDayCloseActions.swift` | `developer` |
+| G2 | `apps/macos/Todz/Shared/TaskCheckbox.swift`, `apps/macos/Todz/Shared/CheckmarkMark.swift`, `apps/macos/Todz/Shared/SparkleBurst.swift`, `apps/macos/Todz/MainWindow/TaskList/TaskRows.swift`, `apps/macos/Todz/MenuBar/MenuBarLabel.swift`, `apps/macos/Todz/MenuBar/MenuBarPopover.swift`, `apps/macos/Todz/RootView.swift`, `apps/macos/Todz/MorningGlance/MorningGlanceView.swift`, `apps/macos/Todz/MenuBar/MenuBarDayCloseActions.swift` | `developer` |
 | G3 | `apps/macos/TodzWidgets/Views/TodayRing.swift`, `apps/macos/TodzWidgets/Views/NextUpView.swift` | `developer` |
 | G4 | `docs/adr/0077-*.md`, `docs/features/motion/*`, `docs/features/README.md`, `apps/macos/README.md` | `developer` |
 
@@ -32,7 +32,7 @@ G1 first (the tokens the others call). G2 and G3 after G1. G4 last.
 
 - [ ] **Step 3:** the check draws in and the mint sparkle burst on completion in `TaskCheckbox`.
 - [ ] **Step 4:** a new task springs in: task rows insert with the `settle` token in `TaskRows`.
-- [ ] **Step 5:** the menu bar count rolls (`todzCountTransition`) in the text branch of `MenuBarLabel`.
+- [ ] **Step 5:** the menu bar count roll, dropped in the fix round: the status item drops SwiftUI animation (ADR 0065). Listed for v1.1.
 - [ ] **Step 6:** the popover blooms on each show in `MenuBarPopover`, with `todzBloom`.
 - [ ] **Step 7:** sign-in success reveals the main window in `RootView` with `todzAnimation(.reveal)`.
 - [ ] **Step 8:** the morning glance and the day close enter with `todzEntrance`.
