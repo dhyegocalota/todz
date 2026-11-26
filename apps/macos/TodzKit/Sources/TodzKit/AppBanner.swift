@@ -14,4 +14,8 @@ public enum AppBanner: Equatable, Sendable {
     case signOutFailed
     case updateNeeded
     case alreadySignedIn
+
+    public var isCalm: Bool {
+        false
+    }
 }

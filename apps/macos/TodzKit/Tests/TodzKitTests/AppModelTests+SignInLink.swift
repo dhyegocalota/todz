@@ -235,6 +235,40 @@ extension AppModelTests {
         #expect(harness.model.banner == .alreadySignedIn)
     }
 
+    @Test func aLinkWhileNamingTheFirstWorkspaceSaysTheOwnerIsAlreadySignedIn() async throws {
+        let harness = try harnessWithAPendingLink()
+        await harness.signedIn()
+        #expect(harness.model.phase == .naming)
+        await harness.model.redeem(signInLink: try incomingLink())
+        #expect(harness.model.banner == .alreadySignedIn)
+    }
+
+    @Test func aLinkWhileTheSessionIsStillLoadingRaisesNoBanner() async throws {
+        let harness = try harnessWithAPendingLink()
+        await harness.model.launch()
+        harness.model.phase = .loading
+        await harness.model.redeem(signInLink: try incomingLink())
+        #expect(harness.model.banner == nil)
+    }
+
+    @Test func signingOutTakesTheAlreadySignedInLineAway() async throws {
+        let harness = try harnessWithAPendingLink()
+        harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        await harness.model.redeem(signInLink: try incomingLink())
+        await harness.model.signOut()
+        #expect(harness.model.banner == nil)
+    }
+
+    @Test func aSessionThatEndsTakesTheAlreadySignedInLineAway() async throws {
+        let harness = try harnessWithAPendingLink()
+        harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        await harness.model.redeem(signInLink: try incomingLink())
+        harness.model.endSession()
+        #expect(harness.model.banner == nil)
+    }
+
     @Test func aLinkWhileSignedOutRaisesNoBanner() async throws {
         let harness = try harnessWithAPendingLink()
         await harness.model.launch()
