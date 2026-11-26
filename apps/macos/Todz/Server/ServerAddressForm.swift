@@ -38,7 +38,7 @@ struct ServerAddressForm: View {
             switch layout {
             case .row:
                 LabeledContent(SettingsCopy.serverAddressLabel) {
-                    HStack {
+                    HStack(alignment: .top) {
                         field
                         action
                     }
@@ -68,13 +68,8 @@ struct ServerAddressForm: View {
     }
 
     private var field: some View {
-        TextField(SettingsCopy.serverAddressLabel, text: $text, prompt: Text(SettingsCopy.serverPlaceholder))
-            .textFieldStyle(.roundedBorder)
-            .multilineTextAlignment(.leading)
-            .labelsHidden()
+        FormField(label: SettingsCopy.serverAddressLabel, prompt: SettingsCopy.serverPlaceholder, text: $text, issue: fieldIssue, isLabelShown: false, isBusy: isInFlight, isFocused: $isFieldFocused)
             .autocorrectionDisabled()
-            .focused($isFieldFocused)
-            .disabled(isInFlight)
             .onSubmit(submit)
             .onExitCommand(perform: escape)
             .onChange(of: text) {
@@ -84,22 +79,12 @@ struct ServerAddressForm: View {
     }
 
     @ViewBuilder private var action: some View {
-        switch flow.state {
-        case .checking:
-            HStack {
-                ProgressView(SettingsCopy.checkingServer)
-                    .controlSize(.small)
-                Button(SheetCopy.cancel, action: cancelCheck)
+        HStack {
+            FormButton(title: SettingsCopy.switchServer, busyTitle: busyTitle, kind: .primary, isBusy: isWorking, disabledReason: actionReason, action: submit)
+            if flow.state == .checking {
+                FormButton(title: SheetCopy.cancel, busyTitle: nil, kind: .cancel, isBusy: false, disabledReason: nil, action: cancelCheck)
                     .keyboardShortcut(.cancelAction)
             }
-        case .switching:
-            ProgressView(SettingsCopy.switchingServer)
-                .controlSize(.small)
-        case .confirming:
-            EmptyView()
-        case .idle, .refused, .notTodz, .answersAs, .alreadyInUse, .switched, .failed:
-            Button(SettingsCopy.switchServer, action: submit)
-                .disabled(because: switchReason)
         }
     }
 
@@ -107,37 +92,53 @@ struct ServerAddressForm: View {
         if !model.isOnDefaultServer {
             switch layout {
             case .row:
-                Button(SettingsCopy.useTodzCloud, action: useTodzCloud)
-                    .buttonStyle(.bordered)
+                FormButton(title: SettingsCopy.useTodzCloud, busyTitle: nil, kind: .secondary, isBusy: false, disabledReason: busyReason, action: useTodzCloud)
                     .controlSize(.small)
-                    .disabled(because: busyReason)
             case .column:
-                Button(SettingsCopy.useTodzCloud, action: useTodzCloud)
-                    .buttonStyle(.plain)
-                    .disabled(because: busyReason)
+                FormButton(title: SettingsCopy.useTodzCloud, busyTitle: nil, kind: .quiet, isBusy: false, disabledReason: busyReason, action: useTodzCloud)
             }
         }
     }
 
     @ViewBuilder private var statusLine: some View {
         if let status {
-            Text(status.text)
-                .foregroundStyle(status.isRefusal ? .red : .secondary)
+            ValidationLine(text: status.text, tone: status.tone)
                 .textSelection(.enabled)
         }
     }
 
-    private var status: (text: String, isRefusal: Bool)? {
+    private var fieldIssue: String? {
+        guard case let .refused(issue) = flow.state else { return nil }
+        return issue.copy
+    }
+
+    private var status: (text: String, tone: ValidationTone)? {
         switch flow.state {
-        case let .refused(issue): (issue.copy, true)
-        case .notTodz: (ErrorCopy.notTodzServer, true)
-        case let .answersAs(origin): (ErrorCopy.serverNamedOther(origin: origin), true)
-        case .failed(.eraseFailed): (ErrorCopy.serverSwitchFailed(server: serverInUseName), true)
-        case .failed(.busy): (ErrorCopy.serverSwitchBusy(server: serverInUseName), true)
-        case .alreadyInUse: (SettingsCopy.serverInUse, false)
-        case .switched: layout == .row ? (SettingsCopy.switched(server: serverInUseName), false) : nil
-        case .idle, .checking, .confirming, .switching: nil
+        case .notTodz: (ErrorCopy.notTodzServer, .issue)
+        case let .answersAs(origin): (ErrorCopy.serverNamedOther(origin: origin), .issue)
+        case .failed(.eraseFailed): (ErrorCopy.serverSwitchFailed(server: serverInUseName), .issue)
+        case .failed(.busy): (ErrorCopy.serverSwitchBusy(server: serverInUseName), .issue)
+        case .alreadyInUse: (SettingsCopy.serverInUse, .note)
+        case .switched: layout == .row ? (SettingsCopy.switched(server: serverInUseName), .note) : nil
+        case .idle, .refused, .checking, .confirming, .switching: nil
         }
+    }
+
+    private var isWorking: Bool {
+        switch flow.state {
+        case .checking, .switching: true
+        case .idle, .refused, .notTodz, .answersAs, .alreadyInUse, .switched, .failed, .confirming: false
+        }
+    }
+
+    private var busyTitle: String {
+        flow.state == .switching ? SettingsCopy.switchingServer : SettingsCopy.checkingServer
+    }
+
+    private var actionReason: String? {
+        guard !isWorking else { return nil }
+        guard !isInFlight else { return SettingsCopy.serverBusy }
+        return switchReason
     }
 
     private var serverInUseName: String {
@@ -245,16 +246,8 @@ struct ServerAddressForm: View {
         switch state {
         case .refused, .notTodz, .answersAs, .failed:
             isFieldFocused = true
-            announceStatus()
-        case .switched:
-            announceStatus()
-        case .idle, .checking, .alreadyInUse, .confirming, .switching:
+        case .switched, .idle, .checking, .alreadyInUse, .confirming, .switching:
             break
         }
-    }
-
-    private func announceStatus() {
-        guard let status else { return }
-        AccessibilityNotification.Announcement(status.text).post()
     }
 }
