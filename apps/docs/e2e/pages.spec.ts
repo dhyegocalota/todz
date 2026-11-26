@@ -3,7 +3,17 @@ import { ColorScheme, DocsViewport, docsPages, expect, test } from './support/do
 const NAVIGATION_BUTTON_NAME = /^Navigation/;
 const SIDEBAR_LINKS = 'nav#sidebar a';
 const MENU_LINKS = 'a[href]';
-const SIDEBAR_TITLES = ['Introduction', 'Quickstart', 'Install on Mac', 'Workspaces', 'Connect an agent', 'MCP tools', 'Self-host todz', 'Privacy', 'Open source'];
+const SIDEBAR_TITLES = [
+  'Introduction',
+  'Quickstart',
+  'Install on Mac',
+  'Workspaces',
+  'Connect an agent',
+  'MCP tools',
+  'Self-host todz',
+  'Privacy',
+  'Open source',
+];
 const pages = docsPages();
 
 for (const scheme of Object.values(ColorScheme)) {
