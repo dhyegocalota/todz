@@ -86,7 +86,7 @@ private final class IdentifierSource {
         let shared = try SharingDomain()
         shared.sharing.record(.popoverOpened, at: firstDay)
         #expect(shared.sharing.dueRollup(at: nextDay, appVersion: appVersion, macosMajor: macosMajor) == nil)
-        #expect(shared.domain.defaults.persistentDomain(forName: shared.domain.name)?[UsageSharing.tallyCountsStorageKey] == nil)
+        #expect(shared.domain.defaults.persistentDomain(forName: shared.domain.name)?[UsageSharing.talliesStorageKey] == nil)
     }
 
     @Test func aFinishedDayBecomesOneRollupOfCountsOnly() throws {

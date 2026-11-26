@@ -8,7 +8,8 @@ import { HttpStatus } from '../http-status';
 import { LimitRefusal, limitRefusal } from '../limit-refusal';
 import { noRouteResponse } from '../owner-errors';
 import { parsedJson } from '../parsed-json';
-import { DIMENSION_SEPARATOR, Metric, UsageEvent } from './metric';
+import { appVersionDimensionOf } from './app-version-dimension';
+import { Metric, UsageEvent } from './metric';
 import { incrementMetrics, incrementWithinCap } from './metrics-store';
 import { USAGE_BODY_MAX_BYTES, USAGE_COUNT_MAX, USAGE_ROLLUPS_PER_DAY_MAX } from './telemetry-constants';
 import { utcDayOf } from './telemetry-day';
@@ -60,7 +61,8 @@ async function refusalOf({ limiter, key }: { limiter: RateLimit | undefined; key
   return ANSWER_OF_REFUSAL[refusal]();
 }
 
-async function recordRollup({ database, rollup }: { database: D1Database; rollup: UsageRollup }): Promise<boolean> {
+async function recordRollup({ env, rollup }: { env: Env; rollup: UsageRollup }): Promise<boolean> {
+  const { DIRECTORY: database } = env;
   const day = utcDayOf(Date.now());
   const isWithinCap = await incrementWithinCap({ database, day, metric: Metric.UsageRollups, capMax: USAGE_ROLLUPS_PER_DAY_MAX });
   if (!isWithinCap) return false;
@@ -72,7 +74,7 @@ async function recordRollup({ database, rollup }: { database: D1Database; rollup
   const versionWrite = {
     day,
     metric: Metric.UsageVersions,
-    dimension: `${rollup.appVersion}${DIMENSION_SEPARATOR}${rollup.macosMajor}`,
+    dimension: await appVersionDimensionOf({ env, appVersion: rollup.appVersion, macosMajor: String(rollup.macosMajor) }),
     amount: 1,
   };
   await incrementMetrics({ database, writes: [versionWrite, ...eventWrites] });
@@ -94,7 +96,7 @@ export async function serveUsageRollup({ request, env }: { request: Request; env
   if (!parsed.success) return status(HttpStatus.Unprocessable);
   const installRefusal = await refusalOf({ limiter: env.USAGE_INSTALL_LIMITER, key: parsed.data.installId });
   if (installRefusal !== null) return installRefusal;
-  const isRecorded = await recordRollup({ database: env.DIRECTORY, rollup: parsed.data });
+  const isRecorded = await recordRollup({ env, rollup: parsed.data });
   if (!isRecorded) return tryAgainResponse();
   return status(HttpStatus.NoContent);
 }

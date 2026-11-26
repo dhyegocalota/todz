@@ -7,11 +7,14 @@ import TodzKit
     private let preference: WorkspaceShortcutsPreference
     private let hotKeys: WorkspaceHotKeys
 
-    init(model: AppModel, preference: WorkspaceShortcutsPreference) {
+    init(model: AppModel, preference: WorkspaceShortcutsPreference, onUsed: @escaping () -> Void) {
         self.model = model
         self.preference = preference
         bindings = preference.bindings
-        hotKeys = WorkspaceHotKeys(onAction: { action in Task { await model.switchWorkspace(action: action) } })
+        hotKeys = WorkspaceHotKeys(onAction: { action in
+            onUsed()
+            Task { await model.switchWorkspace(action: action) }
+        })
     }
 
     func start() {

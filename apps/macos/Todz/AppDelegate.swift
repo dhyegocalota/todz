@@ -52,7 +52,8 @@ private let cacheFolderName = "Cache"
     )
     private(set) lazy var workspaceShortcuts = WorkspaceShortcutController(
         model: model,
-        preference: WorkspaceShortcutsPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain)
+        preference: WorkspaceShortcutsPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
+        onUsed: { [usageSharing] in usageSharing.record(.shortcutUsed, at: Date()) }
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
     private(set) lazy var dayTemperatureClock = DayTemperatureClock(
@@ -65,7 +66,11 @@ private let cacheFolderName = "Cache"
     let ribbonStrips = MenuBarRibbonStripCache()
     private(set) lazy var ribbon = makeRibbon()
     lazy var ribbonScheduler = RibbonScheduler(coordinator: ribbon, model: model)
-    private lazy var morningGlancePresenter = MorningGlancePresenter(windowState: windowState)
+    private lazy var morningGlancePresenter: MorningGlancePresenter = {
+        let presenter = MorningGlancePresenter(windowState: windowState)
+        presenter.onPresented = { [usageSharing] in usageSharing.record(.morningGlance, at: Date()) }
+        return presenter
+    }()
     private(set) lazy var morningGlance = MorningGlanceCoordinator.app(
         model: model,
         gate: gate,

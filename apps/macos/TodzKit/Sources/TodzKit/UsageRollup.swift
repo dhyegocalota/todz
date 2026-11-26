@@ -1,7 +1,7 @@
 import Foundation
 
 public struct UsageRollup: Codable, Equatable, Sendable {
-    public static let countMax = 10_000
+    public static let countMax = 500
     public static let path = "/telemetry/usage"
 
     public let installId: String

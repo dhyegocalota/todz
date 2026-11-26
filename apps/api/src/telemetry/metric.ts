@@ -41,6 +41,14 @@ export const OTHER_DIMENSION = 'other';
 export const UNKNOWN_MACOS = 'unknown';
 export const DIMENSION_SEPARATOR = '|';
 
+const FIRST_SUPPORTED_MACOS_MAJOR = 14;
+const SUPPORTED_MACOS_MAJOR_COUNT = 17;
+
+export const SUPPORTED_MACOS_MAJORS: number[] = Array.from(
+  { length: SUPPORTED_MACOS_MAJOR_COUNT },
+  (_, index) => FIRST_SUPPORTED_MACOS_MAJOR + index,
+);
+
 const VERSION_DIMENSION_PATTERN = /^\d{1,3}\.\d{1,3}\.\d{1,3}\|(?:\d{1,2}|unknown)$/;
 
 const MARKER_OF_AGENT_CLIENT: Record<Exclude<AgentClient, AgentClient.Other>, string> = {

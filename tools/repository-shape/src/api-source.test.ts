@@ -51,6 +51,7 @@ const USAGE_RATE_LIMIT_NAMESPACE_ID = '8614';
 const USAGE_INSTALL_RATE_LIMIT_NAMESPACE_ID = '8615';
 const USAGE_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8616';
 const APPCAST_RATE_LIMIT_NAMESPACE_ID = '8617';
+const APPCAST_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8618';
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -303,6 +304,11 @@ describe('the api source', () => {
         name: 'APPCAST_LIMITER',
         namespace_id: APPCAST_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('APPCAST_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'APPCAST_ADDRESS_LIMITER',
+        namespace_id: APPCAST_ADDRESS_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('APPCAST_ADDRESS_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
   });

@@ -8,6 +8,7 @@ import TodzKit
     @ObservationIgnored private var applicationBeforeEngaging: NSRunningApplication?
     @ObservationIgnored var onShown: (() -> Void)?
     @ObservationIgnored var onOpened: (() -> Void)?
+    @ObservationIgnored var onDayClosed: (() -> Void)?
 
     // NB ADR 0031: a close from code clicks the status item's own button so the next click reopens.
     func close() {
@@ -35,6 +36,7 @@ import TodzKit
         let isOtherApplication = frontmostApplication?.processIdentifier != ProcessInfo.processInfo.processIdentifier
         applicationBeforeEngaging = isOtherApplication ? frontmostApplication : nil
         dayClose.engage()
+        onDayClosed?()
         NSApp.activate()
         window?.makeKey()
     }

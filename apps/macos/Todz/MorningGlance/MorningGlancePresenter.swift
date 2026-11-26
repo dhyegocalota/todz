@@ -7,6 +7,7 @@ private let occlusionWait: Duration = .seconds(1)
 
 @MainActor final class MorningGlancePresenter {
     weak var coordinator: MorningGlanceCoordinator?
+    var onPresented: (() -> Void)?
     private let windowState: MainWindowState
     private var panel: MorningGlancePanel?
     private var dwell = MorningGlanceDwell(shownAt: .now)
@@ -37,6 +38,7 @@ private let occlusionWait: Duration = .seconds(1)
         dwell = MorningGlanceDwell(shownAt: .now)
         allowPointerAfterGrace(on: glancePanel)
         scheduleFade(of: glancePanel)
+        onPresented?()
         return true
     }
 
