@@ -55,6 +55,10 @@ import Observation
     public internal(set) var keyReloadFailure: KeyFailure?
     public internal(set) var revokingKeyIdentifiers: Set<String> = []
     public internal(set) var failedRevokeIdentifiers: Set<String> = []
+    public internal(set) var ownerKeys: KeyList?
+    public internal(set) var issuedOwnerKey: IssuedKey?
+    public internal(set) var isChangingOwnerKeys = false
+    public internal(set) var ownerKeyFailure: OwnerKeyFailure?
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
     var outbox = Outbox() {
@@ -424,6 +428,7 @@ import Observation
         activeWorkspaceIdentifier = nil
         selection = nil
         forgetKeys()
+        forgetOwnerKeys()
         selectedItem = .inbox
         selectedTask = nil
         board = TaskBoard()

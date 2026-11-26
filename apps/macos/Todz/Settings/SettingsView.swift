@@ -28,6 +28,7 @@ struct SettingsView: View {
             privacySection
             SettingsWorkspaceRows()
             SettingsWorkspaceShortcuts()
+            SettingsOwnerKeys()
             serverSection
             Section {
                 OpenSourceLink()

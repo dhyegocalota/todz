@@ -11,6 +11,8 @@ public enum OwnerAPIError: Error, Equatable, Sendable {
     case timeZoneInvalid
     case invalidRequest
     case appTooOld(minimum: String?)
+    case fairUseRefused(message: String)
+    case limitReached
     case unreachable
     case unexpected(status: Int)
 }

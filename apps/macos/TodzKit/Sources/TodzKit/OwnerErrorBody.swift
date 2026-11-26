@@ -13,6 +13,7 @@ struct OwnerErrorBody: Decodable {
     let issue: RuleIssue?
     let index: Int?
     let minimumAppVersion: String?
+    let message: String?
 
     static func failure(status: Int, body: Data) -> OwnerAPIError {
         let codedFailure = (try? OwnerCoding.decoder().decode(OwnerErrorBody.self, from: body))?.failure
@@ -20,6 +21,11 @@ struct OwnerErrorBody: Decodable {
         let statusFailure = ResponseStatus(rawValue: status).flatMap { errorOfStatus[$0] }
         if let statusFailure { return statusFailure }
         return .unexpected(status: status)
+    }
+
+    private var limitFailure: OwnerAPIError {
+        guard let message else { return .limitReached }
+        return .fairUseRefused(message: message)
     }
 
     var failure: OwnerAPIError? {
@@ -35,6 +41,8 @@ struct OwnerErrorBody: Decodable {
         case .signInUnavailable: .signInUnavailable
         case .signInRefused: .signInRefused
         case .appTooOld: .appTooOld(minimum: minimumAppVersion)
+        case .limitReached: limitFailure
+        case .accountSuspended, .signUpRefused: message.map { .fairUseRefused(message: $0) }
         }
     }
 }

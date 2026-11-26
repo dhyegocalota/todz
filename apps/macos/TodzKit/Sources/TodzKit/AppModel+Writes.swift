@@ -46,7 +46,7 @@ extension AppModel {
         case .unreachable:
             raise(.network, retry: retry)
         case .identityRejected, .signInUnavailable, .signInRefused, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead,
-            .ruleViolated, .timeZoneInvalid, .invalidRequest, .unexpected:
+            .ruleViolated, .timeZoneInvalid, .invalidRequest, .fairUseRefused, .limitReached, .unexpected:
             raise(.server, retry: retry)
         }
     }
@@ -70,7 +70,9 @@ extension AppModel {
             raise(.network, retry: retry, retryTarget: target)
         case .inboxIsFixed:
             raise(.inboxIsFixed)
-        case .identityRejected, .signInUnavailable, .signInRefused, .cursorAhead, .timeZoneInvalid, .invalidRequest, .unexpected:
+        case let .fairUseRefused(message):
+            raise(.fairUseRefused(message: message))
+        case .identityRejected, .signInUnavailable, .signInRefused, .cursorAhead, .timeZoneInvalid, .invalidRequest, .limitReached, .unexpected:
             raise(.changeNotSaved)
         }
     }

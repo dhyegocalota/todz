@@ -10,7 +10,7 @@ enum SendOutcome: Equatable, Sendable {
         guard !(error is CancellationError) else { return .sessionGone }
         guard let failure = error as? OwnerAPIError else { return .unexpected }
         switch failure {
-        case .ruleViolated, .taskNotFound, .notFound, .invalidRequest, .inboxIsFixed, .cursorAhead, .timeZoneInvalid, .identityRejected:
+        case .ruleViolated, .taskNotFound, .notFound, .invalidRequest, .inboxIsFixed, .cursorAhead, .timeZoneInvalid, .identityRejected, .fairUseRefused, .limitReached:
             return .refused
         case .unreachable:
             return .unreachable

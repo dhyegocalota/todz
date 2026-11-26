@@ -117,7 +117,7 @@ private let agentActorsWithoutAClientName = [
     }
 
     @Test func holdsTheLimitsOfLibsCore() {
-        #expect(TaskLimits.titleMaxLength == 200)
+        #expect(TaskLimits.titleMaxLength == 500)
         #expect(TaskLimits.notesMaxLength == 20_000)
         #expect(TaskLimits.nameMaxLength == 80)
     }

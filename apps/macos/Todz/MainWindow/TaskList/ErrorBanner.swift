@@ -21,6 +21,7 @@ struct ErrorBanner: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .fixedSize(horizontal: false, vertical: true)
             Spacer()
             BannerActionButton()
         }

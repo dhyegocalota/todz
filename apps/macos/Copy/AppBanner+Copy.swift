@@ -13,6 +13,7 @@ extension AppBanner {
         case .projectGone: ErrorCopy.projectGone
         case .workspaceGone: ErrorCopy.workspaceGone
         case let .changesRefused(count): Self.refusedTitle(count: count)
+        case let .fairUseRefused(message): message
         case .cacheNotSaved: ErrorCopy.cacheNotSaved
         case .waitingChangesLost: ErrorCopy.waitingChangesLost
         case .signOutFailed: ErrorCopy.signOutFailed
@@ -28,7 +29,7 @@ extension AppBanner {
         case .changesRefused: ErrorCopy.changeNotSavedBody
         case .updateNeeded: ErrorCopy.updateNeededBody
         case .someProjectsFailed, .changeNotSaved, .sessionNotSaved, .inboxIsFixed, .taskGone, .projectGone, .workspaceGone, .cacheNotSaved,
-            .waitingChangesLost, .signOutFailed, .alreadySignedIn:
+            .fairUseRefused, .waitingChangesLost, .signOutFailed, .alreadySignedIn:
             nil
         }
     }

@@ -101,6 +101,7 @@ extension AppModel {
         switch SendOutcome.of(error) {
         case .refused:
             refuse(change)
+            raiseFairUseRefusal(of: error)
             return true
         case .unreachable:
             hasServerAnswered = false
@@ -138,6 +139,11 @@ extension AppModel {
         countRefusals(1)
         guard isShown(projectIdentifier: change.projectIdentifier) else { return }
         pullFromStart(projectIdentifier: change.projectIdentifier)
+    }
+
+    private func raiseFairUseRefusal(of error: any Error) {
+        guard let failure = error as? OwnerAPIError, case let .fairUseRefused(message) = failure else { return }
+        raise(.fairUseRefused(message: message))
     }
 
     private func waitToSend() async {

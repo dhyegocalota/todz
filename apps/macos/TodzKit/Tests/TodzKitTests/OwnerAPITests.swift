@@ -234,6 +234,11 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
         (426, "{\"error\":\"app_too_old\",\"minimum_app_version\":\"0.3.0\"}", .appTooOld(minimum: "0.3.0")),
         (426, "{\"error\":\"app_too_old\"}", .appTooOld(minimum: nil)),
         (426, "<html>upgrade</html>", .appTooOld(minimum: nil)),
+        (409, "{\"error\":\"limit_reached\",\"limit\":\"open_tasks\",\"message\":\"Full\"}", .fairUseRefused(message: "Full")),
+        (429, "{\"error\":\"limit_reached\",\"limit\":\"daily_writes\",\"message\":\"Tomorrow\"}", .fairUseRefused(message: "Tomorrow")),
+        (403, "{\"error\":\"account_suspended\",\"message\":\"Suspended\"}", .fairUseRefused(message: "Suspended")),
+        (403, "{\"error\":\"sign_up_refused\",\"message\":\"Refused\"}", .fairUseRefused(message: "Refused")),
+        (409, "{\"error\":\"limit_reached\"}", .limitReached),
         (418, "{\"error\":\"teapot\"}", .unexpected(status: 418)),
     ])
     func mapsEachRowOfTheErrorTable(status: Int, body: String, expected: OwnerAPIError) async throws {

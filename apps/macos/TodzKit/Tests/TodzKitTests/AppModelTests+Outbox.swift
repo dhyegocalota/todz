@@ -229,6 +229,17 @@ extension AppModelTests {
         #expect(harness.pause.durations == [])
     }
 
+    @Test func aFairUseRefusalIsSentOnceDroppedAndShownWithTheServersMessage() async throws {
+        let harness = try await outboxHarness()
+        harness.service.failures[.completeTasks] = .fairUseRefused(message: "You have 500 open tasks.")
+        await harness.model.complete(task: firstTask)
+        await harness.flushed()
+        #expect(harness.service.calls.filter { $0 == .completeTasks(session: harness.session, projectIdentifier: inboxIdentifier, numbers: [1]) }.count == 1)
+        #expect(harness.model.waitingChangeCount == 0)
+        #expect(harness.model.banner == .fairUseRefused(message: "You have 500 open tasks."))
+        #expect(harness.pause.durations == [])
+    }
+
     @Test func aRefusalAsksForItsPullFromZeroWithoutWaitingForIt() async throws {
         let harness = try await outboxHarness()
         harness.service.failures[.completeTasks] = .invalidRequest
@@ -408,6 +419,8 @@ extension AppModelTests {
         (.cursorAhead, .refused),
         (.timeZoneInvalid, .refused),
         (.identityRejected, .refused),
+        (.fairUseRefused(message: "Full"), .refused),
+        (.limitReached, .refused),
         (.unreachable, .unreachable),
         (.unexpected(status: 500), .unexpected),
         (.signInUnavailable, .unexpected),
