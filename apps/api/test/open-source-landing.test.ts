@@ -103,18 +103,13 @@ describe('the star pill', () => {
 });
 
 describe('the star count honesty', () => {
-  test.each([[0], [1], [24]])('shows no number for %i stars, below the threshold of 25', async (stars) => {
-    const { html } = await landing(stars);
-    expect(html).not.toContain('class="star-count"');
-    expect(html).not.toContain('class="star-glyph"');
-    expect(html).toContain(LANDING_COPY.openSource.starLabel);
-  });
-
   test.each([
-    [25, '25'],
+    [0, '0'],
+    [1, '1'],
+    [24, '24'],
     [42, '42'],
     [1000, '1k'],
-  ])('shows the live count for %i stars, from the threshold up', async (stars, text) => {
+  ])('shows the live count for %i stars, from zero up', async (stars, text) => {
     const { html } = await landing(stars);
     expect(html).toContain(`<span class="star-count-final">${text}</span>`);
   });
