@@ -1,8 +1,12 @@
 import { FairUseLimit } from '@todz/types';
+import { cloudAccountsMaxOf } from './cloud-accounts-max';
+import { isHeavyWriterRefused } from './cloud-budget-store';
+import { CLOUD_COPY } from './cloud-copy';
+import { cloudMonthOf } from './cloud-month';
 import type { Env } from './env';
 import { FAIR_USE_COPY } from './fair-use-copy';
 import { type FairUseLimits, fairUseLimitsOf } from './fair-use-limits';
-import { limitResponse, suspendedResponse } from './owner-errors';
+import { cloudAtCapacityResponse, limitResponse, suspendedResponse } from './owner-errors';
 import { WriteRefusal, reserveOwnerWrites } from './owner-usage-store';
 import { utcDayOf } from './telemetry/telemetry-day';
 
@@ -17,7 +21,12 @@ export function textBytesOf(texts: Text[]): number {
   return texts.filter(isText).reduce((total, text) => total + encoder.encode(text).byteLength, 0);
 }
 
-export function reserveWrites({
+async function isHeavyWriterRefusedOnCloud({ env, ownerId, now }: { env: Env; ownerId: string; now: number }): Promise<boolean> {
+  if (cloudAccountsMaxOf(env) === null) return false;
+  return isHeavyWriterRefused({ directory: env.DIRECTORY, ownerId, ...cloudMonthOf(now) });
+}
+
+export async function reserveWrites({
   env,
   ownerId,
   now,
@@ -30,6 +39,8 @@ export function reserveWrites({
   writes: number;
   bytes: number;
 }): Promise<WriteRefusal | null> {
+  const isRefusedAtCapacity = await isHeavyWriterRefusedOnCloud({ env, ownerId, now });
+  if (isRefusedAtCapacity) return WriteRefusal.CloudAtCapacity;
   return reserveOwnerWrites({ directory: env.DIRECTORY, ownerId, day: utcDayOf(now), writes, bytes, limits: fairUseLimitsOf(env) });
 }
 
@@ -53,17 +64,20 @@ export async function writeRefusalTextOf({
 
 function limitOfRefusal(refusal: WriteRefusal): FairUseLimit | null {
   if (refusal === WriteRefusal.Suspended) return null;
+  if (refusal === WriteRefusal.CloudAtCapacity) return null;
   if (refusal === WriteRefusal.DailyWrites) return FairUseLimit.DailyWrites;
   return FairUseLimit.StoredBytes;
 }
 
 export function fairUseRefusalResponse({ refusal, limits, now }: { refusal: WriteRefusal; limits: FairUseLimits; now: number }): Response {
+  if (refusal === WriteRefusal.CloudAtCapacity) return cloudAtCapacityResponse();
   const limit = limitOfRefusal(refusal);
   if (limit === null) return suspendedResponse();
   return limitResponse({ limit, limits, now });
 }
 
 export function fairUseRefusalText({ refusal, limits }: { refusal: WriteRefusal; limits: FairUseLimits }): string {
+  if (refusal === WriteRefusal.CloudAtCapacity) return CLOUD_COPY.atCapacity;
   const limit = limitOfRefusal(refusal);
   if (limit === null) return FAIR_USE_COPY.suspended;
   return FAIR_USE_COPY.limitMessageOf({ limit, max: limits[limit] });

@@ -11,6 +11,8 @@ const UNAUTHORIZED_STATUS = 401;
 const DIRECTORY_TABLES = [
   'admin_sessions',
   'admin_sign_in_links',
+  'cloud_budget',
+  'cloud_queue',
   'day_email_replies',
   'day_email_reply_addresses',
   'day_email_stop_links',
@@ -78,7 +80,7 @@ describe('the handler routes the paths the static assets never answer (the asset
 });
 
 describe('the directory', () => {
-  test('lists exactly the nineteen directory tables', async () => {
+  test('lists exactly the twenty directory tables', async () => {
     expect(await directoryTables()).toEqual(DIRECTORY_TABLES);
   });
 
