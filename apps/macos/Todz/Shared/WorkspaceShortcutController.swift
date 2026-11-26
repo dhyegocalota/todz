@@ -3,7 +3,7 @@ import TodzKit
 
 @MainActor @Observable final class WorkspaceShortcutController {
     private(set) var globalChords: GlobalWorkspaceChords
-    private(set) var unavailableActions: Set<WorkspaceAction> = []
+    private(set) var globalAvailability: [WorkspaceAction: GlobalChordAvailability] = [:]
     private let model: AppModel
     private let preference: WorkspaceShortcutsPreference
     private let hotKeys: WorkspaceHotKeys
@@ -31,12 +31,10 @@ import TodzKit
         let isEligible = WorkspaceShortcuts.shouldRegister(phase: model.phase, workspaceCount: model.workspaces.count, isGlobalOn: preference.isGlobalOn)
         guard isEligible else {
             hotKeys.unregister()
-            unavailableActions = []
+            globalAvailability = [:]
             return
         }
-        let systemEntries = Self.systemHotKeyEntries()
-        let plan = GlobalChordPlan(chords: globalChords, isHeldBySystem: { SymbolicHotKeys.holds($0, in: systemEntries) })
-        unavailableActions = plan.heldBySystem.union(hotKeys.register(plan.registrations))
+        globalAvailability = hotKeys.register(GlobalChordPlan(chords: globalChords).registrations)
     }
 
     func suspendHotKeys() {
@@ -47,8 +45,8 @@ import TodzKit
         action.inAppChord?.keyboardShortcut
     }
 
-    func isInUse(_ action: WorkspaceAction) -> Bool {
-        unavailableActions.contains(action)
+    func availability(of action: WorkspaceAction) -> GlobalChordAvailability? {
+        globalAvailability[action]
     }
 
     func rebind(_ action: WorkspaceAction, to chord: KeyChord) -> RebindRefusal? {
@@ -59,12 +57,6 @@ import TodzKit
             preference.store(rebound)
             return nil
         }
-    }
-
-    private static func systemHotKeyEntries() -> [String: Any] {
-        let stored = CFPreferencesCopyAppValue(SymbolicHotKeys.entriesKey as CFString, SymbolicHotKeys.domainName as CFString)
-        guard let entries = stored as? [String: Any] else { return [:] }
-        return entries
     }
 
     private func observeEligibility() {

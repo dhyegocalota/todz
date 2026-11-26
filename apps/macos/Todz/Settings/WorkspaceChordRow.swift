@@ -29,8 +29,8 @@ struct WorkspaceChordRow: View {
             Text(chord.label)
                 .monospaced()
         }
-        if !isRecording, shortcuts.isInUse(action) {
-            Text(WorkspaceShortcutsCopy.inUse)
+        if !isRecording, let availability = shortcuts.availability(of: action), let note = WorkspaceShortcutsCopy.unavailable(availability) {
+            Text(note)
                 .foregroundStyle(.secondary)
         }
     }

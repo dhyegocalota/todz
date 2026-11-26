@@ -51,15 +51,16 @@ private func hotKeyPressed(_: EventHandlerCallRef?, event: EventRef?, userData: 
         RemoveEventHandler(handler)
     }
 
-    @discardableResult func register(_ chords: [WorkspaceAction: KeyChord]) -> Set<WorkspaceAction> {
+    @discardableResult func register(_ chords: [WorkspaceAction: KeyChord]) -> [WorkspaceAction: GlobalChordAvailability] {
         unregister()
-        guard isHandling else { return Set(chords.keys) }
-        let attempts = WorkspaceAction.all.enumerated().compactMap { offset, action -> (action: WorkspaceAction, reference: EventHotKeyRef?)? in
+        guard isHandling else { return chords.mapValues { _ in GlobalChordAvailability.failed } }
+        let attempts = WorkspaceAction.all.enumerated().compactMap { offset, action -> (action: WorkspaceAction, availability: GlobalChordAvailability, reference: EventHotKeyRef?)? in
             guard let chord = chords[action] else { return nil }
-            return (action, registration(identifier: offset + 1, chord: chord))
+            let attempt = registration(identifier: offset + 1, chord: chord)
+            return (action, GlobalChordAvailability.registering(status: attempt.status), attempt.reference)
         }
-        registrations = attempts.compactMap(\.reference)
-        return Set(attempts.filter { $0.reference == nil }.map(\.action))
+        registrations = attempts.filter { $0.availability == .available }.compactMap(\.reference)
+        return Dictionary(uniqueKeysWithValues: attempts.map { ($0.action, $0.availability) })
     }
 
     func unregister() {
@@ -73,11 +74,10 @@ private func hotKeyPressed(_: EventHandlerCallRef?, event: EventRef?, userData: 
         onAction(WorkspaceAction.all[position])
     }
 
-    private func registration(identifier: Int, chord: KeyChord) -> EventHotKeyRef? {
+    private func registration(identifier: Int, chord: KeyChord) -> (reference: EventHotKeyRef?, status: OSStatus) {
         var reference: EventHotKeyRef?
         let hotKeyIdentifier = EventHotKeyID(signature: hotKeySignature, id: UInt32(identifier))
-        let status = RegisterEventHotKey(UInt32(chord.keyCode), chord.modifiers.carbonFlags, hotKeyIdentifier, GetApplicationEventTarget(), 0, &reference)
-        guard status == noErr else { return nil }
-        return reference
+        let status = RegisterEventHotKey(UInt32(chord.keyCode), chord.modifiers.carbonFlags, hotKeyIdentifier, GetApplicationEventTarget(), OptionBits(kEventHotKeyExclusive), &reference)
+        return (status == noErr ? reference : nil, status)
     }
 }

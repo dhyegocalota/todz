@@ -11,7 +11,6 @@ public enum WorkspaceAction: Hashable, Sendable {
     private static let nextName = "next"
     private static let numberKeyCodes = [1: 18, 2: 19, 3: 20, 4: 21, 5: 23, 6: 22, 7: 26, 8: 28, 9: 25]
     private static let stepModifiers: ChordModifiers = [.control, .command]
-    private static let globalModifiers: ChordModifiers = [.control, .option, .command]
     private static let previousChord = KeyChord(keyCode: 33, key: "[", modifiers: stepModifiers)
     private static let nextChord = KeyChord(keyCode: 30, key: "]", modifiers: stepModifiers)
 
@@ -44,7 +43,7 @@ public enum WorkspaceAction: Hashable, Sendable {
         switch self {
         case let .number(number):
             guard let keyCode = Self.numberKeyCodes[number] else { return nil }
-            return KeyChord(keyCode: keyCode, key: String(number), modifiers: Self.globalModifiers)
+            return KeyChord(keyCode: keyCode, key: String(number), modifiers: WorkspaceShortcuts.globalModifiers)
         case .previous, .next: return nil
         }
     }

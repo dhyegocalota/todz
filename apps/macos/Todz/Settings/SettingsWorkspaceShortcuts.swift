@@ -12,7 +12,7 @@ struct SettingsWorkspaceShortcuts: View {
             Section {
                 Toggle(isOn: $isGlobalOn) {
                     Text(WorkspaceShortcutsCopy.fromAnyApp)
-                    Text(WorkspaceShortcutsCopy.fromAnyAppDetail)
+                    Text(WorkspaceShortcutsCopy.fromAnyAppDetail(modifiers: WorkspaceShortcuts.globalModifiers.symbols, numbers: WorkspaceShortcuts.numbers))
                         .lineLimit(subtitleLines, reservesSpace: true)
                 }
                 .toggleStyle(.switch)
@@ -22,13 +22,16 @@ struct SettingsWorkspaceShortcuts: View {
                         WorkspaceChordRow(action: .number(number), title: workspace.name, refusal: $refusal)
                     }
                 }
-                if let refusal {
-                    Text(WorkspaceShortcutsCopy.refusal(refusal))
-                        .foregroundStyle(.secondary)
-                }
+                Text(footnote)
+                    .foregroundStyle(.secondary)
             } header: {
                 Text(WorkspaceShortcutsCopy.header)
             }
         }
+    }
+
+    private var footnote: String {
+        guard let refusal else { return WorkspaceShortcutsCopy.missionControl }
+        return WorkspaceShortcutsCopy.refusal(refusal)
     }
 }

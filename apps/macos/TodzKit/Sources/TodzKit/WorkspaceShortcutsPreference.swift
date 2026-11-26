@@ -23,7 +23,9 @@ public struct WorkspaceShortcutsPreference {
     public var globalChords: GlobalWorkspaceChords {
         guard let data = domain.value(forKey: Self.bindingsStorageKey) as? Data else { return GlobalWorkspaceChords() }
         guard let stored = try? JSONDecoder().decode([String: KeyChord].self, from: data) else { return GlobalWorkspaceChords() }
-        return GlobalWorkspaceChords(overrides: Dictionary(uniqueKeysWithValues: stored.compactMap(Self.entry)))
+        return stored.sorted { $0.key < $1.key }.reduce(GlobalWorkspaceChords()) { chords, entry in
+            Self.applying(entry, to: chords)
+        }
     }
 
     public func store(_ chords: GlobalWorkspaceChords) {
@@ -32,9 +34,11 @@ public struct WorkspaceShortcutsPreference {
         domain.set(data, forKey: Self.bindingsStorageKey)
     }
 
-    private static func entry(name: String, chord: KeyChord) -> (WorkspaceAction, KeyChord)? {
-        guard let action = WorkspaceAction(storageName: name) else { return nil }
-        guard GlobalWorkspaceChords.refusal(for: action, chord: chord) == nil else { return nil }
-        return (action, chord)
+    private static func applying(_ entry: (key: String, value: KeyChord), to chords: GlobalWorkspaceChords) -> GlobalWorkspaceChords {
+        guard let action = WorkspaceAction(storageName: entry.key) else { return chords }
+        switch chords.rebinding(action, to: entry.value) {
+        case let .success(rebound): return rebound
+        case .failure: return chords
+        }
     }
 }
