@@ -34,8 +34,14 @@ export const LANDING_COPY = {
   },
   hero: {
     eyebrow: 'macOS · Coming soon',
+    eyebrowReleased: 'macOS 14 or later',
     title: 'Your tasks, shared with your agents.',
     lead: 'A native Mac to-do list that Claude Code, Codex and Cursor work over MCP.',
+  },
+  download: {
+    button: 'Download for Mac',
+    note: 'Not notarized by Apple yet: the first time, open it from System Settings › Privacy & Security.',
+    noteLink: 'Install steps',
   },
   stage: {
     label: 'The todz app on a Mac desktop',

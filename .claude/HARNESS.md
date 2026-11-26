@@ -6,7 +6,7 @@
 AGENTS.md            facts and conventions, pointers to this file          (CLAUDE.md, GEMINI.md link here)
 .claude/HARNESS.md   this file: the process
 .agents/roles/       agent role bodies (one source for .claude/agents and .codex/agents)
-.agents/skills/      skills: vendored superpowers subset + feature, adr, learning, verify, check-ui, open-pr, scenario
+.agents/skills/      skills: vendored superpowers subset + feature, adr, learning, verify, check-ui, open-pr, scenario, deploy
 .agents/hooks/       hook scripts (one source for .claude/settings.json and .codex/hooks.json)
 docs/features/<slug> spec.md + plan.md + test-plan.md for every feature or fix
 docs/adr/            decisions            docs/learnings/   dated traps
@@ -195,6 +195,7 @@ Routing: bulk reading and sweeps → cheapest model; implementing a decided desi
 | `/check-ui` | skill | Playwright MCP walk, screenshots, video, media upload |
 | `/open-pr` | skill | the Ship gates, then the PR |
 | `/scenario` | skill | boots the stack on its own ports and walks one `docs/scenarios/<slug>.md` with one Playwright MCP server per user |
+| `deploy` | skill | the one way an agent deploys: the gate, `docs/runbooks/deploy-the-api.md`, `pnpm release:mac` when `apps/macos` changed, then the live download checks; stops at the first failure |
 
 Vendored skills come from superpowers 6.4.1 (MIT); the `metadata` block in each `SKILL.md` says what was changed. Claude Code invokes a skill as `/<name>` with `$ARGUMENTS`; Codex as `$<name>` followed by the arguments in plain text.
 

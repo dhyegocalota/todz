@@ -27,6 +27,7 @@ import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
 import { LANDING_STRUCTURED_DATA } from './site-json-ld';
 import { CONTENT_ID, JOIN_PATH, LANDING_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE, cropClassOf } from './site-style';
+import { DOCS_INSTALL_URL, DOWNLOAD_PATH } from './site-urls';
 import { WEBMCP_SCRIPT } from './webmcp-script';
 import { renderStampOf } from './waitlist-stamp';
 
@@ -320,13 +321,24 @@ ${challenge.widget(form)}${challenge.fieldsOf(form)}${joinStatusHtml({ form, not
 </form>`;
 }
 
-function heroHtml({ notice, challenge }: { notice: LandingNotice; challenge: LandingChallenge }): string {
+function downloadHtml(): string {
+  const { button, note, noteLink } = LANDING_COPY.download;
+  return `<div class="download rise delay-3">
+<a class="download-button" href="${DOWNLOAD_PATH}" download>${escapedHtml(button)}</a>
+<p class="download-note">${escapedHtml(note)} <a class="download-note-link" href="${DOCS_INSTALL_URL}">${escapedHtml(noteLink)}</a></p>
+</div>
+`;
+}
+
+function heroHtml({ notice, challenge, isReleased }: { notice: LandingNotice; challenge: LandingChallenge; isReleased: boolean }): string {
+  const eyebrow = isReleased ? LANDING_COPY.hero.eyebrowReleased : LANDING_COPY.hero.eyebrow;
+  const download = isReleased ? downloadHtml() : '';
   return `<section class="hero page-width" aria-labelledby="hero-title">
 <div class="hero-copy">
-<p class="eyebrow-pill glass rise"><span class="eyebrow-dot" aria-hidden="true"></span>${escapedHtml(LANDING_COPY.hero.eyebrow)}</p>
+<p class="eyebrow-pill glass rise"><span class="eyebrow-dot" aria-hidden="true"></span>${escapedHtml(eyebrow)}</p>
 <h1 id="hero-title" class="hero-title rise delay-1">${escapedHtml(LANDING_COPY.hero.title)}</h1>
 <p class="hero-lead rise delay-2">${escapedHtml(LANDING_COPY.hero.lead)}</p>
-${joinFormHtml({ form: JoinForm.Hero, notice, challenge, classNames: ['rise', 'delay-3'] })}
+${download}${joinFormHtml({ form: JoinForm.Hero, notice, challenge, classNames: ['rise', 'delay-3'] })}
 </div>
 <figure class="desk-stage arrive delay-3">
 <figcaption class="visually-hidden">${escapedHtml(LANDING_COPY.stage.label)}</figcaption>
@@ -393,7 +405,15 @@ ${joinFormHtml({ form: JoinForm.Final, notice, challenge, classNames: [] })}
 </section>`;
 }
 
-function landingHtml({ notice, challenge }: { notice: LandingNotice; challenge: LandingChallenge }): string {
+function landingHtml({
+  notice,
+  challenge,
+  isReleased,
+}: {
+  notice: LandingNotice;
+  challenge: LandingChallenge;
+  isReleased: boolean;
+}): string {
   const { scriptTag } = challenge;
   return siteDocumentHtml({
     kind: SitePageKind.Public,
@@ -402,7 +422,7 @@ function landingHtml({ notice, challenge }: { notice: LandingNotice; challenge: 
     title: LANDING_COPY.meta.title,
     description: LANDING_COPY.meta.description,
     main: `<main id="${CONTENT_ID}">
-${heroHtml({ notice, challenge })}
+${heroHtml({ notice, challenge, isReleased })}
 ${benefitsHtml()}
 ${howItWorksHtml()}
 ${finalCallHtml({ notice, challenge })}
@@ -411,19 +431,24 @@ ${scriptTag}</main>`,
   });
 }
 
-function landingPageOf(notice: LandingNotice): LandingPage {
+function landingPageOf({ notice, isReleased }: { notice: LandingNotice; isReleased: boolean }): LandingPage {
   return {
-    available: ({ siteKey, stamp }) => landingHtml({ notice, challenge: challengeOf({ siteKey, stamp }) }),
-    unavailable: landingHtml({ notice, challenge: NO_CHALLENGE }),
+    available: ({ siteKey, stamp }) => landingHtml({ notice, challenge: challengeOf({ siteKey, stamp }), isReleased }),
+    unavailable: landingHtml({ notice, challenge: NO_CHALLENGE, isReleased }),
   };
 }
 
-const LANDING_PAGES: Record<LandingNotice, LandingPage> = {
-  [LandingNotice.None]: landingPageOf(LandingNotice.None),
-  [LandingNotice.OpensSoon]: landingPageOf(LandingNotice.OpensSoon),
-  [LandingNotice.Joined]: landingPageOf(LandingNotice.Joined),
-  [LandingNotice.TryAgain]: landingPageOf(LandingNotice.TryAgain),
-};
+function landingPagesOf(isReleased: boolean): Record<LandingNotice, LandingPage> {
+  return {
+    [LandingNotice.None]: landingPageOf({ notice: LandingNotice.None, isReleased }),
+    [LandingNotice.OpensSoon]: landingPageOf({ notice: LandingNotice.OpensSoon, isReleased }),
+    [LandingNotice.Joined]: landingPageOf({ notice: LandingNotice.Joined, isReleased }),
+    [LandingNotice.TryAgain]: landingPageOf({ notice: LandingNotice.TryAgain, isReleased }),
+  };
+}
+
+const COMING_SOON_LANDING_PAGES = landingPagesOf(false);
+const RELEASED_LANDING_PAGES = landingPagesOf(true);
 
 export function landingChallengeKeysOf(env: Env): LandingChallengeKeys | null {
   const siteKey = siteKeyOf(env);
@@ -435,11 +460,13 @@ export function landingChallengeKeysOf(env: Env): LandingChallengeKeys | null {
 export async function serveLandingPage({
   notice,
   challenge,
+  isReleased,
 }: {
   notice: LandingNotice;
   challenge: LandingChallengeKeys | null;
+  isReleased: boolean;
 }): Promise<Response> {
-  const page = LANDING_PAGES[notice];
+  const page = isReleased ? RELEASED_LANDING_PAGES[notice] : COMING_SOON_LANDING_PAGES[notice];
   const usableSiteKey = challenge === null ? null : usableSiteKeyOf(challenge.siteKey);
   if (challenge === null || usableSiteKey === null) {
     return sitePageResponse({ html: page.unavailable, contentSecurityPolicy: CONTENT_SECURITY_POLICY });

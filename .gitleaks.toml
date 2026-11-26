@@ -9,4 +9,5 @@ regexes = [
   '''^todz-test-secret-with-at-least-32-characters$''',
   '''^todz_yMnKy8zNzs_Q0dLT1NXW19jZ2tvc3d7f4OHi4-Tl5uc$''',
   '''^Zm9yLXByZXZpZXctb25seS1ub3QtYS1yZWFsLXRva2Vu$''',
+  '''^BYXfy/qfQvJmxxD6JPs8gelvFwACXZ8xhhcG2p/fpYY=$''',
 ]

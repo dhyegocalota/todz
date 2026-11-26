@@ -37,7 +37,7 @@ struct TodzApp: App {
         }
         .defaultSize(width: defaultWidth, height: defaultHeight)
         .windowResizability(.contentMinSize)
-        .commands { AppCommands(model: model, windowState: windowState) }
+        .commands { AppCommands(model: model, windowState: windowState, updater: appDelegate.updater) }
         MenuBarExtra {
             MenuBarPopover()
                 .frame(width: popoverWidth)

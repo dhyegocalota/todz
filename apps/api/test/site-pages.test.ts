@@ -89,14 +89,21 @@ async function pageOf(response: Promise<Response>): Promise<SitePage> {
 }
 
 function landingPage(notice: LandingNotice): Promise<SitePage> {
-  return pageOf(serveLandingPage({ notice, challenge: null }));
+  return pageOf(serveLandingPage({ notice, challenge: null, isReleased: false }));
+}
+
+function releasedLandingPage(notice: LandingNotice): Promise<SitePage> {
+  return pageOf(serveLandingPage({ notice, challenge: null, isReleased: true }));
 }
 
 function widgetLandingPage(notice: LandingNotice): Promise<SitePage> {
-  return pageOf(serveLandingPage({ notice, challenge: { siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET } }));
+  return pageOf(serveLandingPage({ notice, challenge: { siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }, isReleased: false }));
 }
 
-const LANDING_PAGES: NamedPage[] = NOTICES.map((notice) => [`the landing with the ${notice} notice`, () => landingPage(notice)]);
+const LANDING_PAGES: NamedPage[] = [
+  ...NOTICES.map((notice): NamedPage => [`the landing with the ${notice} notice`, () => landingPage(notice)]),
+  ...NOTICES.map((notice): NamedPage => [`the released landing with the ${notice} notice`, () => releasedLandingPage(notice)]),
+];
 const WIDGET_LANDING_PAGES: NamedPage[] = NOTICES.map((notice) => [
   `the landing with the ${notice} notice and the widget`,
   () => widgetLandingPage(notice),
@@ -153,6 +160,48 @@ function textNodes(html: string): string[] {
 function captures({ html, pattern }: { html: string; pattern: RegExp }): string[] {
   return [...html.matchAll(pattern)].flatMap((match) => match.slice(1, 2));
 }
+
+const DOWNLOAD_BUTTON = '<a class="download-button" href="/download" download>Download for Mac</a>';
+const DOWNLOAD_NOTE_PATTERN =
+  /<p class="download-note">Not notarized by Apple yet: the first time, open it from System Settings › Privacy &amp; Security\. <a class="download-note-link" href="https:\/\/docs\.todz\.app\/install-on-mac">Install steps<\/a><\/p>/;
+const RELEASED_EYEBROW = 'macOS 14 or later';
+const COMING_SOON_PATTERN = /coming soon/i;
+
+describe('the landing download', () => {
+  test.each(NOTICES)('with the %s notice and a released version, the button and the note sit above the waitlist form', async (notice) => {
+    const { html } = await releasedLandingPage(notice);
+    expect(html).toContain(DOWNLOAD_BUTTON);
+    expect(html).toMatch(DOWNLOAD_NOTE_PATTERN);
+    expect(html.indexOf(DOWNLOAD_BUTTON)).toBeLessThan(html.indexOf('<form'));
+    expect(html.match(/class="download-button"/g)).toHaveLength(1);
+  });
+
+  test('with a released version the eyebrow names the macOS version and nothing says coming soon', async () => {
+    const { html } = await releasedLandingPage(LandingNotice.None);
+    expect(textNodes(html)).toContain(RELEASED_EYEBROW);
+    expect(html).not.toMatch(COMING_SOON_PATTERN);
+  });
+
+  test('without a released version there is no download button and the eyebrow says coming soon', async () => {
+    const { html } = await landingPage(LandingNotice.None);
+    expect(html).not.toContain('class="download-button"');
+    expect(html).not.toContain('class="download-note"');
+    expect(textNodes(html)).toContain(LANDING_COPY.hero.eyebrow);
+    expect(LANDING_COPY.hero.eyebrow).toMatch(COMING_SOON_PATTERN);
+  });
+
+  test('with a released version, every word it shows comes from the copy module', async () => {
+    const { html } = await releasedLandingPage(LandingNotice.None);
+    const copy = copyStrings(LANDING_COPY);
+    expect(textNodes(html).filter((text) => !copy.includes(text))).toEqual([]);
+  });
+
+  test('the style sheet carries the three download rules', () => {
+    expect(SITE_STYLE).toContain('.download{');
+    expect(SITE_STYLE).toContain('.download-button{');
+    expect(SITE_STYLE).toContain('.download-note{');
+  });
+});
 
 describe('the site pages', () => {
   test.each([...LANDING_PAGES, ...WIDGET_LANDING_PAGES])(
@@ -368,7 +417,7 @@ describe('the landing', () => {
     ['no site key', null],
     ['an unusable site key', { siteKey: UNUSABLE_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }],
   ])('with %s, the landing renders no widget, no Turnstile script and no Turnstile origin', async (_name, challenge) => {
-    const { response, html } = await pageOf(serveLandingPage({ notice: LandingNotice.Joined, challenge }));
+    const { response, html } = await pageOf(serveLandingPage({ notice: LandingNotice.Joined, challenge, isReleased: false }));
     expect(html).not.toMatch(WIDGET_PATTERN);
     expect(html).not.toContain(TURNSTILE_SCRIPT_TAG);
     expect(html).not.toContain(UNUSABLE_SITE_KEY);
@@ -409,7 +458,9 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
   });
 
   function stampedLandingPage(notice: LandingNotice): Promise<SitePage> {
-    return pageOf(serveLandingPage({ notice, challenge: { siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET } }));
+    return pageOf(
+      serveLandingPage({ notice, challenge: { siteKey: TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }, isReleased: false }),
+    );
   }
 
   function stampsOf(html: string): string[] {
@@ -541,7 +592,7 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
   });
 
   test('without the secret, the page has no stamp and no widget', async () => {
-    const { html } = await pageOf(serveLandingPage({ notice: LandingNotice.None, challenge: null }));
+    const { html } = await pageOf(serveLandingPage({ notice: LandingNotice.None, challenge: null, isReleased: false }));
     expect(stampsOf(html)).toEqual([]);
     expect(html).not.toMatch(WIDGET_PATTERN);
   });
@@ -549,7 +600,9 @@ describe('the landing joins in place behind a stamp, a honeypot and a visible ch
 
 describe('the site host through the Worker', () => {
   function keyedLandingPage(notice: LandingNotice): Promise<SitePage> {
-    return pageOf(serveLandingPage({ notice, challenge: { siteKey: TURNSTILE_TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET } }));
+    return pageOf(
+      serveLandingPage({ notice, challenge: { siteKey: TURNSTILE_TEST_SITE_KEY, stampSecret: TURNSTILE_TEST_SECRET }, isReleased: false }),
+    );
   }
 
   async function postJoin(token: string | null): Promise<Response> {

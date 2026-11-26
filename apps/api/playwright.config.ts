@@ -9,6 +9,13 @@ import { ADMIN_ADDRESS, SERVER_LOG_FILE_NAME } from './e2e/site-environment';
 const SITE_PORT = 8791;
 const INSPECTOR_PORT = 9291;
 const SITE_ORIGIN = `http://localhost:${SITE_PORT}`;
+const STAGED_SITE_PORT = 8792;
+const STAGED_INSPECTOR_PORT = 9292;
+const STAGED_SITE_ORIGIN = `http://localhost:${STAGED_SITE_PORT}`;
+const STAGED_FOLDER_NAME = 'staged-assets';
+const STAGED_STATE_FOLDER_NAME = 'staged-state';
+const STAGED_SERVER_LOG_FILE_NAME = 'staged-server.log';
+const STAGE_SCRIPT = 'e2e/stage-fixture-site.sh';
 const API_ORIGIN = 'http://localhost:8787';
 const PERSIST_FOLDER_PREFIX = 'todz-e2e-';
 const DATABASE_NAME = 'todz-directory';
@@ -22,15 +29,17 @@ const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
 const MOBILE_VIEWPORT = { width: 375, height: 812 };
 const ADMIN_SPEC_PATTERN = /admin\.spec\.ts$/;
 
-const SITE_VARIABLES: Record<string, string> = {
-  SIGN_IN_PROVIDER: 'fake',
-  EMAIL_SENDER: 'console',
-  PUBLIC_ORIGIN: API_ORIGIN,
-  SITE_ORIGIN: SITE_ORIGIN,
-  ADMIN_EMAIL: ADMIN_ADDRESS,
-  TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
-  TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
-};
+function siteVariablesOf(siteOrigin: string): Record<string, string> {
+  return {
+    SIGN_IN_PROVIDER: 'fake',
+    EMAIL_SENDER: 'console',
+    PUBLIC_ORIGIN: API_ORIGIN,
+    SITE_ORIGIN: siteOrigin,
+    ADMIN_EMAIL: ADMIN_ADDRESS,
+    TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
+    TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
+  };
+}
 
 function persistFolder(): string {
   const existingFolder = process.env[PERSIST_FOLDER_VARIABLE];
@@ -40,20 +49,61 @@ function persistFolder(): string {
   return createdFolder;
 }
 
-function siteServerCommand(): string {
-  const persistArgument = `--persist-to ${persistFolder()}`;
-  const variableArguments = Object.entries(SITE_VARIABLES).map(([name, value]) => `--var ${name}:${value}`);
+function siteServerCommand({
+  port,
+  inspectorPort,
+  siteOrigin,
+  stateFolder,
+  logFile,
+  assetsArguments,
+  beforeServing,
+}: {
+  port: number;
+  inspectorPort: number;
+  siteOrigin: string;
+  stateFolder: string;
+  logFile: string;
+  assetsArguments: string[];
+  beforeServing: string[];
+}): string {
+  const persistArgument = `--persist-to ${stateFolder}`;
+  const variableArguments = Object.entries(siteVariablesOf(siteOrigin)).map(([name, value]) => `--var ${name}:${value}`);
   const migrate = `pnpm exec wrangler d1 migrations apply ${DATABASE_NAME} --local ${persistArgument}`;
   const serve = [
     'pnpm exec wrangler dev',
-    `--port ${SITE_PORT}`,
-    `--inspector-port ${INSPECTOR_PORT}`,
-    `--local-upstream localhost:${SITE_PORT}`,
+    `--port ${port}`,
+    `--inspector-port ${inspectorPort}`,
+    `--local-upstream localhost:${port}`,
     persistArgument,
+    ...assetsArguments,
     ...variableArguments,
   ].join(' ');
-  const serverLog = path.join(persistFolder(), SERVER_LOG_FILE_NAME);
-  return `${migrate} && ${serve} > ${serverLog} 2>&1`;
+  return [...beforeServing, migrate, `${serve} > ${logFile} 2>&1`].join(' && ');
+}
+
+function defaultServerCommand(): string {
+  return siteServerCommand({
+    port: SITE_PORT,
+    inspectorPort: INSPECTOR_PORT,
+    siteOrigin: SITE_ORIGIN,
+    stateFolder: persistFolder(),
+    logFile: path.join(persistFolder(), SERVER_LOG_FILE_NAME),
+    assetsArguments: [],
+    beforeServing: [],
+  });
+}
+
+function stagedServerCommand(): string {
+  const stagedFolder = path.join(persistFolder(), STAGED_FOLDER_NAME);
+  return siteServerCommand({
+    port: STAGED_SITE_PORT,
+    inspectorPort: STAGED_INSPECTOR_PORT,
+    siteOrigin: STAGED_SITE_ORIGIN,
+    stateFolder: path.join(persistFolder(), STAGED_STATE_FOLDER_NAME),
+    logFile: path.join(persistFolder(), STAGED_SERVER_LOG_FILE_NAME),
+    assetsArguments: [`--assets ${stagedFolder}`],
+    beforeServing: [`bash ${STAGE_SCRIPT} ${stagedFolder}`],
+  });
 }
 
 function browserLaunch(): { channel?: string } {
@@ -81,10 +131,8 @@ export default defineConfig({
     { name: ProjectName.Desktop, use: { viewport: DESKTOP_VIEWPORT } },
     { name: ProjectName.Mobile, use: { viewport: MOBILE_VIEWPORT }, testIgnore: ADMIN_SPEC_PATTERN },
   ],
-  webServer: {
-    command: siteServerCommand(),
-    url: SITE_ORIGIN,
-    reuseExistingServer: false,
-    timeout: SERVER_START_TIMEOUT_MS,
-  },
+  webServer: [
+    { command: defaultServerCommand(), url: SITE_ORIGIN, reuseExistingServer: false, timeout: SERVER_START_TIMEOUT_MS },
+    { command: stagedServerCommand(), url: STAGED_SITE_ORIGIN, reuseExistingServer: false, timeout: SERVER_START_TIMEOUT_MS },
+  ],
 });

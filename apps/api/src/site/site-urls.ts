@@ -2,6 +2,8 @@ export const SITE_URL = 'https://todz.app';
 export const MCP_URL = 'https://api.todz.app/mcp';
 export const DOCS_URL = 'https://docs.todz.app';
 export const DOCS_INSTALL_URL = `${DOCS_URL}/install-on-mac`;
+export const DOWNLOAD_PATH = '/download';
+export const DOWNLOAD_LATEST_PATH = `${DOWNLOAD_PATH}/latest`;
 export const SERVER_CARD_PATH = '/mcp/server-card';
 
 export enum DiscoveryPath {
