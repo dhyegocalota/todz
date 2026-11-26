@@ -116,6 +116,7 @@ extension AppModel {
             try await deletionIsDone { try await service.deleteWorkspace(session: session, workspaceIdentifier: identifier) }
         }
         guard isDeleted != nil else { return }
+        workspaces = workspaces.filter { $0.identifier != identifier }
         await reloadWorkspacesQuietly()
         guard wasShown, phase == .choosing, let first = workspaces.first else { return }
         await chooseWorkspace(identifier: first.identifier)
@@ -127,6 +128,9 @@ extension AppModel {
             try await deletionIsDone { try await service.deleteProject(session: session, projectIdentifier: projectIdentifier) }
         }
         guard isDeleted != nil else { return }
+        workspaces.forEach { workspace in
+            replaceProjects(workspaceIdentifier: workspace.identifier) { projects in projects.filter { $0.identifier != projectIdentifier } }
+        }
         await reloadWorkspacesQuietly()
     }
 
@@ -177,7 +181,7 @@ extension AppModel {
     }
 
     private var selectionToShow: WorkspaceSelection? {
-        if let selection, !selection.workspaces(in: workspaces).isEmpty { return selection }
+        if let selection, !selection.workspaces(in: workspaces).isEmpty { return selection.limited(to: workspaces) }
         guard workspaces.count == 1, let sole = workspaces.first else { return nil }
         return .chosen([sole.identifier])
     }
