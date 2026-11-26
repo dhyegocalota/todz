@@ -12,7 +12,7 @@ The release DMG is a bare folder of the app and an `Applications` link. The owne
 ## Decision
 
 1. The layout is a `.DS_Store` committed in `apps/macos/release/`, generated once on a throwaway image, and copied with the background into the staging folder that `hdiutil create -srcfolder` already packs. No read-write image, no mount and no Finder session at build time.
-2. The background is `apps/macos/release/dmg-background.svg` (source) and `dmg-background.tiff`, a multi-representation TIFF of the 1x and 2x renders (`tiffutil -cathidpicheck`), copied to `.background/dmg-background.tiff`. The icon labels sit on mid-blue plates so Finder's black label in light mode and white label in dark mode both stay readable.
+2. The background is `apps/macos/release/dmg-background.svg` (source) and `dmg-background.tiff`, a multi-representation TIFF of the 1x and 2x renders (`tiffutil -cat` of the two, the 1x at 72 dpi and the 2x at 144 dpi; `-cathidpicheck` rewrote both to 72 dpi), copied to `.background/dmg-background.tiff`. The icon labels sit on mid-blue plates so Finder's black label in light mode and white label in dark mode both stay readable.
 3. A missing background or layout file refuses the release with a named message before `hdiutil` runs. The image stays UDZO and is signed as before; the sum, signature and appcast steps do not change.
 
 ## Alternatives considered
