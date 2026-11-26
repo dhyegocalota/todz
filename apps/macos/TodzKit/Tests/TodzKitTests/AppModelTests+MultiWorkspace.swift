@@ -239,6 +239,23 @@ extension AppModelTests {
         #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "side", created.identifier])
     }
 
+    @Test func aSingleWorkspaceInboxNeverReadsEmptyWhileAnAddIsWaitingOrSaved() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.rememberWorkspace(identifier: "acme")
+        await harness.signedIn()
+        harness.service.suspend(.addTasks)
+        await harness.model.addTask(title: "Acme task", projectIdentifier: "acme-inbox", dueDate: nil)
+        let waiting = try #require(harness.model.taskViews)
+        #expect(waiting.inbox.count + waiting.pendingTasks(for: .inbox).count == 1)
+        harness.service.unsuspend(.addTasks)
+        harness.service.resume(.addTasks)
+        await harness.flushed()
+        let saved = try #require(harness.model.taskViews)
+        #expect(saved.inbox.map(\.task.title) == ["Acme task"])
+        #expect(saved.pendingTasks(for: .inbox) == [])
+    }
+
     @Test func aTickForAnUnknownTaskIsRefused() async throws {
         let harness = try await twoWorkspaceHarness()
         await harness.model.selectWorkspaces(.all)
