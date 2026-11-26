@@ -10,6 +10,7 @@ import { signUpRefusalOf } from '../src/sign-up-limiter';
 const FORBIDDEN_STATUS = 403;
 const TOO_MANY_STATUS = 429;
 const NOW = Date.parse('2026-11-26T12:00:00Z');
+const FAIR_USE_URL = 'https://docs.todz.app/fair-use';
 const SERVICE_ORIGIN = 'https://api.todz.app/owner/sessions';
 
 function randomClientAddress(): string {
@@ -42,7 +43,11 @@ describe('the daily sign-up cap per client', () => {
     if (refused === null || refused === undefined) throw new Error('the sign-up past the cap is refused');
     expect(refused.status).toBe(TOO_MANY_STATUS);
     expect(refused.headers.get('Retry-After')).not.toBeNull();
-    expect(await refused.json()).toMatchObject({ error: 'limit_reached', limit: 'daily_sign_ups' });
+    expect(await refused.json()).toMatchObject({
+      error: 'limit_reached',
+      limit: 'daily_sign_ups',
+      message: expect.stringContaining(FAIR_USE_URL),
+    });
     const refusedSubject = subjects[SIGN_UPS_PER_CLIENT_DAY_MAX];
     if (refusedSubject === undefined) throw new Error('a subject was tried');
     expect(await findIdentityOwner({ directory: env.DIRECTORY, provider: SignInProviderKind.Email, subject: refusedSubject })).toBeNull();
@@ -113,7 +118,7 @@ describe('the disposable email domains', () => {
     const subject = `throwaway.${crypto.randomUUID()}@mailinator.com`;
     const response = await attemptNewAccount({ clientAddress: randomClientAddress(), subject });
     expect(response?.status).toBe(FORBIDDEN_STATUS);
-    expect(await response?.json()).toMatchObject({ error: 'sign_up_refused' });
+    expect(await response?.json()).toMatchObject({ error: 'sign_up_refused', message: expect.stringContaining(FAIR_USE_URL) });
     expect(await findIdentityOwner({ directory: env.DIRECTORY, provider: SignInProviderKind.Email, subject })).toBeNull();
   });
 
