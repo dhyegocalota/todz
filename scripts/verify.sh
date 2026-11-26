@@ -156,9 +156,7 @@ gate_macos() {
     command -v "$tool" >/dev/null || { failure_reason="$tool is not installed. fix: $("$root/.agents/hooks/doctor.sh" --fix "$tool")"; return 1; }
   done
   xcodebuild -version >/dev/null 2>&1 || { failure_reason="xcodebuild is not installed. fix: $("$root/.agents/hooks/doctor.sh" --fix xcodebuild)"; return 1; }
-  swift test --package-path apps/macos/TodzKit \
-    && xcodegen generate --spec apps/macos/project.yml \
-    && xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Debug -derivedDataPath apps/macos/build
+  "$root/scripts/verify-macos.sh"
 }
 
 unit_suites() {

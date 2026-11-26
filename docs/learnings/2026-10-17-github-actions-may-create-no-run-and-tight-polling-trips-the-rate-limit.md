@@ -5,6 +5,7 @@
 - Revisited: 2026-10-17
 - Revisited: 2026-11-04 — ported with the harness from [superdoc-collab](https://github.com/dhyegocalota/superdoc-collab); the paths under Inspired by and Anchor name that repository
 - Revisited: 2026-11-23 — carried into this repository with the harness; still true
+- Revisited: 2026-11-26 — still true; `verify.yml` now also runs on pull requests ([ADR 0084](../adr/0084-the-full-gate-runs-on-every-pull-request-as-hosted-jobs-filtered-by-path-and-one-summary-check-is-the-merge-gate.md)), and the dispatch is the fallback when a pull request gets no run
 
 ## Signal
 A pushed head has no `verify` check at all, neither queued nor running, so a merge gate waits forever. Later `gh` calls answer 403 "You have exceeded a secondary rate limit" and every agent sharing the token stalls.

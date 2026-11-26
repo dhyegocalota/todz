@@ -95,7 +95,7 @@ new_repository() {
   in_repository init -q -b main
   echo node_modules >> "$repository/.git/info/exclude"
   mkdir -p "$repository/scripts" "$repository/.agents/hooks" "$repository/.agents/skills/x" "$repository/.github/scripts" "$repository/.github/workflows" "$repository/docs"
-  cp "$source_root/scripts/verify.sh" "$source_root/scripts/verify-gates.tsv" "$repository/scripts/"
+  cp "$source_root/scripts/verify.sh" "$source_root/scripts/verify-macos.sh" "$source_root/scripts/verify-gates.tsv" "$repository/scripts/"
   write_package apps/example @todz/example '{"@todz/types":"workspace:*"}'
   write_package apps/api @todz/api '{}'
   write_package apps/docs @todz/docs '{}'
@@ -104,7 +104,7 @@ new_repository() {
   write_package tools/repository-shape @todz/repository-shape '{}'
   printf '#!/usr/bin/env bash\n[[ "${1:-}" == --fix ]] && { echo "install $2"; exit 0; }\necho doctor >> "$STUB_LOG"\n' > "$repository/.agents/hooks/doctor.sh"
   printf '#!/usr/bin/env bash\necho "probe $*" >> "$STUB_LOG"\n' > "$repository/.github/scripts/secret-rules-probe.sh"
-  chmod +x "$repository/.agents/hooks/doctor.sh" "$repository/.github/scripts/secret-rules-probe.sh" "$repository/scripts/verify.sh"
+  chmod +x "$repository/.agents/hooks/doctor.sh" "$repository/.github/scripts/secret-rules-probe.sh" "$repository/scripts/verify.sh" "$repository/scripts/verify-macos.sh"
   local tracked
   for tracked in README.md LICENSE AGENTS.md pnpm-lock.yaml docs/architecture.md .agents/skills/x/SKILL.md .github/workflows/verify.yml apps/example/README.md apps/example/vite.config.ts apps/example/src/a.ts tools/repository-shape/src/x.test.ts tools/perf/src/x.ts libs/types/src/x.ts; do
     change "$tracked"

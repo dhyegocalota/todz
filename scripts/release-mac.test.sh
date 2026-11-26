@@ -268,7 +268,7 @@ FAKE
 
 cat > "$fakes/deploy-worker" <<'FAKE'
 #!/usr/bin/env bash
-echo "deploy-worker token-mode=$(stat -f %Lp "$HOME/.todz-release/lock/token") lock=$([[ -n "${TODZ_RELEASE_LOCK_HELD:-}" && "$TODZ_RELEASE_LOCK_HELD" == "$(cat "$HOME/.todz-release/lock/token")" ]] && echo yes || echo no) $*" >> "$CALLS"
+echo "deploy-worker token-mode=$(stat -c %a "$HOME/.todz-release/lock/token" 2>/dev/null || stat -f %Lp "$HOME/.todz-release/lock/token") lock=$([[ -n "${TODZ_RELEASE_LOCK_HELD:-}" && "$TODZ_RELEASE_LOCK_HELD" == "$(cat "$HOME/.todz-release/lock/token")" ]] && echo yes || echo no) $*" >> "$CALLS"
 [[ "${FAKE_HANG:-}" == deploy-worker ]] && exec tail -f /dev/null
 [[ -n "${FAKE_DEPLOY_FAIL:-}" ]] && { echo "deploy-worker: refused" >&2; exit 1; }
 site="$HOME/.todz-release/site/download"
@@ -506,7 +506,7 @@ expect_equal "a dry run creates no tag" "$(git -C "$repository" tag --list)" ""
 expect_equal "a dry run writes nothing under site" "$(find "$site/download" -type f | wc -l | tr -d ' ')" "0"
 expect_equal "a dry run leaves released empty" "$(cat "$site/released")" ""
 expect_equal "the build holds the commit it built" "$(cat "$build_directory/commit")" "$(git -C "$repository" rev-parse HEAD)"
-expect_equal "the build folder is private" "$(stat -f %Lp "$build_directory")" "700"
+expect_equal "the build folder is private" "$(stat -c %a "$build_directory" 2>/dev/null || stat -f %Lp "$build_directory")" "700"
 expect_contains "xcodebuild gets the version" "$(cat "$CALLS")" "MARKETING_VERSION=$version"
 expect_contains "xcodebuild gets the build number" "$(cat "$CALLS")" "CURRENT_PROJECT_VERSION=$commit_count"
 expect_contains "xcodebuild builds Release into the build folder" "$(cat "$CALLS")" "-configuration Release -derivedDataPath $build_directory/derived"

@@ -314,7 +314,7 @@ expect_equal "a deploy inside a release leaves the release's lock" "$(test -d "$
 rm -rf "$lock"
 chmod 755 "$home/.todz-release"
 TODZ_RELEASE_LOCK_HELD=yes run_deploy
-expect_equal "taking the lock makes the release folder private" "$(stat -f %Lp "$home/.todz-release")" "700"
+expect_equal "taking the lock makes the release folder private" "$(stat -c %a "$home/.todz-release" 2>/dev/null || stat -f %Lp "$home/.todz-release")" "700"
 expect_equal "a stale inherited value with a free lock deploys normally" "$status" "0"
 expect_equal "a deploy takes the lock and frees it" "$(test -d "$lock" && echo held || echo free)" "free"
 
@@ -329,7 +329,8 @@ expect_refused "a hanging production request is killed" "production check timed 
 new_world
 make_release 0.2.0
 make_release 0.3.0
-sed -i '' '/^0.3.0$/d' "$site/released"
+grep -vx 0.3.0 "$site/released" > "$site/released.next"
+mv "$site/released.next" "$site/released"
 stage_only_candidate() {
   stage="$scratch/stage"
   rm -rf "$stage"
