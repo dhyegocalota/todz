@@ -1,10 +1,10 @@
 # Cloud capacity: plan
 
-- [ ] 1. ADR 0099, spec, plan, test plan.
-- [ ] 2. Red tests, then migration 0016 and the cap on the sign-in link request and on the sign-in.
-- [ ] 3. The queue route, the admin page and admissions, the daily digest.
-- [ ] 4. The budget guard, its cron, the 80% email and the 95% write refusal.
-- [ ] 5. `wrangler.jsonc` (cron, `CLOUD_ACCOUNTS_MAX`), the README, `apps/docs` section.
+- [x] 1. ADR 0099, spec, plan, test plan.
+- [x] 2. Migration 0016 and the cap on the sign-in link request and on the sign-in, with the alike answer, the full mail and the count-guarded insert.
+- [x] 3. The queue route, the `/cloud-queue` page, the admin page and admissions limited to the free spots, the daily digest stamped after the send.
+- [x] 4. The budget guard (analytics token or D1 estimate), its cron, the 80% email and the 95% write refusal and read throttle.
+- [x] 5. The mail meter, the per-address daily bound, `last_seen_day`, `wrangler.jsonc` (`CLOUD_ACCOUNTS_MAX`, `CLOUD_READ_LIMITER`), the README, `apps/docs`, the landing and discovery copy.
 
 ## Failure modes
 
@@ -12,3 +12,4 @@
 |---|---|---|---|
 | 2 | An active account is refused | `cloud_full` for a known active address | unset `CLOUD_ACCOUNTS_MAX` |
 | 4 | Writes refused too early | `cloud_at_capacity` while under 95% | unset `CLOUD_ACCOUNTS_MAX` (the guard is off with it) |
+| 4 | The analytics token has the wrong permission | the nightly run fails with `the Cloudflare analytics answered 403` | fix the token, or delete the secret to use the D1 estimate |

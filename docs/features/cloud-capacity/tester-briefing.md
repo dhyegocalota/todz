@@ -2,31 +2,28 @@
 
 ## What changed
 
-- `apps/api/migrations/0016_cloud_capacity.sql`: `cloud_queue`, `cloud_budget`.
-- `apps/api/src/cloud-*.ts`: the cap (`CLOUD_ACCOUNTS_MAX`), admission, queue store, join route, budget guard, nightly run, mail, copy.
-- Gates: `sign-in-links.ts` (link request) and `owner-sign-in.ts` (sign-in); `owner-write-quota.ts` (95% refusal).
-- Admin: `apps/api/src/site/admin-cloud-queue.ts`, `admin-cloud-admissions.ts`, a link on the metrics page.
-- `wrangler.jsonc` sets `CLOUD_ACCOUNTS_MAX` to 13; the self-host guide says to delete it.
+- `apps/api/migrations/0016_cloud_capacity.sql`: `cloud_queue`, `cloud_budget`, `mail_meter`, `owners.last_seen_day`.
+- `apps/api/src/cloud-*.ts`: the cap (`CLOUD_ACCOUNTS_MAX`), admission, queue store, join, budget guard, Cloudflare analytics reader, nightly run, mail and its meter, read throttle, copy.
+- Gates: `sign-in-links.ts` (link request), `owner-sign-in.ts` (sign-in and the count-guarded insert), `owner-write-quota.ts` (95% refusal), `owner-endpoint.ts` and `mcp-endpoint.ts` (read throttle, last seen).
+- Site: `apps/api/src/site/cloud-queue-form.ts` and `cloud-queue-page.ts` (`todz.app/cloud-queue`); admin: `admin-cloud-queue.ts`, `admin-cloud-admissions.ts`.
+- `wrangler.jsonc` sets `CLOUD_ACCOUNTS_MAX` to 50 and binds `CLOUD_READ_LIMITER`; the self-host guide says to delete the var.
 
 ## How to run
 
-`pnpm --filter @todz/api exec vitest run test/cloud-capacity.test.ts test/cloud-budget.test.ts test/cloud-queue-join.test.ts test/admin-cloud-queue.test.ts`
-
-## Red-first
-
-Not red-first: the lane was time-boxed and tests landed with their code, so every test is a pin.
+`pnpm --filter @todz/api exec vitest run test/cloud-capacity.test.ts test/cloud-budget.test.ts test/cloud-queue-join.test.ts test/cloud-queue-page.test.ts test/admin-cloud-queue.test.ts`
 
 ## Hypotheses
 
-- With the var unset nothing changes for any account or server.
-- At the cap an active account signs in; a new address and an account idle for 90 days get `cloud_full` and no link.
-- An admitted address passes the cap; Admit next N takes the oldest.
-- The guard mails the owner once a month at 80% and refuses writes at 95% only from accounts above the month's average per active account; reads and the rest keep working.
-- The queue digest mails only when the queue grew since the last digest.
+- With the var unset nothing changes for any account or server, and nothing is metered.
+- At the cap a link request answers 202 alike; a refused address is mailed the full notice and no link is stored.
+- An admitted address passes the cap; Admit next N takes the oldest, at most the free spots.
+- The guard mails the owner once a month at 80% and refuses writes at 95% only from accounts above the month's average per active account, with 429 and `Retry-After` to the first of next month; their reads are throttled.
+- The queue digest mails only when the queue grew since the last digest that was sent.
 
 ## Gaps
 
-- No client screen (Mac app) for `cloud_full` or the join route; the join route reuses the request-link Turnstile action.
-- The warning and the digest stamp before they send: a failed send loses that mail (v1.1).
-- The read measure is a profile (1,000 read requests per active account a day), not a count.
-- The new admin page has no visual walk; the cap number is arithmetic (ADR 0099), the owner may change it.
+- No client screen (Mac app) for `cloud_at_capacity`; the app lane maps the code to a paused queue. Until then an older app reads the 429 as an unexpected failure.
+- Without the analytics token the read measure is a profile (1,000 read requests per active account a day), not a count.
+- Durable Object duration is not measured or guarded (ADR 0099).
+- A read-only heavy account is not throttled: reads are not counted per account.
+- The `/cloud-queue` page has no recorded visual walk.
