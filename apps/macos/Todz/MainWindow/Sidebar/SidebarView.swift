@@ -21,7 +21,7 @@ struct SidebarView: View {
                     ProjectRow(project: project)
                 }
             } header: {
-                ProjectsHeader()
+                Text(MainWindowCopy.projects)
             }
             Section {
                 Label(KeyScreenCopy.title, systemImage: SidebarItem.connectAgent.symbol)
@@ -31,6 +31,9 @@ struct SidebarView: View {
         .listStyle(.sidebar)
         .safeAreaInset(edge: .top) {
             WorkspaceSwitcher(workspace: workspace, isMainWindow: true)
+        }
+        .safeAreaInset(edge: .bottom) {
+            NewProjectButton(workspace: workspace)
         }
     }
 

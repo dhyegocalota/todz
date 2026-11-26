@@ -3,6 +3,10 @@ enum MainWindowCopy {
         "\(workspaceName) · \(projectName)"
     }
 
+    static func newProjectHelp(workspaceName: String) -> String {
+        "Adds a project to \(workspaceName)"
+    }
+
     static let windowTitle = "todz"
     static let inbox = "Inbox"
     static let today = "Today"
@@ -16,6 +20,7 @@ enum MainWindowCopy {
     static let newWorkspace = "New Workspace…"
     static let allWorkspaces = "All Workspaces"
     static let newProject = "New Project…"
+    static let newProjectButton = "New Project"
     static let renameProject = "Rename…"
     static let signOut = "Sign Out"
     static let newTask = "New Task"
