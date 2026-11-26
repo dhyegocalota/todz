@@ -9,7 +9,7 @@ import { workerEnvWith } from '../owner-client';
 const SITE_ORIGIN = 'https://todz.app';
 const SPARKLE_AGENT = 'Todz/0.2.1 Sparkle/2.6.4 macOS/15';
 const NO_ASSET_STATUS = 404;
-const CLIENT_ADDRESS ='203.0.113.9';
+const CLIENT_ADDRESS = '203.0.113.9';
 
 type StoredRow = { day: string; metric: string; dimension: string; count: number };
 
