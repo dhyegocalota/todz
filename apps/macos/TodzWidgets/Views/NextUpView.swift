@@ -54,7 +54,7 @@ struct NextUpView: View {
             Text(MenuBarCopy.doneToday(count: today.doneCount))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .contentTransition(.numericText())
+                .todzCountTransition()
                 .invalidatableContent()
         }
     }

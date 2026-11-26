@@ -8,9 +8,11 @@ struct MenuBarPopover: View {
     @Environment(MorningGlanceCoordinator.self) private var morningGlance
     @Environment(RibbonCoordinator.self) private var ribbon
     @FocusState private var focus: MenuBarFocus?
+    @State private var bloomCount = 0
 
     var body: some View {
         screen
+            .todzBloom(trigger: bloomCount)
             .background(
                 MenuBarPanelReader(
                     panel: panel,
@@ -31,6 +33,7 @@ struct MenuBarPopover: View {
     }
 
     private func showPopover() {
+        bloomCount += 1
         panel.onShown?()
         dayClose.popoverShown()
         morningGlance.popoverShown()

@@ -30,6 +30,7 @@ struct MenuBarDayCloseActions: View {
         }
         .font(.subheadline)
         .foregroundStyle(.secondary)
+        .todzEntrance()
     }
 
     private func act(_ outcome: LingerOutcome) {

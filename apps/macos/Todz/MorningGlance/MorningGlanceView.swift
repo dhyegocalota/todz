@@ -13,6 +13,7 @@ struct MorningGlanceView: View {
             .padding()
             .frame(width: morningGlanceWidth, alignment: .leading)
             .modifier(MorningGlanceSurface())
+            .todzEntrance()
             .help(MorningGlanceCopy.openToday)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(AccessibilityCopy.morningGlance(count: content.openCount))

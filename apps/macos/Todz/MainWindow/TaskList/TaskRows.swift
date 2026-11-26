@@ -1,6 +1,11 @@
 import SwiftUI
 import TodzKit
 
+private struct ShownSignature: Equatable {
+    let count: Int
+    let lastKey: TaskKey?
+}
+
 struct TaskRows: View {
     let sections: [TaskSection]
     let item: SidebarItem
@@ -29,6 +34,7 @@ struct TaskRows: View {
                 }
             }
             .scrollContentBackground(.hidden)
+            .todzAnimation(.settle, value: shownSignature)
             .focused(focus, equals: .list)
             .task {
                 guard windowState.openingFocus == .list else { return }
@@ -51,6 +57,10 @@ struct TaskRows: View {
                 Task { proxy.scrollTo(selectedTask) }
             }
         }
+    }
+
+    private var shownSignature: ShownSignature {
+        ShownSignature(count: sections.reduce(0) { $0 + $1.tasks.count }, lastKey: sections.last?.tasks.last?.key)
     }
 
     private func toggleSelectedTask() {

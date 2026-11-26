@@ -40,7 +40,7 @@ struct TodayRing: View {
             Text(caption)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .contentTransition(.numericText())
+                .todzCountTransition()
                 .invalidatableContent()
                 .frame(maxWidth: .infinity)
         }
