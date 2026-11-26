@@ -39,8 +39,8 @@ public struct Workspace: Codable, Sendable, Equatable {
     public let projects: [Project]
     public var lastActivityAt: Date? = nil
 
-    public var namedProjectCount: Int {
-        projects.filter { !$0.isInbox }.count
+    public var projectCount: Int {
+        projects.count
     }
 
     enum CodingKeys: String, CodingKey {

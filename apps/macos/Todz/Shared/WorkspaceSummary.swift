@@ -8,7 +8,7 @@ struct WorkspaceSummary: View {
         VStack(alignment: .leading) {
             Text(workspace.name)
                 .lineLimit(1)
-            Text(WorkspacePickerCopy.projectCount(count: workspace.namedProjectCount))
+            Text(WorkspacePickerCopy.projectCount(count: workspace.projectCount))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if let recency = ActivityRecency(lastActivityAt: workspace.lastActivityAt, now: .now) {
