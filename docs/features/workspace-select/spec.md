@@ -34,7 +34,8 @@ A new Mac or a fresh sign-in enters the account's first workspace without asking
 ## Failure handling
 
 - A listing that fails keeps the existing load-failure path (retry banner); the picker is not shown.
-- A row tapped while a write is in flight is ignored by the same guard as a switch.
+- A row tapped twice is protected by the phase check in `chooseWorkspace`: once the phase is `ready`, a second tap changes nothing.
+- Switching by number or by identifier while the picker shows is ignored by the phase check in `switchWorkspace`.
 
 ## Test strategy summary
 

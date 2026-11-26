@@ -10,7 +10,7 @@
 - [x] `chooseWorkspace(identifier: side)` from `choosing`: the phase is `ready`, `side` is active, and its projects are pulled from cursor zero. — evidence: a3473990, choosingAWorkspaceOpensItAndPullsItsProjectsFromZero passes; red at 679f1901 (`isSameCallSet(harness.service.calls, pulls)` failed)
 - [x] `chooseWorkspace(identifier: "unknown")` from `choosing`: the phase stays `choosing` and no call is made. — evidence: a3473990, choosingAnUnlistedWorkspaceChangesNothing passes; red at 679f1901
 - [x] `chooseWorkspace` outside `choosing` (phase `ready`): nothing changes. — evidence: a3473990, choosingOutsideThePickerChangesNothing passes (pin)
-- [ ] The picker offers exactly the listed workspaces: a workspace from another owner never appears in the listing the model holds. — BLOCKED: no dedicated unit test holds a second owner; the walk (walk-two signed in after walk-multi on one Mac) showed only Alpha Co and Beta Co, none of the first owner's workspaces
+- [x] The picker offers exactly the listed workspaces: a workspace from another owner never appears in the listing the model holds. — evidence: the fix round's `aRememberedWorkspaceOfAnotherOwnerNeverOpens` (another owner's remembered workspace, two listed, phase `choosing`, no active workspace); the walk (walk-two signed in after walk-multi on one Mac) showed only Alpha Co and Beta Co
 - [x] While `choosing`, the widget snapshot is `absent`. — evidence: a3473990, whileChoosingTheWidgetsAreAbsent passes; red at 679f1901 (`widgetSnapshot == .absent` failed)
 
 ## User-visible walk (tester, by hand, after the Debug app runs against a local `wrangler dev`)
@@ -30,7 +30,10 @@
 - [x] "New Workspace…" stays in the picker as a link beside Sign Out — evidence: walk at a3473990.
 - [x] Two owners on one Mac: walk-two reached the picker although walk-multi had a remembered workspace on this Mac — evidence: walk at a3473990.
 - [x] The menu bar count and the widget data follow the switch: Side Hustle shows 2, Home shows no count, and widget-snapshot.json names the active workspace each time — evidence: `.pr-media/workspace-select/menu-bar-count.png`, `menu-bar-count-home.png`; the count's owner is the Debug app only because it vanishes on Home.
-- [ ] Defect 1 (minor): the picker and Settings read "1 projects"; expected "1 project". Zero reads "0 projects".
+- [x] Defect 1 (minor): the picker and Settings read "1 projects"; expected "1 project". Zero reads "0 projects". — fixed in the fix round with `^[\(count) project](inflect: true)`; the app target has no unit tests, so the plural is checked by the tester walk, not by TodzKit
+- [x] While `choosing`, switching by number changes nothing — evidence: `switchingByNumberWhileChoosingChangesNothing`, red at a3b507e7, green after the phase guard
+- [x] While `choosing`, shortcuts answer "Choose a workspace in todz first." — evidence: `whileChoosingShortcutsAskForAWorkspaceChoice`, red at a3b507e7; the copy is `ShortcutsCopy.choosing`
+- [x] Leaving the active workspace for the picker stops its watches — evidence: `leavingTheActiveWorkspaceForThePickerStopsItsWatches`, red at a3b507e7
 - [ ] Not exercised: a row tapped twice, signing walk-multi back in with Home remembered, a narrow window.
 - Observed, outside this feature: Settings shows "Server older · Server needs an update" against `wrangler dev`, and the Server Switch to 127.0.0.1 is refused because the server answers as localhost.
 
