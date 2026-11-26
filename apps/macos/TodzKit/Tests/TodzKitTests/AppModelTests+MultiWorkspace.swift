@@ -179,6 +179,66 @@ extension AppModelTests {
         #expect(harness.model.waitingChangeCount == 0)
     }
 
+    @Test func togglingAWorkspaceOnPullsOnlyItsProjectsAndOffPullsNothing() async throws {
+        let harness = try await twoWorkspaceHarness()
+        await harness.model.toggleWorkspace(identifier: "side")
+        let pulled = harness.service.calls.compactMap { call -> String? in
+            guard case let .readChanges(_, projectIdentifier, _) = call else { return nil }
+            return projectIdentifier
+        }
+        #expect(Set(pulled) == ["side-inbox", "side-garden"])
+        #expect(harness.model.board.tasks(projectIdentifier: "acme-inbox").count == 2)
+        harness.service.calls = []
+        await harness.model.toggleWorkspace(identifier: "side")
+        #expect(harness.service.routes().contains(.readChanges) == false)
+        #expect(harness.model.board.tasks(projectIdentifier: "side-inbox") == [])
+        #expect(harness.model.board.tasks(projectIdentifier: "acme-inbox").count == 2)
+    }
+
+    @Test func selectingManyProjectsNeverHasMorePullsInFlightThanTheCap() async throws {
+        let harness = try AppModelHarness()
+        (1...4).forEach { number in harness.seedWorkspace(name: "w\(number)", projectNames: ["a", "b"]) }
+        harness.rememberWorkspace(identifier: "w1")
+        await harness.signedIn()
+        harness.service.suspend(.readChanges)
+        harness.service.calls = []
+        let selecting = Task { await harness.model.selectWorkspaces(.all) }
+        await harness.service.held(.readChanges, count: AppModel.pullConcurrencyLimit)
+        await Task.yield()
+        #expect(harness.service.routes().filter { $0 == .readChanges }.count == AppModel.pullConcurrencyLimit)
+        harness.service.unsuspend(.readChanges)
+        (1...AppModel.pullConcurrencyLimit).forEach { _ in harness.service.resume(.readChanges) }
+        await selecting.value
+        #expect(harness.service.routes().filter { $0 == .readChanges }.count == 9)
+    }
+
+    @Test func aPullOfAWorkspaceDeselectedWhileItWasInFlightIsDropped() async throws {
+        let harness = try await twoWorkspaceHarness()
+        harness.service.suspend(.readChanges)
+        let selecting = Task { await harness.model.selectWorkspaces(.all) }
+        await harness.service.held(.readChanges, count: 2)
+        await harness.model.selectWorkspaces(.chosen(["acme"]))
+        harness.service.unsuspend(.readChanges)
+        (1...2).forEach { _ in harness.service.resume(.readChanges) }
+        await selecting.value
+        #expect(harness.model.board.tasks(projectIdentifier: "side-inbox") == [])
+    }
+
+    @Test func aRequestWithNoWorkspaceForATaskNotShownIsDropped() async throws {
+        let harness = try await twoWorkspaceHarness()
+        harness.widgets.storedRequests = [stored(projectIdentifier: "side-inbox", number: 1, state: .done, workspaceIdentifier: nil)]
+        await harness.model.takeWidgetRequests()
+        #expect(harness.model.waitingChangeCount == 0)
+    }
+
+    @Test func creatingAWorkspaceWhileOnAllKeepsAll() async throws {
+        let harness = try await twoWorkspaceHarness()
+        await harness.model.selectWorkspaces(.all)
+        let created = try #require(await harness.model.createWorkspace(name: "Fresh"))
+        #expect(harness.model.selection == .all)
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "side", created.identifier])
+    }
+
     @Test func aTickForAnUnknownTaskIsRefused() async throws {
         let harness = try await twoWorkspaceHarness()
         await harness.model.selectWorkspaces(.all)

@@ -1,6 +1,8 @@
 typealias PullGate = (session: String, task: Task<ProjectPull?, Never>)
 
 extension AppModel {
+    static let pullConcurrencyLimit = 4
+
     public var isRefreshing: Bool {
         refreshesInFlight > 0
     }
