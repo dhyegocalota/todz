@@ -7,7 +7,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         harness.seedWorkspace(name: "side")
-        await harness.signedInChoosing()
+        await harness.signedIn()
         #expect(harness.model.phase == .choosing)
         #expect(harness.model.activeWorkspace == nil)
         #expect(harness.model.workspaces.map(\.identifier) == ["acme", "side"])
@@ -52,7 +52,7 @@ extension AppModelTests {
         harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "side", projectNames: ["garden"])
         harness.seedTasks(projectIdentifier: "side-garden", count: 1)
-        await harness.signedInChoosing()
+        await harness.signedIn()
         await harness.model.chooseWorkspace(identifier: side.identifier)
         let pulls = side.projects.map { FakeCall.readChanges(session: harness.session, projectIdentifier: $0.identifier, cursor: 0) }
         #expect(harness.model.phase == .ready)
@@ -65,7 +65,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         harness.seedWorkspace(name: "side")
-        await harness.signedInChoosing()
+        await harness.signedIn()
         await harness.model.chooseWorkspace(identifier: "unknown")
         #expect(harness.model.phase == .choosing)
         #expect(harness.model.activeWorkspace == nil)
@@ -91,11 +91,53 @@ extension AppModelTests {
         #expect(workspace.namedProjectCount == 1)
     }
 
+    @Test func switchingByNumberWhileChoosingChangesNothing() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.seedWorkspace(name: "side")
+        await harness.signedIn()
+        await harness.model.switchWorkspace(number: 2)
+        #expect(harness.model.phase == .choosing)
+        #expect(harness.model.activeWorkspace == nil)
+        #expect(harness.service.calls == [])
+    }
+
+    @Test func aRememberedWorkspaceOfAnotherOwnerNeverOpens() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        let side = harness.seedWorkspace(name: "side")
+        harness.store.owner = OwnerCache(ownerIdentifier: "another-owner", workspaces: [], activeWorkspaceIdentifier: side.identifier)
+        await harness.signedIn()
+        #expect(harness.model.phase == .choosing)
+        #expect(harness.model.activeWorkspace == nil)
+    }
+
+    @Test func leavingTheActiveWorkspaceForThePickerStopsItsWatches() async throws {
+        let harness = try AppModelHarness()
+        let acme = harness.seedWorkspace(name: "acme", projectNames: ["launch"])
+        harness.seedWorkspace(name: "side")
+        harness.seedWorkspace(name: "third")
+        harness.rememberWorkspace(identifier: acme.identifier)
+        await harness.signedIn()
+        harness.service.workspaces.removeAll { $0.identifier == acme.identifier }
+        await harness.model.reloadWorkspacesQuietly()
+        #expect(harness.model.phase == .choosing)
+        #expect(harness.signals.cancellations.contains(harness.watchKey("acme-inbox")))
+    }
+
+    @Test func whileChoosingShortcutsAskForAWorkspaceChoice() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        harness.seedWorkspace(name: "side")
+        await harness.signedIn()
+        #expect(await harness.model.shortcutReadiness() == .choosing)
+    }
+
     @Test func whileChoosingTheWidgetsAreAbsent() async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         harness.seedWorkspace(name: "side")
-        await harness.signedInChoosing()
+        await harness.signedIn()
         #expect(harness.model.widgetSnapshot == .absent)
     }
 }
