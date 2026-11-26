@@ -17,6 +17,9 @@ struct ProjectRow: View {
                 Button(MainWindowCopy.renameProject) {
                     windowState.sheet = .renameProject(project)
                 }
+                Button(MainWindowCopy.deleteProject) {
+                    windowState.deletion = .project(project)
+                }
             }
     }
 

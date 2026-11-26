@@ -1,6 +1,6 @@
 # Sign-in polish
 
-**Status:** In review
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡 (a schema change and a write on the task path, two lines of app copy)
 **Owner approval:** inherited from [`docs/product/README.md`](../../product/README.md), approved 2026-11-23; the two items come from the build loop's v1.1 list, run 36
 **ADRs:** [0098](../../adr/0098-the-picker-shows-a-workspace-s-last-activity-stamped-from-the-project-store-at-most-once-every-five-minutes-per-project.md), supersedes the last-activity deferral of [0076](../../adr/0076-an-account-with-several-workspaces-and-no-remembered-choice-opens-a-picker-of-names-and-project-counts.md)

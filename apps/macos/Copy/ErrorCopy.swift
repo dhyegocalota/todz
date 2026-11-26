@@ -14,7 +14,7 @@ enum ErrorCopy {
     static let nameEmpty = "Add a name."
     static let nameTooLong = "Names can be up to \(TaskLimits.nameMaxLength.formatted()) characters."
     static let dueDateInvalid = "That date isn't valid."
-    static let inboxIsFixed = "The Inbox can't be renamed."
+    static let inboxIsFixed = "The Inbox can't be renamed or deleted."
     static let taskGone = "This task is no longer available."
     static let projectGone = "This project is no longer available."
     static let workspaceGone = "This workspace is no longer available."
