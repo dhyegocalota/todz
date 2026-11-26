@@ -1,17 +1,26 @@
 ---
 title: MCP tools
-description: The tools and the prompt an agent gets from the todz MCP server.
+description: The tools and the prompt an agent gets from the todz MCP server, and the key each one needs.
 ---
 
-The todz MCP server holds the to-do list of one project: the project of the key the agent connected with. Task ids look like `T-12`.
+The todz MCP server speaks to two kinds of key, and each tool below names the scope it needs.
+
+- A **project key** holds the to-do list of one project: the project of the key the agent connected with. It can also list and move tasks inside the workspace of that project. It never creates, renames or deletes a workspace or a project. Task ids look like `T-12`.
+- An **owner key** manages the account: its workspaces and projects. It is off until you create one in Settings, it is shown once, you can revoke it there, and it is listed apart from the project keys. It reaches no task and no other account.
+
+An agent holding a project key does not see the owner tools, and an agent holding an owner key does not see the task tools. Every delete asks for a `confirm` argument holding the current name (a task's current title); when it differs, nothing is deleted.
 
 ## next
+
+**Scope:** project key.
 
 The one open task to work on now in this project, with its notes.
 
 It takes no arguments.
 
 ## add
+
+**Scope:** project key.
 
 Add one or more tasks. Give each an idempotency_key to make a retry safe.
 
@@ -25,6 +34,8 @@ Add one or more tasks. Give each an idempotency_key to make a retry safe.
 
 ## list
 
+**Scope:** project key.
+
 List tasks by state, due window and text, in manual order (done: newest first).
 
 | Argument | Type            | Description                                                                            |
@@ -34,7 +45,29 @@ List tasks by state, due window and text, in manual order (done: newest first).
 | `text`   | text or null    | Text to find in titles and notes.                                                      |
 | `limit`  | whole number    | How many tasks to show.                                                                |
 
+## show
+
+**Scope:** project key.
+
+Show one task with its state, due date and notes.
+
+| Argument | Type   | Description           |
+| -------- | ------ | --------------------- |
+| `id`     | text   | Task id, like `T-12`. |
+
+## history
+
+**Scope:** project key.
+
+Show what happened to a task, oldest first: who did what and when.
+
+| Argument | Type   | Description           |
+| -------- | ------ | --------------------- |
+| `id`     | text   | Task id, like `T-12`. |
+
 ## update
+
+**Scope:** project key.
 
 Change a task's title, notes, due date or place in the order. null clears notes or the due date.
 
@@ -50,12 +83,127 @@ Change a task's title, notes, due date or place in the order. null clears notes 
 
 ## done
 
+**Scope:** project key.
+
 Complete one or more tasks, with an optional note of what was done.
 
 | Argument | Type           | Description                |
 | -------- | -------------- | -------------------------- |
 | `ids`    | list of text   | Task ids, like `T-12`.     |
 | `note`   | text or null   | What was done.             |
+
+## reopen
+
+**Scope:** project key.
+
+Reopen one or more done tasks.
+
+| Argument | Type           | Description                |
+| -------- | -------------- | -------------------------- |
+| `ids`    | list of text   | Task ids, like `T-12`.     |
+
+## delete
+
+**Scope:** project key.
+
+Delete a task for good. Give its current title as confirm; nothing is deleted when it differs. A task you mean to keep somewhere else needs move.
+
+| Argument  | Type   | Description                                                                |
+| --------- | ------ | -------------------------------------------------------------------------- |
+| `id`      | text   | Task id, like `T-12`.                                                      |
+| `confirm` | text   | The current title of the task, typed exactly. Nothing is deleted when it differs. |
+
+## move
+
+**Scope:** project key.
+
+Move a task to another project of the same workspace. The task gets a new id there. Find project ids with projects.
+
+| Argument  | Type   | Description                                                      |
+| --------- | ------ | ---------------------------------------------------------------- |
+| `id`      | text   | Task id, like `T-12`.                                            |
+| `project` | text   | Id of the project to move the task to, from the projects tool.   |
+
+## projects
+
+**Scope:** project key.
+
+List the projects of the workspace this key belongs to, with their ids.
+
+It takes no arguments.
+
+## workspaces
+
+**Scope:** owner key.
+
+List the workspaces of this account with their projects and ids.
+
+It takes no arguments.
+
+## create_workspace
+
+**Scope:** owner key.
+
+Create a workspace. It starts with an Inbox project.
+
+| Argument | Type   | Description                         |
+| -------- | ------ | ----------------------------------- |
+| `name`   | text   | Name, up to 80 characters.          |
+
+## rename_workspace
+
+**Scope:** owner key.
+
+Rename a workspace.
+
+| Argument    | Type   | Description                         |
+| ----------- | ------ | ----------------------------------- |
+| `workspace` | text   | Id of the workspace, from workspaces. |
+| `name`      | text   | Name, up to 80 characters.          |
+
+## delete_workspace
+
+**Scope:** owner key.
+
+Delete a workspace for good with all its projects, tasks and project keys. Give its current name as confirm; nothing is deleted when it differs.
+
+| Argument    | Type   | Description                                                                          |
+| ----------- | ------ | ------------------------------------------------------------------------------------ |
+| `workspace` | text   | Id of the workspace, from workspaces.                                                |
+| `confirm`   | text   | The current name of the workspace, typed exactly. Nothing is deleted when it differs. |
+
+## create_project
+
+**Scope:** owner key.
+
+Create a project in a workspace.
+
+| Argument    | Type   | Description                         |
+| ----------- | ------ | ----------------------------------- |
+| `workspace` | text   | Id of the workspace, from workspaces. |
+| `name`      | text   | Name, up to 80 characters.          |
+
+## rename_project
+
+**Scope:** owner key.
+
+Rename a project. The Inbox cannot be renamed.
+
+| Argument  | Type   | Description                         |
+| --------- | ------ | ----------------------------------- |
+| `project` | text   | Id of the project, from workspaces. |
+| `name`    | text   | Name, up to 80 characters.          |
+
+## delete_project
+
+**Scope:** owner key.
+
+Delete a project for good with its tasks and keys. Give its current name as confirm; nothing is deleted when it differs. The Inbox cannot be deleted.
+
+| Argument  | Type   | Description                                                                         |
+| --------- | ------ | ----------------------------------------------------------------------------------- |
+| `project` | text   | Id of the project, from workspaces.                                                 |
+| `confirm` | text   | The current name of the project, typed exactly. Nothing is deleted when it differs. |
 
 ## Prompts
 

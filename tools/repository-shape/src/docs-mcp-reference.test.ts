@@ -5,12 +5,14 @@ import { capturedNames, readRepositoryFile } from './repository-files';
 const REFERENCE_PAGE = 'apps/docs/mcp-tools.mdx';
 const COPY_SOURCE = 'apps/api/src/mcp-copy.ts';
 const ARGUMENTS_SOURCE = 'apps/api/src/mcp-tool-arguments.ts';
+const OWNER_ARGUMENTS_SOURCE = 'apps/api/src/mcp-owner-arguments.ts';
 const TASK_SOURCE = 'libs/types/src/task.ts';
 const TASK_STATE_PATTERN = /export enum TaskState \{([\s\S]*?)\}/;
 const DUE_WINDOW_PATTERN = /export enum DueWindow \{([\s\S]*?)\}/;
 const STATE_DEFAULT_PATTERN = /state: z\.enum\(TaskState\)\.default\(TaskState\.(\w+)\)/;
 const PROMPTS_HEADING = 'Prompts';
 const TOOL_ENUM_PATTERN = /export enum McpToolName \{([\s\S]*?)\}/;
+const OWNER_TOOL_ENUM_PATTERN = /export enum McpOwnerToolName \{([\s\S]*?)\}/;
 const PROMPT_ENUM_PATTERN = /export enum McpPromptName \{([\s\S]*?)\}/;
 const ENUM_MEMBER_PATTERN = /(\w+) = '(\w+)'/g;
 const SECTION_SEPARATOR = '\n## ';
@@ -20,8 +22,19 @@ const SECOND_CAPTURE = 2;
 const TABLE_NAME_PATTERN = /^\| `(\w+)`\s*\|/gm;
 const SCHEMA_KEY_PATTERN = /\b(\w+): (?:z|\w+Schema)\./g;
 const PLACEMENT_SCHEMA_NAME = 'Placement';
-const SCHEMA_END_MARKERS = ['\n});', '\n]);'];
-const SCHEMA_TOOLS = ['add', 'list', 'update', 'done'];
+const SCHEMA_END_MARKERS = ['});', '\n]);'];
+const SCHEMA_TOOLS = ['add', 'list', 'show', 'history', 'update', 'done', 'reopen', 'delete', 'move'];
+const ARGUMENTLESS_TOOLS = ['next', 'projects', 'workspaces'];
+const PROJECT_SCOPE_LINE = '**Scope:** project key.';
+const OWNER_SCOPE_LINE = '**Scope:** owner key.';
+const OWNER_SCHEMA_OF_TOOL: Record<string, string> = {
+  create_workspace: 'Name',
+  rename_workspace: 'RenameWorkspace',
+  delete_workspace: 'DeleteWorkspace',
+  create_project: 'CreateProject',
+  rename_project: 'RenameProject',
+  delete_project: 'DeleteProject',
+};
 
 type Section = { heading: string; body: string };
 
@@ -41,7 +54,7 @@ function copyLines({ group, members }: { group: string; members: { member: strin
   const block = copy.slice(start, copy.indexOf('}', start));
   return Object.fromEntries(
     members.map(({ member, value }) => {
-      const line = new RegExp(`\\[Mcp\\w+Name\\.${member}\\]: (['"])(.*?)\\1`).exec(block);
+      const line = new RegExp(`\\[Mcp\\w+Name\\.${member}\\]:\\s+(['"])(.*?)\\1`).exec(block);
       expect(line).not.toBeNull();
       return [value, line![SECOND_CAPTURE]!];
     }),
@@ -70,8 +83,8 @@ function argumentRow({ tool, argument }: { tool: string; argument: string }): st
   return row!;
 }
 
-function schemaKeys(schema: string): string[] {
-  const source = readRepositoryFile(ARGUMENTS_SOURCE);
+function schemaKeys({ schema, sourcePath = ARGUMENTS_SOURCE }: { schema: string; sourcePath?: string }): string[] {
+  const source = readRepositoryFile(sourcePath);
   const start = source.indexOf(`const ${schema}Schema`);
   const end = Math.min(...SCHEMA_END_MARKERS.map((marker) => source.indexOf(marker, start)).filter((index) => index > start));
   return capturedNames({ text: source.slice(start, end), pattern: SCHEMA_KEY_PATTERN });
@@ -79,22 +92,53 @@ function schemaKeys(schema: string): string[] {
 
 function expectedKeys(tool: string): string[] {
   const name = `${tool.charAt(0).toUpperCase()}${tool.slice(1)}Arguments`;
-  const keys = tool === 'update' ? [...schemaKeys(name), ...schemaKeys(PLACEMENT_SCHEMA_NAME)] : schemaKeys(name);
+  const keys =
+    tool === 'update' ? [...schemaKeys({ schema: name }), ...schemaKeys({ schema: PLACEMENT_SCHEMA_NAME })] : schemaKeys({ schema: name });
   return [...new Set(keys)];
 }
 
+function expectedOwnerKeys(tool: string): string[] {
+  return schemaKeys({ schema: `${OWNER_SCHEMA_OF_TOOL[tool]}Arguments`, sourcePath: OWNER_ARGUMENTS_SOURCE });
+}
+
 const toolMembers = enumMembers({ source: readRepositoryFile(COPY_SOURCE), pattern: TOOL_ENUM_PATTERN });
+const ownerToolMembers = enumMembers({ source: readRepositoryFile(COPY_SOURCE), pattern: OWNER_TOOL_ENUM_PATTERN });
 const promptMembers = enumMembers({ source: readRepositoryFile(COPY_SOURCE), pattern: PROMPT_ENUM_PATTERN });
 
 describe('the MCP tools reference', () => {
-  test('has one section per tool, in the order of the enum, then the prompts', () => {
-    expect(sections().map(({ heading }) => heading)).toEqual([...toolMembers.map(({ value }) => value), PROMPTS_HEADING]);
+  test('has one section per project tool, then one per owner tool, in the order of the enums, then the prompts', () => {
+    const tools = [...toolMembers, ...ownerToolMembers].map(({ value }) => value);
+    expect(sections().map(({ heading }) => heading)).toEqual([...tools, PROMPTS_HEADING]);
   });
 
   test.each(toolMembers.map(({ value }) => value))('the %s section holds the tool description of the Worker, verbatim', (tool) => {
     const description = copyLines({ group: 'tools', members: toolMembers })[tool];
     const section = sections().find(({ heading }) => heading === tool);
     expect(section?.body.split(LINE_SEPARATOR)).toContain(description);
+  });
+
+  test.each(ownerToolMembers.map(({ value }) => value))('the owner tool %s section holds its description, verbatim', (tool) => {
+    const description = copyLines({ group: 'ownerTools', members: ownerToolMembers })[tool];
+    const section = sections().find(({ heading }) => heading === tool);
+    expect(section?.body.split(LINE_SEPARATOR)).toContain(description);
+  });
+
+  test.each(toolMembers.map(({ value }) => value))('the %s section names the project key as its scope', (tool) => {
+    const section = sections().find(({ heading }) => heading === tool);
+    expect(section?.body.split(LINE_SEPARATOR)).toContain(PROJECT_SCOPE_LINE);
+    expect(section?.body.split(LINE_SEPARATOR)).not.toContain(OWNER_SCOPE_LINE);
+  });
+
+  test.each(ownerToolMembers.map(({ value }) => value))('the %s section names the owner key as its scope', (tool) => {
+    const section = sections().find(({ heading }) => heading === tool);
+    expect(section?.body.split(LINE_SEPARATOR)).toContain(OWNER_SCOPE_LINE);
+    expect(section?.body.split(LINE_SEPARATOR)).not.toContain(PROJECT_SCOPE_LINE);
+  });
+
+  test.each(Object.keys(OWNER_SCHEMA_OF_TOOL))('the %s section tabulates exactly the arguments of its owner schema', (tool) => {
+    const section = sections().find(({ heading }) => heading === tool);
+    expect(section).toBeDefined();
+    expect(capturedNames({ text: section!.body, pattern: TABLE_NAME_PATTERN }).sort()).toEqual(expectedOwnerKeys(tool).sort());
   });
 
   test.each(SCHEMA_TOOLS)('the %s section tabulates exactly the arguments of its schema', (tool) => {
@@ -119,8 +163,8 @@ describe('the MCP tools reference', () => {
     expect(windows.filter(({ value }) => !row.includes(`\`${value}\``))).toEqual([]);
   });
 
-  test('the next section tabulates no argument', () => {
-    const section = sections().find(({ heading }) => heading === 'next');
+  test.each(ARGUMENTLESS_TOOLS)('the %s section tabulates no argument', (tool) => {
+    const section = sections().find(({ heading }) => heading === tool);
     expect(capturedNames({ text: section!.body, pattern: TABLE_NAME_PATTERN })).toEqual([]);
   });
 
