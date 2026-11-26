@@ -117,6 +117,46 @@ extension AppModelTests {
         #expect(harness.model.dayEmailMinutes == savedMinutes)
     }
 
+    @Test func aNudgeSaveThatFinishesWhileTheReadIsHeldKeepsTheSavedValue() async throws {
+        let harness = try await harnessOfConfirmedOwner()
+        harness.service.suspend(.readOwner)
+        let refreshing = Task { await harness.model.refreshOwnerSettings() }
+        await harness.service.held(.readOwner)
+        await harness.model.changeAgentNudge(isEnabled: false)
+        harness.service.unsuspend(.readOwner)
+        harness.service.resume(.readOwner)
+        await refreshing.value
+        #expect(harness.model.agentNudge == false)
+    }
+
+    @Test func aDayEmailSaveThatFinishesWhileTheReadIsHeldKeepsTheSavedValue() async throws {
+        let harness = try await harnessOfConfirmedOwner()
+        harness.service.suspend(.readOwner)
+        let refreshing = Task { await harness.model.refreshOwnerSettings() }
+        await harness.service.held(.readOwner)
+        await harness.model.changeDayEmail(isEnabled: false)
+        changeOwnerOnTheServer(harness, agentNudge: true, dayEmail: true, dayEmailMinutes: readMinutes)
+        harness.service.unsuspend(.readOwner)
+        harness.service.resume(.readOwner)
+        await refreshing.value
+        #expect(harness.model.dayEmail == false)
+    }
+
+    @Test func aDayEmailSaveInFlightWhenTheReadStartsKeepsTheSavedValue() async throws {
+        let harness = try await harnessOfConfirmedOwner()
+        harness.service.suspend(.updateDayEmail)
+        let saving = Task { await harness.model.changeDayEmail(isEnabled: false) }
+        await harness.service.held(.updateDayEmail)
+        changeOwnerOnTheServer(harness, agentNudge: false, dayEmail: true, dayEmailMinutes: readMinutes)
+        await harness.model.refreshOwnerSettings()
+        #expect(harness.model.dayEmail == false)
+        #expect(harness.model.agentNudge == false)
+        harness.service.unsuspend(.updateDayEmail)
+        harness.service.resume(.updateDayEmail)
+        await saving.value
+        #expect(harness.model.dayEmail == false)
+    }
+
     @Test func aReadThatCannotReachTodzKeepsEveryValueAndShowsNoNotSavedNotice() async throws {
         let harness = try await harnessOfConfirmedOwner()
         changeOwnerOnTheServer(harness, agentNudge: false, dayEmail: false, dayEmailMinutes: readMinutes)
