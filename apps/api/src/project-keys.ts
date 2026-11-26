@@ -1,4 +1,4 @@
-import { PROJECT_KEY_PREFIX, PROJECT_LIVE_KEYS_MAX } from '@todz/types';
+import { PROJECT_KEY_PREFIX } from '@todz/types';
 import { digestCredential } from './credential-digest';
 import { generateCredentialSecret } from './credential-secret';
 import { insertProjectKey } from './directory';
@@ -16,10 +16,12 @@ export async function issueProjectKey({
   directory,
   projectId,
   now,
+  liveKeysMax,
 }: {
   directory: D1Database;
   projectId: string;
   now: number;
+  liveKeysMax: number;
 }): Promise<IssuedKey | null> {
   const secret = `${PROJECT_KEY_PREFIX}${generateCredentialSecret()}`;
   const id = crypto.randomUUID();
@@ -30,7 +32,7 @@ export async function issueProjectKey({
     hint: keyHintOf(secret),
     projectId,
     now,
-    liveKeysPerProjectMax: PROJECT_LIVE_KEYS_MAX,
+    liveKeysPerProjectMax: liveKeysMax,
   });
   if (!isInserted) return null;
   return { id, secret };

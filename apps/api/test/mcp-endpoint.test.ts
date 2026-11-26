@@ -1,5 +1,5 @@
 import { DEFAULT_MAX_REQUEST_BODY_SIZE, INVALID_PARAMS, JSONRPC_VERSION, LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/server';
-import { CLIENT_NAME_MAX_LENGTH, MILLISECONDS_PER_DAY, PROJECT_KEY_PREFIX, RuleIssue } from '@todz/types';
+import { CLIENT_NAME_MAX_LENGTH, MILLISECONDS_PER_DAY, PROJECT_KEY_PREFIX, PROJECT_LIVE_KEYS_MAX, RuleIssue } from '@todz/types';
 import { env, exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
@@ -276,7 +276,7 @@ describe('a later legacy request', () => {
 
   test('with a session of another key of the same project answers 404 session not found', async () => {
     const { projectId, key } = await seedIssuedKey();
-    const { secret: otherKey } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+    const { secret: otherKey } = await issuedKeyOf(issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
     const sessionId = await openSession(otherKey);
     const response = await toolsList({ key, sessionId });
     expect(response.status).toBe(NOT_FOUND_STATUS);

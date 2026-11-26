@@ -21,6 +21,8 @@ export type KeyProject = {
   keyDigest: string;
   timeZone: string;
   agentNudge: boolean;
+  ownerId: string;
+  isSuspended: boolean;
   sessionClientName: string | null;
 };
 
@@ -85,6 +87,8 @@ export async function openKeyProject({
     keyDigest,
     timeZone: keyProject.timeZone,
     agentNudge: keyProject.agentNudge,
+    ownerId: keyProject.ownerId,
+    isSuspended: keyProject.isSuspended,
     sessionClientName,
   };
 }

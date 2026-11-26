@@ -15,11 +15,13 @@ export class RuleViolation extends Error {
 
 export class LimitViolation extends Error {
   readonly limit: FairUseLimit;
+  readonly max: number;
 
-  constructor({ limit }: { limit: FairUseLimit }) {
+  constructor({ limit, max }: { limit: FairUseLimit; max: number }) {
     super(limit);
     this.name = 'LimitViolation';
     this.limit = limit;
+    this.max = max;
   }
 }
 

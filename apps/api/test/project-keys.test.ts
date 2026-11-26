@@ -1,3 +1,4 @@
+import { PROJECT_OPEN_TASKS_MAX, PROJECT_LIVE_KEYS_MAX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
@@ -41,7 +42,7 @@ async function directoryValues(): Promise<unknown[]> {
 describe('issueProjectKey', () => {
   test('a seeded project gets a prefixed key stored only as its digest', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
-    const { id, secret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+    const { id, secret } = await issuedKeyOf(issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
     expect(secret).toMatch(PROJECT_KEY_PATTERN);
     expect(id).toMatch(UUID_PATTERN);
     expect(await keyRowsOf(projectId)).toEqual([
@@ -52,8 +53,8 @@ describe('issueProjectKey', () => {
 
   test('two keys of one project have two ids and two hints taken from their own secrets', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
-    const first = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
-    const second = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+    const first = await issuedKeyOf(issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+    const second = await issuedKeyOf(issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
     expect(first.id).not.toBe(second.id);
     const rows = await keyRowsOf(projectId);
     expect(rows.map((row) => row.id).sort()).toEqual([first.id, second.id].sort());
@@ -64,21 +65,21 @@ describe('issueProjectKey', () => {
 
   test('two keys of one project are two secrets and two rows that both open the project', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
-    const { secret: firstSecret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
-    const { secret: secondSecret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+    const { secret: firstSecret } = await issuedKeyOf(issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+    const { secret: secondSecret } = await issuedKeyOf(issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
     expect(firstSecret).not.toBe(secondSecret);
     expect(await keyRowsOf(projectId)).toHaveLength(2);
     const firstKeyProject = await openKeyProject({ env, secret: firstSecret });
     const secondKeyProject = await openKeyProject({ env, secret: secondSecret });
     if (firstKeyProject === null || secondKeyProject === null) throw new Error('both keys should open the project');
-    unwrap(await firstKeyProject.project.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Through the first key')] }));
+    unwrap(await firstKeyProject.project.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draftOf('Through the first key')] }));
     const listed = unwrap(await secondKeyProject.project.listTasks({ today: TODAY, filter: openTasksFilter() }));
     expect(listed.tasks.map((task) => task.title)).toEqual(['Through the first key']);
   });
 
   test('a project id that does not exist is refused and adds no row', async () => {
     const before = await keyRowCount();
-    const issuance = issueProjectKey({ directory: env.DIRECTORY, projectId: crypto.randomUUID(), now: CLOCK_NOW });
+    const issuance = issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId: crypto.randomUUID(), now: CLOCK_NOW });
     await expect(issuance).rejects.toThrow(FOREIGN_KEY_FAILURE);
     expect(await keyRowCount()).toBe(before);
   });

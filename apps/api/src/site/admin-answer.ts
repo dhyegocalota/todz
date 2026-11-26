@@ -49,7 +49,7 @@ export function adminJsonAnswerOf({ status, cookies }: AdminAnswerParts): Respon
   return adminAnswerWith({ answer: Response.json({}, { status }), cookies });
 }
 
-export function adminRedirectAnswerOf({ cookies }: { cookies?: string[] } = {}): Response {
-  const answer = new Response(null, { status: HttpStatus.SeeOther, headers: { [HttpHeader.Location]: AdminPath.Panel } });
+export function adminRedirectAnswerOf({ cookies, location = AdminPath.Panel }: { cookies?: string[]; location?: string } = {}): Response {
+  const answer = new Response(null, { status: HttpStatus.SeeOther, headers: { [HttpHeader.Location]: location } });
   return adminAnswerWith({ answer, cookies });
 }

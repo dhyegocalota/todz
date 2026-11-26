@@ -1,10 +1,11 @@
 import { OWNER_ACTOR } from '@todz/core';
-import { REPLY_SIZE_MAX_BYTES } from '@todz/types';
+import { FairUseLimit, REPLY_SIZE_MAX_BYTES } from '@todz/types';
 import PostalMime from 'postal-mime';
 import type { Email } from 'postal-mime';
 import { digestCredential } from '../credential-digest';
 import type { Env } from '../env';
 import { limitRefusal } from '../limit-refusal';
+import { fairUseLimitsOf } from '../fair-use-limits';
 import { calendarDateInTimeZone } from '../owner-today';
 import { openReplyInbox, replyOwnerOf } from '../project-routing';
 import { DayEmailEvent, logDayEmailEvent } from './day-email-log';
@@ -151,6 +152,7 @@ async function addReplyTask({
   const result = await inbox.addTasks({
     actor: OWNER_ACTOR,
     drafts: [{ title, notes: null, dueDate, idempotencyKey: `${MAIL_KEY_PREFIX}${messageDigest}` }],
+    openTasksMax: fairUseLimitsOf(env)[FairUseLimit.OpenTasks],
   });
   if (!result.ok) throw new Error(FAILURE_MESSAGE);
   const isReplay = result.value.every(({ replayed }) => replayed);

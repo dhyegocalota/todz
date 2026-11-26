@@ -1,9 +1,9 @@
-# 0088. Sign-up abuse is capped per client per day and disposable email domains are refused for new accounts
+# 0089. Sign-up abuse is capped per client per day and disposable email domains are refused for new accounts
 
 - Status: Accepted
 - Date: 2026-11-26
 - Deciders: Claude (the build loop's call, lane `fair-use`) on the owner's brief of 2026-11-26
-- Inspired by: [ADR 0045](0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md) (per-client, per-address and global limits with Turnstile); [ADR 0086](0086-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md)
+- Inspired by: [ADR 0045](0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md) (per-client, per-address and global limits with Turnstile); [ADR 0087](0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md)
 
 ## Context
 

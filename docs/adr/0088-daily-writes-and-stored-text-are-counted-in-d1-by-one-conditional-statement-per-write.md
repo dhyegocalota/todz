@@ -1,9 +1,9 @@
-# 0087. Daily writes and stored text are counted in D1 by one conditional statement per write
+# 0088. Daily writes and stored text are counted in D1 by one conditional statement per write
 
 - Status: Accepted
 - Date: 2026-11-26
 - Deciders: Claude (the build loop's call, lane `fair-use`)
-- Inspired by: [ADR 0086](0086-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md); the daily reply cap that `metrics-store.ts` and the reply cap already spend in D1; the sign-in limiter's "fail closed" rule in [ADR 0045](0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md)
+- Inspired by: [ADR 0087](0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md); the daily reply cap that `metrics-store.ts` and the reply cap already spend in D1; the sign-in limiter's "fail closed" rule in [ADR 0045](0045-the-public-sign-in-routes-are-limited-three-ways-and-turnstile-guarded-failing-closed.md)
 
 ## Context
 
@@ -18,7 +18,7 @@ A write to a project lands in one Durable Object, but the limits belong to the o
 - Stored text is the sum of `bytes` over the owner's rows. Nothing is deleted, so the sum is an upper bound on the text held; an edit counts its new text.
 - The reservation for the owner's MCP writes is the same statement, reached through the key's owner.
 
-Reads are never counted and never refused for quota. A suspended owner's reads pass; see [ADR 0089](0089-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md).
+Reads are never counted and never refused for quota. A suspended owner's reads pass; see [ADR 0090](0090-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md).
 
 ## Alternatives considered
 
@@ -31,9 +31,9 @@ Reads are never counted and never refused for quota. A suspended owner's reads p
 
 ## Consequences
 
-- Each write costs one D1 statement plus one read on refusal. D1 rows written grow by one per write request, inside the allowance of [ADR 0086](0086-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md).
+- Each write costs one D1 statement plus one read on refusal. D1 rows written grow by one per write request, inside the allowance of [ADR 0087](0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md).
 - The storage sum reads the owner's rows by primary key; rows are one per active day, so the sum stays small for years.
-- `owner_usage` is also the source of the admin's Top usage view ([ADR 0089](0089-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md)).
+- `owner_usage` is also the source of the admin's Top usage view ([ADR 0090](0090-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md)).
 
 ## Evidence
 

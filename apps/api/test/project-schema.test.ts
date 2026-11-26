@@ -7,7 +7,7 @@ import { SqliteTaskStore } from '../src/sqlite-task-store';
 import { CLOCK_NOW, TODAY, buildTask, calendarDate, draftOf, newProjectStub, openTasksFilter } from './task-fixtures';
 
 const LIST_LIMIT = 10;
-const LATEST_VERSION = 3;
+const LATEST_VERSION = 4;
 const VERSION_TWO = 2;
 const VERSION_ONE = 1;
 const VERSION_TWO_MIGRATIONS = MIGRATIONS.filter(({ version }) => version <= VERSION_TWO);

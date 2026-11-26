@@ -2,8 +2,8 @@
 
 **Status:** Building
 **Tier:** 🔴
-**Owner approval:** approved by inheritance: [docs/product/README.md](../../product/README.md) (approved 2026-11-23) plus the owner's words of 2026-11-26 ("apply some rules pra avoid free user abusers"), quoted in the loop brief. The numbers are the loop's call, recorded in [ADR 0086](../../adr/0086-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md).
-**ADRs:** [0086](../../adr/0086-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md), [0087](../../adr/0087-daily-writes-and-stored-text-are-counted-in-d1-by-one-conditional-statement-per-write.md), [0088](../../adr/0088-sign-up-abuse-is-capped-per-client-per-day-and-disposable-email-domains-are-refused-for-new-accounts.md), [0089](../../adr/0089-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md)
+**Owner approval:** approved by inheritance: [docs/product/README.md](../../product/README.md) (approved 2026-11-23) plus the owner's words of 2026-11-26 ("apply some rules pra avoid free user abusers"), quoted in the loop brief. The numbers are the loop's call, recorded in [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md).
+**ADRs:** [0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md), [0088](../../adr/0088-daily-writes-and-stored-text-are-counted-in-d1-by-one-conditional-statement-per-write.md), [0089](../../adr/0089-sign-up-abuse-is-capped-per-client-per-day-and-disposable-email-domains-are-refused-for-new-accounts.md), [0090](../../adr/0090-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md)
 **Not changing:** the app (`apps/macos`), the MCP tool names and their arguments, the sign-in providers, the Turnstile guard, the per-minute limiters, the existing rows of the directory, the sync protocol and the change feed.
 
 ## Problem
@@ -12,11 +12,11 @@ A free account can write without a bound beyond the per-minute limiters. One acc
 
 ## Goals
 
-1. One documented set of per-owner limits, enforced on the server, with the numbers of [ADR 0086](../../adr/0086-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md): 20 workspaces, 100 projects per workspace, 5,000 open tasks per project, 500-character titles, 10 KB notes, 10 live MCP keys per project, 1,000 task writes per UTC day, 50 MiB of stored text.
+1. One documented set of per-owner limits, enforced on the server, with the numbers of [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md): 20 workspaces, 100 projects per workspace, 5,000 open tasks per project, 500-character titles, 10 KB notes, 10 live MCP keys per project, 5,000 task writes per UTC day, 50 MiB of stored text.
 2. Every refusal names the limit and carries a human-readable message, over the owner API (`message` in the body) and over MCP (the tool's error text).
-3. Sign-up abuse: a daily cap of new accounts per client and a refusal for disposable email domains, both only for new accounts ([ADR 0088](../../adr/0088-sign-up-abuse-is-capped-per-client-per-day-and-disposable-email-domains-are-refused-for-new-accounts.md)).
-4. The admin (owner only, the existing admin session) sees Top usage over seven days by task writes and by stored text bytes, and suspends or restores an account. A suspended account reads and cannot write nor use MCP ([ADR 0089](../../adr/0089-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md)).
-5. Self-hosted servers set every count with a Worker var, defaults unchanged ([ADR 0086](../../adr/0086-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md)).
+3. Sign-up abuse: a daily cap of new accounts per client and a refusal for disposable email domains, both only for new accounts ([ADR 0089](../../adr/0089-sign-up-abuse-is-capped-per-client-per-day-and-disposable-email-domains-are-refused-for-new-accounts.md)).
+4. The admin (owner only, the existing admin session) sees Top usage over seven days by task writes and by stored text bytes, and suspends or restores an account. A suspended account reads and cannot write nor use MCP ([ADR 0090](../../adr/0090-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md)).
+5. Self-hosted servers set every count with a Worker var, defaults unchanged ([ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md)).
 6. The docs site has a short "Fair use" section.
 
 ## Non-goals
@@ -62,7 +62,7 @@ Admin:
 
 - A reservation the database cannot answer is a write refused as unavailable (503), never a write let through.
 - A missing or invalid `FAIR_USE_*` var stops the Worker at the first request that reads it, with the name of the var, rather than falling back silently.
-- The sign-up counter failing refuses the sign-up as unavailable ([ADR 0088](../../adr/0088-sign-up-abuse-is-capped-per-client-per-day-and-disposable-email-domains-are-refused-for-new-accounts.md)).
+- The sign-up counter failing refuses the sign-up as unavailable ([ADR 0089](../../adr/0089-sign-up-abuse-is-capped-per-client-per-day-and-disposable-email-domains-are-refused-for-new-accounts.md)).
 - Refusals never delete data.
 - A suspended owner's keys stop working at once; restoring the owner restores them without reissue.
 
@@ -70,7 +70,7 @@ Admin:
 
 | Question | Options | Owner's answer | Date |
 |----------|---------|----------------|------|
-| The numbers | the owner's examples, or sized ones | Loop's call: [ADR 0086](../../adr/0086-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md) (1,000 writes a day, not 20,000) | 2026-11-26 |
+| The numbers | the owner's examples, or sized ones | Loop's call: [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md) (5,000 writes a day at the owner's request for agent-heavy owners; the arithmetic is redone at that number) | 2026-11-26 |
 | Disposable list source | vendored by hand, or a service | Loop's call: vendored by hand, updated in reviewed commits | 2026-11-26 |
 | What a suspended owner can do | read; or nothing | Owner's brief: reads, no writes, no MCP | 2026-11-26 |
 | The app's copy | change the app now, or follow-up | Loop's call: follow-up, the server carries the message | 2026-11-26 |

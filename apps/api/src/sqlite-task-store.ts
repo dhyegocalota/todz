@@ -38,13 +38,20 @@ const TASK_COLUMNS =
 const FIRST_CHANGE_NUMBER = 1;
 const HISTORY_COLUMNS = 'at, actor_kind, actor_client, action, fields, note';
 const ADDED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE created_at >= ? AND created_at < ?';
-const COMPLETED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE completed_at >= ? AND completed_at < ?';
+const OPEN_COUNT_QUERY = 'SELECT open_tasks AS total FROM open_counter';
+const ADJUST_OPEN_COUNT = 'UPDATE open_counter SET open_tasks = open_tasks + ?';
+const COMPLETED_COUNT_QUERY ='SELECT count(*) AS total FROM tasks WHERE completed_at >= ? AND completed_at < ?';
 const AGENT_WRITES_QUERY =
   'SELECT actor_client, count(*) AS total FROM task_history WHERE actor_kind = ? AND actor_client IS NOT NULL AND at >= ? AND at < ? GROUP BY actor_client';
 const FIRST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? ORDER BY order_key LIMIT 1';
 const LAST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? ORDER BY order_key DESC LIMIT 1';
 const ORDER_KEY_BEFORE_QUERY = 'SELECT order_key FROM tasks WHERE order_key < ? AND number <> ? ORDER BY order_key DESC LIMIT 1';
 const ORDER_KEY_AFTER_QUERY = 'SELECT order_key FROM tasks WHERE order_key > ? AND number <> ? ORDER BY order_key LIMIT 1';
+
+function openCountOf(state: TaskState | null): number {
+  if (state === TaskState.Open) return 1;
+  return 0;
+}
 
 function invalidColumn({ column, taskNumber }: { column: string; taskNumber: number }): Error {
   return new Error(`${column} of task ${taskNumber} is not valid`);
@@ -202,7 +209,16 @@ export class SqliteTaskStore implements TaskStore {
     return { added, completed, agentWrites };
   }
 
-  private totalOf({ query, bindings }: { query: string; bindings: number[] }): number {
+  countOpenTasks(): number {
+    return this.totalOf({ query: OPEN_COUNT_QUERY, bindings: [] });
+  }
+
+  private adjustOpenCount(delta: number): void {
+    if (delta === 0) return;
+    this.sql.exec(ADJUST_OPEN_COUNT, delta);
+  }
+
+  private totalOf({ query, bindings }: { query: string; bindings: SqlStorageValue[] }): number {
     const [row] = this.sql.exec<{ total: number }>(query, ...bindings).toArray();
     if (row === undefined) throw new Error('a count returned no row');
     return row.total;
@@ -237,9 +253,11 @@ export class SqliteTaskStore implements TaskStore {
       this.takeChangeNumber(),
     );
     this.raiseCounterTo(task.number);
+    this.adjustOpenCount(openCountOf(task.state));
   }
 
   replaceTask(task: Task): void {
+    const previous = this.findTask(task.number);
     this.sql.exec(
       'UPDATE tasks SET title = ?, notes = ?, due_date = ?, state = ?, order_key = ?, updated_at = ?, completed_at = ?, change_number = ? WHERE number = ?',
       task.title,
@@ -252,6 +270,7 @@ export class SqliteTaskStore implements TaskStore {
       this.takeChangeNumber(),
       task.number,
     );
+    this.adjustOpenCount(openCountOf(task.state) - openCountOf(previous === null ? null : previous.state));
   }
 
   appendHistory({ number, entry }: { number: number; entry: HistoryEntry }): void {

@@ -1,4 +1,4 @@
-import { MILLISECONDS_PER_HOUR, TaskPlacement, TaskState } from '@todz/types';
+import { MILLISECONDS_PER_HOUR, PROJECT_OPEN_TASKS_MAX, TaskPlacement, TaskState } from '@todz/types';
 import { runInDurableObject } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
@@ -49,16 +49,16 @@ async function seedWorld(): Promise<World> {
   await seedSession({ ownerId: firstOwnerId, secret: sessions.firstOwnerLive, expiresAt: CLOCK_NOW + MILLISECONDS_PER_HOUR });
   await seedSession({ ownerId: firstOwnerId, secret: sessions.firstOwnerExpired, expiresAt: CLOCK_NOW });
   await seedSession({ ownerId: secondOwnerId, secret: sessions.secondOwnerLive, expiresAt: CLOCK_NOW + MILLISECONDS_PER_HOUR });
-  unwrap(await (await openKey(keys.a)).addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('A one')] }));
+  unwrap(await (await openKey(keys.a)).addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draftOf('A one')] }));
   unwrap(
     await (
       await openKey(keys.b)
-    ).addTasks({
+    ).addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, 
       actor: AGENT_ACTOR,
       drafts: [{ ...draftOf('B secret alpha'), notes: 'B notes' }, draftOf('B two'), draftOf('B three')],
     }),
   );
-  unwrap(await (await openKey(keys.c)).addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('C one')] }));
+  unwrap(await (await openKey(keys.c)).addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draftOf('C one')] }));
   return { projectIds, keys, sessions };
 }
 
@@ -88,7 +88,7 @@ describe('a key of project A', () => {
     const historyBefore = await historyLength({ stub: stubB, number: 2 });
     const expected = { ok: false, failure: { kind: ProjectFailureKind.TaskNotFound, number: 2 } };
     expect(await stubA.completeTasks({ actor: AGENT_ACTOR, numbers: [2], note: null })).toEqual(expected);
-    expect(await stubA.reopenTasks({ actor: AGENT_ACTOR, numbers: [2] })).toEqual(expected);
+    expect(await stubA.reopenTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, numbers: [2] })).toEqual(expected);
     expect(await openTitles(stubB)).toContain('B two');
     expect(await historyLength({ stub: stubB, number: 2 })).toBe(historyBefore);
   });
@@ -132,8 +132,8 @@ describe('a key of project A', () => {
   test('the same idempotency key adds one task in each project', async () => {
     const world = await seedWorld();
     const draft = { ...draftOf('Replayable'), idempotencyKey: SHARED_IDEMPOTENCY_KEY };
-    const throughA = unwrap(await (await openKey(world.keys.a)).addTasks({ actor: AGENT_ACTOR, drafts: [draft] }));
-    const throughB = unwrap(await (await openKey(world.keys.b)).addTasks({ actor: AGENT_ACTOR, drafts: [draft] }));
+    const throughA = unwrap(await (await openKey(world.keys.a)).addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draft] }));
+    const throughB = unwrap(await (await openKey(world.keys.b)).addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draft] }));
     expect([throughA[0]?.replayed, throughB[0]?.replayed]).toEqual([false, false]);
   });
 

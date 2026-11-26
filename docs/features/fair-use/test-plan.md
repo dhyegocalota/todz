@@ -6,7 +6,7 @@ Class: `product` (the owner's brief changes what a person and an agent see). No 
 
 ## Constants and text rules (A)
 
-- [ ] A-1 Input: `PROJECT_OPEN_TASKS_MAX`, `OWNER_WRITES_PER_DAY_MAX`, `OWNER_STORED_BYTES_MAX`, `SIGN_UPS_PER_CLIENT_DAY_MAX`, `WORKSPACE_PROJECTS_MAX`. Expected: 5000, 1000, 52428800, 5, 100.
+- [ ] A-1 Input: `PROJECT_OPEN_TASKS_MAX`, `OWNER_WRITES_PER_DAY_MAX`, `OWNER_STORED_BYTES_MAX`, `SIGN_UPS_PER_CLIENT_DAY_MAX`, `WORKSPACE_PROJECTS_MAX`. Expected: 5000, 5000, 52428800, 5, 100.
 - [ ] A-2 Input: `TASK_TITLE_MAX_LENGTH`, `TASK_NOTES_MAX_BYTES`. Expected: 500 and 10240.
 - [ ] A-3 Input: a title of 500 characters. Expected: accepted, stored whole.
 - [ ] A-4 Input: a title of 501 characters. Expected: `title_too_long`.
@@ -86,7 +86,7 @@ Class: `product` (the owner's brief changes what a person and an agent see). No 
 ## Docs and records (I)
 
 - [ ] I-1 Input: `tools/repository-shape` `docs-pages.test.ts`, `document-indexes.test.ts`, `feature-status.test.ts`, `self-host.test.ts`. Expected: all green.
-- [ ] I-2 Input: `docs/adr/README.md` rows 0086 to 0089 present in number order with the record's title, status and date.
+- [ ] I-2 Input: `docs/adr/README.md` rows 0087 to 0090 present in number order with the record's title, status and date.
 
 ## Adversarial (hunted during the run)
 

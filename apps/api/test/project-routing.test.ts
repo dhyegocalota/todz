@@ -1,3 +1,4 @@
+import { PROJECT_OPEN_TASKS_MAX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
@@ -30,7 +31,7 @@ describe('openKeyProject', () => {
     await seedKey({ projectId, secret });
     const keyProject = await openKeyProject({ env, secret });
     if (keyProject === null) throw new Error('the key should open its project');
-    unwrap(await keyProject.project.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Through the key')] }));
+    unwrap(await keyProject.project.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draftOf('Through the key')] }));
     const ownerStub = await openOwnedProject({ env, owner: await seedLiveOwner({ ownerId }), projectId });
     if (ownerStub === null) throw new Error('the owner should open the project');
     const listed = unwrap(await ownerStub.listTasks({ today: TODAY, filter: openTasksFilter() }));

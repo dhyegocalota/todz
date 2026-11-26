@@ -25,6 +25,8 @@ describe('findKeyProject', () => {
       projectId,
       timeZone: SAO_PAULO_TIME_ZONE,
       agentNudge: false,
+      ownerId: expect.any(String),
+      isSuspended: false,
     });
   });
 

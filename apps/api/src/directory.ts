@@ -1,16 +1,16 @@
-type KeyRow = { project_id: string; time_zone: string; agent_nudge: number };
+type KeyRow = { project_id: string; time_zone: string; agent_nudge: number; owner_id: string; suspended_at: number | null };
 type SessionRow = { owner_id: string };
 type SessionProjectRow = { owner_id: string; project_id: string | null };
 type ProjectRow = { id: string };
 type McpSessionRow = { client_name: string };
 
 const KEY_PROJECT_QUERY =
-  'SELECT project_keys.project_id, owners.time_zone, owners.agent_nudge FROM project_keys JOIN projects ON projects.id = project_keys.project_id JOIN workspaces ON workspaces.id = projects.workspace_id JOIN owners ON owners.id = workspaces.owner_id WHERE project_keys.digest = ? AND project_keys.revoked_at IS NULL';
+  'SELECT project_keys.project_id, owners.time_zone, owners.agent_nudge, owners.id AS owner_id, owners.suspended_at FROM project_keys JOIN projects ON projects.id = project_keys.project_id JOIN workspaces ON workspaces.id = projects.workspace_id JOIN owners ON owners.id = workspaces.owner_id WHERE project_keys.digest = ? AND project_keys.revoked_at IS NULL';
 const MCP_SESSION_QUERY = 'SELECT client_name FROM mcp_sessions WHERE digest = ? AND key_digest = ? AND expires_at > ?';
 const SESSION_PROJECT_QUERY =
   'SELECT sessions.owner_id, (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.id = ? AND workspaces.owner_id = sessions.owner_id) AS project_id FROM sessions WHERE sessions.digest = ? AND sessions.expires_at > ?';
 
-export type KeyProjectRecord = { projectId: string; timeZone: string; agentNudge: boolean };
+export type KeyProjectRecord = { projectId: string; timeZone: string; agentNudge: boolean; ownerId: string; isSuspended: boolean };
 
 export type KeyProjectSessionRecord = { keyProject: KeyProjectRecord | null; sessionClientName: string | null };
 
@@ -18,7 +18,13 @@ export type SessionProjectRecord = { ownerId: string; ownedProjectId: string | n
 
 function keyProjectRecordOf(row: KeyRow | null): KeyProjectRecord | null {
   if (row === null) return null;
-  return { projectId: row.project_id, timeZone: row.time_zone, agentNudge: row.agent_nudge === 1 };
+  return {
+    projectId: row.project_id,
+    timeZone: row.time_zone,
+    agentNudge: row.agent_nudge === 1,
+    ownerId: row.owner_id,
+    isSuspended: row.suspended_at !== null,
+  };
 }
 
 function onlyRowOf<Row>(result: D1Result<unknown> | undefined): Row | null {

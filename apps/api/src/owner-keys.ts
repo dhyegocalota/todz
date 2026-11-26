@@ -1,6 +1,8 @@
+import { FairUseLimit } from '@todz/types';
 import { listProjectKeys, revokeProjectKey } from './directory-keys';
+import { fairUseLimitsOf } from './fair-use-limits';
 import { HttpStatus } from './http-status';
-import { OwnerErrorCode, errorResponse } from './owner-errors';
+import { OwnerErrorCode, errorResponse, limitResponse } from './owner-errors';
 import { keyJson } from './owner-json';
 import { type SessionContext, type SessionHandler, routeParam } from './owner-request';
 import { OwnerRoute, RouteParam } from './owner-routes';
@@ -25,8 +27,9 @@ async function issueKey(context: SessionContext): Promise<Response> {
   const projectId = await ownedProjectId(context);
   if (projectId === null) return errorResponse(OwnerErrorCode.NotFound);
   const { now } = context;
-  const issued = await issueProjectKey({ directory: context.env.DIRECTORY, projectId, now });
-  if (issued === null) return errorResponse(OwnerErrorCode.LimitReached);
+  const limits = fairUseLimitsOf(context.env);
+  const issued = await issueProjectKey({ directory: context.env.DIRECTORY, projectId, now, liveKeysMax: limits[FairUseLimit.LiveKeys] });
+  if (issued === null) return limitResponse({ limit: FairUseLimit.LiveKeys, limits, now });
   const { id, secret } = issued;
   return Response.json({ key: keyJson({ id, hint: keyHintOf(secret), createdAt: now }), secret }, { status: HttpStatus.Created });
 }

@@ -33,7 +33,7 @@ export const MCP_NEXT_NUDGED_BUDGET_OF_ERA: Record<ClientEra, WorkBudget> = {
 };
 
 export const ROWS_READ_BUDGET: Record<RowsReadUseCase, number> = {
-  [RowsReadUseCase.Add]: 10,
+  [RowsReadUseCase.Add]: 11,
   [RowsReadUseCase.UpdateFirst]: 10,
   [RowsReadUseCase.UpdateLast]: 10,
   [RowsReadUseCase.UpdateBefore]: 10,

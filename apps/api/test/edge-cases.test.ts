@@ -1,5 +1,5 @@
 import type { Actor } from '@todz/core';
-import { ActorKind, MILLISECONDS_PER_HOUR, RuleIssue, TaskPlacement, TaskState } from '@todz/types';
+import { ActorKind, MILLISECONDS_PER_HOUR, PROJECT_OPEN_TASKS_MAX, RuleIssue, TaskPlacement, TaskState } from '@todz/types';
 import { runInDurableObject } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
@@ -105,8 +105,8 @@ describe('a key of one project reaches nothing of another', () => {
     if (keyProjectA === null || keyProjectB === null) throw new Error('both keys should open');
     const stubA = keyProjectA.project;
     const stubB = keyProjectB.project;
-    unwrap(await stubA.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('A one')] }));
-    unwrap(await stubB.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('B secret alpha'), draftOf('B two')] }));
+    unwrap(await stubA.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draftOf('A one')] }));
+    unwrap(await stubB.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draftOf('B secret alpha'), draftOf('B two')] }));
     return { stubA, stubB };
   }
 
@@ -137,16 +137,16 @@ describe('a key of one project reaches nothing of another', () => {
     const { stubA } = await twoProjects();
     const lower = { ...draftOf('Lower'), idempotencyKey: 'run-x' };
     const upper = { ...draftOf('Upper'), idempotencyKey: 'RUN-X' };
-    const first = unwrap(await stubA.addTasks({ actor: AGENT_ACTOR, drafts: [lower] }));
-    const second = unwrap(await stubA.addTasks({ actor: AGENT_ACTOR, drafts: [upper] }));
+    const first = unwrap(await stubA.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [lower] }));
+    const second = unwrap(await stubA.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [upper] }));
     expect([first[0]?.replayed, second[0]?.replayed]).toEqual([false, false]);
   });
 
   test('an idempotency key used in B replays nothing in A', async () => {
     const { stubA, stubB } = await twoProjects();
     const draft = { ...draftOf('Keyed'), idempotencyKey: 'only-b' };
-    unwrap(await stubB.addTasks({ actor: AGENT_ACTOR, drafts: [draft] }));
-    const throughA = unwrap(await stubA.addTasks({ actor: AGENT_ACTOR, drafts: [{ ...draft, title: 'Keyed in A' }] }));
+    unwrap(await stubB.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draft] }));
+    const throughA = unwrap(await stubA.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [{ ...draft, title: 'Keyed in A' }] }));
     expect(throughA.map(({ task, replayed }) => ({ title: task.title, number: task.number, replayed }))).toEqual([
       { title: 'Keyed in A', number: 2, replayed: false },
     ]);
@@ -156,12 +156,12 @@ describe('a key of one project reaches nothing of another', () => {
 describe('the number counter', () => {
   test('a number is never reissued after the last task row is deleted by hand', async () => {
     const stub = newProjectStub();
-    unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('One'), draftOf('Two')] }));
+    unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draftOf('One'), draftOf('Two')] }));
     await runInDurableObject(stub, (_instance, state) => {
       state.storage.sql.exec('DELETE FROM task_history WHERE task_number = 2');
       state.storage.sql.exec('DELETE FROM tasks WHERE number = 2');
     });
-    const added = unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Three')] }));
+    const added = unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draftOf('Three')] }));
     expect(added.map(({ task }) => task.number)).toEqual([3]);
   });
 });
@@ -176,7 +176,7 @@ describe('arguments that arrive through RPC', () => {
     'updateTask with number $number is an invalid number',
     async ({ number }) => {
       const stub = newProjectStub();
-      unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('One')] }));
+      unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draftOf('One')] }));
       expect(await stub.updateTask({ actor: AGENT_ACTOR, number, patch: { title: 'Changed' } })).toEqual(TASK_NUMBER_INVALID);
     },
   );
@@ -184,13 +184,13 @@ describe('arguments that arrive through RPC', () => {
   test('extra fields on an owner actor are dropped from the stored creator', async () => {
     const stub = newProjectStub();
     const actor = { kind: ActorKind.Owner, ownerId: 'another-owner' } as unknown as Actor;
-    const added = unwrap(await stub.addTasks({ actor, drafts: [draftOf('One')] }));
+    const added = unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor, drafts: [draftOf('One')] }));
     expect(added[0]?.task.createdBy).toEqual({ kind: ActorKind.Owner });
   });
 
   test('a row that does not map leaves the tasks, the counter and the history as they were after a failed completion', async () => {
     const stub = newProjectStub();
-    unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('One')] }));
+    unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX,  actor: AGENT_ACTOR, drafts: [draftOf('One')] }));
     const countRows = () =>
       runInDurableObject(stub, (_instance, state) => ({
         tasks: state.storage.sql.exec('SELECT number FROM tasks').toArray().length,
