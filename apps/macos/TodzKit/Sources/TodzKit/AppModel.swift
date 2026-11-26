@@ -63,12 +63,15 @@ import Observation
     var isOwnerConfirmed = false
     public internal(set) var agentNudge: Bool?
     var isSavingAgentNudge = false
+    var agentNudgeSavesStarted = 0
+    var isReadingOwnerSettings = false
     var isAgentNudgeNotSaved = false
     public internal(set) var showsDayTemperature = false
     public internal(set) var compatibility: VersionCompatibility
     public internal(set) var dayEmail: Bool?
     public internal(set) var dayEmailMinutes: Int?
     var isSavingDayEmail = false
+    var dayEmailSavesStarted = 0
     var isDayEmailNotSaved = false
 
     @ObservationIgnored var hasLaunched = false
