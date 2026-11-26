@@ -105,6 +105,8 @@ No step is without a backout.
 - The MCP suspension code stays -32003 (the other MCP refusals use -32000 and -32001); spec and test plan now say -32003.
 - ADR 0087 re-measured the rows written per task write (11 to 13, measured) and restated the ceiling (about $2,200 a month for a thousand accounts at 5,000 a day, not $490); the 5,000 is stated as the loop's call.
 
+- Tester findings: the owner API body limit (4,096 bytes, already the limit on main, so the shipped app's long notes were refused before this feature too) is now `OWNER_BODY_LENGTH_MAX`, derived from the text limits and the batch size, for signed-in owner routes only; the public sign-in bodies keep 4,096. Red: `owner-task-sizes.test.ts`. The storage message rounds to one decimal and says KB under a megabyte (`fair-use-copy.test.ts`); the admin usage tables scroll sideways inside `usage-scroll` instead of overflowing at 375 px (asserted on the markup; no browser walk was added, because the admin e2e belongs to the waitlist walk that `remove-waitlist` deletes); the docs say the daily cap counts task changes only.
+
 ## v1.1 from the review
 
 - A reply or write that the Durable Object then recognises as a replay has already spent its reservation; the open-task room is checked before replays are recognised.

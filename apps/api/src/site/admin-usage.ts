@@ -52,7 +52,7 @@ function rowsHtml(owners: OwnerUsageRecord[]): string {
     (owner) =>
       `<tr><td>${accountHtml(owner)}</td><td>${COUNT_FORMAT.format(owner.writes)}</td><td>${MEBIBYTE_FORMAT.format(owner.bytes / BYTES_PER_MEBIBYTE)} ${usage.mebibyteUnit}</td>${suspensionFormHtml(owner)}</tr>`,
   );
-  return `<table class="usage-table"><thead><tr><th>${escapedHtml(usage.columns.account)}</th><th>${escapedHtml(usage.columns.writes)}</th><th>${escapedHtml(usage.columns.bytes)}</th><th>${escapedHtml(usage.columns.state)}</th><th>${escapedHtml(usage.columns.action)}</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  return `<div class="usage-scroll"><table class="usage-table"><thead><tr><th>${escapedHtml(usage.columns.account)}</th><th>${escapedHtml(usage.columns.writes)}</th><th>${escapedHtml(usage.columns.bytes)}</th><th>${escapedHtml(usage.columns.state)}</th><th>${escapedHtml(usage.columns.action)}</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
 }
 
 function usageHtml({ byWrites, byBytes }: { byWrites: OwnerUsageRecord[]; byBytes: OwnerUsageRecord[] }): string {

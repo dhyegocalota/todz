@@ -32,6 +32,7 @@ const ADMIN_STYLE = `.admin-card{display:flex;flex-direction:column;align-items:
 .link-status{display:flex;flex-direction:column;align-items:center}
 .link-status[data-state=working] .admin-title::before{content:'';display:inline-block;width:8px;height:8px;margin-right:var(--space-2);border-radius:50%;background:var(--color-mint);box-shadow:0 0 0 3px rgb(140 247 208 / 0.28)}
 .admin-panel{width:min(100% - 2 * var(--space-side), var(--measure-hero));margin:var(--space-7) auto 0}
+.usage-scroll{overflow-x:auto}
 .panel-head{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-3)}
 .panel-title{font-size:var(--text-section);line-height:1.1;letter-spacing:-0.025em;font-weight:700}
 .panel-actions{display:flex;align-items:center;gap:var(--space-2)}

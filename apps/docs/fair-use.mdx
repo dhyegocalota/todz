@@ -14,7 +14,7 @@ todz is free to use. So that one account cannot take the service down or push it
 | Title | 500 characters | The task is refused |
 | Notes | 20,000 characters | The task is refused |
 | Agent keys per project | 10 | Issuing a key is refused; revoke one to make room |
-| Task changes per day | 5,000 (UTC day) | Writes are refused until midnight UTC; reading keeps working |
+| Task changes per day | 5,000 (UTC day) | Counts adding, editing, completing and reopening tasks, and nothing else (creating a workspace, a project or a key is not counted). Changes are refused until midnight UTC; reading keeps working |
 | Stored task text | 50 MB | Writes are refused; reading keeps working. The count is an upper bound: it adds every title, note and edit as written and does not go down when you edit or delete, so the operator can reset it for an account |
 | New accounts per network per day | 5 | Signing up is refused until the next day |
 
