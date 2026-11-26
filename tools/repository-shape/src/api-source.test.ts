@@ -159,6 +159,7 @@ describe('the api source', () => {
       SITE_ORIGIN,
       TURNSTILE_SITE_KEY,
       TELEMETRY: 'on',
+      CLOUD_ACCOUNTS_MAX: '13',
     });
   });
 

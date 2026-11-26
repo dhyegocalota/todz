@@ -53,7 +53,7 @@ Why 95%: one day at the cap for every admitted account is under 3% of a pool (1/
 ## Consequences
 
 - `cloud_queue` and `cloud_budget` tables (migration 0016); the owner is emailed by the existing sender.
-- A new cron at 04:00 UTC runs the guard and the daily queue digest.
+- The existing 03:00 UTC cron runs the guard and the daily queue digest after the metrics rollup; the guard's measure is derived from D1 and costs nothing at request time except one read per write while the cap is on.
 - A self-hosted server sets nothing and is never capped or guarded.
 - The owner raises the cap knowingly: each account beyond 13 adds roughly 1/13 of the Durable Object request pool, and requests beyond it cost $0.15 per million.
 

@@ -20,6 +20,7 @@
     "SITE_ORIGIN": "https://todz.app",
     "TURNSTILE_SITE_KEY": "0x4AAAAAAGSI2K7Qe9Vad2nL",
     "TELEMETRY": "on",
+    "CLOUD_ACCOUNTS_MAX": "13",
   },
   "d1_databases": [
     {

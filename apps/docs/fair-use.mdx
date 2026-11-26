@@ -28,6 +28,16 @@ New accounts cannot be opened with the address of a disposable mail service. Exi
 
 If an account is abused, the operator can suspend it. A suspended account can still read its tasks and sign out. It cannot change anything, and its agents stop answering until the account is restored. Nothing is deleted.
 
+## todz cloud capacity
+
+todz cloud runs on a fixed monthly budget, so it admits a limited number of active accounts (13 at launch). An account is active when it signed in or wrote a task in the last 90 days; an account that stays idle for 90 days frees its spot and, if the cloud is full when it returns, waits for a spot like a new address.
+
+- Accounts already admitted are never refused because of the limit.
+- When the cloud is full, a new address is not given a sign-in link. It sees "todz cloud is full right now" with a link to [self-host](/self-host), and may leave its email to be invited when a spot opens.
+- When the month's usage nears the plan's included quotas, the operator is emailed, and past 95% the accounts that write the most this month are refused new writes with "todz cloud is at capacity this month". Reading keeps working and the rest of the accounts keep writing.
+
+Self-hosted servers have no account limit unless they set `CLOUD_ACCOUNTS_MAX` to a positive whole number.
+
 ## Self-hosted servers
 
 The counts are Worker variables. Leave one out to keep its default; set it to a positive whole number to change it:

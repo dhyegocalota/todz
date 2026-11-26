@@ -74,6 +74,12 @@ export const APP_ACTIONS: AppAction[] = [
     scope: ParityScope.NotOverMcp,
     reason: IDENTITY_REASON,
   }),
+  withoutTool({
+    action: 'Leave an address for the cloud queue',
+    ownerRoute: 'join_cloud_queue',
+    scope: ParityScope.NotOverMcp,
+    reason: IDENTITY_REASON,
+  }),
   withoutTool({ action: 'Sign out', ownerRoute: 'sign_out', scope: ParityScope.NotOverMcp, reason: IDENTITY_REASON }),
   ownerKeyAction({ action: 'Read the account settings', ownerRoute: 'read_owner', tool: 'settings' }),
   ownerKeyAction({ action: 'Change the account settings', ownerRoute: 'update_owner', tool: 'update_settings' }),
