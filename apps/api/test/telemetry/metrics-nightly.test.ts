@@ -100,7 +100,7 @@ describe('the nightly aggregates', () => {
     const added = await project.addTasks({ actor: OWNER_ACTOR, drafts: [draft, { ...draft, title: 'Call Maria' }] });
     if (!added.ok) throw new Error('the seeded tasks should be added');
     await project.addTasks({ actor: agentActor('claude-code'), drafts: [{ ...draft, title: 'Draft the report' }] });
-    await project.completeTasks({ actor: OWNER_ACTOR, numbers: [added.value[0]!.number], note: null });
+    await project.completeTasks({ actor: OWNER_ACTOR, numbers: [added.value[0]!.task.number], note: null });
     await runMetricsNightly({ scheduledTime: todayStart + MILLISECONDS_PER_DAY + 3 * MILLISECONDS_PER_HOUR, env: nightlyEnv('on') });
     const day = utcDayOf(todayStart);
     const { results } = await env.DIRECTORY.prepare('SELECT metric, dimension, count FROM metrics_daily WHERE day = ?')

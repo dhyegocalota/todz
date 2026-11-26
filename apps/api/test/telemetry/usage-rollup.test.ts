@@ -38,9 +38,9 @@ function limiters({ refusing = [] }: { refusing?: (keyof Limiters)[] } = {}): Li
   };
 }
 
-function settingsOf({ recorded, telemetry = 'on' }: { recorded: Limiters; telemetry?: string | undefined }): Partial<Env> {
+function settingsOf({ recorded, isTelemetryOff = false }: { recorded: Limiters; isTelemetryOff?: boolean }): Partial<Env> {
   return {
-    TELEMETRY: telemetry,
+    TELEMETRY: isTelemetryOff ? undefined : 'on',
     USAGE_LIMITER: recorded.client.limiter,
     USAGE_INSTALL_LIMITER: recorded.install.limiter,
     USAGE_GLOBAL_LIMITER: recorded.global.limiter,
@@ -52,7 +52,11 @@ function rollupRequest({ body, method = 'POST' }: { body: string; method?: strin
   return new Request(`${API_ORIGIN}${USAGE_PATH}`, {
     method,
     body: hasBody ? body : undefined,
-    headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': CLIENT_ADDRESS },
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': String(new TextEncoder().encode(body).length),
+      'CF-Connecting-IP': CLIENT_ADDRESS,
+    },
   });
 }
 
@@ -169,7 +173,7 @@ describe('the shape', () => {
 
 describe('the self-host default', () => {
   test('a server with the variable unset has no such route and stores nothing', async () => {
-    const response = await sent({ rollup: VALID_ROLLUP, settings: settingsOf({ recorded: limiters(), telemetry: undefined }) });
+    const response = await sent({ rollup: VALID_ROLLUP, settings: settingsOf({ recorded: limiters(), isTelemetryOff: true }) });
     expect(response.status).toBe(NOT_FOUND_STATUS);
     expect(await storedRows()).toEqual([]);
   });

@@ -263,6 +263,7 @@ function panelHtml(summary: WaitlistSummary): string {
 <div class="panel-head">
 <h1 class="panel-title">${escapedHtml(panel.title)}</h1>
 <nav class="panel-actions" aria-label="${escapedHtml(ADMIN_COPY.shell.navLabel)}">
+<a class="admin-action" href="${AdminPath.Metrics}">${escapedHtml(ADMIN_COPY.metrics.link)}</a>
 <a class="admin-action" href="${AdminPath.Export}" download>${escapedHtml(panel.download)}</a>
 <form method="post" action="${AdminPath.SignOut}"><button class="nav-link nav-button" type="submit">${escapedHtml(panel.signOut)}</button></form>
 </nav>

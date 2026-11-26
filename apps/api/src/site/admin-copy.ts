@@ -1,3 +1,4 @@
+import { Metric } from '../telemetry/metric';
 import { ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES } from './admin-paths';
 
 export const ADMIN_COPY = {
@@ -9,6 +10,7 @@ export const ADMIN_COPY = {
     closedTitle: 'Admin closed · todz admin',
     linkTitle: 'Signing in · todz admin',
     panelTitle: 'Waitlist · todz admin',
+    metricsTitle: 'Metrics · todz admin',
   },
   shell: {
     navLabel: 'Admin',
@@ -59,6 +61,32 @@ export const ADMIN_COPY = {
     failed: 'Failed',
     timeZone: 'UTC',
     capNote: ({ shown, total }: { shown: string; total: string }) => `Showing the newest ${shown} of ${total}. The CSV has all.`,
+  },
+  metrics: {
+    title: 'Metrics',
+    link: 'Metrics',
+    back: 'Waitlist',
+    download: 'Download CSV',
+    summaryHeading: 'Last 30 days',
+    emptyTitle: 'No numbers yet.',
+    emptyBody: 'The first nightly run writes them.',
+    chartLabel: ({ label, days }: { label: string; days: number }) => `${label}, last ${days} days`,
+    labelOf: {
+      [Metric.OwnersTotal]: 'Owners',
+      [Metric.OwnersNew]: 'New owners',
+      [Metric.WorkspacesTotal]: 'Workspaces',
+      [Metric.WorkspacesNew]: 'New workspaces',
+      [Metric.ProjectsTotal]: 'Projects',
+      [Metric.ProjectsNew]: 'New projects',
+      [Metric.TasksAdded]: 'Tasks added',
+      [Metric.TasksCompleted]: 'Tasks completed',
+      [Metric.AgentWrites]: 'Agent writes',
+      [Metric.DayMailsSent]: 'Day mails sent',
+      [Metric.AppcastRequests]: 'Update checks',
+      [Metric.UsageRollups]: 'Shared usage reports',
+      [Metric.UsageVersions]: 'Reports by app version',
+      [Metric.UsageEvents]: 'Shared usage events',
+    } satisfies Record<Metric, string>,
   },
   empty: {
     title: 'No one on the list yet.',

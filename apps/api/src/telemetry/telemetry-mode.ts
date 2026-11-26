@@ -1,3 +1,4 @@
+import { enumValueOf } from '../enum-value';
 import type { Env } from '../env';
 
 export enum TelemetryMode {
@@ -5,6 +6,7 @@ export enum TelemetryMode {
   Off = 'off',
 }
 
-export function isTelemetryOn(env: Pick<Env, 'TELEMETRY'>): boolean {
-  throw new Error('isTelemetryOn is not implemented');
+export function isTelemetryOn({ TELEMETRY: setting }: Pick<Env, 'TELEMETRY'>): boolean {
+  if (setting === undefined) return false;
+  return enumValueOf({ enumeration: TelemetryMode, candidate: setting }) === TelemetryMode.On;
 }
