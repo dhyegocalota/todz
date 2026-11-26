@@ -14,7 +14,7 @@ enum ErrorCopy {
     static let nameEmpty = "Add a name."
     static let nameTooLong = "Names can be up to \(TaskLimits.nameMaxLength.formatted()) characters."
     static let dueDateInvalid = "That date isn't valid."
-    static let inboxIsFixed = "The Inbox can't be renamed."
+    static let inboxIsFixed = "The Inbox can't be renamed or deleted."
     static let taskGone = "This task is no longer available."
     static let projectGone = "This project is no longer available."
     static let workspaceGone = "This workspace is no longer available."
@@ -24,6 +24,7 @@ enum ErrorCopy {
     static let waitingChangesLost = "Changes waiting on this Mac couldn't be read and were lost."
     static let updateNeededTitle = "Update todz to keep syncing"
     static let updateNeededBody = "Your changes wait here until then."
+    static let alreadySignedIn = "You're already signed in."
     static let signOutFailed = "todz couldn't erase this Mac's copy of your tasks, so you're still signed in. Try again."
 
     static let serverAddressInvalid = "Enter an address like https://todz.example.com."

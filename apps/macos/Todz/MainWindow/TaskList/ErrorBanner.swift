@@ -3,6 +3,7 @@ import TodzKit
 
 private let bannerSymbol = "exclamationmark.triangle.fill"
 private let updateNeededSymbol = "arrow.down.circle"
+private let alreadySignedInSymbol = "checkmark.circle"
 
 struct ErrorBanner: View {
     let banner: AppBanner
@@ -31,7 +32,11 @@ struct ErrorBanner: View {
     }
 
     private var symbol: String {
-        banner == .updateNeeded ? updateNeededSymbol : bannerSymbol
+        switch banner {
+        case .updateNeeded: updateNeededSymbol
+        case .alreadySignedIn: alreadySignedInSymbol
+        default: bannerSymbol
+        }
     }
 
     private func announce() {

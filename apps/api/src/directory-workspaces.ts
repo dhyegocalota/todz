@@ -1,6 +1,6 @@
 import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 
-type WorkspaceRow = { id: string; name: string; created_at: number };
+type WorkspaceRow = { id: string; name: string; created_at: number; last_activity_at: number | null };
 type WorkspaceIdRow = { id: string };
 type ProjectIdRow = { id: string };
 type ProjectRow = { id: string; workspace_id: string; name: string; is_inbox: number; created_at: number };
@@ -12,13 +12,13 @@ function projectRecordOf(row: ProjectRow): ProjectRecord {
 }
 
 function workspaceRecordOf(row: WorkspaceRow): WorkspaceRecord {
-  return { id: row.id, name: row.name, createdAt: row.created_at };
+  return { id: row.id, name: row.name, createdAt: row.created_at, lastActivityAt: row.last_activity_at };
 }
 
 export async function listOwnerWorkspaces({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<WorkspaceListing[]> {
   const [workspaceRows, projectRows] = await Promise.all([
     directory
-      .prepare('SELECT id, name, created_at FROM workspaces WHERE owner_id = ? ORDER BY created_at, rowid')
+      .prepare('SELECT id, name, created_at, last_activity_at FROM workspaces WHERE owner_id = ? ORDER BY created_at, rowid')
       .bind(ownerId)
       .all<WorkspaceRow>(),
     directory
@@ -53,7 +53,7 @@ export async function findOwnerWorkspace({
 }): Promise<WorkspaceListing | null> {
   const [workspaceRow, projectRows] = await Promise.all([
     directory
-      .prepare('SELECT id, name, created_at FROM workspaces WHERE id = ? AND owner_id = ?')
+      .prepare('SELECT id, name, created_at, last_activity_at FROM workspaces WHERE id = ? AND owner_id = ?')
       .bind(workspaceId, ownerId)
       .first<WorkspaceRow>(),
     directory
@@ -135,6 +135,23 @@ export async function updateWorkspaceName({
   return result.meta.changes > 0;
 }
 
+export async function touchWorkspaceActivity({
+  directory,
+  projectId,
+  now,
+}: {
+  directory: D1Database;
+  projectId: string;
+  now: number;
+}): Promise<void> {
+  await directory
+    .prepare(
+      'UPDATE workspaces SET last_activity_at = ? WHERE id = (SELECT workspace_id FROM projects WHERE id = ?) AND (last_activity_at IS NULL OR last_activity_at < ?)',
+    )
+    .bind(now, projectId, now)
+    .run();
+}
+
 export async function insertProject({
   directory,
   ownerId,
@@ -188,4 +205,62 @@ export async function updateProjectName({
     .bind(name, projectId, ownerId)
     .run();
   return result.meta.changes > 0;
+}
+
+export async function deleteOwnerWorkspace({
+  directory,
+  ownerId,
+  workspaceId,
+}: {
+  directory: D1Database;
+  ownerId: string;
+  workspaceId: string;
+}): Promise<string[] | null> {
+  const [, , projectDeletion, workspaceDeletion] = await directory.batch([
+    directory
+      .prepare(
+        'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT project_keys.digest FROM project_keys JOIN projects ON projects.id = project_keys.project_id JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ?)',
+      )
+      .bind(workspaceId, ownerId),
+    directory
+      .prepare(
+        'DELETE FROM project_keys WHERE project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ?)',
+      )
+      .bind(workspaceId, ownerId),
+    directory
+      .prepare('DELETE FROM projects WHERE workspace_id IN (SELECT id FROM workspaces WHERE id = ? AND owner_id = ?) RETURNING id')
+      .bind(workspaceId, ownerId),
+    directory.prepare('DELETE FROM workspaces WHERE id = ? AND owner_id = ? RETURNING id').bind(workspaceId, ownerId),
+  ]);
+  if (projectDeletion === undefined || workspaceDeletion === undefined) throw new Error('the batch answers one result per statement');
+  if (workspaceDeletion.results.length === 0) return null;
+  return (projectDeletion.results as ProjectIdRow[]).map((row) => row.id);
+}
+
+export async function deleteOwnerProject({
+  directory,
+  ownerId,
+  projectId,
+}: {
+  directory: D1Database;
+  ownerId: string;
+  projectId: string;
+}): Promise<boolean> {
+  const [, , projectDeletion] = await directory.batch([
+    directory
+      .prepare(
+        'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT digest FROM project_keys WHERE project_id = ? AND project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ?))',
+      )
+      .bind(projectId, ownerId),
+    directory
+      .prepare(
+        'DELETE FROM project_keys WHERE project_id = ? AND project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ?)',
+      )
+      .bind(projectId, ownerId),
+    directory
+      .prepare('DELETE FROM projects WHERE id = ? AND is_inbox = 0 AND workspace_id IN (SELECT id FROM workspaces WHERE owner_id = ?)')
+      .bind(projectId, ownerId),
+  ]);
+  if (projectDeletion === undefined) throw new Error('the batch answers one result per statement');
+  return projectDeletion.meta.changes > 0;
 }

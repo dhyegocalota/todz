@@ -2,7 +2,6 @@ import SwiftUI
 import TodzKit
 
 let menuBarGlyphName = "MenuBarGlyph"
-let menuBarLabelSpacing: CGFloat = 8
 
 struct MenuBarLabel: View {
     @Environment(AppModel.self) private var model
@@ -40,7 +39,7 @@ struct MenuBarLabel: View {
             .onChange(of: windowState.waitingSignInLink, initial: true) { _, link in
                 guard let link else { return }
                 windowState.waitingSignInLink = nil
-                if model.showsIncomingSignInLink { openWindow.mainWindow() }
+                openWindow.mainWindow()
                 Task { await model.redeem(signInLink: link) }
             }
             .onChange(of: windowState.isMainWindowRequested) { _, isRequested in
@@ -66,24 +65,13 @@ struct MenuBarLabel: View {
 
     @ViewBuilder
     private func countContent(badgeText: String?, countOpacity: Double) -> some View {
-        switch toneBadgeText(badgeText) {
-        case let toneBadgeText?:
-            MenuBarCountLabel(badgeText: toneBadgeText, opacity: countOpacity, displayScale: displayScale)
+        switch badgeText {
+        case let badgeText?:
+            MenuBarCountLabel(badgeText: badgeText, opacity: countOpacity, displayScale: displayScale)
                 .equatable()
         case nil:
-            HStack(spacing: menuBarLabelSpacing) {
-                Image(menuBarGlyphName)
-                if let badgeText {
-                    Text(badgeText)
-                        .monospacedDigit()
-                }
-            }
+            Image(menuBarGlyphName)
         }
-    }
-
-    private func toneBadgeText(_ badgeText: String?) -> String? {
-        guard dayTemperatureClock.isOn else { return nil }
-        return badgeText
     }
 
     private func accessibilityLabel(badgeText: String?, openCount: Int?, presentation: RibbonPresentation?) -> String {

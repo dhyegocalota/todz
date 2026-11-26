@@ -79,6 +79,11 @@ FAKE
 cat > "$fakes/cloudflare" <<'FAKE'
 #!/usr/bin/env bash
 echo "cloudflare $*" >> "$CALLS"
+if [[ "$*" == *"migrations list"* ]]; then
+  [[ -n "${FAKE_PENDING_MIGRATION:-}" ]] && { echo "Migrations to be applied:"; echo "| $FAKE_PENDING_MIGRATION |"; exit 0; }
+  echo "No migrations to apply!"
+  exit 0
+fi
 [[ -n "${FAKE_WRANGLER_HANG:-}" ]] && exec tail -f /dev/null
 echo "Uploaded todz-api"
 echo "Current Version ID: 22222222-2222-2222-2222-222222222222"
@@ -284,13 +289,21 @@ new_world
 make_release 0.2.0
 run_deploy
 expect_equal "a deploy exits 0" "$status" "0"
-deploy_call=$(grep '^cloudflare' "$CALLS")
+deploy_call=$(grep 'server:deploy' "$CALLS")
 expect_contains "the stamping deploy takes the staged directory under ~/.todz-deploy" "$deploy_call" "pnpm --filter @todz/api server:deploy --assets $home/.todz-deploy/"
 expect_contains "the deployment message is HEAD's sha" "$deploy_call" "--message $head_sha"
 expect_equal "the new version id is recorded under HEAD's sha" "$(cat "$home/.todz-deploy/deployments/$head_sha")" "$version_id"
 expect_contains "the output names the staged files" "$output" "staged"
 run_deploy --stage-only "$scratch/stage-only-folder"
-expect_equal "staging only never calls the wrapper" "$(grep -c '^cloudflare' "$CALLS")" "1"
+expect_equal "staging only never deploys" "$(grep -c 'server:deploy' "$CALLS")" "1"
+expect_equal "staging only never asks the remote directory" "$(grep -c 'migrations list' "$CALLS")" "1"
+
+new_world
+make_release 0.2.0
+FAKE_PENDING_MIGRATION=0013_workspace_last_activity.sql run_deploy
+expect_refused "a deploy with a migration pending on the remote directory is refused" "0013_workspace_last_activity.sql"
+expect_contains "the refusal says to apply the migrations first" "$output" "apply the migrations"
+expect_equal "a pending migration never reaches the deploy" "$(grep -c 'server:deploy' "$CALLS")" "0"
 
 new_world
 make_release 0.2.0

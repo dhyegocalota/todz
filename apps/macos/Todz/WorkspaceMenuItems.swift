@@ -4,6 +4,7 @@ import TodzKit
 struct WorkspaceMenuItems: View {
     let model: AppModel
     let shortcuts: WorkspaceShortcutController
+    let windowState: MainWindowState
 
     var body: some View {
         ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
@@ -33,6 +34,15 @@ struct WorkspaceMenuItems: View {
         }
         .keyboardShortcut(shortcuts.shortcut(for: .next))
         .disabled(!canStep)
+        Divider()
+        Button(MainWindowCopy.renameWorkspace) {
+            if let workspace = model.activeWorkspace { windowState.sheet = .renameWorkspace(workspace) }
+        }
+        .disabled(!model.isReady)
+        Button(MainWindowCopy.deleteWorkspace) {
+            if let workspace = model.activeWorkspace { windowState.deletion = .workspace(workspace) }
+        }
+        .disabled(!model.isReady)
     }
 
     private var canStep: Bool {

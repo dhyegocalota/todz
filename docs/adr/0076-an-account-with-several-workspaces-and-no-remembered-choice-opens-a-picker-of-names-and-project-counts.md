@@ -1,6 +1,6 @@
 # 0076. An account with several workspaces and no remembered choice opens a picker of names and project counts
 
-- Status: Accepted
+- Status: Superseded by [0098](0098-the-picker-shows-a-workspace-s-last-activity-stamped-from-the-project-store-at-most-once-every-five-minutes-per-project.md)
 - Date: 2026-11-26
 - Deciders: Dhyego Calota (owner); Claude (advisor, the loop's call under "Tonight's last three")
 - Inspired by: `todz-loop/PROMPT.md` "Tonight's last three", item 2 (`workspace-select`)

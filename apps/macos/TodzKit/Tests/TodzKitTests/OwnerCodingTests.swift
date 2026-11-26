@@ -103,6 +103,18 @@ private func encodedText(_ value: some Encodable) throws -> String {
         try expectRoundTrip(OwnerFixtures.doneTaskJSON(number: 2, idempotencyKey: idempotencyKey), as: TaskRecord.self)
     }
 
+    @Test func workspaceDecodesTheLastActivityTheServerStamped() throws {
+        let json = OwnerFixtures.workspaceJSON(identifier: workspaceIdentifier, name: name, projects: [], lastActivityAtJSON: "\(millisecondsOfInstant)")
+        let workspace = try OwnerFixtures.decoded(Workspace.self, from: json)
+        #expect(workspace.lastActivityAt == instant)
+        try expectRoundTrip(json, as: Workspace.self)
+    }
+
+    @Test func workspaceWithoutAStampDecodesNoLastActivity() throws {
+        let workspace = try OwnerFixtures.decoded(Workspace.self, from: OwnerFixtures.workspaceJSON(identifier: workspaceIdentifier, name: name, projects: []))
+        #expect(workspace.lastActivityAt == nil)
+    }
+
     @Test func encodedTaskHoldsEpochMillisecondsAndCalendarDate() throws {
         let task = TaskRecord(
             number: 1, title: name, notes: nil, dueDate: CalendarDate(year: 2026, month: 11, day: 24), state: .open,
