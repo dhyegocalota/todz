@@ -14,9 +14,11 @@ export async function moveTask({
   sourceProjectId,
   sourceProjectName,
   destination,
+  openTasksMax,
   actor,
   number,
 }: {
+  openTasksMax: number;
   source: DurableObjectStub<ProjectStore>;
   sourceProjectId: string;
   sourceProjectName: string;
@@ -30,7 +32,7 @@ export async function moveTask({
   const drafts = [
     { title: task.title, notes: task.notes, dueDate: task.dueDate, idempotencyKey: `${MOVE_KEY_PREFIX}${sourceProjectId}:${number}` },
   ];
-  const added = await destination.addTasks({ actor, drafts, arrivalNote: MCP_COPY.movedFrom(sourceProjectName) });
+  const added = await destination.addTasks({ actor, drafts, openTasksMax, arrivalNote: MCP_COPY.movedFrom(sourceProjectName) });
   if (!added.ok) return added;
   const [addition] = added.value;
   if (addition === undefined) throw new Error('adding one task answers one task');

@@ -38,6 +38,8 @@ const TASK_COLUMNS =
 const FIRST_CHANGE_NUMBER = 1;
 const HISTORY_COLUMNS = 'at, actor_kind, actor_client, action, fields, note';
 const ADDED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE created_at >= ? AND created_at < ?';
+const OPEN_COUNT_QUERY = 'SELECT open_tasks AS total FROM open_counter';
+const ADJUST_OPEN_COUNT = 'UPDATE open_counter SET open_tasks = open_tasks + ?';
 const COMPLETED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE completed_at >= ? AND completed_at < ?';
 const AGENT_WRITES_QUERY =
   'SELECT actor_client, count(*) AS total FROM task_history WHERE actor_kind = ? AND actor_client IS NOT NULL AND at >= ? AND at < ? GROUP BY actor_client';
@@ -51,6 +53,11 @@ const REMOVE_TASK_STATEMENT =
   'UPDATE tasks SET title = ?, notes = NULL, due_date = NULL, idempotency_key = NULL, deleted_at = ?, change_number = ? WHERE number = ?';
 const SCRUB_HISTORY_STATEMENT = 'UPDATE task_history SET note = NULL WHERE task_number = ?';
 const REMOVED_TITLE = '';
+
+function openCountOf(state: TaskState | null): number {
+  if (state === TaskState.Open) return 1;
+  return 0;
+}
 
 function invalidColumn({ column, taskNumber }: { column: string; taskNumber: number }): Error {
   return new Error(`${column} of task ${taskNumber} is not valid`);
@@ -211,7 +218,16 @@ export class SqliteTaskStore implements TaskStore {
     return { added, completed, agentWrites };
   }
 
-  private totalOf({ query, bindings }: { query: string; bindings: number[] }): number {
+  countOpenTasks(): number {
+    return this.totalOf({ query: OPEN_COUNT_QUERY, bindings: [] });
+  }
+
+  private adjustOpenCount(delta: number): void {
+    if (delta === 0) return;
+    this.sql.exec(ADJUST_OPEN_COUNT, delta);
+  }
+
+  private totalOf({ query, bindings }: { query: string; bindings: SqlStorageValue[] }): number {
     const [row] = this.sql.exec<{ total: number }>(query, ...bindings).toArray();
     if (row === undefined) throw new Error('a count returned no row');
     return row.total;
@@ -246,9 +262,11 @@ export class SqliteTaskStore implements TaskStore {
       this.takeChangeNumber(),
     );
     this.raiseCounterTo(task.number);
+    this.adjustOpenCount(openCountOf(task.state));
   }
 
   replaceTask(task: Task): void {
+    const previous = this.findTask(task.number);
     this.sql.exec(
       'UPDATE tasks SET title = ?, notes = ?, due_date = ?, state = ?, order_key = ?, updated_at = ?, completed_at = ?, change_number = ? WHERE number = ?',
       task.title,
@@ -261,9 +279,12 @@ export class SqliteTaskStore implements TaskStore {
       this.takeChangeNumber(),
       task.number,
     );
+    this.adjustOpenCount(openCountOf(task.state) - openCountOf(previous === null ? null : previous.state));
   }
 
   removeTask({ number, at }: { number: number; at: number }): void {
+    const removed = this.findTask(number);
+    if (removed !== null) this.adjustOpenCount(-openCountOf(removed.state));
     this.sql.exec(REMOVE_TASK_STATEMENT, REMOVED_TITLE, at, this.takeChangeNumber(), number);
     this.sql.exec(SCRUB_HISTORY_STATEMENT, number);
   }

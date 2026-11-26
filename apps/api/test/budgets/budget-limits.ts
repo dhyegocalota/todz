@@ -20,7 +20,7 @@ export const OWNER_WORKSPACE_LIST_BUDGET: WorkBudget = { roundTrips: 3, statemen
 
 export const DAY_EMAIL_TICK_BUDGET: WorkBudget = { roundTrips: 2, statements: 5, projectCalls: 0 };
 export const DAY_EMAIL_OWNER_BUDGET: WorkBudget = { roundTrips: 6, statements: 6, projectCalls: 0 };
-export const DAY_EMAIL_REPLY_BUDGET: WorkBudget = { roundTrips: 4, statements: 4, projectCalls: 1 };
+export const DAY_EMAIL_REPLY_BUDGET: WorkBudget = { roundTrips: 5, statements: 5, projectCalls: 1 };
 
 export const MCP_LIST_BUDGET_OF_ERA: Record<ClientEra, WorkBudget> = {
   [ClientEra.Legacy]: { roundTrips: 1, statements: 2, projectCalls: 1 },
@@ -33,7 +33,7 @@ export const MCP_NEXT_NUDGED_BUDGET_OF_ERA: Record<ClientEra, WorkBudget> = {
 };
 
 export const ROWS_READ_BUDGET: Record<RowsReadUseCase, number> = {
-  [RowsReadUseCase.Add]: 10,
+  [RowsReadUseCase.Add]: 11,
   [RowsReadUseCase.UpdateFirst]: 10,
   [RowsReadUseCase.UpdateLast]: 10,
   [RowsReadUseCase.UpdateBefore]: 10,

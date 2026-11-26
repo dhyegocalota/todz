@@ -2,6 +2,7 @@ import { digestCredential } from './credential-digest';
 import {
   type KeyProjectRecord,
   type KeyProjectSessionRecord,
+  type SessionOwnerRecord,
   findKeyProject,
   findKeyProjectAndSession,
   findOwnedProject,
@@ -22,7 +23,7 @@ import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 import type { ProjectStore } from './project-store';
 import { type RecordWait, measured } from './timed-call';
 
-export type SessionOwner = { readonly ownerId: string } & { readonly sessionOwner: unique symbol };
+export type SessionOwner = { readonly ownerId: string; readonly isSuspended: boolean } & { readonly sessionOwner: unique symbol };
 
 export type SiblingProject = { record: ProjectRecord; project: DurableObjectStub<ProjectStore> };
 
@@ -38,6 +39,8 @@ export type KeyProject = {
   keyDigest: string;
   timeZone: string;
   agentNudge: boolean;
+  ownerId: string;
+  isSuspended: boolean;
   sessionClientName: string | null;
 };
 
@@ -56,8 +59,8 @@ function openProject({ env, projectId }: { env: Env; projectId: string }): Durab
   return env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(projectId));
 }
 
-function resolvedOwnerOf(ownerId: string): SessionOwner {
-  const owner = Object.freeze({ ownerId }) as SessionOwner;
+function resolvedOwnerOf({ ownerId, isSuspended }: SessionOwnerRecord): SessionOwner {
+  const owner = Object.freeze({ ownerId, isSuspended }) as SessionOwner;
   resolvedOwners.add(owner);
   return owner;
 }
@@ -118,6 +121,8 @@ export async function openKeyProject({
     keyDigest,
     timeZone: keyProject.timeZone,
     agentNudge: keyProject.agentNudge,
+    ownerId: keyProject.ownerId,
+    isSuspended: keyProject.isSuspended,
     sessionClientName,
   };
 }
@@ -152,13 +157,13 @@ export async function resolveSessionOwner({
   if (isBlankSecret(secret)) return null;
   const digest = await digestCredential(secret);
   if (projectId === undefined) {
-    const ownerId = await findSessionOwner({ directory: env.DIRECTORY, digest, now });
-    if (ownerId === null) return null;
-    return resolvedOwnerOf(ownerId);
+    const sessionOwner = await findSessionOwner({ directory: env.DIRECTORY, digest, now });
+    if (sessionOwner === null) return null;
+    return resolvedOwnerOf(sessionOwner);
   }
   const sessionProject = await findSessionProject({ directory: env.DIRECTORY, digest, projectId, now });
   if (sessionProject === null) return null;
-  const owner = resolvedOwnerOf(sessionProject.ownerId);
+  const owner = resolvedOwnerOf(sessionProject);
   checkedProjects.set(owner, { projectId, ownedProjectId: sessionProject.ownedProjectId });
   return owner;
 }
@@ -169,9 +174,9 @@ export type OwnerKeyAccess = { owner: SessionOwner; keyDigest: string };
 export async function openOwnerKey({ env, secret }: { env: Env; secret: string }): Promise<OwnerKeyAccess | null> {
   if (isBlankSecret(secret)) return null;
   const keyDigest = await digestCredential(secret);
-  const ownerId = await findKeyOwner({ directory: env.DIRECTORY, digest: keyDigest });
-  if (ownerId === null) return null;
-  return { owner: resolvedOwnerOf(ownerId), keyDigest };
+  const keyOwner = await findKeyOwner({ directory: env.DIRECTORY, digest: keyDigest });
+  if (keyOwner === null) return null;
+  return { owner: resolvedOwnerOf(keyOwner), keyDigest };
 }
 
 export async function findOwnedProjectId({

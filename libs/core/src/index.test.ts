@@ -2,11 +2,13 @@ import { describe, expect, test } from 'vitest';
 import * as core from './index';
 
 const PUBLIC_EXPORTS = [
+  'LimitViolation',
   'OWNER_ACTOR',
   'RuleViolation',
   'TaskNotFoundError',
   'addTasks',
   'agentActor',
+  'assertBatchSize',
   'completeTasks',
   'deleteTask',
   'dueNow',
@@ -26,6 +28,7 @@ const PUBLIC_EXPORTS = [
   'reopenTasks',
   'textMatches',
   'updateTask',
+  'validateDrafts',
 ];
 
 describe('the package index', () => {

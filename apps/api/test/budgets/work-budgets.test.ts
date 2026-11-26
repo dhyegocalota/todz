@@ -1,4 +1,4 @@
-import { TaskPlacement } from '@todz/types';
+import { PROJECT_OPEN_TASKS_MAX, TaskPlacement } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { z } from 'zod';
@@ -39,7 +39,8 @@ const RpcMessageSchema = z.object({ method: z.string() });
 type ServedRequest = { method: string; counts: WorkCounts };
 
 const USE_CASE_OF_ROWS_READ: Record<RowsReadUseCase, (instance: ProjectStore) => unknown> = {
-  [RowsReadUseCase.Add]: (instance) => instance.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('One more')] }),
+  [RowsReadUseCase.Add]: (instance) =>
+    instance.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [draftOf('One more')] }),
   [RowsReadUseCase.UpdateFirst]: (instance) =>
     instance.updateTask({ actor: AGENT_ACTOR, number: MIDDLE_TASK, patch: { placement: { kind: TaskPlacement.First } } }),
   [RowsReadUseCase.UpdateLast]: (instance) =>
@@ -102,7 +103,11 @@ async function countedToolCall({
   name: McpToolName;
 }): Promise<WorkCounts> {
   unwrap(
-    await env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(projectId)).addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('Open task')] }),
+    await env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(projectId)).addTasks({
+      openTasksMax: PROJECT_OPEN_TASKS_MAX,
+      actor: AGENT_ACTOR,
+      drafts: [draftOf('Open task')],
+    }),
   );
   const served: ServedRequest[] = [];
   const client = await connectClient({ era, key, serve: countingServe(served) });
@@ -227,7 +232,7 @@ describe('the directory and Durable Object work of a reply to the day email', ()
     await resetDayEmails();
   });
 
-  test('an accepted reply costs one digest read, one identity read, one Inbox lookup, one conditional claim and one add', async () => {
+  test('an accepted reply costs one digest read, one identity read, one Inbox lookup, one write reservation, one conditional claim and one add', async () => {
     const context = await seedReplyContext();
     const { countedEnv, counts } = countedWorkEnv();
     await deliverReply({

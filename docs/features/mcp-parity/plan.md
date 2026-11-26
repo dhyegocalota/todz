@@ -30,7 +30,7 @@ One developer, in this order: G1, G2, G3 (project tools), G4 (owner keys and acc
 
 ### G2
 
-- [x] **Step 2:** Red: `project-task-removal.test.ts`, schema version 4, the change feed — evidence: red d3b3c7a4, green e4fb43a6
+- [x] **Step 2:** Red: `project-task-removal.test.ts`, schema version 5, the change feed — evidence: red d3b3c7a4, green e4fb43a6
 
 ### G3
 

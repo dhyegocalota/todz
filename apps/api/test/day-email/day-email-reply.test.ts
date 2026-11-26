@@ -1,12 +1,14 @@
 import { OWNER_ACTOR } from '@todz/core';
-import { DAY_EMAIL_RETENTION_MS, REPLY_DAILY_MAX, REPLY_SIZE_MAX_BYTES } from '@todz/types';
+import { DAY_EMAIL_RETENTION_MS, FairUseLimit, REPLY_DAILY_MAX, REPLY_SIZE_MAX_BYTES } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../../src/credential-digest';
 import { ReplyOutcome } from '../../src/day-email/day-email-reply';
 import { issueReplyAddress } from '../../src/day-email/day-email-reply-address';
 import { AuthenticationVerdict } from '../../src/day-email/reply-authentication';
+import { fairUseLimitsOf } from '../../src/fair-use-limits';
 import { calendarDateInTimeZone } from '../../src/owner-today';
+import { utcDayOf } from '../../src/telemetry/telemetry-day';
 import { seedEmailIdentity } from '../directory-seed';
 import { consoleOutput, freshAddress, recordingBinding, recordingLimiter } from '../email-sign-in-client';
 import { resetDayEmails, seedDayOwner } from './day-email-client';
@@ -58,6 +60,16 @@ async function insertRepliesToday({ ownerId, count }: { ownerId: string; count: 
       ),
     ),
   );
+}
+
+async function suspendOwner(ownerId: string): Promise<void> {
+  await env.DIRECTORY.prepare('UPDATE owners SET suspended_at = ? WHERE id = ?').bind(Date.now(), ownerId).run();
+}
+
+async function exhaustDailyWrites(ownerId: string): Promise<void> {
+  await env.DIRECTORY.prepare('INSERT INTO owner_usage (owner_id, day, writes, bytes) VALUES (?, ?, ?, 0)')
+    .bind(ownerId, utcDayOf(Date.now()), fairUseLimitsOf(env)[FairUseLimit.DailyWrites])
+    .run();
 }
 
 const REFUSALS: Refusal[] = [
@@ -247,6 +259,18 @@ const REFUSALS: Refusal[] = [
     name: 'the day after the daily maximum',
     outcome: ReplyOutcome.DailyCap,
     prepare: (context) => insertRepliesToday({ ownerId: context.owner.ownerId, count: REPLY_DAILY_MAX }),
+    delivery: (context) => ownerReplyOf({ context }),
+  },
+  {
+    name: 'a suspended owner',
+    outcome: ReplyOutcome.WriteRefused,
+    prepare: (context) => suspendOwner(context.owner.ownerId),
+    delivery: (context) => ownerReplyOf({ context }),
+  },
+  {
+    name: 'an owner at the daily write cap',
+    outcome: ReplyOutcome.WriteRefused,
+    prepare: (context) => exhaustDailyWrites(context.owner.ownerId),
     delivery: (context) => ownerReplyOf({ context }),
   },
   {

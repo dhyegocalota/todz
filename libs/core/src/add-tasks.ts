@@ -30,6 +30,11 @@ function validateDraft({ draft, index }: { draft: TaskDraft; index: number }): V
   });
 }
 
+export function validateDrafts(drafts: TaskDraft[]): ValidatedDraft[] {
+  assertBatchSize(drafts.length);
+  return drafts.map((draft, index) => validateDraft({ draft, index }));
+}
+
 function findExistingTask({
   store,
   createdTasks,
@@ -91,8 +96,7 @@ export function addTasks({
   drafts: TaskDraft[];
   arrivalNote?: string | null;
 }): AddedTask[] {
-  assertBatchSize(drafts.length);
-  const validatedDrafts = drafts.map((draft, index) => validateDraft({ draft, index }));
+  const validatedDrafts = validateDrafts(drafts);
   const now = clock.now();
   const lastIssuedNumber = store.lastIssuedTaskNumber();
   const initialState: BatchState = {

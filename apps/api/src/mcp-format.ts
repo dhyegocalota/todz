@@ -8,6 +8,7 @@ import {
   formatShortId,
 } from '@todz/core';
 import { ActorKind, type TaskState } from '@todz/types';
+import { FAIR_USE_COPY } from './fair-use-copy';
 import { MCP_COPY } from './mcp-copy';
 import type { MovedTask } from './move-task';
 import type { ProjectRecord } from './owner-records';
@@ -142,6 +143,7 @@ export function nudgedText({ nudge, text }: { nudge: string | null; text: string
 export function failureText(failure: ProjectFailure): string {
   if (failure.kind === ProjectFailureKind.TaskNotFound) return MCP_COPY.taskNotFound(formatShortId(failure.number));
   if (failure.kind === ProjectFailureKind.CursorAhead) throw new Error('the MCP tools never read changes');
+  if (failure.kind === ProjectFailureKind.LimitReached) return FAIR_USE_COPY.limitMessageOf({ limit: failure.limit, max: failure.max });
   const sentence = MCP_COPY.ruleIssue[failure.issue];
   if (failure.index === null) return sentence;
   return MCP_COPY.atTaskPosition({ position: failure.index + 1, sentence });

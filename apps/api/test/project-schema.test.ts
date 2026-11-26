@@ -7,14 +7,14 @@ import { SqliteTaskStore } from '../src/sqlite-task-store';
 import { CLOCK_NOW, TODAY, buildTask, calendarDate, draftOf, newProjectStub, openTasksFilter } from './task-fixtures';
 
 const LIST_LIMIT = 10;
-const LATEST_VERSION = 4;
+const LATEST_VERSION = 5;
 const VERSION_TWO = 2;
 const VERSION_ONE = 1;
 const VERSION_TWO_MIGRATIONS = MIGRATIONS.filter(({ version }) => version <= VERSION_TWO);
 const VERSION_THREE_INDEXES = ['task_history_task', 'tasks_order', 'tasks_state_order'];
 const READ_ONLY_STATEMENT = /^(SELECT|CREATE TABLE IF NOT EXISTS)/;
 const SCENARIO_CLOCK = { now: () => CLOCK_NOW };
-const TABLES_TO_DROP = ['task_history', 'tasks', 'task_counter', 'change_counter', 'schema_version'];
+const TABLES_TO_DROP = ['task_history', 'tasks', 'task_counter', 'change_counter', 'open_counter', 'schema_version'];
 
 type ColumnRow = { name: string };
 type ChangeRow = { number: number; change_number: number };
@@ -122,11 +122,20 @@ function changeCounterRows(sql: SqlStorage): number[] {
 }
 
 describe('applyProjectSchema', () => {
-  test('the schema version is 4', () => {
+  test('the schema version is 5', () => {
     expect(PROJECT_SCHEMA_VERSION).toBe(LATEST_VERSION);
   });
 
-  test('a new store is at version 4 with a change number column, a deleted_at column and an empty counter', async () => {
+  test('an upgraded store counts its open tasks from the first write', async () => {
+    const openCount = await runInDurableObject(newProjectStub(), (_instance, state) => {
+      versionOneStore({ sql: state.storage.sql, taskCount: 2 });
+      applyProjectSchema(state.storage);
+      return new SqliteTaskStore(state.storage.sql).countOpenTasks();
+    });
+    expect(openCount).toBe(2);
+  });
+
+  test('a new store is at version 5 with a change number column, a deleted_at column and an empty counter', async () => {
     const observed = await runInDurableObject(newProjectStub(), (_instance, state) => ({
       versions: state.storage.sql.exec<{ version: number }>('SELECT version FROM schema_version').toArray(),
       columns: state.storage.sql
@@ -141,7 +150,7 @@ describe('applyProjectSchema', () => {
     expect(observed.counter).toEqual([]);
   });
 
-  test('a version 1 store with tasks 1 and 2 upgrades to version 4 numbered by task number', async () => {
+  test('a version 1 store with tasks 1 and 2 upgrades to version 5 numbered by task number', async () => {
     const observed = await runInDurableObject(newProjectStub(), (_instance, state) => {
       versionOneStore({ sql: state.storage.sql, taskCount: 2 });
       applyProjectSchema(state.storage);
@@ -296,15 +305,15 @@ describe('applyProjectSchema', () => {
     expect(observed.counter).toEqual(observed.before.counter);
   });
 
-  test('every use case answers on a migrated version 2 store exactly as on a new store', async () => {
-    const onNewStore = await runInDurableObject(newProjectStub(), (_instance, state) =>
+  test('every use case answers on an upgraded store exactly as on a fresh one', async () => {
+    const onFresh = await runInDurableObject(newProjectStub(), (_instance, state) =>
       scenarioAnswers(new SqliteTaskStore(state.storage.sql)),
     );
-    const onMigratedStore = await runInDurableObject(newProjectStub(), (_instance, state) => {
+    const onUpgraded = await runInDurableObject(newProjectStub(), (_instance, state) => {
       versionTwoStore({ storage: state.storage, taskCount: 0 });
       applyProjectSchema(state.storage);
       return scenarioAnswers(new SqliteTaskStore(state.storage.sql));
     });
-    expect(onMigratedStore).toEqual(onNewStore);
+    expect(onUpgraded).toEqual(onFresh);
   });
 });

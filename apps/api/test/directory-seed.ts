@@ -1,4 +1,4 @@
-import { MILLISECONDS_PER_HOUR, OWNER_KEY_PREFIX } from '@todz/types';
+import { MILLISECONDS_PER_HOUR, OWNER_KEY_PREFIX, PROJECT_LIVE_KEYS_MAX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { digestCredential } from '../src/credential-digest';
 import { generateCredentialSecret } from '../src/credential-secret';
@@ -98,7 +98,9 @@ export async function issuedKeyOf(issuance: Promise<IssuedKey | null>): Promise<
 
 export async function seedIssuedKey(timeZone = 'UTC'): Promise<{ projectId: string; key: string }> {
   const projectId = await seedProject({ ownerId: await seedOwner(timeZone) });
-  const { secret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+  const { secret } = await issuedKeyOf(
+    issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }),
+  );
   return { projectId, key: secret };
 }
 
@@ -106,7 +108,9 @@ export async function seedNudgedKey(): Promise<{ projectId: string; key: string 
   const ownerId = await seedOwner();
   await enableAgentNudge({ directory: env.DIRECTORY, ownerId });
   const projectId = await seedProject({ ownerId });
-  const { secret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+  const { secret } = await issuedKeyOf(
+    issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }),
+  );
   return { projectId, key: secret };
 }
 

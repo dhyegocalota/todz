@@ -3,7 +3,7 @@
 ## What changed
 
 - `libs/core/src/delete-task.ts`: the delete rule (find, compare the trimmed confirmation with the title, remove). `TaskStore.removeTask` is new on the port.
-- `apps/api/src/project-schema.ts`, `sqlite-task-store.ts`, `project-store.ts`: project store schema version 4 (`tasks.deleted_at`); a delete scrubs the row and bumps its change number; every read skips it; `readChanges` returns `deletedNumbers`; `ProjectStore.deleteTask` and `readTask`.
+- `apps/api/src/project-schema.ts`, `sqlite-task-store.ts`, `project-store.ts`: project store schema version 5 (`tasks.deleted_at`); a delete scrubs the row and bumps its change number; every read skips it; `readChanges` returns `deletedNumbers`; `ProjectStore.deleteTask` and `readTask`.
 - `apps/api/src/owner-changes.ts`: the change feed answers `deleted_numbers`.
 - `apps/api/src/mcp-server.ts`, `mcp-format.ts`, `mcp-tool-arguments.ts`, `move-task.ts`, `project-routing.ts`, `directory.ts`, `directory-workspaces.ts`: the project tools `show`, `history`, `reopen`, `delete`, `move`, `projects`. The key row now carries the workspace id; `KeyProject.workspace` opens sibling projects only.
 - `apps/api/migrations/0015_owner_keys.sql`, `directory-owner-keys.ts`, `owner-keys-issuance.ts`, `owner-key-routes.ts`, `owner-routes.ts`: owner keys and `GET|POST /owner/keys`, `DELETE /owner/keys/:keyId`.

@@ -1,6 +1,6 @@
 # MCP parity: every app action has a tool, and account management has its own key
 
-**Status:** In review
+**Status:** Shipped 2026-11-26
 **Tier:** 🔴 (API keys, workspace isolation, MCP tool authorization, data deletion, schema, sync)
 **Owner approval:** the owner's request of 2026-11-26, "make sure que temos todas as MCP tools pra nem precisar relar a mão na UI", and the standing instruction to decide every call; the design is recorded in [ADR 0101](../../adr/0101-an-owner-key-is-a-separate-off-by-default-scope-for-the-account-and-project-keys-never-gain-account-powers.md) and [ADR 0102](../../adr/0102-deleting-a-task-leaves-a-scrubbed-tombstone-for-sync-and-a-move-adds-to-the-destination-before-it-deletes-the-source.md).
 **ADRs:** [0101](../../adr/0101-an-owner-key-is-a-separate-off-by-default-scope-for-the-account-and-project-keys-never-gain-account-powers.md), [0102](../../adr/0102-deleting-a-task-leaves-a-scrubbed-tombstone-for-sync-and-a-move-adds-to-the-destination-before-it-deletes-the-source.md)
@@ -88,13 +88,13 @@ The section sits apart from Connect an Agent, which keeps listing project keys o
 - An owner key whose owner has no row, a revoked key and an unknown key answer 401.
 - Creating past 20 workspaces or 50 projects answers a limit sentence; the daily write reservation of the fair-use lane is the seam below.
 
-### Seam for the fair-use lane (PR #94)
+### The fair-use lane (PR #94), wired
 
-#94 is not on `main` yet. When it lands, the reservation `reserveWrites` goes at these call sites, with no other change to the tools:
+#94 is on `main` and the reservation is wired at these call sites; a call is validated first (the id, the name, the confirmation, the time zone), so a refused call costs no write:
 
 - `apps/api/src/mcp-server.ts`, in `registerWriteTools`: `reopen` (writes: the ids), `delete` (1), `move` (1, plus the bytes of the task's title and notes). The scope already carries what #94 adds (`limits`, `refusalTextOf`) through `buildMcpServer`.
-- `apps/api/src/mcp-owner-server.ts`: `create_workspace`, `create_project`, `rename_*`, `delete_*` and `update_settings` each take one write from the owner's day, by the owner of the key, before the action; `openOwnerKey` also refuses a suspended owner, as `openKeyProject` does.
-- `apps/api/src/owner-workspaces.ts` and `mcp-owner-server.ts` pass the limits of `fairUseLimitsOf(env)` as `workspacesPerOwnerMax` and `projectsPerWorkspaceMax`, which today are `OWNER_WORKSPACES_MAX` and `WORKSPACE_PROJECTS_MAX`.
+- `apps/api/src/mcp-owner-server.ts`: `create_workspace`, `create_project`, `rename_*`, `delete_*` and `update_settings` each take one write from the owner's day, by the owner of the key, before the action; `serveOwnerKey` refuses a suspended owner after the limiter, as `serveMcp` does for a project key.
+- `apps/api/src/owner-workspaces.ts` and `mcp-owner-server.ts` pass the limits of `fairUseLimitsOf(env)` as `workspacesPerOwnerMax` and `projectsPerWorkspaceMax`; the project store frees a place under the open task cap when an open task is deleted. The schema version of the project store is 5 (4 is the open task counter).
 
 ## Open questions → answers
 

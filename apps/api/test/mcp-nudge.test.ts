@@ -1,6 +1,8 @@
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { MILLISECONDS_PER_DAY } from '@todz/types';
+import { env } from 'cloudflare:workers';
 import { describe, expect, onTestFinished, test } from 'vitest';
+import { fairUseLimitsOf } from '../src/fair-use-limits';
 import { MCP_COPY, McpPromptName, McpToolName } from '../src/mcp-copy';
 import { buildMcpServer } from '../src/mcp-server';
 import { calendarDateInTimeZone } from '../src/owner-today';
@@ -113,6 +115,8 @@ describe('next when the due count cannot be read', () => {
       today: calendarDate('2026-11-23'),
       agentNudge: true,
       clientNameOf: () => CLIENT_NAME,
+      limits: fairUseLimitsOf(env),
+      refusalTextOf: async () => null,
     });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await server.connect(serverTransport);

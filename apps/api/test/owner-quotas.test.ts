@@ -6,7 +6,7 @@ import { ownerCall, signInOwner } from './owner-client';
 const CREATED_STATUS = 201;
 const NO_CONTENT_STATUS = 204;
 const CONFLICT_STATUS = 409;
-const LIMIT_REACHED = { error: 'limit_reached' };
+const LIMIT_REACHED = { error: 'limit_reached', message: expect.any(String) };
 const CONCURRENT_EXTRA = 5;
 const INBOX_COUNT = 1;
 
@@ -68,7 +68,7 @@ describe('the workspace quota', () => {
     await inSequence(OWNER_WORKSPACES_MAX, () => createWorkspace(token));
     const refused = await createWorkspace(token);
     expect(refused.status).toBe(CONFLICT_STATUS);
-    expect(await refused.json()).toEqual(LIMIT_REACHED);
+    expect(await refused.json()).toMatchObject(LIMIT_REACHED);
     const listed = await ownerCall({ method: 'GET', path: '/owner/workspaces', token });
     expect((await listed.json<{ workspaces: unknown[] }>()).workspaces).toHaveLength(OWNER_WORKSPACES_MAX);
     expect(await workspaceCount(ownerId)).toBe(OWNER_WORKSPACES_MAX);
@@ -96,7 +96,7 @@ describe('the project quota', () => {
     await inSequence(WORKSPACE_PROJECTS_MAX - INBOX_COUNT, () => createProject({ token, workspaceId: workspace.id }));
     const refused = await createProject({ token, workspaceId: workspace.id });
     expect(refused.status).toBe(CONFLICT_STATUS);
-    expect(await refused.json()).toEqual(LIMIT_REACHED);
+    expect(await refused.json()).toMatchObject(LIMIT_REACHED);
     expect(await projectCount(workspace.id)).toBe(WORKSPACE_PROJECTS_MAX);
   });
 
@@ -116,7 +116,7 @@ describe('the key quota', () => {
     await inSequence(PROJECT_LIVE_KEYS_MAX, () => issueKey({ token, projectId }));
     const refused = await issueKey({ token, projectId });
     expect(refused.status).toBe(CONFLICT_STATUS);
-    expect(await refused.json()).toEqual(LIMIT_REACHED);
+    expect(await refused.json()).toMatchObject(LIMIT_REACHED);
     expect(await liveKeyCount(projectId)).toBe(PROJECT_LIVE_KEYS_MAX);
   });
 

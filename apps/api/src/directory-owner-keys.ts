@@ -1,7 +1,7 @@
 import type { KeyRecord } from './owner-records';
 
 type KeyRow = { id: string; hint: string; created_at: number };
-type OwnerKeyRow = { owner_id: string };
+type OwnerKeyRow = { owner_id: string; suspended_at: number | null };
 
 export async function insertOwnerKey({
   directory,
@@ -53,13 +53,19 @@ export async function revokeOwnerKey({
   return revocation.meta.changes > 0;
 }
 
-export async function findKeyOwner({ directory, digest }: { directory: D1Database; digest: string }): Promise<string | null> {
+export async function findKeyOwner({
+  directory,
+  digest,
+}: {
+  directory: D1Database;
+  digest: string;
+}): Promise<{ ownerId: string; isSuspended: boolean } | null> {
   const row = await directory
     .prepare(
-      'SELECT owner_keys.owner_id FROM owner_keys JOIN owners ON owners.id = owner_keys.owner_id WHERE owner_keys.digest = ? AND owner_keys.revoked_at IS NULL',
+      'SELECT owner_keys.owner_id, owners.suspended_at FROM owner_keys JOIN owners ON owners.id = owner_keys.owner_id WHERE owner_keys.digest = ? AND owner_keys.revoked_at IS NULL',
     )
     .bind(digest)
     .first<OwnerKeyRow>();
   if (row === null) return null;
-  return row.owner_id;
+  return { ownerId: row.owner_id, isSuspended: row.suspended_at !== null };
 }

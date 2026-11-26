@@ -17,11 +17,13 @@ const ACCEPTED_STATUS = 202;
 const LINKS_PATH = '/owner/sign-in-links';
 const SESSIONS_PATH = '/owner/sessions';
 export const TURNSTILE_TEST_SECRET = '1x0000000000000000000000000000000AA';
+const SIGN_UP_TEST_KEY_SECRET = 'sign-up-key-secret-for-tests';
 export const EMAIL_SETTINGS: Partial<Env> = {
   SIGN_IN_PROVIDER: 'email',
   EMAIL_SENDER: 'console',
   PUBLIC_ORIGIN,
   TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET,
+  SIGN_UP_KEY_SECRET: SIGN_UP_TEST_KEY_SECRET,
 };
 const TOKEN_IN_MAIL_PATTERN = /sign-in#token=([A-Za-z0-9_-]{43})/;
 const TOKEN_GROUP = 1;
@@ -32,6 +34,7 @@ export const CLOUDFLARE_SETTINGS: Partial<Env> = {
   SIGN_IN_PROVIDER: 'email',
   EMAIL_SENDER: 'cloudflare',
   PUBLIC_ORIGIN: PUBLIC_HTTPS_ORIGIN,
+  SIGN_UP_KEY_SECRET: SIGN_UP_TEST_KEY_SECRET,
 };
 export const CLIENT_ADDRESS_HEADER = 'CF-Connecting-IP';
 export const CLIENT_ADDRESS = '203.0.113.50';

@@ -1,7 +1,8 @@
-import { RuleIssue, TaskPlacement, TaskState } from '@todz/types';
+import { PROJECT_OPEN_TASKS_MAX, RuleIssue, TaskPlacement, TaskState } from '@todz/types';
 import { runInDurableObject } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
 import { ProjectFailureKind } from '../src/project-result';
+import { SqliteTaskStore } from '../src/sqlite-task-store';
 import { AGENT_ACTOR, TODAY, draftOf, newProjectStub, openTasksFilter, unwrap } from './task-fixtures';
 
 type ProjectStub = ReturnType<typeof newProjectStub>;
@@ -13,7 +14,7 @@ const MISSING_NUMBER = 9;
 
 async function projectWith({ titles }: { titles: string[] }): Promise<ProjectStub> {
   const stub = newProjectStub();
-  unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: titles.map(draftOf) }));
+  unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: titles.map(draftOf) }));
   return stub;
 }
 
@@ -64,6 +65,7 @@ describe('ProjectStore deleteTask', () => {
     const stub = newProjectStub();
     unwrap(
       await stub.addTasks({
+        openTasksMax: PROJECT_OPEN_TASKS_MAX,
         actor: AGENT_ACTOR,
         drafts: [{ title: 'Remove me', notes: SECRET_NOTES, dueDate: null, idempotencyKey: IDEMPOTENCY_KEY }],
       }),
@@ -84,9 +86,9 @@ describe('ProjectStore deleteTask', () => {
   test('the idempotency key of a removed task adds a new task instead of replaying it', async () => {
     const stub = newProjectStub();
     const draft = { title: 'Import', notes: null, dueDate: null, idempotencyKey: IDEMPOTENCY_KEY };
-    unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draft] }));
+    unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [draft] }));
     unwrap(await stub.deleteTask({ number: 1, confirmation: 'Import' }));
-    const [added] = unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draft] }));
+    const [added] = unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [draft] }));
     expect(added).toMatchObject({ replayed: false, task: { number: 2 } });
   });
 
@@ -98,6 +100,17 @@ describe('ProjectStore deleteTask', () => {
     expect(changes.deletedNumbers).toEqual([1]);
     const later = unwrap(await stub.readChanges({ cursor: changes.cursor }));
     expect(later).toEqual({ tasks: [], deletedNumbers: [], cursor: changes.cursor, hasMore: false });
+  });
+
+  test('removing an open task frees its place under the open task cap, and removing a done one does not', async () => {
+    const stub = await projectWith({ titles: ['Open one', 'Done one'] });
+    unwrap(await stub.completeTasks({ actor: AGENT_ACTOR, numbers: [2], note: null }));
+    const openCount = () => runInDurableObject(stub, (_instance, state) => new SqliteTaskStore(state.storage.sql).countOpenTasks());
+    expect(await openCount()).toBe(1);
+    unwrap(await stub.deleteTask({ number: 2, confirmation: 'Done one' }));
+    expect(await openCount()).toBe(1);
+    unwrap(await stub.deleteTask({ number: 1, confirmation: 'Open one' }));
+    expect(await openCount()).toBe(0);
   });
 
   test('a removed done task leaves the done list', async () => {
@@ -113,7 +126,11 @@ describe('ProjectStore readTask', () => {
   test('returns the task with its notes', async () => {
     const stub = newProjectStub();
     unwrap(
-      await stub.addTasks({ actor: AGENT_ACTOR, drafts: [{ title: 'Read me', notes: SECRET_NOTES, dueDate: null, idempotencyKey: null }] }),
+      await stub.addTasks({
+        openTasksMax: PROJECT_OPEN_TASKS_MAX,
+        actor: AGENT_ACTOR,
+        drafts: [{ title: 'Read me', notes: SECRET_NOTES, dueDate: null, idempotencyKey: null }],
+      }),
     );
     expect(unwrap(await stub.readTask({ number: 1 }))).toMatchObject({ title: 'Read me', notes: SECRET_NOTES });
   });

@@ -1,8 +1,13 @@
 import { type CallToolResult, McpServer } from '@modelcontextprotocol/server';
-import { MINUTES_PER_HOUR, OWNER_WORKSPACES_MAX, WORKSPACE_PROJECTS_MAX } from '@todz/types';
+import { FairUseLimit, MINUTES_PER_HOUR } from '@todz/types';
 import { type WorkspaceListing, listOwnerWorkspaces } from './directory-workspaces';
 import type { Env } from './env';
+import type { FairUseLimits } from './fair-use-limits';
 import { MCP_COPY, McpOwnerToolName } from './mcp-copy';
+import type { WriteRefusalTextOf } from './mcp-server';
+import { textBytesOf } from './owner-write-quota';
+import { canonicalTimeZone } from './time-zone';
+import { nameFailureOf } from './write-rules';
 import { failureText } from './mcp-format';
 import {
   CreateProjectArgumentsSchema,
@@ -38,7 +43,33 @@ const READ_ONLY_ANNOTATIONS = { readOnlyHint: true };
 const WRITE_ANNOTATIONS = { destructiveHint: false };
 const DESTRUCTIVE_ANNOTATIONS = { destructiveHint: true };
 
-export type OwnerMcpScope = { env: Env; owner: SessionOwner; now: number };
+export type OwnerMcpScope = {
+  env: Env;
+  owner: SessionOwner;
+  now: number;
+  limits: FairUseLimits;
+  refusalTextOf: WriteRefusalTextOf;
+};
+
+const ONE_WRITE = 1;
+const NO_TEXT_BYTES = 0;
+
+async function reserved({
+  scope,
+  name,
+  run,
+}: {
+  scope: OwnerMcpScope;
+  name: string | null;
+  run: () => Promise<CallToolResult>;
+}): Promise<CallToolResult> {
+  const nameFailure = name === null ? null : nameFailureOf(name);
+  if (nameFailure !== null) return errorAnswer(failureText(nameFailure));
+  const bytes = name === null ? NO_TEXT_BYTES : textBytesOf([name]);
+  const refusal = await scope.refusalTextOf({ writes: ONE_WRITE, bytes });
+  if (refusal !== null) return errorAnswer(refusal);
+  return run();
+}
 
 function textAnswer(text: string): CallToolResult {
   return { content: [{ type: TEXT_CONTENT, text }] };
@@ -136,15 +167,24 @@ function registerSettingsTool({ server, scope }: { server: McpServer; scope: Own
       };
       const isEmpty = Object.values(input).every((value) => value === undefined);
       if (isEmpty) return errorAnswer(MCP_COPY.nothingToUpdateSettings);
-      const result = await updateSettings({ env, owner, now, input });
-      return answerOf({ result, answer: (settings) => [MCP_COPY.settingsUpdated, ...settingsLines(settings)].join(LINE_BREAK) });
+      const isInvalidTimeZone = input.timeZone !== undefined && canonicalTimeZone(input.timeZone) === null;
+      if (isInvalidTimeZone) return errorAnswer(MCP_COPY.timeZoneInvalid);
+      return reserved({
+        scope,
+        name: null,
+        run: async () => {
+          const result = await updateSettings({ env, owner, now, input });
+          return answerOf({ result, answer: (settings) => [MCP_COPY.settingsUpdated, ...settingsLines(settings)].join(LINE_BREAK) });
+        },
+      });
     },
   );
 }
 
 function registerWorkspaceTools({ server, scope }: { server: McpServer; scope: OwnerMcpScope }): void {
   const { env, owner, now } = scope;
-  const limitText = MCP_COPY.workspacesLimit(OWNER_WORKSPACES_MAX);
+  const workspacesPerOwnerMax = scope.limits[FairUseLimit.Workspaces];
+  const limitText = MCP_COPY.workspacesLimit(workspacesPerOwnerMax);
   server.registerTool(
     McpOwnerToolName.CreateWorkspace,
     {
@@ -152,12 +192,17 @@ function registerWorkspaceTools({ server, scope }: { server: McpServer; scope: O
       inputSchema: NameArgumentsSchema,
       annotations: WRITE_ANNOTATIONS,
     },
-    async ({ name }) => {
-      const result = await createWorkspace({ env, owner, name, now, workspacesPerOwnerMax: OWNER_WORKSPACES_MAX });
-      const answer = ({ workspace, projects }: WorkspaceListing) =>
-        MCP_COPY.workspaceCreated({ id: workspace.id, name: workspace.name, inboxId: inboxOf({ workspace, projects }).id });
-      return answerOf({ result, answer, limitText });
-    },
+    async ({ name }) =>
+      reserved({
+        scope,
+        name,
+        run: async () => {
+          const result = await createWorkspace({ env, owner, name, now, workspacesPerOwnerMax });
+          const answer = ({ workspace, projects }: WorkspaceListing) =>
+            MCP_COPY.workspaceCreated({ id: workspace.id, name: workspace.name, inboxId: inboxOf({ workspace, projects }).id });
+          return answerOf({ result, answer, limitText });
+        },
+      }),
   );
   server.registerTool(
     McpOwnerToolName.RenameWorkspace,
@@ -166,10 +211,15 @@ function registerWorkspaceTools({ server, scope }: { server: McpServer; scope: O
       inputSchema: RenameWorkspaceArgumentsSchema,
       annotations: WRITE_ANNOTATIONS,
     },
-    async ({ workspace, name }) => {
-      const result = await renameWorkspace({ env, owner, workspaceId: workspace, name });
-      return answerOf({ result, answer: (listing) => MCP_COPY.workspaceRenamed(listing.workspace), limitText });
-    },
+    async ({ workspace, name }) =>
+      reserved({
+        scope,
+        name,
+        run: async () => {
+          const result = await renameWorkspace({ env, owner, workspaceId: workspace, name });
+          return answerOf({ result, answer: (listing) => MCP_COPY.workspaceRenamed(listing.workspace), limitText });
+        },
+      }),
   );
   server.registerTool(
     McpOwnerToolName.DeleteWorkspace,
@@ -181,15 +231,22 @@ function registerWorkspaceTools({ server, scope }: { server: McpServer; scope: O
     async ({ workspace, confirm }) => {
       const confirmed = await findConfirmedWorkspace({ env, owner, workspaceId: workspace, confirmation: confirm });
       if (!confirmed.ok) return errorAnswer(failureTextOf({ failure: confirmed.failure, limitText }));
-      const result = await deleteWorkspace({ env, owner, workspaceId: workspace, expectedName: confirmed.value.workspace.name });
-      return answerOf({ result, answer: () => MCP_COPY.workspaceDeleted(confirmed.value.workspace.name), limitText });
+      return reserved({
+        scope,
+        name: null,
+        run: async () => {
+          const result = await deleteWorkspace({ env, owner, workspaceId: workspace, expectedName: confirmed.value.workspace.name });
+          return answerOf({ result, answer: () => MCP_COPY.workspaceDeleted(confirmed.value.workspace.name), limitText });
+        },
+      });
     },
   );
 }
 
 function registerProjectTools({ server, scope }: { server: McpServer; scope: OwnerMcpScope }): void {
   const { env, owner, now } = scope;
-  const limitText = MCP_COPY.projectsLimit(WORKSPACE_PROJECTS_MAX);
+  const projectsPerWorkspaceMax = scope.limits[FairUseLimit.Projects];
+  const limitText = MCP_COPY.projectsLimit(projectsPerWorkspaceMax);
   server.registerTool(
     McpOwnerToolName.CreateProject,
     {
@@ -197,17 +254,15 @@ function registerProjectTools({ server, scope }: { server: McpServer; scope: Own
       inputSchema: CreateProjectArgumentsSchema,
       annotations: WRITE_ANNOTATIONS,
     },
-    async ({ workspace, name }) => {
-      const result = await createProject({
-        env,
-        owner,
-        workspaceId: workspace,
+    async ({ workspace, name }) =>
+      reserved({
+        scope,
         name,
-        now,
-        projectsPerWorkspaceMax: WORKSPACE_PROJECTS_MAX,
-      });
-      return answerOf({ result, answer: MCP_COPY.projectCreated, limitText });
-    },
+        run: async () => {
+          const result = await createProject({ env, owner, workspaceId: workspace, name, now, projectsPerWorkspaceMax });
+          return answerOf({ result, answer: MCP_COPY.projectCreated, limitText });
+        },
+      }),
   );
   server.registerTool(
     McpOwnerToolName.RenameProject,
@@ -216,10 +271,15 @@ function registerProjectTools({ server, scope }: { server: McpServer; scope: Own
       inputSchema: RenameProjectArgumentsSchema,
       annotations: WRITE_ANNOTATIONS,
     },
-    async ({ project, name }) => {
-      const result = await renameProject({ env, owner, projectId: project, name });
-      return answerOf({ result, answer: MCP_COPY.projectRenamed, limitText });
-    },
+    async ({ project, name }) =>
+      reserved({
+        scope,
+        name,
+        run: async () => {
+          const result = await renameProject({ env, owner, projectId: project, name });
+          return answerOf({ result, answer: MCP_COPY.projectRenamed, limitText });
+        },
+      }),
   );
   server.registerTool(
     McpOwnerToolName.DeleteProject,
@@ -231,8 +291,14 @@ function registerProjectTools({ server, scope }: { server: McpServer; scope: Own
     async ({ project, confirm }) => {
       const confirmed = await findConfirmedProject({ env, owner, projectId: project, confirmation: confirm });
       if (!confirmed.ok) return errorAnswer(failureTextOf({ failure: confirmed.failure, limitText }));
-      const result = await deleteProject({ env, owner, projectId: project, expectedName: confirmed.value.name });
-      return answerOf({ result, answer: () => MCP_COPY.projectDeleted(confirmed.value.name), limitText });
+      return reserved({
+        scope,
+        name: null,
+        run: async () => {
+          const result = await deleteProject({ env, owner, projectId: project, expectedName: confirmed.value.name });
+          return answerOf({ result, answer: () => MCP_COPY.projectDeleted(confirmed.value.name), limitText });
+        },
+      });
     },
   );
 }

@@ -1,5 +1,5 @@
 import type { Client } from '@modelcontextprotocol/client';
-import { RuleIssue, TaskState } from '@todz/types';
+import { PROJECT_LIVE_KEYS_MAX, PROJECT_OPEN_TASKS_MAX, RuleIssue, TaskState } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { MCP_COPY, McpToolName } from '../src/mcp-copy';
@@ -17,7 +17,9 @@ async function connectedProject(): Promise<ConnectedProject> {
 }
 
 async function clientOfProject(projectId: string): Promise<Client> {
-  const { secret } = await issuedKeyOf(issueProjectKey({ directory: env.DIRECTORY, projectId, now: CLOCK_NOW }));
+  const { secret } = await issuedKeyOf(
+    issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }),
+  );
   return connectClient({ era: ClientEra.Modern, key: secret });
 }
 
@@ -211,6 +213,7 @@ describe('the move tool', () => {
     await addTitled({ client, title: 'Carry' });
     const destination = env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(siblingId));
     const stopped = await destination.addTasks({
+      openTasksMax: PROJECT_OPEN_TASKS_MAX,
       actor: AGENT_ACTOR,
       drafts: [{ title: 'Carry', notes: null, dueDate: null, idempotencyKey: `${MOVE_KEY_PREFIX}${projectId}:1` }],
     });
@@ -245,6 +248,7 @@ describe('the move tool', () => {
     await addTitled({ client, title: 'Carry' });
     const destination = env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(siblingId));
     await destination.addTasks({
+      openTasksMax: PROJECT_OPEN_TASKS_MAX,
       actor: AGENT_ACTOR,
       drafts: [{ title: 'Other', notes: null, dueDate: null, idempotencyKey: `${MOVE_KEY_PREFIX}${projectId}:1` }],
     });

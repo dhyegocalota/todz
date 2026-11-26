@@ -1,5 +1,5 @@
 import { OWNER_ACTOR } from '@todz/core';
-import { ActorKind, HistoryAction, TASK_BATCH_MAX_SIZE, TaskField } from '@todz/types';
+import { ActorKind, HistoryAction, PROJECT_OPEN_TASKS_MAX, TASK_BATCH_MAX_SIZE, TaskField } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { ProjectFailureKind } from '../src/project-result';
 import { CHANGE_PAGE_SIZE } from '../src/project-store';
@@ -24,7 +24,7 @@ async function addTitled({ stub, count }: { stub: ReturnType<typeof newProjectSt
   );
   await batches.reduce(async (previous, batch) => {
     await previous;
-    unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: batch.map(draftOf) }));
+    unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: batch.map(draftOf) }));
   }, Promise.resolve());
 }
 
@@ -123,7 +123,7 @@ async function settled({ stub, probe, count }: { stub: ProjectStub; probe: Socke
 }
 
 async function addOne({ stub, title }: { stub: ProjectStub; title: string }): Promise<void> {
-  unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf(title)] }));
+  unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [draftOf(title)] }));
 }
 
 describe('ProjectStore fetch', () => {
@@ -163,14 +163,14 @@ describe('ProjectStore socket broadcast', () => {
     const probe = await openSocket(stub);
     unwrap(await stub.updateTask({ actor: AGENT_ACTOR, number: 1, patch: { title: 'Renamed' } }));
     unwrap(await stub.completeTasks({ actor: AGENT_ACTOR, numbers: [1], note: null }));
-    unwrap(await stub.reopenTasks({ actor: AGENT_ACTOR, numbers: [1] }));
+    unwrap(await stub.reopenTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, numbers: [1] }));
     expect(await settled({ stub, probe, count: 3 })).toEqual([CHANGED, CHANGED, CHANGED]);
   });
 
   test('a failed write then a successful one sends exactly one changed before the sentinel', async () => {
     const stub = newProjectStub();
     const probe = await openSocket(stub);
-    await stub.addTasks({ actor: AGENT_ACTOR, drafts: [draftOf('  ')] });
+    await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [draftOf('  ')] });
     await addOne({ stub, title: 'Written' });
     await addOne({ stub, title: 'Sentinel' });
     expect(await settled({ stub, probe, count: 2 })).toEqual([CHANGED, CHANGED]);
@@ -180,8 +180,8 @@ describe('ProjectStore socket broadcast', () => {
     const stub = newProjectStub();
     const probe = await openSocket(stub);
     const keyedDraft = { ...draftOf('Once'), idempotencyKey: 'run-1' };
-    unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [keyedDraft] }));
-    unwrap(await stub.addTasks({ actor: AGENT_ACTOR, drafts: [keyedDraft] }));
+    unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [keyedDraft] }));
+    unwrap(await stub.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [keyedDraft] }));
     await addOne({ stub, title: 'Sentinel' });
     expect(await settled({ stub, probe, count: 2 })).toEqual([CHANGED, CHANGED]);
   });

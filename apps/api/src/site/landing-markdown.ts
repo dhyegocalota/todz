@@ -1,7 +1,7 @@
 import { REPOSITORY } from '@todz/types';
 import { DISCOVERY_COPY } from './discovery-copy';
 import type { DiscoveryFile } from './discovery-response';
-import { LANDING_COPY } from './landing-copy';
+import { LANDING_COPY, LANDING_DAY_LINES } from './landing-copy';
 import { fenced, linesOf } from './markdown-lines';
 import { DOCS_INSTALL_URL, DOWNLOAD_URL } from './site-urls';
 
@@ -27,7 +27,13 @@ const LANDING_MARKDOWN = linesOf([
   '',
   `## ${benefits.heading}`,
   '',
-  ...[benefits.agents, benefits.glance, benefits.offline].flatMap(({ title, body }) => [`### ${title}`, '', body, '']),
+  `### ${benefits.day.title}`,
+  '',
+  ...LANDING_DAY_LINES.map((line) => `- ${line}`),
+  '',
+  benefits.day.note,
+  '',
+  ...[benefits.agents, benefits.offline].flatMap(({ title, body }) => [`### ${title}`, '', body, '']),
   `## ${howItWorks.title}`,
   '',
   ...[howItWorks.step1, howItWorks.step2, howItWorks.step3].map((step, index) => `${index + 1}. ${step}`),

@@ -63,7 +63,7 @@ export enum RuleIssue {
 }
 
 export const TASK_SHORT_ID_PREFIX = 'T-';
-export const TASK_TITLE_MAX_LENGTH = 200;
+export const TASK_TITLE_MAX_LENGTH = 500;
 export const TASK_NOTES_MAX_LENGTH = 20_000;
 export const COMPLETION_NOTE_MAX_LENGTH = 2_000;
 export const IDEMPOTENCY_KEY_MAX_LENGTH = 128;

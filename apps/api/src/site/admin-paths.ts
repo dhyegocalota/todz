@@ -9,11 +9,16 @@ export enum AdminPath {
   Export = '/admin/export.csv',
   Metrics = '/admin/metrics',
   MetricsExport = '/admin/metrics.csv',
+  Usage = '/admin/usage',
+  Suspensions = '/admin/suspensions',
+  StoredTextResets = '/admin/stored-text-resets',
 }
 
 export enum AdminField {
   Email = 'email',
   Token = 'token',
+  Owner = 'owner',
+  Choice = 'choice',
 }
 
 export const ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES = 15;
