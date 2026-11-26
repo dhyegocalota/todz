@@ -21,6 +21,7 @@
     "TURNSTILE_SITE_KEY": "0x4AAAAAAGSI2K7Qe9Vad2nL",
     "TELEMETRY": "on",
     "CLOUD_ACCOUNTS_MAX": "50",
+    "CLOUDFLARE_ACCOUNT_ID": "e2035d8e0b7173d520ccf643f6f4661c",
   },
   "d1_databases": [
     {

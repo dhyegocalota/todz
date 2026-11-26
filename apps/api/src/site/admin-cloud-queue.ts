@@ -1,6 +1,8 @@
 import { CLOUD_QUEUE_ADMIN_ROWS_MAX } from '@todz/types';
 import { cloudAccountsMaxOf } from '../cloud-accounts-max';
-import { BudgetSource, ESTIMATE_ONLY_NOTICE, budgetSourceOf } from '../cloud-budget-source';
+import { BudgetSource, ESTIMATE_ONLY_NOTICE, budgetSourceOf, fallbackNoticeOf } from '../cloud-budget-source';
+import { recordedSourceOf } from '../cloud-budget-store';
+import { cloudMonthOf } from '../cloud-month';
 import { type QueuedAddress, waitingAddresses } from '../cloud-queue-store';
 import type { Env } from '../env';
 import { escapedHtml } from '../escaped-html';
@@ -9,7 +11,7 @@ import { siteKeyOf } from '../turnstile-page';
 import { adminCardAnswerOf, adminClosedAnswerOf, adminPageAnswerOf } from './admin-answer';
 import { ADMIN_COPY } from './admin-copy';
 import { AdminNotice } from './admin-notice';
-import { AdminField, AdminPath } from './admin-paths';
+import { ADMIN_NOTICE_PARAMETER, AdminField, AdminPath, CloudQueueAdminNotice } from './admin-paths';
 import { adminEmailOf, hasAdminSession } from './admin-session';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
 import type { SiteContext } from './site-endpoint';
@@ -43,13 +45,20 @@ function admitNextHtml(): string {
   return `<form method="post" action="${AdminPath.CloudAdmissions}"><label>${escapedHtml(cloudQueue.admitNextLabel)} <input type="number" name="${AdminField.Count}" min="1" max="${CLOUD_QUEUE_ADMIN_ROWS_MAX}" value="1"></label> <button class="nav-link nav-button" type="submit">${escapedHtml(cloudQueue.admitNext)}</button></form>`;
 }
 
-function guardNoticeHtml({ env }: { env: Env }): string {
-  const isEstimateOnly = cloudAccountsMaxOf(env) !== null && budgetSourceOf(env).source === BudgetSource.Estimate;
-  if (!isEstimateOnly) return '';
-  return `<p class="empty-body">${escapedHtml(ESTIMATE_ONLY_NOTICE)}</p>`;
+async function guardNoticeOf({ env, now }: { env: Env; now: number }): Promise<string | null> {
+  if (cloudAccountsMaxOf(env) === null) return null;
+  if (budgetSourceOf(env).source === BudgetSource.Estimate) return ESTIMATE_ONLY_NOTICE;
+  const recorded = await recordedSourceOf({ directory: env.DIRECTORY, month: cloudMonthOf(now).month });
+  if (recorded === null || recorded.reason === null) return null;
+  return fallbackNoticeOf(recorded.reason);
 }
 
-function queueHtml({ waiting, env }: { waiting: QueuedAddress[]; env: Env }): string {
+function noticeHtml(notice: string | null): string {
+  if (notice === null) return '';
+  return `<p class="empty-body">${escapedHtml(notice)}</p>`;
+}
+
+function queueHtml({ waiting, notices }: { waiting: QueuedAddress[]; notices: (string | null)[] }): string {
   const { cloudQueue, panel } = ADMIN_COPY;
   return siteDocumentHtml({
     kind: SitePageKind.Private,
@@ -64,7 +73,7 @@ function queueHtml({ waiting, env }: { waiting: QueuedAddress[]; env: Env }): st
 <form method="post" action="${AdminPath.SignOut}"><button class="nav-link nav-button" type="submit">${escapedHtml(panel.signOut)}</button></form>
 </nav>
 </div>
-${guardNoticeHtml({ env })}
+${notices.map(noticeHtml).join('')}
 ${admitNextHtml()}
 ${tableHtml(waiting)}
 </div>
@@ -80,6 +89,9 @@ export async function serveAdminCloudQueue({ request, env }: SiteContext): Promi
   if (!isSignedIn) return adminCardAnswerOf({ notice: AdminNotice.None, siteKey: siteKeyOf(env) });
   const waiting = await waitingAddresses({ directory: env.DIRECTORY, limit: CLOUD_QUEUE_ADMIN_ROWS_MAX }).catch(() => null);
   if (waiting === null) return adminClosedAnswerOf({ env });
-  const page = adminPageResponse({ html: queueHtml({ waiting, env }), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+  const guardNotice = await guardNoticeOf({ env, now: Date.now() }).catch(() => null);
+  const isNoRoom = new URL(request.url).searchParams.get(ADMIN_NOTICE_PARAMETER) === CloudQueueAdminNotice.NoRoom;
+  const notices = [guardNotice, isNoRoom ? ADMIN_COPY.cloudQueue.noRoom : null];
+  const page = adminPageResponse({ html: queueHtml({ waiting, notices }), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
   return adminPageAnswerOf({ page, status: HttpStatus.Ok });
 }

@@ -5,15 +5,17 @@ export const CLOUD_COPY = {
   fullMail: {
     subject: 'todz cloud is full right now',
     textOf: ({ queueUrl }: { queueUrl: string }): string =>
-      `todz cloud is full right now: free todz cloud spots are extremely limited. Leave your email and you'll get in when a spot opens: ${queueUrl}\n\nOr run your own server, which is always open: ${DOCS_SELF_HOST_URL}`,
+      `todz cloud is full right now: free todz cloud spots are extremely limited. Confirm your address to get in line, and you'll get in when a spot opens: ${queueUrl}\n\nOr run your own server, which is always open: ${DOCS_SELF_HOST_URL}`,
   },
   atCapacity: `todz cloud is at capacity this month. Your changes are kept and sync next month, or run your own server: ${DOCS_SELF_HOST_URL}`,
   queued: "You're on the list. We'll email you when a spot opens.",
   queuePage: {
     title: 'Get in line for todz cloud',
-    lead: 'Free todz cloud spots are extremely limited. Leave your email and we will write when one opens.',
-    emailLabel: 'Email address',
-    emailPlaceholder: 'you@example.com',
+    lead: 'Free todz cloud spots are extremely limited. Confirm below and we will write when one opens.',
+    joinAs: 'Join the line as',
+    invalidTitle: 'This link is no longer valid',
+    invalidBody:
+      'The link in the mail we sent when todz cloud was full works for a week. Ask for a new sign-in link in the app to get a new one.',
     submit: 'Get in line',
     submitting: 'Sending…',
     queuedTitle: "You're on the list",
@@ -31,6 +33,10 @@ export const CLOUD_COPY = {
   warning: {
     subject: 'todz cloud has used 80% of a monthly quota',
     textOf: (dimension: string): string => `todz cloud has used at least 80% of its included ${dimension} this month.`,
+  },
+  fallback: {
+    subject: 'The todz cloud budget guard fell back to the estimate',
+    textOf: (reason: string): string => `budget guard fell back to the estimate: ${reason}`,
   },
   digest: {
     subject: 'People are waiting for a todz cloud spot',

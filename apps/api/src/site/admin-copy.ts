@@ -77,6 +77,7 @@ export const ADMIN_COPY = {
     admitNext: 'Admit next',
     admitNextLabel: 'How many',
     empty: 'Nobody is waiting for a spot.',
+    noRoom: 'No free spots.',
   },
   usage: {
     title: 'Top usage',

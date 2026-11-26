@@ -10,7 +10,7 @@
 
 ## How to run
 
-`pnpm --filter @todz/api exec vitest run test/cloud-capacity.test.ts test/cloud-budget.test.ts test/cloud-queue-join.test.ts test/cloud-queue-page.test.ts test/admin-cloud-queue.test.ts`
+`pnpm --filter @todz/api exec vitest run test/cloud-capacity.test.ts test/cloud-budget.test.ts test/cloud-capacity-requests.test.ts test/cloud-queue-page.test.ts test/admin-cloud-queue.test.ts`
 
 ## Hypotheses
 

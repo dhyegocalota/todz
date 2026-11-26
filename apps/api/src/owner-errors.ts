@@ -1,4 +1,4 @@
-import { FairUseLimit, MILLISECONDS_PER_DAY, MILLISECONDS_PER_SECOND, MINIMUM_APP_VERSION } from '@todz/types';
+import { CloudLimit, FairUseLimit, MILLISECONDS_PER_DAY, MILLISECONDS_PER_SECOND, MINIMUM_APP_VERSION } from '@todz/types';
 import { CLOUD_COPY } from './cloud-copy';
 import { secondsUntilNextMonth } from './cloud-month';
 import { FAIR_USE_COPY } from './fair-use-copy';
@@ -79,10 +79,8 @@ export function cloudFullResponse(): Response {
 }
 
 // NB ADR 0099: the 95% refusal is a 429 limit_reached with a message, the one body every installed app already reads as a fair-use pause that keeps its queue.
-const CLOUD_CAPACITY_LIMIT = 'cloud_capacity';
-
 export function cloudAtCapacityResponse(now: number): Response {
-  const body = { error: OwnerErrorCode.LimitReached, limit: CLOUD_CAPACITY_LIMIT, message: CLOUD_COPY.atCapacity };
+  const body = { error: OwnerErrorCode.LimitReached, limit: CloudLimit.Capacity, message: CLOUD_COPY.atCapacity };
   const response = Response.json(body, { status: HttpStatus.TooManyRequests });
   response.headers.set(HttpHeader.RetryAfter, String(secondsUntilNextMonth(now)));
   return response;

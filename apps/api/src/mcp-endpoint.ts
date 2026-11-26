@@ -18,6 +18,8 @@ import { fairUseLimitsOf } from './fair-use-limits';
 import { buildOwnerMcpServer } from './mcp-owner-server';
 import { type McpServerScope, buildMcpServer, envelopeClientName } from './mcp-server';
 import { isReadThrottled } from './cloud-read-throttle';
+import { logCrash } from './crash-log';
+import { stampOwnerSeen } from './owner-last-seen';
 import { writeRefusalTextOf } from './owner-write-quota';
 import { openMcpSession } from './mcp-sessions';
 import { calendarDateInTimeZone } from './owner-today';
@@ -174,6 +176,7 @@ async function serveOwnerKey({
   if (isRateLimited) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
   const isThrottledOwner = await isReadThrottled({ request, env, ownerId: access.owner.ownerId, now });
   if (isThrottledOwner) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
+  await stampOwnerSeen({ env, ownerId: access.owner.ownerId, now }).catch(logCrash);
   if (access.owner.isSuspended) return suspendedRefusal();
   if (request.method !== MCP_METHOD) return methodNotAllowed();
   const isLegacy = await isLegacyRequest(request);
@@ -194,6 +197,7 @@ export async function serveMcp({ request, env, now }: { request: Request; env: E
   if (isRateLimited) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
   const isThrottledOwner = await isReadThrottled({ request, env, ownerId: keyProject.ownerId, now });
   if (isThrottledOwner) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
+  await stampOwnerSeen({ env, ownerId: keyProject.ownerId, now }).catch(logCrash);
   if (keyProject.isSuspended) return suspendedRefusal();
   if (request.method !== MCP_METHOD) return methodNotAllowed();
   const today = calendarDateInTimeZone({ timeZone: keyProject.timeZone, now });

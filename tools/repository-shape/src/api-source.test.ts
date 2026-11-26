@@ -161,6 +161,7 @@ describe('the api source', () => {
       TURNSTILE_SITE_KEY,
       TELEMETRY: 'on',
       CLOUD_ACCOUNTS_MAX: '50',
+      CLOUDFLARE_ACCOUNT_ID: ACCOUNT_ID,
     });
   });
 

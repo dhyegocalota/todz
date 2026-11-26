@@ -88,11 +88,66 @@ describe('the admin cloud queue', () => {
   });
 
   test('with the cap on and the token set the page says nothing of it', async () => {
-    expect(await queuePageWith({ CLOUD_ACCOUNTS_MAX: '50', CLOUDFLARE_ANALYTICS_TOKEN: 'token-for-tests' })).not.toContain('estimate only');
+    const settings = {
+      CLOUD_ACCOUNTS_MAX: '50',
+      CLOUDFLARE_ANALYTICS_TOKEN: 'token-for-tests',
+      CLOUDFLARE_ACCOUNT_ID: 'account-tag-for-tests',
+    };
+    expect(await queuePageWith(settings)).not.toContain('estimate only');
+    expect(await queuePageWith({ ...settings, CLOUDFLARE_ACCOUNT_ID: undefined })).toContain('budget guard: estimate only');
   });
 
   test('with the cap off nothing warns', async () => {
     expect(await queuePageWith({})).not.toContain('estimate only');
+  });
+
+  test('with no free spot a single Admit admits nobody, mails nobody and the page says there are no free spots', async () => {
+    await env.DIRECTORY.prepare('DELETE FROM cloud_queue').run();
+    const { binding, sent } = recordingBinding();
+    await seedOwner();
+    const accounts = await countActiveAccounts({ directory: env.DIRECTORY, now: NOW });
+    const email = freshAddress();
+    await enqueueAddress({ directory: env.DIRECTORY, email, now: NOW });
+    const response = await admit({
+      body: new URLSearchParams({ email }),
+      settings: { EMAIL: binding, CLOUD_ACCOUNTS_MAX: String(accounts) },
+    });
+    expect(response.headers.get('Location')).toBe('/admin/cloud-queue?notice=no-room');
+    expect(sent).toEqual([]);
+    expect(await isAdmittedAddress({ directory: env.DIRECTORY, email, now: NOW })).toBe(false);
+    const page = await serveAdminCloudQueue({
+      request: new Request(`${SITE_ORIGIN}/admin/cloud-queue?notice=no-room`, { headers: { Cookie: await sessionCookie() } }),
+      env: adminEnv(),
+      executionContext: createExecutionContext(),
+    });
+    expect(await page.text()).toContain('No free spots.');
+  });
+
+  test('a clipped Admit next N with room for none answers the same notice', async () => {
+    await env.DIRECTORY.prepare('DELETE FROM cloud_queue').run();
+    await seedOwner();
+    const accounts = await countActiveAccounts({ directory: env.DIRECTORY, now: NOW });
+    const response = await admit({ body: new URLSearchParams({ count: '3' }), settings: { CLOUD_ACCOUNTS_MAX: String(accounts) } });
+    expect(response.headers.get('Location')).toBe('/admin/cloud-queue?notice=no-room');
+  });
+
+  test('with room the redirect carries no notice', async () => {
+    const response = await admit({ body: new URLSearchParams({ count: '1' }), settings: { CLOUD_ACCOUNTS_MAX: '100000' } });
+    expect(response.headers.get('Location')).toBe('/admin/cloud-queue');
+  });
+
+  test('after a failed analytics night the page shows why the guard is estimate only', async () => {
+    await env.DIRECTORY.prepare(
+      "INSERT INTO cloud_budget (month, level, heavy_writes, source, source_reason) VALUES (?, 'normal', 0, 'estimate', ?) ON CONFLICT (month) DO UPDATE SET source = 'estimate', source_reason = excluded.source_reason",
+    )
+      .bind(new Date().toISOString().slice(0, 7), 'the Cloudflare analytics answered 403')
+      .run();
+    const page = await queuePageWith({
+      CLOUD_ACCOUNTS_MAX: '50',
+      CLOUDFLARE_ANALYTICS_TOKEN: 'token-for-tests',
+      CLOUDFLARE_ACCOUNT_ID: 'account-tag-for-tests',
+    });
+    expect(page).toContain('budget guard: estimate only — analytics failed: the Cloudflare analytics answered 403');
   });
 
   test('Admit one admits the address and mails the invite', async () => {

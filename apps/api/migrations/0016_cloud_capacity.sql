@@ -11,6 +11,8 @@ CREATE TABLE cloud_budget (
   month TEXT PRIMARY KEY CHECK (length(month) = 7),
   level TEXT NOT NULL,
   heavy_writes INTEGER NOT NULL CHECK (heavy_writes >= 0),
+  source TEXT NOT NULL CHECK (source IN ('analytics', 'estimate')),
+  source_reason TEXT,
   warned_at INTEGER
 ) STRICT, WITHOUT ROWID;
 

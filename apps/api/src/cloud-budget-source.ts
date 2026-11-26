@@ -5,12 +5,16 @@ export enum BudgetSource {
   Estimate = 'estimate',
 }
 
-export type BudgetSourceChoice = { source: BudgetSource.Analytics; token: string } | { source: BudgetSource.Estimate };
+export type BudgetSourceChoice = { source: BudgetSource.Analytics; token: string; accountTag: string } | { source: BudgetSource.Estimate };
 
 export const ESTIMATE_ONLY_NOTICE = 'budget guard: estimate only';
 
 export function budgetSourceOf(env: Env): BudgetSourceChoice {
-  const token = env.CLOUDFLARE_ANALYTICS_TOKEN;
-  if (!token) return { source: BudgetSource.Estimate };
-  return { source: BudgetSource.Analytics, token };
+  const { CLOUDFLARE_ANALYTICS_TOKEN: token, CLOUDFLARE_ACCOUNT_ID: accountTag } = env;
+  if (!token || !accountTag) return { source: BudgetSource.Estimate };
+  return { source: BudgetSource.Analytics, token, accountTag };
+}
+
+export function fallbackNoticeOf(reason: string): string {
+  return `${ESTIMATE_ONLY_NOTICE} — analytics failed: ${reason}`;
 }

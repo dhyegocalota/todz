@@ -1,14 +1,16 @@
 import { AGENT_NUDGE_BY_DEFAULT, DAY_EMAIL_BY_DEFAULT } from '@todz/types';
 import type { CloudCap } from './cloud-admission';
-import { activeOwnerSql } from './cloud-queue-store';
+import { activeOwnerSql, outstandingAdmissionSql } from './cloud-queue-store';
 import type { OwnerRecord } from './owner-records';
+import { SignInProviderKind } from './sign-in-provider';
 
 const OWNER_COLUMNS = 'id, time_zone, agent_nudge, day_email, day_email_minutes';
 
 const INSERT_OWNER = 'INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at) VALUES (?1, ?2, ?3, ?4, ?5)';
 const INSERT_OWNER_WITHIN_CAP = `INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at)
 SELECT ?1, ?2, ?3, ?4, ?5
-WHERE (SELECT COUNT(*) FROM owners WHERE ${activeOwnerSql({ sinceMilliseconds: '?6', sinceDay: '?7' })}) < ?8`;
+WHERE (SELECT COUNT(*) FROM owners WHERE ${activeOwnerSql({ sinceMilliseconds: '?6', sinceDay: '?7' })})
+  + (SELECT COUNT(*) FROM cloud_queue WHERE ${outstandingAdmissionSql({ sinceMilliseconds: '?6', sinceDay: '?7', admissionSince: '?9', provider: '?10' })}) < ?8`;
 const INSERT_IDENTITY_OF_OWNER = `INSERT INTO owner_identities (provider, subject, owner_id, created_at)
 SELECT ?1, ?2, ?3, ?4 WHERE EXISTS (SELECT 1 FROM owners WHERE id = ?3)`;
 
@@ -60,7 +62,9 @@ export async function insertOwnerWithIdentity({
   const ownerValues = [ownerId, timeZone, Number(AGENT_NUDGE_BY_DEFAULT), Number(DAY_EMAIL_BY_DEFAULT), now];
   const isCapped = cap !== null && !cap.isExempt;
   const insertOwner = isCapped
-    ? directory.prepare(INSERT_OWNER_WITHIN_CAP).bind(...ownerValues, cap.sinceMilliseconds, cap.sinceDay, cap.accountsMax)
+    ? directory
+        .prepare(INSERT_OWNER_WITHIN_CAP)
+        .bind(...ownerValues, cap.sinceMilliseconds, cap.sinceDay, cap.accountsMax, cap.admissionSince, SignInProviderKind.Email)
     : directory.prepare(INSERT_OWNER).bind(...ownerValues);
   const [insertedOwner] = await directory.batch([
     insertOwner,

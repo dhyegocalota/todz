@@ -17,7 +17,9 @@ The todz cloud must not cost more than the Workers Paid base of USD 5 a month, a
 - A nightly budget guard reads the month's real totals from Cloudflare's analytics when the optional `CLOUDFLARE_ANALYTICS_TOKEN` secret is set, estimates them from D1 when not, emails the owner at 80% and, at 95%, refuses new writes from the heaviest accounts (HTTP 429 `limit_reached` with `limit: "cloud_capacity"` with `Retry-After` to the first of next month) and throttles their reads.
 - Every mail is metered; link mail is bounded per address per day.
 - The owner gets one email a day when the queue grew, and an admin page admits one address or the next N, at most the free spots.
-- Accounts idle for 90 days (no session, write or signed-in request) free their spot, and an admission lapses the same way.
+- Accounts idle for 90 days (no session, write, signed-in or agent-key request) free their spot, and an admission nobody redeems lapses after seven days. Admissions reserve their spots against strangers.
+- A refused address gets a signed, expiring link to the queue page; only its holder can join the line, so a typed address never does.
+- Any failure of the analytics falls back to the estimate, is recorded, mailed and shown on the admin page. Durable Object duration is a guarded dimension at an assumed GB-s per request.
 - The landing, the docs, `llms.txt` and the mails say that free todz cloud spots are extremely limited and that self-hosting is always open.
 
 ## Non-goals
@@ -43,7 +45,7 @@ flowchart TD
 
 ### Interfaces
 
-`CLOUD_ACCOUNTS_MAX` var; `CLOUDFLARE_ANALYTICS_TOKEN` optional secret; `CLOUD_READ_LIMITER` binding; `GET` and `POST /cloud-queue` on the site host; `POST /owner/cloud-queue`; `GET /admin/cloud-queue`; `POST /admin/cloud-queue/admissions`; error code `cloud_full` (sign-in itself only); `429 limit_reached` (`limit: "cloud_capacity"`).
+`CLOUD_ACCOUNTS_MAX` and `CLOUDFLARE_ACCOUNT_ID` vars; `CLOUDFLARE_ANALYTICS_TOKEN` optional secret; `CLOUD_READ_LIMITER` binding; `GET` and `POST /cloud-queue` on the site host, reached by the signed link in the full mail; `GET /admin/cloud-queue`; `POST /admin/cloud-queue/admissions`; error code `cloud_full` (sign-in itself only); `429 limit_reached` (`limit: "cloud_capacity"`).
 
 ### Failure handling
 

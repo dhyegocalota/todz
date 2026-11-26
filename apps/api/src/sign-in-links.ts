@@ -10,7 +10,6 @@ import { deleteSignInLink, insertSignInLinkWithinLimit } from './directory-sign-
 import { isOwnDomainAddress, normalizedAddress } from './email-address';
 import { signInMail } from './emails/sign-in-mail';
 import { emailSenderOf } from './email-sender';
-import type { Env } from './env';
 import { enumValueOf } from './enum-value';
 import { isLocalOrigin } from './local-origin';
 import { HttpStatus } from './http-status';
@@ -48,17 +47,7 @@ export function publicOriginOf(configured: string | undefined): string | null {
   return configured;
 }
 
-// NB ADR 0099: a full cloud answers a link request like any other, with a mail that names the queue and self-hosting, so no answer tells an admitted address from a refused one.
-async function cloudFullAnswer({ env, address }: { env: Env; address: string }): Promise<Response> {
-  try {
-    await sendCloudFullMail({ env, to: address });
-  } catch {
-    return errorResponse(OwnerErrorCode.SignInUnavailable);
-  }
-  return Response.json({}, { status: HttpStatus.Accepted });
-}
-
-// NB ADR 0040: a link lasts 15 minutes, an address gets five in that window, and one statement counts and inserts.
+// NB ADR 0040: a link lasts 15 minutes, an address gets five in that window, and one statement counts and inserts; ADR 0099: a full cloud counts and answers alike, with a queue mail instead of a link.
 export async function requestSignInLink({ request, env, now }: OwnerContext): Promise<Response> {
   const publicOrigin = publicOriginOf(env.PUBLIC_ORIGIN);
   const isEmailProvider = signInKindOf(env.SIGN_IN_PROVIDER) === SignInProviderKind.Email;
@@ -90,8 +79,6 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   const meter = mailMeterOf(env);
   const isMailBudgetSpent = meter !== null && (await isAddressMailBudgetSpent({ directory: meter, address, now }));
   if (isMailBudgetSpent) return signInRefusal();
-  const isCloudFull = await isCloudFullFor({ env, address, now });
-  if (isCloudFull) return cloudFullAnswer({ env, address });
   const token = generateCredentialSecret();
   const digest = await digestCredential(token);
   const isWithinLimit = await insertSignInLinkWithinLimit({
@@ -105,10 +92,14 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
     linksPerWindowMax: SIGN_IN_LINKS_PER_ADDRESS_MAX,
   });
   if (!isWithinLimit) return signInRefusal();
+  const isCloudFull = await isCloudFullFor({ env, address, now });
   try {
-    await sender.send(
-      signInMail({ to: address, link: `${publicOrigin}${SIGN_IN_PAGE_PATH}#token=${token}&app=${appLinkScheme}`, origin: publicOrigin }),
-    );
+    if (isCloudFull) await sendCloudFullMail({ env, to: address, now });
+    if (!isCloudFull) {
+      await sender.send(
+        signInMail({ to: address, link: `${publicOrigin}${SIGN_IN_PAGE_PATH}#token=${token}&app=${appLinkScheme}`, origin: publicOrigin }),
+      );
+    }
   } catch {
     await deleteSignInLink({ directory: env.DIRECTORY, digest });
     return errorResponse(OwnerErrorCode.SignInUnavailable);

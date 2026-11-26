@@ -15,14 +15,11 @@ import {
   answerTitleHtml,
   noticeHtml,
 } from './admin-page';
-import { AdminField } from './admin-paths';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
 import { LANDING_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE } from './site-style';
 import { DOCS_SELF_HOST_URL } from './self-host-redirect';
-import { CLOUD_QUEUE_PATH } from './site-urls';
-
-const EMAIL_ID = 'queue-email';
+import { CLOUD_QUEUE_PATH, CLOUD_QUEUE_TOKEN_FIELD } from './site-urls';
 
 export enum CloudQueueNotice {
   None = 'none',
@@ -30,7 +27,10 @@ export enum CloudQueueNotice {
   TryAgain = 'try-again',
   Closed = 'closed',
   Forbidden = 'forbidden',
+  Invalid = 'invalid',
 }
+
+export type CloudQueueForm = { token: string; maskedAddress: string };
 
 export const STATUS_OF_CLOUD_QUEUE_NOTICE: Record<CloudQueueNotice, HttpStatus> = {
   [CloudQueueNotice.None]: HttpStatus.Ok,
@@ -38,9 +38,8 @@ export const STATUS_OF_CLOUD_QUEUE_NOTICE: Record<CloudQueueNotice, HttpStatus> 
   [CloudQueueNotice.TryAgain]: HttpStatus.TooManyRequests,
   [CloudQueueNotice.Closed]: HttpStatus.Unavailable,
   [CloudQueueNotice.Forbidden]: HttpStatus.Forbidden,
+  [CloudQueueNotice.Invalid]: HttpStatus.BadRequest,
 };
-
-type QueuePage = { hasForm: boolean; available: (siteKey: string) => string; unavailable: string };
 
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
@@ -57,28 +56,30 @@ const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   declaresManifest: false,
 });
 
+export function maskedAddressOf(address: string): string {
+  const [name, domain] = address.split('@');
+  return `${name?.slice(0, 1)}…@${domain}`;
+}
+
 function selfHostHtml(): string {
   const { selfHost, selfHostLink } = CLOUD_COPY.queuePage;
   return `<p class="admin-body">${escapedHtml(selfHost)} <a class="admin-link" href="${DOCS_SELF_HOST_URL}">${escapedHtml(selfHostLink)}</a></p>`;
 }
 
-function formHtml({ notice, siteKey }: { notice: string | null; siteKey: string | null }): string {
+function formHtml({ notice, siteKey, form }: { notice: string | null; siteKey: string; form: CloudQueueForm }): string {
   const copy = CLOUD_COPY.queuePage;
-  const widget =
-    siteKey === null
-      ? ''
-      : `<div class="${WIDGET_CLASS}" data-sitekey="${siteKey}" data-action="${TurnstileAction.CloudQueue}" data-appearance="${WIDGET_APPEARANCE}" data-theme="${WIDGET_THEME}" data-callback="${TOKEN_CALLBACK}"></div>\n`;
-  const scriptTag = siteKey === null ? '' : `${TURNSTILE_SCRIPT_TAG}\n`;
+  const widget = `<div class="${WIDGET_CLASS}" data-sitekey="${siteKey}" data-action="${TurnstileAction.CloudQueue}" data-appearance="${WIDGET_APPEARANCE}" data-theme="${WIDGET_THEME}" data-callback="${TOKEN_CALLBACK}"></div>\n`;
   return `<h1 class="admin-title">${escapedHtml(copy.title)}</h1>
 <p class="admin-body">${escapedHtml(copy.lead)}</p>
 <form class="${JOIN_FORM_CLASS} admin-form" method="post" action="${CLOUD_QUEUE_PATH}">
+<input type="hidden" name="${CLOUD_QUEUE_TOKEN_FIELD}" value="${escapedHtml(form.token)}">
 <div class="join-capsule">
-<label class="visually-hidden" for="${EMAIL_ID}">${escapedHtml(copy.emailLabel)}</label>
-<input id="${EMAIL_ID}" class="join-input" name="${AdminField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(copy.emailPlaceholder)}" required>
+<p class="admin-body">${escapedHtml(copy.joinAs)} ${escapedHtml(form.maskedAddress)}</p>
 <button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(copy.submitting)}">${escapedHtml(copy.submit)}</button>
 </div>
 ${widget}${noticeHtml(notice)}</form>
-${scriptTag}${selfHostHtml()}`;
+${TURNSTILE_SCRIPT_TAG}
+${selfHostHtml()}`;
 }
 
 function answerHtml({ title, body }: { title: string; body: string | null }): string {
@@ -98,41 +99,51 @@ function documentHtml(content: string): string {
   });
 }
 
-function queuePageOf({ hasForm, contentOf }: { hasForm: boolean; contentOf: (siteKey: string | null) => string }): QueuePage {
-  return {
-    hasForm,
-    available: (siteKey) => documentHtml(contentOf(siteKey)),
-    unavailable: documentHtml(contentOf(null)),
-  };
-}
+type Answer = { title: string; body: string | null };
 
-const QUEUE_PAGES: Record<CloudQueueNotice, QueuePage> = {
-  [CloudQueueNotice.None]: queuePageOf({ hasForm: true, contentOf: (siteKey) => formHtml({ notice: null, siteKey }) }),
-  [CloudQueueNotice.TryAgain]: queuePageOf({
-    hasForm: true,
-    contentOf: (siteKey) => formHtml({ notice: CLOUD_COPY.queuePage.tryAgain, siteKey }),
-  }),
-  [CloudQueueNotice.Queued]: queuePageOf({
-    hasForm: false,
-    contentOf: () => answerHtml({ title: CLOUD_COPY.queuePage.queuedTitle, body: CLOUD_COPY.queuePage.queuedBody }),
-  }),
-  [CloudQueueNotice.Closed]: queuePageOf({
-    hasForm: false,
-    contentOf: () => answerHtml({ title: CLOUD_COPY.queuePage.closed, body: null }),
-  }),
-  [CloudQueueNotice.Forbidden]: queuePageOf({
-    hasForm: false,
-    contentOf: () => answerHtml({ title: CLOUD_COPY.queuePage.forbidden, body: null }),
-  }),
+const INVALID_ANSWER: Answer = { title: CLOUD_COPY.queuePage.invalidTitle, body: CLOUD_COPY.queuePage.invalidBody };
+
+const ANSWER_OF_NOTICE: Record<CloudQueueNotice, Answer | null> = {
+  [CloudQueueNotice.None]: null,
+  [CloudQueueNotice.TryAgain]: null,
+  [CloudQueueNotice.Queued]: { title: CLOUD_COPY.queuePage.queuedTitle, body: CLOUD_COPY.queuePage.queuedBody },
+  [CloudQueueNotice.Closed]: { title: CLOUD_COPY.queuePage.closed, body: null },
+  [CloudQueueNotice.Forbidden]: { title: CLOUD_COPY.queuePage.forbidden, body: null },
+  [CloudQueueNotice.Invalid]: INVALID_ANSWER,
 };
 
-export function cloudQueuePageResponse({ notice, siteKey }: { notice: CloudQueueNotice; siteKey: string | null }): Response {
-  const page = QUEUE_PAGES[notice];
-  const usableSiteKey = page.hasForm ? usableSiteKeyOf(siteKey) : null;
-  const status = STATUS_OF_CLOUD_QUEUE_NOTICE[notice];
-  const isChallenged = usableSiteKey !== null;
-  const html = isChallenged ? page.available(usableSiteKey) : page.unavailable;
-  const contentSecurityPolicy = isChallenged ? CHALLENGE_CONTENT_SECURITY_POLICY : CONTENT_SECURITY_POLICY;
-  const response = adminPageResponse({ html, contentSecurityPolicy });
-  return new Response(response.body, { status, headers: response.headers });
+export function cloudQueuePageResponse({
+  notice,
+  siteKey,
+  form,
+}: {
+  notice: CloudQueueNotice;
+  siteKey: string | null;
+  form: CloudQueueForm | null;
+}): Response {
+  const usableSiteKey = usableSiteKeyOf(siteKey);
+  const page = pageOf({ notice, usableSiteKey, form });
+  const response = adminPageResponse({
+    html: documentHtml(page.content),
+    contentSecurityPolicy: page.hasChallenge ? CHALLENGE_CONTENT_SECURITY_POLICY : CONTENT_SECURITY_POLICY,
+  });
+  return new Response(response.body, { status: page.status, headers: response.headers });
+}
+
+function pageOf({ notice, usableSiteKey, form }: { notice: CloudQueueNotice; usableSiteKey: string | null; form: CloudQueueForm | null }): {
+  content: string;
+  hasChallenge: boolean;
+  status: HttpStatus;
+} {
+  const answer = ANSWER_OF_NOTICE[notice];
+  if (answer !== null) return { content: answerHtml(answer), hasChallenge: false, status: STATUS_OF_CLOUD_QUEUE_NOTICE[notice] };
+  if (usableSiteKey === null || form === null) {
+    return { content: answerHtml(INVALID_ANSWER), hasChallenge: false, status: STATUS_OF_CLOUD_QUEUE_NOTICE[CloudQueueNotice.Invalid] };
+  }
+  const formNotice = notice === CloudQueueNotice.TryAgain ? CLOUD_COPY.queuePage.tryAgain : null;
+  return {
+    content: formHtml({ notice: formNotice, siteKey: usableSiteKey, form }),
+    hasChallenge: true,
+    status: STATUS_OF_CLOUD_QUEUE_NOTICE[notice],
+  };
 }

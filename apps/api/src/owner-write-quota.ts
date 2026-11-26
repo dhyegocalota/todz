@@ -2,13 +2,13 @@ import { FairUseLimit } from '@todz/types';
 import { cloudAccountsMaxOf } from './cloud-accounts-max';
 import { isHeavyWriterRefused } from './cloud-budget-store';
 import { CLOUD_COPY } from './cloud-copy';
+import { isRefusingMonth } from './cloud-level';
 import { cloudMonthOf } from './cloud-month';
 import type { Env } from './env';
 import { FAIR_USE_COPY } from './fair-use-copy';
 import { type FairUseLimits, fairUseLimitsOf } from './fair-use-limits';
 import { cloudAtCapacityResponse, limitResponse, suspendedResponse } from './owner-errors';
 import { WriteRefusal, reserveOwnerWrites } from './owner-usage-store';
-import { SignInProviderKind } from './sign-in-provider';
 import { adminEmailOf } from './site/admin-session';
 import { utcDayOf } from './telemetry/telemetry-day';
 
@@ -25,13 +25,8 @@ export function textBytesOf(texts: Text[]): number {
 
 export async function isHeavyWriterRefusedOnCloud({ env, ownerId, now }: { env: Env; ownerId: string; now: number }): Promise<boolean> {
   if (cloudAccountsMaxOf(env) === null) return false;
-  return isHeavyWriterRefused({
-    directory: env.DIRECTORY,
-    ownerId,
-    exemptAddress: adminEmailOf(env),
-    provider: SignInProviderKind.Email,
-    ...cloudMonthOf(now),
-  });
+  if (!(await isRefusingMonth({ env, now }))) return false;
+  return isHeavyWriterRefused({ directory: env.DIRECTORY, ownerId, exemptAddress: adminEmailOf(env), ...cloudMonthOf(now) });
 }
 
 export async function reserveWrites({

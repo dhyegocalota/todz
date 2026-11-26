@@ -1,6 +1,6 @@
-import { CLOUD_INACTIVE_DAYS, CLOUD_MAILS_PER_ADDRESS_DAY_MAX, MILLISECONDS_PER_DAY } from '@todz/types';
+import { CLOUD_ADMISSION_LAPSE_DAYS, CLOUD_INACTIVE_DAYS, CLOUD_MAILS_PER_ADDRESS_DAY_MAX, MILLISECONDS_PER_DAY } from '@todz/types';
 import { env } from 'cloudflare:workers';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { cloudAccountsMaxOf } from '../src/cloud-accounts-max';
 import { cloudCapOf, cloudFullRefusalOf, isCloudFullFor } from '../src/cloud-admission';
 import { CLOUD_COPY } from '../src/cloud-copy';
@@ -9,10 +9,12 @@ import {
   admitAddress,
   admitNextAddresses,
   countActiveAccounts,
+  countOutstandingAdmissions,
   enqueueAddress,
   isAdmittedAddress,
   waitingAddresses,
 } from '../src/cloud-queue-store';
+import type { Env } from '../src/env';
 import { findIdentityOwner, insertOwnerWithIdentity } from '../src/directory-owners';
 import { emailSenderOf } from '../src/email-sender';
 import { stampOwnerSeen } from '../src/owner-last-seen';
@@ -41,14 +43,32 @@ const UNAVAILABLE_STATUS = 503;
 const DAY_AFTER = CLOCK_NOW + MILLISECONDS_PER_DAY;
 const SITE_ORIGIN = 'https://todz.app';
 const ADMIN_ADDRESS = 'admin@example.com';
+const SIX_ASKS = 6;
 
 async function activeAccounts(): Promise<number> {
   return countActiveAccounts({ directory: env.DIRECTORY, now: CLOCK_NOW });
 }
 
+async function seedActiveAddress(): Promise<string> {
+  const email = freshAddress();
+  await seedEmailIdentity({ ownerId: await seedOwner(), email });
+  return email;
+}
+
+async function seedAdmittedAddress(): Promise<string> {
+  const email = freshAddress();
+  await enqueueAddress({ directory: env.DIRECTORY, email, now: CLOCK_NOW });
+  await admitAddress({ directory: env.DIRECTORY, email, now: CLOCK_NOW });
+  return email;
+}
+
+async function takenSpots(): Promise<number> {
+  return (await activeAccounts()) + (await countOutstandingAdmissions({ directory: env.DIRECTORY, now: CLOCK_NOW }));
+}
+
 async function fullCloudEnv(settings: Parameters<typeof emailEnv>[0] = {}) {
   await seedOwner();
-  return emailEnv({ CLOUD_ACCOUNTS_MAX: String(await activeAccounts()), ...settings });
+  return emailEnv({ CLOUD_ACCOUNTS_MAX: String(await takenSpots()), ...settings });
 }
 
 async function linkRowCount(email: string): Promise<number> {
@@ -124,11 +144,11 @@ describe('the cloud account cap', () => {
     expect(await isCloudFullFor({ env: await fullCloudEnv(), address: email, now: DAY_AFTER })).toBe(false);
   });
 
-  test('an admission lapses after 90 idle days and the address waits again when it comes back', async () => {
+  test('an unredeemed admission lapses after 7 days and the address waits again when it comes back', async () => {
     const email = freshAddress();
     await enqueueAddress({ directory: env.DIRECTORY, email, now: CLOCK_NOW });
     await admitAddress({ directory: env.DIRECTORY, email, now: CLOCK_NOW });
-    const lapsedNow = CLOCK_NOW + (CLOUD_INACTIVE_DAYS + 1) * MILLISECONDS_PER_DAY;
+    const lapsedNow = CLOCK_NOW + (CLOUD_ADMISSION_LAPSE_DAYS + 1) * MILLISECONDS_PER_DAY;
     expect(await isAdmittedAddress({ directory: env.DIRECTORY, email, now: CLOCK_NOW + MILLISECONDS_PER_DAY })).toBe(true);
     expect(await isAdmittedAddress({ directory: env.DIRECTORY, email, now: lapsedNow })).toBe(false);
     await enqueueAddress({ directory: env.DIRECTORY, email, now: lapsedNow });
@@ -148,7 +168,7 @@ describe('a full cloud answers a link request like any other', () => {
     return fullCloudEnv({ EMAIL: binding, EMAIL_SENDER: 'cloudflare', SITE_ORIGIN });
   }
 
-  test('a refused address gets the same 202 as an admitted one, a full mail and no link row', async () => {
+  test('a refused address gets the same 202 as an admitted one and a full mail with a signed queue link, never a sign-in link', async () => {
     const { binding, sent } = recordingBinding();
     const workerEnv = await recordedFullEnv({ binding });
     const admittedEmail = freshAddress();
@@ -158,12 +178,38 @@ describe('a full cloud answers a link request like any other', () => {
     const refused = await requestLink({ email: refusedEmail, workerEnv });
     expect([refused.status, await refused.json()]).toEqual([admitted.status, await admitted.json()]);
     expect(refused.status).toBe(ACCEPTED_STATUS);
-    expect(await linkRowCount(refusedEmail)).toBe(0);
     const fullMail = sent.find((message) => message.to === refusedEmail);
     expect(fullMail?.subject).toBe(CLOUD_COPY.fullMail.subject);
-    expect(fullMail?.text).toContain(`${SITE_ORIGIN}/cloud-queue`);
+    expect(fullMail?.text).toMatch(new RegExp(`${SITE_ORIGIN}/cloud-queue\\?token=[0-9a-f]+\\.\\d+\\.[0-9a-f]{64}`));
+    expect(fullMail?.text).not.toContain('sign-in#token');
     expect(fullMail?.text).toContain('https://docs.todz.app/self-host');
     expect(fullMail?.text).toContain('extremely limited');
+  });
+
+  test.each([
+    ['an active account', seedActiveAddress],
+    ['an admitted address', seedAdmittedAddress],
+    ['the admin address', async () => ADMIN_ADDRESS],
+    ['a new address while full', async () => freshAddress()],
+  ])('%s gets the same sequence of answers over six requests in a window as a new address with room', async (_class, addressOf) => {
+    const { binding } = recordingBinding();
+    const fullEnv = await fullCloudEnv({ EMAIL: binding, EMAIL_SENDER: 'cloudflare', SITE_ORIGIN, ADMIN_EMAIL: ADMIN_ADDRESS });
+    const roomyEnv = emailEnv({
+      EMAIL: binding,
+      EMAIL_SENDER: 'cloudflare',
+      SITE_ORIGIN,
+      ADMIN_EMAIL: ADMIN_ADDRESS,
+      CLOUD_ACCOUNTS_MAX: '100000',
+    });
+    const statusesOf = ({ email, workerEnv }: { email: string; workerEnv: Env }): Promise<number[]> =>
+      Array.from({ length: SIX_ASKS }).reduce<Promise<number[]>>(
+        async (statuses) => [...(await statuses), (await requestLink({ email, workerEnv })).status],
+        Promise.resolve([]),
+      );
+    const subject = await addressOf();
+    expect(await statusesOf({ email: subject, workerEnv: fullEnv })).toEqual(
+      await statusesOf({ email: freshAddress(), workerEnv: roomyEnv }),
+    );
   });
 
   test('an address that was refused is not told apart by the mail it gets either', async () => {
@@ -187,6 +233,44 @@ describe('a full cloud answers a link request like any other', () => {
   });
 });
 
+describe('admissions reserve their spots', () => {
+  test('with 49 active and one admitted a stranger is refused and the invitee signs in to the 50th', async () => {
+    await env.DIRECTORY.prepare('DELETE FROM cloud_queue').run();
+    const workerEnv = await fullCloudEnv();
+    const accountsMax = Number(workerEnv.CLOUD_ACCOUNTS_MAX);
+    const invitee = freshAddress();
+    const room = emailEnv({ CLOUD_ACCOUNTS_MAX: String(accountsMax + 1) });
+    await enqueueAddress({ directory: env.DIRECTORY, email: invitee, now: CLOCK_NOW });
+    await admitAddress({ directory: env.DIRECTORY, email: invitee, now: CLOCK_NOW });
+    expect(await isCloudFullFor({ env: room, address: freshAddress(), now: CLOCK_NOW })).toBe(true);
+    const strangerCap = await cloudCapOf({ env: room, address: freshAddress(), now: CLOCK_NOW });
+    expect(
+      await insertOwnerWithIdentity({
+        directory: env.DIRECTORY,
+        ownerId: crypto.randomUUID(),
+        provider: SignInProviderKind.Email,
+        subject: freshAddress(),
+        timeZone: 'UTC',
+        now: CLOCK_NOW,
+        cap: strangerCap,
+      }),
+    ).toBe(false);
+    const inviteeCap = await cloudCapOf({ env: room, address: invitee, now: CLOCK_NOW });
+    expect(
+      await insertOwnerWithIdentity({
+        directory: env.DIRECTORY,
+        ownerId: crypto.randomUUID(),
+        provider: SignInProviderKind.Email,
+        subject: invitee,
+        timeZone: 'UTC',
+        now: CLOCK_NOW,
+        cap: inviteeCap,
+      }),
+    ).toBe(true);
+    expect(await takenSpots()).toBe(accountsMax + 1);
+  });
+});
+
 describe('the mail meter', () => {
   test('every mail the cloudflare sender sends is recorded for its address', async () => {
     const { binding } = recordingBinding();
@@ -205,6 +289,29 @@ describe('the mail meter', () => {
       .bind(address)
       .first<{ mails: number }>();
     expect(row?.mails).toBe(1);
+  });
+
+  test('a mail that went out stays sent when the meter cannot record it, and the failure is logged', async () => {
+    const { binding, sent } = recordingBinding();
+    const failure = new Error('d1 down');
+    const brokenMeter = {
+      prepare() {
+        throw failure;
+      },
+    } as unknown as D1Database;
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const sender = emailSenderOf({
+      configured: 'cloudflare',
+      publicOrigin: SITE_ORIGIN,
+      requestUrl: SITE_ORIGIN,
+      binding,
+      meter: brokenMeter,
+    });
+    await expect(
+      sender?.send({ to: freshAddress(), subject: 'Hello', html: '<p>Hello</p>', text: 'Hello', replyTo: 'hello@todz.app' }),
+    ).resolves.toBeUndefined();
+    expect(sent).toHaveLength(1);
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining('d1 down'));
   });
 
   test('a self-hosted server records nothing and bounds nothing', async () => {
@@ -264,20 +371,20 @@ describe('admission is a count-guarded insert', () => {
 
   test('two sign-ins with one spot left end at the cap, not above it', async () => {
     await seedOwner();
-    const workerEnv = emailEnv({ CLOUD_ACCOUNTS_MAX: String((await activeAccounts()) + 1) });
+    const workerEnv = emailEnv({ CLOUD_ACCOUNTS_MAX: String((await takenSpots()) + 1) });
     const [firstEmail, secondEmail] = [freshAddress(), freshAddress()];
     const firstCap = await cloudCapOf({ env: workerEnv, address: firstEmail, now: CLOCK_NOW });
     const secondCap = await cloudCapOf({ env: workerEnv, address: secondEmail, now: CLOCK_NOW });
     expect(await insertAt({ email: firstEmail, cap: firstCap })).toBe(true);
     expect(await insertAt({ email: secondEmail, cap: secondCap })).toBe(false);
     expect(await findIdentityOwner({ directory: env.DIRECTORY, provider: SignInProviderKind.Email, subject: secondEmail })).toBeNull();
-    expect(await activeAccounts()).toBe(Number(workerEnv.CLOUD_ACCOUNTS_MAX));
+    expect(await takenSpots()).toBe(Number(workerEnv.CLOUD_ACCOUNTS_MAX));
   });
 
   test('concurrent sign-ins at one spot admit exactly one', async () => {
     const [first, second] = [await askedLink(), await askedLink()];
     await seedOwner();
-    const workerEnv = emailEnv({ CLOUD_ACCOUNTS_MAX: String((await activeAccounts()) + 1) });
+    const workerEnv = emailEnv({ CLOUD_ACCOUNTS_MAX: String((await takenSpots()) + 1) });
     const answers = await Promise.all([signInWith({ link: first, workerEnv }), signInWith({ link: second, workerEnv })]);
     expect(answers.map((answer) => answer.status).sort()).toEqual([CREATED_STATUS, FORBIDDEN_STATUS]);
   });

@@ -1,5 +1,6 @@
 import { MAIL_SENDER_ADDRESS } from '@todz/types';
 import { mailMeterOf, recordMail } from './cloud-mail-meter';
+import { logCrash } from './crash-log';
 import type { Env } from './env';
 import { enumValueOf } from './enum-value';
 import { isLocalOrigin } from './local-origin';
@@ -25,8 +26,6 @@ export type EmailSender = { send(message: EmailMessage): Promise<void> };
 
 type EmailSenderFactory = ({ binding, meter }: { binding: SendEmail | undefined; meter: D1Database | null }) => EmailSender | null;
 
-const NO_METERED_MAIL = Promise.resolve();
-
 // NB ADR 0041: the console sender only logs, so a deployed origin never selects it.
 const EMAIL_SENDER_FACTORY_OF_KIND: Record<EmailSenderKind, EmailSenderFactory> = {
   [EmailSenderKind.Console]: () => ({
@@ -38,8 +37,9 @@ const EMAIL_SENDER_FACTORY_OF_KIND: Record<EmailSenderKind, EmailSenderFactory> 
     if (binding === undefined) return null;
     return {
       async send({ to, subject, html, text, replyTo, headers }) {
-        const metering = meter === null ? NO_METERED_MAIL : recordMail({ directory: meter, address: to, now: Date.now() });
-        await Promise.all([metering, binding.send({ from: SENDER_ADDRESS, replyTo, to, subject, html, text, headers })]);
+        await binding.send({ from: SENDER_ADDRESS, replyTo, to, subject, html, text, headers });
+        if (meter === null) return;
+        await recordMail({ directory: meter, address: to, now: Date.now() }).catch(logCrash);
       },
     };
   },

@@ -11,7 +11,14 @@
 - [x] An account seen signed in keeps its spot; the stamp writes once a day and only on the cloud.
 - [x] Two sign-ins with one spot left end at the cap; concurrent sign-ins admit exactly one.
 - [x] The queue stores an address once and answers alike for a repeat.
-- [x] Admit marks the row, mails the invite, and the address passes the cap; an admission lapses after 90 days and the address waits again.
+- [x] Admit marks the row, mails the invite, and the address passes the cap; an unredeemed admission lapses after 7 days and the address waits again.
+- [x] Six link requests in a window answer the same sequence for an active, admitted, admin and refused address and for a new address with room.
+- [x] With 49 active and one admitted a stranger is refused (gate and insert) and the invitee signs in to the 50th.
+- [x] The queue link is signed and expires: a typed address, a forged or expired token and a missing Turnstile token store nothing; a valid token stores once, also with room.
+- [x] An analytics failure (non-200, errors, data null, shape, timeout, network) falls back to the estimate, records and mails the reason, shows it on the admin page, and the first-of-month row and the metrics rollup still happen.
+- [x] Durable Object duration reaches 80% before the request pool and is named in the owner mail.
+- [x] The read throttle holds through `serveOwner` and `serveMcp`; a normal month adds no per-owner statement; agent keys stamp last seen.
+- [x] A meter failure leaves a sent mail sent; a single Admit and a clipped Admit next N with no room show "No free spots."
 - [x] Admit next N admits the oldest N, at most the free spots, and the next ask finds none left; an admitted address that signed in is not counted twice.
 - [x] The digest mails only when the queue grew, stamps only after a successful send, and reports a join after the run time the next night.
 - [x] The guard levels: under 80%, at 80%, at 95% per dimension.
