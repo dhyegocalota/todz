@@ -24,6 +24,7 @@ private let cacheFolderName = "Cache"
     )
     let windowState = MainWindowState()
     let updater = AppUpdater(bundle: .main)
+    let applicationsMoveOffer = ApplicationsMoveOffer(bundle: .main)
     let panel = MenuBarPanel()
     let gate: ProactiveGate
     var dayChangeObservation: (any NSObjectProtocol)?
@@ -100,6 +101,7 @@ private let cacheFolderName = "Cache"
         observeDayChanges()
         startUsageSharing()
         observeWindows(LaunchActivation.of(isDefaultLaunch: notification.userInfo?[NSApplication.launchIsDefaultUserInfoKey] as? Bool))
+        Task { applicationsMoveOffer?.offerIfNeeded() }
         launchReading = Task {
             await focusSwitch.start()
             startDayTemperature()
