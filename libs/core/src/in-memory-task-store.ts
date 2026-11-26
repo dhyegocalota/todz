@@ -67,8 +67,10 @@ export class InMemoryTaskStore implements TaskStore {
     this.tasks.set(task.number, structuredClone(task));
   }
 
-  removeTask(_removal: { number: number; at: number }): void {
-    throw new Error('removeTask is not implemented');
+  removeTask(removal: { number: number; at: number }): void {
+    this.writeCount += 1;
+    this.tasks.delete(removal.number);
+    this.removals = [...this.removals, removal];
   }
 
   appendHistory({ number, entry }: { number: number; entry: HistoryEntry }): void {

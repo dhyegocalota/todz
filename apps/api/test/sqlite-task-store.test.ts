@@ -402,8 +402,8 @@ describe('SqliteTaskStore change numbers', () => {
       },
     });
     expect(changes).toEqual([
-      { task: FIRST_TASK, changeNumber: 1 },
-      { task: SECOND_TASK, changeNumber: 2 },
+      { task: FIRST_TASK, changeNumber: 1, isDeleted: false },
+      { task: SECOND_TASK, changeNumber: 2, isDeleted: false },
     ]);
   });
 
@@ -420,8 +420,8 @@ describe('SqliteTaskStore change numbers', () => {
     expect(result).toEqual({
       last: 3,
       changes: [
-        { task: SECOND_TASK, changeNumber: 2 },
-        { task: renamed, changeNumber: 3 },
+        { task: SECOND_TASK, changeNumber: 2, isDeleted: false },
+        { task: renamed, changeNumber: 3, isDeleted: false },
       ],
     });
   });

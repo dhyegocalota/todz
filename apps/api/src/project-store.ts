@@ -17,6 +17,7 @@ import {
   addTasks,
   agentActor,
   completeTasks,
+  deleteTask,
   dueNow,
   listTasks,
   nextTask,
@@ -97,12 +98,16 @@ export class ProjectStore extends DurableObject<Env> {
     return this.runWrite(() => reopenTasks({ store: this.store, clock: SYSTEM_CLOCK, actor: trustedActor(actor), numbers }));
   }
 
-  deleteTask(_removal: { number: number; confirmation: string }): ProjectResult<Task> {
-    throw new Error('deleteTask is not implemented');
+  deleteTask({ number, confirmation }: { number: number; confirmation: string }): ProjectResult<Task> {
+    return this.runWrite(() => deleteTask({ store: this.store, clock: SYSTEM_CLOCK, number, confirmation }));
   }
 
-  readTask(_lookup: { number: number }): ProjectResult<Task> {
-    throw new Error('readTask is not implemented');
+  readTask({ number }: { number: number }): ProjectResult<Task> {
+    return resultOf(() => {
+      const task = this.store.findTask(number);
+      if (task === null) throw new TaskNotFoundError(number);
+      return task;
+    });
   }
 
   listTasks({ today, filter }: { today: string; filter: TaskFilter }): ProjectResult<TaskList> {
@@ -142,10 +147,13 @@ export class ProjectStore extends DurableObject<Env> {
     const page = changes.slice(0, CHANGE_PAGE_SIZE);
     const lastOnPage = page.at(LAST_INDEX);
     const nextCursor = lastOnPage === undefined ? cursor : lastOnPage.changeNumber;
-    return {
-      ok: true,
-      value: { tasks: page.map(({ task }) => task), deletedNumbers: [], cursor: nextCursor, hasMore: changes.length > CHANGE_PAGE_SIZE },
+    const value = {
+      tasks: page.filter(({ isDeleted }) => !isDeleted).map(({ task }) => task),
+      deletedNumbers: page.filter(({ isDeleted }) => isDeleted).map(({ task }) => task.number),
+      cursor: nextCursor,
+      hasMore: changes.length > CHANGE_PAGE_SIZE,
     };
+    return { ok: true, value };
   }
 
   readHistory({ number }: { number: number }): ProjectResult<HistoryEntry[]> {

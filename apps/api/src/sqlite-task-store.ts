@@ -18,9 +18,9 @@ type TaskRow = {
   completed_at: number | null;
 };
 
-type ChangedTaskRow = TaskRow & { change_number: number };
+type ChangedTaskRow = TaskRow & { change_number: number; deleted_at: number | null };
 
-export type TaskChange = { task: Task; changeNumber: number };
+export type TaskChange = { task: Task; changeNumber: number; isDeleted: boolean };
 
 export type ActivityCounts = { added: number; completed: number; agentWrites: { client: string; count: number }[] };
 
@@ -41,10 +41,16 @@ const ADDED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE created_at 
 const COMPLETED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE completed_at >= ? AND completed_at < ?';
 const AGENT_WRITES_QUERY =
   'SELECT actor_client, count(*) AS total FROM task_history WHERE actor_kind = ? AND actor_client IS NOT NULL AND at >= ? AND at < ? GROUP BY actor_client';
-const FIRST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? ORDER BY order_key LIMIT 1';
-const LAST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? ORDER BY order_key DESC LIMIT 1';
-const ORDER_KEY_BEFORE_QUERY = 'SELECT order_key FROM tasks WHERE order_key < ? AND number <> ? ORDER BY order_key DESC LIMIT 1';
-const ORDER_KEY_AFTER_QUERY = 'SELECT order_key FROM tasks WHERE order_key > ? AND number <> ? ORDER BY order_key LIMIT 1';
+const FIRST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? AND deleted_at IS NULL ORDER BY order_key LIMIT 1';
+const LAST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? AND deleted_at IS NULL ORDER BY order_key DESC LIMIT 1';
+const ORDER_KEY_BEFORE_QUERY =
+  'SELECT order_key FROM tasks WHERE order_key < ? AND number <> ? AND deleted_at IS NULL ORDER BY order_key DESC LIMIT 1';
+const ORDER_KEY_AFTER_QUERY =
+  'SELECT order_key FROM tasks WHERE order_key > ? AND number <> ? AND deleted_at IS NULL ORDER BY order_key LIMIT 1';
+const REMOVE_TASK_STATEMENT =
+  'UPDATE tasks SET title = ?, notes = NULL, due_date = NULL, idempotency_key = NULL, deleted_at = ?, change_number = ? WHERE number = ?';
+const SCRUB_HISTORY_STATEMENT = 'UPDATE task_history SET note = NULL WHERE task_number = ?';
+const REMOVED_TITLE = '';
 
 function invalidColumn({ column, taskNumber }: { column: string; taskNumber: number }): Error {
   return new Error(`${column} of task ${taskNumber} is not valid`);
@@ -149,7 +155,7 @@ export class SqliteTaskStore implements TaskStore {
   constructor(private readonly sql: SqlStorage) {}
 
   findTask(number: number): Task | null {
-    const [row] = this.sql.exec<TaskRow>(`SELECT ${TASK_COLUMNS} FROM tasks WHERE number = ?`, number).toArray();
+    const [row] = this.sql.exec<TaskRow>(`SELECT ${TASK_COLUMNS} FROM tasks WHERE number = ? AND deleted_at IS NULL`, number).toArray();
     if (row === undefined) return null;
     return taskOf(row);
   }
@@ -161,7 +167,10 @@ export class SqliteTaskStore implements TaskStore {
   }
 
   listTasksInState(state: TaskState): Task[] {
-    return this.sql.exec<TaskRow>(`SELECT ${TASK_COLUMNS} FROM tasks WHERE state = ? ORDER BY order_key`, state).toArray().map(taskOf);
+    return this.sql
+      .exec<TaskRow>(`SELECT ${TASK_COLUMNS} FROM tasks WHERE state = ? AND deleted_at IS NULL ORDER BY order_key`, state)
+      .toArray()
+      .map(taskOf);
   }
 
   lastIssuedTaskNumber(): number | null {
@@ -211,12 +220,12 @@ export class SqliteTaskStore implements TaskStore {
   listChangesSince({ cursor, limit }: { cursor: number; limit: number }): TaskChange[] {
     return this.sql
       .exec<ChangedTaskRow>(
-        `SELECT ${TASK_COLUMNS}, change_number FROM tasks WHERE change_number > ? ORDER BY change_number LIMIT ?`,
+        `SELECT ${TASK_COLUMNS}, change_number, deleted_at FROM tasks WHERE change_number > ? ORDER BY change_number LIMIT ?`,
         cursor,
         limit,
       )
       .toArray()
-      .map((row) => ({ task: taskOf(row), changeNumber: row.change_number }));
+      .map((row) => ({ task: taskOf(row), changeNumber: row.change_number, isDeleted: row.deleted_at !== null }));
   }
 
   insertTask(task: Task): void {
@@ -254,8 +263,9 @@ export class SqliteTaskStore implements TaskStore {
     );
   }
 
-  removeTask(_removal: { number: number; at: number }): void {
-    throw new Error('removeTask is not implemented');
+  removeTask({ number, at }: { number: number; at: number }): void {
+    this.sql.exec(REMOVE_TASK_STATEMENT, REMOVED_TITLE, at, this.takeChangeNumber(), number);
+    this.sql.exec(SCRUB_HISTORY_STATEMENT, number);
   }
 
   appendHistory({ number, entry }: { number: number; entry: HistoryEntry }): void {

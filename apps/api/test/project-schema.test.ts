@@ -263,7 +263,7 @@ describe('applyProjectSchema', () => {
     expect(observed.before.indexes).not.toEqual(expect.arrayContaining(VERSION_THREE_INDEXES));
     expect(observed.versions).toEqual([LATEST_VERSION]);
     expect(observed.indexes).toEqual(expect.arrayContaining(VERSION_THREE_INDEXES));
-    expect(observed.tasks).toEqual(observed.before.tasks);
+    expect(observed.tasks).toEqual(observed.before.tasks.map((task) => ({ ...(task as object), deleted_at: null })));
     expect(observed.history).toEqual(observed.before.history);
   });
 
@@ -296,16 +296,15 @@ describe('applyProjectSchema', () => {
     expect(observed.counter).toEqual(observed.before.counter);
   });
 
-  test('every use case answers on a version 3 store exactly as on a version 2 store', async () => {
-    const onVersionTwo = await runInDurableObject(newProjectStub(), (_instance, state) => {
-      versionTwoStore({ storage: state.storage, taskCount: 0 });
-      return scenarioAnswers(new SqliteTaskStore(state.storage.sql));
-    });
-    const onVersionThree = await runInDurableObject(newProjectStub(), (_instance, state) => {
+  test('every use case answers on a migrated version 2 store exactly as on a new store', async () => {
+    const onNewStore = await runInDurableObject(newProjectStub(), (_instance, state) =>
+      scenarioAnswers(new SqliteTaskStore(state.storage.sql)),
+    );
+    const onMigratedStore = await runInDurableObject(newProjectStub(), (_instance, state) => {
       versionTwoStore({ storage: state.storage, taskCount: 0 });
       applyProjectSchema(state.storage);
       return scenarioAnswers(new SqliteTaskStore(state.storage.sql));
     });
-    expect(onVersionThree).toEqual(onVersionTwo);
+    expect(onMigratedStore).toEqual(onNewStore);
   });
 });
