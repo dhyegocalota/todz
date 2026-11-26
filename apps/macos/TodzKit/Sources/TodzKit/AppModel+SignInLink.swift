@@ -57,7 +57,8 @@ extension AppModel {
         }
         guard case .signedOut = phase else {
             heldSignInLink = nil
-            if banner == nil { raise(.alreadySignedIn) }
+            let isLineFree = phase != .loading && banner == nil
+            if isLineFree { raise(.alreadySignedIn) }
             return
         }
         guard !isSigningIn else { return }

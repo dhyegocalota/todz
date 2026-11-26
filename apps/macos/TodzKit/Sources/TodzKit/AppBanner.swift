@@ -16,6 +16,6 @@ public enum AppBanner: Equatable, Sendable {
     case alreadySignedIn
 
     public var isCalm: Bool {
-        false
+        self == .alreadySignedIn
     }
 }
