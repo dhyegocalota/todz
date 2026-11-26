@@ -16,9 +16,28 @@ const FAVICON = 'apps/docs/favicon.svg';
 const PAGE_EXTENSION = '.mdx';
 const NAVIGATION_GROUPS = [
   { group: 'Get started', pages: ['index', 'quickstart', 'install-on-mac', 'connect-an-agent'] },
-  { group: 'Guides', pages: ['workspaces', 'updates', 'privacy', 'open-source'] },
-  { group: 'Reference', pages: ['mcp-tools'] },
+  {
+    group: 'Guides',
+    pages: [
+      'workspaces',
+      'keyboard-shortcuts',
+      'updates',
+      'privacy',
+      'troubleshooting',
+      'uninstall',
+      'use-these-docs-from-your-agent',
+      'open-source',
+    ],
+  },
+  { group: 'Reference', pages: ['mcp-tools', 'releases'] },
   { group: 'Run your own', pages: ['self-host'] },
+];
+const REPOSITORY_COLUMN = 'Open source';
+const REPOSITORY_BLOB = 'https://github.com/dhyegocalota/todz/blob/main';
+const REPOSITORY_LINKS = [
+  { label: 'Contributing', href: `${REPOSITORY_BLOB}/.github/CONTRIBUTING.md` },
+  { label: 'Security', href: `${REPOSITORY_BLOB}/.github/SECURITY.md` },
+  { label: 'License', href: `${REPOSITORY_BLOB}/LICENSE` },
 ];
 const NOT_FOUND_TITLE = 'Page not found';
 const HOME_LINK = '](/)';
@@ -143,13 +162,17 @@ describe('docs.json', () => {
     },
   );
 
-  test('credits Logic Bit in one footer column: the lead of the landing credit as its header, the company name as its one link', () => {
+  test('credits Logic Bit in the first footer column: the lead of the landing credit as its header, the company name as its one link', () => {
     const copy = readRepositoryFile(LANDING_COPY);
     const constants = readRepositoryFile(COMPANY_CONSTANTS);
     const tradeName = singleCapture({ text: constants, pattern: TRADE_NAME_PATTERN });
     const creditLead = singleCapture({ text: copy, pattern: CREDIT_LEAD_PATTERN });
     const website = singleCapture({ text: constants, pattern: WEBSITE_PATTERN });
-    expect(configuration.footer?.links).toEqual([{ header: creditLead, items: [{ label: tradeName, href: website }] }]);
+    expect(configuration.footer?.links?.[0]).toEqual({ header: creditLead, items: [{ label: tradeName, href: website }] });
+  });
+
+  test('links the repository policies in the second footer column', () => {
+    expect(configuration.footer?.links?.[1]).toEqual({ header: REPOSITORY_COLUMN, items: REPOSITORY_LINKS });
   });
 
   test('links the landing from the navbar', () => {

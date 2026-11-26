@@ -9,10 +9,15 @@ const SIDEBAR_TITLES = [
   'Install on Mac',
   'Connect an agent',
   'Workspaces',
+  'Keyboard shortcuts',
   'Updates',
   'Privacy',
+  'Troubleshooting',
+  'Uninstall',
+  'Use these docs from your agent',
   'Open source',
   'MCP tools',
+  'Releases',
   'Server setup',
 ];
 const pages = docsPages();
