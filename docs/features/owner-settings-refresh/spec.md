@@ -1,6 +1,6 @@
 # Owner settings refresh
 
-**Status:** Building
+**Status:** Shipped 2026-11-26
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-26 as the loop's call under the owner's 2026-11-24 instruction to decide every call (todz-loop/PROMPT.md), from todz-6f's report in STATE.md's v1.1 list
 **ADRs:** none
