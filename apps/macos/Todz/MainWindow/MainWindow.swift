@@ -15,6 +15,7 @@ struct MainWindow: View {
     @Environment(AppModel.self) private var model
     @Environment(MainWindowState.self) private var windowState
     @FocusState private var focus: MainWindowFocus?
+    @State private var titleFlightFrames = TitleFlightFrames()
 
     var body: some View {
         @Bindable var windowState = windowState
@@ -37,6 +38,8 @@ struct MainWindow: View {
                 }
             }
         }
+        .coordinateSpace(.named(titleFlightSpace))
+        .environment(titleFlightFrames)
         .defaultFocus($focus, MainWindowFocus(windowState.openingFocus))
         .onDisappear { windowState.windowClosed() }
         .sheet(item: $windowState.sheet) { kind in

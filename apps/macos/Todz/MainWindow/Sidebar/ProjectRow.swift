@@ -12,6 +12,7 @@ struct ProjectRow: View {
             .truncationMode(.tail)
             .help(label)
             .openCountBadge(model.openCount(of: item))
+            .titleFlightSource(item: item)
             .tag(item)
             .contextMenu {
                 Button(MainWindowCopy.renameProject) {

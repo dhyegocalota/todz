@@ -4,6 +4,7 @@ import TodzKit
 struct TaskListBody: View {
     let state: TaskListState
     let item: SidebarItem
+    let arriving: Set<RowIdentity>
     let focus: FocusState<MainWindowFocus?>.Binding
 
     var body: some View {
@@ -18,7 +19,7 @@ struct TaskListBody: View {
             ContentUnavailableView(item.emptyTitle, systemImage: item.symbol, description: Text(item.emptyBody))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case let .rows(sections):
-            TaskRows(sections: sections, item: item, focus: focus)
+            TaskRows(sections: sections, item: item, arriving: arriving, focus: focus)
         }
     }
 }
