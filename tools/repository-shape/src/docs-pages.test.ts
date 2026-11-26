@@ -146,7 +146,7 @@ describe('the quickstart', () => {
 describe('the self-host guide', () => {
   test('says the official app updates itself whatever its server, and links the install page updates', () => {
     const page = pageText(GUIDE_PAGE);
-    expect(page).toContain('## App updates');
+    expect(page.indexOf('## App updates')).toBeGreaterThan(page.indexOf('wrangler secret delete TURNSTILE_SECRET_KEY'));
     expect(page).toContain('[Install on Mac › Updates](https://docs.todz.app/install-on-mac#4-updates)');
     expect(pageText('install-on-mac')).toContain('## 4. Updates');
   });
