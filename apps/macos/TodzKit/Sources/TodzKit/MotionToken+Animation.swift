@@ -2,7 +2,7 @@ import SwiftUI
 
 extension MotionToken {
     public var animation: Animation {
-        let seconds = Double(durationMilliseconds) / MotionTiming.millisecondsPerSecond
+        let seconds = Double(durationMilliseconds) / millisecondsPerSecond
         switch curve {
         case let .spring(response, dampingFraction):
             return .spring(response: response, dampingFraction: dampingFraction)
