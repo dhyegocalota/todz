@@ -102,6 +102,39 @@ private final class IdentifierSource {
         #expect(rollup.macosMajor == macosMajor)
     }
 
+    @Test(arguments: UsageEvent.allCases) func eachEventIsTalliedOnItsOwn(event: UsageEvent) throws {
+        let shared = try SharingDomain()
+        shared.preference.answer(isSharing: true)
+        shared.sharing.record(event, at: firstDay)
+        let rollup = try #require(shared.sharing.dueRollup(at: nextDay, appVersion: appVersion, macosMajor: macosMajor))
+        #expect(rollup.counts == [event.rawValue: 1])
+    }
+
+    @Test func aRolloverKeepsTheUnsentDayAndSendsItBeforeTheNewOne() throws {
+        let shared = try SharingDomain()
+        shared.preference.answer(isSharing: true)
+        shared.sharing.record(.popoverOpened, at: firstDay)
+        shared.sharing.record(.dayClosed, at: nextDay)
+        let previousDay = try #require(shared.sharing.dueRollup(at: nextDay, appVersion: appVersion, macosMajor: macosMajor))
+        #expect(previousDay.counts == ["popover_opened": 1])
+        shared.sharing.markSent()
+        #expect(shared.sharing.dueRollup(at: nextDay, appVersion: appVersion, macosMajor: macosMajor) == nil)
+        let followingDay = try #require(shared.sharing.dueRollup(at: nextDay.addingTimeInterval(24 * 60 * 60), appVersion: appVersion, macosMajor: macosMajor))
+        #expect(followingDay.counts == ["day_closed": 1])
+    }
+
+    @Test func aWeekOfUnsentDaysIsTheMostThatIsKept() throws {
+        let shared = try SharingDomain()
+        shared.preference.answer(isSharing: true)
+        let days = (0 ..< 9).map { firstDay.addingTimeInterval(Double($0) * 24 * 60 * 60) }
+        days.forEach { shared.sharing.record(.popoverOpened, at: $0) }
+        let due = (0 ..< 9).compactMap { _ -> UsageRollup? in
+            defer { shared.sharing.markSent() }
+            return shared.sharing.dueRollup(at: days[8], appVersion: appVersion, macosMajor: macosMajor)
+        }
+        #expect(due.count == 7)
+    }
+
     @Test func theCurrentDayIsNotDueYet() throws {
         let shared = try SharingDomain()
         shared.preference.answer(isSharing: true)

@@ -7,6 +7,7 @@ import { utcDayOf } from '../../src/telemetry/telemetry-day';
 import { USAGE_PATH, serveUsageRollup } from '../../src/telemetry/usage-rollup';
 import { type RecordingLimiter, recordingLimiter } from '../email-sign-in-client';
 import { workerEnvWith } from '../owner-client';
+import { assetsServing } from './fake-assets';
 
 const API_ORIGIN = 'https://api.todz.app';
 const INSTALL_IDENTIFIER = '5b0c9d0e-7f1a-4c53-9a39-0d4f8b2f3e11';
@@ -41,6 +42,7 @@ function limiters({ refusing = [] }: { refusing?: (keyof Limiters)[] } = {}): Li
 function settingsOf({ recorded, isTelemetryOff = false }: { recorded: Limiters; isTelemetryOff?: boolean }): Partial<Env> {
   return {
     TELEMETRY: isTelemetryOff ? undefined : 'on',
+    ASSETS: assetsServing({ published: ['0.2.1'] }),
     USAGE_LIMITER: recorded.client.limiter,
     USAGE_INSTALL_LIMITER: recorded.install.limiter,
     USAGE_GLOBAL_LIMITER: recorded.global.limiter,
@@ -105,6 +107,22 @@ describe('a valid rollup', () => {
     await sent({ rollup: VALID_ROLLUP, settings: settingsOf({ recorded }) });
     expect(recorded.install.keys).toEqual([INSTALL_IDENTIFIER]);
     expect(recorded.client.keys).toEqual([CLIENT_ADDRESS]);
+  });
+
+  test('an app version that was never published counts into other without taking a version slot', async () => {
+    await sent({ rollup: { ...VALID_ROLLUP, appVersion: '9.9.9' }, settings: settingsOf({ recorded: limiters() }) });
+    const versionRows = (await storedRows()).filter(({ metric }) => metric === Metric.UsageVersions);
+    expect(versionRows.map(({ dimension }) => dimension)).toEqual(['other']);
+  });
+
+  test('a macOS major version outside the fixed list counts into other', async () => {
+    await sent({ rollup: { ...VALID_ROLLUP, macosMajor: 99 }, settings: settingsOf({ recorded: limiters() }) });
+    const versionRows = (await storedRows()).filter(({ metric }) => metric === Metric.UsageVersions);
+    expect(versionRows.map(({ dimension }) => dimension)).toEqual(['other']);
+  });
+
+  test('an event count is at most five hundred a day (pin)', () => {
+    expect(USAGE_COUNT_MAX).toBe(500);
   });
 
   test('the fullest possible rollup stays under one kilobyte', () => {

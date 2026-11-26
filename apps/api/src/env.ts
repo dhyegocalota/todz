@@ -30,4 +30,5 @@ export type Env = {
   USAGE_INSTALL_LIMITER?: RateLimit;
   USAGE_GLOBAL_LIMITER?: RateLimit;
   APPCAST_LIMITER?: RateLimit;
+  APPCAST_ADDRESS_LIMITER?: RateLimit;
 };

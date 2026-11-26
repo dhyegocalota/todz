@@ -57,6 +57,7 @@ export const USAGE_INSTALL_RATE_LIMIT_MAX = 1;
 export const USAGE_GLOBAL_RATE_LIMIT_MAX = 60;
 export const USAGE_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;
 export const APPCAST_RATE_LIMIT_MAX = 600;
+export const APPCAST_ADDRESS_RATE_LIMIT_MAX = 1;
 export const COMPANY = {
   tradeName: 'Logic Bit',
   legalName: 'Logic Bit AI Software Boutique Ltda',
