@@ -12,28 +12,14 @@ struct AddressSlot: View {
 
     var body: some View {
         VStack {
-            TextField(SignInCopy.emailPlaceholder, text: $email)
-                .textFieldStyle(.roundedBorder)
+            FormField(label: SignInCopy.emailLabel, prompt: SignInCopy.emailPlaceholder, text: $email, issue: formatIssue, isLabelShown: false, isBusy: model.isRequestingLink, isFocused: $isEmailFocused)
                 .textContentType(.emailAddress)
                 .autocorrectionDisabled()
-                .accessibilityLabel(SignInCopy.emailLabel)
-                .focused($isEmailFocused)
-                .disabled(model.isRequestingLink)
                 .onSubmit(submit)
+                .onChange(of: email) { isFormatRefused = false }
             ChallengeView()
-            if isFormatRefused {
-                Text(SignInCopy.emailFormat)
-                    .foregroundStyle(.red)
-            }
-            if model.isRequestingLink {
-                ProgressView(SignInCopy.sendingLink)
-                    .controlSize(.small)
-            }
-            if !model.isRequestingLink {
-                Button(SignInCopy.sendLink, action: submit)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(because: sendReason)
-            }
+            FormButton(title: SignInCopy.sendLink, busyTitle: SignInCopy.sendingLink, kind: .primary, isBusy: model.isRequestingLink, disabledReason: sendReason, isFullWidth: true, action: submit)
+                .keyboardShortcut(.defaultAction)
             if let signInError = model.signInError {
                 SignInErrorLine(signInError: signInError, tryAgain: submit)
             }
@@ -58,6 +44,11 @@ struct AddressSlot: View {
     private func focusEmail() {
         guard !isServerFormOpen else { return }
         isEmailFocused = true
+    }
+
+    private var formatIssue: String? {
+        guard isFormatRefused else { return nil }
+        return SignInCopy.emailFormat
     }
 
     private var address: String {

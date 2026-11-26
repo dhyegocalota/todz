@@ -36,6 +36,15 @@ enum SignInCopy {
     static let linkNotRequested = "Open the link on the Mac that asked for it, or send a new one."
 
     static let serverDisclosureHint = "Change the server todz signs in to."
+    static let cloudSpotsLimited = "Free todz cloud spots are extremely limited. You can always"
+    static let runYourOwnServer = "run your own server"
+    static let sentenceEnd = "."
+
+    static var cloudSpotsLine: AttributedString {
+        var guide = AttributedString(runYourOwnServer)
+        guide.link = SelfHostAddress.url
+        return AttributedString("\(cloudSpotsLimited) ") + guide + AttributedString(sentenceEnd)
+    }
 
     static func serverDisclosure(server: String) -> String {
         "Server: \(server)"
