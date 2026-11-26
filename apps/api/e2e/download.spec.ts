@@ -131,7 +131,7 @@ test.describe('the landing with a released version', () => {
       await page.goto('/');
       const button = page.locator(DOWNLOAD_BUTTON);
       await expect(button).toBeVisible();
-      await expect(button).toHaveText(LANDING_COPY.download.button);
+      await expect(button).toHaveText(LANDING_COPY.download.heroButton);
       await expect(page.locator(DOWNLOAD_NOTE)).toContainText(LANDING_COPY.download.note);
       await expect(page.locator(`${DOWNLOAD_NOTE} a`)).toHaveAttribute('href', INSTALL_STEPS_URL);
       await expect(page.locator('.hero .eyebrow-pill')).toHaveText(LANDING_COPY.hero.eyebrow);

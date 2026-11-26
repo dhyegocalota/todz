@@ -102,12 +102,36 @@ describe('the star pill', () => {
   });
 });
 
-describe('the open source line and the footer links', () => {
-  test('the hero says Open source · AGPL-3.0 with the repository link', async () => {
+describe('the star count honesty', () => {
+  test.each([[0], [1], [24]])('shows no number for %i stars, below the threshold of 25', async (stars) => {
+    const { html } = await landing(stars);
+    expect(html).not.toContain('class="star-count"');
+    expect(html).not.toContain('class="star-glyph"');
+    expect(html).toContain(LANDING_COPY.openSource.starLabel);
+  });
+
+  test.each([
+    [25, '25'],
+    [42, '42'],
+    [1000, '1k'],
+  ])('shows the live count for %i stars, from the threshold up', async (stars, text) => {
+    const { html } = await landing(stars);
+    expect(html).toContain(`<span class="star-count-final">${text}</span>`);
+  });
+
+  test('keeps no star count in the site source: only the live count is ever rendered', () => {
+    const sources = Object.entries(import.meta.glob('../src/site/*.ts', { query: '?raw', import: 'default', eager: true }));
+    const literalCount = /(?:stars|stargazers_count)\s*[:=]\s*\d/i;
+    expect(sources.length).toBeGreaterThan(0);
+    expect(sources.filter(([, source]) => literalCount.test(String(source))).map(([path]) => path)).toEqual([]);
+  });
+});
+
+describe('the footer links', () => {
+  test('the hero no longer repeats the open source line, the pill says it', async () => {
     const { html } = await landing(STARS);
-    expect(html).toContain(`<a class="open-source-link" href="${REPOSITORY.url}"`);
-    expect(html).toContain(LANDING_COPY.openSource.line);
-    expect(LANDING_COPY.openSource.line).toBe('Open source · AGPL-3.0');
+    expect(html).not.toContain('open-source-line');
+    expect(html).not.toContain('Open source · AGPL-3.0');
   });
 
   test('the footer links the license and the contributing guide', async () => {

@@ -1,6 +1,6 @@
 # Waitlist off
 
-**Status:** Building
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-26 by the owner's words to the loop ("desativa join waitlist por favor.. já estamos no ar"), inheriting the product scope of [docs/product/README.md](../../product/README.md)
 **ADRs:** none; the earlier records of the waitlist ([0050](../../adr/0050-the-waitlist-answers-alike-for-every-address-mails-once-and-is-guarded-like-sign-in.md), [0052](../../adr/0052-the-waitlist-digest-goes-to-the-admin-address-once-a-day-from-a-cron.md), [0060](../../adr/0060-the-landing-describes-itself-from-the-copy-modules-and-offers-webmcp-tools-over-its-own-turnstile-form.md), [0067](../../adr/0067-the-waitlist-joins-in-place-over-fetch-behind-a-visible-check-a-honeypot-and-a-signed-render-time.md)) stay as history

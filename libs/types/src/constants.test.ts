@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   ABSENT_INDEX,
+  AUTHOR,
   AGENT_NUDGE_BY_DEFAULT,
   API_VERSION_HEADER,
   APP_VERSION_HEADER,
@@ -98,6 +99,12 @@ describe('repository constants', () => {
       licenseSpdxUrl: 'https://spdx.org/licenses/AGPL-3.0-only.html',
       contributingUrl: 'https://github.com/dhyegocalota/todz/blob/main/.github/CONTRIBUTING.md',
     });
+  });
+});
+
+describe('author constants', () => {
+  test('the maker signs with a first name and the GitHub profile (pin)', () => {
+    expect(AUTHOR).toEqual({ name: 'Dhyego', url: 'https://github.com/dhyegocalota' });
   });
 });
 

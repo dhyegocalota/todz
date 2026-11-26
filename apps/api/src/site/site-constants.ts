@@ -13,6 +13,7 @@ export const REPOSITORY_STARS_RETRY_MS = 5 * MILLISECONDS_PER_MINUTE;
 export const STARS_FORMAT_LOCALE = FORMATTER_LOCALE;
 export const STARS_FORMAT_OPTIONS = { notation: 'compact', maximumFractionDigits: 1 } as const;
 export const STARS_COUNT_UP_MS = 600;
+export const STARS_SHOWN_MINIMUM = 25;
 const SCRIPT_OPENER = '<';
 const ESCAPED_SCRIPT_OPENER = '\\u003c';
 

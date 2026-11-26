@@ -1,6 +1,6 @@
 # Open source surfaces
 
-**Status:** Building
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-26 by the owner's words to the loop ("cadê na landing page o stars, coisas de open source igual zapbip? também quero star no GitHub no app, nos options do menu bar etc"), inheriting the product scope of [docs/product/README.md](../../product/README.md)
 **ADRs:** [0081](../../adr/0081-the-whole-repository-is-agpl-3-0-only-and-going-public-follows-a-pre-flight-runbook.md); no new record, the choices below have no rejected alternative worth one

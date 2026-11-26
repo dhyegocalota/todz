@@ -10,7 +10,7 @@ test.describe('the two ways section', () => {
     test(`shows two equal cards, the badges, the buttons and the note in ${colorScheme}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: colorScheme === 'dark' ? 'dark' : 'light' });
       await page.goto('/');
-      await expect(page.getByRole('heading', { name: LANDING_COPY.ways.title })).toBeVisible();
+      await expect(page.locator('#ways')).toBeVisible();
       const cards = page.locator('.way-card');
       await expect(cards).toHaveCount(2);
       await expect(cards.nth(0).locator('.way-badge')).toHaveText(LANDING_COPY.ways.cloud.badge);
@@ -41,6 +41,8 @@ test.describe('the two ways section', () => {
   test('the hero keeps its free line and chip', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.hero-free')).toHaveText(LANDING_COPY.free.line);
-    await expect(page.locator('.hero .free-chip')).toHaveText(LANDING_COPY.free.chip);
+    await expect(page.locator('.hero-free a')).toHaveAttribute('href', '#ways');
+    await expect(page.locator('.hero .download-button')).toHaveText(LANDING_COPY.download.heroButton);
+    await expect(page.locator('.free-chip')).toHaveCount(0);
   });
 });

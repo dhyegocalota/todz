@@ -11,6 +11,12 @@ const OK_STATUS = 200;
 const STARS = 1234;
 const STARS_TEXT = '1.2k';
 const STAR_GLYPH = '★';
+const LINKED_LINE_PIECES = [
+  `${LANDING_COPY.signature.line} —`,
+  'Free on todz cloud — or',
+  '.',
+  `${LANDING_COPY.shell.creditPrefix} ${LANDING_COPY.shell.creditLead}`,
+];
 const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
@@ -37,16 +43,16 @@ const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
 const DOCS_INSTALL_URL = 'https://docs.todz.app/install-on-mac';
 const GUIDE_LINK_PATTERN = /<a class="(?:nav-link|footer-link)" href="([^"]*)"/g;
 const FOOTER_CREDIT =
-  '<p class="footer-credit">todz is a product of <a class="footer-credit-link" href="https://logicbit.com.br" rel="noopener noreferrer">Logic Bit</a>, made in Brazil</p>';
+  '<p class="footer-credit">© todz · todz is a product of <a class="footer-credit-link" href="https://logicbit.com.br" rel="noopener noreferrer">Logic Bit</a>, made in Brazil</p>';
 const FOOTER_CREDIT_LINK_STYLE = '.footer-credit-link{color:var(--color-text);text-decoration:underline;text-underline-offset:0.2em}';
 const SECTION_MARKERS = [
   '<section class="hero',
   '<section class="benefits',
   '<section class="how-it-works',
-  '<section class="final-call',
+  '<section id="ways" class="final-call',
   '<footer class="site-footer',
 ];
-const DOWNLOAD_BUTTON = '<a class="download-button" href="/download" download>Download for Mac</a>';
+const DOWNLOAD_BUTTON = '<a class="download-button" href="/download" download>Download for Mac — Free</a>';
 const DOWNLOAD_NOTE_PATTERN =
   /<p class="download-note">Not notarized by Apple yet: the first time, open it from System Settings › Privacy &amp; Security\. <a class="download-note-link" href="https:\/\/docs\.todz\.app\/install-on-mac">Install steps<\/a><\/p>/;
 const COMING_SOON_PATTERN = /coming soon/i;
@@ -196,7 +202,7 @@ describe('the landing', () => {
 
   test('every word it shows or reads aloud comes from the copy module', async () => {
     const { html } = await landingPage();
-    const copy = [...copyStrings(LANDING_COPY), STARS_TEXT, STAR_GLYPH];
+    const copy = [...copyStrings(LANDING_COPY), STARS_TEXT, STAR_GLYPH, ...LINKED_LINE_PIECES];
     const readable = [
       ...textNodes(html),
       ...captures({ html, pattern: READABLE_ATTRIBUTE_PATTERN }).map(decoded),

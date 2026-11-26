@@ -1,5 +1,5 @@
 import { formatShortId } from '@todz/core';
-import { COMPANY } from '@todz/types';
+import { AUTHOR, COMPANY } from '@todz/types';
 import { MCP_COPY, McpToolName } from '../mcp-copy';
 import { AgentClient, agentSetupOf } from './agent-setup';
 import { KEY_PLACEHOLDER } from './site-constants';
@@ -27,7 +27,7 @@ export const LANDING_COPY = {
     footerSelfHost: 'Self-host guide',
     footerInstall: 'Install on Mac',
     footerGithub: 'GitHub',
-    copyright: '© todz',
+    creditPrefix: '© todz ·',
     creditLead: 'todz is a product of',
     creditName: COMPANY.tradeName,
     creditTail: ', made in Brazil',
@@ -39,15 +39,15 @@ export const LANDING_COPY = {
   },
   download: {
     button: 'Download for Mac',
+    heroButton: 'Download for Mac — Free',
     note: 'Not notarized by Apple yet: the first time, open it from System Settings › Privacy & Security.',
     noteLink: 'Install steps',
   },
   free: {
     line: 'Free on todz cloud — or run your own.',
-    chip: 'Free',
+    linkText: 'run your own',
   },
   ways: {
-    title: 'Two ways to use todz',
     cloud: {
       title: 'todz cloud',
       badge: 'Free',
@@ -64,9 +64,12 @@ export const LANDING_COPY = {
   },
   openSource: {
     starLabel: 'Star on GitHub',
-    line: 'Open source · AGPL-3.0',
     license: 'License',
     contributing: 'Contributing',
+  },
+  signature: {
+    line: 'Built by a developer, for developers and AI tinkerers.',
+    name: AUTHOR.name,
   },
   stage: {
     label: 'The todz app on a Mac desktop',
@@ -105,7 +108,6 @@ export const LANDING_COPY = {
   },
   final: {
     title: 'Get todz on your Mac.',
-    body: 'Download it, connect your agent and add the first task.',
   },
   alt: {
     window: "The todz main window: a project's tasks, one added via Claude Code, with its notes and history in the inspector",
