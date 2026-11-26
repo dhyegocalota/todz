@@ -8,22 +8,36 @@ extension AppModel {
         workspaces.append(created)
         selectedItem = .inbox
         phase = .ready
-        await activate(created)
+        await show(.chosen([created.identifier]))
         return created
     }
 
     public func switchWorkspace(identifier: String) async {
+        guard workspaces.contains(where: { $0.identifier == identifier }) else { return }
+        await selectWorkspaces(.chosen([identifier]))
+    }
+
+    public func selectWorkspaces(_ selection: WorkspaceSelection) async {
         guard phase == .ready else { return }
-        guard identifier != activeWorkspaceIdentifier else { return }
-        guard let workspace = workspaces.first(where: { $0.identifier == identifier }) else { return }
-        await activate(workspace)
+        guard selection != self.selection else { return }
+        guard !selection.workspaces(in: workspaces).isEmpty else { return }
+        await show(selection)
+    }
+
+    public func toggleWorkspace(identifier: String) async {
+        guard let selection else { return }
+        await selectWorkspaces(selection.toggling(identifier: identifier, in: workspaces))
     }
 
     public func chooseWorkspace(identifier: String) async {
+        await chooseWorkspaces(.chosen([identifier]))
+    }
+
+    public func chooseWorkspaces(_ selection: WorkspaceSelection) async {
         guard phase == .choosing else { return }
-        guard let workspace = workspaces.first(where: { $0.identifier == identifier }) else { return }
+        guard !selection.workspaces(in: workspaces).isEmpty else { return }
         phase = .ready
-        await activate(workspace)
+        await show(selection)
     }
 
     public func switchWorkspace(number: Int) async {
@@ -32,11 +46,19 @@ extension AppModel {
     }
 
     func isFirstLoad(of workspace: Workspace) -> Bool {
-        workspace.projects.contains { projectLoads[$0.identifier] == nil }
+        isFirstLoad(of: [workspace])
+    }
+
+    func isFirstLoad(of workspaces: [Workspace]) -> Bool {
+        workspaces.contains { workspace in workspace.projects.contains { projectLoads[$0.identifier] == nil } }
     }
 
     public func loadFailure(of workspace: Workspace) -> AppBanner? {
-        let loads = workspace.projects.map { projectLoads[$0.identifier] }
+        loadFailure(of: [workspace])
+    }
+
+    public func loadFailure(of workspaces: [Workspace]) -> AppBanner? {
+        let loads = workspaces.flatMap(\.projects).map { projectLoads[$0.identifier] }
         let isNothingLoaded = loads.allSatisfy { $0 == .unreachable || $0 == .failed }
         guard isNothingLoaded else { return nil }
         let isServerUnreachable = loads.allSatisfy { $0 == .unreachable }
@@ -105,35 +127,39 @@ extension AppModel {
         workspaces = listed
         keepOwner()
         startSending()
-        guard let workspace = preferredWorkspace else {
+        guard let selectionToShow else {
             forgetActiveWorkspace()
             phase = workspaces.isEmpty ? .naming : .choosing
             return
         }
         phase = .ready
-        await activate(workspace)
+        await show(selectionToShow)
     }
 
-    private var preferredWorkspace: Workspace? {
-        guard let activeWorkspace else { return soleWorkspace }
-        return activeWorkspace
+    private var selectionToShow: WorkspaceSelection? {
+        if let selection, !selection.workspaces(in: workspaces).isEmpty { return selection }
+        guard workspaces.count == 1, let sole = workspaces.first else { return nil }
+        return .chosen([sole.identifier])
     }
 
-    private var soleWorkspace: Workspace? {
-        let isSole = workspaces.count == 1
-        guard isSole else { return nil }
-        return workspaces.first
+    func primary(of shown: [Workspace]) -> Workspace? {
+        if let active = shown.first(where: { $0.identifier == activeWorkspaceIdentifier }) { return active }
+        return shown.first
     }
 
-    private func activate(_ workspace: Workspace) async {
-        let isAnotherWorkspace = workspace.identifier != activeWorkspaceIdentifier
-        if isAnotherWorkspace { forgetActiveWorkspace() }
-        activeWorkspaceIdentifier = workspace.identifier
+    // NB ADR 0080: the primary workspace takes writes that name no project; every shown workspace is pulled and watched.
+    private func show(_ newSelection: WorkspaceSelection) async {
+        let shown = newSelection.workspaces(in: workspaces)
+        guard let primary = primary(of: shown) else { return }
+        let isAnotherSet = shown.map(\.identifier) != shownWorkspaces.map(\.identifier)
+        if isAnotherSet { forgetActiveWorkspace() }
+        selection = newSelection
+        activeWorkspaceIdentifier = primary.identifier
         keepOwner()
-        keepSelection(in: workspace)
-        loadCachedProjects(of: workspace)
+        keepSelection(in: shown)
+        loadCachedProjects(of: shown)
         followActiveProjects()
-        await pull(projectIdentifiers: workspace.projects.map(\.identifier), workspaceIdentifier: workspace.identifier)
+        await pull(projectIdentifiers: shown.flatMap(\.projects).map(\.identifier), workspaceIdentifier: primary.identifier)
     }
 
     private func forgetActiveWorkspace() {
@@ -148,18 +174,17 @@ extension AppModel {
         dismissBanner()
     }
 
-    private func keepSelection(in workspace: Workspace) {
+    private func keepSelection(in shown: [Workspace]) {
         let isKeyScreenForgotten = selectedItem == .connectAgent && keyProjectIdentifier == nil
         if isKeyScreenForgotten { showInboxKeys() }
         guard case let .project(identifier) = selectedItem else { return }
-        let isInWorkspace = workspace.projects.contains { $0.identifier == identifier }
+        let isInWorkspace = shown.contains { workspace in workspace.projects.contains { $0.identifier == identifier } }
         guard !isInWorkspace else { return }
         selectedItem = .inbox
     }
 
     func isShown(projectIdentifier: String) -> Bool {
-        guard let activeWorkspace else { return false }
-        return activeWorkspace.projects.contains { $0.identifier == projectIdentifier }
+        shownProjects.contains { $0.identifier == projectIdentifier }
     }
 
     private func replaceProjects(workspaceIdentifier: String, change: ([Project]) -> [Project]) {

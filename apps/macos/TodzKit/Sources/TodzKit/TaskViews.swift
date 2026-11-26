@@ -21,9 +21,18 @@ public struct TaskViews: Sendable {
     private let pendingTasks: [PendingTask]
     private let day: CalendarDate
     private let timeZone: TimeZone
+    private let workspaceNames: [String: String]
 
-    public init(projects: [Project], board: TaskBoard, pendingTasks: [PendingTask] = [], day: CalendarDate, timeZone: TimeZone) {
+    public init(
+        projects: [Project],
+        board: TaskBoard,
+        pendingTasks: [PendingTask] = [],
+        workspaceNames: [String: String] = [:],
+        day: CalendarDate,
+        timeZone: TimeZone
+    ) {
         self.projects = projects
+        self.workspaceNames = workspaceNames
         self.board = board
         self.pendingTasks = pendingTasks
         self.day = day
@@ -33,8 +42,7 @@ public struct TaskViews: Sendable {
     public func pendingTasks(for item: SidebarItem) -> [PendingTask] {
         switch item {
         case .inbox:
-            guard let inboxProject else { return [] }
-            return workspacePendingTasks.filter { $0.projectIdentifier == inboxProject.identifier }
+            return workspacePendingTasks.filter { inboxIdentifiers.contains($0.projectIdentifier) }
         case let .project(identifier):
             return workspacePendingTasks.filter { $0.projectIdentifier == identifier }
         case .today:
@@ -52,12 +60,14 @@ public struct TaskViews: Sendable {
     }
 
     public var inbox: [BoardTask] {
-        guard let inboxProject else { return [] }
-        return project(identifier: inboxProject.identifier)
+        openTasks
+            .filter { inboxIdentifiers.contains($0.boardTask.project.identifier) }
+            .sorted(by: PositionedTask.isEarlierInSidebarOrder)
+            .map(\.boardTask)
     }
 
-    private var inboxProject: Project? {
-        projects.first(where: \.isInbox)
+    private var inboxIdentifiers: Set<String> {
+        Set(projects.filter(\.isInbox).map(\.identifier))
     }
 
     private var workspacePendingTasks: [PendingTask] {
@@ -103,7 +113,7 @@ public struct TaskViews: Sendable {
     private var positionedTasks: [PositionedTask] {
         projects.enumerated().flatMap { position, project in
             board.tasks(projectIdentifier: project.identifier).map { task in
-                PositionedTask(position: position, boardTask: BoardTask(project: project, task: task))
+                PositionedTask(position: position, boardTask: BoardTask(project: project, task: task, workspaceName: workspaceNames[project.identifier]))
             }
         }
     }

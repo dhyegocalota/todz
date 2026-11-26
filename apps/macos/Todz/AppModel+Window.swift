@@ -55,12 +55,13 @@ extension AppModel {
     }
 
     func openCount(of item: SidebarItem) -> Int? {
-        guard let taskViews, let projects = activeWorkspace?.projects else { return nil }
+        guard let taskViews else { return nil }
+        let projects = shownWorkspaces.flatMap(\.projects)
         let isEveryProjectLoaded = projects.allSatisfy { projectLoads[$0.identifier] == .loaded }
         switch item {
         case .inbox:
-            guard let inbox = projects.first(where: \.isInbox) else { return nil }
-            guard projectLoads[inbox.identifier] == .loaded else { return nil }
+            let inboxes = projects.filter(\.isInbox)
+            guard !inboxes.isEmpty, inboxes.allSatisfy({ projectLoads[$0.identifier] == .loaded }) else { return nil }
             return taskViews.inbox.count
         case .today:
             guard isEveryProjectLoaded else { return nil }

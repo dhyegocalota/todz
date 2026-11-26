@@ -19,6 +19,7 @@ public struct OwnerCache: Codable, Sendable, Equatable {
     }
 
     public var selection: WorkspaceSelection? {
-        nil
+        if let storedSelection { return storedSelection }
+        return activeWorkspaceIdentifier.map { .chosen([$0]) }
     }
 }

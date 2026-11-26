@@ -124,7 +124,13 @@ extension AppModelTests {
         let second = try AppModelHarness()
         second.seedWorkspace(name: "acme", projectNames: ["launch"])
         second.seedWorkspace(name: "side", projectNames: ["garden"])
-        second.store.owner = first.store.owner
+        let kept = try #require(first.store.owner)
+        second.store.owner = OwnerCache(
+            ownerIdentifier: second.ownerIdentifier,
+            workspaces: kept.workspaces,
+            activeWorkspaceIdentifier: kept.activeWorkspaceIdentifier,
+            selection: kept.selection
+        )
         await second.launchedFromCache()
         #expect(second.model.selection == .all)
         #expect(second.model.shownWorkspaces.map(\.identifier) == ["acme", "side"])

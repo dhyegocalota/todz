@@ -2,6 +2,7 @@ import Foundation
 import TodzKit
 
 private let spokenSeparator = ", "
+private let tagSeparator = " · "
 
 struct TaskRowDetails {
     let projectTag: String?
@@ -9,13 +10,13 @@ struct TaskRowDetails {
     let actor: String?
 
     init(task: BoardTask, item: SidebarItem, today: CalendarDate) {
-        projectTag = item.isCrossProject ? task.project.name : nil
+        projectTag = Self.tag(workspaceName: task.workspaceName, projectName: item.isCrossProject ? task.project.name : nil)
         dueDate = Self.shownDueDate(task.task.dueDate, item: item, today: today)
         actor = Self.agentLine(task: task)
     }
 
-    init(pendingTask: PendingTask, projectName: String?, item: SidebarItem, today: CalendarDate) {
-        projectTag = item.isCrossProject ? projectName : nil
+    init(pendingTask: PendingTask, projectName: String?, workspaceName: String?, item: SidebarItem, today: CalendarDate) {
+        projectTag = Self.tag(workspaceName: workspaceName, projectName: item.isCrossProject ? projectName : nil)
         dueDate = Self.shownDueDate(pendingTask.dueDate, item: item, today: today)
         actor = nil
     }
@@ -27,6 +28,12 @@ struct TaskRowDetails {
     @MainActor func spokenValue(state: String, today: CalendarDate, timeZone: TimeZone) -> String {
         let dueText = dueDate.map { DueLabel.text(dueDate: $0, today: today, timeZone: timeZone) }
         return [state, projectTag, dueText, actor].compactMap { $0 }.joined(separator: spokenSeparator)
+    }
+
+    private static func tag(workspaceName: String?, projectName: String?) -> String? {
+        let parts = [workspaceName, projectName].compactMap(\.self)
+        guard !parts.isEmpty else { return nil }
+        return parts.joined(separator: tagSeparator)
     }
 
     private static func shownDueDate(_ dueDate: CalendarDate?, item: SidebarItem, today: CalendarDate) -> CalendarDate? {

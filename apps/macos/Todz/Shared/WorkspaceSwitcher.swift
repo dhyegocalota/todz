@@ -1,6 +1,8 @@
 import SwiftUI
 import TodzKit
 
+private let shownNamesSeparator = ", "
+
 struct WorkspaceSwitcher: View {
     let workspace: Workspace
     let isMainWindow: Bool
@@ -26,15 +28,11 @@ struct WorkspaceSwitcher: View {
 
     private var menu: some View {
         Menu {
-            Picker(selection: activeIdentifier) {
-                ForEach(model.workspaces, id: \.identifier) { candidate in
-                    Text(candidate.name)
-                        .tag(candidate.identifier)
-                }
-            } label: {
-                EmptyView()
+            Toggle(MainWindowCopy.allWorkspaces, isOn: isAllSelected)
+            Divider()
+            ForEach(model.workspaces, id: \.identifier) { candidate in
+                Toggle(candidate.name, isOn: isShown(candidate))
             }
-            .pickerStyle(.inline)
             if isMainWindow {
                 Divider()
                 Button(MainWindowCopy.newWorkspace) {
@@ -46,19 +44,33 @@ struct WorkspaceSwitcher: View {
                 }
             }
         } label: {
-            Text(workspace.name)
+            Text(shownNames)
                 .lineLimit(1)
         }
         .menuStyle(.borderlessButton)
         .fixedSize(horizontal: isMainWindow, vertical: true)
-        .accessibilityLabel(AccessibilityCopy.switcher(name: workspace.name))
+        .accessibilityLabel(AccessibilityCopy.switcher(name: shownNames))
     }
 
-    private var activeIdentifier: Binding<String> {
+    private var shownNames: String {
+        guard model.selection != .all else { return MainWindowCopy.allWorkspaces }
+        return model.shownWorkspaces.map(\.name).joined(separator: shownNamesSeparator)
+    }
+
+    private var isAllSelected: Binding<Bool> {
         Binding {
-            workspace.identifier
-        } set: { identifier in
-            Task { await model.switchWorkspace(identifier: identifier) }
+            model.selection == .all
+        } set: { isOn in
+            guard isOn else { return }
+            Task { await model.selectWorkspaces(.all) }
+        }
+    }
+
+    private func isShown(_ candidate: Workspace) -> Binding<Bool> {
+        Binding {
+            model.shownWorkspaces.contains { $0.identifier == candidate.identifier }
+        } set: { _ in
+            Task { await model.toggleWorkspace(identifier: candidate.identifier) }
         }
     }
 }

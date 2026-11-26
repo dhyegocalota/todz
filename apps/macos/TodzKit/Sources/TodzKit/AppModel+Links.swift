@@ -10,8 +10,8 @@ extension AppModel {
 
     private var isAwaitingToday: Bool {
         guard phase != .loading else { return true }
-        guard phase == .ready, let activeWorkspace else { return false }
-        return isFirstLoad(of: activeWorkspace)
+        guard phase == .ready, activeWorkspace != nil else { return false }
+        return isFirstLoad(of: shownWorkspaces)
     }
 
     private func followWaitingLink() {

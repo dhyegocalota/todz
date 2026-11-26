@@ -1,4 +1,8 @@
 enum MainWindowCopy {
+    static func workspaceTag(workspaceName: String, projectName: String) -> String {
+        "\(workspaceName) · \(projectName)"
+    }
+
     static let windowTitle = "todz"
     static let inbox = "Inbox"
     static let today = "Today"
@@ -10,6 +14,7 @@ enum MainWindowCopy {
     static let todayGroup = "Today"
     static let yesterday = "Yesterday"
     static let newWorkspace = "New Workspace…"
+    static let allWorkspaces = "All Workspaces"
     static let newProject = "New Project…"
     static let renameProject = "Rename…"
     static let signOut = "Sign Out"

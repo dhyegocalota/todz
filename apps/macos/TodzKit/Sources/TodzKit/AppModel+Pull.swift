@@ -33,7 +33,7 @@ extension AppModel {
         refreshesInFlight += 1
         defer { refreshesInFlight -= 1 }
         startSending()
-        await pull(projectIdentifiers: activeWorkspace.projects.map(\.identifier), workspaceIdentifier: activeWorkspace.identifier)
+        await pull(projectIdentifiers: shownProjects.map(\.identifier), workspaceIdentifier: activeWorkspace.identifier)
         await loadKeys()
     }
 

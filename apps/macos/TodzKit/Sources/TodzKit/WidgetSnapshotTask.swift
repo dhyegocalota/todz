@@ -1,3 +1,5 @@
+private let workspaceTagSeparator = " · "
+
 public struct WidgetSnapshotTask: Codable, Equatable, Sendable {
     public let projectIdentifier: String
     public let projectName: String
@@ -38,30 +40,34 @@ public struct WidgetSnapshotTask: Codable, Equatable, Sendable {
         creatorLabel == nil
     }
 
-    static func of(_ boardTask: BoardTask, day: CalendarDate) -> WidgetSnapshotTask {
+    static func of(_ boardTask: BoardTask, workspace: Workspace, isWorkspaceTagged: Bool, day: CalendarDate) -> WidgetSnapshotTask {
         let task = boardTask.task
         return WidgetSnapshotTask(
             projectIdentifier: boardTask.project.identifier,
-            projectName: boardTask.project.name,
+            projectName: taggedName(of: boardTask.project, workspace: workspace, isWorkspaceTagged: isWorkspaceTagged),
             number: task.number,
             title: task.title,
             dueDate: task.dueDate,
             creatorLabel: creatorLabel(of: task.createdBy),
             isOverdue: isOverdue(dueDate: task.dueDate, day: day),
-            state: task.state
+            state: task.state,
+            workspaceIdentifier: workspace.identifier,
+            workspaceName: workspace.name
         )
     }
 
-    static func of(_ pendingTask: PendingTask, project: Project, day: CalendarDate) -> WidgetSnapshotTask {
+    static func of(_ pendingTask: PendingTask, project: Project, workspace: Workspace, isWorkspaceTagged: Bool, day: CalendarDate) -> WidgetSnapshotTask {
         WidgetSnapshotTask(
             projectIdentifier: project.identifier,
-            projectName: project.name,
+            projectName: taggedName(of: project, workspace: workspace, isWorkspaceTagged: isWorkspaceTagged),
             number: nil,
             title: pendingTask.title,
             dueDate: pendingTask.dueDate,
             creatorLabel: nil,
             isOverdue: isOverdue(dueDate: pendingTask.dueDate, day: day),
-            state: .open
+            state: .open,
+            workspaceIdentifier: workspace.identifier,
+            workspaceName: workspace.name
         )
     }
 
@@ -74,8 +80,15 @@ public struct WidgetSnapshotTask: Codable, Equatable, Sendable {
             dueDate: dueDate,
             creatorLabel: creatorLabel,
             isOverdue: isOverdue,
-            state: state
+            state: state,
+            workspaceIdentifier: workspaceIdentifier,
+            workspaceName: workspaceName
         )
+    }
+
+    private static func taggedName(of project: Project, workspace: Workspace, isWorkspaceTagged: Bool) -> String {
+        guard isWorkspaceTagged else { return project.name }
+        return [workspace.name, project.name].joined(separator: workspaceTagSeparator)
     }
 
     private static func creatorLabel(of creator: ChangeActor) -> String? {

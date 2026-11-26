@@ -33,7 +33,9 @@ private func row(_ number: Int?, project: Project = alpha, title: String, dueDat
         dueDate: dueDate,
         creatorLabel: nil,
         isOverdue: false,
-        state: state
+        state: state,
+        workspaceIdentifier: acme.identifier,
+        workspaceName: acme.name
     )
 }
 
