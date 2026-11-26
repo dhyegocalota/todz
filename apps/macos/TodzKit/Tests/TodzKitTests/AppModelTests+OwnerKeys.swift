@@ -117,6 +117,32 @@ extension AppModelTests {
         #expect(harness.model.ownerKeyFailure == nil)
     }
 
+    @Test func anIssueAnswerAfterSettingsClosedKeepsNoSecretAndListsNothing() async throws {
+        let harness = try await ownerKeyHarness()
+        harness.service.suspend(.issueOwnerKey)
+        let issuing = Task { await harness.model.issueOwnerKey() }
+        await harness.service.held(.issueOwnerKey)
+        harness.model.forgetOwnerKeys()
+        harness.service.resume(.issueOwnerKey)
+        await issuing.value
+        #expect(harness.model.issuedOwnerKey == nil)
+        #expect(harness.model.ownerKeys == nil)
+        #expect(harness.model.ownerKeyFailure == nil)
+        #expect(harness.model.isChangingOwnerKeys == false)
+        #expect(!harness.service.calls.contains(.listOwnerKeys(session: harness.session)))
+    }
+
+    @Test func aListAnswerAfterSettingsClosedIsIgnored() async throws {
+        let harness = try await ownerKeyHarness()
+        harness.service.suspend(.listOwnerKeys)
+        let loading = Task { await harness.model.loadOwnerKeys() }
+        await harness.service.held(.listOwnerKeys)
+        harness.model.forgetOwnerKeys()
+        harness.service.resume(.listOwnerKeys)
+        await loading.value
+        #expect(harness.model.ownerKeys == nil)
+    }
+
     @Test func theOwnerKeyLimitIsTheServers() {
         #expect(OwnerKeyLimit.liveKeysMax == 5)
     }

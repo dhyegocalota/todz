@@ -115,6 +115,7 @@ import Observation
     @ObservationIgnored var publishedWidgetSnapshot: WidgetSnapshotState?
     @ObservationIgnored var keyScreenIdentifier: UUID?
     @ObservationIgnored var keyIssueAnswerCount = 0
+    @ObservationIgnored var ownerKeyVisit = UUID()
     @ObservationIgnored var revokedKeyIdentifiers: Set<String> = []
     @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored var serverSignOut: Task<Void, Never>?
