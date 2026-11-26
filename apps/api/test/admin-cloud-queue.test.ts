@@ -74,6 +74,27 @@ describe('the admin cloud queue', () => {
     expect(page).toContain('Admit next');
   });
 
+  async function queuePageWith(settings: Partial<Env>): Promise<string> {
+    const response = await serveAdminCloudQueue({
+      request: new Request(`${SITE_ORIGIN}/admin/cloud-queue`, { headers: { Cookie: await sessionCookie() } }),
+      env: adminEnv(settings),
+      executionContext: createExecutionContext(),
+    });
+    return response.text();
+  }
+
+  test('with the cap on and no analytics token the page says the guard is estimate only', async () => {
+    expect(await queuePageWith({ CLOUD_ACCOUNTS_MAX: '50' })).toContain('budget guard: estimate only');
+  });
+
+  test('with the cap on and the token set the page says nothing of it', async () => {
+    expect(await queuePageWith({ CLOUD_ACCOUNTS_MAX: '50', CLOUDFLARE_ANALYTICS_TOKEN: 'token-for-tests' })).not.toContain('estimate only');
+  });
+
+  test('with the cap off nothing warns', async () => {
+    expect(await queuePageWith({})).not.toContain('estimate only');
+  });
+
   test('Admit one admits the address and mails the invite', async () => {
     const { binding, sent } = recordingBinding();
     const email = freshAddress();

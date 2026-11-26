@@ -210,6 +210,30 @@ describe('the measured month from Cloudflare analytics', () => {
     expect(analytics).not.toHaveBeenCalled();
   });
 
+  test('the nightly run logs once that it is estimate only when the cap is on and the token is missing', async () => {
+    const { binding } = recordingBinding();
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await runCloudCapacity({ scheduledTime: FIRST_OF_MONTH_NIGHT, env: cloudEnv({ EMAIL: binding }) });
+    expect(log.mock.calls.filter(([line]) => line === 'budget guard: estimate only')).toHaveLength(1);
+  });
+
+  test('with the token the run does not log estimate only', async () => {
+    const { binding } = recordingBinding();
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(analyticsAnswer({ durableObjectRequests: 0 }));
+    await runCloudCapacity({
+      scheduledTime: FIRST_OF_MONTH_NIGHT,
+      env: cloudEnv({ EMAIL: binding, CLOUDFLARE_ANALYTICS_TOKEN: ANALYTICS_TOKEN }),
+    });
+    expect(log).not.toHaveBeenCalledWith('budget guard: estimate only');
+  });
+
+  test('with the cap off no token is needed and nothing is logged', async () => {
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await runCloudCapacity({ scheduledTime: FIRST_OF_MONTH_NIGHT, env: workerEnvWith({}) });
+    expect(log).not.toHaveBeenCalled();
+  });
+
   test('an analytics answer that is not ok fails the run instead of guessing', async () => {
     const { binding } = recordingBinding();
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 403 }));

@@ -2,10 +2,12 @@ import { CLOUD_READ_REQUESTS_PER_ACCOUNT_DAY, MILLISECONDS_PER_DAY } from '@todz
 import { cloudAccountsMaxOf } from './cloud-accounts-max';
 import { measuredTotalsOf } from './cloud-analytics';
 import { type BudgetUsage, BudgetLevel, budgetStatusOf, estimatedUsageOf, measuredUsageOf } from './cloud-budget';
+import { BudgetSource, type BudgetSourceChoice, ESTIMATE_ONLY_NOTICE, budgetSourceOf } from './cloud-budget-source';
 import { isWarned, monthWritesOf, recordBudget, stampWarning } from './cloud-budget-store';
 import { CLOUD_COPY } from './cloud-copy';
 import { sendCloudMail } from './cloud-mail';
 import { countMailsSince, pruneMailsBefore } from './cloud-mail-meter';
+import { logNotice } from './crash-log';
 import { type CloudMonth, cloudMonthOf } from './cloud-month';
 import { countActiveAccounts, queueDigestThrough, stampQueueDigest } from './cloud-queue-store';
 import type { Env } from './env';
@@ -22,21 +24,22 @@ function ownerAddressOf(env: Env): string {
 }
 
 async function monthUsageOf({
-  token,
+  choice,
   month,
   scheduledTime,
   counts,
 }: {
-  token: string | undefined;
+  choice: BudgetSourceChoice;
   month: CloudMonth;
   scheduledTime: number;
   counts: MonthCounts;
 }): Promise<BudgetUsage> {
-  if (token === undefined) {
+  if (choice.source === BudgetSource.Estimate) {
+    logNotice(ESTIMATE_ONLY_NOTICE);
     const readRequests = counts.accounts * CLOUD_READ_REQUESTS_PER_ACCOUNT_DAY * month.daysElapsed;
     return estimatedUsageOf({ monthWrites: counts.writes, readRequests, emails: counts.emails });
   }
-  const measured = await measuredTotalsOf({ token, month, now: scheduledTime });
+  const measured = await measuredTotalsOf({ token: choice.token, month, now: scheduledTime });
   return measuredUsageOf({ measured, monthWrites: counts.writes, emails: counts.emails });
 }
 
@@ -50,7 +53,7 @@ async function runBudgetGuard({ scheduledTime, env }: CloudCapacityRun): Promise
     countActiveAccounts({ directory, now: scheduledTime }),
   ]);
   const usage = await monthUsageOf({
-    token: env.CLOUDFLARE_ANALYTICS_TOKEN,
+    choice: budgetSourceOf(env),
     month: monthOfRun,
     scheduledTime,
     counts: { writes, emails, accounts },

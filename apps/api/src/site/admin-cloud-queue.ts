@@ -1,5 +1,8 @@
 import { CLOUD_QUEUE_ADMIN_ROWS_MAX } from '@todz/types';
+import { cloudAccountsMaxOf } from '../cloud-accounts-max';
+import { BudgetSource, ESTIMATE_ONLY_NOTICE, budgetSourceOf } from '../cloud-budget-source';
 import { type QueuedAddress, waitingAddresses } from '../cloud-queue-store';
+import type { Env } from '../env';
 import { escapedHtml } from '../escaped-html';
 import { HttpStatus } from '../http-status';
 import { siteKeyOf } from '../turnstile-page';
@@ -40,7 +43,13 @@ function admitNextHtml(): string {
   return `<form method="post" action="${AdminPath.CloudAdmissions}"><label>${escapedHtml(cloudQueue.admitNextLabel)} <input type="number" name="${AdminField.Count}" min="1" max="${CLOUD_QUEUE_ADMIN_ROWS_MAX}" value="1"></label> <button class="nav-link nav-button" type="submit">${escapedHtml(cloudQueue.admitNext)}</button></form>`;
 }
 
-function queueHtml(waiting: QueuedAddress[]): string {
+function guardNoticeHtml({ env }: { env: Env }): string {
+  const isEstimateOnly = cloudAccountsMaxOf(env) !== null && budgetSourceOf(env).source === BudgetSource.Estimate;
+  if (!isEstimateOnly) return '';
+  return `<p class="empty-body">${escapedHtml(ESTIMATE_ONLY_NOTICE)}</p>`;
+}
+
+function queueHtml({ waiting, env }: { waiting: QueuedAddress[]; env: Env }): string {
   const { cloudQueue, panel } = ADMIN_COPY;
   return siteDocumentHtml({
     kind: SitePageKind.Private,
@@ -55,6 +64,7 @@ function queueHtml(waiting: QueuedAddress[]): string {
 <form method="post" action="${AdminPath.SignOut}"><button class="nav-link nav-button" type="submit">${escapedHtml(panel.signOut)}</button></form>
 </nav>
 </div>
+${guardNoticeHtml({ env })}
 ${admitNextHtml()}
 ${tableHtml(waiting)}
 </div>
@@ -70,6 +80,6 @@ export async function serveAdminCloudQueue({ request, env }: SiteContext): Promi
   if (!isSignedIn) return adminCardAnswerOf({ notice: AdminNotice.None, siteKey: siteKeyOf(env) });
   const waiting = await waitingAddresses({ directory: env.DIRECTORY, limit: CLOUD_QUEUE_ADMIN_ROWS_MAX }).catch(() => null);
   if (waiting === null) return adminClosedAnswerOf({ env });
-  const page = adminPageResponse({ html: queueHtml(waiting), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+  const page = adminPageResponse({ html: queueHtml({ waiting, env }), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
   return adminPageAnswerOf({ page, status: HttpStatus.Ok });
 }

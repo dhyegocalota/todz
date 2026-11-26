@@ -382,15 +382,15 @@ Steps 19 to 24 ship a setting that is on by default (the agent nudge and the day
 
 ## The todz cloud capacity guard
 
-26. **Put the analytics token, only with the owner's go.** The nightly budget guard reads the month's real totals from Cloudflare's GraphQL Analytics API when the Worker holds `CLOUDFLARE_ANALYTICS_TOKEN`, and estimates them from D1 when it does not ([ADR 0099](../adr/0099-the-todz-cloud-admits-at-most-fifty-active-accounts-and-a-monthly-budget-guard-stops-heavy-writes-before-any-included-quota-runs-out.md)). The owner creates a separate token with the one permission Account Analytics Read, never the deploy token, and pastes it at Wrangler's own prompt, so no file, history line or agent holds it; the owner runs the first command in their own terminal:
+26. **Put the analytics token secret, once, before the Worker that reads it.** The nightly budget guard reads the month's real totals from Cloudflare's GraphQL Analytics API when the Worker holds `CLOUDFLARE_ANALYTICS_TOKEN`, and estimates them from D1 when it does not ([ADR 0099](../adr/0099-the-todz-cloud-admits-at-most-fifty-active-accounts-and-a-monthly-budget-guard-stops-heavy-writes-before-any-included-quota-runs-out.md)). The owner creates a separate token with the one permission Account Analytics Read, never the deploy token, and pastes it at Wrangler's own prompt, so no file, history line or agent holds it; the owner runs the first command in their own terminal:
 
     ```bash
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret put CLOUDFLARE_ANALYTICS_TOKEN
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler secret list
     ```
 
-    Expected: the put says it uploaded the secret `CLOUDFLARE_ANALYTICS_TOKEN` for `todz-api`; the list names it and prints no value. The next 03:00 UTC run uses the measured totals.
-    If it fails: without the secret the guard keeps the D1 estimate, which is the safe state. A token with the wrong permission makes the nightly run fail with `the Cloudflare analytics answered 403`; the previous night's level stands until the token is fixed. Delete the secret with `wrangler secret delete CLOUDFLARE_ANALYTICS_TOKEN` to go back to the estimate.
+    Expected: the put says it uploaded the secret `CLOUDFLARE_ANALYTICS_TOKEN` for `todz-api`; the list names it and prints no value. The next 03:00 UTC run uses the real totals, which is the production path, and the admin Cloud queue page shows no "budget guard: estimate only" line.
+    If it fails: when `vars.CLOUD_ACCOUNTS_MAX` is set and the list lacks `CLOUDFLARE_ANALYTICS_TOKEN`, stop and tell the owner: the guard is estimate only, the nightly run logs "budget guard: estimate only" and the admin page says so. Only a server with no cap needs no token. A token with the wrong permission makes the nightly run fail with `the Cloudflare analytics answered 403`; the previous night's level stands until the token is fixed. Delete the secret with `wrangler secret delete CLOUDFLARE_ANALYTICS_TOKEN` to go back to the estimate.
 
 ## Rollback
 
