@@ -136,3 +136,41 @@ describe('the quickstart', () => {
     expect(anchors.filter((anchor) => !slugs.includes(anchor))).toEqual([]);
   });
 });
+
+describe('the install page', () => {
+  const ALLOWED_SIGNERS_FILE = 'apps/macos/release/allowed-signers';
+  const FINGERPRINT = 'SHA256:yBlPOn96/UZM6GGCo//eqZtFjWl440Hr6rxWa0VS5Tk';
+  const TRUST_SENTENCE =
+    "The signature proves a download is the file the todz release key signed. It does not protect against someone who controls the todz.app zone or todz's Cloudflare account, because this page is served from that zone too.";
+  const REQUIRED_PHRASES = [
+    'XFWR794VS8',
+    'ssh-keygen -Y verify -f allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg',
+    'shasum -a 256 -c Todz-<version>.dmg.sha256',
+    'https://todz.app/download',
+    'TeamIdentifier=XFWR794VS8',
+    'flags=0x10000(runtime)',
+  ];
+
+  test('holds the exact allowed-signers line of the repository', () => {
+    const line = readRepositoryFile(ALLOWED_SIGNERS_FILE).trim();
+    expect(pageText('install-on-mac')).toContain(line);
+  });
+
+  test('holds the fingerprint, the trust sentence and the verification commands', () => {
+    const page = pageText('install-on-mac');
+    expect(page).toContain(FINGERPRINT);
+    expect(page).toContain(TRUST_SENTENCE);
+    expect(REQUIRED_PHRASES.filter((phrase) => !page.includes(phrase))).toEqual([]);
+  });
+
+  test('says the download exists only once todz.app shows the button, and points to the source build until then', () => {
+    const page = pageText('install-on-mac');
+    expect(page).toContain('When todz.app shows **Download for Mac**');
+    expect(page).toContain('until then, build it from source (section 5)');
+    expect(page).not.toMatch(/^Download todz for Mac from /m);
+  });
+
+  test('no longer says the download is not there yet', () => {
+    expect(pageText('install-on-mac')).not.toMatch(/no download or notarized build yet/);
+  });
+});

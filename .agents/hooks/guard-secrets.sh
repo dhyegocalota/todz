@@ -16,6 +16,21 @@ readonly COMMIT_HEREDOC_PATTERN=$'^git commit( -[[:alpha:]]+)* (-m "\\$\\(cat|-F
 readonly COMMIT_MESSAGE_CLOSING='-m "$(cat'
 readonly COMMIT_MESSAGE_TAIL=')"'
 readonly PRINT_LINES_PATTERN="^sed -n ['\"]?[0-9]+(,[0-9]+)?p['\"]?( [^-][^ ]*)+\$"
+readonly RELEASE_SECRETS_MESSAGE="Blocked: the release key and Sparkle's key are read only by pnpm release:mac. No agent command reads, dumps, changes or exports them."
+readonly RELEASE_KEY_ITEM='todz-release-key'
+readonly KEYCHAIN_TOOL='security'
+readonly KEYCHAIN_VALUE_FLAG_PATTERN='[[:space:]]-[[:alpha:]]*[wg][[:alpha:]]*([^[:alnum:]_-]|$)'
+readonly SPARKLE_KEYCHAIN_PATTERN='sparkle-project\.org'
+readonly SPARKLE_EXPORT_PATTERN='generate_keys[^|;&]*[[:space:]]-x'
+readonly KEYCHAIN_DUMP_PATTERN='dump-keychain'
+readonly KEYCHAIN_INTERACTIVE_PATTERN='security[[:space:]]+-i([[:space:]]|$)'
+readonly KEYCHAIN_PASSWORD_READ_PATTERN='find-(generic|internet)-password'
+readonly KEYCHAIN_PASSWORD_CHANGE_PATTERN='(add|delete)-generic-password'
+readonly DOCUMENTED_PASSWORD_READ_PATTERN='^security find-generic-password -s todz-turnstile -w( \| scripts/todz-cloudflare\.sh pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY)?$'
+readonly RELEASE_ACCOUNT_PATTERN='[[:space:]]-a[[:space:]]+release([[:space:]]|$)'
+readonly SPARKLE_TOOL_PATTERN='(^|[^[:alnum:]_-])(sign_update|generate_keys)([^[:alnum:]_-]|$)'
+readonly RELEASE_OVERRIDE_PATTERN='TODZ_(RELEASE|DEPLOY)_'
+readonly RELEASE_COMMAND_PATTERN='^(pnpm release:mac|scripts/release-mac\.sh)( --[a-z-]+( [0-9]+\.[0-9]+\.[0-9]+)?)*$'
 readonly PROSE_PATTERN='^(echo|printf)[[:space:]]+([^>]*[^>[:space:]])[[:space:]]*(>>?[[:space:]]*([^[:space:]>]+))?$'
 
 is_protected_env_file() {
@@ -28,8 +43,35 @@ is_protected_env_file() {
 }
 
 block() {
-  echo "$BLOCKED_MESSAGE" >&2
+  echo "${1:-$BLOCKED_MESSAGE}" >&2
   exit 2
+}
+
+names_release_tool_or_override() {
+  [[ "$scanned_text" =~ $SPARKLE_TOOL_PATTERN || "$scanned_text" =~ $RELEASE_OVERRIDE_PATTERN ]]
+}
+
+is_documented_password_read() {
+  [[ "$trimmed_command" =~ $DOCUMENTED_PASSWORD_READ_PATTERN ]]
+}
+
+reads_keychain_value() {
+  [[ "$scanned_text" == *"$KEYCHAIN_TOOL"* ]] || return 1
+  [[ "$scanned_text" =~ $KEYCHAIN_DUMP_PATTERN || "$scanned_text" =~ $KEYCHAIN_INTERACTIVE_PATTERN ]] && return 0
+  [[ "$scanned_text" == *"$RELEASE_KEY_ITEM"* && "$scanned_text" =~ $KEYCHAIN_PASSWORD_CHANGE_PATTERN ]] && return 0
+  [[ "$scanned_text" =~ $KEYCHAIN_PASSWORD_READ_PATTERN && "$scanned_text" =~ $KEYCHAIN_VALUE_FLAG_PATTERN ]] && return 0
+  [[ "$scanned_text" =~ $KEYCHAIN_PASSWORD_READ_PATTERN && "$scanned_text" =~ $RELEASE_ACCOUNT_PATTERN ]] && return 0
+  [[ "$scanned_text" == *"$RELEASE_KEY_ITEM"* && "$scanned_text" =~ $KEYCHAIN_VALUE_FLAG_PATTERN ]]
+}
+
+reads_release_secret() {
+  [[ "$scanned_text" =~ $SPARKLE_KEYCHAIN_PATTERN || "$scanned_text" =~ $SPARKLE_EXPORT_PATTERN ]] && return 0
+  reads_keychain_value && return 0
+  names_release_tool_or_override && ! is_plain_read
+}
+
+is_release_command() {
+  [[ "$trimmed_command" =~ $RELEASE_COMMAND_PATTERN ]]
 }
 
 has_metacharacter() {
@@ -132,6 +174,7 @@ done <<<"$touched"
 command=$(jq -r '.tool_input.command // ""' <<<"$hook_input")
 scanned_text=$(tr -d "\"'\\\\" <<<"$command")
 trimmed_command=${command#"${command%%[![:space:]]*}"}
+reads_release_secret && ! is_release_command && ! is_documented_password_read && block "$RELEASE_SECRETS_MESSAGE"
 if names_protected_env_file "$scanned_text"; then
   is_plain_read && exit 0
   is_prose && exit 0

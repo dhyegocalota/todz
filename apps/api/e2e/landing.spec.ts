@@ -197,6 +197,15 @@ async function hasFocusRing(element: Locator): Promise<boolean> {
   });
 }
 
+test.describe('without a released version', () => {
+  test('keeps coming soon and shows no download button', async ({ page }) => {
+    await page.goto(SitePath.Landing);
+    await expect(page.locator('.hero .eyebrow-pill')).toHaveText(LANDING_COPY.hero.eyebrow);
+    await expect(page.locator('.download-button')).toHaveCount(0);
+    await expect(page.locator('.download-note')).toHaveCount(0);
+  });
+});
+
 test.describe('first fold', () => {
   test('shows the logo, the promise, the hero shot and the form above the fold at 1280', async ({ page }) => {
     onlyOn(ProjectName.Desktop);

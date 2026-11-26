@@ -33,7 +33,13 @@ const LINK_LINE_PATTERN = /^- \[[^\]]+\]\(https:\/\/[^)]+\)(: .+)?$/;
 const TOOL_LINE_PATTERN = /^- `(next|add|list|update|done)`: .+$/;
 const LINK_URL_PATTERN = /\]\((https:\/\/[^)]+)\)/;
 const SECTIONS = ['## Connect an agent', '## MCP tools', '## Docs', '## Optional'];
-const FACTS = ['in development', 'coming soon', 'Pricing has not been announced', 'Joining the waitlist is free', 'Logic Bit'];
+const FACTS = [
+  'in development',
+  'not yet notarized by Apple',
+  'Pricing has not been announced',
+  'Joining the waitlist is free',
+  'Logic Bit',
+];
 const CRAWLERS = [
   'Googlebot',
   'Bingbot',
@@ -193,6 +199,10 @@ describe('llms.txt', () => {
     const body = await bodyOf(DiscoveryPath.Llms);
     expect(body.startsWith('# todz\n\n> ')).toBe(true);
     FACTS.forEach((fact) => expect(body).toContain(fact));
+  });
+
+  test('never says the app is a download: the file is static and a release may not be staged', async () => {
+    expect(await bodyOf(DiscoveryPath.Llms)).not.toContain('is a download');
   });
 
   test('holds the four sections in order', async () => {

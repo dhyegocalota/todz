@@ -159,6 +159,13 @@ a{color:var(--color-link);text-underline-offset:0.12em}
 .hero-lead{margin-top:var(--space-5);max-width:34em;font-size:var(--text-lead);line-height:1.5;color:var(--color-text-muted);text-wrap:balance}
 .join-form{width:100%;max-width:var(--measure-form);margin-inline:auto;scroll-margin-top:calc(var(--size-header) + var(--space-7))}
 .hero .join-form{margin-top:var(--space-6)}
+.download{width:100%;max-width:var(--measure-form);margin:var(--space-6) auto 0;text-align:center}
+.download-button{display:inline-flex;align-items:center;justify-content:center;width:100%;height:var(--size-capsule);padding:0 var(--space-6);border-radius:var(--radius-pill);font-weight:600;color:var(--color-on-action);background:var(--gradient-action);box-shadow:var(--shadow-action);text-decoration:none;white-space:nowrap;transition:filter var(--duration-quick) var(--ease-out), transform var(--duration-quick) var(--ease-out)}
+.download-button:hover{filter:brightness(1.06)}
+.download-button:active{transform:scale(0.98)}
+.download-button:focus-visible{outline:3px solid var(--color-focus);outline-offset:2px}
+.download-note{margin-top:var(--space-3);font-size:var(--text-small);color:var(--color-text-muted)}
+.download-note-link{color:var(--color-text);text-decoration:underline;text-underline-offset:0.2em}
 .join-capsule{display:grid;gap:var(--space-2);border-radius:var(--radius-pill)}
 .join-input{width:100%;height:var(--size-capsule);padding:0 var(--space-5);border:0;border-radius:var(--radius-pill);font:inherit;color:var(--color-text);background:var(--glass-sheen), var(--glass-fill);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);box-shadow:var(--glass-edge), var(--shadow-card);transition:background-color var(--duration-base) var(--ease-out)}
 .join-input::placeholder{color:var(--color-text-muted);opacity:1}
@@ -241,6 +248,7 @@ ${CROP_RULES}
 .join-input{flex:1;min-width:0;height:100%;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
 .join-input:focus-visible{outline:none}
 .join-button{height:100%}
+.download-button{width:auto}
 .desk-stage{aspect-ratio:1152 / 600}
 .shot-window{display:block}
 .shot-popover{left:auto;right:5%;top:12%;width:27%;translate:none}
@@ -281,6 +289,6 @@ html{scroll-behavior:auto}
 .site-header{background:var(--color-page);-webkit-backdrop-filter:none;backdrop-filter:none}}
 @media (forced-colors: active){
 .glass,.join-input,.join-capsule,.desk-stage,.final-call,.terminal,.benefit-well{background:Canvas;box-shadow:none;border:1px solid CanvasText}
-.join-button{background:ButtonFace;color:ButtonText;border:1px solid ButtonText;box-shadow:none}
+.join-button,.download-button{background:ButtonFace;color:ButtonText;border:1px solid ButtonText;box-shadow:none}
 .eyebrow-dot,.notice-dot{background:CanvasText;box-shadow:none}}
 ${ADMIN_STYLE}`;

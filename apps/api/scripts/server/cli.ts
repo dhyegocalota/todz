@@ -12,6 +12,7 @@ const WRANGLER_COMMAND = 'wrangler';
 const COMMIT_DATE_ARGUMENTS = ['log', '-1', '--format=%cd', '--date=format-local:%Y-%m-%d'];
 const COMMIT_HASH_ARGUMENTS = ['rev-parse', 'HEAD'];
 const UTC_TIME_ZONE = 'UTC';
+const EXTRA_ARGUMENTS_START = 2;
 const SUCCESS_STATUS = 0;
 const KILLED_STATUS = 1;
 
@@ -24,7 +25,13 @@ function gitOutput(gitArguments: string[]): string {
 }
 
 const serverVersion = versionStamp({ commitDate: gitOutput(COMMIT_DATE_ARGUMENTS), commitHash: gitOutput(COMMIT_HASH_ARGUMENTS) });
-const { status } = spawnSync(WRANGLER_COMMAND, deployArguments(serverVersion), { stdio: 'inherit' });
+const { status } = spawnSync(
+  WRANGLER_COMMAND,
+  deployArguments({ serverVersion, extraArguments: process.argv.slice(EXTRA_ARGUMENTS_START) }),
+  {
+    stdio: 'inherit',
+  },
+);
 if (status !== SUCCESS_STATUS) process.exit(status === null ? KILLED_STATUS : status);
 
 console.log(
