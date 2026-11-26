@@ -1,6 +1,6 @@
 # Production smoke walk
 
-**Status:** Approved
+**Status:** Shipped 2026-11-25
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-25 as the loop's call under the owner's 2026-11-24 instruction to decide every call (todz-loop/PROMPT.md, "Everything is done")
 **ADRs:** none
