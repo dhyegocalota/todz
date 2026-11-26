@@ -329,7 +329,8 @@ expect_refused "a hanging production request is killed" "production check timed 
 new_world
 make_release 0.2.0
 make_release 0.3.0
-sed -i '' '/^0.3.0$/d' "$site/released"
+grep -vx 0.3.0 "$site/released" > "$site/released.next"
+mv "$site/released.next" "$site/released"
 stage_only_candidate() {
   stage="$scratch/stage"
   rm -rf "$stage"
