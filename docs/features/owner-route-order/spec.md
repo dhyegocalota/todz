@@ -1,6 +1,6 @@
 # Owner route order
 
-**Status:** In review
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡
 **Owner approval:** approved by inheritance from `docs/product/README.md` (approved 2026-11-23) and the owner's 2026-11-24 instruction to decide every call; the order is the loop's call in [ADR 0086](../../adr/0086-an-owner-route-checks-the-credential-before-the-app-version.md)
 **ADRs:** [0086](../../adr/0086-an-owner-route-checks-the-credential-before-the-app-version.md)
