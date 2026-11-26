@@ -36,7 +36,7 @@ G1, one developer.
 
 ## Z. Prove and ship
 
-- [ ] **Tester briefing:** a developer wrote `tester-briefing.md`.
-- [ ] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence.
-- [ ] **Reviewer:** one combined review (correctness and security) returned its verdict.
+- [x] **Tester briefing:** a developer wrote `tester-briefing.md`.
+- [x] **Tester run:** a fresh `tester` sub-agent executed `test-plan.md` and ticked every box with evidence (7a8366e7, at cef22cae; the fix round's change is covered by its unit test, not re-walked).
+- [x] **Reviewer:** one combined review returned WITH RESERVATIONS at 5421ac23 (1 IMPORTANT, 2 MINOR, security CLEAR, merge sensitivity LOW); all three fixed in 16671533..ed25eac1 and the spec, as the reviewer proposed.
 - [ ] **/open-pr:** gates passed, learnings sweep stated, PR opened.
