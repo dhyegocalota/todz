@@ -12,15 +12,15 @@ struct SettingsWorkspaceShortcuts: View {
             Section {
                 Toggle(isOn: $isGlobalOn) {
                     Text(WorkspaceShortcutsCopy.fromAnyApp)
-                    Text(WorkspaceShortcutsCopy.fromAnyAppDetail)
+                    Text(WorkspaceShortcutsCopy.fromAnyAppDetail(modifiers: WorkspaceShortcuts.globalModifiers.symbols, numbers: WorkspaceShortcuts.numbers))
                         .lineLimit(subtitleLines, reservesSpace: true)
                 }
                 .toggleStyle(.switch)
                 .onChange(of: isGlobalOn) { shortcuts.registerHotKeys() }
-                WorkspaceChordRow(action: .previous, title: WorkspaceShortcutsCopy.previous, refusal: $refusal)
-                WorkspaceChordRow(action: .next, title: WorkspaceShortcutsCopy.next, refusal: $refusal)
-                ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
-                    WorkspaceChordRow(action: .number(number), title: workspace.name, refusal: $refusal)
+                if isGlobalOn {
+                    ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
+                        WorkspaceChordRow(action: .number(number), title: workspace.name, refusal: $refusal)
+                    }
                 }
                 Text(footnote)
                     .foregroundStyle(.secondary)

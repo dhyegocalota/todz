@@ -3,7 +3,7 @@ import Foundation
 public struct WorkspaceShortcutsPreference {
     public static let isGlobalOnStorageKey = "switchesWorkspacesFromAnyApp"
     public static let bindingsStorageKey = "workspaceChords"
-    public static let isGlobalOnByDefault = true
+    public static let isGlobalOnByDefault = false
 
     private let domain: PersistentDomain
 
@@ -20,20 +20,25 @@ public struct WorkspaceShortcutsPreference {
         return stored as? Bool == true
     }
 
-    public var bindings: WorkspaceBindings {
-        guard let data = domain.value(forKey: Self.bindingsStorageKey) as? Data else { return WorkspaceBindings() }
-        guard let stored = try? JSONDecoder().decode([String: KeyChord].self, from: data) else { return WorkspaceBindings() }
-        return WorkspaceBindings(overrides: Dictionary(uniqueKeysWithValues: stored.compactMap(Self.entry)))
+    public var globalChords: GlobalWorkspaceChords {
+        guard let data = domain.value(forKey: Self.bindingsStorageKey) as? Data else { return GlobalWorkspaceChords() }
+        guard let stored = try? JSONDecoder().decode([String: KeyChord].self, from: data) else { return GlobalWorkspaceChords() }
+        return stored.sorted { $0.key < $1.key }.reduce(GlobalWorkspaceChords()) { chords, entry in
+            Self.applying(entry, to: chords)
+        }
     }
 
-    public func store(_ bindings: WorkspaceBindings) {
-        let named = Dictionary(uniqueKeysWithValues: bindings.overrides.map { ($0.key.storageName, $0.value) })
+    public func store(_ chords: GlobalWorkspaceChords) {
+        let named = Dictionary(uniqueKeysWithValues: chords.overrides.map { ($0.key.storageName, $0.value) })
         guard let data = try? JSONEncoder().encode(named) else { return }
         domain.set(data, forKey: Self.bindingsStorageKey)
     }
 
-    private static func entry(name: String, chord: KeyChord) -> (WorkspaceAction, KeyChord)? {
-        guard let action = WorkspaceAction(storageName: name) else { return nil }
-        return (action, chord)
+    private static func applying(_ entry: (key: String, value: KeyChord), to chords: GlobalWorkspaceChords) -> GlobalWorkspaceChords {
+        guard let action = WorkspaceAction(storageName: entry.key) else { return chords }
+        switch chords.rebinding(action, to: entry.value) {
+        case let .success(rebound): return rebound
+        case .failure: return chords
+        }
     }
 }

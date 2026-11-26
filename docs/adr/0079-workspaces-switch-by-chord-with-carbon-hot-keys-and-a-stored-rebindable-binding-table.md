@@ -1,6 +1,6 @@
 # 0079. Workspaces switch by chord, with global Carbon hot keys and a stored, rebindable binding table
 
-- Status: Accepted
+- Status: Accepted; the global chords and their default, and the in-app chords' rebinding, are amended by [ADR 0091](0091-global-workspace-hot-keys-are-off-by-default-and-take-control-option-command-digits-and-yield-to-a-chord-another-app-holds.md)
 - Date: 2026-11-26
 - Deciders: Dhyego Calota (owner); Claude (advisor, the loop's call under "Workspaces, more")
 - Inspired by: `todz-loop/PROMPT.md` "Workspaces, more"; the owner's request of 2026-11-26, "quero switch between workspaces com shortcuts configurados por padrão"; [ADR 0068](0068-one-respect-focus-switch-decides-for-every-proactive-surface-and-untouched-settings-follow-the-defaults.md); [ADR 0076](0076-an-account-with-several-workspaces-and-no-remembered-choice-opens-a-picker-of-names-and-project-counts.md)
