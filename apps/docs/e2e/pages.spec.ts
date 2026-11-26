@@ -9,9 +9,17 @@ const SIDEBAR_TITLES = [
   'Install on Mac',
   'Connect an agent',
   'A tour of the app',
-  'MCP tools',
-  'Self-host todz',
+  'Workspaces',
+  'Keyboard shortcuts',
+  'Updates',
   'Privacy',
+  'Troubleshooting',
+  'Uninstall',
+  'Use these docs from your agent',
+  'Open source',
+  'MCP tools',
+  'Releases',
+  'Server setup',
 ];
 const pages = docsPages();
 
@@ -31,13 +39,13 @@ for (const scheme of Object.values(ColorScheme)) {
       });
     }
 
-    test('the sidebar lists the eight titles in the order of the navigation', async ({ page }, testInfo) => {
+    test('the sidebar lists the titles in the order of the navigation', async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== DocsViewport.Desktop);
       await page.goto('/');
       await expect(page.locator(SIDEBAR_LINKS)).toHaveText(SIDEBAR_TITLES);
     });
 
-    test('the menu opens and lists the eight titles', async ({ page }, testInfo) => {
+    test('the menu opens and lists the titles', async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== DocsViewport.Narrow);
       await page.goto('/');
       await page.getByRole('button', { name: NAVIGATION_BUTTON_NAME }).click();

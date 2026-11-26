@@ -19,6 +19,7 @@ struct AddTaskField<Focus: Hashable>: View {
                 .textFieldStyle(.plain)
                 .focused(focus, equals: focusedValue)
                 .onSubmit(submit)
+                .accessibilityAction(named: AccessibilityCopy.addTask, submit)
                 .onExitCommand(perform: clear)
                 .onChange(of: destination) {
                     title = clearedTitle
@@ -47,12 +48,15 @@ struct AddTaskField<Focus: Hashable>: View {
     }
 
     private func submit() {
-        let isBlank = title.allSatisfy(\.isWhitespace)
-        guard !isBlank else { return }
-        localIssue = TextCheck.issue(ofTitle: title)
-        guard localIssue == nil else { return }
-        let submitted = title
-        title = clearedTitle
-        Task { await model.addTask(title: submitted, projectIdentifier: destination.projectIdentifier, dueDate: destination.dueDate, selection: selection) }
+        switch AddFieldSubmission.of(title: title) {
+        case .ignored:
+            return
+        case let .refused(issue):
+            localIssue = issue
+        case let .accepted(submitted):
+            localIssue = nil
+            title = clearedTitle
+            Task { await model.addTask(title: submitted, projectIdentifier: destination.projectIdentifier, dueDate: destination.dueDate, selection: selection) }
+        }
     }
 }

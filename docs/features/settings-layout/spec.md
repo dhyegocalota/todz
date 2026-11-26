@@ -1,6 +1,6 @@
 # Settings layout
 
-**Status:** In review
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡 (Settings layout, one prompt default, one count rule; no server, no schema, no deploy)
 **Owner approval:** the owner's report on the 0.2.2 Settings window ("tá cortando!!! ajusta, acelera"), approved by inheritance from [docs/product/README.md](../../product/README.md) (approved 2026-11-23) and the owner's words, received 2026-11-26.
 **ADRs:** [0092](../../adr/0092-settings-is-one-scrolling-form-of-sections-with-a-resizable-window-and-usage-sharing-asks-with-not-now-as-the-default.md)

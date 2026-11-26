@@ -10,16 +10,16 @@ struct SettingsWorkspaceShortcuts: View {
     var body: some View {
         if !model.workspaces.isEmpty {
             Section {
-                SettingsRow(title: WorkspaceShortcutsCopy.fromAnyApp, detail: WorkspaceShortcutsCopy.fromAnyAppDetail) {
+                SettingsRow(title: WorkspaceShortcutsCopy.fromAnyApp, detail: WorkspaceShortcutsCopy.fromAnyAppDetail(modifiers: WorkspaceShortcuts.globalModifiers.symbols, numbers: WorkspaceShortcuts.numbers)) {
                     Toggle(WorkspaceShortcutsCopy.fromAnyApp, isOn: $isGlobalOn)
                         .toggleStyle(.switch)
                         .labelsHidden()
                 }
                 .onChange(of: isGlobalOn) { shortcuts.registerHotKeys() }
-                WorkspaceChordRow(action: .previous, title: WorkspaceShortcutsCopy.previous, refusal: $refusal)
-                WorkspaceChordRow(action: .next, title: WorkspaceShortcutsCopy.next, refusal: $refusal)
-                ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
-                    WorkspaceChordRow(action: .number(number), title: workspace.name, refusal: $refusal)
+                if isGlobalOn {
+                    ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
+                        WorkspaceChordRow(action: .number(number), title: workspace.name, refusal: $refusal)
+                    }
                 }
                 Text(footnote)
                     .foregroundStyle(.secondary)

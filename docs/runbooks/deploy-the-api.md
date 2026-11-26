@@ -692,3 +692,10 @@ The owner rotates the Keychain token after a run that went wrong, when it may ha
 | 2026-11-26 | 3ecdab2 | 8 | Staged 33 files (0.2.0 kept served); Current Version ID `649dd31c-ff61-4238-97a9-c6f8a6c5b8ac`; ready line `server 2026.11.26+3ecdab2 · accepts app 0.2.0 or later` |
 | 2026-11-26 | 3ecdab2 | 14 | Same answers as the c4d3eb9 run with version `2026.11.26+3ecdab2`; `/download` and `/download/latest` `302` to 0.2.0, the appcast `200` |
 | 2026-11-26 | 3ecdab2 | 18 | This file. `pnpm release:mac` 0.2.1 (the second try, after a missed `generate_keys` prompt) followed: Current Version ID `36e12103-58fe-4870-81f8-8900cab277de`; `/download` and `/download/latest` `302` to `/download/0.2.1/Todz-0.2.1.dmg`; 0.2.0 still `200`; sum `OK`; signature `Good`; the appcast names 0.2.1, build 2069, with `sparkle:edSignature`; tag `mac-v0.2.1` on 3ecdab23 |
+| 2026-11-26 | f7d4810 | 1 | `pnpm verify all` 9 gates green at f7d48103 |
+| 2026-11-26 | f7d4810 | 5 | Bookmark `0000008b-00000000-0000512f-d20a0a6dfb3f9f52c8fae2e759575278` |
+| 2026-11-26 | f7d4810 | 6 | Exported `before-f7d48103.sql`; deleted after step 14 |
+| 2026-11-26 | f7d4810 | 7 | Applied `0011_metrics_daily.sql` |
+| 2026-11-26 | f7d4810 | 8 | Staged 36 files; Current Version ID `6c40153d-2881-49d0-97f3-6ead2f4c778b`; schedules `*/15 * * * *` and `0 3 * * *` (the digest cron removed by waitlist-off); `TELEMETRY` on |
+| 2026-11-26 | f7d4810 | 14 | `{"method":"link"}`; `/health` `2026.11.26+f7d4810`; landing 200 with Download for Mac — Free, the star pill, todz cloud and Self-host, the signature; `POST /join` 410; llms.txt, index.md, api-catalog, the server card on api.todz.app 200; the appcast 200 with `cache-control: public, max-age=300`; `/admin/metrics` the sign-in card |
+| 2026-11-26 | f7d4810 | 18 | This file. `pnpm release:mac` 0.2.2: Current Version ID `ad9a0ee2-876c-4fb6-bba6-20cd5fc3ce66`; `/download/latest` 302 to 0.2.2; sum `OK`; signature `Good`; appcast 0.2.2 build 2165 signed; tag `mac-v0.2.2` |

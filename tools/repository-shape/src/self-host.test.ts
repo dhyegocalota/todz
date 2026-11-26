@@ -7,7 +7,7 @@ import { swiftCopyValue } from './swift-copy';
 
 const GUIDE = 'apps/docs/self-host.mdx';
 const LEGACY_GUIDE = 'docs/self-host.md';
-const GUIDE_TITLE = 'Self-host todz';
+const GUIDE_TITLE = 'Self-hosting';
 const DOCS_GUIDE_URL = 'https://docs.todz.app/self-host';
 const KEY_SCREEN_COPY = 'apps/macos/Copy/KeyScreenCopy.swift';
 const KEY_SCREEN_TITLE_NAME = 'title';
