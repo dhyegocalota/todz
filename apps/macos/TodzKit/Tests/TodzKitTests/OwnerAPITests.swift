@@ -238,6 +238,7 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
         (429, "{\"error\":\"limit_reached\",\"limit\":\"daily_writes\",\"message\":\"Tomorrow\"}", .fairUsePaused(message: "Tomorrow")),
         (403, "{\"error\":\"account_suspended\",\"message\":\"Suspended\"}", .fairUsePaused(message: "Suspended")),
         (403, "{\"error\":\"sign_up_refused\",\"message\":\"Refused\"}", .fairUseRefused(message: "Refused")),
+        (429, "{\"error\":\"cloud_at_capacity\",\"message\":\"Cloud is full\"}", .fairUsePaused(message: "Cloud is full")),
         (409, "{\"error\":\"limit_reached\"}", .limitReached),
         (418, "{\"error\":\"teapot\"}", .unexpected(status: 418)),
     ])
