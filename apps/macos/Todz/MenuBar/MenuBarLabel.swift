@@ -2,7 +2,6 @@ import SwiftUI
 import TodzKit
 
 let menuBarGlyphName = "MenuBarGlyph"
-let menuBarLabelSpacing: CGFloat = 8
 
 struct MenuBarLabel: View {
     @Environment(AppModel.self) private var model
@@ -71,11 +70,12 @@ struct MenuBarLabel: View {
             MenuBarCountLabel(badgeText: toneBadgeText, opacity: countOpacity, displayScale: displayScale)
                 .equatable()
         case nil:
-            HStack(spacing: menuBarLabelSpacing) {
+            HStack(spacing: MenuBarLayout.glyphSpacing) {
                 Image(menuBarGlyphName)
                 if let badgeText {
                     Text(badgeText)
                         .monospacedDigit()
+                        .offset(y: -MenuBarLayout.countRise)
                 }
             }
         }
