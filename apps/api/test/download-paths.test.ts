@@ -6,8 +6,10 @@ const SITE_ORIGIN = 'http://localhost:8788';
 const SERVER_ERROR_FLOOR = 500;
 const ODD_DOWNLOAD_PATHS = [
   '/download/',
+  '//download',
   '/download//latest',
   '/download/latest/',
+  '/download/%2e/latest',
   '/download/latest/x',
   '/download/%2e%2e',
   '/download/%2fetc',
