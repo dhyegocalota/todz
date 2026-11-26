@@ -8,6 +8,7 @@ private let tomorrowOffset = 1
 @MainActor @Observable final class MainWindowState {
     var isInspectorPresented = true
     var sheet: NameSheetKind?
+    var deletion: DeletionKind?
     var focusRequest: MainWindowFocus?
     var isConfirmingSignOut = false
     var lingers = CompletionLingers()

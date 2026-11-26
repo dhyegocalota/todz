@@ -177,6 +177,10 @@ export async function openOwnedProject({
   return openProject({ env, projectId: ownedProjectId });
 }
 
+export async function wipeProjectStorage({ env, projectId }: { env: Env; projectId: string }): Promise<void> {
+  await openProject({ env, projectId }).wipe();
+}
+
 export async function closeSessionSockets({ env, owner, secret }: { env: Env; owner: SessionOwner; secret: string }): Promise<void> {
   if (!resolvedOwners.has(owner)) return;
   const [projectIds, sessionDigest] = await Promise.all([

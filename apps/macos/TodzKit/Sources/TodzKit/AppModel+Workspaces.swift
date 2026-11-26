@@ -97,6 +97,60 @@ extension AppModel {
         return renamed
     }
 
+    @discardableResult
+    public func renameWorkspace(identifier: String, name: String) async -> Workspace? {
+        let target = WriteTarget.workspaceName(workspaceIdentifier: identifier)
+        let renamed = await write(target: target, retry: { await self.renameWorkspace(identifier: identifier, name: name) }) {
+            try await service.renameWorkspace(session: $0, workspaceIdentifier: identifier, name: name)
+        }
+        guard let renamed else { return nil }
+        workspaces = workspaces.map { $0.identifier == renamed.identifier ? renamed : $0 }
+        keepOwner()
+        return renamed
+    }
+
+    public func deleteWorkspace(identifier: String) async {
+        let target = WriteTarget.workspaceRemoval(workspaceIdentifier: identifier)
+        let wasShown = shownWorkspaces.contains { $0.identifier == identifier }
+        let isDeleted = await write(target: target, retry: { await self.deleteWorkspace(identifier: identifier) }) { session in
+            try await deletionIsDone { try await service.deleteWorkspace(session: session, workspaceIdentifier: identifier) }
+        }
+        guard isDeleted != nil else { return }
+        workspaces = workspaces.filter { $0.identifier != identifier }
+        keepOwner()
+        await reloadWorkspacesQuietly()
+        let isShownWorkspaceMissing = wasShown && activeWorkspace == nil
+        guard isShownWorkspaceMissing else { return }
+        guard let first = workspaces.first else {
+            forgetActiveWorkspace()
+            phase = .naming
+            return
+        }
+        phase = .ready
+        guard let selectionToShow else { return await show(.chosen([first.identifier])) }
+        await show(selectionToShow)
+    }
+
+    public func deleteProject(projectIdentifier: String) async {
+        let target = WriteTarget.projectRemoval(projectIdentifier: projectIdentifier)
+        let isDeleted = await write(target: target, retry: { await self.deleteProject(projectIdentifier: projectIdentifier) }) { session in
+            try await deletionIsDone { try await service.deleteProject(session: session, projectIdentifier: projectIdentifier) }
+        }
+        guard isDeleted != nil else { return }
+        workspaces.forEach { workspace in
+            replaceProjects(workspaceIdentifier: workspace.identifier) { projects in projects.filter { $0.identifier != projectIdentifier } }
+        }
+        followActiveProjects()
+        await reloadWorkspacesQuietly()
+    }
+
+    private func deletionIsDone(_ deletion: () async throws -> Void) async throws -> Bool {
+        do {
+            try await deletion()
+        } catch OwnerAPIError.notFound {}
+        return true
+    }
+
     func loadWorkspaces() async {
         do {
             try await openListedWorkspaces()
@@ -137,7 +191,7 @@ extension AppModel {
     }
 
     private var selectionToShow: WorkspaceSelection? {
-        if let selection, !selection.workspaces(in: workspaces).isEmpty { return selection }
+        if let selection, !selection.workspaces(in: workspaces).isEmpty { return selection.limited(to: workspaces) }
         guard workspaces.count == 1, let sole = workspaces.first else { return nil }
         return .chosen([sole.identifier])
     }
