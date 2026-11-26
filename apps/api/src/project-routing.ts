@@ -9,6 +9,7 @@ import {
   findSessionProject,
 } from './directory';
 import { findCandidateRows, findFirstInboxId } from './day-email/day-email-store';
+import { findKeyOwner } from './directory-owner-keys';
 import {
   findOwnedWorkspace,
   findWorkspaceProject,
@@ -160,6 +161,17 @@ export async function resolveSessionOwner({
   const owner = resolvedOwnerOf(sessionProject.ownerId);
   checkedProjects.set(owner, { projectId, ownedProjectId: sessionProject.ownedProjectId });
   return owner;
+}
+
+export type OwnerKeyAccess = { owner: SessionOwner; keyDigest: string };
+
+// NB ADR 0101: an owner key resolves to the one owner of its row and to nothing else; it is looked up in its own table, never in the project keys.
+export async function openOwnerKey({ env, secret }: { env: Env; secret: string }): Promise<OwnerKeyAccess | null> {
+  if (isBlankSecret(secret)) return null;
+  const keyDigest = await digestCredential(secret);
+  const ownerId = await findKeyOwner({ directory: env.DIRECTORY, digest: keyDigest });
+  if (ownerId === null) return null;
+  return { owner: resolvedOwnerOf(ownerId), keyDigest };
 }
 
 export async function findOwnedProjectId({

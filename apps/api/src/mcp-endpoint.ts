@@ -7,18 +7,19 @@ import {
   isLegacyRequest,
 } from '@modelcontextprotocol/server';
 import { agentActor } from '@todz/core';
-import { ActorKind, RuleIssue } from '@todz/types';
+import { ActorKind, OWNER_KEY_PREFIX, RuleIssue } from '@todz/types';
 import { z } from 'zod';
 import { bearerSecret, unauthorized } from './bearer-secret';
 import type { Env } from './env';
 import { HttpStatus } from './http-status';
 import { MCP_COPY } from './mcp-copy';
+import { buildOwnerMcpServer } from './mcp-owner-server';
 import { type McpServerScope, buildMcpServer, envelopeClientName } from './mcp-server';
 import { openMcpSession } from './mcp-sessions';
 import { calendarDateInTimeZone } from './owner-today';
 import { parsedJson } from './parsed-json';
 import { resultOf } from './project-result';
-import { type KeyProject, openKeyProject } from './project-routing';
+import { type KeyProject, openKeyProject, openOwnerKey } from './project-routing';
 import { isSignedInRateLimited, withRetryAfter } from './signed-in-limiter';
 
 const SESSION_REQUIRED_CODE = -32000;
@@ -131,9 +132,31 @@ async function serveLegacy(legacyRequest: LegacyRequest): Promise<Response> {
   return serveScope({ request, scope: legacyScope({ legacyRequest, clientName }), era: ProtocolEra.Legacy });
 }
 
+async function serveOwnerKey({
+  request,
+  env,
+  secret,
+  now,
+}: {
+  request: Request;
+  env: Env;
+  secret: string;
+  now: number;
+}): Promise<Response> {
+  const access = await openOwnerKey({ env, secret });
+  if (access === null) return unauthorized();
+  const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.MCP_LIMITER, key: access.keyDigest });
+  if (isRateLimited) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
+  if (request.method !== MCP_METHOD) return methodNotAllowed();
+  const isLegacy = await isLegacyRequest(request);
+  const era = isLegacy ? ProtocolEra.Legacy : ProtocolEra.Modern;
+  return createMcpHandler(() => buildOwnerMcpServer({ env, owner: access.owner, now }), HANDLER_OPTIONS_OF_ERA[era]).fetch(request);
+}
+
 export async function serveMcp({ request, env, now }: { request: Request; env: Env; now: number }): Promise<Response> {
   const secret = bearerSecret(request);
   if (secret === null) return unauthorized();
+  if (secret.startsWith(OWNER_KEY_PREFIX)) return serveOwnerKey({ request, env, secret, now });
   const sessionId = request.headers.get(SESSION_HEADER);
   const hasSession = sessionId !== null && sessionId.trim() !== '';
   const keyProject = await openKeyProject({ env, secret, mcpSession: hasSession ? { sessionId, now } : undefined });

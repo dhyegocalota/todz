@@ -1,5 +1,5 @@
 import { normalizeName } from '@todz/core';
-import { INBOX_PROJECT_NAME } from '@todz/types';
+import { INBOX_PROJECT_NAME, RuleIssue } from '@todz/types';
 import {
   deleteOwnerProject,
   deleteOwnerWorkspace,
@@ -13,7 +13,7 @@ import {
 import type { WorkspaceListing } from './directory-workspaces';
 import type { Env } from './env';
 import type { ProjectRecord } from './owner-records';
-import { type ProjectFailure, resultOf } from './project-result';
+import { type ProjectFailure, ProjectFailureKind, resultOf } from './project-result';
 import { type SessionOwner, findOwnedProjectId, findOwnedWorkspaceId, wipeProjectStorage } from './project-routing';
 
 export enum ActionFailureKind {
@@ -124,6 +124,41 @@ export async function createProject({
   });
   if (!isInserted) return failed(ActionFailureKind.LimitReached);
   return { ok: true, value: project };
+}
+
+const CONFIRMATION_MISMATCH: ActionResult<never> = {
+  ok: false,
+  failure: {
+    kind: ActionFailureKind.RuleViolated,
+    failure: { kind: ProjectFailureKind.RuleViolated, issue: RuleIssue.ConfirmationMismatch, index: null },
+  },
+};
+
+// NB ADR 0101: a delete over MCP names its target: the confirmation must equal the current name, and a target of another owner answers not found before any name is compared.
+export async function findConfirmedWorkspace({
+  env,
+  owner,
+  workspaceId,
+  confirmation,
+}: Acting & { workspaceId: string; confirmation: string }): Promise<ActionResult<WorkspaceListing>> {
+  const ownedWorkspaceId = await findOwnedWorkspaceId({ env, owner, workspaceId });
+  if (ownedWorkspaceId === null) return failed(ActionFailureKind.NotFound);
+  const listing = await findOwnerWorkspace({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId: ownedWorkspaceId });
+  if (listing === null) return failed(ActionFailureKind.NotFound);
+  if (confirmation.trim() !== listing.workspace.name) return CONFIRMATION_MISMATCH;
+  return { ok: true, value: listing };
+}
+
+export async function findConfirmedProject({
+  env,
+  owner,
+  projectId,
+  confirmation,
+}: Acting & { projectId: string; confirmation: string }): Promise<ActionResult<ProjectRecord>> {
+  const changeable = await ownedChangeableProject({ env, owner, projectId });
+  if (!changeable.ok) return changeable;
+  if (confirmation.trim() !== changeable.value.name) return CONFIRMATION_MISMATCH;
+  return changeable;
 }
 
 async function ownedChangeableProject({ env, owner, projectId }: Acting & { projectId: string }): Promise<ActionResult<ProjectRecord>> {
