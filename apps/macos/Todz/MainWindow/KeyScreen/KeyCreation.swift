@@ -9,34 +9,27 @@ struct KeyCreation: View {
             if let issuedKey = model.issuedKey {
                 SecretNotice(hint: issuedKey.key.hint)
             }
-            if model.isIssuing {
-                HStack {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text(KeyScreenCopy.creating)
-                }
-                .accessibilityElement(children: .combine)
-                .onAppear { AccessibilityNotification.Announcement(KeyScreenCopy.creating).post() }
-            }
             if canCreate {
-                Button(KeyScreenCopy.createKey) {
+                FormButton(title: KeyScreenCopy.createKey, busyTitle: KeyScreenCopy.creating, kind: .primary, isBusy: model.isIssuing, disabledReason: model.keyActionDisabledReason) {
                     Task { await model.issueKey() }
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(because: model.keyActionDisabledReason)
                 Text(KeyScreenCopy.createKeyNote)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
             if let issueFailure = model.issueFailure {
-                KeyScreenFailureLine(text: KeyScreenCopy.issueFailed)
+                ValidationLine(text: KeyScreenCopy.issueFailed, tone: .issue)
                 Text(KeyScreenCopy.failureBody(failure: issueFailure))
                     .foregroundStyle(.secondary)
             }
         }
+        .onChange(of: model.isIssuing) {
+            guard model.isIssuing else { return }
+            AccessibilityNotification.Announcement(KeyScreenCopy.creating).post()
+        }
     }
 
     private var canCreate: Bool {
-        model.issuedKey == nil && !model.isIssuing
+        model.issuedKey == nil
     }
 }

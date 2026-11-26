@@ -21,7 +21,7 @@ struct KeyRow: View {
                 .accessibilityLabel(Text(KeyScreenCopy.keyEnding(hint: key.hint), marking: key.hint) { $0.speechSpellsOutCharacters() })
                 .accessibilityValue(createdLine)
                 if model.failedRevokeIdentifiers.contains(key.identifier) {
-                    KeyScreenFailureLine(text: KeyScreenCopy.revokeFailed)
+                    ValidationLine(text: KeyScreenCopy.revokeFailed, tone: .issue)
                 }
             }
             Spacer()
@@ -31,7 +31,7 @@ struct KeyRow: View {
                     .accessibilityLabel(KeyScreenCopy.revoking)
             }
             if !isRevoking {
-                Button(KeyScreenCopy.revoke) { isConfirmingRevoke = true }
+                Button(KeyScreenCopy.revoke, role: .destructive) { isConfirmingRevoke = true }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .disabled(because: model.keyActionDisabledReason)
