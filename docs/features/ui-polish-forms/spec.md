@@ -1,6 +1,6 @@
 # One form language across the Mac app
 
-**Status:** Approved
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡 (a new shared set of form views and one pure rule in TodzKit, one outbox refusal, no schema)
 **Owner approval:** inherited from [`docs/product/README.md`](../../product/README.md), approved 2026-11-23; the owner's request of 2026-11-26, "faz a UI ficar sexy, até mesmo os forms", and the decisions of [design § 9](design.md#9-owner-decisions), made by the loop
 **ADRs:** [0104](../../adr/0104-forms-share-one-drawn-field-language-on-native-buttons-and-a-glass-panel.md)
