@@ -188,6 +188,31 @@ private let privateRootPrefix = "/private"
         #expect(try content(of: source) == newContent)
     }
 
+    @Test func aDestinationCreatedBetweenTheCheckAndTheRenameIsNeverDisplaced() throws {
+        system.racingDestinationContent = previousContent
+        #expect(move() == .refused(.installFailed))
+        #expect(try content(of: destination) == previousContent)
+        #expect(!exists(staging))
+        #expect(try content(of: source) == newContent)
+    }
+
+    @Test func aStagingSymbolicLinkLeftByAnEarlierKillIsRemovedAndItsTargetSurvives() throws {
+        let target = scratchFolder.appending(path: "someone-elses").appending(path: ApplicationsMove.bundleFileName)
+        try writeBundle(at: target, content: previousContent)
+        try FileManager.default.createSymbolicLink(at: staging, withDestinationURL: target)
+        #expect(move() == .moved(destination: destination))
+        #expect(try content(of: target) == previousContent)
+        #expect(try content(of: destination) == newContent)
+        #expect(!exists(staging))
+    }
+
+    @Test func aStagingSymbolicLinkToTheDestinationRefusesBecauseTheDestinationExists() throws {
+        try writeBundle(at: destination, content: previousContent)
+        try FileManager.default.createSymbolicLink(at: staging, withDestinationURL: destination)
+        #expect(move() == .refused(.destinationOccupied))
+        #expect(try content(of: destination) == previousContent)
+    }
+
     @Test func anOriginalThatCannotBeTrashedStaysAndTheMoveStillSucceeds() throws {
         let sourceIdentity = try #require(FileIdentity.of(source))
         system.untrashableBundles = [sourceIdentity]

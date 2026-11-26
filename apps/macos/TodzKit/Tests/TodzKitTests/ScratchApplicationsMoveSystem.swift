@@ -16,6 +16,7 @@ final class ScratchApplicationsMoveSystem: ApplicationsMoveSystem {
     var untrashableBundles: Set<FileIdentity> = []
     var hasMatchingRequirement = true
     var originalBundle: URL?
+    var racingDestinationContent: String?
     private(set) var strippedBundles: [URL] = []
     private let trashFolder: URL
     private let manager = FileManager.default
@@ -58,7 +59,13 @@ final class ScratchApplicationsMoveSystem: ApplicationsMoveSystem {
 
     func rename(_ staging: URL, to destination: URL) throws {
         guard !failingSteps.contains(.rename) else { throw ScratchFailure() }
-        try manager.moveItem(at: staging, to: destination)
+        try racingDestinationContent.map { try writeRacingBundle(at: destination, content: $0) }
+        try ExclusiveRename.perform(from: staging, to: destination)
+    }
+
+    private func writeRacingBundle(at destination: URL, content: String) throws {
+        try manager.createDirectory(at: destination, withIntermediateDirectories: true)
+        try content.write(to: destination.appending(path: "version.txt"), atomically: true, encoding: .utf8)
     }
 
     func hasMatchingDesignatedRequirement(copy: URL) -> Bool {

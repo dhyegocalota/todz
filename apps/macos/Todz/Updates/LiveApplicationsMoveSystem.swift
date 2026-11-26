@@ -41,7 +41,7 @@ struct LiveApplicationsMoveSystem: ApplicationsMoveSystem {
     }
 
     func rename(_ staging: URL, to destination: URL) throws {
-        try FileManager.default.moveItem(at: staging, to: destination)
+        try ExclusiveRename.perform(from: staging, to: destination)
     }
 
     func hasMatchingDesignatedRequirement(copy: URL) -> Bool {
