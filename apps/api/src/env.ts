@@ -25,4 +25,9 @@ export type Env = {
   MCP_LIMITER?: RateLimit;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
+  TELEMETRY?: string;
+  USAGE_LIMITER?: RateLimit;
+  USAGE_INSTALL_LIMITER?: RateLimit;
+  USAGE_GLOBAL_LIMITER?: RateLimit;
+  APPCAST_LIMITER?: RateLimit;
 };
