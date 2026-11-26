@@ -4,7 +4,6 @@ import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, usabl
 import { ADMIN_COPY } from './admin-copy';
 import { AdminField, AdminPath } from './admin-paths';
 import { AdminNotice, ConfirmationState, type WaitlistRow, type WaitlistSummary } from './admin-waitlist';
-import { LANDING_COPY } from './landing-copy';
 import { SiteGlyph, glyphHtml } from './site-glyphs';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
 import { CONTENT_ID, SitePageKind, siteDocumentHtml } from './site-shell';
@@ -136,8 +135,8 @@ function signInCardOf({ notice, challenge }: { notice: string | null; challenge:
 <p class="admin-body">${escapedHtml(ADMIN_COPY.signIn.lead)}</p>
 <form class="${JOIN_FORM_CLASS} admin-form" method="post" action="${AdminPath.SignInLinks}">
 <div class="join-capsule">
-<label class="visually-hidden" for="${EMAIL_ID}">${escapedHtml(LANDING_COPY.join.emailLabel)}</label>
-<input id="${EMAIL_ID}" class="join-input" name="${AdminField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(LANDING_COPY.join.emailPlaceholder)}" required>
+<label class="visually-hidden" for="${EMAIL_ID}">${escapedHtml(ADMIN_COPY.signIn.emailLabel)}</label>
+<input id="${EMAIL_ID}" class="join-input" name="${AdminField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(ADMIN_COPY.signIn.emailPlaceholder)}" required>
 <button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(ADMIN_COPY.signIn.submitting)}">${escapedHtml(ADMIN_COPY.signIn.submit)}</button>
 </div>
 ${challenge.widget}${noticeHtml(notice)}</form>
@@ -263,6 +262,7 @@ function panelHtml(summary: WaitlistSummary): string {
 <div class="panel-head">
 <h1 class="panel-title">${escapedHtml(panel.title)}</h1>
 <nav class="panel-actions" aria-label="${escapedHtml(ADMIN_COPY.shell.navLabel)}">
+<a class="admin-action" href="${AdminPath.Metrics}">${escapedHtml(ADMIN_COPY.metrics.link)}</a>
 <a class="admin-action" href="${AdminPath.Export}" download>${escapedHtml(panel.download)}</a>
 <form method="post" action="${AdminPath.SignOut}"><button class="nav-link nav-button" type="submit">${escapedHtml(panel.signOut)}</button></form>
 </nav>

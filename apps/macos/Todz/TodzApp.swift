@@ -15,9 +15,11 @@ struct TodzApp: App {
         DayClosePreference.registerDefaults(in: .standard)
         MorningGlancePreference.registerDefaults(in: .standard)
         DayTemperaturePreference.registerDefaults(in: .standard)
+        UsageSharingPreference.registerDefaults(in: .standard)
         RibbonPreference.registerDefaults(in: .standard)
         MenuBarOnlyPreference.registerDefaults(in: .standard)
         RespectFocusPreference.registerDefaults(in: .standard)
+        WorkspaceShortcutsPreference.registerDefaults(in: .standard)
     }
 
     var body: some Scene {
@@ -37,7 +39,7 @@ struct TodzApp: App {
         }
         .defaultSize(width: defaultWidth, height: defaultHeight)
         .windowResizability(.contentMinSize)
-        .commands { AppCommands(model: model, windowState: windowState, updater: appDelegate.updater) }
+        .commands { AppCommands(model: model, windowState: windowState, updater: appDelegate.updater, shortcuts: appDelegate.workspaceShortcuts) }
         MenuBarExtra {
             MenuBarPopover()
                 .frame(width: popoverWidth)
@@ -64,6 +66,7 @@ struct TodzApp: App {
                 .environment(model)
                 .environment(gate)
                 .environment(appDelegate.updater)
+                .environment(appDelegate.workspaceShortcuts)
         }
         .windowResizability(.contentSize)
     }

@@ -7,6 +7,8 @@ export enum AdminPath {
   Sessions = '/admin/sessions',
   SignOut = '/admin/sign-out',
   Export = '/admin/export.csv',
+  Metrics = '/admin/metrics',
+  MetricsExport = '/admin/metrics.csv',
 }
 
 export enum AdminField {

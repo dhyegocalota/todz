@@ -1,16 +1,19 @@
+import { REPOSITORY } from '@todz/types';
 import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
 import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { noRouteResponse } from '../owner-errors';
 import { ADMIN_ROUTES } from './admin-routes';
+import { APPCAST_PATH, serveAppcast } from './appcast';
 import { discoveryResponse } from './discovery-response';
-import { isDownloadReleased } from './download-release';
-import { LandingNotice, landingChallengeKeysOf, serveLandingPage } from './landing-page';
+import { serveLandingPage } from './landing-page';
+import { repositoryStarsOf } from './repository-stars';
 import { SELF_HOST_PATH, redirectToDocs } from './self-host-redirect';
+import { REPOSITORY_API_URL, REPOSITORY_STARS_CACHE_NAME } from './site-constants';
 import { DISCOVERY_FILES } from './site-discovery';
 import { JOIN_PATH, LANDING_PATH } from './site-shell';
-import { serveWaitlistJoin } from './waitlist-join';
+import { serveWaitlistClosed } from './waitlist-closed';
 
 export type SiteContext = { request: Request; env: Env; executionContext: ExecutionContext };
 
@@ -20,12 +23,18 @@ function routeKey({ method, pathname }: { method: string; pathname: string }): s
   return `${method} ${pathname}`;
 }
 
+function repositoryApiUrlOf({ REPOSITORY_API_ORIGIN: apiOrigin }: Env): string {
+  if (apiOrigin === undefined) return REPOSITORY_API_URL;
+  return `${apiOrigin}/repos/${REPOSITORY.path}`;
+}
+
 async function serveLanding({ env }: SiteContext): Promise<Response> {
-  return serveLandingPage({
-    notice: LandingNotice.None,
-    challenge: landingChallengeKeysOf(env),
-    isReleased: await isDownloadReleased(env),
+  const stars = await repositoryStarsOf({
+    fetchImplementation: fetch,
+    cache: await caches.open(REPOSITORY_STARS_CACHE_NAME),
+    apiUrl: repositoryApiUrlOf(env),
   });
+  return serveLandingPage({ stars });
 }
 
 function redirectToLanding(): Response {
@@ -50,9 +59,11 @@ const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
   ...DISCOVERY_ROUTE_OF_REQUEST,
   [routeKey({ method: HttpMethod.Get, pathname: LANDING_PATH })]: serveLanding,
   [routeKey({ method: HttpMethod.Head, pathname: LANDING_PATH })]: serveLanding,
+  [routeKey({ method: HttpMethod.Get, pathname: APPCAST_PATH })]: serveAppcast,
+  [routeKey({ method: HttpMethod.Head, pathname: APPCAST_PATH })]: serveAppcast,
   [routeKey({ method: HttpMethod.Get, pathname: SELF_HOST_PATH })]: redirectToDocs,
   [routeKey({ method: HttpMethod.Head, pathname: SELF_HOST_PATH })]: redirectToDocs,
-  [routeKey({ method: HttpMethod.Post, pathname: JOIN_PATH })]: serveWaitlistJoin,
+  [routeKey({ method: HttpMethod.Post, pathname: JOIN_PATH })]: serveWaitlistClosed,
   [routeKey({ method: HttpMethod.Get, pathname: JOIN_PATH })]: redirectToLanding,
 };
 

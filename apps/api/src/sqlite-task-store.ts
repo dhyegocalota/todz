@@ -22,6 +22,8 @@ type ChangedTaskRow = TaskRow & { change_number: number };
 
 export type TaskChange = { task: Task; changeNumber: number };
 
+export type ActivityCounts = { added: number; completed: number; agentWrites: { client: string; count: number }[] };
+
 type HistoryRow = {
   at: number;
   actor_kind: string;
@@ -35,6 +37,10 @@ const TASK_COLUMNS =
   'number, title, notes, due_date, state, order_key, idempotency_key, created_by_kind, created_by_client, created_at, updated_at, completed_at';
 const FIRST_CHANGE_NUMBER = 1;
 const HISTORY_COLUMNS = 'at, actor_kind, actor_client, action, fields, note';
+const ADDED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE created_at >= ? AND created_at < ?';
+const COMPLETED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE completed_at >= ? AND completed_at < ?';
+const AGENT_WRITES_QUERY =
+  'SELECT actor_client, count(*) AS total FROM task_history WHERE actor_kind = ? AND actor_client IS NOT NULL AND at >= ? AND at < ? GROUP BY actor_client';
 const FIRST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? ORDER BY order_key LIMIT 1';
 const LAST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? ORDER BY order_key DESC LIMIT 1';
 const ORDER_KEY_BEFORE_QUERY = 'SELECT order_key FROM tasks WHERE order_key < ? AND number <> ? ORDER BY order_key DESC LIMIT 1';
@@ -184,6 +190,22 @@ export class SqliteTaskStore implements TaskStore {
     const [row] = this.sql.exec<{ last_change_number: number }>('SELECT last_change_number FROM change_counter').toArray();
     if (row === undefined) return null;
     return row.last_change_number;
+  }
+
+  countActivity({ since, until }: { since: number; until: number }): ActivityCounts {
+    const added = this.totalOf({ query: ADDED_COUNT_QUERY, bindings: [since, until] });
+    const completed = this.totalOf({ query: COMPLETED_COUNT_QUERY, bindings: [since, until] });
+    const agentWrites = this.sql
+      .exec<{ actor_client: string; total: number }>(AGENT_WRITES_QUERY, ActorKind.Agent, since, until)
+      .toArray()
+      .map((row) => ({ client: row.actor_client, count: row.total }));
+    return { added, completed, agentWrites };
+  }
+
+  private totalOf({ query, bindings }: { query: string; bindings: number[] }): number {
+    const [row] = this.sql.exec<{ total: number }>(query, ...bindings).toArray();
+    if (row === undefined) throw new Error('a count returned no row');
+    return row.total;
   }
 
   listChangesSince({ cursor, limit }: { cursor: number; limit: number }): TaskChange[] {

@@ -16,6 +16,11 @@ import TodzKit
         guard let info = bundle.infoDictionary, UpdateFeed(info: info) != nil else { return nil }
         guard let currentVersion = AppVersion.of(info: info) else { return nil }
         controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: reminders)
+        controller.updater.userAgentString = UpdateUserAgent.text(
+            appVersion: currentVersion,
+            sparkleVersion: Self.sparkleVersion,
+            macosMajor: ProcessInfo.processInfo.operatingSystemVersion.majorVersion
+        )
         automaticallyUpdates = controller.updater.automaticallyDownloadsUpdates
         updatedToVersion = UpdateNote.recordLaunch(ofVersion: currentVersion, defaults: .standard)
         observations = [
@@ -28,6 +33,13 @@ import TodzKit
                 Task { @MainActor in self?.automaticallyUpdates = isOn }
             },
         ]
+    }
+
+    private static var sparkleVersion: String {
+        guard let version = Bundle(for: SPUUpdater.self).infoDictionary?["CFBundleShortVersionString"] as? String else {
+            fatalError("The Sparkle framework's Info.plist has no version")
+        }
+        return version
     }
 
     func checkForUpdates() {

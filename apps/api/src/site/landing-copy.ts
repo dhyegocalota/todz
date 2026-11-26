@@ -1,5 +1,5 @@
 import { formatShortId } from '@todz/core';
-import { COMPANY } from '@todz/types';
+import { AUTHOR, COMPANY } from '@todz/types';
 import { MCP_COPY, McpToolName } from '../mcp-copy';
 import { AgentClient, agentSetupOf } from './agent-setup';
 import { KEY_PLACEHOLDER } from './site-constants';
@@ -27,41 +27,53 @@ export const LANDING_COPY = {
     footerSelfHost: 'Self-host guide',
     footerInstall: 'Install on Mac',
     footerGithub: 'GitHub',
-    copyright: '© todz',
+    creditPrefix: '© todz ·',
     creditLead: 'todz is a product of',
     creditName: COMPANY.tradeName,
     creditTail: ', made in Brazil',
   },
   hero: {
-    eyebrow: 'macOS · Coming soon',
-    eyebrowReleased: 'macOS 14 or later',
+    eyebrow: 'macOS 14 or later',
     title: 'Your tasks, shared with your agents.',
     lead: 'A native Mac to-do list that Claude Code, Codex and Cursor work over MCP.',
   },
   download: {
     button: 'Download for Mac',
+    heroButton: 'Download for Mac — Free',
     note: 'Not notarized by Apple yet: the first time, open it from System Settings › Privacy & Security.',
     noteLink: 'Install steps',
+  },
+  free: {
+    line: 'Free on todz cloud — or run your own.',
+    linkText: 'run your own',
+  },
+  ways: {
+    cloud: {
+      title: 'todz cloud',
+      badge: 'Free',
+      body: 'Sign in with your email. Synced across your Macs and agents. Nothing to run.',
+      cta: 'Download for Mac',
+    },
+    selfHost: {
+      title: 'Self-host',
+      badge: 'Open source',
+      body: 'Run the server on your own Cloudflare account. Same app: switch the server in Settings.',
+      cta: 'Server setup guide',
+    },
+    note: 'The app is the same either way, and updates itself.',
+  },
+  openSource: {
+    starLabel: 'Star on GitHub',
+    license: 'License',
+    contributing: 'Contributing',
+  },
+  signature: {
+    line: 'Built by a developer, for developers and AI tinkerers.',
+    name: AUTHOR.name,
   },
   stage: {
     label: 'The todz app on a Mac desktop',
     menuCount: '2',
-  },
-  join: {
-    emailLabel: 'Email address',
-    emailPlaceholder: 'you@example.com',
-    submit: 'Join the waitlist',
-    submitting: 'Joining…',
-    note: 'Only to tell you when todz opens.',
-    opensSoon: 'The waitlist opens soon.',
-    joined: "You're on the list. Check your inbox.",
-    tryAgain: "Couldn't add you right now. Try again in a minute.",
-    waitingForCheck: 'Finish the check below to join.',
-    invalid: "That address doesn't look right.",
-    checkFailed: "The check didn't pass. Try it again.",
-    unreachable: "Couldn't reach todz. Check your connection and try again.",
-    checkError: "The check couldn't load. Reload the page to try again.",
-    honeypotLabel: 'Leave this field empty',
   },
   benefits: {
     heading: 'Why todz',
@@ -95,8 +107,7 @@ export const LANDING_COPY = {
     toolResult: `${MCP_COPY.added} ${formatShortId(EXAMPLE_TASK_NUMBER)} ${EXAMPLE_TASK_TITLE}`,
   },
   final: {
-    title: 'Be first on the list.',
-    body: 'Join the waitlist and get todz when it opens.',
+    title: 'Get todz on your Mac.',
   },
   alt: {
     window: "The todz main window: a project's tasks, one added via Claude Code, with its notes and history in the inspector",

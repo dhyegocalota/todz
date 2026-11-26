@@ -1,0 +1,12 @@
+import { MILLISECONDS_PER_DAY } from '@todz/types';
+
+export const METRICS_RETENTION_DAYS = 395;
+export const METRICS_RETENTION_MS = METRICS_RETENTION_DAYS * MILLISECONDS_PER_DAY;
+export const METRIC_DIMENSIONS_PER_DAY_MAX = 50;
+export const NIGHTLY_PROJECTS_MAX = 500;
+export const USAGE_BODY_MAX_BYTES = 2048;
+export const USAGE_ROLLUPS_PER_DAY_MAX = 5000;
+export const USAGE_COUNT_MAX = 500;
+export const ADMIN_METRICS_DAYS = 30;
+export const SPARKLINE_WIDTH = 120;
+export const SPARKLINE_HEIGHT = 32;
