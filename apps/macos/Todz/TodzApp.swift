@@ -4,7 +4,10 @@ import TodzKit
 private let defaultWidth: CGFloat = 1100
 private let defaultHeight: CGFloat = 700
 private let popoverWidth: CGFloat = 360
-private let settingsWidth: CGFloat = 420
+private let settingsWidth: CGFloat = 520
+private let settingsMinimumWidth: CGFloat = 460
+private let settingsHeight: CGFloat = 640
+private let settingsMinimumHeight: CGFloat = 420
 
 @main
 struct TodzApp: App {
@@ -62,12 +65,13 @@ struct TodzApp: App {
         .menuBarExtraStyle(.window)
         Settings {
             SettingsView()
-                .frame(width: settingsWidth)
+                .frame(minWidth: settingsMinimumWidth, idealWidth: settingsWidth, minHeight: settingsMinimumHeight, idealHeight: settingsHeight)
                 .environment(model)
                 .environment(gate)
                 .environment(appDelegate.updater)
                 .environment(appDelegate.workspaceShortcuts)
         }
-        .windowResizability(.contentSize)
+        .defaultSize(width: settingsWidth, height: settingsHeight)
+        .windowResizability(.contentMinSize)
     }
 }
