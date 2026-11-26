@@ -1,6 +1,6 @@
 # Global workspace hot keys off by default
 
-**Status:** Shipped 2026-11-26 ([PR #88](https://github.com/dhyegocalota/todz/pull/88))
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡 (a default change, a second chord scope, a Settings change; no server, no schema, no deploy)
 **Owner approval:** approved by inheritance from [docs/product/README.md](../../product/README.md) (2026-11-23) and the owner's report of 2026-11-26: the global ⌃1…⌃9 hot keys steal Dia's profile switching system-wide.
 **ADRs:** [0091](../../adr/0091-global-workspace-hot-keys-are-off-by-default-and-take-control-option-command-digits-and-yield-to-a-chord-another-app-holds.md) (amends [0079](../../adr/0079-workspaces-switch-by-chord-with-carbon-hot-keys-and-a-stored-rebindable-binding-table.md))
