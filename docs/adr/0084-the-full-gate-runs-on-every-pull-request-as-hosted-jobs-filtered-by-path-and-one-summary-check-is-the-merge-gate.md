@@ -33,6 +33,7 @@ ADR 0005 kept hosted CI out of the merge path because it was private, metered an
 - ADR 0005's item 7 is amended: the merge gate is the hosted `ci-ok` on the head after merging a fresh `origin/main`; `pnpm verify` remains the local loop.
 - A pull request GitHub creates no run for is dispatched by hand, as the learning says.
 - The branch protection rule requires `ci-ok`, not the individual jobs.
+- Timing-budget tests measure the machine ([the 2026-11-07 learning](../learnings/2026-11-07-default-test-timeout-measures-the-machine-under-load.md)), so a hosted runner skips them and the local `/verify`, where ADR 0061's budgets were set, keeps them. A Swift budget test carries `.enabled(if: !isOnHostedRunner)`, and `swift-budget-tests.test.ts` fails when one does not.
 - A path outside the filters runs only the always-on jobs, so a new top-level area adds its filter and job in the same change.
 
 ## Evidence
