@@ -5,7 +5,8 @@ const VARIABLE = 'CLOUD_ACCOUNTS_MAX';
 
 export function cloudAccountsMaxOf(env: Env): number | null {
   const configured = env.CLOUD_ACCOUNTS_MAX;
-  if (configured === undefined) return null;
+  const isOff = configured === undefined || configured === '';
+  if (isOff) return null;
   if (!POSITIVE_WHOLE_NUMBER_PATTERN.test(configured)) throw new Error(`${VARIABLE} must be a positive whole number`);
   return Number(configured);
 }

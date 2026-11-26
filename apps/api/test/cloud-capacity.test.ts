@@ -41,6 +41,10 @@ describe('the cloud account cap', () => {
     expect(response.status).toBe(ACCEPTED_STATUS);
   });
 
+  test('an empty var turns the cap off, as the test bindings need', () => {
+    expect(cloudAccountsMaxOf(workerEnvWith({ CLOUD_ACCOUNTS_MAX: '' }))).toBeNull();
+  });
+
   test('a malformed var throws instead of falling back', () => {
     expect(() => cloudAccountsMaxOf(workerEnvWith({ CLOUD_ACCOUNTS_MAX: 'many' }))).toThrow(
       'CLOUD_ACCOUNTS_MAX must be a positive whole number',
