@@ -12,7 +12,7 @@ The surface is native macOS: there is no browser surface, so there is no Playwri
 ## Unit
 
 - [ ] `sidebar-new-project.test.ts` — input: `MainWindowCopy.swift`; expected: `newProjectHelp(workspaceName:)` returns `Adds a project to \(workspaceName)`
-- [ ] `sidebar-new-project.test.ts` — input: `SidebarView.swift`; expected: contains `.safeAreaInset(edge: .bottom)`, `NewProjectButton(workspace: workspace)` and `Text(MainWindowCopy.projects)`, and no `ProjectsHeader`
+- [ ] `sidebar-new-project.test.ts` — input: `SidebarView.swift`; expected: stacks `NewProjectButton(workspace: workspace)` under `list` in a `VStack(spacing: 0)`, has no `.safeAreaInset(edge: .bottom)`, contains `Text(MainWindowCopy.projects)`, and no `ProjectsHeader`
 - [ ] `sidebar-new-project.test.ts` — input: `NewProjectButton.swift`; expected: contains `windowState.sheet = .newProject`, `.help(MainWindowCopy.newProjectHelp(`, `.accessibilityHint(MainWindowCopy.newProjectHelp(`, `.disabled(!model.isReady)`, `.todzAnimation(.snap`, `Color.accentColor`, `.contentShape(.rect)`; no `.opacity(` and no `.keyboardShortcut(`
 - [ ] `sidebar-new-project.test.ts` — input: `apps/macos/Todz/MainWindow/Sidebar/ProjectsHeader.swift`; expected: absent
 - [ ] `sidebar-new-project.test.ts` — input: `AccessibilityCopy.swift`; expected: no `addProject`

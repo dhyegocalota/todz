@@ -6,6 +6,13 @@ struct SidebarView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        VStack(spacing: 0) {
+            list
+            NewProjectButton(workspace: workspace)
+        }
+    }
+
+    private var list: some View {
         List(selection: selection) {
             Section {
                 ForEach(SidebarItem.views, id: \.self) { item in
@@ -31,9 +38,6 @@ struct SidebarView: View {
         .listStyle(.sidebar)
         .safeAreaInset(edge: .top) {
             WorkspaceSwitcher(workspace: workspace, isMainWindow: true)
-        }
-        .safeAreaInset(edge: .bottom) {
-            NewProjectButton(workspace: workspace)
         }
     }
 

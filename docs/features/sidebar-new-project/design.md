@@ -85,7 +85,7 @@ One screen changes: the main window's sidebar. Every state below is the sidebar 
    both on the sidebar's own material (Liquid Glass on macOS 26); no added fill
 ```
 
-- Change: a `NewProjectButton` pinned under the list with `.safeAreaInset(edge: .bottom)`, the mirror of the `WorkspaceSwitcher` pinned above it with `.safeAreaInset(edge: .top)`. The header `+` goes away, so there is one affordance, not two.
+- Change: a `NewProjectButton` stacked under the list in a `VStack(spacing: 0)`, so it never covers a row, with the `WorkspaceSwitcher` still an inset above it. The header `+` goes away, so there is one affordance, not two.
 - For: Apple's own pattern on macOS 26 (Reminders "Add List", Notes "New Folder", both a circled plus and a word at the foot of the glass sidebar); always visible whatever the scroll; a word, not a lone glyph; outside the `List`, so no selection, tag or row-height effect on the views, the projects, the multi-workspace tags, the badges or Connect an Agent; the sidebar's width rule is untouched ("● New Project" is about 105 pt; the narrowest sidebar leaves 148 pt inside the default padding).
 - Against: further from the Projects header when the list is short; the label carries the link. Takes about 44 pt of height from the scrolling list at the bottom, as the switcher does at the top.
 
@@ -96,7 +96,7 @@ One screen changes: the main window's sidebar. Every state below is the sidebar 
 | Piece | Where | Note |
 |---|---|---|
 | `NewProjectButton` (new) | `apps/macos/Todz/MainWindow/Sidebar/NewProjectButton.swift` | Takes `workspace: Workspace` from `SidebarView`, as the switcher does |
-| `SidebarView` | same folder | Adds `.safeAreaInset(edge: .bottom) { NewProjectButton(workspace: workspace) }` after the top inset; the Projects `Section` header becomes `Text(MainWindowCopy.projects)` |
+| `SidebarView` | same folder | Wraps the list in `VStack(spacing: 0) { list; NewProjectButton(workspace: workspace) }`; the Projects `Section` header becomes `Text(MainWindowCopy.projects)` |
 | `ProjectsHeader` | same folder | Deleted: its only job was the hover `+` |
 | `WorkspaceSwitcher` | `apps/macos/Todz/Shared` | Unchanged; "New Workspace…" stays in its menu and in File |
 
@@ -177,7 +177,7 @@ No new token. Mint `#8CF7D0` is not used: on the light sidebar it is about 1.3:1
 There is no test target for the app's views (`docs/learnings/2026-11-24-a-swiftui-subtree-that-reads-the-selection-itself-renders-once-more-with-the-new-item.md`), so the shape is pinned by `tools/repository-shape` the way `open-source-surfaces.test.ts` pins `StarRepositoryButton`. New file `tools/repository-shape/src/sidebar-new-project.test.ts`, red first:
 
 - `MainWindowCopy.newProjectButton` is "New Project" (`swiftCopyValue`).
-- `SidebarView.swift` contains `.safeAreaInset(edge: .bottom)` and `NewProjectButton(workspace: workspace)`, and no longer contains `ProjectsHeader()`.
+- `SidebarView.swift` stacks `NewProjectButton(workspace: workspace)` under `list` in a `VStack(spacing: 0)`, has no `.safeAreaInset(edge: .bottom)`, and no longer contains `ProjectsHeader()`.
 - `NewProjectButton.swift` contains `windowState.sheet = .newProject`, `.help(MainWindowCopy.newProjectHelp(` and `.accessibilityHint(`, and contains no `.opacity(` (the affordance is never hidden).
 - `apps/macos/Todz/MainWindow/Sidebar/ProjectsHeader.swift` does not exist.
 - `AppCommands.swift` still binds New Project to `.keyboardShortcut(newKey, modifiers: [.command, .shift])`.

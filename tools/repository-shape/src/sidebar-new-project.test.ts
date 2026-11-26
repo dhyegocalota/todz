@@ -16,6 +16,7 @@ const NEW_PROJECT_HELP = '"Adds a project to \\(workspaceName)"';
 const NEW_PROJECT_SHORTCUT = '.keyboardShortcut(newKey, modifiers: [.command, .shift])';
 const MENU_ITEM_WITH_SHORTCUT =
   /Button\(MainWindowCopy\.newProject\) \{ windowState\.sheet = \.newProject \}\s+\.keyboardShortcut\(newKey, modifiers: \[\.command, \.shift\]\)/;
+const STACKED_FOOTER = /VStack\(spacing: 0\) \{\s+list\s+NewProjectButton\(workspace: workspace\)\s+\}/;
 const BUTTON_PIECES = [
   'windowState.sheet = .newProject',
   'Color.accentColor',
@@ -42,10 +43,10 @@ describe('the sidebar New Project button', () => {
     expect(copy).toContain(NEW_PROJECT_HELP);
   });
 
-  test('the sidebar pins the button under the list and heads Projects with plain text', () => {
+  test('the sidebar stacks the button under the list, never over its rows, and heads Projects with plain text', () => {
     const sidebar = readRepositoryFile(SIDEBAR_FILE);
-    expect(sidebar).toContain('.safeAreaInset(edge: .bottom)');
-    expect(sidebar).toContain('NewProjectButton(workspace: workspace)');
+    expect(sidebar).toMatch(STACKED_FOOTER);
+    expect(sidebar).not.toContain('.safeAreaInset(edge: .bottom)');
     expect(sidebar).toContain('Text(MainWindowCopy.projects)');
   });
 

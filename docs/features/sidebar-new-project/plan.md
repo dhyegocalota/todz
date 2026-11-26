@@ -24,12 +24,12 @@ G3 (folder) → G1 (red) → G2 (green) → G3 (evidence, Shipped).
 
 ### G1
 
-- [ ] **Step 1:** Red: `sidebar-new-project.test.ts`, committed alone, failing on the missing copy, inset, button file and on `ProjectsHeader.swift` still existing; the ⇧⌘N binding is a pin.
+- [x] **Step 1:** (297d6059) Red: `sidebar-new-project.test.ts`, committed alone, failing on the missing copy, inset, button file and on `ProjectsHeader.swift` still existing; the ⇧⌘N binding is a pin.
 
 ### G2
 
-- [ ] **Step 2:** Copy: `newProjectButton`, `newProjectHelp(workspaceName:)`; drop `AccessibilityCopy.addProject`.
-- [ ] **Step 3:** `NewProjectButton` as design.md § 3; `SidebarView` adds the bottom inset and a plain `Text` header; `ProjectsHeader.swift` deleted.
+- [x] **Step 2:** (8104443e) Copy: `newProjectButton`, `newProjectHelp(workspaceName:)`; drop `AccessibilityCopy.addProject`.
+- [x] **Step 3:** (8104443e, VStack in the next commit) `NewProjectButton` as design.md § 3; `SidebarView` stacks the button under the list (a `VStack`, chosen over the bottom inset so the footer never overlays a row) and a plain `Text` header; `ProjectsHeader.swift` deleted.
 - [ ] **Step 4:** `swift test` and the Debug `xcodebuild` in the foreground.
 
 ### G3
