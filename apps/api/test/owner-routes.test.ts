@@ -32,6 +32,9 @@ describe('matchOwnerRoute', () => {
     ['GET', `/owner/projects/${PROJECT}/keys`, OwnerRoute.ListKeys, { projectId: PROJECT }],
     ['POST', `/owner/projects/${PROJECT}/keys`, OwnerRoute.IssueKey, { projectId: PROJECT }],
     ['DELETE', `/owner/projects/${PROJECT}/keys/${KEY}`, OwnerRoute.RevokeKey, { projectId: PROJECT, keyId: KEY }],
+    ['GET', '/owner/keys', OwnerRoute.ListOwnerKeys, {}],
+    ['POST', '/owner/keys', OwnerRoute.IssueOwnerKey, {}],
+    ['DELETE', `/owner/keys/${KEY}`, OwnerRoute.RevokeOwnerKey, { keyId: KEY }],
   ])('%s %s is %s', (method, path, route, params) => {
     expect(matched({ method, path })).toEqual({ route, params });
   });

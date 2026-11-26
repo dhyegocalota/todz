@@ -14,6 +14,7 @@ export class InMemoryTaskStore implements TaskStore {
   private readonly histories = new Map<number, HistoryEntry[]>();
   private highestIssuedNumber = NO_TASK_ISSUED;
   writeCount = 0;
+  removals: { number: number; at: number }[] = [];
 
   findTask(number: number): Task | null {
     const task = this.tasks.get(number);
@@ -64,6 +65,12 @@ export class InMemoryTaskStore implements TaskStore {
   replaceTask(task: Task): void {
     this.writeCount += 1;
     this.tasks.set(task.number, structuredClone(task));
+  }
+
+  removeTask(removal: { number: number; at: number }): void {
+    this.writeCount += 1;
+    this.tasks.delete(removal.number);
+    this.removals = [...this.removals, removal];
   }
 
   appendHistory({ number, entry }: { number: number; entry: HistoryEntry }): void {

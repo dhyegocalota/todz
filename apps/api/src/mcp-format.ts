@@ -1,7 +1,17 @@
-import { type AddedTask, type CompletedTask, type Task, type TaskList, formatShortId } from '@todz/core';
-import type { TaskState } from '@todz/types';
+import {
+  type AddedTask,
+  type CompletedTask,
+  type HistoryEntry,
+  type ReopenedTask,
+  type Task,
+  type TaskList,
+  formatShortId,
+} from '@todz/core';
+import { ActorKind, type TaskState } from '@todz/types';
 import { FAIR_USE_COPY } from './fair-use-copy';
 import { MCP_COPY } from './mcp-copy';
+import type { MovedTask } from './move-task';
+import type { ProjectRecord } from './owner-records';
 import { type ProjectFailure, ProjectFailureKind } from './project-result';
 
 const LINE_BREAK = '\n';
@@ -30,6 +40,11 @@ function completedLine({ task, alreadyDone }: CompletedTask): string {
   return `${MCP_COPY.done} ${taskLine(task)}`;
 }
 
+function reopenedLine({ task, alreadyOpen }: ReopenedTask): string {
+  if (alreadyOpen) return `${MCP_COPY.alreadyOpen} ${taskLine(task)}`;
+  return `${MCP_COPY.reopened} ${taskLine(task)}`;
+}
+
 export function taskLine(task: Task): string {
   const line = `${formatShortId(task.number)} ${task.title}`;
   if (task.dueDate === null) return line;
@@ -56,6 +71,47 @@ export function updatedAnswer(task: Task): string {
 
 export function completedAnswer(completed: CompletedTask[]): string {
   return lines(completed.map(completedLine));
+}
+
+export function showAnswer({ task, arrivalNote }: { task: Task; arrivalNote: string | null | undefined }): string {
+  const notes = task.notes === null ? [] : [task.notes];
+  const arrival = typeof arrivalNote === 'string' ? [arrivalNote] : [];
+  return paragraphs([taskLine(task), MCP_COPY.stateLine(task.state), ...arrival, ...notes]);
+}
+
+function historyLineOf(entry: HistoryEntry): string {
+  const who = entry.actor.kind === ActorKind.Owner ? MCP_COPY.historyOwner : entry.actor.clientName;
+  const fields = entry.fields.length === 0 ? '' : MCP_COPY.historyFields(entry.fields.join(', '));
+  const note = entry.note === null ? '' : MCP_COPY.historyNote(entry.note);
+  return `${MCP_COPY.historyLine({ at: new Date(entry.at).toISOString(), who, what: `${entry.action}${fields}` })}${note}`;
+}
+
+export function historyAnswer(history: HistoryEntry[]): string {
+  return lines(history.map(historyLineOf));
+}
+
+export function reopenedAnswer(reopened: ReopenedTask[]): string {
+  return lines(reopened.map(reopenedLine));
+}
+
+export function deletedAnswer(task: Task): string {
+  return `${MCP_COPY.deleted} ${taskLine(task)}`;
+}
+
+export function movedAnswer({ moved, projectName }: { moved: MovedTask; projectName: string }): string {
+  const arrival = MCP_COPY.movedTo({ projectName, shortId: formatShortId(moved.arrived.number) });
+  return `${MCP_COPY.moved} ${taskLine(moved.task)} ${arrival}`;
+}
+
+export function projectsAnswer({ projects, currentProjectId }: { projects: ProjectRecord[]; currentProjectId: string }): string {
+  return lines(
+    projects.map((project) => {
+      const line = `${project.id} ${project.name}`;
+      const inboxMark = project.isInbox ? MCP_COPY.inboxProject : '';
+      const currentMark = project.id === currentProjectId ? MCP_COPY.currentProject : '';
+      return `${line}${inboxMark}${currentMark}`;
+    }),
+  );
 }
 
 export function nextAnswer(task: Task | null): string {

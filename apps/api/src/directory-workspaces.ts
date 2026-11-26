@@ -34,6 +34,39 @@ export async function listOwnerWorkspaces({ directory, ownerId }: { directory: D
   }));
 }
 
+export async function listWorkspaceProjects({
+  directory,
+  workspaceId,
+}: {
+  directory: D1Database;
+  workspaceId: string;
+}): Promise<ProjectRecord[]> {
+  const { results } = await directory
+    .prepare(
+      'SELECT id, workspace_id, name, is_inbox, created_at FROM projects WHERE workspace_id = ? ORDER BY is_inbox DESC, created_at, rowid',
+    )
+    .bind(workspaceId)
+    .all<ProjectRow>();
+  return results.map(projectRecordOf);
+}
+
+export async function findWorkspaceProject({
+  directory,
+  workspaceId,
+  projectId,
+}: {
+  directory: D1Database;
+  workspaceId: string;
+  projectId: string;
+}): Promise<ProjectRecord | null> {
+  const row = await directory
+    .prepare('SELECT id, workspace_id, name, is_inbox, created_at FROM projects WHERE id = ? AND workspace_id = ?')
+    .bind(projectId, workspaceId)
+    .first<ProjectRow>();
+  if (row === null) return null;
+  return projectRecordOf(row);
+}
+
 export async function listOwnerProjectIds({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<string[]> {
   const { results } = await directory
     .prepare('SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ?')
@@ -207,30 +240,37 @@ export async function updateProjectName({
   return result.meta.changes > 0;
 }
 
+// NB ADR 0101: an expected name makes the delete itself check it, so a rename between a confirmation and the batch deletes nothing; null skips the check for a caller that confirmed elsewhere.
 export async function deleteOwnerWorkspace({
   directory,
   ownerId,
   workspaceId,
+  expectedName,
 }: {
   directory: D1Database;
   ownerId: string;
   workspaceId: string;
+  expectedName: string | null;
 }): Promise<string[] | null> {
   const [, , projectDeletion, workspaceDeletion] = await directory.batch([
     directory
       .prepare(
-        'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT project_keys.digest FROM project_keys JOIN projects ON projects.id = project_keys.project_id JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ?)',
+        'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT project_keys.digest FROM project_keys JOIN projects ON projects.id = project_keys.project_id JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ? AND (? IS NULL OR workspaces.name = ?))',
       )
-      .bind(workspaceId, ownerId),
+      .bind(workspaceId, ownerId, expectedName, expectedName),
     directory
       .prepare(
-        'DELETE FROM project_keys WHERE project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ?)',
+        'DELETE FROM project_keys WHERE project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ? AND (? IS NULL OR workspaces.name = ?))',
       )
-      .bind(workspaceId, ownerId),
+      .bind(workspaceId, ownerId, expectedName, expectedName),
     directory
-      .prepare('DELETE FROM projects WHERE workspace_id IN (SELECT id FROM workspaces WHERE id = ? AND owner_id = ?) RETURNING id')
-      .bind(workspaceId, ownerId),
-    directory.prepare('DELETE FROM workspaces WHERE id = ? AND owner_id = ? RETURNING id').bind(workspaceId, ownerId),
+      .prepare(
+        'DELETE FROM projects WHERE workspace_id IN (SELECT id FROM workspaces WHERE id = ? AND owner_id = ? AND (? IS NULL OR name = ?)) RETURNING id',
+      )
+      .bind(workspaceId, ownerId, expectedName, expectedName),
+    directory
+      .prepare('DELETE FROM workspaces WHERE id = ? AND owner_id = ? AND (? IS NULL OR name = ?) RETURNING id')
+      .bind(workspaceId, ownerId, expectedName, expectedName),
   ]);
   if (projectDeletion === undefined || workspaceDeletion === undefined) throw new Error('the batch answers one result per statement');
   if (workspaceDeletion.results.length === 0) return null;
@@ -241,25 +281,29 @@ export async function deleteOwnerProject({
   directory,
   ownerId,
   projectId,
+  expectedName,
 }: {
   directory: D1Database;
   ownerId: string;
   projectId: string;
+  expectedName: string | null;
 }): Promise<boolean> {
   const [, , projectDeletion] = await directory.batch([
     directory
       .prepare(
-        'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT digest FROM project_keys WHERE project_id = ? AND project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ?))',
+        'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT digest FROM project_keys WHERE project_id = ? AND project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ? AND (? IS NULL OR projects.name = ?)))',
       )
-      .bind(projectId, ownerId),
+      .bind(projectId, ownerId, expectedName, expectedName),
     directory
       .prepare(
-        'DELETE FROM project_keys WHERE project_id = ? AND project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ?)',
+        'DELETE FROM project_keys WHERE project_id = ? AND project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ? AND (? IS NULL OR projects.name = ?))',
       )
-      .bind(projectId, ownerId),
+      .bind(projectId, ownerId, expectedName, expectedName),
     directory
-      .prepare('DELETE FROM projects WHERE id = ? AND is_inbox = 0 AND workspace_id IN (SELECT id FROM workspaces WHERE owner_id = ?)')
-      .bind(projectId, ownerId),
+      .prepare(
+        'DELETE FROM projects WHERE id = ? AND is_inbox = 0 AND workspace_id IN (SELECT id FROM workspaces WHERE owner_id = ?) AND (? IS NULL OR name = ?)',
+      )
+      .bind(projectId, ownerId, expectedName, expectedName),
   ]);
   if (projectDeletion === undefined) throw new Error('the batch answers one result per statement');
   return projectDeletion.meta.changes > 0;

@@ -1,25 +1,15 @@
-import { normalizeName } from '@todz/core';
-import { FairUseLimit, INBOX_PROJECT_NAME } from '@todz/types';
+import { FairUseLimit } from '@todz/types';
 import { z } from 'zod';
-import {
-  deleteOwnerProject,
-  deleteOwnerWorkspace,
-  findOwnerWorkspace,
-  findProject,
-  insertProject,
-  insertWorkspaceWithInbox,
-  listOwnerWorkspaces,
-  updateProjectName,
-  updateWorkspaceName,
-} from './directory-workspaces';
+import { listOwnerWorkspaces } from './directory-workspaces';
 import { fairUseLimitsOf } from './fair-use-limits';
 import { HttpStatus } from './http-status';
-import { OwnerErrorCode, errorResponse, failureResponse, limitResponse } from './owner-errors';
+import { failedResponse } from './owner-action-response';
+import { ActionFailureKind, type ActionResult } from './owner-action-result';
+import { OwnerErrorCode, errorResponse, limitResponse } from './owner-errors';
 import { projectJson, workspaceJson } from './owner-json';
 import { type SessionContext, type SessionHandler, parsedBody, routeParam } from './owner-request';
 import { OwnerRoute, RouteParam } from './owner-routes';
-import { resultOf } from './project-result';
-import { findOwnedProjectId, findOwnedWorkspaceId, wipeProjectStorage } from './project-routing';
+import { createProject, createWorkspace, deleteProject, deleteWorkspace, renameProject, renameWorkspace } from './owner-workspace-actions';
 
 const NameBodySchema = z.object({ name: z.string() });
 
@@ -32,116 +22,98 @@ type WorkspaceRoute =
   | OwnerRoute.RenameProject
   | OwnerRoute.DeleteProject;
 
+function createFailedResponse({
+  result,
+  limit,
+  context,
+}: {
+  result: Extract<ActionResult<unknown>, { ok: false }>;
+  limit: FairUseLimit;
+  context: SessionContext;
+}): Response {
+  if (result.failure.kind !== ActionFailureKind.LimitReached) return failedResponse(result.failure);
+  return limitResponse({ limit, limits: fairUseLimitsOf(context.env), now: context.now });
+}
+
 async function listWorkspaces({ env, owner }: SessionContext): Promise<Response> {
   const listings = await listOwnerWorkspaces({ directory: env.DIRECTORY, ownerId: owner.ownerId });
   return Response.json({ workspaces: listings.map(workspaceJson) });
 }
 
-async function createWorkspace({ request, env, owner, now }: SessionContext): Promise<Response> {
-  const body = await parsedBody({ request, schema: NameBodySchema });
-  if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
-  const limits = fairUseLimitsOf(env);
-  const nameResult = resultOf(() => normalizeName(body.name));
-  if (!nameResult.ok) return failureResponse(nameResult.failure);
-  const workspace = { id: crypto.randomUUID(), name: nameResult.value, createdAt: now, lastActivityAt: null };
-  const inbox = { id: crypto.randomUUID(), name: INBOX_PROJECT_NAME, isInbox: true, createdAt: now };
-  const isInserted = await insertWorkspaceWithInbox({
-    directory: env.DIRECTORY,
-    ownerId: owner.ownerId,
-    workspaceId: workspace.id,
-    inboxId: inbox.id,
-    name: workspace.name,
-    inboxName: inbox.name,
-    now,
-    workspacesPerOwnerMax: limits[FairUseLimit.Workspaces],
-  });
-  if (!isInserted) return limitResponse({ limit: FairUseLimit.Workspaces, limits, now });
-  return Response.json({ workspace: workspaceJson({ workspace, projects: [inbox] }) }, { status: HttpStatus.Created });
-}
-
-async function renameWorkspace(context: SessionContext): Promise<Response> {
-  const { request, env, owner } = context;
-  const body = await parsedBody({ request, schema: NameBodySchema });
-  if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
-  const workspaceId = await findOwnedWorkspaceId({ env, owner, workspaceId: routeParam({ context, name: RouteParam.WorkspaceId }) });
-  if (workspaceId === null) return errorResponse(OwnerErrorCode.NotFound);
-  const nameResult = resultOf(() => normalizeName(body.name));
-  if (!nameResult.ok) return failureResponse(nameResult.failure);
-  const isRenamed = await updateWorkspaceName({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId, name: nameResult.value });
-  if (!isRenamed) return errorResponse(OwnerErrorCode.NotFound);
-  const renamed = await findOwnerWorkspace({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId });
-  if (renamed === null) throw new Error('a renamed workspace is missing from the directory');
-  return Response.json({ workspace: workspaceJson(renamed) });
-}
-
-async function createProject(context: SessionContext): Promise<Response> {
+async function createWorkspaceRoute(context: SessionContext): Promise<Response> {
   const { request, env, owner, now } = context;
   const body = await parsedBody({ request, schema: NameBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
-  const workspaceId = await findOwnedWorkspaceId({ env, owner, workspaceId: routeParam({ context, name: RouteParam.WorkspaceId }) });
-  if (workspaceId === null) return errorResponse(OwnerErrorCode.NotFound);
-  const limits = fairUseLimitsOf(env);
-  const nameResult = resultOf(() => normalizeName(body.name));
-  if (!nameResult.ok) return failureResponse(nameResult.failure);
-  const project = { id: crypto.randomUUID(), name: nameResult.value, isInbox: false, createdAt: now };
-  const isInserted = await insertProject({
-    directory: env.DIRECTORY,
-    ownerId: owner.ownerId,
-    projectId: project.id,
-    workspaceId,
-    name: project.name,
-    now,
-    projectsPerWorkspaceMax: limits[FairUseLimit.Projects],
-  });
-  if (!isInserted) return limitResponse({ limit: FairUseLimit.Projects, limits, now });
-  return Response.json({ project: projectJson(project) }, { status: HttpStatus.Created });
+  const workspacesPerOwnerMax = fairUseLimitsOf(env)[FairUseLimit.Workspaces];
+  const result = await createWorkspace({ env, owner, name: body.name, now, workspacesPerOwnerMax });
+  if (!result.ok) return createFailedResponse({ result, limit: FairUseLimit.Workspaces, context });
+  return Response.json({ workspace: workspaceJson(result.value) }, { status: HttpStatus.Created });
 }
 
-async function renameProject(context: SessionContext): Promise<Response> {
+async function renameWorkspaceRoute(context: SessionContext): Promise<Response> {
   const { request, env, owner } = context;
   const body = await parsedBody({ request, schema: NameBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
-  const projectId = await findOwnedProjectId({ env, owner, projectId: routeParam({ context, name: RouteParam.ProjectId }) });
-  if (projectId === null) return errorResponse(OwnerErrorCode.NotFound);
-  const project = await findProject({ directory: env.DIRECTORY, projectId });
-  if (project === null) throw new Error('an owned project has no row');
-  if (project.isInbox) return errorResponse(OwnerErrorCode.InboxIsFixed);
-  const nameResult = resultOf(() => normalizeName(body.name));
-  if (!nameResult.ok) return failureResponse(nameResult.failure);
-  const isRenamed = await updateProjectName({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId, name: nameResult.value });
-  if (!isRenamed) return errorResponse(OwnerErrorCode.NotFound);
-  return Response.json({ project: projectJson({ ...project, name: nameResult.value }) });
+  const result = await renameWorkspace({ env, owner, workspaceId: routeParam({ context, name: RouteParam.WorkspaceId }), name: body.name });
+  if (!result.ok) return failedResponse(result.failure);
+  return Response.json({ workspace: workspaceJson(result.value) });
 }
 
-async function deleteWorkspace(context: SessionContext): Promise<Response> {
+async function createProjectRoute(context: SessionContext): Promise<Response> {
+  const { request, env, owner, now } = context;
+  const body = await parsedBody({ request, schema: NameBodySchema });
+  if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
+  const result = await createProject({
+    env,
+    owner,
+    workspaceId: routeParam({ context, name: RouteParam.WorkspaceId }),
+    name: body.name,
+    now,
+    projectsPerWorkspaceMax: fairUseLimitsOf(env)[FairUseLimit.Projects],
+  });
+  if (!result.ok) return createFailedResponse({ result, limit: FairUseLimit.Projects, context });
+  return Response.json({ project: projectJson(result.value) }, { status: HttpStatus.Created });
+}
+
+async function renameProjectRoute(context: SessionContext): Promise<Response> {
+  const { request, env, owner } = context;
+  const body = await parsedBody({ request, schema: NameBodySchema });
+  if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
+  const result = await renameProject({ env, owner, projectId: routeParam({ context, name: RouteParam.ProjectId }), name: body.name });
+  if (!result.ok) return failedResponse(result.failure);
+  return Response.json({ project: projectJson(result.value) });
+}
+
+async function deleteWorkspaceRoute(context: SessionContext): Promise<Response> {
   const { env, owner } = context;
-  const workspaceId = await findOwnedWorkspaceId({ env, owner, workspaceId: routeParam({ context, name: RouteParam.WorkspaceId }) });
-  if (workspaceId === null) return errorResponse(OwnerErrorCode.NotFound);
-  const deletedProjectIds = await deleteOwnerWorkspace({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId });
-  if (deletedProjectIds === null) return errorResponse(OwnerErrorCode.NotFound);
-  await Promise.allSettled(deletedProjectIds.map((projectId) => wipeProjectStorage({ env, projectId })));
+  const result = await deleteWorkspace({
+    env,
+    owner,
+    workspaceId: routeParam({ context, name: RouteParam.WorkspaceId }),
+    expectedName: null,
+  });
+  if (!result.ok) return failedResponse(result.failure);
   return new Response(null, { status: HttpStatus.NoContent });
 }
 
-async function deleteProject(context: SessionContext): Promise<Response> {
+async function deleteProjectRoute(context: SessionContext): Promise<Response> {
   const { env, owner } = context;
-  const projectId = await findOwnedProjectId({ env, owner, projectId: routeParam({ context, name: RouteParam.ProjectId }) });
-  if (projectId === null) return errorResponse(OwnerErrorCode.NotFound);
-  const project = await findProject({ directory: env.DIRECTORY, projectId });
-  if (project === null) throw new Error('an owned project has no row');
-  if (project.isInbox) return errorResponse(OwnerErrorCode.InboxIsFixed);
-  const isDeleted = await deleteOwnerProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId });
-  if (!isDeleted) return errorResponse(OwnerErrorCode.NotFound);
-  await Promise.allSettled([wipeProjectStorage({ env, projectId })]);
+  const result = await deleteProject({
+    env,
+    owner,
+    projectId: routeParam({ context, name: RouteParam.ProjectId }),
+    expectedName: null,
+  });
+  if (!result.ok) return failedResponse(result.failure);
   return new Response(null, { status: HttpStatus.NoContent });
 }
 
 export const WORKSPACE_HANDLERS: Record<WorkspaceRoute, SessionHandler> = {
   [OwnerRoute.ListWorkspaces]: listWorkspaces,
-  [OwnerRoute.CreateWorkspace]: createWorkspace,
-  [OwnerRoute.RenameWorkspace]: renameWorkspace,
-  [OwnerRoute.DeleteWorkspace]: deleteWorkspace,
-  [OwnerRoute.CreateProject]: createProject,
-  [OwnerRoute.RenameProject]: renameProject,
-  [OwnerRoute.DeleteProject]: deleteProject,
+  [OwnerRoute.CreateWorkspace]: createWorkspaceRoute,
+  [OwnerRoute.RenameWorkspace]: renameWorkspaceRoute,
+  [OwnerRoute.DeleteWorkspace]: deleteWorkspaceRoute,
+  [OwnerRoute.CreateProject]: createProjectRoute,
+  [OwnerRoute.RenameProject]: renameProjectRoute,
+  [OwnerRoute.DeleteProject]: deleteProjectRoute,
 };

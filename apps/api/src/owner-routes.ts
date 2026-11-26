@@ -31,10 +31,14 @@ export enum OwnerRoute {
   ListKeys = 'list_keys',
   IssueKey = 'issue_key',
   RevokeKey = 'revoke_key',
+  ListOwnerKeys = 'list_owner_keys',
+  IssueOwnerKey = 'issue_owner_key',
+  RevokeOwnerKey = 'revoke_owner_key',
 }
 
 const TASK_NUMBER_PATTERN = '[1-9][0-9]{0,8}';
 const WORKSPACE_PATH = `/owner/workspaces/:${RouteParam.WorkspaceId}`;
+const OWNER_KEYS_PATH = '/owner/keys';
 const PROJECT_PATH = `/owner/projects/:${RouteParam.ProjectId}`;
 const TASK_PATH = `${PROJECT_PATH}/tasks/:${RouteParam.Number}(${TASK_NUMBER_PATTERN})`;
 
@@ -70,6 +74,9 @@ export const OWNER_ROUTES: Record<OwnerRoute, OwnerRouteDefinition> = {
   [OwnerRoute.ListKeys]: definition({ method: HttpMethod.Get, pathname: `${PROJECT_PATH}/keys` }),
   [OwnerRoute.IssueKey]: definition({ method: HttpMethod.Post, pathname: `${PROJECT_PATH}/keys` }),
   [OwnerRoute.RevokeKey]: definition({ method: HttpMethod.Delete, pathname: `${PROJECT_PATH}/keys/:${RouteParam.KeyId}` }),
+  [OwnerRoute.ListOwnerKeys]: definition({ method: HttpMethod.Get, pathname: OWNER_KEYS_PATH }),
+  [OwnerRoute.IssueOwnerKey]: definition({ method: HttpMethod.Post, pathname: OWNER_KEYS_PATH }),
+  [OwnerRoute.RevokeOwnerKey]: definition({ method: HttpMethod.Delete, pathname: `${OWNER_KEYS_PATH}/:${RouteParam.KeyId}` }),
 };
 
 function namedParams(groups: Record<string, string | undefined>): Record<string, string> {

@@ -10,6 +10,7 @@ const PUBLIC_EXPORTS = [
   'agentActor',
   'assertBatchSize',
   'completeTasks',
+  'deleteTask',
   'dueNow',
   'dueWindowOf',
   'formatShortId',

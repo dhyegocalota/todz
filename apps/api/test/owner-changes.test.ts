@@ -99,7 +99,7 @@ async function settled({ project, probe, count }: { project: OwnedProject; probe
 describe('GET /owner/projects/:projectId/changes', () => {
   test('an empty project at cursor 0 answers an empty page', async () => {
     const project = await createOwnedProject();
-    expect(await changesFrom({ project, cursor: 0 })).toEqual({ tasks: [], cursor: 0, has_more: false });
+    expect(await changesFrom({ project, cursor: 0 })).toEqual({ tasks: [], deleted_numbers: [], cursor: 0, has_more: false });
   });
 
   test('two added tasks come back at cursor 0 with the cursor on the last', async () => {

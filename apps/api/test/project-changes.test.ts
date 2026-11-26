@@ -50,7 +50,7 @@ describe('ProjectStore readChanges', () => {
     expect(secondPage.cursor).toBe(CHANGE_PAGE_SIZE + 1);
     expect(secondPage.hasMore).toBe(false);
     const emptyPage = unwrap(await stub.readChanges({ cursor: secondPage.cursor }));
-    expect(emptyPage).toEqual({ tasks: [], cursor: CHANGE_PAGE_SIZE + 1, hasMore: false });
+    expect(emptyPage).toEqual({ tasks: [], deletedNumbers: [], cursor: CHANGE_PAGE_SIZE + 1, hasMore: false });
   });
 
   test('a task updated twice after the cursor appears once, in its latest state', async () => {
@@ -75,13 +75,18 @@ describe('ProjectStore readChanges', () => {
   test('a cursor on the last change number is an empty page at that cursor', async () => {
     const stub = newProjectStub();
     await addTitled({ stub, count: 3 });
-    expect(unwrap(await stub.readChanges({ cursor: 3 }))).toEqual({ tasks: [], cursor: 3, hasMore: false });
+    expect(unwrap(await stub.readChanges({ cursor: 3 }))).toEqual({ tasks: [], deletedNumbers: [], cursor: 3, hasMore: false });
   });
 
   test('a new store counts its last change number as 0: cursor 1 is ahead, cursor 0 is empty', async () => {
     const stub = newProjectStub();
     expect(await stub.readChanges({ cursor: NEW_STORE_CURSOR })).toEqual({ ok: false, failure: { kind: ProjectFailureKind.CursorAhead } });
-    expect(unwrap(await stub.readChanges({ cursor: BEFORE_FIRST_CHANGE }))).toEqual({ tasks: [], cursor: 0, hasMore: false });
+    expect(unwrap(await stub.readChanges({ cursor: BEFORE_FIRST_CHANGE }))).toEqual({
+      tasks: [],
+      deletedNumbers: [],
+      cursor: 0,
+      hasMore: false,
+    });
   });
 });
 

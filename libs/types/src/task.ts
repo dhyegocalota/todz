@@ -58,6 +58,8 @@ export enum RuleIssue {
   CompletionNoteInvalid = 'completion_note_invalid',
   NameInvalid = 'name_invalid',
   OrderKeyTooLong = 'order_key_too_long',
+  ConfirmationMismatch = 'confirmation_mismatch',
+  MoveConflict = 'move_conflict',
 }
 
 export const TASK_SHORT_ID_PREFIX = 'T-';

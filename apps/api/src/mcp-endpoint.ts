@@ -7,7 +7,7 @@ import {
   isLegacyRequest,
 } from '@modelcontextprotocol/server';
 import { agentActor } from '@todz/core';
-import { ActorKind, RuleIssue } from '@todz/types';
+import { ActorKind, OWNER_KEY_PREFIX, RuleIssue } from '@todz/types';
 import { z } from 'zod';
 import { bearerSecret, unauthorized } from './bearer-secret';
 import type { Env } from './env';
@@ -15,13 +15,14 @@ import { HttpStatus } from './http-status';
 import { MCP_COPY } from './mcp-copy';
 import { FAIR_USE_COPY } from './fair-use-copy';
 import { fairUseLimitsOf } from './fair-use-limits';
-import { writeRefusalTextOf } from './owner-write-quota';
+import { buildOwnerMcpServer } from './mcp-owner-server';
 import { type McpServerScope, buildMcpServer, envelopeClientName } from './mcp-server';
+import { writeRefusalTextOf } from './owner-write-quota';
 import { openMcpSession } from './mcp-sessions';
 import { calendarDateInTimeZone } from './owner-today';
 import { parsedJson } from './parsed-json';
 import { resultOf } from './project-result';
-import { type KeyProject, openKeyProject } from './project-routing';
+import { type KeyProject, openKeyProject, openOwnerKey } from './project-routing';
 import { isSignedInRateLimited, withRetryAfter } from './signed-in-limiter';
 
 const SESSION_REQUIRED_CODE = -32000;
@@ -77,27 +78,32 @@ function serveScope({ request, scope, era }: { request: Request; scope: McpServe
 
 function quotaFieldsOf({
   env,
-  keyProject,
+  ownerId,
   now,
 }: {
   env: Env;
-  keyProject: KeyProject;
+  ownerId: string;
   now: number;
 }): Pick<McpServerScope, 'limits' | 'refusalTextOf'> {
   return {
     limits: fairUseLimitsOf(env),
-    refusalTextOf: ({ writes, bytes }) => writeRefusalTextOf({ env, ownerId: keyProject.ownerId, now, writes, bytes }),
+    refusalTextOf: ({ writes, bytes }) => writeRefusalTextOf({ env, ownerId, now, writes, bytes }),
   };
+}
+
+function suspendedRefusal(): Response {
+  return jsonRpcError({ status: HttpStatus.Forbidden, id: null, code: ACCOUNT_SUSPENDED_CODE, message: FAIR_USE_COPY.suspended });
 }
 
 function legacyScope({ legacyRequest, clientName }: { legacyRequest: LegacyRequest; clientName: string }): McpServerScope {
   const { env, keyProject, today, now } = legacyRequest;
   return {
     project: keyProject.project,
+    workspace: keyProject.workspace,
     today,
     agentNudge: keyProject.agentNudge,
     clientNameOf: () => clientName,
-    ...quotaFieldsOf({ env, keyProject, now }),
+    ...quotaFieldsOf({ env, ownerId: keyProject.ownerId, now }),
   };
 }
 
@@ -150,28 +156,51 @@ async function serveLegacy(legacyRequest: LegacyRequest): Promise<Response> {
   return serveScope({ request, scope: legacyScope({ legacyRequest, clientName }), era: ProtocolEra.Legacy });
 }
 
+async function serveOwnerKey({
+  request,
+  env,
+  secret,
+  now,
+}: {
+  request: Request;
+  env: Env;
+  secret: string;
+  now: number;
+}): Promise<Response> {
+  const access = await openOwnerKey({ env, secret });
+  if (access === null) return unauthorized();
+  const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.MCP_LIMITER, key: access.keyDigest });
+  if (isRateLimited) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
+  if (access.owner.isSuspended) return suspendedRefusal();
+  if (request.method !== MCP_METHOD) return methodNotAllowed();
+  const isLegacy = await isLegacyRequest(request);
+  const era = isLegacy ? ProtocolEra.Legacy : ProtocolEra.Modern;
+  const scope = { env, owner: access.owner, now, ...quotaFieldsOf({ env, ownerId: access.owner.ownerId, now }) };
+  return createMcpHandler(() => buildOwnerMcpServer(scope), HANDLER_OPTIONS_OF_ERA[era]).fetch(request);
+}
+
 export async function serveMcp({ request, env, now }: { request: Request; env: Env; now: number }): Promise<Response> {
   const secret = bearerSecret(request);
   if (secret === null) return unauthorized();
+  if (secret.startsWith(OWNER_KEY_PREFIX)) return serveOwnerKey({ request, env, secret, now });
   const sessionId = request.headers.get(SESSION_HEADER);
   const hasSession = sessionId !== null && sessionId.trim() !== '';
   const keyProject = await openKeyProject({ env, secret, mcpSession: hasSession ? { sessionId, now } : undefined });
   if (keyProject === null) return unauthorized();
   const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.MCP_LIMITER, key: keyProject.keyDigest });
   if (isRateLimited) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
-  if (keyProject.isSuspended) {
-    return jsonRpcError({ status: HttpStatus.Forbidden, id: null, code: ACCOUNT_SUSPENDED_CODE, message: FAIR_USE_COPY.suspended });
-  }
+  if (keyProject.isSuspended) return suspendedRefusal();
   if (request.method !== MCP_METHOD) return methodNotAllowed();
   const today = calendarDateInTimeZone({ timeZone: keyProject.timeZone, now });
   const isLegacy = await isLegacyRequest(request);
   if (isLegacy) return serveLegacy({ request, env, keyProject, today, now });
   const scope = {
     project: keyProject.project,
+    workspace: keyProject.workspace,
     today,
     agentNudge: keyProject.agentNudge,
     clientNameOf: envelopeClientName,
-    ...quotaFieldsOf({ env, keyProject, now }),
+    ...quotaFieldsOf({ env, ownerId: keyProject.ownerId, now }),
   };
   return serveScope({ request, scope, era: ProtocolEra.Modern });
 }

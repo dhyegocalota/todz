@@ -7,7 +7,7 @@ import { SqliteTaskStore } from '../src/sqlite-task-store';
 import { CLOCK_NOW, TODAY, buildTask, calendarDate, draftOf, newProjectStub, openTasksFilter } from './task-fixtures';
 
 const LIST_LIMIT = 10;
-const LATEST_VERSION = 4;
+const LATEST_VERSION = 5;
 const VERSION_TWO = 2;
 const VERSION_ONE = 1;
 const VERSION_TWO_MIGRATIONS = MIGRATIONS.filter(({ version }) => version <= VERSION_TWO);
@@ -122,7 +122,7 @@ function changeCounterRows(sql: SqlStorage): number[] {
 }
 
 describe('applyProjectSchema', () => {
-  test('the schema version is 4', () => {
+  test('the schema version is 5', () => {
     expect(PROJECT_SCHEMA_VERSION).toBe(LATEST_VERSION);
   });
 
@@ -135,7 +135,7 @@ describe('applyProjectSchema', () => {
     expect(openCount).toBe(2);
   });
 
-  test('a new store is at version 3 with a change number column and an empty counter', async () => {
+  test('a new store is at version 5 with a change number column, a deleted_at column and an empty counter', async () => {
     const observed = await runInDurableObject(newProjectStub(), (_instance, state) => ({
       versions: state.storage.sql.exec<{ version: number }>('SELECT version FROM schema_version').toArray(),
       columns: state.storage.sql
@@ -146,10 +146,11 @@ describe('applyProjectSchema', () => {
     }));
     expect(observed.versions).toEqual([{ version: LATEST_VERSION }]);
     expect(observed.columns).toContain('change_number');
+    expect(observed.columns).toContain('deleted_at');
     expect(observed.counter).toEqual([]);
   });
 
-  test('a version 1 store with tasks 1 and 2 upgrades to version 3 numbered by task number', async () => {
+  test('a version 1 store with tasks 1 and 2 upgrades to version 5 numbered by task number', async () => {
     const observed = await runInDurableObject(newProjectStub(), (_instance, state) => {
       versionOneStore({ sql: state.storage.sql, taskCount: 2 });
       applyProjectSchema(state.storage);
@@ -271,7 +272,7 @@ describe('applyProjectSchema', () => {
     expect(observed.before.indexes).not.toEqual(expect.arrayContaining(VERSION_THREE_INDEXES));
     expect(observed.versions).toEqual([LATEST_VERSION]);
     expect(observed.indexes).toEqual(expect.arrayContaining(VERSION_THREE_INDEXES));
-    expect(observed.tasks).toEqual(observed.before.tasks);
+    expect(observed.tasks).toEqual(observed.before.tasks.map((task) => ({ ...(task as object), deleted_at: null })));
     expect(observed.history).toEqual(observed.before.history);
   });
 

@@ -13,6 +13,7 @@ export interface TaskStore {
   orderKeyAfter({ orderKey, excludingNumber }: { orderKey: string; excludingNumber: number }): string | null;
   insertTask(task: Task): void;
   replaceTask(task: Task): void;
+  removeTask({ number, at }: { number: number; at: number }): void;
   appendHistory({ number, entry }: { number: number; entry: HistoryEntry }): void;
 }
 

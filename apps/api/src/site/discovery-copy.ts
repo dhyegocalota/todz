@@ -40,6 +40,8 @@ export const TOOL_PARAMETERS: Record<McpToolName, ToolParameter[]> = {
     { name: 'text', text: MCP_COPY.fields.text },
     { name: 'limit', text: MCP_COPY.fields.limit },
   ],
+  [McpToolName.Show]: [{ name: 'id', text: MCP_COPY.fields.id }],
+  [McpToolName.History]: [{ name: 'id', text: MCP_COPY.fields.id }],
   [McpToolName.Update]: [
     { name: 'id', text: MCP_COPY.fields.id },
     { name: 'title', text: MCP_COPY.fields.title },
@@ -51,6 +53,16 @@ export const TOOL_PARAMETERS: Record<McpToolName, ToolParameter[]> = {
     { name: 'ids', text: MCP_COPY.fields.ids },
     { name: 'note', text: MCP_COPY.fields.note },
   ],
+  [McpToolName.Reopen]: [{ name: 'ids', text: MCP_COPY.fields.ids }],
+  [McpToolName.Delete]: [
+    { name: 'id', text: MCP_COPY.fields.id },
+    { name: 'confirm', text: MCP_COPY.fields.confirm },
+  ],
+  [McpToolName.Move]: [
+    { name: 'id', text: MCP_COPY.fields.id },
+    { name: 'project', text: MCP_COPY.fields.project },
+  ],
+  [McpToolName.Projects]: [],
 };
 
 export const DISCOVERY_COPY = {
