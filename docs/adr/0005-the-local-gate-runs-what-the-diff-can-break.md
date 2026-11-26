@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-11-23
 - Deciders: Dhyego Calota (owner); Claude (advisor)
+- Amended by: [0084](0084-the-full-gate-runs-on-every-pull-request-as-hosted-jobs-filtered-by-path-and-one-summary-check-is-the-merge-gate.md) (item 7: the hosted `ci-ok` run on the pull request is the merge gate)
 - Inspired by: [superdoc-collab ADR 0030](https://github.com/dhyegocalota/superdoc-collab/blob/main/docs/adr/0030-the-local-gate-runs-what-the-diff-can-break.md), ported with the harness; the learning [pnpm's changed-since filter selects nothing in a linked worktree](../learnings/2026-10-17-pnpm-changed-since-selects-nothing-in-a-linked-worktree.md)
 
 ## Context
