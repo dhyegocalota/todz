@@ -99,12 +99,43 @@ extension AppModel {
 
     @discardableResult
     public func renameWorkspace(identifier: String, name: String) async -> Workspace? {
-        nil
+        let target = WriteTarget.workspaceName(workspaceIdentifier: identifier)
+        let renamed = await write(target: target, retry: { await self.renameWorkspace(identifier: identifier, name: name) }) {
+            try await service.renameWorkspace(session: $0, workspaceIdentifier: identifier, name: name)
+        }
+        guard let renamed else { return nil }
+        workspaces = workspaces.map { $0.identifier == renamed.identifier ? renamed : $0 }
+        keepOwner()
+        return renamed
     }
 
-    public func deleteWorkspace(identifier: String) async {}
+    public func deleteWorkspace(identifier: String) async {
+        let target = WriteTarget.workspaceRemoval(workspaceIdentifier: identifier)
+        let wasShown = shownWorkspaces.contains { $0.identifier == identifier }
+        let isDeleted = await write(target: target, retry: { await self.deleteWorkspace(identifier: identifier) }) { session in
+            try await deletionIsDone { try await service.deleteWorkspace(session: session, workspaceIdentifier: identifier) }
+        }
+        guard isDeleted != nil else { return }
+        await reloadWorkspacesQuietly()
+        guard wasShown, phase == .choosing, let first = workspaces.first else { return }
+        await chooseWorkspace(identifier: first.identifier)
+    }
 
-    public func deleteProject(projectIdentifier: String) async {}
+    public func deleteProject(projectIdentifier: String) async {
+        let target = WriteTarget.projectRemoval(projectIdentifier: projectIdentifier)
+        let isDeleted = await write(target: target, retry: { await self.deleteProject(projectIdentifier: projectIdentifier) }) { session in
+            try await deletionIsDone { try await service.deleteProject(session: session, projectIdentifier: projectIdentifier) }
+        }
+        guard isDeleted != nil else { return }
+        await reloadWorkspacesQuietly()
+    }
+
+    private func deletionIsDone(_ deletion: () async throws -> Void) async throws -> Bool {
+        do {
+            try await deletion()
+        } catch OwnerAPIError.notFound {}
+        return true
+    }
 
     func loadWorkspaces() async {
         do {

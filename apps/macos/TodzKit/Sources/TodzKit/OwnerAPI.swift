@@ -10,7 +10,10 @@ private let signInLinksPath = "/owner/sign-in-links"
 private let currentSessionPath = "/owner/sessions/current"
 private let workspacesPath = "/owner/workspaces"
 private let cursorParameter = "cursor"
-private let notImplementedStatus = 501
+
+private func workspacePath(_ workspaceIdentifier: String) -> String {
+    "\(workspacesPath)/\(workspaceIdentifier)"
+}
 
 private func projectsPath(workspaceIdentifier: String) -> String {
     "\(workspacesPath)/\(workspaceIdentifier)/projects"
@@ -184,15 +187,16 @@ public struct OwnerAPI: OwnerService {
     }
 
     public func renameWorkspace(session: String, workspaceIdentifier: String, name: String) async throws -> Workspace {
-        throw OwnerAPIError.unexpected(status: notImplementedStatus)
+        let request = try OwnerRequest(method: .patch, path: workspacePath(workspaceIdentifier), session: session, body: NameBody(name: name))
+        return try await answer(WorkspaceAnswer.self, to: request).workspace
     }
 
     public func deleteWorkspace(session: String, workspaceIdentifier: String) async throws {
-        throw OwnerAPIError.unexpected(status: notImplementedStatus)
+        _ = try await send(OwnerRequest(method: .delete, path: workspacePath(workspaceIdentifier), session: session))
     }
 
     public func deleteProject(session: String, projectIdentifier: String) async throws {
-        throw OwnerAPIError.unexpected(status: notImplementedStatus)
+        _ = try await send(OwnerRequest(method: .delete, path: projectPath(projectIdentifier), session: session))
     }
 
     public func createProject(session: String, workspaceIdentifier: String, name: String) async throws -> Project {

@@ -82,6 +82,8 @@ struct NameSheet: View {
             return await model.createWorkspace(name: name) != nil
         case .newProject:
             return await model.createProject(name: name) != nil
+        case let .renameWorkspace(workspace):
+            return await model.renameWorkspace(identifier: workspace.identifier, name: name) != nil
         case let .renameProject(project):
             return await model.renameProject(projectIdentifier: project.identifier, name: name) != nil
         }
