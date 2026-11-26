@@ -19,7 +19,7 @@ const { day } = LANDING_COPY.benefits;
 const EXAMPLE_DUE_COUNT = 3;
 const EXAMPLE_TASK_NUMBER = 12;
 const STOP_TIMES = ['07:00', '09:00', '10:30', '18:00'];
-const DAY_CARD_OPENING = '<li class="benefit-card benefit-card-day glass reveal">';
+const DAY_CARD_OPENING = '<li id="proactive-day" class="benefit-card benefit-card-day glass reveal">';
 const PLAIN_CARD_OPENING = '<li class="benefit-card glass reveal">';
 const TIME_PATTERN = /<time class="day-time" datetime="([^"]+)">/g;
 const FIRST_CAPTURE = 1;
@@ -110,7 +110,7 @@ describe('the proactive day copy', () => {
 describe('the proactive day card', () => {
   test('is the first benefit card, with the agents and offline cards after it', async () => {
     const html = await landingHtml();
-    const cardOpenings = html.match(/<li class="benefit-card[^"]*">/g);
+    const cardOpenings = html.match(/<li (?:id="[^"]*" )?class="benefit-card[^"]*">/g);
     expect(cardOpenings).toEqual([DAY_CARD_OPENING, PLAIN_CARD_OPENING, PLAIN_CARD_OPENING]);
     expect(html.indexOf(escapedHtml(day.title))).toBeLessThan(html.indexOf(escapedHtml(LANDING_COPY.benefits.agents.title)));
     expect(html).not.toContain(escapedHtml('Your menu bar and widgets'));

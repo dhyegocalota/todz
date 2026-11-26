@@ -20,6 +20,7 @@ const VIEWPORT_SIZES = {
 };
 const { day } = LANDING_COPY.benefits;
 const DAY_CARD = '.benefit-card-day';
+const DAY_CARD_ID = 'proactive-day';
 const STOP_TIMES = ['07:00', '09:00', '10:30', '18:00'];
 const FIRST_STOP = '.day-stop:first-child';
 const FILL_PSEUDO_ELEMENT = '::after';
@@ -87,6 +88,24 @@ async function scrollWellTopTo({ page, viewportShare }: { page: Page; viewportSh
         await expectDayCardShown(page);
         expect(await hasSidewaysScroll(page)).toBe(false);
       });
+    });
+  });
+});
+
+(Object.values(Viewport) as Viewport[]).forEach((viewport) => {
+  test.describe(`the proactive day card anchor at ${viewport}`, () => {
+    test.use({ viewport: VIEWPORT_SIZES[viewport] });
+
+    test('E8. lands the headline below the sticky header when opened by its anchor', async ({ page }) => {
+      onlyOn(ProjectName.Desktop);
+      await page.goto(`${LANDING_PATH}#${DAY_CARD_ID}`);
+      await expect
+        .poll(async () => {
+          const headerBox = await page.locator('.site-header').boundingBox();
+          const titleBox = await page.locator(`${DAY_CARD} .day-title`).boundingBox();
+          return headerBox !== null && titleBox !== null && headerBox.y + headerBox.height <= titleBox.y;
+        })
+        .toBe(true);
     });
   });
 });

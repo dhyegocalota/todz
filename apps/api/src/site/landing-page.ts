@@ -19,6 +19,7 @@ const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const SRCSET_LIST_SEPARATOR = ', ';
 const WORD_SEPARATOR = ' ';
 const WAYS_ID = 'ways';
+const DAY_CARD_ID = 'proactive-day';
 const LINK_ARROW = '→';
 
 const MARKDOWN_ALTERNATE_LINK = `<${DiscoveryPath.LandingMarkdown}>; rel="alternate"; type="${MARKDOWN_MEDIA_TYPE}"`;
@@ -168,7 +169,7 @@ function dayCardHtml(): string {
     { ...agent, mock: dayAgentMockHtml() },
     { ...close, mock: dayCloseMockHtml() },
   ];
-  return `<li class="benefit-card benefit-card-day glass reveal">
+  return `<li id="${DAY_CARD_ID}" class="benefit-card benefit-card-day glass reveal">
 <div class="day-head">
 <div>
 <p class="section-eyebrow">${escapedHtml(eyebrow)}</p>

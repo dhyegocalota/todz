@@ -274,7 +274,7 @@ ${CROP_RULES}
 .offline-glyph{width:64px;height:64px;filter:drop-shadow(0 12px 24px rgb(27 42 158 / 0.35))}
 .benefit-title{margin-top:var(--space-5);font-size:var(--text-title);line-height:1.3;letter-spacing:-0.01em;font-weight:650}
 .benefit-body{margin-top:var(--space-2);color:var(--color-text-muted)}
-.benefit-card-day{grid-column:1 / -1}
+.benefit-card-day{grid-column:1 / -1;scroll-margin-top:calc(var(--size-header) + var(--space-5))}
 .day-head{display:flex;flex-direction:column;gap:var(--space-3)}
 .day-title{margin-top:var(--space-2)}
 .day-note{font-size:var(--text-small);color:var(--color-text-muted)}
