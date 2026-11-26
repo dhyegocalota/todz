@@ -5,7 +5,7 @@ import type { Env } from './env';
 import type { FairUseLimits } from './fair-use-limits';
 import { MCP_COPY, McpOwnerToolName } from './mcp-copy';
 import type { WriteRefusalTextOf } from './mcp-server';
-import { textBytesOf } from './owner-write-quota';
+import { NO_TEXT_BYTES, ONE_WRITE, textBytesOf } from './owner-write-quota';
 import { canonicalTimeZone } from './time-zone';
 import { nameFailureOf } from './write-rules';
 import { failureText } from './mcp-format';
@@ -31,7 +31,7 @@ import {
   renameProject,
   renameWorkspace,
 } from './owner-workspace-actions';
-import type { SessionOwner } from './project-routing';
+import { type SessionOwner, findOwnedProjectId, findOwnedWorkspaceId } from './project-routing';
 
 const MCP_SERVER_NAME = 'todz';
 const MCP_SERVER_VERSION = '0.1.0';
@@ -51,9 +51,6 @@ export type OwnerMcpScope = {
   refusalTextOf: WriteRefusalTextOf;
 };
 
-const ONE_WRITE = 1;
-const NO_TEXT_BYTES = 0;
-
 async function reserved({
   scope,
   name,
@@ -69,6 +66,22 @@ async function reserved({
   const refusal = await scope.refusalTextOf({ writes: ONE_WRITE, bytes });
   if (refusal !== null) return errorAnswer(refusal);
   return run();
+}
+
+async function reservedForOwned({
+  scope,
+  findOwnedId,
+  name,
+  run,
+}: {
+  scope: OwnerMcpScope;
+  findOwnedId: () => Promise<string | null>;
+  name: string;
+  run: () => Promise<CallToolResult>;
+}): Promise<CallToolResult> {
+  const ownedId = await findOwnedId();
+  if (ownedId === null) return errorAnswer(MCP_COPY.accountNotFound);
+  return reserved({ scope, name, run });
 }
 
 function textAnswer(text: string): CallToolResult {
@@ -212,8 +225,9 @@ function registerWorkspaceTools({ server, scope }: { server: McpServer; scope: O
       annotations: WRITE_ANNOTATIONS,
     },
     async ({ workspace, name }) =>
-      reserved({
+      reservedForOwned({
         scope,
+        findOwnedId: () => findOwnedWorkspaceId({ env, owner, workspaceId: workspace }),
         name,
         run: async () => {
           const result = await renameWorkspace({ env, owner, workspaceId: workspace, name });
@@ -255,8 +269,9 @@ function registerProjectTools({ server, scope }: { server: McpServer; scope: Own
       annotations: WRITE_ANNOTATIONS,
     },
     async ({ workspace, name }) =>
-      reserved({
+      reservedForOwned({
         scope,
+        findOwnedId: () => findOwnedWorkspaceId({ env, owner, workspaceId: workspace }),
         name,
         run: async () => {
           const result = await createProject({ env, owner, workspaceId: workspace, name, now, projectsPerWorkspaceMax });
@@ -272,8 +287,9 @@ function registerProjectTools({ server, scope }: { server: McpServer; scope: Own
       annotations: WRITE_ANNOTATIONS,
     },
     async ({ project, name }) =>
-      reserved({
+      reservedForOwned({
         scope,
+        findOwnedId: () => findOwnedProjectId({ env, owner, projectId: project }),
         name,
         run: async () => {
           const result = await renameProject({ env, owner, projectId: project, name });

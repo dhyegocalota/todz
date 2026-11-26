@@ -60,6 +60,8 @@ export enum RuleIssue {
   OrderKeyTooLong = 'order_key_too_long',
   ConfirmationMismatch = 'confirmation_mismatch',
   MoveConflict = 'move_conflict',
+  TaskChanged = 'task_changed',
+  DestinationGone = 'destination_gone',
 }
 
 export const TASK_SHORT_ID_PREFIX = 'T-';
