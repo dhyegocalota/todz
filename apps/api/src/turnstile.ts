@@ -12,6 +12,7 @@ export enum TurnstileAction {
   RequestLink = 'request_link',
   SignIn = 'sign_in',
   AdminSignIn = 'admin_sign_in',
+  CloudQueue = 'cloud_queue',
 }
 
 export enum TurnstileVerdict {

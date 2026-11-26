@@ -2,8 +2,28 @@ import { DOCS_SELF_HOST_URL } from './site/self-host-redirect';
 
 export const CLOUD_COPY = {
   full: `todz cloud is full right now. Leave your email and you'll get in when a spot opens, or run your own server: ${DOCS_SELF_HOST_URL}`,
-  atCapacity: `todz cloud is at capacity this month. Reading still works and writing resumes next month, or run your own server: ${DOCS_SELF_HOST_URL}`,
+  fullMail: {
+    subject: 'todz cloud is full right now',
+    textOf: ({ queueUrl }: { queueUrl: string }): string =>
+      `todz cloud is full right now: free todz cloud spots are extremely limited. Leave your email and you'll get in when a spot opens: ${queueUrl}\n\nOr run your own server, which is always open: ${DOCS_SELF_HOST_URL}`,
+  },
+  atCapacity: `todz cloud is at capacity this month. Your tasks are safe and writing resumes next month, or run your own server: ${DOCS_SELF_HOST_URL}`,
   queued: "You're on the list. We'll email you when a spot opens.",
+  queuePage: {
+    title: 'Get in line for todz cloud',
+    lead: 'Free todz cloud spots are extremely limited. Leave your email and we will write when one opens.',
+    emailLabel: 'Email address',
+    emailPlaceholder: 'you@example.com',
+    submit: 'Get in line',
+    submitting: 'Sending…',
+    queuedTitle: "You're on the list",
+    queuedBody: "We'll email you when a spot opens.",
+    tryAgain: "Couldn't add you right now. Try again in a minute.",
+    closed: 'The line is closed right now.',
+    forbidden: "That request didn't come from this site.",
+    selfHost: 'Or run your own server, which is always open:',
+    selfHostLink: 'self-host guide',
+  },
   invite: {
     subject: 'A spot opened on todz cloud',
     text: 'A spot opened on todz cloud. Open todz and sign in with this email address to get in.',

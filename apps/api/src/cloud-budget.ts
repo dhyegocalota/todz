@@ -14,7 +14,11 @@ export enum BudgetLevel {
   Refusing = 'refusing',
 }
 
-export type BudgetUsage = { monthWrites: number; readRequests: number; emails: number };
+export type BudgetUsage = Record<BudgetDimension, number>;
+
+export type EstimateInput = { monthWrites: number; readRequests: number; emails: number };
+
+export type MeasuredTotals = { workerRequests: number; durableObjectRequests: number; directoryRowsWritten: number };
 
 export type BudgetStatus = { level: BudgetLevel; dimension: BudgetDimension };
 
@@ -51,11 +55,39 @@ const COST_OF_EMAIL: Record<BudgetDimension, number> = {
   [BudgetDimension.Emails]: 1,
 };
 
-function usedOf({ dimension, usage }: { dimension: BudgetDimension; usage: BudgetUsage }): number {
-  const writes = usage.monthWrites * COST_OF_WRITE[dimension];
-  const reads = usage.readRequests * COST_OF_READ[dimension];
-  const emails = usage.emails * COST_OF_EMAIL[dimension];
+function estimatedUseOf({ dimension, estimate }: { dimension: BudgetDimension; estimate: EstimateInput }): number {
+  const writes = estimate.monthWrites * COST_OF_WRITE[dimension];
+  const reads = estimate.readRequests * COST_OF_READ[dimension];
+  const emails = estimate.emails * COST_OF_EMAIL[dimension];
   return writes + reads + emails;
+}
+
+export function estimatedUsageOf(estimate: EstimateInput): BudgetUsage {
+  return {
+    [BudgetDimension.WorkerRequests]: estimatedUseOf({ dimension: BudgetDimension.WorkerRequests, estimate }),
+    [BudgetDimension.DurableObjectRequests]: estimatedUseOf({ dimension: BudgetDimension.DurableObjectRequests, estimate }),
+    [BudgetDimension.DurableObjectRows]: estimatedUseOf({ dimension: BudgetDimension.DurableObjectRows, estimate }),
+    [BudgetDimension.DirectoryRows]: estimatedUseOf({ dimension: BudgetDimension.DirectoryRows, estimate }),
+    [BudgetDimension.Emails]: estimatedUseOf({ dimension: BudgetDimension.Emails, estimate }),
+  };
+}
+
+export function measuredUsageOf({
+  measured,
+  monthWrites,
+  emails,
+}: {
+  measured: MeasuredTotals;
+  monthWrites: number;
+  emails: number;
+}): BudgetUsage {
+  return {
+    [BudgetDimension.WorkerRequests]: measured.workerRequests,
+    [BudgetDimension.DurableObjectRequests]: measured.durableObjectRequests,
+    [BudgetDimension.DurableObjectRows]: monthWrites * COST_OF_WRITE[BudgetDimension.DurableObjectRows],
+    [BudgetDimension.DirectoryRows]: measured.directoryRowsWritten,
+    [BudgetDimension.Emails]: emails,
+  };
 }
 
 function levelOf(ratio: number): BudgetLevel {
@@ -67,7 +99,7 @@ function levelOf(ratio: number): BudgetLevel {
 export function budgetStatusOf(usage: BudgetUsage): BudgetStatus {
   const ratios = Object.values(BudgetDimension).map((dimension) => ({
     dimension,
-    ratio: usedOf({ dimension, usage }) / ALLOWANCE_OF_DIMENSION[dimension],
+    ratio: usage[dimension] / ALLOWANCE_OF_DIMENSION[dimension],
   }));
   const [busiest] = [...ratios].sort((left, right) => right.ratio - left.ratio);
   if (busiest === undefined) throw new Error('a budget has dimensions');

@@ -1,6 +1,8 @@
 import { MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { z } from 'zod';
-import { cloudFullRefusalOf } from './cloud-admission';
+import { isCloudFullFor } from './cloud-admission';
+import { sendCloudFullMail } from './cloud-mail';
+import { isAddressMailBudgetSpent, mailMeterOf } from './cloud-mail-meter';
 import { digestCredential } from './credential-digest';
 import { AppLinkScheme } from './app-link-scheme';
 import { generateCredentialSecret } from './credential-secret';
@@ -8,6 +10,7 @@ import { deleteSignInLink, insertSignInLinkWithinLimit } from './directory-sign-
 import { isOwnDomainAddress, normalizedAddress } from './email-address';
 import { signInMail } from './emails/sign-in-mail';
 import { emailSenderOf } from './email-sender';
+import type { Env } from './env';
 import { enumValueOf } from './enum-value';
 import { isLocalOrigin } from './local-origin';
 import { HttpStatus } from './http-status';
@@ -45,13 +48,29 @@ export function publicOriginOf(configured: string | undefined): string | null {
   return configured;
 }
 
+// NB ADR 0099: a full cloud answers a link request like any other, with a mail that names the queue and self-hosting, so no answer tells an admitted address from a refused one.
+async function cloudFullAnswer({ env, address }: { env: Env; address: string }): Promise<Response> {
+  try {
+    await sendCloudFullMail({ env, to: address });
+  } catch {
+    return errorResponse(OwnerErrorCode.SignInUnavailable);
+  }
+  return Response.json({}, { status: HttpStatus.Accepted });
+}
+
 // NB ADR 0040: a link lasts 15 minutes, an address gets five in that window, and one statement counts and inserts.
 export async function requestSignInLink({ request, env, now }: OwnerContext): Promise<Response> {
   const publicOrigin = publicOriginOf(env.PUBLIC_ORIGIN);
   const isEmailProvider = signInKindOf(env.SIGN_IN_PROVIDER) === SignInProviderKind.Email;
   const isLinkUnsendable = !isEmailProvider || publicOrigin === null;
   if (isLinkUnsendable) return errorResponse(OwnerErrorCode.SignInUnavailable);
-  const sender = emailSenderOf({ configured: env.EMAIL_SENDER, publicOrigin, requestUrl: request.url, binding: env.EMAIL });
+  const sender = emailSenderOf({
+    configured: env.EMAIL_SENDER,
+    publicOrigin,
+    requestUrl: request.url,
+    binding: env.EMAIL,
+    meter: mailMeterOf(env),
+  });
   if (sender === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
   const challenge = signInChallengeOf({ request, env, action: TurnstileAction.RequestLink });
   if (challenge === null) return errorResponse(OwnerErrorCode.SignInUnavailable);
@@ -68,8 +87,11 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   const addressRefusal = await addressLimitRefusal({ request, env, address });
   if (addressRefusal !== null) return addressRefusal;
   if (isOwnDomainAddress(address)) return Response.json({}, { status: HttpStatus.Accepted });
-  const cloudRefusal = await cloudFullRefusalOf({ env, address, now });
-  if (cloudRefusal !== null) return cloudRefusal;
+  const meter = mailMeterOf(env);
+  const isMailBudgetSpent = meter !== null && (await isAddressMailBudgetSpent({ directory: meter, address, now }));
+  if (isMailBudgetSpent) return signInRefusal();
+  const isCloudFull = await isCloudFullFor({ env, address, now });
+  if (isCloudFull) return cloudFullAnswer({ env, address });
   const token = generateCredentialSecret();
   const digest = await digestCredential(token);
   const isWithinLimit = await insertSignInLinkWithinLimit({

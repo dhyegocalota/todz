@@ -25,6 +25,7 @@ describe('the cloudflare sender', () => {
       configured: 'cloudflare',
       publicOrigin: PUBLIC_HTTPS_ORIGIN,
       requestUrl: PUBLIC_REQUEST_URL,
+      meter: null,
       binding,
     });
     await sender?.send(MAIL);
@@ -33,7 +34,13 @@ describe('the cloudflare sender', () => {
 
   test('sends the reply-to of the message and no headers when it names none', async () => {
     const { binding, sent } = recordingBinding();
-    const sender = emailSenderOf({ configured: 'cloudflare', publicOrigin: PUBLIC_HTTPS_ORIGIN, requestUrl: PUBLIC_REQUEST_URL, binding });
+    const sender = emailSenderOf({
+      configured: 'cloudflare',
+      publicOrigin: PUBLIC_HTTPS_ORIGIN,
+      requestUrl: PUBLIC_REQUEST_URL,
+      meter: null,
+      binding,
+    });
     await sender?.send({ ...MAIL, replyTo: REPLY_ADDRESS });
     expect(sent.map((message) => message.replyTo)).toEqual([REPLY_ADDRESS]);
     expect(sent.map((message) => message.headers)).toEqual([undefined]);
@@ -41,14 +48,26 @@ describe('the cloudflare sender', () => {
 
   test('sends the headers of the message through the binding', async () => {
     const { binding, sent } = recordingBinding();
-    const sender = emailSenderOf({ configured: 'cloudflare', publicOrigin: PUBLIC_HTTPS_ORIGIN, requestUrl: PUBLIC_REQUEST_URL, binding });
+    const sender = emailSenderOf({
+      configured: 'cloudflare',
+      publicOrigin: PUBLIC_HTTPS_ORIGIN,
+      requestUrl: PUBLIC_REQUEST_URL,
+      meter: null,
+      binding,
+    });
     await sender?.send({ ...MAIL, headers: AUTO_SUBMITTED_HEADERS });
     expect(sent.map((message) => message.headers)).toEqual([AUTO_SUBMITTED_HEADERS]);
   });
 
   test('sends the one-click unsubscribe headers beside the auto-submitted header (pin)', async () => {
     const { binding, sent } = recordingBinding();
-    const sender = emailSenderOf({ configured: 'cloudflare', publicOrigin: PUBLIC_HTTPS_ORIGIN, requestUrl: PUBLIC_REQUEST_URL, binding });
+    const sender = emailSenderOf({
+      configured: 'cloudflare',
+      publicOrigin: PUBLIC_HTTPS_ORIGIN,
+      requestUrl: PUBLIC_REQUEST_URL,
+      meter: null,
+      binding,
+    });
     await sender?.send({ ...MAIL, headers: UNSUBSCRIBE_HEADERS });
     expect(sent.map((message) => message.headers)).toEqual([UNSUBSCRIBE_HEADERS]);
   });
@@ -59,6 +78,7 @@ describe('the cloudflare sender', () => {
       configured: 'cloudflare',
       publicOrigin: PUBLIC_HTTPS_ORIGIN,
       requestUrl: PUBLIC_REQUEST_URL,
+      meter: null,
       binding,
     });
     await sender?.send({ ...MAIL, to: 'a(b)@x.co' });
@@ -70,18 +90,27 @@ describe('the cloudflare sender', () => {
       configured: 'cloudflare',
       publicOrigin: PUBLIC_HTTPS_ORIGIN,
       requestUrl: PUBLIC_REQUEST_URL,
+      meter: null,
       binding: bindingFailingWith(new Error('the binding is down')),
     });
     await expect(sender?.send(MAIL)).rejects.toThrow('the binding is down');
   });
 
   test('is no sender without the binding', () => {
-    expect(emailSenderOf({ configured: 'cloudflare', publicOrigin: PUBLIC_HTTPS_ORIGIN, requestUrl: PUBLIC_REQUEST_URL })).toBeNull();
+    expect(
+      emailSenderOf({ configured: 'cloudflare', publicOrigin: PUBLIC_HTTPS_ORIGIN, requestUrl: PUBLIC_REQUEST_URL, meter: null }),
+    ).toBeNull();
   });
 
   test('is a sender on a public https origin and a public request host', () => {
     const { binding } = recordingBinding();
-    const sender = emailSenderOf({ configured: 'cloudflare', publicOrigin: PUBLIC_HTTPS_ORIGIN, requestUrl: PUBLIC_REQUEST_URL, binding });
+    const sender = emailSenderOf({
+      configured: 'cloudflare',
+      publicOrigin: PUBLIC_HTTPS_ORIGIN,
+      requestUrl: PUBLIC_REQUEST_URL,
+      meter: null,
+      binding,
+    });
     expect(sender).not.toBeNull();
   });
 });
@@ -94,12 +123,12 @@ describe('emailSenderOf', () => {
     ['the console kind on a public origin', 'console', PUBLIC_HTTPS_ORIGIN, LOCAL_REQUEST_URL, false],
     ['the console kind on a public request host', 'console', LOCAL_ORIGIN, PUBLIC_REQUEST_URL, false],
   ])('%s is a sender: %s', (_name, configured, publicOrigin, requestUrl, isSender) => {
-    expect(emailSenderOf({ configured, publicOrigin, requestUrl }) !== null).toBe(isSender);
+    expect(emailSenderOf({ configured, publicOrigin, requestUrl, meter: null }) !== null).toBe(isSender);
   });
 
   test('the console sender logs the address, the reply-to and the text only', async () => {
     const output = consoleOutput();
-    const sender = emailSenderOf({ configured: 'console', publicOrigin: LOCAL_ORIGIN, requestUrl: LOCAL_REQUEST_URL });
+    const sender = emailSenderOf({ configured: 'console', publicOrigin: LOCAL_ORIGIN, requestUrl: LOCAL_REQUEST_URL, meter: null });
     await sender?.send(MAIL);
     expect(sentMail(output)).toEqual([{ to: MAIL.to, replyTo: MAIL.replyTo, text: MAIL.text }]);
   });

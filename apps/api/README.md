@@ -14,7 +14,7 @@ The site describes itself to what reads it other than a person: a search engine,
 
 The site also holds a small admin for the one owner address: a link mailed to it works only in the browser that asked for it, once and briefly, and opens a short session that shows the metrics of the server and exports them. Every other address gets the same answer and no mail, and the admin is guarded and closes the same way.
 
-When the server is configured with an account cap, only a limited number of active accounts are admitted: a new address waits on a list the admin works through, and a monthly budget guard warns the owner and holds back the heaviest writers before an included quota runs out.
+When the server is configured with an account cap, only a limited number of active accounts are admitted: every address that asks for a link gets the same answer, one that may not sign in is mailed a way onto a list the admin works through, and a monthly budget guard reads the month's real usage when it can, warns the owner and holds back the heaviest accounts before an included quota runs out. Such a server also counts the mail it sends.
 
 An owner who never turned it off gets a short mail of Today once a day at the time they pick, in their own time zone, never twice for one day, and every mail carries a link that stops it in one click without signing in. Replying to it from the owner's own mailbox adds one task, the reply's first line, to the Inbox of their first workspace, due today; a reply from anyone else, or one that cannot be proven to come from that mailbox, adds nothing and is answered by nothing. No address of todz can be an owner.
 

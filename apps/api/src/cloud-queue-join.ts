@@ -4,6 +4,7 @@ import { CLOUD_COPY } from './cloud-copy';
 import { enqueueAddress } from './cloud-queue-store';
 import { isDisposableEmailAddress } from './disposable-email-domains';
 import { isOwnDomainAddress, normalizedAddress } from './email-address';
+import type { Env } from './env';
 import { HttpStatus } from './http-status';
 import { OwnerErrorCode, errorResponse, signUpRefusedResponse } from './owner-errors';
 import { type OwnerContext, parsedPublicBody } from './owner-request';
@@ -16,6 +17,18 @@ const RequestBodySchema = z.object({
   email: z.string(),
   turnstile_token: z.string(),
 });
+
+export enum QueueJoin {
+  Accepted = 'accepted',
+  Refused = 'refused',
+}
+
+export async function joinQueueWhenFull({ env, address, now }: { env: Env; address: string; now: number }): Promise<QueueJoin> {
+  if (isDisposableEmailAddress(address)) return QueueJoin.Refused;
+  const isWaiting = !isOwnDomainAddress(address) && (await isCloudFullFor({ env, address, now }));
+  if (isWaiting) await enqueueAddress({ directory: env.DIRECTORY, email: address, now });
+  return QueueJoin.Accepted;
+}
 
 export async function joinCloudQueue({ request, env, now }: OwnerContext): Promise<Response> {
   const challenge = signInChallengeOf({ request, env, action: TurnstileAction.RequestLink });
@@ -30,8 +43,7 @@ export async function joinCloudQueue({ request, env, now }: OwnerContext): Promi
   if (globalRefusal !== null) return globalRefusal;
   const addressRefusal = await addressLimitRefusal({ request, env, address });
   if (addressRefusal !== null) return addressRefusal;
-  if (isDisposableEmailAddress(address)) return signUpRefusedResponse();
-  const isWaiting = !isOwnDomainAddress(address) && (await isCloudFullFor({ env, address, now }));
-  if (isWaiting) await enqueueAddress({ directory: env.DIRECTORY, email: address, now });
+  const join = await joinQueueWhenFull({ env, address, now });
+  if (join === QueueJoin.Refused) return signUpRefusedResponse();
   return Response.json({ message: CLOUD_COPY.queued }, { status: HttpStatus.Accepted });
 }

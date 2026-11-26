@@ -8,6 +8,8 @@ import { FAIR_USE_COPY } from './fair-use-copy';
 import { type FairUseLimits, fairUseLimitsOf } from './fair-use-limits';
 import { cloudAtCapacityResponse, limitResponse, suspendedResponse } from './owner-errors';
 import { WriteRefusal, reserveOwnerWrites } from './owner-usage-store';
+import { SignInProviderKind } from './sign-in-provider';
+import { adminEmailOf } from './site/admin-session';
 import { utcDayOf } from './telemetry/telemetry-day';
 
 type Text = string | null | undefined;
@@ -21,9 +23,15 @@ export function textBytesOf(texts: Text[]): number {
   return texts.filter(isText).reduce((total, text) => total + encoder.encode(text).byteLength, 0);
 }
 
-async function isHeavyWriterRefusedOnCloud({ env, ownerId, now }: { env: Env; ownerId: string; now: number }): Promise<boolean> {
+export async function isHeavyWriterRefusedOnCloud({ env, ownerId, now }: { env: Env; ownerId: string; now: number }): Promise<boolean> {
   if (cloudAccountsMaxOf(env) === null) return false;
-  return isHeavyWriterRefused({ directory: env.DIRECTORY, ownerId, ...cloudMonthOf(now) });
+  return isHeavyWriterRefused({
+    directory: env.DIRECTORY,
+    ownerId,
+    exemptAddress: adminEmailOf(env),
+    provider: SignInProviderKind.Email,
+    ...cloudMonthOf(now),
+  });
 }
 
 export async function reserveWrites({
@@ -70,7 +78,7 @@ function limitOfRefusal(refusal: WriteRefusal): FairUseLimit | null {
 }
 
 export function fairUseRefusalResponse({ refusal, limits, now }: { refusal: WriteRefusal; limits: FairUseLimits; now: number }): Response {
-  if (refusal === WriteRefusal.CloudAtCapacity) return cloudAtCapacityResponse();
+  if (refusal === WriteRefusal.CloudAtCapacity) return cloudAtCapacityResponse(now);
   const limit = limitOfRefusal(refusal);
   if (limit === null) return suspendedResponse();
   return limitResponse({ limit, limits, now });

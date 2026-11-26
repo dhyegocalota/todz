@@ -1,5 +1,6 @@
 export enum HttpHeader {
   Allow = 'Allow',
+  Authorization = 'Authorization',
   ClientAddress = 'CF-Connecting-IP',
   RetryAfter = 'Retry-After',
   Cookie = 'Cookie',

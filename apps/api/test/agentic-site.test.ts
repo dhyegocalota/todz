@@ -149,6 +149,7 @@ describe('llms.txt for a live product', () => {
       REPOSITORY.licenseName,
       `claude mcp add --transport http todz-docs ${DOCS_MCP_URL}`,
       'free on todz cloud, or self-host',
+      'Free todz cloud spots are extremely limited; self-hosting is always open',
       DOCS_INSTALL_URL,
       `${DOCS_URL}/self-host`,
       `${DOCS_URL}/privacy`,

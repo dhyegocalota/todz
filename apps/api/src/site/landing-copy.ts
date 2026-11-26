@@ -55,6 +55,7 @@ export const LANDING_COPY = {
       title: 'todz cloud',
       badge: 'Free',
       points: ['Sign in with your email.', 'Synced across your Macs and agents.', 'Nothing to run.'],
+      limit: 'Free todz cloud spots are extremely limited. Self-hosting is always open.',
       cta: 'Download for Mac',
     },
     selfHost: {

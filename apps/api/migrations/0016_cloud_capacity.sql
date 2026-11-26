@@ -13,3 +13,13 @@ CREATE TABLE cloud_budget (
   heavy_writes INTEGER NOT NULL CHECK (heavy_writes >= 0),
   warned_at INTEGER
 ) STRICT, WITHOUT ROWID;
+
+CREATE TABLE mail_meter (
+  address TEXT NOT NULL,
+  sent_at INTEGER NOT NULL
+) STRICT;
+
+CREATE INDEX mail_meter_sent_at ON mail_meter (sent_at);
+CREATE INDEX mail_meter_address ON mail_meter (address, sent_at);
+
+ALTER TABLE owners ADD COLUMN last_seen_day TEXT;

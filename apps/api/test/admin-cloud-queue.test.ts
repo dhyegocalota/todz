@@ -2,12 +2,13 @@ import { createExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { CLOUD_COPY } from '../src/cloud-copy';
-import { enqueueAddress, isAdmittedAddress, waitingAddresses } from '../src/cloud-queue-store';
+import { countActiveAccounts, enqueueAddress, isAdmittedAddress, waitingAddresses } from '../src/cloud-queue-store';
 import { digestCredential } from '../src/credential-digest';
 import type { Env } from '../src/env';
 import { serveAdminCloudAdmissions } from '../src/site/admin-cloud-admissions';
 import { serveAdminCloudQueue } from '../src/site/admin-cloud-queue';
 import { AdminCookie } from '../src/site/admin-session';
+import { seedEmailIdentity, seedOwner } from './directory-seed';
 import { freshAddress, recordingBinding } from './email-sign-in-client';
 import type { SentMessage } from './email-sign-in-client';
 
@@ -79,7 +80,7 @@ describe('the admin cloud queue', () => {
     await enqueueAddress({ directory: env.DIRECTORY, email, now: NOW });
     const response = await admit({ body: new URLSearchParams({ email }), settings: { EMAIL: binding } });
     expect(response.status).toBe(SEE_OTHER_STATUS);
-    expect(await isAdmittedAddress({ directory: env.DIRECTORY, email })).toBe(true);
+    expect(await isAdmittedAddress({ directory: env.DIRECTORY, email, now: NOW })).toBe(true);
     expect(invitesOf(sent)).toEqual([email]);
   });
 
@@ -95,6 +96,45 @@ describe('the admin cloud queue', () => {
     expect((await waitingAddresses({ directory: env.DIRECTORY, limit: 10 })).map((queued) => queued.email)).toEqual([third]);
   });
 
+  test('Admit next N admits no more than the free spots and the next ask finds none left', async () => {
+    await env.DIRECTORY.prepare('DELETE FROM cloud_queue').run();
+    const { binding, sent } = recordingBinding();
+    const accounts = await countActiveAccounts({ directory: env.DIRECTORY, now: NOW });
+    const settings = { EMAIL: binding, CLOUD_ACCOUNTS_MAX: String(accounts + 2) };
+    const waiting = [freshAddress(), freshAddress(), freshAddress(), freshAddress()];
+    await Promise.all(waiting.map((email, index) => enqueueAddress({ directory: env.DIRECTORY, email, now: NOW + index })));
+    await admit({ body: new URLSearchParams({ count: '4' }), settings });
+    expect([...invitesOf(sent)].sort()).toEqual(waiting.slice(0, 2).sort());
+    await admit({ body: new URLSearchParams({ count: '4' }), settings });
+    expect(invitesOf(sent)).toHaveLength(2);
+    expect(await waitingAddresses({ directory: env.DIRECTORY, limit: 10 })).toHaveLength(2);
+  });
+
+  test('an admitted address that signed in holds its spot as an account, not as an admission', async () => {
+    await env.DIRECTORY.prepare('DELETE FROM cloud_queue').run();
+    const { binding, sent } = recordingBinding();
+    const signedInEmail = freshAddress();
+    await enqueueAddress({ directory: env.DIRECTORY, email: signedInEmail, now: NOW });
+    await admit({ body: new URLSearchParams({ email: signedInEmail }), settings: { EMAIL: binding } });
+    await seedEmailIdentity({ ownerId: await seedOwner(), email: signedInEmail });
+    const waiting = [freshAddress(), freshAddress()];
+    await Promise.all(waiting.map((email, index) => enqueueAddress({ directory: env.DIRECTORY, email, now: NOW + index })));
+    const accounts = await countActiveAccounts({ directory: env.DIRECTORY, now: NOW });
+    await admit({ body: new URLSearchParams({ count: '2' }), settings: { EMAIL: binding, CLOUD_ACCOUNTS_MAX: String(accounts + 1) } });
+    expect(invitesOf(sent).filter((address) => waiting.includes(address))).toHaveLength(1);
+  });
+
+  test('Admit next N with no free spot admits nobody and mails nobody', async () => {
+    await env.DIRECTORY.prepare('DELETE FROM cloud_queue').run();
+    const { binding, sent } = recordingBinding();
+    const accounts = await countActiveAccounts({ directory: env.DIRECTORY, now: NOW });
+    const email = freshAddress();
+    await enqueueAddress({ directory: env.DIRECTORY, email, now: NOW });
+    await admit({ body: new URLSearchParams({ count: '3' }), settings: { EMAIL: binding, CLOUD_ACCOUNTS_MAX: String(accounts) } });
+    expect(sent).toEqual([]);
+    expect(await isAdmittedAddress({ directory: env.DIRECTORY, email, now: NOW })).toBe(false);
+  });
+
   test('a cross-site post is forbidden and admits nobody', async () => {
     const { binding, sent } = recordingBinding();
     const email = freshAddress();
@@ -105,7 +145,7 @@ describe('the admin cloud queue', () => {
       executionContext: createExecutionContext(),
     });
     expect(response.status).toBe(FORBIDDEN_STATUS);
-    expect(await isAdmittedAddress({ directory: env.DIRECTORY, email })).toBe(false);
+    expect(await isAdmittedAddress({ directory: env.DIRECTORY, email, now: NOW })).toBe(false);
     expect(sent).toEqual([]);
   });
 
@@ -117,6 +157,6 @@ describe('the admin cloud queue', () => {
       env: adminEnv(),
       executionContext: createExecutionContext(),
     });
-    expect(await isAdmittedAddress({ directory: env.DIRECTORY, email })).toBe(false);
+    expect(await isAdmittedAddress({ directory: env.DIRECTORY, email, now: NOW })).toBe(false);
   });
 });

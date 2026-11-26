@@ -1,4 +1,5 @@
 import { CLOUD_QUEUE_ADMIN_ROWS_MAX } from '@todz/types';
+import { admissionRoomOf } from '../cloud-admission';
 import { CLOUD_COPY } from '../cloud-copy';
 import { sendCloudMail } from '../cloud-mail';
 import { admitAddress, admitNextAddresses } from '../cloud-queue-store';
@@ -12,15 +13,21 @@ import { AdminField, AdminPath } from './admin-paths';
 import { hasAdminSession, isSameOriginPost } from './admin-session';
 import type { SiteContext } from './site-endpoint';
 
-function admittedAddressesOf({ env, form, now }: { env: Env; form: FormData; now: number }): Promise<string[]> {
-  const directory = env.DIRECTORY;
+async function admittedNextOf({ env, count, now }: { env: Env; count: number; now: number }): Promise<string[]> {
+  const room = await admissionRoomOf({ env, now });
+  const requested = Math.min(count, CLOUD_QUEUE_ADMIN_ROWS_MAX);
+  const admitted = room === null ? requested : Math.min(requested, room);
+  return admitNextAddresses({ directory: env.DIRECTORY, count: admitted, now });
+}
+
+async function admittedAddressesOf({ env, form, now }: { env: Env; form: FormData; now: number }): Promise<string[]> {
   const email = form.get(AdminField.Email);
   const count = form.get(AdminField.Count);
   const address = typeof email === 'string' ? normalizedAddress(email) : null;
-  if (address !== null) return admitAddress({ directory, email: address, now });
+  if (address !== null) return admitAddress({ directory: env.DIRECTORY, email: address, now });
   const isCount = typeof count === 'string' && POSITIVE_WHOLE_NUMBER_PATTERN.test(count);
-  if (!isCount) return Promise.resolve([]);
-  return admitNextAddresses({ directory, count: Math.min(Number(count), CLOUD_QUEUE_ADMIN_ROWS_MAX), now });
+  if (!isCount) return [];
+  return admittedNextOf({ env, count: Number(count), now });
 }
 
 export async function serveAdminCloudAdmissions({ request, env }: SiteContext): Promise<Response> {
