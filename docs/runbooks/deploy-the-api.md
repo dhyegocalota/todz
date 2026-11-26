@@ -671,3 +671,20 @@ The owner rotates the Keychain token after a run that went wrong, when it may ha
 | 2026-11-26 | 104a531 | 16 | Eleven `401`, then three `429` each with `retry-after: 60` |
 | 2026-11-26 | 104a531 | 17 | Discovery files, crawlers and beacon as before. Lighthouse once: every category 1; the five named audits pass |
 | 2026-11-26 | 104a531 | 18 | This file. Step 21's mail-header check of the 6f283d2b deploy is still open until the owner's 10:00 UTC day mail |
+| 2026-11-26 | 98ed052 | 1 | Clean `main` equal to `origin/main`; `pnpm verify all` 9 gates green at 98ed052a |
+| 2026-11-26 | 98ed052 | 2 | `whoami`: a User API Token, one account `e2035d8e0b7173d520ccf643f6f4661c`; verify `"status":"active"` |
+| 2026-11-26 | 98ed052 | 3 | `api.todz.app`, `todz.app`, `www.todz.app`: only the Worker's `AAAA 100::` each; apex `MX` and `TXT` unchanged |
+| 2026-11-26 | 98ed052 | 4 | `todz-directory`, uuid `dc22b1c3-1869-44a0-b805-91bf92017f19` |
+| 2026-11-26 | 98ed052 | 5 | Bookmark `0000006f-00000000-0000512f-66a571ba523cff2849a335ee4e165627` |
+| 2026-11-26 | 98ed052 | 6 | Exported `before-98ed052a.sql` (8567 bytes) into the private folder; deleted after step 14 |
+| 2026-11-26 | 98ed052 | 7 | No migrations to apply |
+| 2026-11-26 | 98ed052 | 8 | `scripts/deploy-worker.sh`: staged 28 files, three custom domains, both schedules. Current Version ID `f22cee2d-c5f9-4157-89b8-1335422fff62`, message the full commit sha. Ready line `server 2026.11.26+98ed052 · accepts app 0.2.0 or later` |
+| 2026-11-26 | 98ed052 | 9 | One domain entry per host, each `todz-api`; the version at 100 percent; `DIRECTORY` bound to `dc22b1c3-1869-44a0-b805-91bf92017f19` |
+| 2026-11-26 | 98ed052 | 14 | `{"method":"link"}`, the `app_too_old` body without the header, `/health` version `2026.11.26+98ed052`; every route as the previous run; `/download`, `/download/latest` and the appcast `404` before the release. Steps 15 and 16 skipped: no limiter probes while the owner's walk holds production |
+| 2026-11-26 | c4d3eb9 | 1 | `pnpm verify all` 9 gates green at c4d3eb94 (PR #69, the release script fix; no API change) |
+| 2026-11-26 | c4d3eb9 | 5 | Bookmark `00000071-00000000-0000512f-bd47b38ea1921f0c4b3cebaa664d7434` |
+| 2026-11-26 | c4d3eb9 | 6 | Exported `before-c4d3eb94.sql` into the private folder; deleted after step 14 |
+| 2026-11-26 | c4d3eb9 | 7 | No migrations to apply |
+| 2026-11-26 | c4d3eb9 | 8 | Current Version ID `12c381b9-0e01-4182-9697-797af02025be`; ready line `server 2026.11.26+c4d3eb9 · accepts app 0.2.0 or later` |
+| 2026-11-26 | c4d3eb9 | 14 | Same answers as the 98ed052 run with version `2026.11.26+c4d3eb9` |
+| 2026-11-26 | c4d3eb9 | release | `pnpm release:mac` 0.2.0: Current Version ID `48062362-9a9d-4034-ad9d-de803d106b9f`; `/download` and `/download/latest` `302` to `/download/0.2.0/Todz-0.2.0.dmg`; the DMG `200` with `attachment` and `immutable`; sum `OK`; signature `Good`; the appcast names 0.2.0, build 2063, with `sparkle:edSignature`; tag `mac-v0.2.0` on c4d3eb94 |
