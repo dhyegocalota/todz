@@ -1,5 +1,6 @@
 import { MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { z } from 'zod';
+import { cloudFullRefusalOf } from './cloud-admission';
 import { digestCredential } from './credential-digest';
 import { AppLinkScheme } from './app-link-scheme';
 import { generateCredentialSecret } from './credential-secret';
@@ -67,6 +68,8 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   const addressRefusal = await addressLimitRefusal({ request, env, address });
   if (addressRefusal !== null) return addressRefusal;
   if (isOwnDomainAddress(address)) return Response.json({}, { status: HttpStatus.Accepted });
+  const cloudRefusal = await cloudFullRefusalOf({ env, address, now });
+  if (cloudRefusal !== null) return cloudRefusal;
   const token = generateCredentialSecret();
   const digest = await digestCredential(token);
   const isWithinLimit = await insertSignInLinkWithinLimit({

@@ -1,5 +1,6 @@
 import { AGENT_NUDGE_BY_DEFAULT, DAY_EMAIL_BY_DEFAULT, DAY_EMAIL_MINUTES_DEFAULT } from '@todz/types';
 import { z } from 'zod';
+import { cloudFullRefusalOf } from './cloud-admission';
 import { findIdentityOwner, insertOwnerWithIdentity, storeOwnerChanges } from './directory-owners';
 import { emailSenderOf } from './email-sender';
 import { welcomeMail } from './emails/welcome-mail';
@@ -118,6 +119,8 @@ export async function signIn({ request, env, now, executionContext }: OwnerConte
     now,
   });
   if (subject === null) return errorResponse(OwnerErrorCode.IdentityRejected);
+  const cloudRefusal = await cloudFullRefusalOf({ env, address: subject, now });
+  if (cloudRefusal !== null) return cloudRefusal;
   const signUpRefusal = await signUpRefusalOf({ request, env, kind, subject, now });
   if (signUpRefusal !== null) return signUpRefusal;
   const { owner, isNewOwner } = await identityOwner({ directory: env.DIRECTORY, kind, subject, timeZone, now });

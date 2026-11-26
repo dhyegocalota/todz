@@ -1,4 +1,5 @@
 import { FairUseLimit, MILLISECONDS_PER_DAY, MILLISECONDS_PER_SECOND, MINIMUM_APP_VERSION } from '@todz/types';
+import { CLOUD_COPY } from './cloud-copy';
 import { FAIR_USE_COPY } from './fair-use-copy';
 import type { FairUseLimits } from './fair-use-limits';
 import { HttpHeader, NO_STORE } from './http-header';
@@ -22,6 +23,8 @@ export enum OwnerErrorCode {
   RateLimited = 'rate_limited',
   AccountSuspended = 'account_suspended',
   SignUpRefused = 'sign_up_refused',
+  CloudFull = 'cloud_full',
+  CloudAtCapacity = 'cloud_at_capacity',
 }
 
 const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
@@ -40,6 +43,8 @@ const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
   [OwnerErrorCode.RateLimited]: HttpStatus.TooManyRequests,
   [OwnerErrorCode.AccountSuspended]: HttpStatus.Forbidden,
   [OwnerErrorCode.SignUpRefused]: HttpStatus.Forbidden,
+  [OwnerErrorCode.CloudFull]: HttpStatus.Forbidden,
+  [OwnerErrorCode.CloudAtCapacity]: HttpStatus.Unavailable,
 };
 
 const STATUS_OF_LIMIT: Record<FairUseLimit, HttpStatus> = {
@@ -68,6 +73,14 @@ export function suspendedResponse(): Response {
 
 export function signUpRefusedResponse(): Response {
   return messageErrorResponse({ code: OwnerErrorCode.SignUpRefused, message: FAIR_USE_COPY.signUpRefused });
+}
+
+export function cloudFullResponse(): Response {
+  return messageErrorResponse({ code: OwnerErrorCode.CloudFull, message: CLOUD_COPY.full });
+}
+
+export function cloudAtCapacityResponse(): Response {
+  return messageErrorResponse({ code: OwnerErrorCode.CloudAtCapacity, message: CLOUD_COPY.atCapacity });
 }
 
 export function secondsUntilNextUtcDay(now: number): number {
