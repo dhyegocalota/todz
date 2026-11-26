@@ -43,7 +43,7 @@ struct OwnerErrorBody: Decodable {
         case .signInRefused: .signInRefused
         case .appTooOld: .appTooOld(minimum: minimumAppVersion)
         case .limitReached: limitFailure(status: status)
-        case .accountSuspended, .cloudAtCapacity: message.map { .fairUsePaused(message: $0) }
+        case .accountSuspended: message.map { .fairUsePaused(message: $0) }
         case .signUpRefused: message.map { .fairUseRefused(message: $0) }
         }
     }

@@ -18,7 +18,7 @@ Every form in the Mac app draws its own field, its own error line and its own bu
 - A glass panel (`FormPanel`) for the three centred screens: sign-in, first workspace, workspace picker.
 - Migrated, in order: the name sheet, the first workspace and picker screens, the typed-name confirmation, sign-in, the Server field, Settings, Connect an Agent.
 - The sign-in screen says, quietly, that free todz cloud spots are extremely limited and that the owner can run their own server, linking the self-host guide.
-- A write refused with `cloud_at_capacity` keeps the queue and pauses sending, as a daily cap does, and shows the server's message.
+- A write refused with a `limit_reached` 429 for `cloud_capacity` keeps the queue and pauses sending, as a daily cap does, and shows the server's message.
 
 ## Non-goals
 
@@ -39,7 +39,7 @@ Every form in the Mac app draws its own field, its own error line and its own bu
 
 - A refused request that is not the text's fault leaves the field at rest and shows the line.
 - The glass panel falls back to `.regularMaterial` before macOS 26 and under Reduce Transparency, through the system.
-- A pause from `cloud_at_capacity` lifts on the next refresh, like the daily cap; the server answers it without work.
+- A pause from `cloud_capacity` lifts on the next refresh, like the daily cap; the server answers it without work.
 
 ## Open questions → answers
 
@@ -52,4 +52,4 @@ Every form in the Mac app draws its own field, its own error line and its own bu
 
 ## Test strategy summary
 
-TodzKit: `FieldState`'s sixteen combinations and its precedence, red first; the `cloud_at_capacity` decode and the paused outbox. The views have no logic beyond that and are rendered offscreen, light and dark, for the PR.
+TodzKit: `FieldState`'s sixteen combinations and its precedence, red first; the `cloud_capacity` decode and the paused outbox. The views have no logic beyond that and are rendered offscreen, light and dark, for the PR.

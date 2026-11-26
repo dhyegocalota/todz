@@ -12,6 +12,4 @@ enum OwnerErrorCode: String, Decodable {
     case appTooOld = "app_too_old"
     case limitReached = "limit_reached"
     case accountSuspended = "account_suspended"
-    case signUpRefused = "sign_up_refused"
-    case cloudAtCapacity = "cloud_at_capacity"
-}
+    case signUpRefused = "sign_up_refused"}

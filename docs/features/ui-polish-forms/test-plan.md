@@ -3,7 +3,7 @@
 ## Unit (TodzKit, `swift test --package-path apps/macos/TodzKit --filter "FieldStateTests|OwnerAPITests|AppModelTests"`)
 
 - [x] All sixteen combinations of focus, issue, disabled and busy resolve to the state of the precedence busy, disabled, invalid, focused, rest. — evidence: `FieldStateTests`, red as a compile failure before `FieldState` existed, green after
-- [x] A `cloud_at_capacity` answer decodes to a pause carrying the server's message. — evidence: `OwnerAPITests` error table row, red before the code, green after
+- [x] A `limit_reached` 429 for `cloud_capacity` decodes to a pause carrying the server's message. — evidence: `OwnerAPITests` error table row, red before the code, green after
 - [x] A queue that meets a pause is kept, sending pauses and the banner shows the message. — evidence: the existing `aDailyCapKeepsEveryQueuedChangePausesSendingAndResumesOnTheNextRefresh`, since the new code decodes to the same `fairUsePaused` error
 - [x] The self-host guide address. — evidence: `SelfHostAddressTests`
 
