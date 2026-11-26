@@ -1,26 +1,6 @@
 import SwiftUI
 
-private let dimmedScale = 0.96
 private let insertedScale = 0.92
-
-private enum BloomPhase: CaseIterable {
-    case dimmed
-    case lit
-
-    var scale: Double {
-        switch self {
-        case .dimmed: dimmedScale
-        case .lit: 1
-        }
-    }
-
-    var opacity: Double {
-        switch self {
-        case .dimmed: 0
-        case .lit: 1
-        }
-    }
-}
 
 private struct TodzAnimationModifier<Value: Equatable>: ViewModifier {
     let token: MotionToken
@@ -47,15 +27,19 @@ private struct TodzCountTransitionModifier: ViewModifier {
 private struct TodzBloomModifier: ViewModifier {
     let trigger: Int
     @Environment(\.accessibilityReduceMotion) private var isReduceMotionOn
+    @State private var isBloomed = true
 
     func body(content: Content) -> some View {
-        content.phaseAnimator(BloomPhase.allCases, trigger: trigger) { view, phase in
-            view
-                .scaleEffect(isReduceMotionOn ? 1 : phase.scale)
-                .opacity(phase.opacity)
-        } animation: { _ in
-            MotionRule.token(.bloom, isReduceMotionOn: isReduceMotionOn).animation
-        }
+        content
+            .scaleEffect(MotionBloom.scale(isBloomed: isBloomed, isReduceMotionOn: isReduceMotionOn))
+            .opacity(MotionBloom.opacity(isBloomed: isBloomed))
+            .animation(MotionRule.token(.bloom, isReduceMotionOn: isReduceMotionOn).animation, value: isBloomed)
+            .onChange(of: trigger) {
+                var dimmed = Transaction()
+                dimmed.animation = nil
+                withTransaction(dimmed) { isBloomed = false }
+                Task { isBloomed = true }
+            }
     }
 }
 
@@ -65,8 +49,8 @@ private struct TodzEntranceModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .scaleEffect(isPresented || isReduceMotionOn ? 1 : dimmedScale)
-            .opacity(isPresented ? 1 : 0)
+            .scaleEffect(MotionBloom.scale(isBloomed: isPresented, isReduceMotionOn: isReduceMotionOn))
+            .opacity(MotionBloom.opacity(isBloomed: isPresented))
             .animation(MotionRule.token(.bloom, isReduceMotionOn: isReduceMotionOn).animation, value: isPresented)
             .onAppear { isPresented = true }
     }

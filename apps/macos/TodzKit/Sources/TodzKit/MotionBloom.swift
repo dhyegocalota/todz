@@ -3,10 +3,11 @@ public enum MotionBloom {
     public static let dimmedScale = 0.96
 
     public static func opacity(isBloomed: Bool) -> Double {
-        0
+        isBloomed ? 1 : 0
     }
 
     public static func scale(isBloomed: Bool, isReduceMotionOn: Bool) -> Double {
-        1
+        guard isBloomed || isReduceMotionOn else { return dimmedScale }
+        return 1
     }
 }
