@@ -11,14 +11,18 @@ public struct WorkspaceBindings: Equatable, Sendable {
     }
 
     public func chord(for action: WorkspaceAction) -> KeyChord? {
-        nil
+        guard let chosen = overrides[action] else { return action.defaultChord }
+        return chosen
     }
 
     public func action(for chord: KeyChord) -> WorkspaceAction? {
-        nil
+        WorkspaceAction.all.first { self.chord(for: $0) == chord }
     }
 
     public func rebinding(_ action: WorkspaceAction, to chord: KeyChord) -> Result<WorkspaceBindings, RebindRefusal> {
-        .success(self)
+        guard chord.modifiers.canTrigger else { return .failure(.needsModifier) }
+        guard self.chord(for: action) != chord else { return .success(self) }
+        if let holder = self.action(for: chord), holder != action { return .failure(.taken(by: holder)) }
+        return .success(WorkspaceBindings(overrides: overrides.merging([action: chord]) { _, new in new }))
     }
 }
