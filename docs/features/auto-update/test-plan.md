@@ -22,7 +22,7 @@
 - [ ] Settings shows "Update todz automatically", on, for a Mac that never touched it. Expected: the switch is on after a fresh defaults domain.
 - [ ] Turning it off persists across a relaunch. Expected: off after relaunch; Sparkle's `SUAutomaticallyUpdate` reads NO.
 - [ ] The popover foot shows "Check for Updates…" in Release and no such entry in Debug. Expected: visible in Release, absent in Debug.
-- [ ] After an install of x+1 over x, the popover shows "Updated to x+1" once; a tap clears it. Expected: the note appears on the first popover open after the update and is gone after the tap and after the next launch.
+- [ ] After an install of x+1 over x, the popover shows "Updated to x+1" once; a tap clears it. Expected: the note shows in the popover foot after the update; a tap clears it; a relaunch does not bring it back.
 - [ ] A first launch shows no note. Expected: no "Updated to" text on a fresh install.
 
 ## Release check (the lead, on this Mac, after the first release is live)

@@ -73,7 +73,7 @@ The spike of 2026-11-25, on this Mac only, scripts in the scratchpad, nothing co
 
 ## Revisit when
 
-- The owner's other-Mac check fails (decision 1's fallback), or passes (record it here).
+- The owner's other-Mac check fails (decision 1's fallback), or passes (record it here). Amended 2026-11-26 by [ADR 0075](0075-the-mac-app-updates-itself-by-default-through-sparkle-and-the-release-gate-is-a-local-check.md) decision 5: the first public release's gate is a local check on this Mac; the other-Mac check becomes a later one.
 - The owner buys the Apple Developer Program (decision 10).
 - The owner asks for a GitHub Actions release.
 - A DMG passes 25 MiB (decision 5's R2 fallback), or `_headers` turns out unable to set a header decision 5 needs.
