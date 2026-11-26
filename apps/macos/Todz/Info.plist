@@ -35,7 +35,7 @@
 		<string>$(TODZ_ALLOWS_LOCAL_NETWORKING)</string>
 	</dict>
 	<key>SUAutomaticallyUpdate</key>
-	<true/>
+	<string>$(TODZ_AUTOMATICALLY_UPDATES)</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUEnableInstallerLauncherService</key>
