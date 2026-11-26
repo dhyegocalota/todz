@@ -15,6 +15,7 @@ struct MainWindow: View {
     @Environment(AppModel.self) private var model
     @Environment(MainWindowState.self) private var windowState
     @FocusState private var focus: MainWindowFocus?
+    @Namespace private var titleNamespace
 
     var body: some View {
         @Bindable var windowState = windowState
@@ -22,14 +23,14 @@ struct MainWindow: View {
             Color.clear
                 .frame(minWidth: minimumContentWidth, minHeight: contentMinimumHeight)
             NavigationSplitView {
-                SidebarView(workspace: workspace)
+                SidebarView(workspace: workspace, titleNamespace: titleNamespace)
                     .navigationSplitViewColumnWidth(min: sidebarMinimumWidth, ideal: sidebarIdealWidth, max: sidebarMaximumWidth)
             } detail: {
                 if isOnKeyScreen {
                     KeyScreen(workspace: workspace)
                 }
                 if !isOnKeyScreen {
-                    TaskListView(workspace: workspace, item: model.selectedItem, focus: $focus)
+                    TaskListView(workspace: workspace, item: model.selectedItem, focus: $focus, titleNamespace: titleNamespace)
                         .inspector(isPresented: $windowState.isInspectorPresented) {
                             InspectorView(item: model.selectedItem, focus: $focus)
                                 .inspectorColumnWidth(min: inspectorMinimumWidth, ideal: inspectorIdealWidth, max: inspectorMaximumWidth)

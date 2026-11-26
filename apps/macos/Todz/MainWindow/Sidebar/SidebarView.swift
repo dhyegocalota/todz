@@ -3,6 +3,7 @@ import TodzKit
 
 struct SidebarView: View {
     let workspace: Workspace
+    let titleNamespace: Namespace.ID
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -12,6 +13,7 @@ struct SidebarView: View {
                     if let title = item.title(in: workspace) {
                         Label(title, systemImage: item.symbol)
                             .openCountBadge(model.openCount(of: item))
+                            .matchedGeometryEffect(id: item, in: titleNamespace, properties: .position)
                             .tag(item)
                     }
                 }

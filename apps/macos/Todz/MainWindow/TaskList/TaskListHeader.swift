@@ -4,6 +4,7 @@ import TodzKit
 struct TaskListHeader: View {
     let workspace: Workspace
     let item: SidebarItem
+    let titleNamespace: Namespace.ID
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -13,6 +14,7 @@ struct TaskListHeader: View {
                     .font(.title)
                     .bold()
                     .lineLimit(1)
+                    .matchedGeometryEffect(id: item, in: titleNamespace, properties: .position)
             }
             Spacer()
             if item == .today {
@@ -21,5 +23,6 @@ struct TaskListHeader: View {
             }
         }
         .padding()
+        .todzAnimation(.settle, value: item)
     }
 }
