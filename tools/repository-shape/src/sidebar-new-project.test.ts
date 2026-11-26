@@ -17,6 +17,7 @@ const NEW_PROJECT_SHORTCUT = '.keyboardShortcut(newKey, modifiers: [.command, .s
 const MENU_ITEM_WITH_SHORTCUT =
   /Button\(MainWindowCopy\.newProject\) \{ windowState\.sheet = \.newProject \}\s+\.keyboardShortcut\(newKey, modifiers: \[\.command, \.shift\]\)/;
 const STACKED_FOOTER = /VStack\(spacing: 0\) \{\s+list\s+NewProjectButton\(workspace: workspace\)\s+\}/;
+const PADDED_CONTENT_SHAPE = /\.padding\(\)\s+\.frame\(maxWidth: \.infinity, alignment: \.leading\)\s+\.contentShape\(\.rect\)/;
 const BUTTON_PIECES = [
   'windowState.sheet = .newProject',
   'Color.accentColor',
@@ -52,6 +53,10 @@ describe('the sidebar New Project button', () => {
 
   test.each(BUTTON_PIECES)('the button carries %s', (piece) => {
     expect(readRepositoryFile(NEW_PROJECT_BUTTON_FILE)).toContain(piece);
+  });
+
+  test('the whole footer strip is the click target: the padding sits inside the content shape', () => {
+    expect(readRepositoryFile(NEW_PROJECT_BUTTON_FILE)).toMatch(PADDED_CONTENT_SHAPE);
   });
 
   test('the button is never hidden and repeats no shortcut', () => {
