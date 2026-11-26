@@ -2,7 +2,7 @@ import { CLIENT_INFO_META_KEY, type CallToolResult, McpServer, type ServerContex
 import { type Actor, type DueNow, type Task, parseShortId } from '@todz/core';
 import { ActorKind, FairUseLimit, HistoryAction, RuleIssue } from '@todz/types';
 import type { FairUseLimits } from './fair-use-limits';
-import { textBytesOf } from './owner-write-quota';
+import { NO_TEXT_BYTES, ONE_WRITE, textBytesOf } from './owner-write-quota';
 import { z } from 'zod';
 import { MCP_COPY, McpPromptName, McpToolName } from './mcp-copy';
 import {
@@ -50,7 +50,6 @@ const READ_ONLY_ANNOTATIONS = { readOnlyHint: true };
 const WRITE_ANNOTATIONS = { destructiveHint: false };
 const DESTRUCTIVE_ANNOTATIONS = { destructiveHint: true };
 const NOTHING_DUE = 0;
-const NO_TEXT_BYTES = 0;
 
 const EnvelopeClientSchema = z.object({ [CLIENT_INFO_META_KEY]: z.object({ name: z.string() }) });
 
@@ -222,7 +221,7 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
         write: async (actor) => {
           const fieldsFailure = fieldsFailureOf(args);
           if (fieldsFailure !== null) return errorAnswer(failureText(fieldsFailure));
-          const refusal = await refusedAnswer({ refusalTextOf, writes: 1, bytes: textBytesOf([args.title, args.notes]) });
+          const refusal = await refusedAnswer({ refusalTextOf, writes: ONE_WRITE, bytes: textBytesOf([args.title, args.notes]) });
           if (refusal !== null) return refusal;
           return resultAnswer({ result: await project.updateTask({ actor, number, patch }), answer: updatedAnswer });
         },
@@ -281,7 +280,7 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
           const read = await project.readTask({ number });
           if (!read.ok) return errorAnswer(failureText(read.failure));
           if (confirm.trim() !== read.value.title) return errorAnswer(MCP_COPY.ruleIssue[RuleIssue.ConfirmationMismatch]);
-          const refusal = await refusedAnswer({ refusalTextOf, writes: 1, bytes: NO_TEXT_BYTES });
+          const refusal = await refusedAnswer({ refusalTextOf, writes: ONE_WRITE, bytes: NO_TEXT_BYTES });
           if (refusal !== null) return refusal;
           return resultAnswer({ result: await project.deleteTask({ number, confirmation: confirm }), answer: deletedAnswer });
         },
@@ -305,7 +304,7 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
           const read = await project.readTask({ number });
           if (!read.ok) return errorAnswer(failureText(read.failure));
           const bytes = textBytesOf([read.value.title, read.value.notes]);
-          const refusal = await refusedAnswer({ refusalTextOf, writes: 1, bytes });
+          const refusal = await refusedAnswer({ refusalTextOf, writes: ONE_WRITE, bytes });
           if (refusal !== null) return refusal;
           const result = await moveTask({
             openTasksMax: limits[FairUseLimit.OpenTasks],
@@ -313,6 +312,7 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
             sourceProjectId: scope.workspace.projectId,
             sourceProjectName: sourceProject.name,
             destination: sibling.project,
+            isDestinationListed: async () => (await scope.workspace.openSibling(destinationId)) !== null,
             actor,
             number,
           });

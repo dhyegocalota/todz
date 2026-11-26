@@ -37,10 +37,10 @@ const TASK_COLUMNS =
   'number, title, notes, due_date, state, order_key, idempotency_key, created_by_kind, created_by_client, created_at, updated_at, completed_at';
 const FIRST_CHANGE_NUMBER = 1;
 const HISTORY_COLUMNS = 'at, actor_kind, actor_client, action, fields, note';
-const ADDED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE created_at >= ? AND created_at < ?';
+const ADDED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE created_at >= ? AND created_at < ? AND deleted_at IS NULL';
 const OPEN_COUNT_QUERY = 'SELECT open_tasks AS total FROM open_counter';
 const ADJUST_OPEN_COUNT = 'UPDATE open_counter SET open_tasks = open_tasks + ?';
-const COMPLETED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE completed_at >= ? AND completed_at < ?';
+const COMPLETED_COUNT_QUERY = 'SELECT count(*) AS total FROM tasks WHERE completed_at >= ? AND completed_at < ? AND deleted_at IS NULL';
 const AGENT_WRITES_QUERY =
   'SELECT actor_client, count(*) AS total FROM task_history WHERE actor_kind = ? AND actor_client IS NOT NULL AND at >= ? AND at < ? GROUP BY actor_client';
 const FIRST_ORDER_KEY_QUERY = 'SELECT order_key FROM tasks WHERE number <> ? AND deleted_at IS NULL ORDER BY order_key LIMIT 1';

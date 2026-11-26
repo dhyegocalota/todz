@@ -6,7 +6,7 @@ import type { Env } from '../src/env';
 import { MCP_COPY, McpOwnerToolName, McpToolName } from '../src/mcp-copy';
 import { serveMcp } from '../src/mcp-endpoint';
 import { utcDayOf } from '../src/telemetry/telemetry-day';
-import { seedIssuedKey, seedOwner, seedOwnerKey, seedSiblingProject } from './directory-seed';
+import { seedIssuedKey, seedOwner, seedOwnerKey, seedProject, seedSiblingProject, seedWorkspace } from './directory-seed';
 import { ClientEra, callTool, connectClient } from './mcp-client';
 
 const FORBIDDEN_STATUS = 403;
@@ -126,6 +126,26 @@ describe('an owner at the daily cap', () => {
       isError: true,
     });
     expect((await callTool({ client, name: McpOwnerToolName.Workspaces, args: {} })).text).not.toContain('After');
+  });
+});
+
+describe('an owner key reaching for a foreign id', () => {
+  test('a rename or a create answers not found and spends no write', async () => {
+    const ownerId = await seedOwner();
+    const foreignOwnerId = await seedOwner();
+    const foreignWorkspaceId = await seedWorkspace({ ownerId: foreignOwnerId });
+    const foreignProjectId = await seedProject({ ownerId: foreignOwnerId });
+    const client = await ownerKeyClient({ ownerId });
+    const answers = await Promise.all([
+      callTool({ client, name: McpOwnerToolName.RenameWorkspace, args: { workspace: foreignWorkspaceId, name: 'Mine' } }),
+      callTool({ client, name: McpOwnerToolName.CreateProject, args: { workspace: foreignWorkspaceId, name: 'Mine' } }),
+      callTool({ client, name: McpOwnerToolName.RenameProject, args: { project: foreignProjectId, name: 'Mine' } }),
+    ]);
+    answers.forEach((answer) => expect(answer).toEqual({ text: MCP_COPY.accountNotFound, isError: true }));
+    const usage = await env.DIRECTORY.prepare('SELECT count(*) AS total FROM owner_usage WHERE owner_id = ?')
+      .bind(ownerId)
+      .first<{ total: number }>();
+    expect(usage).toEqual({ total: 0 });
   });
 });
 

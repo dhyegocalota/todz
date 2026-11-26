@@ -117,8 +117,8 @@ export class ProjectStore extends DurableObject<Env> {
     });
   }
 
-  deleteTask({ number, confirmation }: { number: number; confirmation: string }): ProjectResult<Task> {
-    return this.runWrite(() => deleteTask({ store: this.store, clock: SYSTEM_CLOCK, number, confirmation }));
+  deleteTask({ number, confirmation, unchangedFrom }: { number: number; confirmation: string; unchangedFrom?: Task }): ProjectResult<Task> {
+    return this.runWrite(() => deleteTask({ store: this.store, clock: SYSTEM_CLOCK, number, confirmation, unchangedFrom }));
   }
 
   readTask({ number }: { number: number }): ProjectResult<Task> {
