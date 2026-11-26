@@ -83,4 +83,11 @@ describe('the disposable email domains', () => {
     expect(isDisposableEmailAddress('x@MAILINATOR.com')).toBe(true);
     expect(isDisposableEmailAddress('x@notmailinator.com')).toBe(false);
   });
+
+  test('a subdomain of a listed domain and a trailing dot are listed too', () => {
+    expect(isDisposableEmailAddress('x@mail.mailinator.com')).toBe(true);
+    expect(isDisposableEmailAddress('x@mailinator.com.')).toBe(true);
+    expect(isDisposableEmailAddress('x@mail.Mailinator.COM.')).toBe(true);
+    expect(isDisposableEmailAddress('x@mailinator.com.example.org')).toBe(false);
+  });
 });
