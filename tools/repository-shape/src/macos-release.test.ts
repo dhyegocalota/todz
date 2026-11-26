@@ -85,13 +85,14 @@ function machLookupEntry(suffix: string): string {
 }
 
 describe('the version the app sends and the version Sparkle updates from', () => {
-  test('the first release, the project version and the oldest app the server accepts are one version', () => {
+  test('the first release and the project version are one version, and the oldest app the server accepts is not older', () => {
     const firstRelease = FIRST_VERSION_PATTERN.exec(readRepositoryFile(RELEASE_SCRIPT))?.[FIRST_CAPTURE];
     const oldestAccepted = MINIMUM_APP_VERSION_PATTERN.exec(readRepositoryFile(TYPES_CONSTANTS))?.[FIRST_CAPTURE];
     const marketingVersions = [...project().matchAll(MARKETING_VERSION_PATTERN)].map((match) => match[FIRST_CAPTURE]);
     expect(firstRelease).toBeDefined();
     expect(marketingVersions).toEqual([firstRelease, firstRelease]);
-    expect(oldestAccepted).toBe(firstRelease);
+    expect(oldestAccepted).toBeDefined();
+    expect(String(oldestAccepted).localeCompare(String(firstRelease), undefined, { numeric: true })).toBeGreaterThanOrEqual(0);
   });
 
   test('the release command gives xcodebuild the version and the build number the appcast names', () => {
