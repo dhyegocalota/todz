@@ -84,6 +84,7 @@ describe('the admin usage view', () => {
     const html = await response.text();
     expect(html).toContain(busy);
     expect(html).toContain('/admin/stored-text-resets');
+    expect(html).toContain('<div class="usage-scroll"><table class="usage-table">');
     expect(html).not.toContain(stale);
   });
 });
