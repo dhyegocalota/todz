@@ -25,7 +25,6 @@ export enum OwnerErrorCode {
   AccountSuspended = 'account_suspended',
   SignUpRefused = 'sign_up_refused',
   CloudFull = 'cloud_full',
-  CloudAtCapacity = 'cloud_at_capacity',
 }
 
 const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
@@ -45,7 +44,6 @@ const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
   [OwnerErrorCode.AccountSuspended]: HttpStatus.Forbidden,
   [OwnerErrorCode.SignUpRefused]: HttpStatus.Forbidden,
   [OwnerErrorCode.CloudFull]: HttpStatus.Forbidden,
-  [OwnerErrorCode.CloudAtCapacity]: HttpStatus.TooManyRequests,
 };
 
 const STATUS_OF_LIMIT: Record<FairUseLimit, HttpStatus> = {
@@ -80,8 +78,12 @@ export function cloudFullResponse(): Response {
   return messageErrorResponse({ code: OwnerErrorCode.CloudFull, message: CLOUD_COPY.full });
 }
 
+// NB ADR 0099: the 95% refusal is a 429 limit_reached with a message, the one body every installed app already reads as a fair-use pause that keeps its queue.
+const CLOUD_CAPACITY_LIMIT = 'cloud_capacity';
+
 export function cloudAtCapacityResponse(now: number): Response {
-  const response = messageErrorResponse({ code: OwnerErrorCode.CloudAtCapacity, message: CLOUD_COPY.atCapacity });
+  const body = { error: OwnerErrorCode.LimitReached, limit: CLOUD_CAPACITY_LIMIT, message: CLOUD_COPY.atCapacity };
+  const response = Response.json(body, { status: HttpStatus.TooManyRequests });
   response.headers.set(HttpHeader.RetryAfter, String(secondsUntilNextMonth(now)));
   return response;
 }

@@ -295,7 +295,11 @@ describe('the 95% refusals', () => {
       now: FIRST_OF_MONTH_NIGHT,
     });
     expect(response.status).toBe(TOO_MANY_REQUESTS_STATUS);
-    expect(await response.json()).toEqual({ error: 'cloud_at_capacity', message: CLOUD_COPY.atCapacity });
+    expect(await response.json()).toEqual({
+      error: 'limit_reached',
+      limit: 'cloud_capacity',
+      message: CLOUD_COPY.atCapacity,
+    });
     expect(response.headers.get('Retry-After')).toBe(String((NEXT_MONTH_START - FIRST_OF_MONTH_NIGHT) / 1000));
     expect(CLOUD_COPY.atCapacity).toContain('todz cloud is at capacity this month');
     expect(CLOUD_COPY.atCapacity).toContain('run your own server');

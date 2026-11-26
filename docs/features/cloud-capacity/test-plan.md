@@ -18,7 +18,7 @@
 - [x] With the analytics token the totals come from Cloudflare (bearer token, the three datasets); a failing answer or a token reaching no account fails the run; without the token Cloudflare is not asked.
 - [x] The 80% email goes once a month and is stamped only after it was sent.
 - [x] Every mail the cloud sends is metered; a self-hosted server meters nothing; an address with 10 mails in a day gets no link mail.
-- [x] At 95% an account above the average is refused writes with 429 `cloud_at_capacity`, the message and `Retry-After` to the first of next month (also across the year end); one below keeps writing.
+- [x] At 95% an account above the average is refused writes with 429 `{ error: "limit_reached", limit: "cloud_capacity", message }`, the message and `Retry-After` to the first of next month (also across the year end); one below keeps writing.
 - [x] At 95% a heavy account's reads are throttled, a light one's are not, and without the cap nothing is throttled.
 - [x] A malformed `CLOUD_ACCOUNTS_MAX` throws.
 

@@ -11,5 +11,5 @@
 | Step | What breaks | Signal | Back out |
 |---|---|---|---|
 | 2 | An active account is refused | `cloud_full` for a known active address | unset `CLOUD_ACCOUNTS_MAX` |
-| 4 | Writes refused too early | `cloud_at_capacity` while under 95% | unset `CLOUD_ACCOUNTS_MAX` (the guard is off with it) |
+| 4 | Writes refused too early | the capacity 429 while under 95% | unset `CLOUD_ACCOUNTS_MAX` (the guard is off with it) |
 | 4 | The analytics token has the wrong permission | the nightly run fails with `the Cloudflare analytics answered 403` | fix the token, or delete the secret to use the D1 estimate |

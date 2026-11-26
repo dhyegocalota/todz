@@ -22,7 +22,7 @@
 
 ## Gaps
 
-- No client screen (Mac app) for `cloud_at_capacity`; the app lane maps the code to a paused queue. Until then an older app reads the 429 as an unexpected failure.
+- No client screen (Mac app) for the capacity message; installed apps already pause on the 429 `limit_reached` body.
 - Without the analytics token the read measure is a profile (1,000 read requests per active account a day), not a count.
 - Durable Object duration is not measured or guarded (ADR 0099).
 - A read-only heavy account is not throttled: reads are not counted per account.
