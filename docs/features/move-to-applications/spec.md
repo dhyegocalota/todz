@@ -1,6 +1,6 @@
 # Move to Applications
 
-**Status:** Building
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡
 **Owner approval:** the owner asked for it on 2026-11-26 through todz-6f after the release local check, and listed its v1.1 requirements on 2026-11-26 after the first attempt replaced his installed app; the loop decided the rest under the owner's 2026-11-24 instruction to decide every call
 **ADRs:** [0105](../../adr/0105-the-move-to-applications-offer-acts-only-on-a-click-compares-canonical-paths-and-runs-behind-a-protocol-tested-on-scratch-copies.md)
