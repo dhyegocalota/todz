@@ -183,7 +183,7 @@ describe('the signature', () => {
     const ways = waysOf(await landingHtml());
     expect(ways).toContain('<path d="M2 9 C 28 3, 52 11, 78 6 S 108 3, 118 5" pathLength="1"');
     expect(blockOf(SITE_STYLE, MOTION_MEDIA, REDUCED_MOTION_MEDIA)).toContain(
-      '.signature-swash path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw linear both;animation-timeline:view();animation-range:entry 40% cover 40%}',
+      '.signature-swash path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw linear both;animation-timeline:view();animation-range:entry 0% entry 100%}',
     );
   });
 

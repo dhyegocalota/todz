@@ -1,6 +1,6 @@
 # The final panel of todz.app
 
-**Status:** Building
+**Status:** Shipped 2026-11-26
 **Tier:** 🟢 (copy, markup and CSS of one panel on the landing; no route, no data, no new script)
 **Owner approval:** inherited from [`docs/product/README.md`](../../product/README.md), approved 2026-11-23, and the owner's words "the final panel isn't sexy". The design choice is the loop's call (Option A of [design.md](design.md), recorded in [ADR 0096](../../adr/0096-the-final-panel-glows-mint-through-a-glow-mint-token.md)); the owner may overturn it.
 **ADRs:** [0096](../../adr/0096-the-final-panel-glows-mint-through-a-glow-mint-token.md)

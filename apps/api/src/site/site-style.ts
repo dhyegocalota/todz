@@ -329,7 +329,7 @@ ${CROP_RULES}
 @keyframes fade{from{opacity:0}}
 @supports (animation-timeline: view()){
 .reveal{animation:rise linear both;animation-timeline:view();animation-range:entry 0% entry 60%}
-.signature-swash path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw linear both;animation-timeline:view();animation-range:entry 40% cover 40%}}
+.signature-swash path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw linear both;animation-timeline:view();animation-range:entry 0% entry 100%}}
 @keyframes draw{to{stroke-dashoffset:0}}}
 @media (prefers-reduced-motion: reduce){
 html{scroll-behavior:auto}

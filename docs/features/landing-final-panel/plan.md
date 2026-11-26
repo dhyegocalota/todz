@@ -37,7 +37,11 @@ G1 is committed first and fails. G2 turns it green. G3 is docs and rides with th
 
 ### G3
 
-- [ ] **Step 6:** ADR 0096 and its index row; feature row in `docs/features/README.md`.
+- [x] **Step 6:** ADR 0096 and its index row; feature row in `docs/features/README.md` — evidence: 8a77f2b4 and e5981202
+
+## v1.1
+
+The review's MINORs 1 to 4 go here. The list was not in this lane's brief, so this section waits for the reviewer's text before it is filled in.
 
 ## Failure modes
 
