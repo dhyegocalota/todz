@@ -7,6 +7,7 @@ import type { Env } from '../env';
 import { limitRefusal } from '../limit-refusal';
 import { fairUseLimitsOf } from '../fair-use-limits';
 import { calendarDateInTimeZone } from '../owner-today';
+import { reserveWrites, textBytesOf } from '../owner-write-quota';
 import { openReplyInbox, replyOwnerOf } from '../project-routing';
 import { DayEmailEvent, logDayEmailEvent } from './day-email-log';
 import { ReplyClaim, claimReply, findOwnerEmailIdentities, findReplyAddressOwner } from './day-email-store';
@@ -33,6 +34,7 @@ export enum ReplyOutcome {
   NotAReply = 'not_a_reply',
   NoMessageId = 'no_message_id',
   DailyCap = 'daily_cap',
+  WriteRefused = 'write_refused',
   Empty = 'empty',
   InvalidTitle = 'invalid_title',
   NoInbox = 'no_inbox',
@@ -145,6 +147,8 @@ async function addReplyTask({
 }): Promise<ReplyResult> {
   const inbox = await openReplyInbox({ env, owner: replyOwnerOf(ownerId) });
   if (inbox === null) return { outcome: ReplyOutcome.NoInbox };
+  const writeRefusal = await reserveWrites({ env, ownerId, now, writes: 1, bytes: textBytesOf([title]) });
+  if (writeRefusal !== null) return { outcome: ReplyOutcome.WriteRefused };
   const messageDigest = await digestCredential(messageId);
   const claim = await claimReply({ directory: env.DIRECTORY, ownerId, messageDigest, now });
   if (claim === ReplyClaim.DailyMaximum) return { outcome: ReplyOutcome.DailyCap };
