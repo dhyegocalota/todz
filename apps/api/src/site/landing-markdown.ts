@@ -23,7 +23,7 @@ const LANDING_MARKDOWN = linesOf([
   '',
   DISCOVERY_COPY.pricing,
   '',
-  `[${openSource.line}](${REPOSITORY.url})`,
+  `[${openSource.starLabel}](${REPOSITORY.url}) · ${REPOSITORY.licenseName}`,
   '',
   `## ${benefits.heading}`,
   '',
@@ -34,8 +34,6 @@ const LANDING_MARKDOWN = linesOf([
   '',
   ...fenced({ language: 'bash', text: terminal.command }),
   `## ${final.title}`,
-  '',
-  final.body,
   '',
   `[${download.button}](${DOWNLOAD_URL})`,
 ]);
