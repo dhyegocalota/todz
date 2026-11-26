@@ -1,6 +1,6 @@
 # Add field commit
 
-**Status:** In review
+**Status:** Shipped 2026-11-26
 **Tier:** 🟢
 **Owner approval:** approved by inheritance from `docs/product/README.md` (approved 2026-11-23) and the owner's 2026-11-24 instruction to decide every call
 **ADRs:** [0080](../../adr/0080-the-workspace-picker-selects-several-workspaces-or-all-and-every-surface-shows-their-union-tagged-by-workspace.md)
