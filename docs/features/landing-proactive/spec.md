@@ -1,6 +1,6 @@
 # todz.app says how proactive todz is
 
-**Status:** Building
+**Status:** Shipped 2026-11-26
 **Tier:** 🟢 (copy, markup and CSS of one benefit card on the landing; no route, no data, no script, no image)
 **Owner approval:** inherited from [`docs/product/README.md`](../../product/README.md), approved 2026-11-23, and the owner's words of 2026-11-26: "deixa hiper claro na landing page o quão proactive ele é… óbvio, com frontend-designer, de forma sexy". The layout is the loop's call, recorded below from [design.md](design.md) (Option B); the owner may overturn it.
 **ADRs:** none new. The Focus wording follows [ADR 0068](../../adr/0068-one-respect-focus-switch-decides-for-every-proactive-surface-and-untouched-settings-follow-the-defaults.md) §5, which keeps the agent nudge and the day mail ungated.
