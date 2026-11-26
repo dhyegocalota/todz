@@ -4,6 +4,7 @@
 - Date: 2026-11-26
 - Deciders: Claude (the build loop's call); Dhyego Calota (owner) may overturn it
 - Inspired by: [ADR 0072](0072-the-mac-app-downloads-from-todz-app-as-a-development-signed-dmg-with-an-ssh-signature-and-updates-through-sparkle.md) decision 2, `scripts/release-mac.sh` (`create_disk_image`)
+- Amended by: [0095](0095-the-committed-dmg-layout-carries-the-whole-icon-view-record-finder-writes-or-finder-drops-it.md) (decision 1: the committed layout carries the whole icon view record Finder writes)
 
 ## Context
 
