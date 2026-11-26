@@ -4,6 +4,7 @@ import { env } from 'cloudflare:workers';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import type { Env } from '../src/env';
 import { serveOwner } from '../src/owner-endpoint';
+import { OWNER_BODY_LENGTH_MAX } from '../src/request-body';
 import { CLIENT_ADDRESS, CLIENT_ADDRESS_HEADER, LINK_CHALLENGE, acceptingSiteverify, emailEnv, freshAddress } from './email-sign-in-client';
 import { ownerCall, serveOwnerCall, signInOwner } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
@@ -13,6 +14,8 @@ const CREATED_STATUS = 201;
 const INVALID_REQUEST = { error: 'invalid_request' };
 const BODY_LENGTH_MAX = 4096;
 const OVERSIZED_LENGTH = BODY_LENGTH_MAX + 1;
+const SIGNED_IN_BODY_LENGTH_MAX = OWNER_BODY_LENGTH_MAX;
+const SIGNED_IN_OVERSIZED_LENGTH = SIGNED_IN_BODY_LENGTH_MAX + 1;
 const JSON_MEDIA_TYPE = 'application/json';
 const LOCAL_ORIGIN = 'http://localhost:8787';
 
@@ -57,15 +60,15 @@ afterEach(() => {
 describe('a signed-in body', () => {
   test('of exactly the bound is read (pin)', async () => {
     const { token } = await signInOwner();
-    const body = paddedName(BODY_LENGTH_MAX);
-    expect(body).toHaveLength(BODY_LENGTH_MAX);
+    const body = paddedName(SIGNED_IN_BODY_LENGTH_MAX);
+    expect(body).toHaveLength(SIGNED_IN_BODY_LENGTH_MAX);
     const response = await ownerCall({ method: 'POST', path: '/owner/workspaces', token, rawBody: body });
     expect(response.status).toBe(CREATED_STATUS);
   });
 
   test('over the bound is refused and keeps nothing', async () => {
     const { token, ownerId } = await signInOwner();
-    const response = await ownerCall({ method: 'POST', path: '/owner/workspaces', token, rawBody: paddedName(OVERSIZED_LENGTH) });
+    const response = await ownerCall({ method: 'POST', path: '/owner/workspaces', token, rawBody: paddedName(SIGNED_IN_OVERSIZED_LENGTH) });
     expect(response.status).toBe(BAD_REQUEST_STATUS);
     expect(await response.json()).toEqual(INVALID_REQUEST);
     expect(await workspaceCount(ownerId)).toBe(0);
@@ -76,7 +79,7 @@ describe('a signed-in body', () => {
     const request = streamedRequest({
       path: '/owner/workspaces',
       headers: { Authorization: `Bearer ${token}` },
-      body: paddedName(BODY_LENGTH_MAX),
+      body: paddedName(SIGNED_IN_BODY_LENGTH_MAX),
     });
     const response = await serveStreamed({ request });
     expect(response.status).toBe(BAD_REQUEST_STATUS);
