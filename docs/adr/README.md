@@ -104,3 +104,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0083](0083-the-release-dmg-opens-on-a-committed-background-and-a-committed-ds-store-layout-copied-into-the-image-folder.md) | The release DMG opens on a committed background and a committed .DS_Store layout, copied into the image folder | Accepted | 2026-11-26 |
 | [0084](0084-the-full-gate-runs-on-every-pull-request-as-hosted-jobs-filtered-by-path-and-one-summary-check-is-the-merge-gate.md) | The full gate runs on every pull request as hosted jobs filtered by path, and one summary check is the merge gate | Accepted | 2026-11-26 |
 | [0085](0085-the-readme-is-a-six-shot-showcase-and-the-docs-hold-the-tour.md) | The README is a six-shot showcase and the docs hold the tour | Accepted | 2026-11-26 |
+| [0086](0086-an-owner-route-checks-the-credential-before-the-app-version.md) | An owner route checks the credential before the app version | Accepted | 2026-11-26 |
