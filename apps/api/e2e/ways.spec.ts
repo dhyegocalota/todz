@@ -41,6 +41,7 @@ test.describe('the two ways section', () => {
   test('the hero keeps its free line and chip', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.hero-free')).toHaveText(LANDING_COPY.free.line);
-    await expect(page.locator('.hero .free-chip')).toHaveText(LANDING_COPY.free.chip);
+    await expect(page.locator('.hero .download-button')).toHaveText(LANDING_COPY.download.heroButton);
+    await expect(page.locator('.free-chip')).toHaveCount(0);
   });
 });

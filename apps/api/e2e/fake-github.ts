@@ -2,8 +2,8 @@ import http from 'node:http';
 import { REPOSITORY } from '@todz/types';
 
 export const FAKE_GITHUB_PORT = 8793;
-export const FAKE_GITHUB_STARS = 1234;
-export const FAKE_GITHUB_STARS_TEXT = '1.2k';
+export const FAKE_GITHUB_STARS = 42;
+export const FAKE_GITHUB_STARS_TEXT = '42';
 const OK_STATUS = 200;
 const NOT_FOUND_STATUS = 404;
 const REPOSITORY_PATHNAME = `/repos/${REPOSITORY.path}`;

@@ -21,9 +21,9 @@ function waysOf(html: string): string {
 }
 
 describe('the free copy', () => {
-  test('says Free on todz cloud, or run your own, and names the chip', () => {
+  test('says Free on todz cloud, or run your own, and the hero button says Free too', () => {
     expect(LANDING_COPY.free.line).toBe('Free on todz cloud — or run your own.');
-    expect(LANDING_COPY.free.chip).toBe('Free');
+    expect(LANDING_COPY.download.heroButton).toBe('Download for Mac — Free');
   });
 
   test('words the two ways as the owner asked', () => {
@@ -57,11 +57,12 @@ describe('the free hero', () => {
     expect(hero).toContain(LANDING_COPY.free.line);
   });
 
-  test('puts a Free chip in the glass style right after the Download button', async () => {
-    const hero = heroOf(await landingHtml());
-    expect(hero).toContain(`<span class="free-chip glass">${LANDING_COPY.free.chip}</span>`);
-    expect(hero.indexOf('class="download-button"')).toBeLessThan(hero.indexOf('free-chip glass'));
-    expect(hero.indexOf('free-chip glass')).toBeLessThan(hero.indexOf('class="star-pill'));
+  test('folds Free into the Download button, with no second button-like chip', async () => {
+    const html = await landingHtml();
+    const hero = heroOf(html);
+    expect(hero).toContain(`<a class="download-button" href="/download" download>${LANDING_COPY.download.heroButton}</a>`);
+    expect(html).not.toContain('free-chip');
+    expect(SITE_STYLE).not.toContain('.free-chip');
   });
 });
 
@@ -92,8 +93,8 @@ describe('the two ways section', () => {
     expect(selfHost).toContain(LANDING_COPY.ways.selfHost.cta);
   });
 
-  test('styles the chip, the section, its cards and the badge, two columns from the narrow breakpoint', () => {
-    ['.free-chip{', '.ways{', '.way-card{', '.way-badge{'].forEach((rule) => expect(SITE_STYLE).toContain(rule));
+  test('styles the section, its cards and the badge, two columns from the narrow breakpoint', () => {
+    ['.ways{', '.way-card{', '.way-badge{'].forEach((rule) => expect(SITE_STYLE).toContain(rule));
     expect(SITE_STYLE).toContain('.way-list{grid-template-columns:repeat(2, 1fr)}');
   });
 });

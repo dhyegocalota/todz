@@ -46,7 +46,7 @@ const SECTION_MARKERS = [
   '<section class="final-call',
   '<footer class="site-footer',
 ];
-const DOWNLOAD_BUTTON = '<a class="download-button" href="/download" download>Download for Mac</a>';
+const DOWNLOAD_BUTTON = '<a class="download-button" href="/download" download>Download for Mac — Free</a>';
 const DOWNLOAD_NOTE_PATTERN =
   /<p class="download-note">Not notarized by Apple yet: the first time, open it from System Settings › Privacy &amp; Security\. <a class="download-note-link" href="https:\/\/docs\.todz\.app\/install-on-mac">Install steps<\/a><\/p>/;
 const COMING_SOON_PATTERN = /coming soon/i;
