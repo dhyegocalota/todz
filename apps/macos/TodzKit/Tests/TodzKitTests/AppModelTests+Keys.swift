@@ -445,6 +445,58 @@ extension AppModelTests {
         #expect(harness.model.keys == .loaded([]))
     }
 
+    @Test func aRevokeAnsweredAfterTheScreenReappearedRemovesTheKeyFromTheNewList() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.service.suspend(.revokeKey)
+        let revoking = Task { await harness.model.revokeKey(launchKey) }
+        await harness.service.held(.revokeKey)
+        harness.model.leaveKeyScreen()
+        harness.model.reopenKeyScreen()
+        await harness.model.keyLoading?.value
+        #expect(harness.model.keys == .loaded([launchKey]))
+        harness.service.resume(.revokeKey)
+        await revoking.value
+        #expect(harness.model.keys == .loaded([]))
+        #expect(harness.model.revokingKeyIdentifiers == [])
+        #expect(harness.model.failedRevokeIdentifiers == [])
+    }
+
+    @Test func aListAnsweredAfterAConfirmedRevokeInANewVisitDoesNotBringTheKeyBack() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.service.suspend(.revokeKey)
+        let revoking = Task { await harness.model.revokeKey(launchKey) }
+        await harness.service.held(.revokeKey)
+        harness.model.leaveKeyScreen()
+        harness.service.suspend(.listKeys)
+        harness.model.reopenKeyScreen()
+        await harness.service.held(.listKeys)
+        harness.service.resume(.revokeKey)
+        await revoking.value
+        harness.service.keysOfProject[launchIdentifier] = [launchKey]
+        harness.service.resume(.listKeys)
+        await harness.model.keyLoading?.value
+        #expect(harness.model.keys == .loaded([]))
+    }
+
+    @Test func aFailedRevokeAnsweredAfterTheScreenReappearedShowsNoFailureOnTheNewList() async throws {
+        let harness = try await keyHarness()
+        await openKeys(harness, from: .project(identifier: launchIdentifier))
+        harness.service.failures[.revokeKey] = .unreachable
+        harness.service.suspend(.revokeKey)
+        let revoking = Task { await harness.model.revokeKey(launchKey) }
+        await harness.service.held(.revokeKey)
+        harness.model.leaveKeyScreen()
+        harness.model.reopenKeyScreen()
+        await harness.model.keyLoading?.value
+        harness.service.resume(.revokeKey)
+        await revoking.value
+        #expect(harness.model.failedRevokeIdentifiers == [])
+        #expect(harness.model.revokingKeyIdentifiers == [])
+        #expect(harness.model.keys == .loaded([launchKey]))
+    }
+
     @Test func aListForAGoneProjectFallsBackToTheInbox() async throws {
         let harness = try await keyHarness()
         harness.service.projectFailures[launchIdentifier] = .notFound
