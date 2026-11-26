@@ -100,4 +100,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0079](0079-workspaces-switch-by-chord-with-carbon-hot-keys-and-a-stored-rebindable-binding-table.md) | Workspaces switch by chord, with global Carbon hot keys and a stored, rebindable binding table | Accepted | 2026-11-26 |
 | [0081](0081-the-whole-repository-is-agpl-3-0-only-and-going-public-follows-a-pre-flight-runbook.md) | The whole repository is AGPL-3.0-only, and going public follows a pre-flight runbook | Accepted | 2026-11-26 |
 | [0083](0083-the-release-dmg-opens-on-a-committed-background-and-a-committed-ds-store-layout-copied-into-the-image-folder.md) | The release DMG opens on a committed background and a committed .DS_Store layout, copied into the image folder | Accepted | 2026-11-26 |
-| [0085](0085-the-readme-is-a-six-shot-showcase-and-the-docs-hold-the-tour.md) | The README is a six-shot showcase and the docs hold the tour | Proposed | 2026-11-26 |
+| [0085](0085-the-readme-is-a-six-shot-showcase-and-the-docs-hold-the-tour.md) | The README is a six-shot showcase and the docs hold the tour | Accepted | 2026-11-26 |

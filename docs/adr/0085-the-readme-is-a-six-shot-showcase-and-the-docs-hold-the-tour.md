@@ -1,6 +1,6 @@
 # 0085. The README is a six-shot showcase and the docs hold the tour
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-26
 - Deciders: Dhyego Calota (owner) asked for a newcomer-first README, shorter than zapbip's, on 2026-11-26; Claude (the build loop's call on the cut and the new home)
 - Inspired by: the README at c0ad1411, 28 screenshots long; [ADR 0047](0047-the-readme-walk-shows-only-the-shots-that-tell-the-product-s-story.md), whose revisit condition ("the landing on `todz.app` shows the product") has fired; [ADR 0059](0059-the-docs-are-a-mintlify-site-on-docs-todz-app-built-from-apps-docs-and-the-self-host-guide-moves-into-it.md)
