@@ -9,6 +9,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme", projectNames: ["launch"])
         harness.seedWorkspace(name: "side")
+        harness.rememberWorkspace(identifier: "acme")
         harness.service.tasksOfProject[inboxIdentifier] = [
             MutableTask(number: 1, title: "Due today", dueDate: harness.model.today).record,
             MutableTask(number: 2, title: "Also today", dueDate: harness.model.today).record,

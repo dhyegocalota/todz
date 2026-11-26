@@ -198,6 +198,7 @@ extension AppModelTests {
         harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "side")
         harness.seedTasks(projectIdentifier: inboxIdentifier, count: 2)
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         harness.service.suspend(.completeTasks)
         await harness.model.complete(task: firstTask)

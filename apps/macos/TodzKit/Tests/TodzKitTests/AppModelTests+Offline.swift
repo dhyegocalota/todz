@@ -40,6 +40,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "side", projectNames: ["garden"])
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         harness.service.failures[.readChanges] = .unreachable
         await harness.model.switchWorkspace(identifier: side.identifier)
@@ -51,6 +52,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "side", projectNames: ["garden"])
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         harness.service.failures[.readChanges] = .unreachable
         await harness.model.switchWorkspace(identifier: side.identifier)
@@ -61,6 +63,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "side", projectNames: ["garden"])
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         harness.service.projectFailures["side-inbox"] = .unreachable
         harness.service.projectFailures["side-garden"] = .unexpected(status: 500)

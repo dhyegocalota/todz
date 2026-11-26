@@ -55,6 +55,7 @@ extension AppModelTests {
         harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "side")
         harness.seedTasks(projectIdentifier: inboxIdentifier, count: 1)
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         await harness.model.commitNotes(task: firstTask, draft: tooLongNotes)
         await harness.model.switchWorkspace(identifier: side.identifier)

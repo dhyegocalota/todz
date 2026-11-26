@@ -122,7 +122,7 @@ extension AppModelTests {
         harness.service.workspaces.removeAll { $0.identifier == acme.identifier }
         await harness.model.reloadWorkspacesQuietly()
         #expect(harness.model.phase == .choosing)
-        #expect(harness.signals.cancellations.contains(harness.watchKey("acme-inbox")))
+        await harness.signals.cancelled(harness.watchKey("acme-inbox"))
     }
 
     @Test func whileChoosingShortcutsAskForAWorkspaceChoice() async throws {

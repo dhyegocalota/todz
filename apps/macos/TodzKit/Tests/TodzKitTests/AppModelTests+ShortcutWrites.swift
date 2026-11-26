@@ -107,6 +107,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "side")
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         await harness.model.switchWorkspace(identifier: side.identifier)
         harness.service.suspend(.addTasks)
@@ -154,6 +155,7 @@ extension AppModelTests {
         harness.seedWorkspace(name: "acme")
         harness.seedWorkspace(name: "side")
         harness.service.tasksOfProject["side-inbox"] = [MutableTask(number: 1, title: "Water the garden").record]
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         #expect(await harness.model.completeFromShortcut(key: TaskKey(projectIdentifier: "side-inbox", number: 1)) == .notFound)
         #expect(harness.model.waitingChangeCount == 0)

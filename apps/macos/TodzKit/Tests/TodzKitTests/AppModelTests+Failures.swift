@@ -26,6 +26,7 @@ extension AppModelTests {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "side")
+        harness.rememberWorkspace(identifier: "acme")
         await harness.signedIn()
         harness.service.failures[.createProject] = .notFound
         harness.service.workspaces = [side]
