@@ -13,6 +13,7 @@ import { signIn } from './owner-sign-in';
 import { signInLimitRefusal } from './sign-in-limiter';
 import { isSignedInRateLimited, withRetryAfter } from './signed-in-limiter';
 import { requestSignInLink } from './sign-in-links';
+import { joinCloudQueue } from './cloud-queue-join';
 import { readSignInMethod } from './sign-in-method';
 import { TASK_HANDLERS } from './owner-tasks';
 import { WORKSPACE_HANDLERS } from './owner-workspaces';
@@ -30,6 +31,7 @@ const PUBLIC_HANDLERS: Record<PublicRoute, PublicHandler> = {
   [OwnerRoute.SignIn]: signIn,
   [OwnerRoute.ReadSignInMethod]: readSignInMethod,
   [OwnerRoute.RequestSignInLink]: requestSignInLink,
+  [OwnerRoute.JoinCloudQueue]: joinCloudQueue,
 };
 
 function isPublicRoute(route: OwnerRoute): route is PublicRoute {

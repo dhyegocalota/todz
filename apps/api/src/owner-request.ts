@@ -5,7 +5,7 @@ import { parsedJson } from './parsed-json';
 import type { SessionOwner } from './project-routing';
 import { MediaType, OWNER_BODY_LENGTH_MAX, hasMediaType, isBoundedRequest } from './request-body';
 
-export type PublicRoute = OwnerRoute.SignIn | OwnerRoute.ReadSignInMethod | OwnerRoute.RequestSignInLink;
+export type PublicRoute = OwnerRoute.SignIn | OwnerRoute.ReadSignInMethod | OwnerRoute.RequestSignInLink | OwnerRoute.JoinCloudQueue;
 
 export type SessionRoute = Exclude<OwnerRoute, PublicRoute>;
 

@@ -24,6 +24,7 @@ const LIMITER_OF_LIMIT: Record<SignInLimit, (env: Env) => RateLimit | undefined>
 const LIMITS_OF_ROUTE: Record<PublicRoute, SignInLimit[]> = {
   [OwnerRoute.ReadSignInMethod]: [SignInLimit.Client],
   [OwnerRoute.RequestSignInLink]: [SignInLimit.Client, SignInLimit.Address, SignInLimit.Global],
+  [OwnerRoute.JoinCloudQueue]: [SignInLimit.Client, SignInLimit.Address, SignInLimit.Global],
   [OwnerRoute.SignIn]: [SignInLimit.Client, SignInLimit.Global],
 };
 
