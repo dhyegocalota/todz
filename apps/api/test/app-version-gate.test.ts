@@ -1,6 +1,6 @@
 import { APP_VERSION_HEADER, MINIMUM_APP_VERSION } from '@todz/types';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
-import { exports } from 'cloudflare:workers';
+import { env, exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import type { Env } from '../src/env';
 import { HttpStatus } from '../src/http-status';
@@ -19,6 +19,7 @@ const NO_STORE = 'no-store';
 const TOO_OLD_VERSIONS = ['0.1.9', 'v0.2.0'];
 const ACCEPTED_VERSIONS = ['0.2.0', '0.2', '1.0.0'];
 const REFUSED_SIGN_IN_COUNT = 10;
+const UNKNOWN_TOKEN = 'todz_unknown_credential';
 const PRE_ADR_0058_BODY = { email: 'maria@example.com', link_challenge: LINK_CHALLENGE, turnstile_token: TURNSTILE_DUMMY_TOKEN };
 
 type AppCall = { method?: string; path: string; appVersion?: string; token?: string; body?: unknown; headers?: Record<string, string> };
@@ -70,6 +71,37 @@ describe('the app version gate on /owner/*', () => {
     await expectAppTooOld(await appFetch({ path: '/owner', token: owner.token, appVersion: '0.1.0' }));
     const accepted = await appFetch({ path: '/owner', token: owner.token, appVersion: MINIMUM_APP_VERSION });
     expect(accepted.status).toBe(HttpStatus.Ok);
+  });
+
+  test.each([
+    { method: 'GET', path: '/owner' },
+    { method: 'PATCH', path: '/owner' },
+    { method: 'GET', path: '/owner/workspaces' },
+    { method: 'POST', path: '/owner/workspaces' },
+    { method: 'DELETE', path: '/owner/sessions/current' },
+  ])('$method $path with no credential and no version header answers 401, not 426', async ({ method, path }) => {
+    const response = await appFetch({ method, path });
+    expect(response.status).toBe(HttpStatus.Unauthorized);
+  });
+
+  test('a session route with an unknown credential and an old version answers 401, not 426', async () => {
+    const response = await appFetch({ path: '/owner/workspaces', token: UNKNOWN_TOKEN, appVersion: '0.1.0' });
+    expect(response.status).toBe(HttpStatus.Unauthorized);
+  });
+
+  test('a refused signed-in request spends no owner limiter budget', async () => {
+    const owner = await signInOwner();
+    const limiter = recordingLimiter({ isAllowed: true });
+    const executionContext = createExecutionContext();
+    const response = await serveOwner({
+      request: appRequest({ path: '/owner', token: owner.token, appVersion: '0.1.0' }),
+      env: { ...env, OWNER_LIMITER: limiter.limiter },
+      now: CLOCK_NOW,
+      executionContext,
+    });
+    await waitOnExecutionContext(executionContext);
+    await expectAppTooOld(response);
+    expect(limiter.keys).toEqual([]);
   });
 
   test('the change socket with no version header is refused with the todz body, not the store upgrade refusal', async () => {
