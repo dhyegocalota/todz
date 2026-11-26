@@ -23,17 +23,17 @@ G1, G2 and G3 are disjoint and run in parallel; the Privacy page waits for the f
 
 ### G1
 
-- [ ] **Step 1:** red tests and stubs for the store, the nightly run, the appcast, the usage report and the admin page, then the migration and wiring.
-- [ ] **Step 2:** the store with the dimension allow-lists, the cap and retention.
-- [ ] **Step 3:** the nightly run, the appcast counter, the usage endpoint and the admin page with its CSV.
+- [x] **Step 1:** red tests and stubs for the store, the nightly run, the appcast, the usage report and the admin page, then the migration and wiring. — evidence: dcda491f, 5d44615e
+- [x] **Step 2:** the store with the dimension allow-lists, the cap and retention. — evidence: a00f5b14 (`metrics-store.test.ts`)
+- [x] **Step 3:** the nightly run, the appcast counter, the usage endpoint and the admin page with its CSV. — evidence: a00f5b14
 
 ### G2
 
-- [ ] **Step 4:** the switch off by default, the rotating identifier, the counts-only rollup, the daily send and the ask once.
+- [x] **Step 4:** the switch off by default, the rotating identifier, the counts-only rollup, the daily send and the ask once. — evidence: b5636e3b (`UsageSharingTests`)
 
 ### G3
 
-- [ ] **Step 5:** ADR 0082, the Privacy page, the navigation, the self-host guide and the index rows.
+- [x] **Step 5:** ADR 0082, the Privacy page, the navigation, the self-host guide and the index rows. — evidence: c51f5fe3
 
 ## Failure modes
 
