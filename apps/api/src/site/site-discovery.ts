@@ -3,7 +3,7 @@ import { SERVER_CARD_FILE, SERVER_CARD_MEDIA_TYPE } from '../mcp-server-card';
 import { AgentClient, agentSetupOf } from './agent-setup';
 import { DISCOVERY_COPY, DOCS_PAGES, TOOL_PARAMETERS } from './discovery-copy';
 import { type DiscoveryFile, NO_HEADERS, OPEN_READ_HEADERS } from './discovery-response';
-import { LANDING_COPY } from './landing-copy';
+import { LANDING_COPY, LANDING_DAY_LINES } from './landing-copy';
 import { LANDING_MARKDOWN_FILE } from './landing-markdown';
 import { fenced, linesOf } from './markdown-lines';
 import { DOCS_SELF_HOST_URL } from './self-host-redirect';
@@ -108,6 +108,10 @@ const HEAD_LINES = [
   DISCOVERY_COPY.pricing,
   DISCOVERY_COPY.publisher,
   DISCOVERY_COPY.source,
+  '',
+  LANDING_COPY.benefits.day.title,
+  ...LANDING_DAY_LINES,
+  LANDING_COPY.benefits.day.note,
   '',
 ];
 

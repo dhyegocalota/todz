@@ -19,6 +19,7 @@ const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const SRCSET_LIST_SEPARATOR = ', ';
 const WORD_SEPARATOR = ' ';
 const WAYS_ID = 'ways';
+const DAY_CARD_ID = 'proactive-day';
 const LINK_ARROW = '→';
 
 const MARKDOWN_ALTERNATE_LINK = `<${DiscoveryPath.LandingMarkdown}>; rel="alternate"; type="${MARKDOWN_MEDIA_TYPE}"`;
@@ -122,13 +123,74 @@ ${well}
 </li>`;
 }
 
+function dayStopHtml({ time, mock, title, body }: { time: string; mock: string; title: string; body: string }): string {
+  return `<li class="day-stop"><span class="day-dot" aria-hidden="true"></span><div class="day-vignette glass"><time class="day-time" datetime="${escapedHtml(time)}">${escapedHtml(time)}</time><div class="day-mock" aria-hidden="true">${mock}</div><p class="day-stop-title">${escapedHtml(title)}</p><p class="day-stop-body">${escapedHtml(body)}</p></div></li>`;
+}
+
+function dayEmailMockHtml(): string {
+  return `<span class="day-mail">${glyphHtml({ glyph: SiteGlyph.Icon, className: 'day-mail-icon' })}<span class="day-mail-subject">${escapedHtml(LANDING_COPY.benefits.day.email.subject)}</span></span>`;
+}
+
+function dayGlanceMockHtml(): string {
+  const { heading, count, rows } = LANDING_COPY.benefits.day.glance;
+  const rowsHtml = rows.map((row) => `<span class="day-row">${escapedHtml(row)}</span>`).join('');
+  return `<span class="day-mock-head"><span>${escapedHtml(heading)}</span><span>${escapedHtml(count)}</span></span>${rowsHtml}`;
+}
+
+function dayAgentMockHtml(): string {
+  const { ask, toolCall, toolResult } = LANDING_COPY.benefits.day.agent;
+  return `<div class="terminal day-terminal"><pre class="terminal-body"><code><span class="terminal-line"><span class="terminal-prompt">${escapedHtml(LANDING_COPY.terminal.askPrompt)}</span> <span class="terminal-ask">${escapedHtml(ask)}</span></span><span class="terminal-line terminal-call">${escapedHtml(toolCall)}</span><span class="terminal-line terminal-result">${escapedHtml(toolResult)}</span></code></pre></div>`;
+}
+
+function dayCloseMockHtml(): string {
+  const { count, task, actions } = LANDING_COPY.benefits.day.close;
+  const actionsHtml = actions.map((action) => `<span class="day-action">${escapedHtml(action)}</span>`).join('');
+  return `<span class="day-mock-head"><span>${escapedHtml(count)}</span></span><span class="day-row">${escapedHtml(task)}</span><span class="day-actions">${actionsHtml}</span>`;
+}
+
+function dayExtrasHtml(): string {
+  const { label, ribbon, temperature, siri } = LANDING_COPY.benefits.day.extras;
+  const extras = [
+    { label: ribbon.label, detail: `<span class="menu-strip-item">${MENU_BAR_GLYPH}<span>${escapedHtml(ribbon.detail)}</span></span>` },
+    { label: temperature.label, detail: `<span>${escapedHtml(temperature.detail)}</span>` },
+    { label: siri.label, detail: `<span>${escapedHtml(siri.detail)}</span>` },
+  ];
+  const itemsHtml = extras
+    .map((extra) => `<li class="day-extra"><span class="day-extra-label">${escapedHtml(extra.label)}</span> ${extra.detail}</li>`)
+    .join('');
+  return `<ul class="day-extras" aria-label="${escapedHtml(label)}">${itemsHtml}</ul>`;
+}
+
+function dayCardHtml(): string {
+  const { eyebrow, title, railLabel, email, glance, agent, close, note } = LANDING_COPY.benefits.day;
+  const stops = [
+    { ...email, mock: dayEmailMockHtml() },
+    { ...glance, mock: dayGlanceMockHtml() },
+    { ...agent, mock: dayAgentMockHtml() },
+    { ...close, mock: dayCloseMockHtml() },
+  ];
+  return `<li id="${DAY_CARD_ID}" class="benefit-card benefit-card-day glass reveal">
+<div class="day-head">
+<div>
+<p class="section-eyebrow">${escapedHtml(eyebrow)}</p>
+<h3 class="section-title day-title">${escapedHtml(title)}</h3>
+</div>
+<p class="day-note">${escapedHtml(note)}</p>
+</div>
+<div class="benefit-well day-well">
+<ol class="day-rail" aria-label="${escapedHtml(railLabel)}">${stops.map(dayStopHtml).join('')}</ol>
+</div>
+${dayExtrasHtml()}
+</li>`;
+}
+
 function benefitsHtml(): string {
-  const { agents, glance, offline } = LANDING_COPY.benefits;
+  const { agents, offline } = LANDING_COPY.benefits;
   return `<section class="benefits page-width" aria-labelledby="benefits-title">
 <h2 id="benefits-title" class="visually-hidden">${escapedHtml(LANDING_COPY.benefits.heading)}</h2>
 <ul class="benefit-list">
+${dayCardHtml()}
 ${benefitHtml({ well: `<div class="benefit-well benefit-well-agents"><div class="benefit-shot-agents ${cropClassOf(LandingShot.AgentTasks)}">${shotImage({ shot: LandingShot.AgentTasks, alt: LANDING_COPY.alt.agentTasks })}</div></div>`, ...agents })}
-${benefitHtml({ well: `<div class="benefit-well"><div class="benefit-shot-ring ${cropClassOf(LandingShot.WidgetRing)}">${shotImage({ shot: LandingShot.WidgetRing, alt: LANDING_COPY.alt.widgetRing })}</div></div>`, ...glance })}
 ${benefitHtml({ well: `<div class="benefit-well">${glyphHtml({ glyph: SiteGlyph.Offline, className: 'offline-glyph' })}</div>`, ...offline })}
 </ul>
 </section>`;
