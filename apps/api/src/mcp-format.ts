@@ -1,5 +1,13 @@
-import { type AddedTask, type CompletedTask, type ReopenedTask, type Task, type TaskList, formatShortId } from '@todz/core';
-import type { TaskState } from '@todz/types';
+import {
+  type AddedTask,
+  type CompletedTask,
+  type HistoryEntry,
+  type ReopenedTask,
+  type Task,
+  type TaskList,
+  formatShortId,
+} from '@todz/core';
+import { ActorKind, type TaskState } from '@todz/types';
 import { MCP_COPY } from './mcp-copy';
 import type { MovedTask } from './move-task';
 import type { ProjectRecord } from './owner-records';
@@ -62,6 +70,22 @@ export function updatedAnswer(task: Task): string {
 
 export function completedAnswer(completed: CompletedTask[]): string {
   return lines(completed.map(completedLine));
+}
+
+export function showAnswer(task: Task): string {
+  const notes = task.notes === null ? [] : [task.notes];
+  return paragraphs([taskLine(task), MCP_COPY.stateLine(task.state), ...notes]);
+}
+
+function historyLineOf(entry: HistoryEntry): string {
+  const who = entry.actor.kind === ActorKind.Owner ? MCP_COPY.historyOwner : entry.actor.clientName;
+  const fields = entry.fields.length === 0 ? '' : MCP_COPY.historyFields(entry.fields.join(', '));
+  const note = entry.note === null ? '' : MCP_COPY.historyNote(entry.note);
+  return `${MCP_COPY.historyLine({ at: new Date(entry.at).toISOString(), who, what: `${entry.action}${fields}` })}${note}`;
+}
+
+export function historyAnswer(history: HistoryEntry[]): string {
+  return lines(history.map(historyLineOf));
 }
 
 export function reopenedAnswer(reopened: ReopenedTask[]): string {

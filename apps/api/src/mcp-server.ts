@@ -8,6 +8,7 @@ import {
   completedAnswer,
   deletedAnswer,
   failureText,
+  historyAnswer,
   listAnswer,
   movedAnswer,
   nextAnswer,
@@ -16,15 +17,18 @@ import {
   nudgedText,
   projectsAnswer,
   reopenedAnswer,
+  showAnswer,
   updatedAnswer,
 } from './mcp-format';
 import {
   AddArgumentsSchema,
   DeleteArgumentsSchema,
   DoneArgumentsSchema,
+  HistoryArgumentsSchema,
   ListArgumentsSchema,
   MoveArgumentsSchema,
   ReopenArgumentsSchema,
+  ShowArgumentsSchema,
   UpdateArgumentsSchema,
   draftsOf,
   patchOf,
@@ -122,6 +126,24 @@ function registerReadTools({ server, scope }: { server: McpServer; scope: McpSer
     async ({ state, due, text, limit }) => {
       const result = await project.listTasks({ today, filter: { state, dueWindows: due, text, limit } });
       return resultAnswer({ result, answer: (list) => listAnswer({ state, list }) });
+    },
+  );
+  server.registerTool(
+    McpToolName.Show,
+    { description: MCP_COPY.tools[McpToolName.Show], inputSchema: ShowArgumentsSchema, annotations: READ_ONLY_ANNOTATIONS },
+    async ({ id }) => {
+      const number = parseShortId(id);
+      if (number === null) return errorAnswer(MCP_COPY.taskIdInvalid);
+      return resultAnswer({ result: await project.readTask({ number }), answer: showAnswer });
+    },
+  );
+  server.registerTool(
+    McpToolName.History,
+    { description: MCP_COPY.tools[McpToolName.History], inputSchema: HistoryArgumentsSchema, annotations: READ_ONLY_ANNOTATIONS },
+    async ({ id }) => {
+      const number = parseShortId(id);
+      if (number === null) return errorAnswer(MCP_COPY.taskIdInvalid);
+      return resultAnswer({ result: await project.readHistory({ number }), answer: historyAnswer });
     },
   );
   server.registerTool(

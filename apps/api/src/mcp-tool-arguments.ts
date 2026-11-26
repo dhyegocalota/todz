@@ -40,6 +40,14 @@ export const DoneArgumentsSchema = z.object({
   note: z.string().nullable().default(null).describe(MCP_COPY.fields.note),
 });
 
+export const ShowArgumentsSchema = z.object({
+  id: z.string().describe(MCP_COPY.fields.id),
+});
+
+export const HistoryArgumentsSchema = z.object({
+  id: z.string().describe(MCP_COPY.fields.id),
+});
+
 export const ReopenArgumentsSchema = z.object({
   ids: z.array(z.string()).describe(MCP_COPY.fields.ids),
 });

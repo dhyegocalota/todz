@@ -40,6 +40,8 @@ export const TOOL_PARAMETERS: Record<McpToolName, ToolParameter[]> = {
     { name: 'text', text: MCP_COPY.fields.text },
     { name: 'limit', text: MCP_COPY.fields.limit },
   ],
+  [McpToolName.Show]: [{ name: 'id', text: MCP_COPY.fields.id }],
+  [McpToolName.History]: [{ name: 'id', text: MCP_COPY.fields.id }],
   [McpToolName.Update]: [
     { name: 'id', text: MCP_COPY.fields.id },
     { name: 'title', text: MCP_COPY.fields.title },

@@ -1,5 +1,5 @@
 import type { Client } from '@modelcontextprotocol/client';
-import { RuleIssue } from '@todz/types';
+import { RuleIssue, TaskState } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { MCP_COPY, McpToolName } from '../src/mcp-copy';
@@ -62,6 +62,56 @@ describe('the update tool sets and clears the due date and the notes (pin)', () 
     expect(set.text).toBe(`${MCP_COPY.updated} T-1 Plan${MCP_COPY.dueOn('2027-01-02')}`);
     const cleared = await callTool({ client, name: McpToolName.Update, args: { id: 'T-1', due_date: null, notes: null } });
     expect(cleared.text).toBe(`${MCP_COPY.updated} T-1 Plan`);
+  });
+});
+
+describe('the show tool', () => {
+  test('shows the title, due date, state and notes of one task', async () => {
+    const { client } = await connectedProject();
+    await callTool({
+      client,
+      name: McpToolName.Add,
+      args: { tasks: [{ title: 'Plan', notes: 'Bring the deck', due_date: '2027-01-02' }] },
+    });
+    expect(await callTool({ client, name: McpToolName.Show, args: { id: 'T-1' } })).toEqual({
+      text: `T-1 Plan${MCP_COPY.dueOn('2027-01-02')}\n\n${MCP_COPY.stateLine(TaskState.Open)}\n\nBring the deck`,
+      isError: undefined,
+    });
+    await callTool({ client, name: McpToolName.Done, args: { ids: ['T-1'] } });
+    expect((await callTool({ client, name: McpToolName.Show, args: { id: 'T-1' } })).text).toContain(MCP_COPY.stateLine(TaskState.Done));
+  });
+
+  test('a bad id and a missing task are errors, and a deleted task is gone', async () => {
+    const { client } = await connectedProject();
+    await addTitled({ client, title: 'Remove me' });
+    await callTool({ client, name: McpToolName.Delete, args: { id: 'T-1', confirm: 'Remove me' } });
+    expect(await callTool({ client, name: McpToolName.Show, args: { id: 'T-1' } })).toEqual({
+      text: MCP_COPY.taskNotFound('T-1'),
+      isError: true,
+    });
+    expect(await callTool({ client, name: McpToolName.Show, args: { id: 'x' } })).toEqual({ text: MCP_COPY.taskIdInvalid, isError: true });
+  });
+});
+
+describe('the history tool', () => {
+  test('lists what happened oldest first with who did it, the fields changed and the completion note', async () => {
+    const { client } = await connectedProject();
+    await addTitled({ client, title: 'Plan' });
+    await callTool({ client, name: McpToolName.Update, args: { id: 'T-1', title: 'Plan it', due_date: '2027-01-02' } });
+    await callTool({ client, name: McpToolName.Done, args: { ids: ['T-1'], note: 'Shipped' } });
+    const { text } = await callTool({ client, name: McpToolName.History, args: { id: 'T-1' } });
+    const [created, updated, completed] = text.split('\n');
+    expect(created).toMatch(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z created by Claude Code$|^\d{4}-\d{2}-\d{2}T[\d:.]+Z created by Codex$/);
+    expect(updated).toMatch(/Z updated \(title, due_date\) by /);
+    expect(completed).toMatch(/Z completed by .*: Shipped$/);
+  });
+
+  test('a missing task is an error', async () => {
+    const { client } = await connectedProject();
+    expect(await callTool({ client, name: McpToolName.History, args: { id: 'T-4' } })).toEqual({
+      text: MCP_COPY.taskNotFound('T-4'),
+      isError: true,
+    });
   });
 });
 
