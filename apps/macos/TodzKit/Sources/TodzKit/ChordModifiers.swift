@@ -15,12 +15,13 @@ public struct ChordModifiers: OptionSet, Codable, Hashable, Sendable {
     ]
 
     private static let triggers: ChordModifiers = [.control, .option, .command]
+    private static let minimumGlobalTriggers = 2
 
     public var symbols: String {
         Self.symbols.filter { contains($0.modifier) }.map(\.symbol).joined()
     }
 
-    public var canTrigger: Bool {
-        !isDisjoint(with: Self.triggers)
+    public var canBeGlobal: Bool {
+        intersection(Self.triggers).rawValue.nonzeroBitCount >= Self.minimumGlobalTriggers
     }
 }

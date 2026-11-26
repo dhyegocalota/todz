@@ -4,6 +4,7 @@ public enum WorkspaceAction: Hashable, Sendable {
     case next
 
     public static let all: [WorkspaceAction] = WorkspaceShortcuts.numbers.map(WorkspaceAction.number) + [.previous, .next]
+    public static let inAppChords: [KeyChord] = all.compactMap(\.inAppChord)
 
     private static let numberPrefix = "number"
     private static let previousName = "previous"
@@ -26,8 +27,8 @@ public enum WorkspaceAction: Hashable, Sendable {
         }
     }
 
-    // NB ADR 0079: ⌃1…⌃9 pick workspaces 1…9, ⌃⌘[ and ⌃⌘] step; a workspace beyond the ninth has no chord.
-    public var defaultChord: KeyChord? {
+    // NB ADR 0091: in-app chords are the Workspace menu's keys and are never registered globally.
+    public var inAppChord: KeyChord? {
         switch self {
         case let .number(number):
             guard let keyCode = Self.numberKeyCodes[number] else { return nil }
@@ -35,5 +36,19 @@ public enum WorkspaceAction: Hashable, Sendable {
         case .previous: return Self.previousChord
         case .next: return Self.nextChord
         }
+    }
+
+    // NB ADR 0091: global chords are ⌃⌥⌘1…9; previous and next have no global chord.
+    public var globalDefaultChord: KeyChord? {
+        switch self {
+        case let .number(number):
+            guard let keyCode = Self.numberKeyCodes[number] else { return nil }
+            return KeyChord(keyCode: keyCode, key: String(number), modifiers: WorkspaceShortcuts.globalModifiers)
+        case .previous, .next: return nil
+        }
+    }
+
+    public var hasGlobalChord: Bool {
+        globalDefaultChord != nil
     }
 }
