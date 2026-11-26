@@ -221,6 +221,51 @@ describe('the move tool', () => {
     expect((await listIn({ client: await clientOfProject(siblingId), state: 'open' })).text).toBe('Open tasks: 1 of 1\nT-1 Carry');
   });
 
+  test('the arrival names its source project in history and in show', async () => {
+    const { client, projectId } = await connectedProject();
+    const siblingId = await seedSiblingProject({ projectId, name: 'Side' });
+    await addTitled({ client, title: 'Carry' });
+    await callTool({ client, name: McpToolName.Move, args: { id: 'T-1', project: siblingId } });
+    const sibling = await clientOfProject(siblingId);
+    const history = await callTool({ client: sibling, name: McpToolName.History, args: { id: 'T-1' } });
+    expect(history.text).toMatch(new RegExp(`created by .*${MCP_COPY.historyNote(MCP_COPY.movedFrom('Project'))}$`));
+    expect((await callTool({ client: sibling, name: McpToolName.Show, args: { id: 'T-1' } })).text).toContain(
+      MCP_COPY.movedFrom('Project'),
+    );
+    const original = await callTool({ client: sibling, name: McpToolName.Add, args: { tasks: [{ title: 'Own' }] } });
+    expect(original.isError).toBeUndefined();
+    expect((await callTool({ client: sibling, name: McpToolName.Show, args: { id: 'T-2' } })).text).not.toContain(
+      MCP_COPY.movedFrom('Project'),
+    );
+  });
+
+  test('a replayed arrival whose title differs from the source is refused and the source stays', async () => {
+    const { client, projectId } = await connectedProject();
+    const siblingId = await seedSiblingProject({ projectId, name: 'Side' });
+    await addTitled({ client, title: 'Carry' });
+    const destination = env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(siblingId));
+    await destination.addTasks({
+      actor: AGENT_ACTOR,
+      drafts: [{ title: 'Other', notes: null, dueDate: null, idempotencyKey: `${MOVE_KEY_PREFIX}${projectId}:1` }],
+    });
+    expect(await callTool({ client, name: McpToolName.Move, args: { id: 'T-1', project: siblingId } })).toEqual({
+      text: MCP_COPY.ruleIssue[RuleIssue.MoveConflict],
+      isError: true,
+    });
+    expect((await listIn({ client, state: 'open' })).text).toContain('Carry');
+  });
+
+  test('an add with a key in the space of moves is refused', async () => {
+    const { client } = await connectedProject();
+    const answer = await callTool({
+      client,
+      name: McpToolName.Add,
+      args: { tasks: [{ title: 'Forged', idempotency_key: `${MOVE_KEY_PREFIX}${crypto.randomUUID()}:1` }] },
+    });
+    expect(answer.isError).toBe(true);
+    expect((await listIn({ client, state: 'open' })).text).not.toContain('Forged');
+  });
+
   test('a missing task is not found and nothing is added to the destination', async () => {
     const { client, projectId } = await connectedProject();
     const siblingId = await seedSiblingProject({ projectId, name: 'Side' });

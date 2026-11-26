@@ -278,17 +278,48 @@ describe('the directory deletions called for another owner', () => {
   test('deleteOwnerWorkspace answers null and keeps the workspace and its projects', async () => {
     const { token } = await signInOwner();
     const workspace = await createWorkspace({ token, name: 'Mine' });
-    const answer = await deleteOwnerWorkspace({ directory: env.DIRECTORY, ownerId: crypto.randomUUID(), workspaceId: workspace.id });
+    const answer = await deleteOwnerWorkspace({
+      directory: env.DIRECTORY,
+      ownerId: crypto.randomUUID(),
+      workspaceId: workspace.id,
+      expectedName: null,
+    });
     expect(answer).toBeNull();
     expect(await storedWorkspaceRows(workspace.id)).toBe(1);
     expect(await storedProjectRows(workspace.projects.map((project) => project.id))).toBe(1);
+  });
+
+  test('deleteOwnerWorkspace with a name that is no longer the name deletes nothing, and with the name deletes it', async () => {
+    const { token, ownerId } = await signInOwner();
+    const workspace = await createWorkspace({ token, name: 'Mine' });
+    const stale = await deleteOwnerWorkspace({ directory: env.DIRECTORY, ownerId, workspaceId: workspace.id, expectedName: 'Renamed' });
+    expect(stale).toBeNull();
+    expect(await storedWorkspaceRows(workspace.id)).toBe(1);
+    const current = await deleteOwnerWorkspace({ directory: env.DIRECTORY, ownerId, workspaceId: workspace.id, expectedName: 'Mine' });
+    expect(current).not.toBeNull();
+    expect(await storedWorkspaceRows(workspace.id)).toBe(0);
+  });
+
+  test('deleteOwnerProject with a name that is no longer the name deletes nothing, and with the name deletes it', async () => {
+    const { token, ownerId } = await signInOwner();
+    const workspace = await createWorkspace({ token, name: 'Mine' });
+    const project = await createProject({ token, workspaceId: workspace.id, name: 'Launch' });
+    expect(await deleteOwnerProject({ directory: env.DIRECTORY, ownerId, projectId: project.id, expectedName: 'Renamed' })).toBe(false);
+    expect(await storedProjectRows([project.id])).toBe(1);
+    expect(await deleteOwnerProject({ directory: env.DIRECTORY, ownerId, projectId: project.id, expectedName: 'Launch' })).toBe(true);
+    expect(await storedProjectRows([project.id])).toBe(0);
   });
 
   test('deleteOwnerProject answers false and keeps the project', async () => {
     const { token } = await signInOwner();
     const workspace = await createWorkspace({ token, name: 'Mine' });
     const project = await createProject({ token, workspaceId: workspace.id, name: 'Launch' });
-    const isDeleted = await deleteOwnerProject({ directory: env.DIRECTORY, ownerId: crypto.randomUUID(), projectId: project.id });
+    const isDeleted = await deleteOwnerProject({
+      directory: env.DIRECTORY,
+      ownerId: crypto.randomUUID(),
+      projectId: project.id,
+      expectedName: null,
+    });
     expect(isDeleted).toBe(false);
     expect(await storedProjectRows([project.id])).toBe(1);
   });

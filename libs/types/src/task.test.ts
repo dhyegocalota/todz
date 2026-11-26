@@ -80,6 +80,7 @@ describe('task enums', () => {
       NameInvalid: 'name_invalid',
       OrderKeyTooLong: 'order_key_too_long',
       ConfirmationMismatch: 'confirmation_mismatch',
+      MoveConflict: 'move_conflict',
     });
   });
 });

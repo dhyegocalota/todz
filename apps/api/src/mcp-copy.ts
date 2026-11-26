@@ -57,9 +57,9 @@ export const MCP_COPY = {
     [McpToolName.Done]: 'Complete one or more tasks, with an optional note of what was done.',
     [McpToolName.Reopen]: 'Reopen one or more done tasks.',
     [McpToolName.Delete]:
-      'Delete a task for good. Give its current title as confirm; nothing is deleted when it differs. A task you mean to keep somewhere else needs move.',
+      "Delete a task for good. Give its current title as confirm; nothing is deleted when it differs. A task you mean to keep somewhere else needs move. The owner's Mac shows the deletion after its next update.",
     [McpToolName.Move]:
-      'Move a task to another project of the same workspace. The task gets a new id there. Find project ids with projects.',
+      "Move a task to another project of the same workspace. The task gets a new id there. Find project ids with projects. The owner's Mac shows the move after its next update.",
     [McpToolName.Projects]: 'List the projects of the workspace this key belongs to, with their ids.',
   } satisfies Record<McpToolName, string>,
   ownerInstructions:
@@ -131,6 +131,8 @@ export const MCP_COPY = {
     [RuleIssue.OrderKeyTooLong]: 'The order cannot take this move: move the task first or last.',
     [RuleIssue.ConfirmationMismatch]:
       'The confirmation is not the current name of the target: nothing was deleted. Send the name exactly as it is now.',
+    [RuleIssue.MoveConflict]:
+      'The task was moved once already and has changed since: nothing was moved. Look at the destination project before moving it again.',
   } satisfies Record<RuleIssue, string>,
   taskIdInvalid: `Not a task id: use one like ${EXAMPLE_TASK_ID}.`,
   sessionRequired: 'Bad Request: Mcp-Session-Id header is required',
@@ -161,6 +163,7 @@ export const MCP_COPY = {
   alreadyOpen: 'Already open',
   deleted: 'Deleted',
   moved: 'Moved',
+  movedFrom: (projectName: string) => `Moved from ${projectName}`,
   movedTo: ({ projectName, shortId }: { projectName: string; shortId: string }) => `to ${projectName} as ${shortId}`,
   projectNotInWorkspace: 'That project is not another project of this workspace.',
   currentProject: ' · this project',
