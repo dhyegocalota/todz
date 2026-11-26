@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
 import type { Env } from '../src/env';
 import { utcDayOf } from '../src/telemetry/telemetry-day';
+import { serveAdminStoredTextReset } from '../src/site/admin-stored-text-reset';
 import { SuspensionChoice, serveAdminSuspension } from '../src/site/admin-suspension';
 import { serveAdminUsage } from '../src/site/admin-usage';
 import { AdminCookie } from '../src/site/admin-session';
@@ -137,5 +138,65 @@ describe('the admin suspension switch', () => {
       executionContext: createExecutionContext(),
     });
     expect(await suspendedAt(ownerId)).toBeNull();
+  });
+});
+
+async function storedBytesOf(ownerId: string): Promise<number> {
+  const row = await env.DIRECTORY.prepare('SELECT COALESCE(SUM(bytes), 0) AS bytes FROM owner_usage WHERE owner_id = ?')
+    .bind(ownerId)
+    .first<{ bytes: number }>();
+  if (row === null) throw new Error('a sum always answers');
+  return row.bytes;
+}
+
+function resetRequest({ cookie, origin, ownerId }: { cookie: string | null; origin: string; ownerId: string }): Request {
+  const headers: Record<string, string> = { 'Sec-Fetch-Site': origin, 'Content-Type': 'application/x-www-form-urlencoded' };
+  if (cookie !== null) headers.Cookie = cookie;
+  return new Request(`${SITE_ORIGIN}/admin/stored-text-resets`, { method: 'POST', headers, body: new URLSearchParams({ owner: ownerId }) });
+}
+
+describe('the admin stored text reset', () => {
+  test('a foreign origin changes nothing', async () => {
+    const ownerId = await seedOwner();
+    await writeUsage({ ownerId, day: utcDayOf(Date.now()), writes: 1, bytes: 500 });
+    const cookie = await sessionCookie(ADMIN_EMAIL);
+    const response = await serveAdminStoredTextReset({
+      request: resetRequest({ cookie, origin: 'cross-site', ownerId }),
+      env: adminEnv(),
+      executionContext: createExecutionContext(),
+    });
+    expect(response.status).toBe(FORBIDDEN_STATUS);
+    expect(await storedBytesOf(ownerId)).toBe(500);
+  });
+
+  test('without the admin session it changes nothing', async () => {
+    const ownerId = await seedOwner();
+    await writeUsage({ ownerId, day: utcDayOf(Date.now()), writes: 1, bytes: 500 });
+    const response = await serveAdminStoredTextReset({
+      request: resetRequest({ cookie: null, origin: 'same-origin', ownerId }),
+      env: adminEnv(),
+      executionContext: createExecutionContext(),
+    });
+    expect(response.status).toBe(SEE_OTHER_STATUS);
+    expect(await storedBytesOf(ownerId)).toBe(500);
+  });
+
+  test('the admin zeroes the stored text counter, keeps the writes and is sent back to the usage page', async () => {
+    const ownerId = await seedOwner();
+    const today = utcDayOf(Date.now());
+    await writeUsage({ ownerId, day: today, writes: 4, bytes: 500 });
+    const cookie = await sessionCookie(ADMIN_EMAIL);
+    const response = await serveAdminStoredTextReset({
+      request: resetRequest({ cookie, origin: 'same-origin', ownerId }),
+      env: adminEnv(),
+      executionContext: createExecutionContext(),
+    });
+    expect(response.status).toBe(SEE_OTHER_STATUS);
+    expect(response.headers.get('Location')).toBe('/admin/usage');
+    expect(await storedBytesOf(ownerId)).toBe(0);
+    const writes = await env.DIRECTORY.prepare('SELECT writes FROM owner_usage WHERE owner_id = ? AND day = ?')
+      .bind(ownerId, today)
+      .first<{ writes: number }>();
+    expect(writes).toEqual({ writes: 4 });
   });
 });
