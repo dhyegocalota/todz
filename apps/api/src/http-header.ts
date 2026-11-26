@@ -20,6 +20,7 @@ export enum HttpHeader {
   Accept = 'Accept',
   Vary = 'Vary',
   SessionDigest = 'Todz-Session-Digest',
+  UserAgent = 'User-Agent',
 }
 
 export const NO_STORE = 'no-store';

@@ -31,7 +31,7 @@ import { HttpHeader } from './http-header';
 import { HttpStatus } from './http-status';
 import { applyProjectSchema } from './project-schema';
 import { ProjectFailureKind, type ProjectResult, resultOf } from './project-result';
-import { SqliteTaskStore } from './sqlite-task-store';
+import { type ActivityCounts, SqliteTaskStore } from './sqlite-task-store';
 
 export const CHANGE_PAGE_SIZE = 100;
 const NO_CHANGE_NUMBER = 0;
@@ -142,6 +142,10 @@ export class ProjectStore extends DurableObject<Env> {
       if (this.store.findTask(number) === null) throw new TaskNotFoundError(number);
       return this.store.listHistory(number);
     });
+  }
+
+  countActivity({ since, until }: { since: number; until: number }): ActivityCounts {
+    return this.store.countActivity({ since, until });
   }
 
   private run<Value>(useCase: () => Value): ProjectResult<Value> {
