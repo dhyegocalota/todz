@@ -82,7 +82,7 @@ const PLAYWRIGHT_CACHE_PATH = '~/.cache/ms-playwright';
 const E2E_STEPS = ['playwright install --with-deps chromium', 'run: pnpm --filter @todz/api test:e2e'];
 const DOCS_STEP = 'run: pnpm --filter @todz/docs run broken-links';
 const MACOS_RUNNER = 'runs-on: macos-latest';
-const MACOS_STEP = 'run: scripts/verify-macos.sh';
+const MACOS_STEP = 'run: scripts/verify-macos.sh CODE_SIGNING_ALLOWED=NO';
 const SWIFT_CACHE_PATH = 'apps/macos/TodzKit/.build';
 const DERIVED_DATA_CACHE_PATH = 'apps/macos/build';
 const TOKEN_REFERENCE = 'secrets.';

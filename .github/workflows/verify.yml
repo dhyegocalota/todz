@@ -141,7 +141,7 @@ jobs:
           key: derived-data-${{ runner.os }}-${{ github.sha }}
           restore-keys: derived-data-${{ runner.os }}-
       - run: brew install xcodegen
-      - run: scripts/verify-macos.sh
+      - run: scripts/verify-macos.sh CODE_SIGNING_ALLOWED=NO
 
   security:
     runs-on: ubuntu-latest
