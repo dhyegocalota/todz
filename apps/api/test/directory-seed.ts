@@ -52,6 +52,16 @@ export async function seedProject({ ownerId }: { ownerId: string }): Promise<str
   return projectId;
 }
 
+export async function seedSiblingProject({ projectId, name }: { projectId: string; name: string }): Promise<string> {
+  const siblingId = crypto.randomUUID();
+  await env.DIRECTORY.prepare(
+    'INSERT INTO projects (id, workspace_id, name, is_inbox, created_at) SELECT ?, workspace_id, ?, 0, ? FROM projects WHERE id = ?',
+  )
+    .bind(siblingId, name, CLOCK_NOW, projectId)
+    .run();
+  return siblingId;
+}
+
 export async function seedKey({
   projectId,
   secret,

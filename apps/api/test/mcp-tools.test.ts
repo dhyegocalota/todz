@@ -111,26 +111,31 @@ function modernAdd({
 describe.each([ClientEra.Legacy, ClientEra.Modern])('the %s client', (era) => {
   const clientName = CLIENT_NAME_OF_ERA[era];
 
-  test('lists the five tools with their copy, hints and defaults, and no scope argument', async () => {
+  test('lists the nine project tools with their copy, hints and defaults, and no scope argument', async () => {
     const { client } = await connectedProject({ era });
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name).sort()).toEqual([
       McpToolName.Add,
+      McpToolName.Delete,
       McpToolName.Done,
       McpToolName.List,
+      McpToolName.Move,
       McpToolName.Next,
+      McpToolName.Projects,
+      McpToolName.Reopen,
       McpToolName.Update,
     ]);
     expect(Object.fromEntries(tools.map((tool) => [tool.name, tool.description]))).toEqual(MCP_COPY.tools);
-    expect(tools.map((tool) => JSON.stringify(tool.inputSchema)).filter((schema) => SCOPE_NAME_PATTERN.test(schema))).toEqual([]);
+    const scopeSchemas = tools.filter((tool) => tool.name !== McpToolName.Move).map((tool) => JSON.stringify(tool.inputSchema));
+    expect(scopeSchemas.filter((schema) => SCOPE_NAME_PATTERN.test(schema))).toEqual([]);
     const annotationsOf = Object.fromEntries(tools.map((tool) => [tool.name, tool.annotations]));
     expect(annotationsOf[McpToolName.Next]?.readOnlyHint).toBe(true);
     expect(annotationsOf[McpToolName.List]?.readOnlyHint).toBe(true);
-    expect([McpToolName.Add, McpToolName.Update, McpToolName.Done].map((name) => annotationsOf[name]?.destructiveHint)).toEqual([
-      false,
-      false,
-      false,
-    ]);
+    expect(annotationsOf[McpToolName.Projects]?.readOnlyHint).toBe(true);
+    expect(
+      [McpToolName.Add, McpToolName.Update, McpToolName.Done, McpToolName.Reopen].map((name) => annotationsOf[name]?.destructiveHint),
+    ).toEqual([false, false, false, false]);
+    expect([McpToolName.Delete, McpToolName.Move].map((name) => annotationsOf[name]?.destructiveHint)).toEqual([true, true]);
     const listSchema = tools.find((tool) => tool.name === McpToolName.List)?.inputSchema;
     expect(listSchema?.properties).toMatchObject({ state: { default: TaskState.Open }, limit: { default: LIST_LIMIT_DEFAULT } });
   });

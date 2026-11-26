@@ -21,6 +21,10 @@ export enum McpToolName {
   List = 'list',
   Update = 'update',
   Done = 'done',
+  Reopen = 'reopen',
+  Delete = 'delete',
+  Move = 'move',
+  Projects = 'projects',
 }
 
 export enum McpPromptName {
@@ -28,13 +32,19 @@ export enum McpPromptName {
 }
 
 export const MCP_COPY = {
-  instructions: `todz holds the to-do list of one project. Call next to get the task to work on, add to record new tasks, list to see tasks, update to change one, and done to complete tasks with a note of what was done. Ids look like ${EXAMPLE_TASK_ID}.`,
+  instructions: `todz holds the to-do list of one project. Call next to get the task to work on, add to record new tasks, list to see tasks, update to change one, done to complete tasks with a note of what was done, and reopen to undo a done. delete removes a task for good and needs its title as confirm; move sends a task to another project of the workspace (projects lists them). Ids look like ${EXAMPLE_TASK_ID}.`,
   tools: {
     [McpToolName.Next]: 'The one open task to work on now in this project, with its notes.',
     [McpToolName.Add]: 'Add one or more tasks. Give each an idempotency_key to make a retry safe.',
     [McpToolName.List]: 'List tasks by state, due window and text, in manual order (done: newest first).',
     [McpToolName.Update]: "Change a task's title, notes, due date or place in the order. null clears notes or the due date.",
     [McpToolName.Done]: 'Complete one or more tasks, with an optional note of what was done.',
+    [McpToolName.Reopen]: 'Reopen one or more done tasks.',
+    [McpToolName.Delete]:
+      'Delete a task for good. Give its current title as confirm; nothing is deleted when it differs. A task you mean to keep somewhere else needs move.',
+    [McpToolName.Move]:
+      'Move a task to another project of the same workspace. The task gets a new id there. Find project ids with projects.',
+    [McpToolName.Projects]: 'List the projects of the workspace this key belongs to, with their ids.',
   } satisfies Record<McpToolName, string>,
   prompts: {
     [McpPromptName.Next]: 'Start working on the next task of this project.',
@@ -52,6 +62,8 @@ export const MCP_COPY = {
     ids: `Task ids, like ${EXAMPLE_TASK_ID}.`,
     placement: 'Where to move the task: first, last, or before or after anchor.',
     note: 'What was done.',
+    confirm: 'The current title of the task, typed exactly. Nothing is deleted when it differs.',
+    project: 'Id of the project to move the task to, from the projects tool.',
   },
   ruleIssue: {
     [RuleIssue.TitleEmpty]: 'The title is empty.',
@@ -103,6 +115,14 @@ export const MCP_COPY = {
   updated: 'Updated',
   done: 'Done',
   alreadyDone: 'Already done',
+  reopened: 'Reopened',
+  alreadyOpen: 'Already open',
+  deleted: 'Deleted',
+  moved: 'Moved',
+  movedTo: ({ projectName, shortId }: { projectName: string; shortId: string }) => `to ${projectName} as ${shortId}`,
+  projectNotInWorkspace: 'That project is not another project of this workspace.',
+  currentProject: ' · this project',
+  inboxProject: ' · inbox',
   dueOn: (dueDate: string) => ` · due ${dueDate}`,
   shownOfMatched: ({ shown, matched }: { shown: number; matched: number }) => `${shown} of ${matched}`,
   atTaskPosition: ({ position, sentence }: { position: number; sentence: string }) => `Task ${position}: ${sentence}`,
