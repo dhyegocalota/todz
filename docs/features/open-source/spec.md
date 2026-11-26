@@ -1,6 +1,6 @@
 # Open source
 
-**Status:** Building
+**Status:** Shipped 2026-11-26
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-26 by the owner's words to the loop ("also make it open source please!! siga todas as boas diretrizes de um open-source igual ao zapbip")
 **ADRs:** [0081](../../adr/0081-the-whole-repository-is-agpl-3-0-only-and-going-public-follows-a-pre-flight-runbook.md), [0007](../../adr/0007-contributions-come-under-a-contributor-license-agreement.md)
