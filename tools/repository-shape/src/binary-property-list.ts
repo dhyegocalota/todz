@@ -31,8 +31,8 @@ function unsignedNumber({ bytes, offset, size }: { bytes: Buffer; offset: number
 export function parsedBinaryPropertyList(bytes: Buffer): PropertyListValue {
   if (bytes.subarray(0, MAGIC.length).toString('latin1') !== MAGIC) throw new Error('not a binary property list');
   const trailer = bytes.length - TRAILER_BYTES;
-  const offsetSize = bytes[trailer + OFFSET_SIZE_AT];
-  const referenceSize = bytes[trailer + REFERENCE_SIZE_AT];
+  const offsetSize = bytes.readUInt8(trailer + OFFSET_SIZE_AT);
+  const referenceSize = bytes.readUInt8(trailer + REFERENCE_SIZE_AT);
   const offsetTable = unsignedNumber({ bytes, offset: trailer + OFFSET_TABLE_AT + 4, size: 4 });
   const topObject = unsignedNumber({ bytes, offset: trailer + TOP_OBJECT_AT + 4, size: 4 });
   const objectCount = unsignedNumber({ bytes, offset: trailer + OBJECT_COUNT_AT + 4, size: 4 });
@@ -43,15 +43,15 @@ export function parsedBinaryPropertyList(bytes: Buffer): PropertyListValue {
   }
 
   function lengthAt(offset: number): { length: number; start: number } {
-    const nibble = bytes[offset] & NIBBLE_MASK;
+    const nibble = bytes.readUInt8(offset) & NIBBLE_MASK;
     if (nibble !== EXTENDED_LENGTH) return { length: nibble, start: offset + 1 };
-    const size = 1 << (bytes[offset + 1] & NIBBLE_MASK);
+    const size = 1 << (bytes.readUInt8(offset + 1) & NIBBLE_MASK);
     return { length: unsignedNumber({ bytes, offset: offset + 2, size }), start: offset + 2 + size };
   }
 
   function objectAt(index: number): PropertyListValue {
     const offset = objectOffset(index);
-    const byte = bytes[offset];
+    const byte = bytes.readUInt8(offset);
     const marker = byte >> NIBBLE_BITS;
     if (byte === FALSE_MARKER) return false;
     if (byte === TRUE_MARKER) return true;
@@ -65,14 +65,13 @@ export function parsedBinaryPropertyList(bytes: Buffer): PropertyListValue {
       return Buffer.from(bytes.subarray(start, start + length * 2))
         .swap16()
         .toString('utf16le');
-    const references = Array.from({ length: marker === Marker.Dictionary ? length * 2 : length }, (_, position) =>
-      unsignedNumber({ bytes, offset: start + position * referenceSize, size: referenceSize }),
-    );
-    if (marker === Marker.Array) return references.map(objectAt);
+    function referencedObject(position: number): PropertyListValue {
+      return objectAt(unsignedNumber({ bytes, offset: start + position * referenceSize, size: referenceSize }));
+    }
+    const positions = Array.from({ length }, (_, position) => position);
+    if (marker === Marker.Array) return positions.map(referencedObject);
     if (marker !== Marker.Dictionary) throw new Error(`unsupported property list marker ${marker}`);
-    const keys = references.slice(0, length).map((reference) => objectAt(reference) as string);
-    const values = references.slice(length).map(objectAt);
-    return Object.fromEntries(keys.map((key, position) => [key, values[position]]));
+    return Object.fromEntries(positions.map((position) => [referencedObject(position) as string, referencedObject(length + position)]));
   }
 
   return objectAt(topObject);
