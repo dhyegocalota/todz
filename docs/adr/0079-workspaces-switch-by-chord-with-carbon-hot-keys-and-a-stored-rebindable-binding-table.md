@@ -32,7 +32,7 @@ The Workspace menu switches with ⌘1–⌘9 and the popover reads the same keys
 
 ## Consequences
 
-- The Workspace menu's ⌘1–⌘9 go away; the main window loses those keys, the popover keeps them.
+- The Workspace menu keeps its ⌘1–⌘9 list as on `main`; the ⌃ chords sit in a "Switch With Control" submenu beside Previous and Next, and a test pins the list chords to ⌘ and the workspace chords to ⌃.
 - A chord another app registered first makes our registration fail quietly; the row still shows the chord and the menu still works while todz is in front.
 - No server, schema or deploy change.
 

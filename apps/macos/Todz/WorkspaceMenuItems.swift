@@ -8,12 +8,21 @@ struct WorkspaceMenuItems: View {
     var body: some View {
         ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
             Button(workspace.name) {
-                Task { await model.switchWorkspace(action: .number(number)) }
+                Task { await model.switchWorkspace(number: number) }
             }
-            .keyboardShortcut(shortcuts.shortcut(for: .number(number)))
+            .keyboardShortcut(WorkspaceShortcuts.keyboardShortcut(number: number))
             .disabled(!model.isReady)
         }
         Divider()
+        Menu(WorkspaceShortcutsCopy.chordsMenu) {
+            ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
+                Button(workspace.name) {
+                    Task { await model.switchWorkspace(action: .number(number)) }
+                }
+                .keyboardShortcut(shortcuts.shortcut(for: .number(number)))
+                .disabled(!model.isReady)
+            }
+        }
         Button(WorkspaceShortcutsCopy.previous) {
             Task { await model.switchWorkspace(action: .previous) }
         }

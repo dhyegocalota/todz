@@ -2,7 +2,7 @@
 
 ## What changed
 
-- The Workspace menu now shows ⌃1…⌃9 (not ⌘1…⌘9) and adds Previous and Next Workspace (⌃⌘[ and ⌃⌘]). The popover keeps its own ⌘1–⌘9.
+- The Workspace menu keeps ⌘1…⌘9, adds a "Switch With Control" submenu with ⌃1…⌃9, and adds Previous and Next Workspace (⌃⌘[ and ⌃⌘]). The popover keeps its own ⌘1–⌘9.
 - Settings has a "Workspace shortcuts" section: a "Switch from any app" switch (on by default), a Record button per chord, and one line about Mission Control.
 - Global chords are Carbon hot keys; no permission prompt is expected.
 
@@ -27,4 +27,4 @@ Red at a3fa8f1c: the stubs returned no chord, no workspace and a global switch o
 
 - The recorder, the menu and the Carbon keys have no automated test; only TodzKit's pure parts do.
 - The ⌃1 Mission Control collision was not exercised.
-- ⌘1–⌘9 in the main window now do nothing (decision 1 of ADR 0079).
+- ⌘1–⌘9 keep switching as on `main`; the ⌃ chords are in the "Switch With Control" submenu.

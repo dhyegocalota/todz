@@ -1,5 +1,6 @@
 public enum WorkspaceShortcuts {
     public static let numbers = 1...9
+    public static let listModifiers: ChordModifiers = [.command]
 
     public static func workspace(number: Int, in workspaces: [Workspace]) -> Workspace? {
         let position = number - numbers.lowerBound

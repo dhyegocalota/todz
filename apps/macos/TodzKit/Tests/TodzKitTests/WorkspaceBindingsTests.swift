@@ -39,6 +39,13 @@ private let bareKey = KeyChord(keyCode: 0, key: "a", modifiers: [])
         #expect(Set(WorkspaceAction.all.compactMap { WorkspaceBindings().chord(for: $0) }).count == 11)
     }
 
+    @Test func theListChordsAreCommandAndTheWorkspaceChordsNeverUseCommandWithADigit() {
+        #expect(WorkspaceShortcuts.listModifiers == [.command])
+        let numberChords = WorkspaceShortcuts.numbers.compactMap { WorkspaceBindings().chord(for: .number($0)) }
+        #expect(numberChords.allSatisfy { $0.modifiers == [.control] })
+        #expect(numberChords.allSatisfy { $0.modifiers != WorkspaceShortcuts.listModifiers })
+    }
+
     @Test func aChordNamesItsAction() throws {
         let bindings = WorkspaceBindings()
         let chord = try #require(bindings.chord(for: .number(3)))

@@ -4,6 +4,7 @@ enum WorkspaceShortcutsCopy {
     static let header = "Workspace shortcuts"
     static let fromAnyApp = "Switch from any app"
     static let fromAnyAppDetail = "Works while another app is in front. Turn it off to leave these keys to other apps."
+    static let chordsMenu = "Switch With Control"
     static let previous = "Previous Workspace"
     static let next = "Next Workspace"
     static let record = "Record"
