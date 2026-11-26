@@ -12,6 +12,7 @@ enum SettingsCopy {
     static let respectFocus = "Respect Focus"
     static let respectFocusDetail = "Hold what todz shows on this Mac in a Focus that has the todz filter."
     static let respectFocusHelper = "Add the todz filter to a Focus."
+    static let workspaces = "Workspaces"
     static let focusQuietNow = "Quiet now, until this Focus ends."
     static let openFocusSettings = "Open Focus Settings"
     static let closeTheDay = "Close the day"

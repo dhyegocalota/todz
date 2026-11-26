@@ -115,6 +115,7 @@ struct SettingsView: View {
                     Text(SettingsCopy.respectFocusHelper)
                 }
             }
+            SettingsWorkspaceRows()
             Section {
                 ServerAddressForm(layout: .row, exit: {})
             } footer: {
