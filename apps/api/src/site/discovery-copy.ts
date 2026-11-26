@@ -1,4 +1,4 @@
-import { COMPANY } from '@todz/types';
+import { COMPANY, REPOSITORY } from '@todz/types';
 import { MCP_COPY, McpToolName } from '../mcp-copy';
 
 export enum DocsPageSlug {
@@ -53,9 +53,10 @@ export const TOOL_PARAMETERS: Record<McpToolName, ToolParameter[]> = {
 export const DISCOVERY_COPY = {
   summary:
     'todz is a native Mac to-do list that people and their AI agents share: Claude Code, Codex and Cursor read, add and finish tasks over MCP.',
-  status: 'todz is in development: the macOS app is not yet notarized by Apple and the waitlist is open.',
-  pricing: 'Pricing has not been announced. Joining the waitlist is free.',
+  status: 'todz is out for macOS 14 or later: the app is not yet notarized by Apple.',
+  pricing: 'Downloading todz is free. Pricing has not been announced.',
   publisher: `todz is a product of ${COMPANY.tradeName}, made in Brazil.`,
+  source: `todz is open source under the ${REPOSITORY.licenseName} license: ${REPOSITORY.url}`,
   connect: {
     heading: 'Connect an agent',
     lead: 'Add the server to Claude Code with this command. The key comes from Connect an Agent in the app: one key per project.',

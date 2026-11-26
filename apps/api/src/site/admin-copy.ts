@@ -16,6 +16,8 @@ export const ADMIN_COPY = {
   signIn: {
     title: 'Sign in to the admin',
     lead: 'Enter your address to get a sign-in link.',
+    emailLabel: 'Email address',
+    emailPlaceholder: 'you@example.com',
     submit: 'Email me a link',
     submitting: 'Sending…',
   },

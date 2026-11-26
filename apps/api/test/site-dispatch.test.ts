@@ -30,6 +30,7 @@ const MOVED_PERMANENTLY_STATUS = 301;
 const SEE_OTHER_STATUS = 303;
 const FORBIDDEN_STATUS = 403;
 const NOT_FOUND_STATUS = 404;
+const GONE_STATUS = 410;
 const UNAVAILABLE_STATUS = 503;
 const SCRIPT_PAYLOAD = '<script>alert(1)</script>';
 const FORM_BODY = `email=${SCRIPT_PAYLOAD}`;
@@ -119,20 +120,14 @@ describe('the site host', () => {
     expect(response.headers.get('Location')).toBe('/');
   });
 
-  test.each([
-    ['no Turnstile keys', {}],
-    [
-      'the Turnstile keys but no waitlist limiter',
-      { TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY, TURNSTILE_SECRET_KEY: TURNSTILE_TEST_SECRET },
-    ],
-  ])('POST /join with %s answers 503, never echoes the body and never reads it', async (_name, settings) => {
+  test('POST /join answers 410, never echoes the body and never reads it', async () => {
     const request = new Request(`${SITE_ORIGIN}/join`, {
       method: 'POST',
       headers: { 'Content-Type': FORM_CONTENT_TYPE, 'Content-Length': String(FORM_BODY.length), [CLIENT_ADDRESS_HEADER]: CLIENT_ADDRESS },
       body: FORM_BODY,
     });
-    const response = await serveWith({ request, settings });
-    expect(response.status).toBe(UNAVAILABLE_STATUS);
+    const response = await serve(request);
+    expect(response.status).toBe(GONE_STATUS);
     expect(await response.text()).not.toContain(SCRIPT_PAYLOAD);
     expect(request.bodyUsed).toBe(false);
   });
