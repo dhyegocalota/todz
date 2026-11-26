@@ -1,7 +1,6 @@
 import SwiftUI
 import TodzKit
 
-let subtitleLines = 2
 private let unknownDayEmailHour = 7
 private let unknownDayEmailMinutes = unknownDayEmailHour * DayCloseSchedule.minutesPerHour
 private let focusSettingsAddress = "x-apple.systempreferences:com.apple.Focus-Settings.extension"
@@ -24,25 +23,64 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Toggle(isOn: $isCountEnabled) {
-                Text(SettingsCopy.showPendingCount)
-                Text(SettingsCopy.showPendingCountDetail)
+            generalSection
+            proactiveSection
+            privacySection
+            SettingsWorkspaceRows()
+            SettingsWorkspaceShortcuts()
+            serverSection
+            Section {
+                OpenSourceLink()
             }
-            .toggleStyle(.switch)
-            Toggle(isOn: $isMenuBarOnlyOn) {
-                Text(SettingsCopy.keepInMenuBar)
-                Text(SettingsCopy.keepInMenuBarDetail)
-                    .lineLimit(subtitleLines, reservesSpace: true)
+        }
+        .formStyle(.grouped)
+        .onAppear { Task { await model.refreshOwnerSettings() } }
+        .onChange(of: model.agentNudgeNotice) { _, notice in announce(notice) }
+        .onChange(of: model.dayEmailNotice) { _, notice in announce(notice) }
+        .onDisappear {
+            model.forgetAgentNudgeFailure()
+            model.forgetDayEmailFailure()
+        }
+    }
+
+    private var generalSection: some View {
+        Section {
+            SettingsRow(title: SettingsCopy.showPendingCount, detail: SettingsCopy.showPendingCountDetail) {
+                Toggle(SettingsCopy.showPendingCount, isOn: $isCountEnabled)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
             }
-            .toggleStyle(.switch)
-            Toggle(isOn: agentNudge) {
-                Text(SettingsCopy.agentNudge)
-                Text(SettingsCopy.ownerSettingSubtitle(notice: model.agentNudgeNotice, detail: SettingsCopy.agentNudgeDetail))
-                    .lineLimit(subtitleLines, reservesSpace: true)
+            SettingsRow(title: SettingsCopy.keepInMenuBar, detail: SettingsCopy.keepInMenuBarDetail) {
+                Toggle(SettingsCopy.keepInMenuBar, isOn: $isMenuBarOnlyOn)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
             }
-            .toggleStyle(.switch)
-            .disabled(!model.canChangeAgentNudge)
-            LabeledContent {
+            SettingsRow(title: SettingsCopy.agentNudge, detail: SettingsCopy.ownerSettingSubtitle(notice: model.agentNudgeNotice, detail: SettingsCopy.agentNudgeDetail)) {
+                Toggle(SettingsCopy.agentNudge, isOn: agentNudge)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .disabled(!model.canChangeAgentNudge)
+            }
+            SettingsRow(title: SettingsCopy.respectFocus, detail: SettingsCopy.focusQuietSubtitle(notice: FocusQuietNotice(isQuiet: gate.isQuiet))) {
+                Toggle(SettingsCopy.respectFocus, isOn: $isRespectFocusOn)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+            if isRespectFocusOn {
+                LabeledContent {
+                    Button(SettingsCopy.openFocusSettings, action: openFocusSettings)
+                } label: {
+                    detail(SettingsCopy.respectFocusHelper)
+                }
+            }
+        } header: {
+            Text(SettingsCopy.general)
+        }
+    }
+
+    private var proactiveSection: some View {
+        Section {
+            SettingsRow(title: SettingsCopy.closeTheDay, detail: SettingsCopy.closeTheDayDetail) {
                 HStack {
                     DatePicker(SettingsCopy.closeTheDayTime, selection: dayCloseTime, displayedComponents: .hourAndMinute)
                         .datePickerStyle(.stepperField)
@@ -52,24 +90,18 @@ struct SettingsView: View {
                         .toggleStyle(.switch)
                         .labelsHidden()
                 }
-            } label: {
-                Text(SettingsCopy.closeTheDay)
-                Text(SettingsCopy.closeTheDayDetail)
-                    .lineLimit(subtitleLines, reservesSpace: true)
             }
-            Toggle(isOn: $isMorningGlanceOn) {
-                Text(SettingsCopy.morningGlance)
-                Text(SettingsCopy.morningGlanceDetail)
-                    .lineLimit(subtitleLines, reservesSpace: true)
+            SettingsRow(title: SettingsCopy.morningGlance, detail: SettingsCopy.morningGlanceDetail) {
+                Toggle(SettingsCopy.morningGlance, isOn: $isMorningGlanceOn)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
             }
-            .toggleStyle(.switch)
-            Toggle(isOn: $isDayTemperatureOn) {
-                Text(SettingsCopy.dayTemperature)
-                Text(SettingsCopy.dayTemperatureDetail)
-                    .lineLimit(subtitleLines, reservesSpace: true)
+            SettingsRow(title: SettingsCopy.dayTemperature, detail: SettingsCopy.dayTemperatureDetail) {
+                Toggle(SettingsCopy.dayTemperature, isOn: $isDayTemperatureOn)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
             }
-            .toggleStyle(.switch)
-            LabeledContent {
+            SettingsRow(title: SettingsCopy.dayEmail, detail: SettingsCopy.ownerSettingSubtitle(notice: model.dayEmailNotice, detail: SettingsCopy.dayEmailDetail)) {
                 HStack {
                     DatePicker(SettingsCopy.dayEmailTime, selection: dayEmailTime, displayedComponents: .hourAndMinute)
                         .datePickerStyle(.stepperField)
@@ -80,12 +112,8 @@ struct SettingsView: View {
                         .labelsHidden()
                         .disabled(!model.canChangeDayEmail)
                 }
-            } label: {
-                Text(SettingsCopy.dayEmail)
-                Text(SettingsCopy.ownerSettingSubtitle(notice: model.dayEmailNotice, detail: SettingsCopy.dayEmailDetail))
-                    .lineLimit(subtitleLines, reservesSpace: true)
             }
-            LabeledContent {
+            SettingsRow(title: SettingsCopy.menuBarRibbon, detail: ribbonDetail) {
                 HStack {
                     Picker(SettingsCopy.menuBarRibbonCadence, selection: ribbonCadence) {
                         ForEach(RibbonCadence.allCases, id: \.self) { cadence in
@@ -99,58 +127,44 @@ struct SettingsView: View {
                         .toggleStyle(.switch)
                         .labelsHidden()
                 }
-            } label: {
-                Text(SettingsCopy.menuBarRibbon)
-                Text(ribbonDetail)
-                    .lineLimit(subtitleLines, reservesSpace: true)
             }
-            Toggle(isOn: $isRespectFocusOn) {
-                Text(SettingsCopy.respectFocus)
-                Text(SettingsCopy.focusQuietSubtitle(notice: FocusQuietNotice(isQuiet: gate.isQuiet)))
-                    .lineLimit(subtitleLines, reservesSpace: true)
-            }
-            .toggleStyle(.switch)
-            if isRespectFocusOn {
-                LabeledContent {
-                    Button(SettingsCopy.openFocusSettings, action: openFocusSettings)
-                } label: {
-                    Text(SettingsCopy.respectFocusHelper)
-                }
-            }
+        } header: {
+            Text(SettingsCopy.proactive)
+        }
+    }
+
+    private var privacySection: some View {
+        Section {
             if let appUpdater {
-                Toggle(isOn: automaticUpdates(appUpdater)) {
-                    Text(UpdateCopy.automaticUpdates)
-                    Text(UpdateCopy.automaticUpdatesDetail)
-                        .lineLimit(subtitleLines, reservesSpace: true)
+                SettingsRow(title: UpdateCopy.automaticUpdates, detail: UpdateCopy.automaticUpdatesDetail) {
+                    Toggle(UpdateCopy.automaticUpdates, isOn: automaticUpdates(appUpdater))
+                        .toggleStyle(.switch)
+                        .labelsHidden()
                 }
-                .toggleStyle(.switch)
             }
-            Toggle(isOn: $isUsageSharingOn) {
-                Text(UsageSharingCopy.toggle)
-                Text(UsageSharingCopy.toggleDetail)
-                    .lineLimit(subtitleLines, reservesSpace: true)
+            SettingsRow(title: UsageSharingCopy.toggle, detail: UsageSharingCopy.toggleDetail) {
+                Toggle(UsageSharingCopy.toggle, isOn: $isUsageSharingOn)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
             }
-            .toggleStyle(.switch)
-            SettingsWorkspaceRows()
-            SettingsWorkspaceShortcuts()
-            Section {
-                ServerAddressForm(layout: .row, exit: {})
-            } footer: {
-                VersionLine()
-            }
-            Section {
-                OpenSourceLink()
-            }
+        } header: {
+            Text(SettingsCopy.privacyAndUpdates)
         }
-        .formStyle(.grouped)
-        .fixedSize(horizontal: false, vertical: true)
-        .onAppear { Task { await model.refreshOwnerSettings() } }
-        .onChange(of: model.agentNudgeNotice) { _, notice in announce(notice) }
-        .onChange(of: model.dayEmailNotice) { _, notice in announce(notice) }
-        .onDisappear {
-            model.forgetAgentNudgeFailure()
-            model.forgetDayEmailFailure()
+    }
+
+    private var serverSection: some View {
+        Section {
+            ServerAddressForm(layout: .row, exit: {})
+        } header: {
+            Text(SettingsCopy.server)
+        } footer: {
+            VersionLine()
         }
+    }
+
+    private func detail(_ text: String) -> some View {
+        Text(text)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var agentNudge: Binding<Bool> {

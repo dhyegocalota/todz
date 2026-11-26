@@ -2,6 +2,7 @@ import AppKit
 import TodzKit
 
 private let successStatus = 204
+private let escapeKeyEquivalent = "\u{1b}"
 
 extension AppDelegate {
     @MainActor private static var isSendingUsage = false
@@ -35,9 +36,12 @@ extension AppDelegate {
         let alert = NSAlert()
         alert.messageText = UsageSharingCopy.askTitle
         alert.informativeText = UsageSharingCopy.askBody
-        alert.addButton(withTitle: UsageSharingCopy.askShare)
-        alert.addButton(withTitle: UsageSharingCopy.askDecline)
-        usageSharingPreference.answer(isSharing: alert.runModal() == .alertFirstButtonReturn)
+        UsageSharingPrompt.buttonsInOrder.forEach { answer in
+            let button = alert.addButton(withTitle: UsageSharingCopy.title(of: answer))
+            if answer == UsageSharingPrompt.escapeAnswer { button.keyEquivalent = escapeKeyEquivalent }
+        }
+        let responseIndex = alert.runModal().rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
+        usageSharingPreference.answer(isSharing: UsageSharingPrompt.answer(forButtonIndex: responseIndex) == .share)
     }
 
     private func sendDueUsageRollup() {
