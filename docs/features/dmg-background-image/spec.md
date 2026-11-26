@@ -1,6 +1,6 @@
 # The released DMG shows its background picture in Finder
 
-**Status:** In review
+**Status:** Shipped 2026-11-26
 **Tier:** 🟢
 **Owner approval:** inherited from docs/product/README.md, approved 2026-11-23 (the loop decides)
 **ADRs:** [0095](../../adr/0095-the-committed-dmg-layout-carries-the-whole-icon-view-record-finder-writes-or-finder-drops-it.md), amends [0083](../../adr/0083-the-release-dmg-opens-on-a-committed-background-and-a-committed-ds-store-layout-copied-into-the-image-folder.md)
