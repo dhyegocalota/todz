@@ -8,6 +8,7 @@ import { ClientEra, callTool, connectClient } from './mcp-client';
 const FORBIDDEN_STATUS = 403;
 const SUSPENDED_JSON_RPC_CODE = -32003;
 const WORKER_ORIGIN = 'http://localhost:8787';
+const FAIR_USE_URL = 'https://docs.todz.app/fair-use';
 const JSON_MEDIA_TYPE = 'application/json';
 
 async function ownerOfProject(projectId: string): Promise<string> {
@@ -40,7 +41,9 @@ describe('fair use over MCP', () => {
       }),
     );
     expect(response.status).toBe(FORBIDDEN_STATUS);
-    expect((await response.json<{ error: { code: number } }>()).error.code).toBe(SUSPENDED_JSON_RPC_CODE);
+    const { error } = await response.json<{ error: { code: number; message: string } }>();
+    expect(error.code).toBe(SUSPENDED_JSON_RPC_CODE);
+    expect(error.message).toContain(FAIR_USE_URL);
   });
 
   test('a write over the daily cap is an error answer with the limit and adds nothing', async () => {
@@ -50,6 +53,7 @@ describe('fair use over MCP', () => {
     const answer = await callTool({ client, name: 'add', args: { tasks: [{ title: 'Over the day' }] } });
     expect(answer.isError).toBe(true);
     expect(answer.text).toContain(String(OWNER_WRITES_PER_DAY_MAX));
+    expect(answer.text).toContain(FAIR_USE_URL);
   });
 
   test('a normal write by an active key is unchanged', async () => {

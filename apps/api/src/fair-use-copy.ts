@@ -1,4 +1,5 @@
 import { BYTES_PER_KIBIBYTE, BYTES_PER_MEBIBYTE, FORMATTER_LOCALE, FairUseLimit } from '@todz/types';
+import { DOCS_URL } from './site/site-urls';
 
 const SIZE_FORMAT = new Intl.NumberFormat(FORMATTER_LOCALE, { maximumFractionDigits: 1 });
 
@@ -17,10 +18,18 @@ const LIMIT_MESSAGE_OF: Record<FairUseLimit, (max: number) => string> = {
   [FairUseLimit.DailySignUps]: () => 'Too many new accounts from this network today. Try again tomorrow.',
 };
 
+const FAIR_USE_URL = `${DOCS_URL}/fair-use`;
+
+function withFairUsePointer(message: string): string {
+  return `${message} See ${FAIR_USE_URL}`;
+}
+
 export const FAIR_USE_COPY = {
-  suspended: 'This account is suspended. It can read its tasks but cannot change them or use agents until it is restored.',
-  signUpRefused: 'This email provider is not accepted for new accounts. Use another address.',
+  suspended: withFairUsePointer(
+    'This account is suspended. It can read its tasks but cannot change them or use agents until it is restored.',
+  ),
+  signUpRefused: withFairUsePointer('This email provider is not accepted for new accounts. Use another address.'),
   limitMessageOf({ limit, max }: { limit: FairUseLimit; max: number }): string {
-    return LIMIT_MESSAGE_OF[limit](max);
+    return withFairUsePointer(LIMIT_MESSAGE_OF[limit](max));
   },
 };
