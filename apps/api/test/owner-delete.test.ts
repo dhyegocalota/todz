@@ -6,7 +6,9 @@ import { digestCredential } from '../src/credential-digest';
 import { deleteOwnerProject, deleteOwnerWorkspace } from '../src/directory-workspaces';
 import { openMcpSession } from '../src/mcp-sessions';
 import { countingEnv } from './counting-namespace';
-import { ownerCall, serveOwnerCall, signInOwner } from './owner-client';
+import type { Env } from '../src/env';
+import type { ProjectStore } from '../src/project-store';
+import { ownerCall, serveOwnerCall, signInOwner, workerEnvWith } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
 
 const OK_STATUS = 200;
@@ -289,6 +291,45 @@ describe('the directory deletions called for another owner', () => {
     const isDeleted = await deleteOwnerProject({ directory: env.DIRECTORY, ownerId: crypto.randomUUID(), projectId: project.id });
     expect(isDeleted).toBe(false);
     expect(await storedProjectRows([project.id])).toBe(1);
+  });
+});
+
+function wipeFailingEnv(): Env {
+  const namespace = {
+    idFromName: (name: string) => name,
+    get: () => ({
+      wipe: () => {
+        throw new Error('the project store is unreachable');
+      },
+    }),
+  } as unknown as DurableObjectNamespace<ProjectStore>;
+  return workerEnvWith({ PROJECT_STORE: namespace });
+}
+
+describe('a delete whose storage wipe fails after the directory rows are gone', () => {
+  test('the workspace delete still answers 204', async () => {
+    const { token } = await signInOwner();
+    const workspace = await createWorkspace({ token, name: 'Orphaned' });
+    const response = await serveOwnerCall({
+      call: { method: 'DELETE', path: `/owner/workspaces/${workspace.id}`, token },
+      now: CLOCK_NOW,
+      workerEnv: wipeFailingEnv(),
+    });
+    expect(response.status).toBe(NO_CONTENT_STATUS);
+    expect(await storedWorkspaceRows(workspace.id)).toBe(0);
+  });
+
+  test('the project delete still answers 204', async () => {
+    const { token } = await signInOwner();
+    const workspace = await createWorkspace({ token, name: 'Work' });
+    const project = await createProject({ token, workspaceId: workspace.id, name: 'Launch' });
+    const response = await serveOwnerCall({
+      call: { method: 'DELETE', path: `/owner/projects/${project.id}`, token },
+      now: CLOCK_NOW,
+      workerEnv: wipeFailingEnv(),
+    });
+    expect(response.status).toBe(NO_CONTENT_STATUS);
+    expect(await storedProjectRows([project.id])).toBe(0);
   });
 });
 
