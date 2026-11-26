@@ -30,11 +30,11 @@ G3 (folder) → G1 (red) → G2 (green) → G3 (evidence, Shipped).
 
 - [x] **Step 2:** (8104443e) Copy: `newProjectButton`, `newProjectHelp(workspaceName:)`; drop `AccessibilityCopy.addProject`.
 - [x] **Step 3:** (8104443e, VStack in the next commit) `NewProjectButton` as design.md § 3; `SidebarView` stacks the button under the list (a `VStack`, chosen over the bottom inset so the footer never overlays a row) and a plain `Text` header; `ProjectsHeader.swift` deleted.
-- [ ] **Step 4:** `swift test` and the Debug `xcodebuild` in the foreground.
+- [x] **Step 4:** (pnpm verify: 7 gates green at d9cd1fac, swift test and xcodebuild inside) `swift test` and the Debug `xcodebuild` in the foreground.
 
 ### G3
 
-- [ ] **Step 5:** In-process renders (light, dark, one workspace, several) into `.pr-media/sidebar-new-project/`.
+- [x] **Step 5:** (.pr-media/sidebar-new-project/ 01-09, light, dark, several workspaces, empty, narrow, overloaded) In-process renders (light, dark, one workspace, several) into `.pr-media/sidebar-new-project/`.
 - [ ] **Step 6:** `/verify` green, the PR opened, then the status flipped to `Shipped 2026-11-26` with the PR link in the last commit.
 
 ## Failure modes
