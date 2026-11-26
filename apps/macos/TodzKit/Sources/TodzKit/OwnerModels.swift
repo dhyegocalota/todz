@@ -123,6 +123,7 @@ public struct HistoryEntry: Decodable, Sendable, Equatable {
 
 public struct ChangePage: Decodable, Sendable, Equatable {
     public let tasks: [TaskRecord]
+    public let deletedNumbers: [Int]
     public let cursor: Int
     public let hasMore: Bool
 }

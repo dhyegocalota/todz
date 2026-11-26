@@ -41,6 +41,12 @@ public struct TaskBoard: Sendable, Equatable {
         tasks.forEach { replace(projectIdentifier: projectIdentifier, task: $0) }
     }
 
+    public mutating func remove(projectIdentifier: String, numbers: [Int]) {
+        guard !numbers.isEmpty else { return }
+        numbers.forEach { tasksOfProject[projectIdentifier]?[$0] = nil }
+        numbersOfProject[projectIdentifier]?.removeAll { numbers.contains($0) }
+    }
+
     public mutating func replace(projectIdentifier: String, task: TaskRecord) {
         guard !isOlderThanTheHeldCopy(task, projectIdentifier: projectIdentifier) else { return }
         let isNewNumber = tasksOfProject[projectIdentifier]?[task.number] == nil

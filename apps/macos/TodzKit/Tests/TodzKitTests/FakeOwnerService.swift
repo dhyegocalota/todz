@@ -246,7 +246,7 @@ struct StatusFailure: Sendable {
         let tasks = tasksOfProject[projectIdentifier, default: []]
         let pageTasks = Array(tasks.dropFirst(cursor).prefix(pageSize))
         let nextCursor = cursor + pageTasks.count
-        return ChangePage(tasks: pageTasks, cursor: nextCursor, hasMore: nextCursor < tasks.count)
+        return ChangePage(tasks: pageTasks, deletedNumbers: [], cursor: nextCursor, hasMore: nextCursor < tasks.count)
     }
 
     func suspend(_ route: FakeRoute) {

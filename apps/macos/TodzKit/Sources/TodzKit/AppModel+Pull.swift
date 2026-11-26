@@ -126,6 +126,7 @@ extension AppModel {
             if isAgentChange(projectIdentifier: projectIdentifier, changes: changes) { agentChangeCount += 1 }
             if changes.isFromStart { board.reset(projectIdentifier: projectIdentifier) }
             board.merge(projectIdentifier: projectIdentifier, tasks: changes.tasks)
+            board.remove(projectIdentifier: projectIdentifier, numbers: changes.deletedNumbers)
             board = board.setting(cursor: changes.cursor, projectIdentifier: projectIdentifier)
             arrivedNumbers.forEach { onTaskArrived?($0) }
             projectLoads[projectIdentifier] = .loaded

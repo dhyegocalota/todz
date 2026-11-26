@@ -204,13 +204,13 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
     }
 
     @Test func readChangesSendsTheCursor() async throws {
-        let body = "{\"tasks\":[\(OwnerFixtures.openTaskJSON(number: 1))],\"cursor\":12,\"has_more\":false}"
+        let body = "{\"tasks\":[\(OwnerFixtures.openTaskJSON(number: 1))],\"deleted_numbers\":[3],\"cursor\":12,\"has_more\":false}"
         let page = try await api(answering: .response(status: 200, body: body))
             .readChanges(session: session, projectIdentifier: projectIdentifier, cursor: 5)
         try expectOnlyRequest(
             ExpectedRequest(method: "GET", path: "/owner/projects/\(projectIdentifier)/changes", query: "cursor=5", session: session, body: nil)
         )
-        #expect(page == ChangePage(tasks: [OwnerFixtures.openTask(number: 1)], cursor: 12, hasMore: false))
+        #expect(page == ChangePage(tasks: [OwnerFixtures.openTask(number: 1)], deletedNumbers: [3], cursor: 12, hasMore: false))
     }
 
     @Test(arguments: [

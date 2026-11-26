@@ -103,9 +103,9 @@ private let agentActorsWithoutAClientName = [
     }
 
     @Test func decodesAChangePage() throws {
-        let json = "{\"tasks\":[\(OwnerFixtures.openTaskJSON(number: 1))],\"cursor\":7,\"has_more\":true}"
+        let json = "{\"tasks\":[\(OwnerFixtures.openTaskJSON(number: 1))],\"deleted_numbers\":[2],\"cursor\":7,\"has_more\":true}"
         let page = try OwnerFixtures.decoded(ChangePage.self, from: json)
-        #expect(page == ChangePage(tasks: [OwnerFixtures.openTask(number: 1)], cursor: 7, hasMore: true))
+        #expect(page == ChangePage(tasks: [OwnerFixtures.openTask(number: 1)], deletedNumbers: [2], cursor: 7, hasMore: true))
     }
 
     @Test func decodesTheSignInAnswer() throws {
