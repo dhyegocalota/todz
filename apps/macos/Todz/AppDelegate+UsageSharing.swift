@@ -35,9 +35,19 @@ extension AppDelegate {
         let alert = NSAlert()
         alert.messageText = UsageSharingCopy.askTitle
         alert.informativeText = UsageSharingCopy.askBody
-        alert.addButton(withTitle: UsageSharingCopy.askShare)
-        alert.addButton(withTitle: UsageSharingCopy.askDecline)
-        usageSharingPreference.answer(isSharing: alert.runModal() == .alertFirstButtonReturn)
+        UsageSharingPrompt.buttonsInOrder.forEach { answer in
+            alert.addButton(withTitle: UsageSharingCopy.title(of: answer))
+        }
+        let escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard UsageSharingPrompt.isEscape(keyCode: event.keyCode) else { return event }
+            MainActor.assumeIsolated { alert.buttons.first?.performClick(nil) }
+            return nil
+        }
+        let response = alert.runModal()
+        if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor) }
+        let responseIndex = response.rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
+        guard let answer = UsageSharingPrompt.answer(forButtonIndex: responseIndex) else { return }
+        usageSharingPreference.answer(isSharing: answer == .share)
     }
 
     private func sendDueUsageRollup() {
