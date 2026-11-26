@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import * as core from './index';
 
 const PUBLIC_EXPORTS = [
+  'LimitViolation',
   'OWNER_ACTOR',
   'RuleViolation',
   'TaskNotFoundError',

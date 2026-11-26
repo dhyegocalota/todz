@@ -3,7 +3,7 @@ export { addTasks, type AddedTask } from './add-tasks';
 export { dueWindowOf, normalizeDueDate, parseCalendarDate } from './calendar-date';
 export { completeTasks, type CompletedTask } from './complete-tasks';
 export { dueNow, type DueNow } from './due-now';
-export { RuleViolation, TaskNotFoundError } from './errors';
+export { LimitViolation, RuleViolation, TaskNotFoundError } from './errors';
 export { listTasks, type TaskList } from './list-tasks';
 export { nextTask } from './next-task';
 export { orderKeyBetween } from './order-key';

@@ -3,7 +3,7 @@ import {
   IDEMPOTENCY_KEY_MAX_LENGTH,
   NAME_MAX_LENGTH,
   RuleIssue,
-  TASK_NOTES_MAX_LENGTH,
+  TASK_NOTES_MAX_BYTES,
   TASK_TITLE_MAX_LENGTH,
 } from '@todz/types';
 import { RuleViolation } from './errors';
@@ -42,20 +42,30 @@ function normalizeSingleLine({ text, maxLength, issues }: { text: string; maxLen
   return collapsed;
 }
 
+function byteLengthOf(text: string): number {
+  return new TextEncoder().encode(text).byteLength;
+}
+
+function exceedsByteLimit({ text, maxBytes }: { text: string; maxBytes: number }): boolean {
+  return byteLengthOf(text) > maxBytes;
+}
+
 function normalizeMultiline({
   text,
   maxLength,
+  exceeds,
   issues,
 }: {
   text: string | null;
   maxLength: number;
+  exceeds: (lineFeedText: string) => boolean;
   issues: MultilineIssues;
 }): string | null {
   if (text === null) return null;
   if (exceedsUtf16Budget({ text, maxLength })) throw new RuleViolation({ issue: issues.tooLong });
   if (text.trim() === '') return null;
   const lineFeedText = text.replace(CARRIAGE_RETURN_LINE_BREAK_PATTERN, LINE_FEED);
-  if (exceedsCodePointLimit({ text: lineFeedText, maxLength })) throw new RuleViolation({ issue: issues.tooLong });
+  if (exceeds(lineFeedText)) throw new RuleViolation({ issue: issues.tooLong });
   if (MULTILINE_CONTROL_CHARACTER_PATTERN.test(lineFeedText)) throw new RuleViolation({ issue: issues.invalid });
   return lineFeedText;
 }
@@ -75,7 +85,8 @@ export function normalizeTitle(text: string): string {
 export function normalizeNotes(text: string | null): string | null {
   return normalizeMultiline({
     text,
-    maxLength: TASK_NOTES_MAX_LENGTH,
+    maxLength: TASK_NOTES_MAX_BYTES,
+    exceeds: (lineFeedText) => exceedsByteLimit({ text: lineFeedText, maxBytes: TASK_NOTES_MAX_BYTES }),
     issues: { tooLong: RuleIssue.NotesTooLong, invalid: RuleIssue.NotesInvalid },
   });
 }
@@ -84,6 +95,7 @@ export function normalizeCompletionNote(text: string | null): string | null {
   return normalizeMultiline({
     text,
     maxLength: COMPLETION_NOTE_MAX_LENGTH,
+    exceeds: (lineFeedText) => exceedsCodePointLimit({ text: lineFeedText, maxLength: COMPLETION_NOTE_MAX_LENGTH }),
     issues: { tooLong: RuleIssue.CompletionNoteTooLong, invalid: RuleIssue.CompletionNoteInvalid },
   });
 }
