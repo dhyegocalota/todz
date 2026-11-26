@@ -38,6 +38,8 @@ public struct Workspace: Codable, Sendable, Equatable {
     public let createdAt: Date
     public let projects: [Project]
 
+    public var namedProjectCount: Int { 0 }
+
     enum CodingKeys: String, CodingKey {
         case identifier = "id"
         case name

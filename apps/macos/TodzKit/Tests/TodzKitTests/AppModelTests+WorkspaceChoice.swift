@@ -83,6 +83,14 @@ extension AppModelTests {
         #expect(harness.model.activeWorkspace == acme)
     }
 
+    @Test func aWorkspaceCountsItsNamedProjectsWithoutTheInbox() {
+        let workspace = Workspace(identifier: "acme", name: "acme", createdAt: fixedInstant, projects: [
+            Project(identifier: "acme-inbox", name: "Inbox", isInbox: true, createdAt: fixedInstant),
+            Project(identifier: "acme-launch", name: "launch", isInbox: false, createdAt: fixedInstant),
+        ])
+        #expect(workspace.namedProjectCount == 1)
+    }
+
     @Test func whileChoosingTheWidgetsAreAbsent() async throws {
         let harness = try AppModelHarness()
         harness.seedWorkspace(name: "acme")
