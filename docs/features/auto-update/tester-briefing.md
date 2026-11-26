@@ -7,7 +7,8 @@ Spec: [spec.md](spec.md). Test plan: [test-plan.md](test-plan.md). Decisions: [A
 - **Settings › "Update todz automatically"** (on by default). A switch that writes Sparkle's `automaticallyDownloadsUpdates`. Default on comes from `SUAutomaticallyUpdate` `YES` in the Release Info.plist, which Sparkle reads when the owner never touched the switch.
 - **Popover foot › "Check for Updates…"**, beside "Quit todz". Release only.
 - **Popover foot › "Updated to x.y"**, once after a version change, cleared by a tap. Release only. No note on a first launch.
-- **Release gate**: `docs/runbooks/release-the-mac-app.md` steps 8 (the local check on this Mac: quarantine, Open Anyway) and 9 (Sparkle x to x+1). The deploy skill runs `pnpm release:mac` without its old conditional.
+- **Release gate**: `docs/runbooks/release-the-mac-app.md` steps 8 (verify the DMG's sum and signature before opening it, then the local check on this Mac: quarantine, Open Anyway) and 9 (Sparkle x to x+1, with the daily check cleared first). The deploy skill's step 4 no longer carries the "release:mac is not a root script" branch; its step 3 still decides on the release by the `apps/macos` change since the last `mac-v*` tag, which is correct. Step 8 is the lead's, not the owner's.
+- **Automatic updates are a build setting** (`TODZ_AUTOMATICALLY_UPDATES`, `"NO"` in `project.yml`): a build from source never updates itself. Only `scripts/release-mac.sh` passes `YES`, and it refuses a built app whose key is not `YES`.
 - The Debug app has no feed, so it shows neither the switch nor the entry nor the note. Test those in Release.
 
 ## How to run it

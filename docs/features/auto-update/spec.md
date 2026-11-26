@@ -15,7 +15,7 @@ Sparkle is in the Release app and checks the appcast daily, but it only offers a
 1. A Settings switch, "Update todz automatically", on by default for a Mac whose owner never touched it. On: Sparkle downloads and installs in the background, on quit or relaunch. Off: Sparkle still checks and offers.
 2. "Check for Updates…" in the popover's foot, beside "Quit todz", in Release only.
 3. A quiet "Updated to x.y" note in the popover's foot after an update, until the owner taps it. Nothing on the first launch.
-4. `pnpm release:mac` and the `deploy` skill ship version x and then x+1 without a manual edit, and the first public release's gate is a local check on this Mac (the runbook's steps 5, 9 and 10).
+4. `pnpm release:mac` and the `deploy` skill ship version x and then x+1 without a manual edit, and the first public release's gate is a local check on this Mac (the runbook's steps 8, 9 and 10).
 
 ## Non-goals
 

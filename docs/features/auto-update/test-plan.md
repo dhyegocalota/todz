@@ -14,7 +14,7 @@
 
 ## Docs (repository-shape)
 
-- [x] The runbook's step 5 names the quarantine command and the Open Anyway path, and no "other-notebook" gate. Expected: the test passes. — evidence: "step 5" is stale; the check now lives in runbook step 8 (`xattr -w com.apple.quarantine`, Open Anyway) and step 9. Pinned by `macos-release.test.ts` "the first public release is gated by a local check on this Mac" (passes). The only "other-notebook" mention says the step 8 check replaces that gate and the other-notebook check becomes a later one. See D1.
+- [x] The runbook's steps 8 and 9 name the verification before opening, the quarantine command, the Open Anyway path and the update check. Expected: the test passes. — evidence: "step 5" is stale; the check now lives in runbook step 8 (`xattr -w com.apple.quarantine`, Open Anyway) and step 9. Pinned by `macos-release.test.ts` "the first public release is gated by a local check on this Mac" (passes). The only "other-notebook" mention says the step 8 check replaces that gate and the other-notebook check becomes a later one. See D1.
 - [x] The install page's updates section says updates install in the background and names the Settings switch. Expected: the test passes. — evidence: `apps/docs/install-on-mac.mdx` line 71 reads "downloads a new version in the background and installs it when you quit or reopen todz. Turn this off with **Update todz automatically** in todz › Settings", verified by reading; no test pins this sentence. See D2.
 
 ## User-visible walk (tester, Playwright MCP is not used for the app; the tester walks the Debug app against a local `wrangler dev`)

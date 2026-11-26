@@ -27,7 +27,7 @@ const PRODUCTION_CHECKS = [
 ];
 const STOP_SENTENCES = ['stops at the first failure', 'leaves the previous release live'];
 const NOT_LIVE_SENTENCE = 'the Mac release is not live yet';
-const OWNER_STEPS_SENTENCE = "Steps 2, 3 and 8 of that runbook are the owner's, once";
+const OWNER_STEPS_SENTENCE = "Steps 2 and 3 of that runbook are the owner's, once";
 const FORBIDDEN_SENTENCES = [
   'never retries a deploy blindly',
   'never edits `~/.todz-release` by hand',

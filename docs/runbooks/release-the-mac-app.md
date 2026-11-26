@@ -1,8 +1,8 @@
 # Release the Mac app
 
-Publish a release of the Mac app at `https://todz.app/download`: a development-signed DMG built from a tagged commit on `main`, its SHA-256 sum, its SSH signature and the signed Sparkle appcast, served as the Worker's own static assets ([ADR 0072](../adr/0072-the-mac-app-downloads-from-todz-app-as-a-development-signed-dmg-with-an-ssh-signature-and-updates-through-sparkle.md)). Steps 2, 3 and 8 run once (8 with the first public release), step 11 only when the release folder is lost; the others run for every release. Once `mac-distribution` ships, the build loop runs it after any batch that merged a change under `apps/macos`, and every run adds a row to the releases table at the end.
+Publish a release of the Mac app at `https://todz.app/download`: a development-signed DMG built from a tagged commit on `main`, its SHA-256 sum, its SSH signature and the signed Sparkle appcast, served as the Worker's own static assets ([ADR 0072](../adr/0072-the-mac-app-downloads-from-todz-app-as-a-development-signed-dmg-with-an-ssh-signature-and-updates-through-sparkle.md)). Steps 2, 3 and 8 run once (8 with the first public release), step 11 only when the release folder is lost; the others run for every release. The owner asks for a deploy after a batch that merged a change under `apps/macos`; then the `deploy` skill runs the per-release steps, and every release adds a row to the releases table at the end.
 
-Every command runs from the repository root, one command per call. Cloudflare calls go through `scripts/todz-cloudflare.sh`, which gives the deploy token to that one command; no R2 permission is used. The two private keys live only in the login Keychain: Sparkle's EdDSA key, which Sparkle's own tools read, and the release key, the item `todz-release-key`. No step prints, exports or copies either one; the secrets guard hook refuses an agent command that reads them outside the release command. The scripts' test overrides work only when a test sets `TODZ_RELEASE_TEST_MODE=1`: never export it in a shell, a profile or a command of this runbook. The DMGs never enter git. `~/.todz-release/` (mode `700`) holds `builds/<version>/` (every build, dry runs included) and `site/` (only released versions, and `site/released`, the list a deploy serves from), so deploys run only from the Mac that holds it. `<version>` is the version step 4 or 7 prints. Agents run the per-release steps through the `deploy` skill, which stops at the first failure.
+Every command runs from the repository root, one command per call. Cloudflare calls go through `scripts/todz-cloudflare.sh`, which gives the deploy token to that one command; no R2 permission is used. The two private keys live only in the login Keychain: Sparkle's EdDSA key, which Sparkle's own tools read, and the release key, the item `todz-release-key`. No step prints, exports or copies either one; the secrets guard hook refuses an agent command that reads them outside the release command. The scripts' test overrides work only when a test sets `TODZ_RELEASE_TEST_MODE=1`: never export it in a shell, a profile or a command of this runbook. The DMGs never enter git. `~/.todz-release/` (mode `700`) holds `builds/<version>/` (every build, dry runs included) and `site/` (only released versions, and `site/released`, the list a deploy serves from), so deploys run only from the Mac that holds it. `<version>` is the version step 4 or 6 prints. Agents run the per-release steps through the `deploy` skill, which stops at the first failure.
 
 1. **Start from a clean `main`.** Check the tree, the branch and that nothing differs from `origin/main`, then run the gate:
 
@@ -27,7 +27,9 @@ Every command runs from the repository root, one command per call. Cloudflare ca
    ~/.todz-release/packages/artifacts/sparkle/Sparkle/bin/sign_update apps/macos/project.yml
    ```
 
-   Expected: `generate_keys` says it saved a new private key to the Keychain and prints the public key as a `SUPublicEDKey` value of 44 characters; that value goes into `apps/macos/project.yml`. When macOS asks whether `sign_update` may use the key, the owner chooses Always Allow; `sign_update` then prints an `sparkle:edSignature` for the file, which is thrown away.
+   Expected: `generate_keys` says it saved a new private key to the Keychain and prints the public key as a `SUPublicEDKey` value of 44 characters; that value goes into `apps/macos/project.yml`. When macOS asks whether `sign_update` may use the key, the owner chooses Allow, never Always Allow; `sign_update` then prints an `sparkle:edSignature` for the file, which is thrown away. The owner approves the two `sign_update` prompts of each release the same way, and the release command's 120-second limit covers them.
+
+   **Owner step, once, now, before the first release:** in Keychain Access, open Sparkle's key item (the generic password whose account is `todz`), go to Access Control, and remove `sign_update` and `generate_keys` from its list of applications. Nothing trusted by default may then read the key without asking; every release asks the owner for each `sign_update` read.
    If it fails: a message that a key already exists means this step ran before; `generate_keys -p` prints the existing public key, which must equal the one in `project.yml`. A missing `generate_keys` means the packages did not resolve; check the network and the Sparkle pin.
 
 3. **Create the release key, once.** The script makes an Ed25519 key inside `~/.todz-release`, stores it in the Keychain item `todz-release-key` through standard input, deletes the file, and prints the allowed-signers line and its fingerprint:
@@ -74,24 +76,40 @@ Every command runs from the repository root, one command per call. Cloudflare ca
    Expected: the first two answer `HTTP/2 302` with `location: /download/<version>/Todz-<version>.dmg`; the third `HTTP/2 200` with `content-disposition: attachment; filename="Todz-<version>.dmg"` and `cache-control: public, max-age=31536000, immutable`; the appcast names `<version>` and carries both `sparkle:edSignature` and its feed signature. A DMG downloaded from the third URL, with its `.sha256` and `.sig` beside it, passes the two checks of step 4.
    If it fails: a `404` on `/download` means the deploy carried no release; re-run step 6. A missing header means `_headers` did not apply; compare with the deploy script's test, and tell the owner before any rollback, which only the release command does to a recorded version id.
 
-8. **Check the public download on this Mac, once, with the first release.** After step 7 passes, the lead downloads the DMG from `todz.app` the way a visitor does, quarantines it, and opens it. From the repository root, with `<version>` from step 6:
+8. **Verify and check the public download on this Mac, once, with the first release.** After step 7 passes, quit the owner's own Todz: this copy and the owner's share the defaults domain, the App Group and the widgets. Then download the DMG from `todz.app` the way a visitor does, and verify it before anything opens it. From the repository root, with `<version>` from step 6:
 
    ```bash
-   mkdir -p ~/.todz-release/check
+   mkdir -p ~/.todz-release/check/Applications
    curl -fsS -o ~/.todz-release/check/Todz-<version>.dmg https://todz.app/download/<version>/Todz-<version>.dmg
+   curl -fsS -o ~/.todz-release/check/Todz-<version>.dmg.sha256 https://todz.app/download/<version>/Todz-<version>.dmg.sha256
+   curl -fsS -o ~/.todz-release/check/Todz-<version>.dmg.sig https://todz.app/download/<version>/Todz-<version>.dmg.sig
+   (cd ~/.todz-release/check && shasum -a 256 -c Todz-<version>.dmg.sha256)
+   ssh-keygen -Y verify -f apps/macos/release/allowed-signers -I release@todz.app -n todz-release -s ~/.todz-release/check/Todz-<version>.dmg.sig < ~/.todz-release/check/Todz-<version>.dmg
+   ```
+
+   Expected: `shasum` prints `Todz-<version>.dmg: OK` and `ssh-keygen` prints `Good "todz-release" signature for release@todz.app`. Only then quarantine the file and open it, so macOS treats it as downloaded:
+
+   ```bash
    xattr -w com.apple.quarantine "0081;6A000000;Safari;3C8D5F2A-0000-4000-8000-000000000001" ~/.todz-release/check/Todz-<version>.dmg
    xattr -p com.apple.quarantine ~/.todz-release/check/Todz-<version>.dmg
    open ~/.todz-release/check/Todz-<version>.dmg
    ```
 
-   Then drag Todz into `~/.todz-release/check/Applications/`, open that copy once and let macOS refuse it, then open System Settings › Privacy & Security, choose Open Anyway (it shows for a limited time after the refusal), enter an administrator password, and open the copy again. Finally run `codesign -dv ~/.todz-release/check/Applications/Todz.app`.
+   The disk image mounts as `/Volumes/Todz`. Before the first launch, check the app on the mounted volume: `codesign -dv --verbose=4 /Volumes/Todz/Todz.app`. Then copy it, `cp -R /Volumes/Todz/Todz.app ~/.todz-release/check/Applications/`, and eject the volume. Open the copy once and let macOS refuse it, then open System Settings › Privacy & Security, choose Open Anyway (it shows for a limited time after the refusal), enter an administrator password, and open the copy again. Finally run `codesign -dv ~/.todz-release/check/Applications/Todz.app`.
 
-   Expected: `xattr -p` prints the quarantine attribute; the first open is refused and Open Anyway is offered; the second open shows todz; `codesign -dv` shows `TeamIdentifier=XFWR794VS8` and `flags=0x10000(runtime)`. Quit the copy and leave it for step 9.
-   If it fails: a refusal without Open Anyway, "damaged", or a copy killed at launch means the release is live and wrong. Stop, tell the owner, and publish a fixed `<version>` plus one (the release command never rolls back a published version and no appcast is edited by hand). This check is the gate that replaces the owner's other-notebook check (ADR 0075 decision 5); that check becomes a later one.
+   Expected: `codesign -dv` on both the mounted app and the copy shows `TeamIdentifier=XFWR794VS8` and `flags=0x10000(runtime)`; the first open of the copy is refused and Open Anyway is offered; the second open shows todz. Quit the copy and leave it for step 9.
+   If it fails: a sum or signature that does not verify means production serves other bytes than the signed release: do not open the file, stop, and tell the owner. A refusal without Open Anyway, "damaged", or a copy killed at launch means the release is live and wrong: stop, tell the owner, and publish a fixed `<version>` plus one (the release command never rolls back a published version and no appcast is edited by hand). If the owner decides the build must instead be signed ad hoc, that needs a superseding ADR, as ADR 0072 decision 1's fallback says. This check replaces the owner's other-notebook check (ADR 0075 decision 5); that check becomes a later one.
 
-9. **Check the update, from the second release on.** With the step 8 copy running at the previous version, and "Update todz automatically" on (the default), quit it after the new version is live and reopen it, or choose Todz › Check for Updates…. Quit the owner's own Todz first: both copies share one bundle identifier and App Group.
+9. **Check the update, from the second release on.** The step 8 copy is at the previous version and the owner's own Todz is still quit (step 8). Sparkle checks once a day, so clear its last check time first, then open the copy:
 
-   Expected: Sparkle installs `<version>` on quit or relaunch with no window over another app, or offers it on a manual check; the popover foot shows "Updated to <version>" once, and a tap clears it. A first launch of a fresh copy shows no note. Then remove the check copy with `rm -rf ~/.todz-release/check`.
+   ```bash
+   defaults delete dev.todz.Todz SULastCheckTime
+   ```
+
+   With "Update todz automatically" on (the default), wait for the background download, then quit the copy. Expected: Sparkle installs `<version>` on quit, with no window over another app; reopen the copy and the popover foot shows "Updated to <version>" once, and a tap clears it. A first launch of a fresh copy shows no note.
+   Check separately: on the copy at the previous version, choose Todz › Check for Updates…. Expected: Sparkle offers `<version>` in its own window, which is the one window this check is meant to show.
+   Then remove the copy's application only, with `rm -rf ~/.todz-release/check/Applications`. Keep `~/.todz-release/check`: the third release's check uses it.
+   If it fails: "improperly signed" or a refused feed means the appcast's signatures do not match `SUPublicEDKey`; stop releasing, tell the owner and investigate the key. No offer means the build number is not greater than the installed one. A switch that stays off after a relaunch means the owner changed that setting; the default is on only for a Mac that never touched it.
    If it fails: "improperly signed" or a refused feed means the appcast's signatures do not match `SUPublicEDKey`; stop releasing, tell the owner and investigate the key. No offer means the build number is not greater than the installed one. A switch that stays off after a relaunch means the owner's setting was changed; the default is on only for a Mac that never touched it.
 
 10. **Record the release.** Add a row to the table below: the date, the version, the build number, the short commit and the sum.
