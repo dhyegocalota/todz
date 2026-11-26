@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import { COMPANY } from '../../../libs/types/src/constants';
-import { readRepositoryFile, repositoryPath } from './repository-files';
+import { committableFiles, readRepositoryFile, repositoryPath } from './repository-files';
 
 const ROOT_LICENSE_FILE = 'LICENSE';
 const ROOT_LICENSE_TITLE = 'GNU AFFERO GENERAL PUBLIC LICENSE';
@@ -33,6 +33,15 @@ const SECURITY_ADVISORY_PATH = '/security/advisories/new';
 const OPEN_SOURCE_RUNBOOK = 'docs/runbooks/open-source.md';
 const RUN_LOG_HEADER = '| Date | Commit | Step | Actual result |\n|------|--------|------|---------------|';
 const RUN_LOG_HEADING = '## Run log\n\n';
+const ACCOUNT_SUBDOMAIN_ADDRESS_PATTERN = /[a-z0-9-]+\.(?!example\.)[a-z0-9-]+\.workers\.dev/;
+const BINARY_BYTE = '\u0000';
+
+function filesNamingAnAccountSubdomain(): string[] {
+  return committableFiles().filter((path) => {
+    const text = readRepositoryFile(path);
+    return !text.includes(BINARY_BYTE) && ACCOUNT_SUBDOMAIN_ADDRESS_PATTERN.test(text);
+  });
+}
 const RUN_LOG_ROW_PATTERN = /^\| \d{4}-\d{2}-\d{2} \| [0-9a-f]{7,40} \| \d+ \| .+ \|$/;
 const LINE_SEPARATOR = '\n';
 const LICENSING_DECISION = 'docs/adr/0081-the-whole-repository-is-agpl-3-0-only-and-going-public-follows-a-pre-flight-runbook.md';
@@ -119,5 +128,9 @@ describe('open source', () => {
     expect(logStart).toBeGreaterThan(0);
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.filter((row) => !RUN_LOG_ROW_PATTERN.test(row))).toEqual([]);
+  });
+
+  test("no tracked file names the Cloudflare account's workers.dev subdomain", () => {
+    expect(filesNamingAnAccountSubdomain()).toEqual([]);
   });
 });
