@@ -89,7 +89,7 @@ const WHITESPACE_RUN_PATTERN = /\s+/g;
 const SINGLE_SPACE = ' ';
 const HEALTH_CURL = 'curl -sS https://api.todz.app/health';
 const HEALTH_HEAD_CURL = 'curl -sSI https://api.todz.app/health';
-const HEALTH_ANSWER = '{"service":"todz","origin":"https://api.todz.app","version":"<stamp>","minimum_app_version":"0.2.0"}';
+const HEALTH_ANSWER = '{"service":"todz","origin":"https://api.todz.app","version":"<stamp>","minimum_app_version":"0.2.4"}';
 const ALL_PASS_SENTENCE = 'When all eighteen pass';
 const SELF_HOST_PROBES = [
   'curl -sS -D - -o /dev/null https://todz.app/self-host',
@@ -100,7 +100,7 @@ const SITE_REDIRECT_OF_GUIDE = 'location: https://todz.app/self-host';
 const OWNER_ROUTE_ANSWER = '`HTTP/2 401` for `api.todz.app/owner`';
 const STALE_OWNER_ROUTE_ANSWER = '`HTTP/2 404` for `api.todz.app/owner`';
 const HEADER_CURLS = [
-  'curl -sS -D - -o /dev/null -H "Todz-App-Version: 0.2.0" https://api.todz.app/owner',
+  'curl -sS -D - -o /dev/null -H "Todz-App-Version: 0.2.4" https://api.todz.app/owner',
   'curl -sS -D - -o /dev/null https://todz.app/brand/todz-lockup.png',
 ];
 const HEADER_ANSWERS = [
