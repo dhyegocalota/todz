@@ -1,6 +1,6 @@
 # Workspace shortcuts
 
-**Status:** Approved
+**Status:** Shipped 2026-11-26
 **Tier:** 🟡 (new keys and a Settings section; no server, no schema, no deploy)
 **Owner approval:** approved 2026-11-26 by the owner's request to the loop, "quero switch between workspaces com shortcuts configurados por padrão… corre", recorded in `todz-loop/PROMPT.md` "Workspaces, more". Product intent by inheritance from [docs/product/README.md](../../product/README.md).
 **ADRs:** [0079](../../adr/0079-workspaces-switch-by-chord-with-carbon-hot-keys-and-a-stored-rebindable-binding-table.md)
