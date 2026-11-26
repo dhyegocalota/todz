@@ -1,6 +1,7 @@
-import { MILLISECONDS_PER_HOUR } from '@todz/types';
+import { MILLISECONDS_PER_HOUR, OWNER_KEY_PREFIX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { digestCredential } from '../src/credential-digest';
+import { generateCredentialSecret } from '../src/credential-secret';
 import { type IssuedKey, issueProjectKey } from '../src/project-keys';
 import { type SessionOwner, resolveSessionOwner } from '../src/project-routing';
 import { CLOCK_NOW } from './task-fixtures';
@@ -75,6 +76,18 @@ export async function seedKey({
   await env.DIRECTORY.prepare('INSERT INTO project_keys (digest, id, hint, project_id, created_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?)')
     .bind(digest, crypto.randomUUID(), SEEDED_KEY_HINT, projectId, CLOCK_NOW, revokedAt)
     .run();
+}
+
+export async function seedOwnerKey({ ownerId, revokedAt = null }: { ownerId: string; revokedAt?: number | null }): Promise<string> {
+  const secret = `${OWNER_KEY_PREFIX}${generateCredentialSecret()}`;
+  await env.DIRECTORY.prepare('INSERT INTO owner_keys (digest, id, hint, owner_id, created_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(await digestCredential(secret), crypto.randomUUID(), SEEDED_KEY_HINT, ownerId, CLOCK_NOW, revokedAt)
+    .run();
+  return secret;
+}
+
+export function seedRevokedOwnerKey({ ownerId }: { ownerId: string }): Promise<string> {
+  return seedOwnerKey({ ownerId, revokedAt: CLOCK_NOW });
 }
 
 export async function issuedKeyOf(issuance: Promise<IssuedKey | null>): Promise<IssuedKey> {

@@ -27,6 +27,16 @@ export enum McpToolName {
   Projects = 'projects',
 }
 
+export enum McpOwnerToolName {
+  Workspaces = 'workspaces',
+  CreateWorkspace = 'create_workspace',
+  RenameWorkspace = 'rename_workspace',
+  DeleteWorkspace = 'delete_workspace',
+  CreateProject = 'create_project',
+  RenameProject = 'rename_project',
+  DeleteProject = 'delete_project',
+}
+
 export enum McpPromptName {
   Next = 'next',
 }
@@ -46,6 +56,26 @@ export const MCP_COPY = {
       'Move a task to another project of the same workspace. The task gets a new id there. Find project ids with projects.',
     [McpToolName.Projects]: 'List the projects of the workspace this key belongs to, with their ids.',
   } satisfies Record<McpToolName, string>,
+  ownerInstructions:
+    'This todz owner key manages the account: its workspaces and projects. Call workspaces to list them with their ids, create_workspace and create_project to add, rename_workspace and rename_project to rename, and delete_workspace and delete_project to remove one for good with its current name as confirm. Tasks are not reachable here: use a project key for them.',
+  ownerTools: {
+    [McpOwnerToolName.Workspaces]: 'List the workspaces of this account with their projects and ids.',
+    [McpOwnerToolName.CreateWorkspace]: 'Create a workspace. It starts with an Inbox project.',
+    [McpOwnerToolName.RenameWorkspace]: 'Rename a workspace.',
+    [McpOwnerToolName.DeleteWorkspace]:
+      'Delete a workspace for good with all its projects, tasks and project keys. Give its current name as confirm; nothing is deleted when it differs.',
+    [McpOwnerToolName.CreateProject]: 'Create a project in a workspace.',
+    [McpOwnerToolName.RenameProject]: 'Rename a project. The Inbox cannot be renamed.',
+    [McpOwnerToolName.DeleteProject]:
+      'Delete a project for good with its tasks and keys. Give its current name as confirm; nothing is deleted when it differs. The Inbox cannot be deleted.',
+  } satisfies Record<McpOwnerToolName, string>,
+  ownerFields: {
+    workspace: 'Id of the workspace, from workspaces.',
+    project: 'Id of the project, from workspaces.',
+    name: `Name, up to ${NAME_MAX_LENGTH} characters.`,
+    confirmWorkspace: 'The current name of the workspace, typed exactly. Nothing is deleted when it differs.',
+    confirmProject: 'The current name of the project, typed exactly. Nothing is deleted when it differs.',
+  },
   prompts: {
     [McpPromptName.Next]: 'Start working on the next task of this project.',
   } satisfies Record<McpPromptName, string>,
@@ -123,6 +153,18 @@ export const MCP_COPY = {
   projectNotInWorkspace: 'That project is not another project of this workspace.',
   currentProject: ' · this project',
   inboxProject: ' · inbox',
+  noWorkspaces: 'No workspaces.',
+  workspaceCreated: ({ id, name, inboxId }: { id: string; name: string; inboxId: string }) =>
+    `Created workspace ${id} ${name} with its Inbox ${inboxId}`,
+  workspaceRenamed: ({ id, name }: { id: string; name: string }) => `Renamed workspace ${id} to ${name}`,
+  workspaceDeleted: (name: string) => `Deleted workspace ${name} with all its projects and tasks`,
+  projectCreated: ({ id, name }: { id: string; name: string }) => `Created project ${id} ${name}`,
+  projectRenamed: ({ id, name }: { id: string; name: string }) => `Renamed project ${id} to ${name}`,
+  projectDeleted: (name: string) => `Deleted project ${name} with all its tasks`,
+  accountNotFound: 'Not found: this account has no such workspace or project.',
+  inboxIsFixed: 'The Inbox cannot be renamed or deleted.',
+  workspacesLimit: (max: number) => `Limit reached: an account holds at most ${max} workspaces.`,
+  projectsLimit: (max: number) => `Limit reached: a workspace holds at most ${max} projects.`,
   dueOn: (dueDate: string) => ` · due ${dueDate}`,
   shownOfMatched: ({ shown, matched }: { shown: number; matched: number }) => `${shown} of ${matched}`,
   atTaskPosition: ({ position, sentence }: { position: number; sentence: string }) => `Task ${position}: ${sentence}`,
