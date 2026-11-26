@@ -1,7 +1,7 @@
 import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { COMPANY, REPOSITORY } from '@todz/types';
-import { LANDING_COPY } from '../src/site/landing-copy';
+import { LANDING_COPY, LANDING_DAY_LINES } from '../src/site/landing-copy';
 import { OPEN_GRAPH_IMAGE } from '../src/site/site-icons';
 import { SITE_URL } from '../src/site/site-urls';
 
@@ -45,6 +45,7 @@ const SHAPES: Record<string, Shape> = {
       'operatingSystem',
       'applicationCategory',
       'applicationSubCategory',
+      'featureList',
       'publisher',
       'offers',
       'codeRepository',
@@ -88,6 +89,7 @@ const APPLICATION: Node = {
   operatingSystem: 'macOS 14 or later',
   applicationCategory: 'BusinessApplication',
   applicationSubCategory: 'Productivity',
+  featureList: LANDING_DAY_LINES,
   publisher: { '@id': ORGANIZATION_ID },
   codeRepository: REPOSITORY.url,
   license: REPOSITORY.licenseSpdxUrl,
