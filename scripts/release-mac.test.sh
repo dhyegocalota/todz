@@ -428,6 +428,12 @@ printf 'HTTP/2 200\r\n' > "$production/appcast.xml.headers"
 run_release --dry-run
 expect_equal "an equal build number is accepted for the version production serves" "$status" "0"
 
+new_world
+mkdir -p "$build_directory/derived"
+run_release --dry-run
+expect_equal "a build folder left without a commit by a stopped run is built again" "$status" "0"
+expect_contains "the stopped build's version is built" "$output" "$disk_image_name"
+
 for case_name in "no-runtime:Todz.app:Todz.app: not signed with the hardened runtime" "other-team:TodzWidgets.appex:TodzWidgets.appex: not signed by team XFWR794VS8" "task-allow:TodzWidgets.appex:TodzWidgets.appex: has get-task-allow" "task-allow:Todz.app:Todz.app: has get-task-allow" "developer-entitlement:TodzWidgets.appex:TodzWidgets.appex: carries a com.apple.developer. entitlement" "no-team:Installer.xpc:Installer.xpc: not signed by team XFWR794VS8" "no-team:Autoupdate:Autoupdate: not signed by team XFWR794VS8" "no-runtime:Updater.app:Updater.app: not signed with the hardened runtime" "verify-fail:Sparkle.framework:Sparkle.framework: signature does not verify"; do
   mode=${case_name%%:*}
   rest=${case_name#*:}

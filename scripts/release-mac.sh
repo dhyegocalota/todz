@@ -140,7 +140,8 @@ built_version_of_head() {
   head_commit=$(git rev-parse HEAD)
   [[ -d "$builds" ]] || return 0
   for directory in "$builds"/*/; do
-    [[ -f "${directory}commit" && "$(cat "${directory}commit")" == "$head_commit" ]] && basename "$directory"
+    [[ -f "${directory}commit" && "$(cat "${directory}commit")" == "$head_commit" ]] || continue
+    basename "$directory"
   done | sort -V | tail -1
 }
 
