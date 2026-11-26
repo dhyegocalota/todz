@@ -9,6 +9,7 @@ struct AppCommands: Commands {
     let model: AppModel
     let windowState: MainWindowState
     let updater: AppUpdater?
+    let shortcuts: WorkspaceShortcutController
 
     var body: some Commands {
         SidebarCommands()
@@ -42,7 +43,7 @@ struct AppCommands: Commands {
                 .keyboardShortcut(inspectorKey, modifiers: [.command, .option])
                 .disabled(!canToggleInspector)
             Divider()
-            WorkspaceMenuItems(model: model)
+            WorkspaceMenuItems(model: model, shortcuts: shortcuts)
         }
         CommandMenu(MainWindowCopy.taskMenu) {
             TaskMenuItems(model: model, windowState: windowState)
