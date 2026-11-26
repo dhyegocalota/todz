@@ -1,10 +1,12 @@
 import { WORKSPACE_ACTIVITY_WRITE_INTERVAL_MS } from '@todz/types';
+import { OWNER_ACTOR } from '@todz/core';
+import { runInDurableObject } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { HttpStatus } from '../src/http-status';
-import { isActivityWriteDue } from '../src/workspace-activity';
+import { ACTIVITY_WRITTEN_AT_KEY, isActivityWriteDue } from '../src/workspace-activity';
 import { type OwnedProject, createOwnedProject, ownerCall, projectCall } from './owner-client';
-import { CLOCK_NOW } from './task-fixtures';
+import { CLOCK_NOW, TODAY, draftOf, openTasksFilter } from './task-fixtures';
 
 type ListedWorkspace = { id: string; last_activity_at: number | null };
 type WorkspaceRow = { last_activity_at: number | null };
@@ -23,11 +25,24 @@ async function addTask({ project, title }: { project: OwnedProject; title: strin
   expect(response.status).toBe(HttpStatus.Created);
 }
 
-async function storedActivity(project: OwnedProject): Promise<number | null> {
-  const { id } = await listedWorkspace(project);
-  const row = await env.DIRECTORY.prepare('SELECT last_activity_at FROM workspaces WHERE id = ?').bind(id).first<WorkspaceRow>();
+async function storedActivityOf(workspaceId: string): Promise<number | null> {
+  const row = await env.DIRECTORY.prepare('SELECT last_activity_at FROM workspaces WHERE id = ?').bind(workspaceId).first<WorkspaceRow>();
   if (row === null) throw new Error('the workspace should exist');
   return row.last_activity_at;
+}
+
+async function storedActivity(project: OwnedProject): Promise<number | null> {
+  const { id } = await listedWorkspace(project);
+  return storedActivityOf(id);
+}
+
+async function secondWorkspaceOf(project: OwnedProject): Promise<{ workspaceId: string; sibling: OwnedProject }> {
+  const response = await ownerCall({ method: 'POST', path: '/owner/workspaces', token: project.token, body: { name: 'Second' } });
+  expect(response.status).toBe(HttpStatus.Created);
+  const { workspace } = await response.json<{ workspace: { id: string; projects: { id: string }[] } }>();
+  const [inbox] = workspace.projects;
+  if (inbox === undefined) throw new Error('a workspace has an Inbox');
+  return { workspaceId: workspace.id, sibling: { ...project, projectId: inbox.id } };
 }
 
 afterEach(() => {
@@ -65,9 +80,29 @@ describe('workspace last activity', () => {
 
   test('a read does not stamp the workspace', async () => {
     const project = await createOwnedProject();
+    const { workspaceId, sibling } = await secondWorkspaceOf(project);
     const response = await projectCall({ project, method: 'GET', path: '/changes?cursor=0' });
     expect(response.status).toBe(HttpStatus.Ok);
+    await addTask({ project: sibling, title: 'Drains the queue' });
+    await vi.waitFor(async () => expect(await storedActivityOf(workspaceId)).not.toBeNull());
     expect(await storedActivity(project)).toBeNull();
+  });
+
+  test('the throttle survives the project store being evicted: it lives in the store own storage', async () => {
+    const project = await createOwnedProject();
+    await addTask({ project, title: 'First' });
+    await vi.waitFor(async () => expect(await storedActivity(project)).not.toBeNull());
+    const stamp = await storedActivity(project);
+    const stub = env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(project.projectId));
+    const kept = await runInDurableObject(stub, (_instance, state) => state.storage.kv.get(ACTIVITY_WRITTEN_AT_KEY));
+    expect(kept).toBe(stamp);
+  });
+
+  test('a store opened without its project name refuses the write and commits nothing', async () => {
+    const stub = env.PROJECT_STORE.get(env.PROJECT_STORE.newUniqueId());
+    await expect(stub.addTasks({ actor: OWNER_ACTOR, drafts: [draftOf('Nameless')] })).rejects.toThrow('without its project name');
+    const listed = await stub.listTasks({ today: TODAY, filter: openTasksFilter() });
+    expect(listed.ok && listed.value.totalMatched).toBe(0);
   });
 
   test('a write after the interval stamps again with the later time', async () => {
