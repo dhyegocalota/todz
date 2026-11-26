@@ -102,11 +102,11 @@ describe('the two ways section', () => {
 });
 
 describe('the signature', () => {
-  test('closes the final panel under the note, with the name linking the GitHub profile', async () => {
+  test('closes the final panel under the note, with the full name linking the personal website', async () => {
     const ways = waysOf(await landingHtml());
     expect(ways.indexOf(LANDING_COPY.ways.note)).toBeLessThan(ways.indexOf('class="signature"'));
     expect(ways).toContain(
-      `<p class="signature">Built by a developer, for developers and AI tinkerers. — <a class="signature-link" href="https://github.com/dhyegocalota" rel="noopener">Dhyego</a></p>`,
+      `<p class="signature">Built by a developer, for developers and AI tinkerers. — <a class="signature-link" href="https://dhyegocalota.com.br" rel="noopener">Dhyego Calota</a></p>`,
     );
   });
 
