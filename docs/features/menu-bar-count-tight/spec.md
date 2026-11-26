@@ -1,6 +1,6 @@
 # The menu bar count sits tight against the glyph
 
-**Status:** Building
+**Status:** In review
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-26 by the owner's words, "o menubar com count tá muito espaçado entre a logo e o número, deixa mais conciso e sexy"; product scope inherited from [docs/product/README.md](../../product/README.md), approved 2026-11-23
 **ADRs:** none new; the drawing of [0065](../../adr/0065-the-day-temperature-steps-the-menu-bar-count-s-opacity-after-noon-and-washes-overdue-widget-rows-by-age-behind-a-setting.md) and [0071](../../adr/0071-the-menu-bar-ribbon-unfolds-what-is-next-beside-the-glyph-for-a-few-seconds-as-template-frames-behind-a-setting-off-by-default.md) keeps its shape
