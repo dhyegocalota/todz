@@ -10,7 +10,7 @@ import { ownedProjectOf } from './owner-project';
 import { type SessionContext, parsedBody, routeParam } from './owner-request';
 import { RouteParam } from './owner-routes';
 import { fieldPatchOf } from './task-field-patch';
-import { refusalOf, textBytesOf } from './owner-write-quota';
+import { NO_TEXT_BYTES, ONE_WRITE, refusalOf, textBytesOf } from './owner-write-quota';
 import { batchFailureOf, completionFailureOf, draftsFailureOf, fieldsFailureOf } from './write-rules';
 
 const TaskNumberSchema = z.number().int().positive();
@@ -67,7 +67,7 @@ export async function updateTask(context: SessionContext): Promise<Response> {
   if (project === null) return errorResponse(OwnerErrorCode.NotFound);
   const fieldsFailure = fieldsFailureOf(body);
   if (fieldsFailure !== null) return failureResponse(fieldsFailure);
-  const refusal = await refusalOf({ context, writes: 1, bytes: textBytesOf([body.title, body.notes]) });
+  const refusal = await refusalOf({ context, writes: ONE_WRITE, bytes: textBytesOf([body.title, body.notes]) });
   if (refusal !== null) return refusal;
   const result = await project.updateTask({ actor: OWNER_ACTOR, number: taskNumberOf(context), patch: patchOf(body) });
   if (!result.ok) return failureResponse(result.failure);
@@ -96,7 +96,7 @@ export async function reopenTasks(context: SessionContext): Promise<Response> {
   if (project === null) return errorResponse(OwnerErrorCode.NotFound);
   const batchFailure = batchFailureOf(body.numbers.length);
   if (batchFailure !== null) return failureResponse(batchFailure);
-  const refusal = await refusalOf({ context, writes: body.numbers.length, bytes: 0 });
+  const refusal = await refusalOf({ context, writes: body.numbers.length, bytes: NO_TEXT_BYTES });
   if (refusal !== null) return refusal;
   const limits = fairUseLimitsOf(context.env);
   const result = await project.reopenTasks({ actor: OWNER_ACTOR, numbers: body.numbers, openTasksMax: limits[FairUseLimit.OpenTasks] });

@@ -1,7 +1,7 @@
 import type { Actor, Task } from '@todz/core';
 import { RuleIssue, TaskState } from '@todz/types';
 import { MCP_COPY } from './mcp-copy';
-import { type ProjectResult, ProjectFailureKind } from './project-result';
+import { type ProjectFailure, type ProjectResult, ProjectFailureKind } from './project-result';
 import type { ProjectStore } from './project-store';
 
 export const MOVE_KEY_PREFIX = 'move:';
@@ -48,11 +48,15 @@ export async function moveTask({
   const arrival = await arrivedAs({ destination, actor, task, arrived: addition.task });
   if (!arrival.ok) return arrival;
   const deleted = await source.deleteTask({ number, confirmation: task.title, unchangedFrom: task });
-  if (!deleted.ok) {
-    await destination.deleteTask({ number: arrival.value.number, confirmation: arrival.value.title });
-    return deleted;
+  if (!deleted.ok && isEditedSource(deleted.failure)) {
+    await destination.deleteTask({ number: arrival.value.number, confirmation: arrival.value.title, unchangedFrom: arrival.value });
   }
+  if (!deleted.ok) return deleted;
   return { ok: true, value: { task, arrived: arrival.value } };
+}
+
+function isEditedSource(failure: ProjectFailure): boolean {
+  return failure.kind === ProjectFailureKind.RuleViolated && failure.issue === RuleIssue.TaskChanged;
 }
 
 async function arrivedAs({

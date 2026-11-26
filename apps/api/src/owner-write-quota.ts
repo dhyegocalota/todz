@@ -7,6 +7,9 @@ import type { SessionContext } from './owner-request';
 import { WriteRefusal, reserveOwnerWrites } from './owner-usage-store';
 import { utcDayOf } from './telemetry/telemetry-day';
 
+export const ONE_WRITE = 1;
+export const NO_TEXT_BYTES = 0;
+
 type Text = string | null | undefined;
 
 function isText(text: Text): text is string {

@@ -5,7 +5,7 @@ import type { Env } from './env';
 import type { FairUseLimits } from './fair-use-limits';
 import { MCP_COPY, McpOwnerToolName } from './mcp-copy';
 import type { WriteRefusalTextOf } from './mcp-server';
-import { textBytesOf } from './owner-write-quota';
+import { NO_TEXT_BYTES, ONE_WRITE, textBytesOf } from './owner-write-quota';
 import { canonicalTimeZone } from './time-zone';
 import { nameFailureOf } from './write-rules';
 import { failureText } from './mcp-format';
@@ -50,9 +50,6 @@ export type OwnerMcpScope = {
   limits: FairUseLimits;
   refusalTextOf: WriteRefusalTextOf;
 };
-
-const ONE_WRITE = 1;
-const NO_TEXT_BYTES = 0;
 
 async function reserved({
   scope,

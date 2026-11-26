@@ -1,4 +1,5 @@
 import { PROJECT_OPEN_TASKS_MAX, RuleIssue } from '@todz/types';
+import { runInDurableObject } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
 import { moveTask } from '../src/move-task';
 import { ProjectFailureKind } from '../src/project-result';
@@ -10,7 +11,7 @@ type ProjectStub = DurableObjectStub<ProjectStore>;
 const SOURCE_PROJECT_ID = 'source-project';
 const SOURCE_PROJECT_NAME = 'Source';
 const EDITED_NOTES = 'edited while moving';
-const WIPE_RECORD = 'wiped';
+const TABLE_COUNT_QUERY = "SELECT count(*) AS total FROM sqlite_master WHERE type = 'table' AND name = 'tasks'";
 
 async function projectWithCarry(): Promise<ProjectStub> {
   const stub = newProjectStub();
@@ -33,16 +34,22 @@ function editedAfterRead(source: ProjectStub): ProjectStub {
   });
 }
 
-function wipeRecorded({ stub, wipes }: { stub: ProjectStub; wipes: string[] }): ProjectStub {
-  return new Proxy(stub, {
+function readThenWaitFor({ source, until }: { source: ProjectStub; until: Promise<unknown> }): ProjectStub {
+  return new Proxy(source, {
     get(target, property) {
       const member = Reflect.get(target, property);
-      if (property !== 'wipe') return member;
-      return async () => {
-        wipes.push(WIPE_RECORD);
+      if (property !== 'readTask') return member;
+      return async (parameters: { number: number }) => {
+        const read = await target.readTask(parameters);
+        await until;
+        return read;
       };
     },
   });
+}
+
+function storedTableCountOf(stub: ProjectStub): Promise<number> {
+  return runInDurableObject(stub, (_instance, state) => state.storage.sql.exec<{ total: number }>(TABLE_COUNT_QUERY).one().total);
 }
 
 function move({
@@ -84,17 +91,29 @@ describe('moveTask and a concurrent edit', () => {
   });
 });
 
+describe('two moves of the same task', () => {
+  test('the one that loses the source keeps the arrival of the one that won', async () => {
+    const source = await projectWithCarry();
+    const destination = newProjectStub();
+    const winner = move({ source, destination });
+    const loser = await move({ source: readThenWaitFor({ source, until: winner }), destination });
+    expect((await winner).ok).toBe(true);
+    expect(loser).toMatchObject({ ok: false, failure: { kind: ProjectFailureKind.TaskNotFound } });
+    expect(await openTitles(destination)).toEqual(['Carry']);
+    expect(await openTitles(source)).toEqual([]);
+  });
+});
+
 describe('moveTask into a project deleted mid-move', () => {
   test('rolls the add back, wipes the orphaned storage and leaves the source', async () => {
     const source = await projectWithCarry();
-    const wipes: string[] = [];
-    const destination = wipeRecorded({ stub: newProjectStub(), wipes });
+    const destination = newProjectStub();
     const failed = await move({ source, destination, isDestinationListed: () => Promise.resolve(false) });
     expect(failed).toEqual({
       ok: false,
       failure: { kind: ProjectFailureKind.RuleViolated, issue: RuleIssue.DestinationGone, index: null },
     });
     expect(await openTitles(source)).toEqual(['Carry']);
-    expect(wipes).toEqual([WIPE_RECORD]);
+    expect(await storedTableCountOf(destination)).toBe(0);
   });
 });

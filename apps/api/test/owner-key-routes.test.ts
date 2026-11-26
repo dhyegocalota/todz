@@ -17,11 +17,14 @@ const NOT_FOUND = { error: 'not_found' };
 const LIMIT_REACHED = { error: 'limit_reached' };
 const KEYS_PATH = '/owner/keys';
 const TOO_MANY_REQUESTS_STATUS = 429;
-const WRITES_PER_ISSUE_AND_REVOKE = 2;
 
 type KeyBody = { id: string; hint: string; created_at: number };
 type IssuedBody = { key: KeyBody; secret: string };
 type DigestRow = { digest: string };
+
+function writesOf(ownerId: string): Promise<{ writes: number } | null> {
+  return env.DIRECTORY.prepare('SELECT writes FROM owner_usage WHERE owner_id = ?').bind(ownerId).first<{ writes: number }>();
+}
 
 async function exhaustToday(ownerId: string): Promise<void> {
   await env.DIRECTORY.prepare(
@@ -170,22 +173,22 @@ describe('owner keys and the daily write cap', () => {
     expect(await listOwnerKeys(token)).toEqual([]);
   });
 
-  test('revoking a key at the cap is refused and the key stays', async () => {
+  test('revoking a key is never gated by the cap and spends no write', async () => {
     const { token, ownerId } = await signInOwner();
     const { key } = await issueOwnerKey(token);
     await exhaustToday(ownerId);
-    const refused = await revokeOwnerKey({ token, keyId: key.id });
-    expect(refused.status).toBe(TOO_MANY_REQUESTS_STATUS);
-    expect(await listOwnerKeys(token)).toEqual([key]);
+    const revoked = await revokeOwnerKey({ token, keyId: key.id });
+    expect(revoked.status).toBe(NO_CONTENT_STATUS);
+    expect(await listOwnerKeys(token)).toEqual([]);
+    expect(await writesOf(ownerId)).toEqual({ writes: OWNER_WRITES_PER_DAY_MAX });
   });
 
-  test('an issue and a revoke each spend one write', async () => {
+  test('an issue spends one write and a refused issue at the key limit spends none', async () => {
     const { token, ownerId } = await signInOwner();
-    const { key } = await issueOwnerKey(token);
-    await revokeOwnerKey({ token, keyId: key.id });
-    const usage = await env.DIRECTORY.prepare('SELECT writes FROM owner_usage WHERE owner_id = ?')
-      .bind(ownerId)
-      .first<{ writes: number }>();
-    expect(usage).toEqual({ writes: WRITES_PER_ISSUE_AND_REVOKE });
+    await Promise.all(Array.from({ length: OWNER_LIVE_KEYS_MAX }, () => issueOwnerKey(token)));
+    expect(await writesOf(ownerId)).toEqual({ writes: OWNER_LIVE_KEYS_MAX });
+    const refused = await ownerCall({ method: 'POST', path: KEYS_PATH, token });
+    expect(refused.status).toBe(CONFLICT_STATUS);
+    expect(await writesOf(ownerId)).toEqual({ writes: OWNER_LIVE_KEYS_MAX });
   });
 });

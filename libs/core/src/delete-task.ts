@@ -22,10 +22,10 @@ export function deleteTask({
   assertTaskNumber(number);
   const task = store.findTask(number);
   if (task === null) throw new TaskNotFoundError(number);
-  const isConfirmed = confirmation.trim() === task.title;
-  if (!isConfirmed) throw new RuleViolation({ issue: RuleIssue.ConfirmationMismatch });
   const isChangedSinceRead = unchangedFrom !== undefined && UNCHANGED_FIELDS.some((field) => task[field] !== unchangedFrom[field]);
   if (isChangedSinceRead) throw new RuleViolation({ issue: RuleIssue.TaskChanged });
+  const isConfirmed = confirmation.trim() === task.title;
+  if (!isConfirmed) throw new RuleViolation({ issue: RuleIssue.ConfirmationMismatch });
   store.removeTask({ number, at: clock.now() });
   return task;
 }

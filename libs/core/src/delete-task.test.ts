@@ -60,6 +60,14 @@ describe('deleteTask', () => {
     expect(store.removals).toEqual([]);
   });
 
+  test('a task renamed since it was read is TaskChanged, not ConfirmationMismatch', () => {
+    const { store, remove } = setup();
+    const readAs = store.findTask(1);
+    if (readAs === null) throw new Error('T-1 should exist');
+    store.replaceTask({ ...readAs, title: 'Renamed' });
+    expect(captureViolation(() => remove({ number: 1, confirmation: 'Task 1', unchangedFrom: readAs })).issue).toBe(RuleIssue.TaskChanged);
+  });
+
   test('a missing number is TaskNotFoundError', () => {
     const { remove } = setup();
     expect(captureNotFound(() => remove({ number: MISSING_NUMBER, confirmation: 'Task 9' })).number).toBe(MISSING_NUMBER);
