@@ -1,6 +1,6 @@
 # Sidebar new project
 
-**Status:** In review
+**Status:** Shipped 2026-11-26
 **Tier:** 🟢
 **Owner approval:** approved 2026-11-26 by the owner's words to the loop ("new project também ficou difícil de enxergar… ajusta com cautela, com frontend-designer, de forma sexy"), inheriting the product scope of [docs/product/README.md](../../product/README.md) (approved 2026-11-23); the option is the loop's pick in [design.md](design.md) § 9
 **ADRs:** none

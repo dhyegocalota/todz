@@ -123,6 +123,12 @@ export class ProjectStore extends DurableObject<Env> {
     this.ctx.getWebSockets(sessionDigest).forEach(closeEndedSession);
   }
 
+  async wipe(): Promise<void> {
+    this.ctx.getWebSockets().forEach(sendChanged);
+    this.ctx.getWebSockets().forEach(closeEndedSession);
+    await this.ctx.storage.deleteAll();
+  }
+
   webSocketMessage(): void {}
 
   readChanges({ cursor }: { cursor: number }): ProjectResult<TaskChanges> {

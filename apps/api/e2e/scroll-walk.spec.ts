@@ -45,7 +45,7 @@ test.describe('a real scroll through the landing', () => {
       SECTIONS.map((selector) => page.locator(selector).evaluate((node) => Number(getComputedStyle(node).opacity))),
     );
     opacities.forEach((opacity) => expect(opacity).toBeGreaterThan(OPAQUE_ENOUGH));
-    await expect(page.locator('.terminal-command')).toContainText('claude mcp add');
+    await expect(page.locator('.terminal-command').first()).toContainText('claude mcp add');
     await expect(page.locator('.final-call .download-button')).toBeVisible();
   });
 

@@ -4,7 +4,7 @@ import { HttpHeader } from '../http-header';
 import { LANDING_COPY } from './landing-copy';
 import { MARKDOWN_MEDIA_TYPE } from './landing-markdown';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
-import { MENU_BAR_GLYPH, SiteGlyph, glyphHtml } from './site-glyphs';
+import { MENU_BAR_GLYPH, SIGNATURE_SWASH, SiteGlyph, glyphHtml } from './site-glyphs';
 import { siteContentSecurityPolicy, sitePageResponse } from './site-headers';
 import { LANDING_STRUCTURED_DATA } from './site-json-ld';
 import { CONTENT_ID, LANDING_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
@@ -19,6 +19,7 @@ const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const SRCSET_LIST_SEPARATOR = ', ';
 const WORD_SEPARATOR = ' ';
 const WAYS_ID = 'ways';
+const LINK_ARROW = '→';
 
 const MARKDOWN_ALTERNATE_LINK = `<${DiscoveryPath.LandingMarkdown}>; rel="alternate"; type="${MARKDOWN_MEDIA_TYPE}"`;
 
@@ -60,11 +61,24 @@ ${starPillHtml(stars)}
 `;
 }
 
-function waysHtml(): string {
+function pointHtml(point: string): string {
+  return `<li class="way-point">${escapedHtml(point)}</li>`;
+}
+
+function selfHostTerminalHtml(): string {
+  const { label, command, ready, next } = LANDING_COPY.ways.selfHost.terminal;
+  return `<figure class="terminal way-terminal">
+<figcaption class="visually-hidden">${escapedHtml(label)}</figcaption>
+<div class="terminal-bar" aria-hidden="true"><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span></div>
+<pre class="terminal-body"><code><span class="terminal-line"><span class="terminal-prompt">${escapedHtml(LANDING_COPY.terminal.shellPrompt)}</span> <span class="terminal-command">${unbrokenWordsHtml(command)}</span></span><span class="terminal-line terminal-result">${escapedHtml(ready)}</span><span class="terminal-line terminal-result">${escapedHtml(next)}</span></code></pre>
+</figure>`;
+}
+
+function waysHtml(stars: number | null): string {
   const { cloud, selfHost, note } = LANDING_COPY.ways;
   return `<ul class="way-list">
-<li class="way-card glass"><div class="way-head"><h3 class="way-title">${escapedHtml(cloud.title)}</h3><span class="way-badge">${escapedHtml(cloud.badge)}</span></div><p class="way-body">${escapedHtml(cloud.body)}</p><a class="download-button way-cta" href="${DOWNLOAD_PATH}" download>${escapedHtml(cloud.cta)}</a></li>
-<li class="way-card glass"><div class="way-head"><h3 class="way-title">${escapedHtml(selfHost.title)}</h3><span class="way-badge">${escapedHtml(selfHost.badge)}</span></div><p class="way-body">${escapedHtml(selfHost.body)}</p><a class="way-cta way-cta-secondary" href="${DOCS_SELF_HOST_URL}">${escapedHtml(selfHost.cta)}</a></li>
+<li class="way-card way-card-cloud glass"><div class="way-head">${glyphHtml({ glyph: SiteGlyph.Icon, className: 'way-icon' })}<h3 class="way-title">${escapedHtml(cloud.title)}</h3><span class="way-badge way-badge-free">${escapedHtml(cloud.badge)}</span></div><ul class="way-points">${cloud.points.map(pointHtml).join('')}</ul><a class="download-button way-cta" href="${DOWNLOAD_PATH}" download>${escapedHtml(cloud.cta)}</a><p class="download-note">${escapedHtml(LANDING_COPY.download.note)} <a class="download-note-link" href="${DOCS_INSTALL_URL}">${escapedHtml(LANDING_COPY.download.noteLink)}</a></p></li>
+<li class="way-card glass"><div class="way-head"><h3 class="way-title">${escapedHtml(selfHost.title)}</h3><span class="way-badge">${escapedHtml(selfHost.badge)}</span></div><p class="way-body">${escapedHtml(selfHost.body)}</p>${selfHostTerminalHtml()}<div class="way-actions"><a class="way-link" href="${DOCS_SELF_HOST_URL}">${escapedHtml(selfHost.cta)}<span class="way-link-arrow" aria-hidden="true">${LINK_ARROW}</span></a>${starPillHtml(stars)}</div></li>
 </ul>
 <p class="ways-note">${escapedHtml(note)}</p>
 `;
@@ -72,7 +86,7 @@ function waysHtml(): string {
 
 function signatureHtml(): string {
   const { line, name } = LANDING_COPY.signature;
-  return `<p class="signature">${escapedHtml(line)} — <a class="signature-link" href="${AUTHOR.url}" rel="noopener">${escapedHtml(name)}</a></p>
+  return `<p class="signature glass"><span class="signature-line">${escapedHtml(line)}</span><span class="signature-sign">— <a class="signature-link" href="${AUTHOR.url}" rel="noopener">${escapedHtml(name)}</a>${SIGNATURE_SWASH}</span></p>
 `;
 }
 
@@ -146,11 +160,10 @@ ${steps}
 </section>`;
 }
 
-function finalCallHtml(): string {
+function finalCallHtml(stars: number | null): string {
   return `<section id="${WAYS_ID}" class="final-call page-width reveal" aria-labelledby="final-title">
-${glyphHtml({ glyph: SiteGlyph.Icon, className: 'final-icon' })}
 <h2 id="final-title" class="section-title">${escapedHtml(LANDING_COPY.final.title)}</h2>
-${waysHtml()}${signatureHtml()}</section>`;
+${waysHtml(stars)}${signatureHtml()}</section>`;
 }
 
 function landingHtml(stars: number | null): string {
@@ -165,7 +178,7 @@ function landingHtml(stars: number | null): string {
 ${heroHtml(stars)}
 ${benefitsHtml()}
 ${howItWorksHtml()}
-${finalCallHtml()}
+${finalCallHtml(stars)}
 </main>`,
     scripts: PAGE_SCRIPTS,
   });

@@ -38,6 +38,12 @@ struct WorkspaceSwitcher: View {
                 Button(MainWindowCopy.newWorkspace) {
                     windowState.sheet = .newWorkspace
                 }
+                Button(MainWindowCopy.renameWorkspace) {
+                    windowState.sheet = .renameWorkspace(workspace)
+                }
+                Button(MainWindowCopy.deleteWorkspace) {
+                    windowState.deletion = .workspace(workspace)
+                }
                 Divider()
                 Button(MainWindowCopy.signOut) {
                     windowState.requestSignOut(model: model)
