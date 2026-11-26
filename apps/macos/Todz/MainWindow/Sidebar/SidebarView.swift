@@ -7,6 +7,7 @@ struct SidebarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            WorkspaceSwitcher(workspace: workspace, isMainWindow: true)
             list
             NewProjectButton(workspace: workspace)
         }
@@ -36,9 +37,6 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .safeAreaInset(edge: .top) {
-            WorkspaceSwitcher(workspace: workspace, isMainWindow: true)
-        }
     }
 
     private var projects: [Project] {
