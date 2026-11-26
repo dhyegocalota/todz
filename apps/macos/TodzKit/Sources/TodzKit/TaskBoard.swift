@@ -77,6 +77,12 @@ public struct TaskBoard: Sendable, Equatable {
         return board
     }
 
+    func clearingCursor(projectIdentifier: String) -> TaskBoard {
+        var board = self
+        board.cursorOfProject[projectIdentifier] = nil
+        return board
+    }
+
     public func applying(_ outbox: Outbox) -> TaskBoard {
         let overlay = outbox.pendingChanges.reduce(into: Overlay(board: self, movedTasks: [])) { overlay, change in
             guard case let .field(key, .placement(placement)) = change else {

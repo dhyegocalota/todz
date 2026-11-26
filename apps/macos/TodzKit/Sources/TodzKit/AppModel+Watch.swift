@@ -4,8 +4,8 @@ typealias ChangeSignalStream = AsyncThrowingStream<ChangeSignalEvent, any Error>
 
 extension AppModel {
     func followActiveProjects() {
-        guard let session, let activeWorkspace else { return }
-        let listedIdentifiers = activeWorkspace.projects.map(\.identifier)
+        guard let session, activeWorkspace != nil else { return }
+        let listedIdentifiers = shownProjects.map(\.identifier)
         let leftIdentifiers = watches.keys.filter { !listedIdentifiers.contains($0) }
         leftIdentifiers.forEach { projectIdentifier in
             watches.removeValue(forKey: projectIdentifier)?.cancel()

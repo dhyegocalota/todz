@@ -28,8 +28,10 @@ extension AppModel {
         ownerIdentifier = cached.ownerIdentifier
         workspaces = cached.workspaces
         activeWorkspaceIdentifier = cached.activeWorkspaceIdentifier
-        guard let workspace = activeWorkspace else { return }
-        loadCachedProjects(of: workspace)
+        selection = cached.selection
+        guard let primary = primary(of: shownWorkspaces) else { return }
+        activeWorkspaceIdentifier = primary.identifier
+        loadCachedProjects(of: shownWorkspaces)
         phase = .ready
         followActiveProjects()
     }
@@ -45,8 +47,8 @@ extension AppModel {
         }
     }
 
-    func loadCachedProjects(of workspace: Workspace) {
-        workspace.projects
+    func loadCachedProjects(of shown: [Workspace]) {
+        shown.flatMap(\.projects)
             .filter { board.cursor(projectIdentifier: $0.identifier) == nil }
             .forEach { loadCachedProject(identifier: $0.identifier) }
     }
@@ -54,8 +56,19 @@ extension AppModel {
     // NB ADR 0027: nothing listed or pulled is written to the cache before this session's owner is confirmed.
     func keepOwner() {
         guard isOwnerConfirmed, let ownerIdentifier else { return }
-        let cache = OwnerCache(ownerIdentifier: ownerIdentifier, workspaces: workspaces, activeWorkspaceIdentifier: activeWorkspaceIdentifier)
+        let cache = OwnerCache(
+            ownerIdentifier: ownerIdentifier,
+            workspaces: workspaces,
+            activeWorkspaceIdentifier: activeWorkspaceIdentifier,
+            selection: selectionToStore
+        )
         keepInCache { try store.writeOwner(cache) }
+    }
+
+    private var selectionToStore: WorkspaceSelection? {
+        let isSingleActiveWorkspace = activeWorkspaceIdentifier.map { selection == .chosen([$0]) } == true
+        guard !isSingleActiveWorkspace else { return nil }
+        return selection
     }
 
     func keepProject(identifier: String) {

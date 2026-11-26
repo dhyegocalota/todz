@@ -21,6 +21,10 @@ import Observation
         didSet { storedTaskViews = nil }
     }
 
+    public internal(set) var selection: WorkspaceSelection? {
+        didSet { storedTaskViews = nil }
+    }
+
     public var selectedItem: SidebarItem = .inbox {
         didSet {
             waitingLink = nil
@@ -191,19 +195,40 @@ import Observation
         workspaces.first { $0.identifier == activeWorkspaceIdentifier }
     }
 
+    public var shownWorkspaces: [Workspace] {
+        guard let selection else { return [] }
+        return selection.workspaces(in: workspaces)
+    }
+
+    public var taggedWorkspaceName: [String: String] {
+        shownWorkspaceNames
+    }
+
+    var shownProjects: [Project] {
+        shownWorkspaces.flatMap(\.projects)
+    }
+
+    var shownWorkspaceNames: [String: String] {
+        let shown = shownWorkspaces
+        guard shown.count > 1 else { return [:] }
+        let pairs = shown.flatMap { workspace in workspace.projects.map { (key: $0.identifier, value: workspace.name) } }
+        return Dictionary(uniqueKeysWithValues: pairs)
+    }
+
     public var today: CalendarDate {
         CalendarDate.today(in: timeZone, at: now())
     }
 
     public var taskViews: TaskViews? {
-        guard let activeWorkspace else { return nil }
+        guard activeWorkspace != nil else { return nil }
         let (currentBoard, currentOutbox, day) = (board, outbox, today)
         if let storedTaskViews, storedTaskViews.day == day { return storedTaskViews.views }
         taskViewsBuildCount += 1
         let views = TaskViews(
-            projects: activeWorkspace.projects,
+            projects: shownProjects,
             board: currentBoard.applying(currentOutbox),
             pendingTasks: currentOutbox.pendingTasks,
+            workspaceNames: shownWorkspaceNames,
             day: day,
             timeZone: timeZone
         )
@@ -397,6 +422,7 @@ import Observation
         isOffline = false
         workspaces = []
         activeWorkspaceIdentifier = nil
+        selection = nil
         forgetKeys()
         selectedItem = .inbox
         selectedTask = nil

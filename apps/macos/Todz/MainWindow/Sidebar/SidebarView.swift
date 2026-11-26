@@ -35,7 +35,7 @@ struct SidebarView: View {
     }
 
     private var projects: [Project] {
-        workspace.projects.filter { !$0.isInbox }
+        model.shownWorkspaces.flatMap(\.projects).filter { !$0.isInbox }
     }
 
     private var selection: Binding<SidebarItem?> {
