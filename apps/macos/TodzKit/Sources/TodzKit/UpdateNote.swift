@@ -9,4 +9,10 @@ public enum UpdateNote {
         guard recorded != current else { return nil }
         return current
     }
+
+    public static func recordLaunch(ofVersion current: String, defaults: UserDefaults) -> String? {
+        nil
+    }
+
+    public static func clearPendingVersion(defaults: UserDefaults) {}
 }
