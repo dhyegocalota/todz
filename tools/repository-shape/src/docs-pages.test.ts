@@ -5,6 +5,8 @@ import { swiftCopyValue } from './swift-copy';
 const DOCS_DIRECTORY = 'apps/docs';
 const PAGE_EXTENSION = '.mdx';
 const AGENT_COMMAND = 'apps/macos/TodzKit/Sources/TodzKit/AgentCommand.swift';
+const AGENT_SERVER = 'apps/macos/TodzKit/Sources/TodzKit/AgentServer.swift';
+const PROJECT_SERVER_PATTERN = /case project = "([\w-]+)"/;
 const WRANGLER_CONFIGURATION = 'apps/api/wrangler.jsonc';
 const KEY_SCREEN_COPY = 'apps/macos/Copy/KeyScreenCopy.swift';
 const SIGN_IN_COPY = 'apps/macos/Copy/SignInCopy.swift';
@@ -68,7 +70,9 @@ function agentCommands(): string[] {
   const publicOrigin = singleCapture({ text: readRepositoryFile(WRANGLER_CONFIGURATION), pattern: PUBLIC_ORIGIN_PATTERN });
   const { serverPath } = constants;
   expect(serverPath).toBeDefined();
-  const values = { ...constants, server: `${publicOrigin}/${serverPath}`, key: KEY_PLACEHOLDER };
+  const address = `${publicOrigin}/${serverPath}`;
+  const name = singleCapture({ text: readRepositoryFile(AGENT_SERVER), pattern: PROJECT_SERVER_PATTERN });
+  const values = { ...constants, server: address, address, name, key: KEY_PLACEHOLDER };
   return [
     singleCapture({ text: swift, pattern: CLAUDE_CODE_LINE_PATTERN }),
     tripleQuoted({ text: swift, name: 'codexConfiguration' }),

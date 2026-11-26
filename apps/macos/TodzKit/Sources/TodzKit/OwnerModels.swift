@@ -123,8 +123,30 @@ public struct HistoryEntry: Decodable, Sendable, Equatable {
 
 public struct ChangePage: Decodable, Sendable, Equatable {
     public let tasks: [TaskRecord]
+    public let deletedNumbers: [Int]
     public let cursor: Int
     public let hasMore: Bool
+}
+
+extension ChangePage {
+    enum CodingKeys: String, CodingKey {
+        case tasks
+        case deletedNumbers
+        case cursor
+        case hasMore
+    }
+
+    // NB ADR 0102: a feed without deleted_numbers comes from a server that cannot delete.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let deletedNumbers = try container.contains(.deletedNumbers) ? container.decode([Int].self, forKey: .deletedNumbers) : []
+        self.init(
+            tasks: try container.decode([TaskRecord].self, forKey: .tasks),
+            deletedNumbers: deletedNumbers,
+            cursor: try container.decode(Int.self, forKey: .cursor),
+            hasMore: try container.decode(Bool.self, forKey: .hasMore)
+        )
+    }
 }
 
 public struct IssuedSession: Decodable, Sendable, Equatable {

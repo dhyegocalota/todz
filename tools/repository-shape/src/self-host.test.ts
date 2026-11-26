@@ -82,7 +82,8 @@ const PRODUCTION_SETTINGS = [
 const SENDER_NAMES = ['SENDER_ADDRESS', 'REPLY_TO_ADDRESS'];
 const NAMESPACE_ID_PATTERN = /"namespace_id": "(\d+)"/g;
 const NAMESPACE_RANGE_PATTERN = /`(\d+)` to `(\d+)`/;
-const SERVER_NAME_PATTERN = /private let serverName = "([\w-]+)"/;
+const AGENT_SERVER = 'apps/macos/TodzKit/Sources/TodzKit/AgentServer.swift';
+const SERVER_NAME_PATTERN = /case project = "([\w-]+)"/;
 const ANCHOR_PATTERN = /#.*$/;
 const NEXT_HEADING_PATTERN = /\n## /;
 const NOT_FOUND = -1;
@@ -234,7 +235,8 @@ describe('the self-host guide', () => {
   });
 
   test('the Claude Code command has the shape the key screen copies', () => {
-    const serverName = SERVER_NAME_PATTERN.exec(readRepositoryFile(AGENT_COMMAND))?.[FIRST_CAPTURE];
+    const serverName = SERVER_NAME_PATTERN.exec(readRepositoryFile(AGENT_SERVER))?.[FIRST_CAPTURE];
+    expect(serverName).toBeDefined();
     expect(readRepositoryFile(AGENT_COMMAND)).toContain(CLAUDE_CODE_PREFIX);
     expect(guide).toContain(`${CLAUDE_CODE_PREFIX} ${serverName} '`);
     expect(guide).toContain(`${MCP_PATH}'`);

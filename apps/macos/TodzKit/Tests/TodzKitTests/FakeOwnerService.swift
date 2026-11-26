@@ -34,6 +34,7 @@ struct StatusFailure: Sendable {
     var tasksOfProject: [String: [TaskRecord]] = [:]
     var history: [HistoryEntry] = []
     var keysOfProject: [String: [ProjectKey]] = [:]
+    var ownerKeys: [ProjectKey] = []
     private(set) var issuedKeyCount = 0
     var clock = fixedInstant
     private var suspendedRoutes: Set<FakeRoute> = []
@@ -224,6 +225,26 @@ struct StatusFailure: Sendable {
         keysOfProject[projectIdentifier]?.removeAll { $0.identifier == keyIdentifier }
     }
 
+    func listOwnerKeys(session: String) async throws -> [ProjectKey] {
+        try await record(.listOwnerKeys(session: session))
+        return ownerKeys
+    }
+
+    func issueOwnerKey(session: String) async throws -> IssuedKey {
+        try await record(.issueOwnerKey(session: session))
+        issuedKeyCount += 1
+        let secret = "todz-owner_fake-secret-\(issuedKeyCount)"
+        let key = ProjectKey(identifier: "owner-key-\(issuedKeyCount)", hint: String(secret.suffix(keyHintLength)), createdAt: tick())
+        ownerKeys.append(key)
+        return IssuedKey(key: key, secret: secret)
+    }
+
+    func revokeOwnerKey(session: String, keyIdentifier: String) async throws {
+        try await record(.revokeOwnerKey(session: session, keyIdentifier: keyIdentifier))
+        guard ownerKeys.contains(where: { $0.identifier == keyIdentifier }) else { throw OwnerAPIError.notFound }
+        ownerKeys.removeAll { $0.identifier == keyIdentifier }
+    }
+
     func nextIssuedKey() -> IssuedKey {
         let identifier = nextKeyIdentifier()
         issuedKeyCount += 1
@@ -246,7 +267,7 @@ struct StatusFailure: Sendable {
         let tasks = tasksOfProject[projectIdentifier, default: []]
         let pageTasks = Array(tasks.dropFirst(cursor).prefix(pageSize))
         let nextCursor = cursor + pageTasks.count
-        return ChangePage(tasks: pageTasks, cursor: nextCursor, hasMore: nextCursor < tasks.count)
+        return ChangePage(tasks: pageTasks, deletedNumbers: [], cursor: nextCursor, hasMore: nextCursor < tasks.count)
     }
 
     func suspend(_ route: FakeRoute) {

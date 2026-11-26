@@ -12,6 +12,7 @@ extension SignInError {
         case .linkRefused: SignInCopy.linkRefused
         case .timeZoneInvalid: SignInCopy.timeZoneInvalid
         case .appTooOld: SignInCopy.appTooOld
+        case let .fairUseRefused(message): message
         case .unreachable: ErrorCopy.networkTitle
         case .unexpected: ErrorCopy.serverTitle
         }
@@ -21,7 +22,7 @@ extension SignInError {
         switch self {
         case .unreachable, .unexpected: true
         case .identityRejected, .signInUnavailable, .signInRefused, .invalidAddress, .linkRejected, .linkNotRequested, .linkRefused,
-            .timeZoneInvalid, .appTooOld:
+            .timeZoneInvalid, .appTooOld, .fairUseRefused:
             false
         }
     }

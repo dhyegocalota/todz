@@ -14,6 +14,9 @@ const CURSOR_TEMPLATE_PATTERN = /private func cursorJSON[^{]*\{\s*"""\n([\s\S]*?
 const INTERPOLATION_PATTERN = /\\\((\w+)\)/g;
 const TEMPLATE_INDENT_PATTERN = /^ {4}/gm;
 const SERVER_INTERPOLATION = 'server';
+const ADDRESS_INTERPOLATION = 'address';
+const NAME_INTERPOLATION = 'name';
+const PROJECT_SERVER_NAME = 'todz';
 const KEY_INTERPOLATION = 'key';
 const FIRST_CAPTURE = 1;
 const SECOND_CAPTURE = 2;
@@ -33,7 +36,13 @@ function swiftTemplate(pattern: RegExp): string {
 }
 
 function interpolated(template: string): string {
-  const values: Record<string, string> = { ...swiftConstants(), [SERVER_INTERPOLATION]: MCP_URL, [KEY_INTERPOLATION]: KEY_PLACEHOLDER };
+  const values: Record<string, string> = {
+    ...swiftConstants(),
+    [SERVER_INTERPOLATION]: MCP_URL,
+    [ADDRESS_INTERPOLATION]: MCP_URL,
+    [NAME_INTERPOLATION]: PROJECT_SERVER_NAME,
+    [KEY_INTERPOLATION]: KEY_PLACEHOLDER,
+  };
   return template.replace(INTERPOLATION_PATTERN, (_match, name: string) => {
     const value = values[name];
     if (value === undefined) throw new Error(`AgentCommand.swift interpolates ${name}, which the test cannot fill`);

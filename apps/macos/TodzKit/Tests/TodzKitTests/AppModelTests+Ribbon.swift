@@ -28,7 +28,7 @@ extension AppModelTests {
     }
 
     @MainActor private func scriptPull(_ tasks: [TaskRecord], in harness: AppModelHarness) {
-        let page = ChangePage(tasks: tasks, cursor: 2 + tasks.count, hasMore: false)
+        let page = ChangePage(tasks: tasks, deletedNumbers: [], cursor: 2 + tasks.count, hasMore: false)
         harness.service.changeScripts[inboxIdentifier] = [.success(page)]
     }
 

@@ -152,6 +152,15 @@ extension AppModelTests {
         #expect(harness.model.banner == .changeNotSaved)
     }
 
+    @Test func aFairUseRefusalOfAWriteShowsTheServersMessage() async throws {
+        let harness = try AppModelHarness()
+        harness.seedWorkspace(name: "acme")
+        await harness.signedIn()
+        harness.service.failures[.createProject] = .fairUseRefused(message: "A workspace holds up to 50 projects.")
+        await harness.model.createProject(name: "Other")
+        #expect(harness.model.banner == .fairUseRefused(message: "A workspace holds up to 50 projects."))
+    }
+
     @Test func renamingTheInboxIsRefused() async throws {
         let harness = try AppModelHarness()
         let workspace = harness.seedWorkspace(name: "acme")

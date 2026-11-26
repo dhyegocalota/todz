@@ -25,6 +25,7 @@ public struct TaskBoard: Sendable, Equatable {
     private var tasksOfProject: [String: [Int: TaskRecord]] = [:]
     private var numbersOfProject: [String: [Int]] = [:]
     private var cursorOfProject: [String: Int] = [:]
+    private var deletedNumbersOfProject: [String: Set<Int>] = [:]
 
     public init() {}
 
@@ -41,8 +42,16 @@ public struct TaskBoard: Sendable, Equatable {
         tasks.forEach { replace(projectIdentifier: projectIdentifier, task: $0) }
     }
 
+    public mutating func remove(projectIdentifier: String, numbers: [Int]) {
+        guard !numbers.isEmpty else { return }
+        deletedNumbersOfProject[projectIdentifier, default: []].formUnion(numbers)
+        numbers.forEach { tasksOfProject[projectIdentifier]?[$0] = nil }
+        numbersOfProject[projectIdentifier]?.removeAll { numbers.contains($0) }
+    }
+
     public mutating func replace(projectIdentifier: String, task: TaskRecord) {
-        guard !isOlderThanTheHeldCopy(task, projectIdentifier: projectIdentifier) else { return }
+        let isDeleted = deletedNumbersOfProject[projectIdentifier]?.contains(task.number) == true
+        guard !isDeleted, !isOlderThanTheHeldCopy(task, projectIdentifier: projectIdentifier) else { return }
         let isNewNumber = tasksOfProject[projectIdentifier]?[task.number] == nil
         tasksOfProject[projectIdentifier, default: [:]][task.number] = task
         guard isNewNumber else { return }
@@ -65,6 +74,7 @@ public struct TaskBoard: Sendable, Equatable {
     public mutating func reset(projectIdentifier: String) {
         tasksOfProject[projectIdentifier] = nil
         numbersOfProject[projectIdentifier] = nil
+        deletedNumbersOfProject[projectIdentifier] = nil
     }
 
     public func cursor(projectIdentifier: String) -> Int? {

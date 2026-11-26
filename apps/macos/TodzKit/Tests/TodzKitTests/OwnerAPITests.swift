@@ -204,13 +204,13 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
     }
 
     @Test func readChangesSendsTheCursor() async throws {
-        let body = "{\"tasks\":[\(OwnerFixtures.openTaskJSON(number: 1))],\"cursor\":12,\"has_more\":false}"
+        let body = "{\"tasks\":[\(OwnerFixtures.openTaskJSON(number: 1))],\"deleted_numbers\":[3],\"cursor\":12,\"has_more\":false}"
         let page = try await api(answering: .response(status: 200, body: body))
             .readChanges(session: session, projectIdentifier: projectIdentifier, cursor: 5)
         try expectOnlyRequest(
             ExpectedRequest(method: "GET", path: "/owner/projects/\(projectIdentifier)/changes", query: "cursor=5", session: session, body: nil)
         )
-        #expect(page == ChangePage(tasks: [OwnerFixtures.openTask(number: 1)], cursor: 12, hasMore: false))
+        #expect(page == ChangePage(tasks: [OwnerFixtures.openTask(number: 1)], deletedNumbers: [3], cursor: 12, hasMore: false))
     }
 
     @Test(arguments: [
@@ -234,6 +234,11 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
         (426, "{\"error\":\"app_too_old\",\"minimum_app_version\":\"0.3.0\"}", .appTooOld(minimum: "0.3.0")),
         (426, "{\"error\":\"app_too_old\"}", .appTooOld(minimum: nil)),
         (426, "<html>upgrade</html>", .appTooOld(minimum: nil)),
+        (409, "{\"error\":\"limit_reached\",\"limit\":\"open_tasks\",\"message\":\"Full\"}", .fairUseRefused(message: "Full")),
+        (429, "{\"error\":\"limit_reached\",\"limit\":\"daily_writes\",\"message\":\"Tomorrow\"}", .fairUsePaused(message: "Tomorrow")),
+        (403, "{\"error\":\"account_suspended\",\"message\":\"Suspended\"}", .fairUsePaused(message: "Suspended")),
+        (403, "{\"error\":\"sign_up_refused\",\"message\":\"Refused\"}", .fairUseRefused(message: "Refused")),
+        (409, "{\"error\":\"limit_reached\"}", .limitReached),
         (418, "{\"error\":\"teapot\"}", .unexpected(status: 418)),
     ])
     func mapsEachRowOfTheErrorTable(status: Int, body: String, expected: OwnerAPIError) async throws {
