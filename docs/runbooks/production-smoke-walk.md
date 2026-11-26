@@ -6,7 +6,7 @@ Every command runs from the repository root, one command per call; a Wrangler or
 
 Take `<commit>` as `git rev-parse --short origin/main` and `<short>` as the same value; both go in the run log.
 
-Once `version-compat` is deployed, every `/owner/*` request without a `Todz-App-Version` of at least the `MINIMUM_APP_VERSION` of `libs/types` answers `426` with `{"error":"app_too_old","minimum_app_version":"<minimum>"}`, before its body is read. Read `<minimum>` from `libs/types/src/constants.ts` (`0.2.4` at the time of writing) and send `-H "Todz-App-Version: <minimum>"` on every `/owner/*` probe below; the plain form without the header is for a Worker deployed before `version-compat`, which ignores it.
+Once `version-compat` is deployed, every `/owner/*` request without a `Todz-App-Version` of at least the `MINIMUM_APP_VERSION` of `libs/types` answers `426` with `{"error":"app_too_old","minimum_app_version":"<minimum>"}`, before its body is read. Read `<minimum>` from `libs/types/src/constants.ts` (`0.2.0` at the time of writing) and send `-H "Todz-App-Version: <minimum>"` on every `/owner/*` probe below; the plain form without the header is for a Worker deployed before `version-compat`, which ignores it.
 
 1. **Confirm what is deployed.** Read the deployed commit of the Worker against `main`, then ask the live health route with both methods:
 
