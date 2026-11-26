@@ -1,6 +1,6 @@
 ---
 title: Workspaces
-description: Switch between workspaces, show several at once and rebind the keys.
+description: Switch between workspaces, show several at once, rebind the keys, rename and delete.
 ---
 
 A workspace holds one company's projects and starts with an Inbox. Each workspace is isolated from the others.
@@ -49,3 +49,20 @@ Each row is tagged with its workspace before its project, as in `Acme · Launch`
 ## Where a new task goes
 
 In the union, a task you add without naming a project (from the menu bar, a shortcut or the day close) goes to the Inbox of the primary workspace: the one that was shown before when it still is, else the first in the list. A new project and the keys of **Connect an Agent** go to the primary workspace too. Changing a task always writes to the project the task belongs to.
+
+## Delete and rename
+
+To rename a workspace, choose **Rename Workspace…** in the workspace menu, or use todz › Settings › Workspaces. The name follows the rules of a new one: 1 to 80 characters, no control characters, trimmed.
+
+To delete a workspace, choose **Delete Workspace…** in the workspace menu, or use todz › Settings › Workspaces. Type the workspace name to confirm.
+
+- Its projects, their MCP keys and their data are removed at once and cannot be restored.
+- Any agent key of its projects stops working immediately.
+- The Inbox is deleted with it.
+- Deleting the last workspace leaves you with none; todz offers to create one.
+
+To delete a project, right-click it in the sidebar and choose **Delete Project…**, then type its name. The Inbox cannot be deleted. The MCP keys of the project stop working at once.
+
+<Note>
+  Each Mac drops the deleted data the next time it hears from the server.
+</Note>
