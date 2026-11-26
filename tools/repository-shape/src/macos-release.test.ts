@@ -6,6 +6,7 @@ const APP_ENTITLEMENTS = 'apps/macos/Todz/Todz.entitlements';
 const WIDGETS_ENTITLEMENTS = 'apps/macos/TodzWidgets/TodzWidgets.entitlements';
 const APP_INFO_PLIST = 'apps/macos/Todz/Info.plist';
 const RELEASE_RUNBOOK = 'docs/runbooks/release-the-mac-app.md';
+const AUTOMATIC_UPDATES_SETTING = 'TODZ_AUTOMATICALLY_UPDATES';
 const APP_TARGET_MARKER = '\n  Todz:\n';
 const WIDGETS_TARGET_MARKER = '\n  TodzWidgets:\n';
 const SCHEMES_MARKER = '\nschemes:\n';
@@ -109,9 +110,14 @@ describe('the macOS release settings', () => {
     expect(appTarget()).toContain(`SUScheduledCheckInterval: ${ONE_DAY_SECONDS}`);
   });
 
-  test('the app updates itself by default, and the Settings switch changes that default', () => {
-    expect(appTarget()).toContain('SUAutomaticallyUpdate: YES');
-    expect(readRepositoryFile(APP_INFO_PLIST)).toMatch(/<key>SUAutomaticallyUpdate<\/key>\s*<true\/>/);
+  test('automatic updates are a build setting that only the release command turns on', () => {
+    expect(appTarget()).toContain(`SUAutomaticallyUpdate: $(${AUTOMATIC_UPDATES_SETTING})`);
+    expect(project()).toMatch(new RegExp(`Debug:\\n(?:      .*\\n)*?      ${AUTOMATIC_UPDATES_SETTING}: "NO"\\n`));
+    expect(project()).toMatch(new RegExp(`Release:\\n(?:      .*\\n)*?      ${AUTOMATIC_UPDATES_SETTING}: "NO"\\n`));
+    expect(readRepositoryFile(APP_INFO_PLIST)).toMatch(
+      new RegExp(`<key>SUAutomaticallyUpdate<\\/key>\\s*<string>\\$\\(${AUTOMATIC_UPDATES_SETTING}\\)<\\/string>`),
+    );
+    expect(readRepositoryFile(RELEASE_SCRIPT)).toContain(`${AUTOMATIC_UPDATES_SETTING}=YES`);
   });
 
   test('the app refuses an appcast that is not signed, and verifies an update before extracting it', () => {
