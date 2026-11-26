@@ -38,7 +38,7 @@ const DOCS_SELF_HOST_URL = 'https://docs.todz.app/self-host';
 const DOCS_INSTALL_URL = 'https://docs.todz.app/install-on-mac';
 const GUIDE_LINK_PATTERN = /<a class="(?:nav-link|footer-link)" href="([^"]*)"/g;
 const FOOTER_CREDIT =
-  '<p class="footer-credit">todz is a product of <a class="footer-credit-link" href="https://logicbit.com.br" rel="noopener noreferrer">Logic Bit</a>, made in Brazil</p>';
+  '<p class="footer-credit">© todz · todz is a product of <a class="footer-credit-link" href="https://logicbit.com.br" rel="noopener noreferrer">Logic Bit</a>, made in Brazil</p>';
 const FOOTER_CREDIT_LINK_STYLE = '.footer-credit-link{color:var(--color-text);text-decoration:underline;text-underline-offset:0.2em}';
 const SECTION_MARKERS = [
   '<section class="hero',

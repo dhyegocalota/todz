@@ -48,11 +48,15 @@ function creditHtml(): string {
   return `<p class="footer-credit">${escapedHtml(creditLead)} <a class="footer-credit-link" href="${escapedHtml(COMPANY.website)}" rel="noopener noreferrer">${escapedHtml(creditName)}</a>${escapedHtml(creditTail)}</p>`;
 }
 
-function openSourceFooterHtml(document: SiteDocument): string {
+function starPillFooterHtml(document: SiteDocument): string {
+  if (document.kind === SitePageKind.Private) return '';
+  return `${starPillHtml(document.stars)}\n`;
+}
+
+function sourceLinksHtml(document: SiteDocument): string {
   if (document.kind === SitePageKind.Private) return '';
   const { license, contributing } = LANDING_COPY.openSource;
-  return `${starPillHtml(document.stars)}
-<a class="footer-link footer-open-source" href="${REPOSITORY.licenseUrl}" rel="noopener">${escapedHtml(license)}</a>
+  return `<a class="footer-link footer-open-source" href="${REPOSITORY.licenseUrl}" rel="noopener">${escapedHtml(license)}</a>
 <a class="footer-link footer-open-source" href="${REPOSITORY.contributingUrl}" rel="noopener">${escapedHtml(contributing)}</a>
 `;
 }
@@ -61,10 +65,11 @@ function footerHtml(document: SiteDocument): string {
   return `<footer class="site-footer">
 <div class="site-footer-inner page-width">
 ${brandHtml()}
-<p class="footer-copyright">${escapedHtml(LANDING_COPY.shell.copyright)}</p>
 ${creditHtml()}
-${openSourceFooterHtml(document)}<a class="footer-link" href="${DOCS_SELF_HOST_URL}">${escapedHtml(LANDING_COPY.shell.footerSelfHost)}</a>
+${starPillFooterHtml(document)}<div class="footer-links">
+${sourceLinksHtml(document)}<a class="footer-link" href="${DOCS_SELF_HOST_URL}">${escapedHtml(LANDING_COPY.shell.footerSelfHost)}</a>
 <a class="footer-link" href="${DOCS_INSTALL_URL}">${escapedHtml(LANDING_COPY.shell.footerInstall)}</a>
+</div>
 </div>
 </footer>`;
 }

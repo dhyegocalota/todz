@@ -37,7 +37,7 @@ const KEYBOARD_ORDER = [
   '.hero .download-button',
 ];
 const CREDIT_LINK = '.site-footer .footer-credit-link';
-const CREDIT_TEXT = 'todz is a product of Logic Bit, made in Brazil';
+const CREDIT_TEXT = '© todz · todz is a product of Logic Bit, made in Brazil';
 const CREDIT_WEBSITE = 'https://logicbit.com.br';
 const SCRIPT_OWNED_TRANSITION_PROPERTIES = ['color', 'background-color', 'opacity'];
 const SITE_PAGES = [SitePath.Landing, SitePath.Join];
