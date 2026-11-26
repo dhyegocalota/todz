@@ -1,6 +1,6 @@
 # Delete and rename workspaces, delete projects
 
-**Status:** In review
+**Status:** Shipped 2026-11-26
 **Tier:** 🔴 (workspace isolation, MCP key revocation, data deletion, schema-free server change, app cache and selection)
 **Owner approval:** the owner's words, "como eu posso deletar um workspace?" and "como renomear?", inherit the product scope of [docs/product/README.md](../../product/README.md) (approved 2026-11-23); the loop decides the design under the owner's standing instruction and records it in [ADR 0093](../../adr/0093-deleting-a-workspace-or-project-is-a-hard-delete-behind-a-typed-name-confirmation.md).
 **ADRs:** [0093](../../adr/0093-deleting-a-workspace-or-project-is-a-hard-delete-behind-a-typed-name-confirmation.md)
