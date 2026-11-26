@@ -189,3 +189,80 @@ export async function updateProjectName({
     .run();
   return result.meta.changes > 0;
 }
+
+export async function listWorkspaceProjectIds({
+  directory,
+  ownerId,
+  workspaceId,
+}: {
+  directory: D1Database;
+  ownerId: string;
+  workspaceId: string;
+}): Promise<string[]> {
+  const { results } = await directory
+    .prepare(
+      'SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ?',
+    )
+    .bind(workspaceId, ownerId)
+    .all<ProjectIdRow>();
+  return results.map((row) => row.id);
+}
+
+export async function deleteOwnerWorkspace({
+  directory,
+  ownerId,
+  workspaceId,
+}: {
+  directory: D1Database;
+  ownerId: string;
+  workspaceId: string;
+}): Promise<boolean> {
+  const [, , , workspaceDeletion] = await directory.batch([
+    directory
+      .prepare(
+        'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT project_keys.digest FROM project_keys JOIN projects ON projects.id = project_keys.project_id JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ?)',
+      )
+      .bind(workspaceId, ownerId),
+    directory
+      .prepare(
+        'DELETE FROM project_keys WHERE project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ?)',
+      )
+      .bind(workspaceId, ownerId),
+    directory
+      .prepare('DELETE FROM projects WHERE workspace_id IN (SELECT id FROM workspaces WHERE id = ? AND owner_id = ?)')
+      .bind(workspaceId, ownerId),
+    directory.prepare('DELETE FROM workspaces WHERE id = ? AND owner_id = ?').bind(workspaceId, ownerId),
+  ]);
+  if (workspaceDeletion === undefined) throw new Error('the batch answers one result per statement');
+  return workspaceDeletion.meta.changes > 0;
+}
+
+export async function deleteOwnerProject({
+  directory,
+  ownerId,
+  projectId,
+}: {
+  directory: D1Database;
+  ownerId: string;
+  projectId: string;
+}): Promise<boolean> {
+  const [, , projectDeletion] = await directory.batch([
+    directory
+      .prepare(
+        'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT digest FROM project_keys WHERE project_id = ? AND project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ?))',
+      )
+      .bind(projectId, ownerId),
+    directory
+      .prepare(
+        'DELETE FROM project_keys WHERE project_id = ? AND project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ?)',
+      )
+      .bind(projectId, ownerId),
+    directory
+      .prepare(
+        'DELETE FROM projects WHERE id = ? AND is_inbox = 0 AND workspace_id IN (SELECT id FROM workspaces WHERE owner_id = ?)',
+      )
+      .bind(projectId, ownerId),
+  ]);
+  if (projectDeletion === undefined) throw new Error('the batch answers one result per statement');
+  return projectDeletion.meta.changes > 0;
+}
