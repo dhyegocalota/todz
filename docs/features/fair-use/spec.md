@@ -12,7 +12,7 @@ A free account can write without a bound beyond the per-minute limiters. One acc
 
 ## Goals
 
-1. One documented set of per-owner limits, enforced on the server, with the numbers of [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md): 20 workspaces, 100 projects per workspace, 5,000 open tasks per project, 500-character titles, 20,000-character notes (unchanged, so the shipped app never loses a note; a 10 KB byte cap waits for an app release), 10 live MCP keys per project, 5,000 task writes per UTC day (the loop's call; the owner's example was 20,000), 50 MiB of stored text.
+1. One documented set of per-owner limits, enforced on the server, with the numbers of [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md): 20 workspaces, 100 projects per workspace, 5,000 open tasks per project, 500-character titles, 20,000-character notes (unchanged, so the shipped app never loses a note; a 10 KB byte cap waits for an app release), 10 live MCP keys per project, 1,000 task writes per UTC day (the loop's call; the owner's example was 20,000), 50 MiB of stored text.
 2. Every refusal names the limit and carries a human-readable message, over the owner API (`message` in the body) and over MCP (the tool's error text).
 3. Sign-up abuse: a daily cap of new accounts per client and a refusal for disposable email domains, both only for new accounts ([ADR 0089](../../adr/0089-sign-up-abuse-is-capped-per-client-per-day-and-disposable-email-domains-are-refused-for-new-accounts.md)).
 4. The admin (owner only, the existing admin session) sees Top usage over seven days by task writes and by stored text bytes, and suspends or restores an account. A suspended account reads and cannot write nor use MCP ([ADR 0090](../../adr/0090-suspension-blocks-writes-and-mcp-and-the-admin-sees-top-usage-by-owner.md)).
@@ -70,7 +70,7 @@ Admin:
 
 | Question | Options | Owner's answer | Date |
 |----------|---------|----------------|------|
-| The numbers | the owner's examples, or sized ones | Loop's call: [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md) (5,000 writes a day is the loop's call, not the owner's: the owner's example was 20,000; the cost arithmetic is in the ADR's Sizing) | 2026-11-26 |
+| The numbers | the owner's examples, or sized ones | Loop's call: [ADR 0087](../../adr/0087-fair-use-limits-are-fixed-numbers-sized-against-workers-paid-allowances-and-configurable-per-server.md) (1,000 writes a day is the loop's call, not the owner's: the owner's example was 20,000; the cost arithmetic is in the ADR's Sizing) | 2026-11-26 |
 | Disposable list source | vendored by hand, or a service | Loop's call: vendored by hand, updated in reviewed commits | 2026-11-26 |
 | What a suspended owner can do | read; or nothing | Owner's brief: reads, no writes, no MCP | 2026-11-26 |
 | The app's copy | change the app now, or follow-up | Loop's call: follow-up, the server carries the message | 2026-11-26 |

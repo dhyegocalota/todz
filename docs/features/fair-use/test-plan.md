@@ -6,7 +6,7 @@ Class: `product` (the owner's brief changes what a person and an agent see). No 
 
 ## Constants and text rules (A)
 
-- [ ] A-1 Input: `PROJECT_OPEN_TASKS_MAX`, `OWNER_WRITES_PER_DAY_MAX`, `OWNER_STORED_BYTES_MAX`, `SIGN_UPS_PER_CLIENT_DAY_MAX`, `WORKSPACE_PROJECTS_MAX`. Expected: 5000, 5000, 52428800, 5, 100.
+- [ ] A-1 Input: `PROJECT_OPEN_TASKS_MAX`, `OWNER_WRITES_PER_DAY_MAX`, `OWNER_STORED_BYTES_MAX`, `SIGN_UPS_PER_CLIENT_DAY_MAX`, `WORKSPACE_PROJECTS_MAX`. Expected: 5000, 1000, 52428800, 5, 100.
 - [ ] A-2 Input: `TASK_TITLE_MAX_LENGTH`, `TASK_NOTES_MAX_BYTES`. Expected: 500 and 10240.
 - [x] A-3 Input: a title of 500 characters. Expected: accepted, stored whole. — evidence: local `wrangler dev` built from c4584899 (frozen checkout), limits set through the FAIR_USE_* vars, scripted walk against the owner API and /mcp. 201 for a 500-character title over the owner API (workers walk, c4584899).
 - [x] A-4 Input: a title of 501 characters. Expected: `title_too_long`. — evidence: local `wrangler dev` built from c4584899 (frozen checkout), limits set through the FAIR_USE_* vars, scripted walk against the owner API and /mcp. 422 {"error":"rule_violated","issue":"title_too_long"} for 501 characters over the owner API.

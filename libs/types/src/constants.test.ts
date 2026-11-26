@@ -211,9 +211,9 @@ describe('fair use constants', () => {
     expect(PROJECT_OPEN_TASKS_MAX).toBe(5_000);
   });
 
-  test('an owner writes five thousand tasks a day, stores fifty mebibytes of text and a client opens five accounts a day (pin)', () => {
+  test('an owner writes a thousand tasks a day, stores fifty mebibytes of text and a client opens five accounts a day (pin)', () => {
     expect(BYTES_PER_KIBIBYTE).toBe(1_024);
-    expect(OWNER_WRITES_PER_DAY_MAX).toBe(5_000);
+    expect(OWNER_WRITES_PER_DAY_MAX).toBe(1_000);
     expect(OWNER_STORED_BYTES_MAX).toBe(52_428_800);
     expect(SIGN_UPS_PER_CLIENT_DAY_MAX).toBe(5);
   });

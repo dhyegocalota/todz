@@ -8,7 +8,7 @@ Ownership is by group, not by developer: one lead works the groups in order, so 
 
 ### Group A: the numbers and the text rules (red, then code)
 
-- [x] A1. Red: `libs/types/src/constants.test.ts` pins the new defaults (projects 100, open tasks 5,000, writes 5,000 a day, stored bytes 50 MiB, sign-ups 5 a client a day, notes 10,240 bytes, title 500), `FairUseLimit` values. Commit "test(types): pin fair use limits (red)".
+- [x] A1. Red: `libs/types/src/constants.test.ts` pins the new defaults (projects 100, open tasks 5,000, writes 1,000 a day (first 5,000, lowered in the fix round), stored bytes 50 MiB, sign-ups 5 a client a day, notes 10,240 bytes, title 500), `FairUseLimit` values. Commit "test(types): pin fair use limits (red)".
 - [x] A2. Red: `libs/core/src/task-text.test.ts` pins notes at exactly 10,240 bytes accepted, 10,241 bytes refused with `notes_too_long`, multi-byte notes counted in bytes, titles at 500 accepted and 501 refused. Commit "test(core): pin the note byte limit (red)".
 - [x] A3. Code: `libs/types/src/constants.ts`, `libs/types/src/fair-use.ts` (new enum `FairUseLimit`), `libs/types/src/task.ts`; `libs/core/src/task-text.ts` measures notes in bytes; `LimitViolation` in `libs/core/src/errors.ts`; `mcp-copy.ts` notes copy says "10 KB".
 
