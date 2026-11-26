@@ -3,7 +3,7 @@ import {
   IDEMPOTENCY_KEY_MAX_LENGTH,
   NAME_MAX_LENGTH,
   RuleIssue,
-  TASK_NOTES_MAX_BYTES,
+  TASK_NOTES_MAX_LENGTH,
   TASK_TITLE_MAX_LENGTH,
 } from '@todz/types';
 import { describe, expect, test } from 'vitest';
@@ -90,7 +90,7 @@ describe('control characters and oversized input', () => {
 
   test.each([
     { name: 'title', run: (text: string) => normalizeTitle(text), limit: TASK_TITLE_MAX_LENGTH, issue: RuleIssue.TitleTooLong },
-    { name: 'notes', run: (text: string) => normalizeNotes(text), limit: TASK_NOTES_MAX_BYTES, issue: RuleIssue.NotesTooLong },
+    { name: 'notes', run: (text: string) => normalizeNotes(text), limit: TASK_NOTES_MAX_LENGTH, issue: RuleIssue.NotesTooLong },
     {
       name: 'completion note',
       run: (text: string) => normalizeCompletionNote(text),
@@ -117,25 +117,19 @@ describe('normalizeNotes', () => {
   });
 
   test('over the limit is NotesTooLong and the message holds no notes text', () => {
-    const tooLong = `${SENTINEL}${'a'.repeat(TASK_NOTES_MAX_BYTES)}`;
+    const tooLong = `${SENTINEL}${'a'.repeat(TASK_NOTES_MAX_LENGTH)}`;
     expect(violationIssueOf(() => normalizeNotes(tooLong))).toBe(RuleIssue.NotesTooLong);
     expect(violationMessageOf(() => normalizeNotes(tooLong))).not.toContain(SENTINEL);
   });
 
-  test('exactly the byte limit is accepted and one byte more is NotesTooLong (red)', () => {
-    expect(normalizeNotes('a'.repeat(TASK_NOTES_MAX_BYTES))).toHaveLength(TASK_NOTES_MAX_BYTES);
-    expect(violationIssueOf(() => normalizeNotes('a'.repeat(TASK_NOTES_MAX_BYTES + 1)))).toBe(RuleIssue.NotesTooLong);
+  test('exactly the limit is accepted and one character more is NotesTooLong', () => {
+    expect(normalizeNotes('a'.repeat(TASK_NOTES_MAX_LENGTH))).toHaveLength(TASK_NOTES_MAX_LENGTH);
+    expect(violationIssueOf(() => normalizeNotes('a'.repeat(TASK_NOTES_MAX_LENGTH + 1)))).toBe(RuleIssue.NotesTooLong);
   });
 
-  test('the limit counts UTF-8 bytes, so 2560 emoji fit and 2561 do not (red)', () => {
-    expect(normalizeNotes(EMOJI.repeat(TASK_NOTES_MAX_BYTES / 4))).toHaveLength(EMOJI.length * (TASK_NOTES_MAX_BYTES / 4));
-    expect(violationIssueOf(() => normalizeNotes(EMOJI.repeat(TASK_NOTES_MAX_BYTES / 4 + 1)))).toBe(RuleIssue.NotesTooLong);
-  });
-
-  test('three-byte characters count three bytes each (red)', () => {
-    const euro = '€';
-    expect(normalizeNotes(euro.repeat(3413))).toHaveLength(3413);
-    expect(violationIssueOf(() => normalizeNotes(euro.repeat(3414)))).toBe(RuleIssue.NotesTooLong);
+  test('the limit counts code points, not bytes, so 20000 emoji fit and 20001 do not', () => {
+    expect(normalizeNotes(EMOJI.repeat(TASK_NOTES_MAX_LENGTH))).toHaveLength(EMOJI.length * TASK_NOTES_MAX_LENGTH);
+    expect(violationIssueOf(() => normalizeNotes(EMOJI.repeat(TASK_NOTES_MAX_LENGTH + 1)))).toBe(RuleIssue.NotesTooLong);
   });
 });
 
