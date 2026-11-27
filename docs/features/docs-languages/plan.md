@@ -4,12 +4,12 @@ Steps are checked off by the developer as each commit lands. Red commits come fi
 
 ## Steps
 
-- [ ] 1. ADR 0119 and this folder.
-- [ ] 2. Red: the shape tests for the twins, the front matter, the code, the links, the headings, the owner name and `navigation.languages`; the existing docs tests read the English entry.
-- [ ] 3. `docs.json` moves to `navigation.languages` with the five group names translated.
-- [ ] 4. Playwright language spec in `apps/docs/e2e`.
-- [ ] 5. The seven translator folders land; `mint broken-links` and the full set run green.
-- [ ] 6. Flip the spec and the index to Shipped; open the PR.
+- [x] 1. ADR 0119 and this folder.
+- [x] 2. Red: the shape tests for the twins, the front matter, the code, the links, the headings, the owner name and `navigation.languages`; the existing docs tests read the English entry.
+- [x] 3. `docs.json` moves to `navigation.languages` with the five group names translated.
+- [x] 4. Playwright language spec in `apps/docs/e2e`.
+- [x] 5. The seven translator folders land; `mint broken-links` and the full set run green.
+- [x] 6. Flip the spec and the index to Shipped; open the PR.
 
 ## File ownership
 

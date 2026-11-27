@@ -1,6 +1,6 @@
 # Docs in eight languages
 
-**Status:** Approved
+**Status:** Shipped 2026-11-27
 **Tier:** 🟡 (the public documentation site; no server, no schema, no app code)
 **Owner approval:** approved by inheritance from [docs/product/README.md](../../product/README.md) (2026-11-23) and the owner's v1.2 order of 2026-11-27, "agora mete uma i18n com lang selector + theme switcher (dark/light) igual do zapbip.. todas as langs suportadas".
 **ADRs:** [0119](../../adr/0119-the-docs-speak-eight-languages-one-folder-per-language-under-mintlify-navigation-languages.md)
