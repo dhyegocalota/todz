@@ -46,6 +46,9 @@ function untranslatableOf({
   ) as Record<Language, string[]>;
 }
 
+// NB ADR 0117: MCP output stays English, so the mock agent replies are the server's real text.
+const MCP_OUTPUT_PATHS = ['benefits.day.agent.toolResult', 'terminal.toolResult'];
+
 const OTHER_LANGUAGES = Object.values(Language).filter((language) => language !== Language.English);
 
 const COPY_MODULES: CopyModule[] = [
@@ -71,6 +74,7 @@ const COPY_MODULES: CopyModule[] = [
         'signature.name',
         'terminal.shellPrompt',
         'terminal.command',
+        ...MCP_OUTPUT_PATHS,
         'terminal.askPrompt',
         'terminal.toolCall',
         'benefits.day.email.time',
