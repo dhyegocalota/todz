@@ -33,6 +33,10 @@ extension AppModel {
         await selectWorkspaces(selection.toggling(identifier: identifier, in: workspaces))
     }
 
+    public func pickWorkspace(identifier: String) async {
+        await toggleWorkspace(identifier: identifier)
+    }
+
     public func chooseWorkspace(identifier: String) async {
         await chooseWorkspaces(.chosen([identifier]))
     }
