@@ -62,6 +62,38 @@ extension AppModelTests {
         #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
     }
 
+    @Test func pinTurningTheSwitchOnWhileASwitchPromptIsOpenNeverLeavesTwoWorkspaces() async throws {
+        let harness = try await singleWorkspaceHarness(isLockOn: false, selection: .all)
+        await harness.model.turnWorkspaceLockOn()
+        harness.authenticator.isHolding = true
+        let opening = Task { await harness.model.switchWorkspace(identifier: "secret") }
+        await Task.yield()
+        await Task.yield()
+        await harness.model.turnWorkspaceLockOn()
+        harness.authenticator.release()
+        await opening.value
+        #expect(harness.model.selection == .chosen(["secret"]))
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["secret"])
+        #expect(harness.authenticator.asked == [.switchWorkspaces])
+    }
+
+    @Test func pinALockedLaunchThatRememberedAllOffersTheListAndEntersWithOneWorkspace() async throws {
+        let harness = try AppModelHarness(isWorkspaceLockOn: true)
+        let acme = harness.seedWorkspace(name: "acme")
+        let side = harness.seedWorkspace(name: "secret")
+        harness.store.owner = OwnerCache(ownerIdentifier: harness.ownerIdentifier, workspaces: [acme, side], activeWorkspaceIdentifier: nil, selection: .all)
+        await harness.signedIn()
+        #expect(harness.model.phase == .choosing)
+        #expect(harness.model.visibleWorkspaces.isEmpty)
+        #expect(await harness.model.beginWorkspaceSwitch())
+        await harness.model.chooseWorkspaces(.all)
+        #expect(harness.model.phase == .choosing)
+        await harness.model.chooseWorkspace(identifier: "acme")
+        #expect(harness.model.phase == .ready)
+        #expect(harness.model.selection == .chosen(["acme"]))
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
+    }
+
     @Test func theNumberOfTheCurrentWorkspaceNeitherAsksNorMovesWhileLocked() async throws {
         let harness = try await singleWorkspaceHarness(active: "secret")
         await harness.model.switchWorkspace(number: 1)
