@@ -4,8 +4,6 @@ struct CommandBlock: View {
     let name: String
     let caption: AttributedString?
     let text: String
-    let holdsSecret: Bool
-    let disabledReason: String?
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -16,30 +14,17 @@ struct CommandBlock: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                CopyButton(text: text, item: name, holdsSecret: holdsSecret, disabledReason: disabledReason)
+                CopyButton(text: text, item: name)
             }
-            if isSelectable {
-                commandText
-                    .textSelection(.enabled)
-            }
-            if !isSelectable {
-                commandText
-            }
+            Text(text)
+                .font(.body.monospaced())
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: FormMetrics.fieldCornerRadius, style: .continuous))
+                .accessibilityLabel(name)
+                .accessibilityValue(text)
         }
-    }
-
-    private var isSelectable: Bool {
-        disabledReason == nil && !holdsSecret
-    }
-
-    private var commandText: some View {
-        Text(text, marking: KeyScreenCopy.secretPlaceholder) { $0.foregroundStyle(.secondary) }
-            .font(.body.monospaced())
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: FormMetrics.fieldCornerRadius, style: .continuous))
-            .accessibilityLabel(name)
-            .accessibilityValue(text)
     }
 }
