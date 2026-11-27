@@ -19,6 +19,7 @@ enum FakeRoute: Hashable, Sendable {
     case deleteProject
     case addTasks
     case updateTask
+    case deleteTask
     case completeTasks
     case reopenTasks
     case readHistory
@@ -46,6 +47,7 @@ enum FakeCall: Equatable, Sendable {
     case deleteProject(session: String, projectIdentifier: String)
     case addTasks(session: String, projectIdentifier: String, drafts: [TaskDraft])
     case updateTask(session: String, projectIdentifier: String, number: Int, patch: TaskPatch)
+    case deleteTask(session: String, projectIdentifier: String, number: Int)
     case completeTasks(session: String, projectIdentifier: String, numbers: [Int])
     case reopenTasks(session: String, projectIdentifier: String, numbers: [Int])
     case readHistory(session: String, projectIdentifier: String, number: Int)
@@ -73,6 +75,7 @@ enum FakeCall: Equatable, Sendable {
         case .deleteProject: .deleteProject
         case .addTasks: .addTasks
         case .updateTask: .updateTask
+        case .deleteTask: .deleteTask
         case .completeTasks: .completeTasks
         case .reopenTasks: .reopenTasks
         case .readHistory: .readHistory
@@ -88,6 +91,7 @@ enum FakeCall: Equatable, Sendable {
             let .deleteProject(_, projectIdentifier),
             let .addTasks(_, projectIdentifier, _),
             let .updateTask(_, projectIdentifier, _, _),
+            let .deleteTask(_, projectIdentifier, _),
             let .completeTasks(_, projectIdentifier, _),
             let .reopenTasks(_, projectIdentifier, _),
             let .readHistory(_, projectIdentifier, _),
