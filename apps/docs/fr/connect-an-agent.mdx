@@ -23,7 +23,7 @@ Pour reconnecter un agent qui utilisait une clé, lancez `claude mcp add --trans
 
 Une portée projet donne les outils de tâches, ainsi que les autres projets de son espace de travail pour `move` et `projects`. Une portée propriétaire donne les outils du compte et les mêmes outils de tâches pour chaque projet du compte, chacun prenant l’identifiant `project` fourni par `workspaces`. L’historique d’une tâche nomme l’app par le nom sous lequel elle s’est enregistrée. Voir [Outils MCP](/fr/mcp-tools).
 
-Les jetons d’accès durent une heure et se renouvellent d’eux-mêmes. Les jetons d’actualisation durent 30 jours et sont renouvelés à chaque utilisation ; si l’un d’eux est utilisé deux fois, l’app est déconnectée. todz ne stocke les jetons que sous forme d’empreintes. L’utilisation raisonnable et le plafond du cloud s’appliquent à chaque app connectée.
+Les jetons d’accès durent une heure et se renouvellent d’eux-mêmes. Les jetons d’actualisation durent 30 jours et sont renouvelés à chaque utilisation ; une seule nouvelle tentative dans les 5 secondes reçoit une nouvelle paire, et un jeton déjà utilisé qui revient plus tard déconnecte l’app. todz ne stocke les jetons que sous forme d’empreintes. L’utilisation raisonnable et le plafond du cloud s’appliquent à chaque app connectée.
 
 Pour déconnecter une app, ouvrez **Réglages** › **Apps connectées** dans l’app Mac. L’app s’arrête aussitôt.
 
