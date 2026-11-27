@@ -4,6 +4,14 @@ import { type PagePreferences, Theme } from '../page-preferences';
 import { LANDING_COPY_BY_LANGUAGE } from './landing-copy';
 import { SitePath } from './site-paths';
 
+const SHORT_CODE_SEPARATOR = '-';
+
+function shortCodeOf(language: Language): string {
+  const [primaryTag] = language.split(SHORT_CODE_SEPARATOR);
+  if (primaryTag === undefined) throw new Error('splitting a string always yields a first part');
+  return primaryTag.toUpperCase();
+}
+
 const GLOBE_ICON = `<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
 
 const THEME_ICONS: Record<Theme, string> = {
@@ -24,12 +32,12 @@ function languageButtonHtml({ language, preferences }: { language: Language; pre
 
 export function languageMenuHtml(preferences: PagePreferences): string {
   const { languageLabel } = LANDING_COPY_BY_LANGUAGE[preferences.language].shell;
-  const { nativeName } = LANGUAGE_PROFILES[preferences.language];
+  const shortCode = shortCodeOf(preferences.language);
   const buttons = Object.values(Language)
     .map((language) => languageButtonHtml({ language, preferences }))
     .join('\n');
   return `<details class="language-menu">
-<summary class="nav-link language-summary" aria-label="${escapedHtml(languageLabel)}">${GLOBE_ICON}<span class="language-current">${escapedHtml(nativeName)}</span></summary>
+<summary class="language-summary" aria-label="${escapedHtml(`${languageLabel}: ${shortCode}`)}" aria-expanded="false"><span class="language-code">${shortCode}</span></summary>
 <form class="language-form" method="post" action="${SitePath.Language}">
 ${returnInputHtml(preferences)}
 ${buttons}

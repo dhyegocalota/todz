@@ -28,6 +28,25 @@ export const SWITCH_SCRIPT = `{
     if (windowSource) windowSource.media = sourceMedia[theme];
     document.cookie = '${PreferenceCookie.Theme}=' + (isSystem ? '' : theme) + '; Path=/; SameSite=Lax' + securePart + '; Max-Age=' + (isSystem ? 0 : ${PREFERENCE_MAX_AGE_SECONDS});
   };
+  document.querySelectorAll('.language-menu').forEach((menu) => {
+    const trigger = menu.querySelector('.language-summary');
+    const syncExpanded = () => trigger.setAttribute('aria-expanded', String(menu.open));
+    const close = (shouldFocus) => {
+      menu.removeAttribute('open');
+      syncExpanded();
+      if (shouldFocus) trigger.focus();
+    };
+    menu.addEventListener('toggle', syncExpanded);
+    document.addEventListener('click', (event) => {
+      if (!menu.contains(event.target)) close(false);
+    });
+    menu.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || !menu.open) return;
+      event.preventDefault();
+      close(true);
+    });
+    menu.querySelector('.language-form').addEventListener('submit', () => close(false));
+  });
   document.querySelectorAll('.language-form').forEach((form) => {
     form.addEventListener('submit', () => {
       form.elements['${SitePath.ReturnField}'].value = location.pathname + location.search + location.hash;

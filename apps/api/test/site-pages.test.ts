@@ -13,6 +13,8 @@ const OK_STATUS = 200;
 const STARS = 1234;
 const STARS_TEXT = '1.2k';
 const NATIVE_LANGUAGE_NAMES = Object.values(LANGUAGE_PROFILES).map(({ nativeName }) => nativeName);
+const ENGLISH_SHORT_CODE = 'EN';
+const LANGUAGE_TRIGGER_TEXTS = [ENGLISH_SHORT_CODE, `${LANDING_COPY.shell.languageLabel}: ${ENGLISH_SHORT_CODE}`];
 const STAR_GLYPH = '★';
 const LINK_ARROW = '→';
 const SIGNATURE_DASH = '—';
@@ -214,6 +216,7 @@ describe('the landing', () => {
     const copy = [
       ...copyStrings(LANDING_COPY),
       ...NATIVE_LANGUAGE_NAMES,
+      ...LANGUAGE_TRIGGER_TEXTS,
       STARS_TEXT,
       STAR_GLYPH,
       LINK_ARROW,

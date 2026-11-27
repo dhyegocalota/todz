@@ -37,10 +37,6 @@ const KEYBOARD_ORDER = [
   '.site-header .brand',
   HEADER_GUIDE_LINK,
   HEADER_INSTALL_LINK,
-  '.language-summary',
-  '.theme-option[value=system]',
-  '.theme-option[value=light]',
-  '.theme-option[value=dark]',
   '.hero-free-link',
   '.hero .download-button',
 ];
