@@ -10,6 +10,7 @@ const SIDEBAR_TITLES = [
   'Connect an agent',
   'A tour of the app',
   'Workspaces',
+  'Workspace privacy',
   'Keyboard shortcuts',
   'Updates',
   'Privacy',
