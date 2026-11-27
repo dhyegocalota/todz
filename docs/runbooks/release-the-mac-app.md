@@ -140,5 +140,6 @@ Every command runs from the repository root, one command per call. Cloudflare ca
 | 2026-11-26 | 0.2.4 | 2395 | 00ed0f42 | `9bd3e628b55c411cda32e6cfe7613f1cfa3984bb74363883db5cbc7fa71e6571` |
 | 2026-11-26 | 0.2.5 | 2414 | 86b2a653 | `485ae2ee34a0a27dd2c00a4188e834592d45e05041c2348d30856cc083e1353f` |
 | 2026-11-26 | 0.2.6 | 2450 | 91c1662f | `b9547d79d6cb42d9f9528d256db70dff1646221b5289781b8521e1f86277bf11` |
+| 2026-11-27 | 0.2.7 | 2481 | 505e24e2 | `15a2c8fb785873e24aa6c3c4bdbe0caa30836e5cb26ccb4f9c6991ee3d179dd4` |
 
-The first attempt at 0.2.3 failed with "the served signature does not verify" and the release command rolled the Worker back; the retry passed and tagged `mac-v0.2.3`. The first attempts at 0.2.4 and 0.2.6 stopped at an unanswered `generate_keys` Keychain prompt (60 s, then 120 s after #107) before any upload; each retry passed.
+The first attempt at 0.2.3 failed with "the served signature does not verify" and the release command rolled the Worker back; the retry passed and tagged `mac-v0.2.3`. The first attempts at 0.2.4, 0.2.6 and 0.2.7 stopped at an unanswered `generate_keys` Keychain prompt (60 s, then 120 s after #107) before any upload; each retry passed. One 0.2.7 attempt also stopped at "the active deployment does not carry HEAD's sha" after a docs-only merge, until `scripts/deploy-worker.sh` deployed HEAD.
