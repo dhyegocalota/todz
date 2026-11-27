@@ -51,6 +51,14 @@ enum SettingsCopy {
     static let revokeOwnerKeyTitle = "Revoke this key?"
     static let revokeOwnerKeyMessage = "Agents that use it lose access at once."
     static let ownerKeyNotCreated = "The key wasn't created."
+    static let connectedApps = "Connected apps"
+    static let connectedAppsDetail = "Apps you approved in the browser to use todz over MCP. Disconnecting one signs it out right away."
+    static let noConnectedApps = "No connected apps yet. Add todz to Claude Code, Cursor or Codex with its address and approve it in the browser."
+    static let connectedAppAccountScope = "Your whole account"
+    static let connectedAppNeverUsed = "never"
+    static let disconnectConnectedApp = "Disconnect"
+    static let disconnectConnectedAppMessage = "It loses access at once. You can connect it again from the app."
+    static let connectedAppNotDisconnected = "The app wasn't disconnected. It still has access."
     static let server = "Server"
     static let serverDetail = "Where your tasks are kept. Switching signs you out and erases this Mac's copy."
     static let serverAddressLabel = "Server address"
@@ -120,6 +128,27 @@ enum SettingsCopy {
         case .notCreated: ownerKeyNotCreated
         case .notRevoked: KeyScreenCopy.revokeFailed
         case let .refused(message): message
+        }
+    }
+
+    static func disconnectConnectedAppTitle(clientName: String) -> String {
+        "Disconnect \(clientName)?"
+    }
+
+    static func connectedAppScope(_ scope: ConnectedAppScope) -> String {
+        switch scope {
+        case let .project(_, name): "Project: \(name)"
+        case .owner: connectedAppAccountScope
+        }
+    }
+
+    static func connectedAppSummary(scope: String, redirectHost: String, lastUsed: String) -> String {
+        "\(scope) · \(redirectHost) · Last used \(lastUsed)"
+    }
+
+    static func connectedAppFailure(_ failure: ConnectedAppFailure) -> String {
+        switch failure {
+        case .notDisconnected: connectedAppNotDisconnected
         }
     }
 

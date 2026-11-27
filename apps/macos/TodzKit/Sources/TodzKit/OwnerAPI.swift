@@ -32,6 +32,7 @@ private func taskPath(projectIdentifier: String, number: Int) -> String {
 }
 
 private let ownerKeysPath = "/owner/keys"
+private let connectedAppsPath = "/owner/connected-apps"
 
 private func keysPath(_ projectIdentifier: String) -> String {
     "\(projectPath(projectIdentifier))/keys"
@@ -276,11 +277,11 @@ public struct OwnerAPI: OwnerService {
     }
 
     public func listConnectedApps(session: String) async throws -> [ConnectedApp] {
-        throw OwnerAPIError.unreachable
+        try await answer(ConnectedAppsAnswer.self, to: OwnerRequest(method: .get, path: connectedAppsPath, session: session)).connectedApps
     }
 
     public func disconnectConnectedApp(session: String, connectedAppIdentifier: String) async throws {
-        throw OwnerAPIError.unreachable
+        _ = try await send(OwnerRequest(method: .delete, path: "\(connectedAppsPath)/\(connectedAppIdentifier)", session: session))
     }
 
     private func answer<Answer: Decodable>(_ type: Answer.Type, to request: OwnerRequest) async throws -> Answer {
