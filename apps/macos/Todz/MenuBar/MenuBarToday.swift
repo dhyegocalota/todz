@@ -13,6 +13,7 @@ struct MenuBarToday: View {
     @Environment(DayCloseCoordinator.self) private var dayClose
     @Environment(AppUpdater.self) private var appUpdater: AppUpdater?
     @State private var pinnedTopHeight: CGFloat = .zero
+    @State private var isDoneTodayExpanded = false
 
     var body: some View {
         let state = TaskListState.of(workspace: workspace, item: .today, model: model, lingers: windowState.lingers)
@@ -46,6 +47,7 @@ struct MenuBarToday: View {
                 state: state,
                 day: day,
                 focus: focus,
+                isDoneTodayExpanded: $isDoneTodayExpanded,
                 navigate: { navigate(direction: $0, day: day, hasComposer: showsComposer && !isClosingDay) },
                 maximumHeight: maximumPopoverHeight - pinnedTopHeight
             )
@@ -110,12 +112,13 @@ struct MenuBarToday: View {
     private func navigate(direction: MenuBarDirection, day: MenuBarDay, hasComposer: Bool) {
         let rows = ([day.upNext].compactMap(\.self) + day.queue).map { TaskKey(projectIdentifier: $0.project.identifier, number: $0.task.number) }
         let hasDoneToday = !dayClose.isClosingDay && !day.doneToday.isEmpty
-        let targets = MenuBarNavigation.targets(hasComposer: hasComposer, rows: rows, hasDoneToday: hasDoneToday)
+        let doneRows = isDoneTodayExpanded && hasDoneToday ? day.doneToday.map(\.key) : []
+        let targets = MenuBarNavigation.targets(hasComposer: hasComposer, rows: rows, hasDoneToday: hasDoneToday, doneRows: doneRows)
         focus.wrappedValue = MenuBarNavigation.next(from: focus.wrappedValue, direction: direction, in: targets)
     }
 
     private func completeUpNext(_ task: BoardTask?) {
-        guard let task else { return }
+        guard let task, task.task.state != .done else { return }
         windowState.toggleDone(task: task.key, item: .today, model: model)
     }
 

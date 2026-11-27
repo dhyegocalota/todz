@@ -5,6 +5,7 @@ struct MenuBarTodayRows: View {
     let day: MenuBarDay
     let pendingTasks: [PendingTask]
     let focus: FocusState<MenuBarFocus?>.Binding
+    @Binding var isDoneTodayExpanded: Bool
     let navigate: (MenuBarDirection) -> Void
     let maximumHeight: CGFloat
     @State private var contentHeight: CGFloat = .zero
@@ -26,7 +27,7 @@ struct MenuBarTodayRows: View {
                         .padding(.horizontal)
                 }
                 if showsDoneToday {
-                    MenuBarDoneToday(tasks: day.doneToday, focus: focus, navigate: navigate)
+                    MenuBarDoneToday(tasks: day.doneToday, focus: focus, isExpanded: $isDoneTodayExpanded, navigate: navigate)
                 }
             }
             .padding(.vertical)

@@ -31,14 +31,20 @@ struct RootView: View {
     @ViewBuilder private var choosing: some View {
         if model.workspaceLock.isLocked {
             LoadingScreen()
-                .task {
-                    _ = await model.beginWorkspaceSwitch()
-                    model.announceConfirmationFailure()
+                .overlay(alignment: .bottom) {
+                    Button(WorkspaceLockCopy.switchWorkspace) { Task { await confirmWorkspaceChoice() } }
+                        .padding()
                 }
+                .task { await confirmWorkspaceChoice() }
         }
         if !model.workspaceLock.isLocked {
             WorkspacePickerScreen()
         }
+    }
+
+    private func confirmWorkspaceChoice() async {
+        _ = await model.beginWorkspaceSwitch()
+        model.announceConfirmationFailure()
     }
 
     @ViewBuilder private var screen: some View {

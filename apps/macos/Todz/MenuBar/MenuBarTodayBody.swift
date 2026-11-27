@@ -5,6 +5,7 @@ struct MenuBarTodayBody: View {
     let state: TaskListState
     let day: MenuBarDay
     let focus: FocusState<MenuBarFocus?>.Binding
+    @Binding var isDoneTodayExpanded: Bool
     let navigate: (MenuBarDirection) -> Void
     let maximumHeight: CGFloat
 
@@ -20,7 +21,7 @@ struct MenuBarTodayBody: View {
             case .empty:
                 centeredLines(title: MainWindowCopy.todayEmptyTitle, detail: MainWindowCopy.todayEmptyBody)
             case .closingDay, .allDone, .active:
-                MenuBarTodayRows(day: day, pendingTasks: pendingTasks, focus: focus, navigate: navigate, maximumHeight: maximumHeight)
+                MenuBarTodayRows(day: day, pendingTasks: pendingTasks, focus: focus, isDoneTodayExpanded: $isDoneTodayExpanded, navigate: navigate, maximumHeight: maximumHeight)
             }
         }
         .todzMotion(.skeletonToRows, value: day.screen)
