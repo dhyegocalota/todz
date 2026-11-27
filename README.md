@@ -32,7 +32,7 @@
 | | |
 | --- | --- |
 | <img src="docs/screenshots/mac-app-shell/03-today-two-projects.png" width="400" alt="Today across two projects"><br>**Today**, across every project. | <img src="docs/screenshots/menu-bar-count/01-count.png" width="90" alt="The menu bar icon with the count of what is left"> <img src="docs/screenshots/menu-bar/01-today-popover.png" width="300" alt="The menu bar popover with today's tasks"><br>**The menu bar** counts what is left; add a task without leaving your work. |
-| <img src="docs/screenshots/widgets/03-medium-today.png" width="400" alt="A medium widget listing today's tasks"><br>**Widgets** on your desktop; tick a task right there. | <img src="docs/screenshots/connect-an-agent/01-key-screen.png" width="400" alt="Connect an Agent: a key and the command to paste"><br>**Connect an Agent**: one key, one `claude mcp add`. |
+| <img src="docs/screenshots/widgets/03-medium-today.png" width="400" alt="A medium widget listing today's tasks"><br>**Widgets** on your desktop; tick a task right there. | **Connect an agent**: one `claude mcp add`, then sign in in the browser. No key to copy. |
 
 ## Install
 
@@ -41,14 +41,14 @@
 ## Connect an agent
 
 1. Open todz and sign in with your email.
-2. Open **Connect an Agent**, pick a project, and copy your client's command.
-3. Paste it in your terminal, then ask your agent for the next task:
+2. Paste this in your terminal, then sign in in the browser when your agent asks:
 
    ```bash
-   claude mcp add --transport http todz 'https://api.todz.app/mcp' --header 'Authorization: Bearer <key>'
+   claude mcp add --transport http todz https://api.todz.app/mcp
    ```
+3. Ask your agent for the next task.
 
-Codex, Cursor and every MCP tool: [docs.todz.app](https://docs.todz.app/connect-an-agent). More of the app: [a tour](https://docs.todz.app/tour).
+Codex and every MCP tool: [docs.todz.app](https://docs.todz.app/connect-an-agent). More of the app: [a tour](https://docs.todz.app/tour).
 
 ## Contributing
 
