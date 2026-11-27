@@ -142,7 +142,9 @@ import Observation
     @ObservationIgnored let store: any SyncStore
     @ObservationIgnored let cacheWriter: ProjectCacheWriter
     @ObservationIgnored var taskViewsBuildCount = 0
-    @ObservationIgnored private var storedTaskViews: (day: CalendarDate, views: TaskViews)?
+    @ObservationIgnored private var storedTaskViews: (day: CalendarDate, isLocked: Bool, views: TaskViews)?
+    @ObservationIgnored public let workspaceLock: WorkspaceLock
+    @ObservationIgnored var workspaceRelock: Task<Void, Never>?
     @ObservationIgnored let widgetStore: any WidgetStore
     @ObservationIgnored let reloadWidgets: @Sendable () -> Void
     @ObservationIgnored public let timeZone: TimeZone
@@ -162,6 +164,7 @@ import Observation
         pendingLinks: any PendingLinkVault,
         store: any SyncStore,
         cacheScheduler: CacheScheduler = .immediate,
+        workspaceLock: WorkspaceLock,
         widgetStore: any WidgetStore,
         reloadWidgets: @escaping @Sendable () -> Void,
         timeZone: TimeZone,
@@ -186,6 +189,7 @@ import Observation
         self.pendingLinks = pendingLinks
         self.store = store
         self.cacheWriter = ProjectCacheWriter(store: store, scheduler: cacheScheduler)
+        self.workspaceLock = workspaceLock
         self.widgetStore = widgetStore
         self.reloadWidgets = reloadWidgets
         self.timeZone = timeZone
@@ -205,9 +209,14 @@ import Observation
         workspaces.first { $0.identifier == activeWorkspaceIdentifier }
     }
 
-    public var shownWorkspaces: [Workspace] {
+    var selectedWorkspaces: [Workspace] {
         guard let selection else { return [] }
         return selection.workspaces(in: workspaces)
+    }
+
+    // NB ADR 0110: while the lock holds, the one current workspace is all that any surface can show.
+    public var shownWorkspaces: [Workspace] {
+        workspaceLock.visible(selectedWorkspaces, current: activeWorkspaceIdentifier)
     }
 
     public var taggedWorkspaceName: [String: String] {
@@ -231,8 +240,8 @@ import Observation
 
     public var taskViews: TaskViews? {
         guard activeWorkspace != nil else { return nil }
-        let (currentBoard, currentOutbox, day) = (board, outbox, today)
-        if let storedTaskViews, storedTaskViews.day == day { return storedTaskViews.views }
+        let (currentBoard, currentOutbox, day, isLocked) = (board, outbox, today, workspaceLock.isLocked)
+        if let storedTaskViews, storedTaskViews.day == day, storedTaskViews.isLocked == isLocked { return storedTaskViews.views }
         taskViewsBuildCount += 1
         let views = TaskViews(
             projects: shownProjects,
@@ -242,7 +251,7 @@ import Observation
             day: day,
             timeZone: timeZone
         )
-        storedTaskViews = (day: day, views: views)
+        storedTaskViews = (day: day, isLocked: isLocked, views: views)
         return views
     }
 

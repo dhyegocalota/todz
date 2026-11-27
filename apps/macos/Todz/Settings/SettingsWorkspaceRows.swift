@@ -12,22 +12,10 @@ struct SettingsWorkspaceRows: View {
     var body: some View {
         if !model.workspaces.isEmpty {
             Section {
-                ForEach(model.workspaces, id: \.identifier) { workspace in
-                    HStack {
-                        Button {
-                            Task { await model.switchWorkspace(identifier: workspace.identifier) }
-                        } label: {
-                            LabeledContent {
-                                if workspace.identifier == model.activeWorkspace?.identifier {
-                                    Image(systemName: activeSymbol)
-                                }
-                            } label: {
-                                WorkspaceSummary(workspace: workspace)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(!model.isReady)
-                        actions(of: workspace)
+                ForEach(model.presentedWorkspaces, id: \.identifier) { presented in
+                    switch presented {
+                    case let .visible(workspace): row(of: workspace)
+                    case let .locked(identifier): lockedRow(identifier: identifier)
                     }
                 }
             } header: {
@@ -40,6 +28,39 @@ struct SettingsWorkspaceRows: View {
                 DeleteConfirmSheet(kind: kind)
             }
         }
+    }
+
+    private func row(of workspace: Workspace) -> some View {
+        HStack {
+            Button {
+                Task { await model.switchWorkspace(identifier: workspace.identifier) }
+            } label: {
+                LabeledContent {
+                    if workspace.identifier == model.activeWorkspace?.identifier {
+                        Image(systemName: activeSymbol)
+                    }
+                } label: {
+                    WorkspaceSummary(workspace: workspace)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(!model.isReady)
+            actions(of: workspace)
+        }
+    }
+
+    private func lockedRow(identifier: String) -> some View {
+        Button {
+            Task {
+                await model.switchWorkspace(identifier: identifier)
+                model.announceConfirmationFailure()
+            }
+        } label: {
+            LockedWorkspaceRow()
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .disabled(!model.isReady)
     }
 
     private func actions(of workspace: Workspace) -> some View {

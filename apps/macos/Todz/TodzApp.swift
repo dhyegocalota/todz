@@ -23,6 +23,7 @@ struct TodzApp: App {
         MenuBarOnlyPreference.registerDefaults(in: .standard)
         RespectFocusPreference.registerDefaults(in: .standard)
         WorkspaceShortcutsPreference.registerDefaults(in: .standard)
+        WorkspaceLockPreference.registerDefaults(in: .standard)
     }
 
     var body: some Scene {

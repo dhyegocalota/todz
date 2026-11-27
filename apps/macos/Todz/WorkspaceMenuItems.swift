@@ -7,18 +7,30 @@ struct WorkspaceMenuItems: View {
     let windowState: MainWindowState
 
     var body: some View {
-        ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
-            Button(workspace.name) {
-                Task { await model.switchWorkspace(number: number) }
+        ForEach(WorkspaceShortcuts.numbered(model.presentedWorkspaces), id: \.presented.identifier) { number, presented in
+            Button {
+                Task {
+                    await model.switchWorkspace(number: number)
+                    model.announceConfirmationFailure()
+                }
+            } label: {
+                PresentedWorkspaceLabel(presented: presented)
             }
             .keyboardShortcut(WorkspaceShortcuts.keyboardShortcut(number: number))
             .disabled(!model.isReady)
         }
+        if model.workspaceLock.isUnlocked {
+            Button(WorkspaceLockCopy.lockNow) {
+                Task { await model.relockWorkspaces(because: .manual) }
+            }
+        }
         Divider()
         Menu(WorkspaceShortcutsCopy.chordsMenu) {
-            ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
-                Button(workspace.name) {
+            ForEach(WorkspaceShortcuts.numbered(model.presentedWorkspaces), id: \.presented.identifier) { number, presented in
+                Button {
                     Task { await model.switchWorkspace(action: .number(number)) }
+                } label: {
+                    PresentedWorkspaceLabel(presented: presented)
                 }
                 .keyboardShortcut(shortcuts.shortcut(for: .number(number)))
                 .disabled(!model.isReady)

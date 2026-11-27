@@ -76,6 +76,7 @@ extension AppModel {
 
     public func completeFromShortcut(key: TaskKey) async -> ShortcutCompletion {
         guard session != nil else { return .signedOut }
+        guard !isInLockedWorkspace(projectIdentifier: key.projectIdentifier) else { return .workspaceLocked }
         guard let boardTask = shownBoardTask(key: key) else { return .notFound }
         guard boardTask.task.state == .open else { return .alreadyDone(title: boardTask.task.title) }
         await complete(task: key)

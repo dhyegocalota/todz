@@ -36,6 +36,16 @@ enum SettingsCopy {
     static let menuBarRibbonDayClose = "At the close of the day"
     static let menuBarRibbonAgentChange = "When an agent adds or completes a task"
     static let menuBarRibbonDayCloseOverlap = "Close the day already opens todz at that time."
+    static let lockWorkspaces = "Lock other workspaces"
+    static let lockWorkspacesDetailOff = "Ask for Touch ID or your Mac password before opening any workspace but this one."
+    static let lockWorkspacesDetailOn = "Other workspaces show as locked until you unlock them with Touch ID or your Mac password."
+    static let lockTimeout = "Lock again after"
+    static let lockTimeoutDetail = "Locks sooner when the Mac sleeps or the screen locks."
+    static let lockTimeoutOneMinute = "1 minute"
+    static let lockTimeoutFiveMinutes = "5 minutes"
+    static let lockTimeoutFifteenMinutes = "15 minutes"
+    static let lockTimeoutOneHour = "1 hour"
+    static let lockUnavailable = "Set a password for this Mac to use this lock."
     static let ownerKeys = "Account keys"
     static let ownerKeysDetail = "An account key lets an AI agent create, rename and delete your workspaces and projects and change these settings. It cannot read your tasks. It is off until you create one. Keep it out of any repository."
     static let noOwnerKeys = "No account keys. Agents can still use your project keys."
@@ -104,6 +114,15 @@ enum SettingsCopy {
     static func confirmationMessage(server: String, losing: Int, signedIn: Bool) -> String {
         guard losing > 0 else { return switchMessage(server: server) }
         return signedIn ? switchLosingSignedInMessage(server: server) : switchLosingSignedOutMessage(server: server)
+    }
+
+    static func lockTimeoutName(_ timeout: WorkspaceLockTimeout) -> String {
+        switch timeout {
+        case .oneMinute: lockTimeoutOneMinute
+        case .fiveMinutes: lockTimeoutFiveMinutes
+        case .fifteenMinutes: lockTimeoutFifteenMinutes
+        case .oneHour: lockTimeoutOneHour
+        }
     }
 
     static func cadenceName(_ cadence: RibbonCadence) -> String {

@@ -69,6 +69,7 @@ private func serverTasks(of workspace: Workspace, session: String) async throws 
             vault: vault,
             pendingLinks: InMemoryPendingLinkVault(),
             store: store,
+            workspaceLock: WorkspaceLock(preference: WorkspaceLockPreference(defaults: defaults, domainName: defaultsName), authenticator: FakeAuthenticator()),
             widgetStore: widgets,
             reloadWidgets: { MainActor.assumeIsolated { widgets.recordReload() } },
             timeZone: try #require(TimeZone(identifier: liveTimeZone)),

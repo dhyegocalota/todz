@@ -17,14 +17,21 @@ struct SettingsWorkspaceShortcuts: View {
                 }
                 .onChange(of: isGlobalOn) { shortcuts.registerHotKeys() }
                 if isGlobalOn {
-                    ForEach(WorkspaceShortcuts.numbered(model.workspaces), id: \.workspace.identifier) { number, workspace in
-                        WorkspaceChordRow(action: .number(number), title: workspace.name, refusal: $refusal)
+                    ForEach(WorkspaceShortcuts.numbered(model.presentedWorkspaces), id: \.presented.identifier) { number, presented in
+                        WorkspaceChordRow(action: .number(number), title: title(of: presented), refusal: $refusal)
                     }
                 }
                 ValidationLine(text: footnote, tone: refusal == nil ? .note : .issue)
             } header: {
                 Text(WorkspaceShortcutsCopy.header)
             }
+        }
+    }
+
+    private func title(of presented: PresentedWorkspace) -> String {
+        switch presented {
+        case let .visible(workspace): workspace.name
+        case .locked: WorkspaceLockCopy.lockedWorkspace
         }
     }
 

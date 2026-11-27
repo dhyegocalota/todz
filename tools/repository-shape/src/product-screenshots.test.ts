@@ -15,12 +15,16 @@ const README_SCREENSHOT_LIMIT = 6;
 const PICTURE_PATTERN = /<picture>[\s\S]*?<\/picture>/g;
 const PICTURE_SOURCE_PATTERN = /(?:src|srcset)="([^"]+)"/g;
 const DOCS_IMAGE_PATH_PATTERN = /^apps\/docs\/images\/(?<slug>[^/]+)\/\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.png$/;
-const HERO_SCREENSHOT = 'docs/screenshots/motion/01-add-and-complete.gif';
+const HERO_SCREENSHOT = 'docs/screenshots/motion/01-add-and-complete.webp';
 const PNG_EXTENSION = '.png';
-const GIF_EXTENSION = '.gif';
-const GIF_WIDTH_OFFSET = 6;
-const GIF_MAX_BYTES = 2 * 1024 * 1024;
-const SCREENSHOT_PATH_PATTERN = /^docs\/screenshots\/(?<slug>[^/]+)\/\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.(?:png|gif)$/;
+const ANIMATION_EXTENSION = '.webp';
+const ANIMATION_WIDTH_OFFSET = 24;
+const ANIMATION_WIDTH_BYTES = 3;
+const ANIMATION_MAX_BYTES = 4 * 1024 * 1024;
+const ANIMATION_MAX_WIDTH_PIXELS = 1640;
+const HERO_DISPLAY_WIDTH = 820;
+const HERO_PIXEL_RATIO = 2;
+const SCREENSHOT_PATH_PATTERN = /^docs\/screenshots\/(?<slug>[^/]+)\/\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.(?:png|webp)$/;
 const WIDTH_OFFSET = 16;
 const MAX_WIDTH_PIXELS = 1600;
 const MAX_BYTES = 1024 * 1024;
@@ -37,14 +41,18 @@ function featureSlugs(): string[] {
     .map((entry) => entry.name);
 }
 
-function pngWidth(path: string): number {
+function imageWidth(path: string): number {
   const bytes = readFileSync(repositoryPath(path));
-  if (path.endsWith(GIF_EXTENSION)) return bytes.readUInt16LE(GIF_WIDTH_OFFSET);
+  if (path.endsWith(ANIMATION_EXTENSION)) return bytes.readUIntLE(ANIMATION_WIDTH_OFFSET, ANIMATION_WIDTH_BYTES) + 1;
   return bytes.readUInt32BE(WIDTH_OFFSET);
 }
 
 function byteLimit(path: string): number {
-  return path.endsWith(GIF_EXTENSION) ? GIF_MAX_BYTES : MAX_BYTES;
+  return path.endsWith(ANIMATION_EXTENSION) ? ANIMATION_MAX_BYTES : MAX_BYTES;
+}
+
+function widthLimit(path: string): number {
+  return path.endsWith(ANIMATION_EXTENSION) ? ANIMATION_MAX_WIDTH_PIXELS : MAX_WIDTH_PIXELS;
 }
 
 function isNamedForAFeature(path: string): boolean {
@@ -71,13 +79,19 @@ describe('product screenshots', () => {
     expect(SCREENSHOTS.length).toBeGreaterThan(0);
   });
 
-  test('every file under docs/screenshots is a numbered png or gif inside a folder named for a feature', () => {
+  test('every file under docs/screenshots is a numbered png or animated webp inside a folder named for a feature', () => {
     expect(SCREENSHOTS.filter((path) => !isNamedForAFeature(path))).toEqual([]);
   });
 
-  test.each(SCREENSHOTS)('%s is at most 1600 pixels wide and 1 MB (2 MB for a gif)', (path) => {
-    expect(pngWidth(path)).toBeLessThanOrEqual(MAX_WIDTH_PIXELS);
+  test.each(SCREENSHOTS)('%s is at most 1600 pixels wide and 1 MB (1640 pixels and 4 MB for an animated webp)', (path) => {
+    expect(imageWidth(path)).toBeLessThanOrEqual(widthLimit(path));
     expect(statSync(repositoryPath(path)).size).toBeLessThanOrEqual(byteLimit(path));
+  });
+
+  test('the hero animation is drawn at twice the width the README displays it at', () => {
+    const readme = readRepositoryFile(README_FILE);
+    expect(readme).toContain(`<img src="${HERO_SCREENSHOT}" width="${HERO_DISPLAY_WIDTH}"`);
+    expect(imageWidth(HERO_SCREENSHOT)).toBe(HERO_DISPLAY_WIDTH * HERO_PIXEL_RATIO);
   });
 
   test('every screenshot is shown by the root README or served by the landing', () => {
@@ -115,7 +129,7 @@ describe('docs images', () => {
   });
 
   test.each(DOCS_IMAGES)('%s is at most 1600 pixels wide and 1 MB', (path) => {
-    expect(pngWidth(path)).toBeLessThanOrEqual(MAX_WIDTH_PIXELS);
+    expect(imageWidth(path)).toBeLessThanOrEqual(MAX_WIDTH_PIXELS);
     expect(statSync(repositoryPath(path)).size).toBeLessThanOrEqual(MAX_BYTES);
   });
 
