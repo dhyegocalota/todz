@@ -32,7 +32,13 @@ export type NavigationGroup = { group: string; pages: string[] };
 export type LanguageEntry = { language: string; groups: NavigationGroup[] };
 type DocsConfiguration = { navigation: { languages?: LanguageEntry[]; groups?: NavigationGroup[] } };
 
-export const TRANSLATED_LANGUAGES = Object.values(DocsLanguage).filter((language) => language !== DocsLanguage.English);
+export type TranslatedLanguage = Exclude<DocsLanguage, DocsLanguage.English>;
+
+function isTranslated(language: DocsLanguage): language is TranslatedLanguage {
+  return language !== DocsLanguage.English;
+}
+
+export const TRANSLATED_LANGUAGES: TranslatedLanguage[] = Object.values(DocsLanguage).filter(isTranslated);
 
 export function docsConfiguration(): DocsConfiguration {
   return JSON.parse(readRepositoryFile(DOCS_CONFIGURATION)) as DocsConfiguration;

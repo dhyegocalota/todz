@@ -3,6 +3,7 @@ import {
   DOCS_FOLDER_OF,
   DocsLanguage,
   TRANSLATED_LANGUAGES,
+  type TranslatedLanguage,
   docsConfiguration,
   englishGroups,
   englishPageNames,
@@ -15,6 +16,15 @@ import { bodyOf, frontMatterOf } from './front-matter';
 
 const EXPECTED_LANGUAGES = ['en', 'pt-BR', 'es', 'de', 'fr', 'ja', 'ko', 'zh'];
 const GROUP_COUNT = 5;
+const SHARED_GROUP_NAMES: Record<TranslatedLanguage, string[]> = {
+  [DocsLanguage.PortugueseBrazil]: [],
+  [DocsLanguage.Spanish]: [],
+  [DocsLanguage.German]: [],
+  [DocsLanguage.French]: ['Guides'],
+  [DocsLanguage.Japanese]: [],
+  [DocsLanguage.Korean]: [],
+  [DocsLanguage.Chinese]: [],
+};
 const FENCED_BLOCK_PATTERN = /```[\s\S]*?```/g;
 const INLINE_CODE_PATTERN = /`[^`\n]+`/g;
 const HEADING_PATTERN = /^#{1,6} /gm;
@@ -22,6 +32,7 @@ const MARKDOWN_LINK_PATTERN = /\]\((\/[^)\s]*)\)/g;
 const ATTRIBUTE_LINK_PATTERN = /(?:href|src)="(\/[^"]*)"/g;
 const DOCS_ORIGIN_LINK_PATTERN = /https:\/\/docs\.todz\.app(\/[^)\s"]*|)/g;
 const ASSET_PATTERN = /^\/(?:images|logo|favicon)|\.\w{2,4}(?:[?#].*)?$/;
+const SHARED_ENDPOINT = '/mcp';
 const FIRST_CAPTURE = 1;
 const OWNER_FIRST_NAME = ['Dhy', 'ego'].join('');
 const OWNER_FULL_NAME = `${OWNER_FIRST_NAME} Calota`;
@@ -62,7 +73,7 @@ function isInsideFolder({ path, folder }: { path: string; folder: string }): boo
 }
 
 function isAsset(path: string): boolean {
-  return ASSET_PATTERN.test(path);
+  return ASSET_PATTERN.test(path) || path === SHARED_ENDPOINT;
 }
 
 describe('docs.json languages', () => {
@@ -86,7 +97,10 @@ describe('docs.json languages', () => {
     const englishNames = englishGroups().map((group) => group.group);
     expect(names).toHaveLength(GROUP_COUNT);
     expect(new Set(names).size).toBe(GROUP_COUNT);
-    expect(names.filter((name, index) => !name || name === englishNames[index])).toEqual([]);
+    const untranslated = names.filter(
+      (name, index) => !name || (name === englishNames[index] && !SHARED_GROUP_NAMES[language].includes(name)),
+    );
+    expect(untranslated).toEqual([]);
   });
 });
 
@@ -117,8 +131,7 @@ describe.each(TRANSLATED_LANGUAGES)('the %s pages', (language) => {
 
   test('keep the heading count of the English page', () => {
     const drifted = englishPageNames().filter(
-      (name) =>
-        headingCountOf(pageTextOf({ name, language })) !== headingCountOf(pageTextOf({ name, language: DocsLanguage.English })),
+      (name) => headingCountOf(pageTextOf({ name, language })) !== headingCountOf(pageTextOf({ name, language: DocsLanguage.English })),
     );
     expect(drifted).toEqual([]);
   });
@@ -147,9 +160,7 @@ describe.each(TRANSLATED_LANGUAGES)('the %s pages', (language) => {
       const english = pageTextOf({ name, language: DocsLanguage.English });
       const fullNames = (text: string): number => occurrences({ text, pattern: OWNER_FULL_NAME_PATTERN }).length;
       const websites = (text: string): number => occurrences({ text, pattern: OWNER_WEBSITE_PATTERN }).length;
-      return (
-        BARE_FIRST_NAME_PATTERN.test(twin) || fullNames(twin) !== fullNames(english) || websites(twin) !== websites(english)
-      );
+      return BARE_FIRST_NAME_PATTERN.test(twin) || fullNames(twin) !== fullNames(english) || websites(twin) !== websites(english);
     });
     expect(drifted).toEqual([]);
   });
