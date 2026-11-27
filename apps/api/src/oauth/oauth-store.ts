@@ -63,8 +63,16 @@ type AccessGrantRow = {
 const RedirectUrisSchema = z.array(z.string());
 
 const GRANT_HAS_SCOPES = 'EXISTS (SELECT 1 FROM oauth_grant_scopes WHERE oauth_grant_scopes.grant_id = oauth_grants.id)';
-const LEGACY_REACH_BACKFILL = `UPDATE oauth_grants SET reaches_workspace = 1 WHERE project_id IS NOT NULL AND NOT ${GRANT_HAS_SCOPES}`;
-const LEGACY_SCOPES_BACKFILL = `INSERT INTO oauth_grant_scopes (grant_id, kind, workspace_id, project_id) SELECT id, CASE WHEN project_id IS NULL THEN 'account' ELSE 'project' END, NULL, project_id FROM oauth_grants WHERE NOT ${GRANT_HAS_SCOPES}`;
+const LEGACY_REACH_BACKFILL = `UPDATE oauth_grants SET reaches_workspace = 1 WHERE is_scoped = 0 AND project_id IS NOT NULL AND NOT ${GRANT_HAS_SCOPES}`;
+const LEGACY_SCOPES_BACKFILL = `INSERT INTO oauth_grant_scopes (grant_id, kind, workspace_id, project_id) SELECT id, CASE WHEN project_id IS NULL THEN 'account' ELSE 'project' END, NULL, project_id FROM oauth_grants WHERE is_scoped = 0 AND NOT ${GRANT_HAS_SCOPES}`;
+const LEGACY_SCOPED_MARK = 'UPDATE oauth_grants SET is_scoped = 1 WHERE is_scoped = 0';
+const LEGACY_LINEAGE_BACKFILL = `UPDATE oauth_tokens SET parent_digest = (
+  SELECT parent.digest FROM oauth_tokens AS parent
+  WHERE parent.grant_id = oauth_tokens.grant_id AND parent.kind = 'refresh' AND parent.digest <> oauth_tokens.digest
+    AND (parent.spent_at = oauth_tokens.created_at OR parent.retried_at = oauth_tokens.created_at)
+  ORDER BY parent.rowid
+  LIMIT 1
+) WHERE kind = 'refresh' AND parent_digest IS NULL`;
 
 const CLIENT_HAS_GRANT = 'EXISTS (SELECT 1 FROM oauth_grants WHERE oauth_grants.client_id = oauth_clients.id)';
 const CLIENT_IS_LIVE = `(${CLIENT_HAS_GRANT} OR (active_at > created_at AND active_at > ?) OR created_at > ?)`;
@@ -324,7 +332,7 @@ export async function insertGrant({
   const results = await directory.batch([
     directory
       .prepare(
-        'INSERT INTO oauth_grants (id, client_id, owner_id, redirect_uri, created_at, last_used_at, reaches_workspace) SELECT ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM oauth_codes WHERE digest = ? AND replayed_at IS NOT NULL)',
+        'INSERT INTO oauth_grants (id, client_id, owner_id, redirect_uri, created_at, last_used_at, reaches_workspace, is_scoped) SELECT ?, ?, ?, ?, ?, ?, ?, 1 WHERE NOT EXISTS (SELECT 1 FROM oauth_codes WHERE digest = ? AND replayed_at IS NOT NULL)',
       )
       .bind(grantId, code.clientId, code.ownerId, code.redirectUri, now, now, Number(isSingleProject(code.scopes)), codeDigest),
     directory
@@ -503,9 +511,14 @@ export async function deleteSpentOAuthRows({ directory, now }: { directory: D1Da
   ]);
 }
 
-// NB ADR 0126: a grant the Worker before migration 0022 stored without scopes is refused until this idempotent run gives it the scope of its project or the account.
+// NB ADR 0126: a grant the Worker before migration 0022 stored, never marked scoped, is refused until this idempotent run gives it the scope of its project or the account; the tokens it rotated get their parents as in 0021.
 export async function backfillLegacyGrantScopes(directory: D1Database): Promise<void> {
-  await directory.batch([directory.prepare(LEGACY_REACH_BACKFILL), directory.prepare(LEGACY_SCOPES_BACKFILL)]);
+  await directory.batch([
+    directory.prepare(LEGACY_REACH_BACKFILL),
+    directory.prepare(LEGACY_SCOPES_BACKFILL),
+    directory.prepare(LEGACY_SCOPED_MARK),
+    directory.prepare(LEGACY_LINEAGE_BACKFILL),
+  ]);
 }
 
 export async function deleteOAuthSession({ directory, digest }: { directory: D1Database; digest: string }): Promise<void> {

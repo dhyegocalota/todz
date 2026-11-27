@@ -102,7 +102,7 @@ async function seedGrant({
       CLOCK_NOW,
     ),
     env.DIRECTORY.prepare(
-      'INSERT INTO oauth_grants (id, client_id, owner_id, redirect_uri, created_at, last_used_at, reaches_workspace) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO oauth_grants (id, client_id, owner_id, redirect_uri, created_at, last_used_at, reaches_workspace, is_scoped) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
     ).bind(grantId, clientId, ownerId, SEEDED_REDIRECT_URI, CLOCK_NOW, CLOCK_NOW, Number(reachesWorkspace)),
     env.DIRECTORY.prepare('INSERT INTO oauth_tokens (digest, grant_id, kind, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').bind(
       await digestCredential(secret),
