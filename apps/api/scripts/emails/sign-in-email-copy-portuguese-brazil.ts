@@ -7,4 +7,5 @@ export const SIGN_IN_EMAIL_COPY_PORTUGUESE_BRAZIL: SignInEmailCopy = {
   action: 'Entrar no todz',
   fallback: 'O botão não funciona? Cole este link no seu navegador:',
   footer: 'Se não foi você que pediu, ignore este e-mail.',
+  codeLabel: 'Ou digite este código onde você pediu o link. Ele vale uma vez e expira junto com o link.',
 };

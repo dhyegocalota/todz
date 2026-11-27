@@ -9,4 +9,5 @@ export const OAUTH_SIGN_IN_EMAIL_COPY_GERMAN: OAuthSignInEmailCopy = {
   fallback: 'Öffnet es sich im falschen Browser? Füge diesen Link in den Browser ein, in dem du ihn angefordert hast:',
   footer:
     'Dieser Link funktioniert einmal, läuft bald ab und öffnet sich nur in dem Browser, in dem du ihn angefordert hast. Hast du ihn nicht angefordert, ignoriere diese E-Mail: Es ist nichts verbunden.',
+  codeLabel: 'Oder gib diesen Code dort ein, wo du den Link angefordert hast. Er funktioniert einmal und läuft mit dem Link ab.',
 };

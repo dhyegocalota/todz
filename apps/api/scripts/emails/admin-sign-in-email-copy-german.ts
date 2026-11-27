@@ -9,4 +9,5 @@ export const ADMIN_SIGN_IN_EMAIL_COPY_GERMAN: AdminSignInEmailCopy = {
   action: 'Anmelden',
   fallback: 'Öffnet es sich im falschen Browser? Füge diesen Link in den Browser ein, in dem du ihn angefordert hast:',
   footer: `Dieser Link funktioniert einmal, ${ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES} Minuten lang, in dem Browser, in dem du ihn angefordert hast.`,
+  codeLabel: 'Oder gib diesen Code dort ein, wo du den Link angefordert hast. Er funktioniert einmal und läuft mit dem Link ab.',
 };

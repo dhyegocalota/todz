@@ -29,6 +29,7 @@ const DIRECTORY_TABLES = [
   'owners',
   'projects',
   'sessions',
+  'sign_in_code_misses',
   'sign_in_links',
   'sign_up_usage',
   'workspaces',
@@ -83,7 +84,7 @@ describe('the handler routes the paths the static assets never answer (the asset
 });
 
 describe('the directory', () => {
-  test('lists exactly the twenty-three directory tables', async () => {
+  test('lists exactly the twenty-four directory tables', async () => {
     expect(await directoryTables()).toEqual(DIRECTORY_TABLES);
   });
 

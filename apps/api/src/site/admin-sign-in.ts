@@ -1,6 +1,7 @@
 import type { Language } from '@todz/types';
 import { z } from 'zod';
 import { digestCredential } from '../credential-digest';
+import { issuedEmailCode } from '../email-code';
 import { generateCredentialSecret } from '../credential-secret';
 import { mailMeterOf } from '../cloud-mail-meter';
 import { normalizedAddress } from '../email-address';
@@ -127,10 +128,13 @@ async function issueAdminLink({
 }): Promise<void> {
   const token = generateCredentialSecret();
   const digest = await digestCredential(token);
+  const issuedCode = await issuedEmailCode();
   const now = Date.now();
   const isStored = await insertAdminLinkWithinLimit({
     database,
     digest,
+    codeDigest: issuedCode.digest,
+    codeSalt: issuedCode.salt,
     email: guard.adminEmail,
     challenge: await digestCredential(challenge),
     now,
@@ -141,7 +145,7 @@ async function issueAdminLink({
   if (!isStored) return;
   const link = `${guard.siteOrigin}${AdminPath.LinkPage}#${AdminField.Token}=${token}`;
   try {
-    await guard.sender.send(adminSignInMail({ to: guard.adminEmail, link, origin: guard.siteOrigin, language }));
+    await guard.sender.send(adminSignInMail({ to: guard.adminEmail, link, code: issuedCode.code, origin: guard.siteOrigin, language }));
   } catch {
     await deleteAdminLink({ database, digest });
   }

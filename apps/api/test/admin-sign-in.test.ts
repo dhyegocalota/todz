@@ -54,6 +54,7 @@ const RETRY_AFTER_HEADER = 'Retry-After';
 const RETRY_AFTER_SECONDS = '60';
 const SET_COOKIE_HEADER = 'Set-Cookie';
 const LINK_PATTERN = /https:\/\/todz\.app\/admin\/sign-in#token=([A-Za-z0-9_-]{43})(?![A-Za-z0-9_-])/;
+const CODE_PATTERN = /(?:^|\s)([0-9]{6})(?:\s|$)/;
 const LOCAL_LINK_PATTERN = /http:\/\/localhost:8788\/admin\/sign-in#token=([A-Za-z0-9_-]{43})/;
 const COOKIE_VALUE_PATTERN = /^(__Host-[a-z_]+)=([A-Za-z0-9_-]*);/;
 const CHALLENGE_COOKIE_PATTERN = /^__Host-todz_admin_challenge=[A-Za-z0-9_-]{43}; Path=\/; Secure; HttpOnly; SameSite=Lax; Max-Age=900$/;
@@ -255,6 +256,14 @@ function tokenOfSent(sent: RecordingBinding['sent']): string {
   return token;
 }
 
+function codeOfSent(sent: RecordingBinding['sent']): string {
+  const [message] = sent;
+  if (message === undefined) throw new Error('a mail should have been sent');
+  const code = CODE_PATTERN.exec(message.text)?.[1];
+  if (code === undefined) throw new Error('the mail should carry the sign-in code');
+  return code;
+}
+
 async function askedLink(): Promise<AskedLink> {
   const run = await askForLink();
   return { token: tokenOfSent(run.sent), challenge: cookieValueOf({ cookies: run.cookies, name: AdminCookie.Challenge }) };
@@ -361,7 +370,8 @@ describe('a link request as the admin on a public site host', () => {
     const run = await askForLink();
     const token = tokenOfSent(run.sent);
     const link = `${SITE_ORIGIN}${AdminPath.LinkPage}#token=${token}`;
-    expect(run.sent[0]).toMatchObject(adminSignInMail({ to: ADMIN_ADDRESS, link, origin: SITE_ORIGIN, language: Language.English }));
+    const code = codeOfSent(run.sent);
+    expect(run.sent[0]).toMatchObject(adminSignInMail({ to: ADMIN_ADDRESS, link, code, origin: SITE_ORIGIN, language: Language.English }));
     expect(run.html).not.toContain(token);
     expect(run.cookies.join()).not.toContain(token);
   });

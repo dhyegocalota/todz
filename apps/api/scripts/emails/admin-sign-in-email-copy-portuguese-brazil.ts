@@ -9,4 +9,5 @@ export const ADMIN_SIGN_IN_EMAIL_COPY_PORTUGUESE_BRAZIL: AdminSignInEmailCopy = 
   action: 'Entrar',
   fallback: 'Abriu no navegador errado? Cole este link no navegador em que você fez o pedido:',
   footer: `Este link vale uma vez, por ${ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES} minutos, no navegador em que você o pediu.`,
+  codeLabel: 'Ou digite este código onde você pediu o link. Ele vale uma vez e expira junto com o link.',
 };

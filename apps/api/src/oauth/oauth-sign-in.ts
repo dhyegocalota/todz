@@ -137,7 +137,7 @@ export async function serveOAuthSignInLink(context: OAuthContext): Promise<Respo
     challenge: await digestCredential(challenge),
     now,
     language,
-    mailOf: (token) => oauthSignInMail({ to: address, link: linkOf(token), origin: issuer, language }),
+    mailOf: ({ token, code }) => oauthSignInMail({ to: address, link: linkOf(token), code, origin: issuer, language }),
   });
   if (mailing === LinkMailing.Unavailable) return refusalPageOf({ request, refusal: OAuthRefusal.Unavailable });
   if (mailing === LinkMailing.Refused)

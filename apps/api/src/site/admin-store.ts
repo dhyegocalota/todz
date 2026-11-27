@@ -1,6 +1,8 @@
 type AdminLinkInsertion = {
   database: D1Database;
   digest: string;
+  codeDigest: string;
+  codeSalt: string;
   email: string;
   challenge: string;
   now: number;
@@ -16,6 +18,8 @@ type AdminSessionOpening = { database: D1Database; digest: string; email: string
 export async function insertAdminLinkWithinLimit({
   database,
   digest,
+  codeDigest,
+  codeSalt,
   email,
   challenge,
   now,
@@ -26,9 +30,9 @@ export async function insertAdminLinkWithinLimit({
   await database.prepare('DELETE FROM admin_sign_in_links WHERE expires_at <= ?').bind(now).run();
   const insertion = await database
     .prepare(
-      'INSERT INTO admin_sign_in_links (digest, email, challenge, created_at, expires_at) SELECT ?, ?, ?, ?, ? WHERE (SELECT count(*) FROM admin_sign_in_links WHERE email = ? AND created_at > ?) < ?',
+      'INSERT INTO admin_sign_in_links (digest, email, challenge, created_at, expires_at, code_digest, code_salt) SELECT ?, ?, ?, ?, ?, ?, ? WHERE (SELECT count(*) FROM admin_sign_in_links WHERE email = ? AND created_at > ?) < ?',
     )
-    .bind(digest, email, challenge, now, expiresAt, email, windowStart, linksPerWindowMax)
+    .bind(digest, email, challenge, now, expiresAt, codeDigest, codeSalt, email, windowStart, linksPerWindowMax)
     .run();
   return insertion.meta.changes > 0;
 }

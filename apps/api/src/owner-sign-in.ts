@@ -19,15 +19,18 @@ import { openOwnerSession } from './owner-sessions';
 import { signUpRefusalOf } from './sign-up-limiter';
 import { type SignInChallenge, signInChallengeOf } from './sign-in-challenge';
 import { globalLimitRefusal } from './sign-in-limiter';
+import { credentialOf, subjectOf } from './sign-in-credential';
 import { publicOriginOf } from './sign-in-links';
-import { SIGN_IN_PROVIDER_OF_KIND, SignInProviderKind, signInKindForRequest } from './sign-in-provider';
+import { SignInProviderKind, signInKindForRequest } from './sign-in-provider';
 import { canonicalTimeZone } from './time-zone';
 import { TurnstileAction } from './turnstile';
 
 const LINK_VERIFIER_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 const SignInBodySchema = z.object({
-  identity_token: z.string(),
+  identity_token: z.string().optional(),
+  email: z.string().optional(),
+  email_code: z.string().optional(),
   link_verifier: z.string().optional(),
   time_zone: z.string(),
   turnstile_token: z.string().optional(),
@@ -156,19 +159,16 @@ export async function signIn({ request, env, now, executionContext }: OwnerConte
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const timeZone = canonicalTimeZone(body.time_zone);
   if (timeZone === null) return errorResponse(OwnerErrorCode.TimeZoneInvalid);
+  const credential = credentialOf({ body, providerKind: kind });
+  if (credential === null) return errorResponse(OwnerErrorCode.InvalidRequest);
   const isMalformedVerifier = body.link_verifier !== undefined && !LINK_VERIFIER_PATTERN.test(body.link_verifier);
   if (isMalformedVerifier) return errorResponse(OwnerErrorCode.IdentityRejected);
   const challengeRefusal = await challenge.refusalOf(body.turnstile_token);
   if (challengeRefusal !== null) return challengeRefusal;
   const globalRefusal = await globalLimitRefusal({ request, env, route: OwnerRoute.SignIn });
   if (globalRefusal !== null) return globalRefusal;
-  const subject = await SIGN_IN_PROVIDER_OF_KIND[kind].verify({
-    identityToken: body.identity_token,
-    linkVerifier: body.link_verifier,
-    directory: env.DIRECTORY,
-    now,
-  });
-  if (subject === null) return errorResponse(OwnerErrorCode.IdentityRejected);
+  const subject = await subjectOf({ credential, context: { request, env, now, providerKind: kind } });
+  if (subject instanceof Response) return subject;
   const admitted = await admittedOwner({ request, env, kind, subject, timeZone, now, executionContext });
   if (admitted instanceof Response) return admitted;
   const sessionToken = await openOwnerSession({ directory: env.DIRECTORY, ownerId: admitted.id, now });

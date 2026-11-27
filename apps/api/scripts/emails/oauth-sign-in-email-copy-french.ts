@@ -9,4 +9,5 @@ export const OAUTH_SIGN_IN_EMAIL_COPY_FRENCH: OAuthSignInEmailCopy = {
   fallback: 'Il s’ouvre dans le mauvais navigateur ? Collez ce lien dans celui où vous l’avez demandé :',
   footer:
     'Ce lien fonctionne une seule fois, expire bientôt et s’ouvre uniquement dans le navigateur où vous l’avez demandé. Si vous n’avez rien demandé, ignorez cet e-mail : rien n’est connecté.',
+  codeLabel: 'Ou saisissez ce code là où vous avez demandé le lien. Il fonctionne une seule fois et expire avec le lien.',
 };

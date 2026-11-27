@@ -53,6 +53,7 @@ const CLOUD_READ_RATE_LIMIT_NAMESPACE_ID = '8616';
 const OAUTH_RATE_LIMIT_NAMESPACE_ID = '8617';
 const OAUTH_REGISTER_RATE_LIMIT_NAMESPACE_ID = '8618';
 const OAUTH_REGISTER_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8619';
+const SIGN_IN_CODE_RATE_LIMIT_NAMESPACE_ID = '8620';
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -315,6 +316,11 @@ describe('the api source', () => {
         name: 'OAUTH_REGISTER_GLOBAL_LIMITER',
         namespace_id: OAUTH_REGISTER_GLOBAL_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('OAUTH_REGISTER_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'SIGN_IN_CODE_LIMITER',
+        namespace_id: SIGN_IN_CODE_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('SIGN_IN_CODE_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
   });

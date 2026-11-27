@@ -1,10 +1,11 @@
-import { type Language, MILLISECONDS_PER_MINUTE } from '@todz/types';
+import { type Language, MILLISECONDS_PER_MINUTE, SIGN_IN_LINK_LIFETIME_MINUTES } from '@todz/types';
 import { z } from 'zod';
 import { isCloudFullFor } from './cloud-admission';
 import { sendCloudFullMail } from './cloud-mail';
 import { isAddressMailBudgetSpent, mailMeterOf } from './cloud-mail-meter';
 import { digestCredential } from './credential-digest';
 import { AppLinkScheme } from './app-link-scheme';
+import { issuedEmailCode } from './email-code';
 import { generateCredentialSecret } from './credential-secret';
 import { deleteSignInLink, insertSignInLinkWithinLimit } from './directory-sign-in-links';
 import { isOwnDomainAddress, normalizedAddress } from './email-address';
@@ -25,7 +26,6 @@ import { SIGN_IN_PAGE_PATH } from './sign-in-page';
 import { SignInProviderKind, signInKindOf } from './sign-in-provider';
 import { TurnstileAction } from './turnstile';
 
-const SIGN_IN_LINK_LIFETIME_MINUTES = 15;
 export const SIGN_IN_LINK_LIFETIME_MS = SIGN_IN_LINK_LIFETIME_MINUTES * MILLISECONDS_PER_MINUTE;
 const SIGN_IN_LINKS_PER_ADDRESS_MAX = 5;
 const SECURE_PROTOCOL = 'https:';
@@ -85,10 +85,11 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
     challenge: body.link_challenge,
     now,
     language,
-    mailOf: (token) =>
+    mailOf: ({ token, code }) =>
       signInMail({
         to: address,
         link: `${publicOrigin}${SIGN_IN_PAGE_PATH}#token=${token}&app=${appLinkScheme}`,
+        code,
         origin: publicOrigin,
         language,
       }),
@@ -124,7 +125,7 @@ export async function mailSignInLink({
   challenge: string;
   now: number;
   language: Language;
-  mailOf: (token: string) => EmailMessage;
+  mailOf: (credentials: { token: string; code: string }) => EmailMessage;
 }): Promise<LinkMailing> {
   if (isOwnDomainAddress(address)) return LinkMailing.Sent;
   const meter = mailMeterOf(env);
@@ -132,9 +133,12 @@ export async function mailSignInLink({
   if (isMailBudgetSpent) return LinkMailing.Refused;
   const token = generateCredentialSecret();
   const digest = await digestCredential(token);
+  const issuedCode = await issuedEmailCode();
   const isWithinLimit = await insertSignInLinkWithinLimit({
     directory: env.DIRECTORY,
     digest,
+    codeDigest: issuedCode.digest,
+    codeSalt: issuedCode.salt,
     email: address,
     challenge,
     now,
@@ -146,7 +150,7 @@ export async function mailSignInLink({
   const isCloudFull = await isCloudFullFor({ env, address, now });
   try {
     if (isCloudFull) await sendCloudFullMail({ env, to: address, now, language });
-    if (!isCloudFull) await sender.send(mailOf(token));
+    if (!isCloudFull) await sender.send(mailOf({ token, code: issuedCode.code }));
   } catch {
     await deleteSignInLink({ directory: env.DIRECTORY, digest });
     return LinkMailing.Unavailable;

@@ -5,7 +5,7 @@ import {
   MILLISECONDS_PER_MINUTE,
 } from '@todz/types';
 import { env } from 'cloudflare:workers';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 import { generateCredentialSecret } from '../src/credential-secret';
 import { CodeTable, CodeVerdict, spendEmailCode } from '../src/email-code';
@@ -14,6 +14,8 @@ import { digestCredential } from '../src/credential-digest';
 import { seedEmailIdentity, seedOwner } from './directory-seed';
 import {
   PUBLIC_HTTPS_ORIGIN,
+  TURNSTILE_TOKEN_OF_ACTION,
+  acceptingSiteverify,
   askedLink,
   consoleOutput,
   emailEnv,
@@ -26,6 +28,7 @@ import {
   requestLink,
 } from './email-sign-in-client';
 import { serveOwnerCall } from './owner-client';
+import { TurnstileAction } from '../src/turnstile';
 import { CLOCK_NOW } from './task-fixtures';
 
 const LINK_LIFETIME_MS = 15 * MILLISECONDS_PER_MINUTE;
@@ -40,6 +43,7 @@ const INVALID_REQUEST = { error: 'invalid_request' };
 const SIGN_IN_UNAVAILABLE = { error: 'sign_in_unavailable' };
 const RETRY_AFTER_HEADER = 'Retry-After';
 const WRONG_CODE = '000000';
+const SIGN_IN_TURNSTILE_TOKEN = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.SignIn];
 const SIX_DIGITS = /^[0-9]{6}$/;
 const HEXADECIMAL_DIGEST_PATTERN = /^[0-9a-f]{64}$/;
 const SessionSchema = z.object({ session_token: z.string(), owner: z.object({ id: z.string() }) });
@@ -323,6 +327,10 @@ describe('code lockouts', () => {
 describe('the code limiter per client address', () => {
   const REFUSED_CLIENT = '198.51.100.77';
 
+  beforeEach(() => {
+    acceptingSiteverify();
+  });
+
   test('a refusing code limiter answers 429 code_locked with Retry-After 60 before any code is looked at', async () => {
     const { limiter, keys } = recordingLimiter({ isAllowed: false });
     const workerEnv = emailEnv({ ...guardedSettings(), SIGN_IN_CODE_LIMITER: limiter });
@@ -332,6 +340,7 @@ describe('the code limiter per client address', () => {
       verifier: generateCredentialSecret(),
       workerEnv,
       origin: PUBLIC_HTTPS_ORIGIN,
+      turnstileToken: SIGN_IN_TURNSTILE_TOKEN,
       headers: { 'CF-Connecting-IP': REFUSED_CLIENT },
     });
     expect([answer.status, await answer.json(), answer.headers.get(RETRY_AFTER_HEADER)]).toEqual([TOO_MANY_STATUS, CODE_LOCKED, '60']);
@@ -346,6 +355,7 @@ describe('the code limiter per client address', () => {
       verifier: generateCredentialSecret(),
       workerEnv,
       origin: PUBLIC_HTTPS_ORIGIN,
+      turnstileToken: SIGN_IN_TURNSTILE_TOKEN,
       headers: { 'CF-Connecting-IP': REFUSED_CLIENT },
     });
     expect([answer.status, await answer.json()]).toEqual([UNAVAILABLE_STATUS, SIGN_IN_UNAVAILABLE]);
@@ -354,7 +364,13 @@ describe('the code limiter per client address', () => {
   test('a link sign-in does not touch the code limiter', async () => {
     const { limiter, keys } = recordingLimiter({ isAllowed: true });
     const workerEnv = emailEnv({ ...guardedSettings(), SIGN_IN_CODE_LIMITER: limiter });
-    await redeemLink({ token: generateCredentialSecret(), verifier: generateCredentialSecret(), workerEnv, origin: PUBLIC_HTTPS_ORIGIN });
+    await redeemLink({
+      token: generateCredentialSecret(),
+      verifier: generateCredentialSecret(),
+      workerEnv,
+      origin: PUBLIC_HTTPS_ORIGIN,
+      turnstileToken: SIGN_IN_TURNSTILE_TOKEN,
+    });
     expect(keys).toEqual([]);
   });
 });

@@ -2,6 +2,7 @@ import { escapedHtml } from '../escaped-html';
 
 export enum EmailSlot {
   Link = '{{link}}',
+  Code = '{{code}}',
   Email = '{{email}}',
   Origin = '{{origin}}',
   More = '{{more}}',

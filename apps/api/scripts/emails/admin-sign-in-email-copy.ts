@@ -16,6 +16,7 @@ export const ADMIN_SIGN_IN_EMAIL_COPY = {
   action: 'Sign in',
   fallback: 'Opens in the wrong browser? Paste this link into the one where you asked:',
   footer: `This link works once, for ${ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES} minutes, in the browser where you asked for it.`,
+  codeLabel: 'Or enter this code where you asked for the link. It works once and expires with the link.',
 };
 
 export type AdminSignInEmailCopy = typeof ADMIN_SIGN_IN_EMAIL_COPY;

@@ -9,4 +9,5 @@ export const OAUTH_SIGN_IN_EMAIL_COPY_PORTUGUESE_BRAZIL: OAuthSignInEmailCopy = 
   fallback: 'Abriu no navegador errado? Cole este link no navegador em que você fez o pedido:',
   footer:
     'Este link vale uma vez, expira logo e só abre no navegador em que você o pediu. Se não foi você, ignore este e-mail: nada foi conectado.',
+  codeLabel: 'Ou digite este código onde você pediu o link. Ele vale uma vez e expira junto com o link.',
 };

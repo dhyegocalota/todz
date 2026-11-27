@@ -16,6 +16,7 @@ const STALE_MESSAGE = `${GENERATED_EMAILS_PATH} is stale; run pnpm emails:genera
 const PREVIEW_DIRECTORY = fileURLToPath(new URL('../../../../.pr-media/emails/', import.meta.url));
 const PREVIEW_VALUES = {
   [EmailSlot.Link]: 'http://localhost:8787/sign-in#token=preview-only-not-a-token',
+  [EmailSlot.Code]: '482913',
   [EmailSlot.Email]: 'maria@example.com',
   [EmailSlot.Origin]: 'http://localhost:8787',
   [EmailSlot.More]: 'and 3 more.',

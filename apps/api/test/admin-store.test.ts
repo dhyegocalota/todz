@@ -36,6 +36,8 @@ function insertLink({
   return insertAdminLinkWithinLimit({
     database: env.DIRECTORY,
     digest,
+    codeDigest: randomDigest(),
+    codeSalt: randomDigest(),
     email,
     challenge,
     now,
