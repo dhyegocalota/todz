@@ -1,0 +1,244 @@
+---
+title: Herramientas MCP
+description: Las herramientas y el prompt que un agente recibe del servidor MCP de todz, y el ámbito que necesita cada una.
+---
+
+Un cliente MCP se conecta al servidor de todz solo con OAuth: añade la URL a tu cliente e inicia sesión, como muestra [Conectar un agente](/es/connect-an-agent). La autorización que apruebas elige el conjunto de herramientas: un ámbito de proyecto da las herramientas de tareas de un proyecto, y un ámbito de propietario da las herramientas de la cuenta y las mismas herramientas de tareas para cada proyecto de la cuenta. Cada herramienta de abajo nombra el ámbito que necesita.
+
+- Un **ámbito de proyecto** contiene la lista de tareas de un proyecto: el que elegiste en la pantalla de consentimiento. También puede listar y mover tareas dentro del espacio de trabajo de ese proyecto. Nunca crea, renombra ni elimina un espacio de trabajo o un proyecto. Los ids de tarea tienen el aspecto `T-12`.
+- Un **ámbito de propietario** contiene toda la cuenta: sus espacios de trabajo, sus proyectos y cada tarea, así que una conexión expone todo lo que puede hacer la app. Nunca viene preseleccionado en la pantalla de consentimiento, y se desconecta en **Ajustes** › **Apps conectadas**. No llega a ninguna otra cuenta.
+
+En un ámbito de propietario, cada herramienta de tareas recibe un argumento `project` obligatorio: el id del proyecto en el que trabaja, tomado de `workspaces`. No hay un proyecto por defecto. Un proyecto de otra cuenta responde exactamente igual que un proyecto que no existe. Un ámbito de proyecto no tiene argumento `project`, salvo que `move` recibe ahí el destino.
+
+Cada eliminación pide un argumento `confirm` con el nombre actual (el título actual, en el caso de una tarea); cuando difiere, no se elimina nada.
+
+## next
+
+**Ámbito:** ámbito de proyecto y ámbito de propietario.
+
+La única tarea abierta en la que trabajar ahora en este proyecto, con sus notas.
+
+| Argumento | Tipo   | Descripción                                                      |
+| --------- | ------ | ---------------------------------------------------------------- |
+| `project` | texto  | Solo ámbito de propietario: id del proyecto en el que trabaja la herramienta de tareas, tomado de workspaces. |
+
+## add
+
+**Ámbito:** ámbito de proyecto y ámbito de propietario.
+
+Añade una o más tareas. Da a cada una una idempotency_key para que reintentar sea seguro.
+
+| Argumento         | Tipo           | Descripción                                                                  |
+| ----------------- | -------------- | ---------------------------------------------------------------------------- |
+| `project`         | texto          | Solo ámbito de propietario: id del proyecto en el que trabaja la herramienta de tareas, tomado de workspaces. |
+| `tasks`           | lista          | Las tareas que añadir, un objeto por tarea.                                  |
+| `title`           | texto          | Título corto.                                                                |
+| `notes`           | texto o null   | Notas en Markdown.                                                           |
+| `due_date`        | texto o null   | Fecha de calendario, YYYY-MM-DD.                                             |
+| `idempotency_key` | texto o null   | Cualquier cadena única para esta tarea; repetirla devuelve la tarea ya añadida. |
+
+## list
+
+**Ámbito:** ámbito de proyecto y ámbito de propietario.
+
+Lista tareas por estado, ventana de vencimiento y texto, en orden manual (hechas: las más recientes primero).
+
+| Argumento | Tipo            | Descripción                                                                            |
+| --------- | --------------- | -------------------------------------------------------------------------------------- |
+| `project` | texto           | Solo ámbito de propietario: id del proyecto en el que trabaja la herramienta de tareas, tomado de workspaces. |
+| `state`   | texto           | `open` o `done`. Por defecto `open`.                                                   |
+| `due`     | lista de texto  | Ventanas de vencimiento que incluir: `overdue`, `today`, `upcoming` o `undated`. Vacío significa todas. |
+| `text`    | texto o null    | Texto que buscar en títulos y notas.                                                   |
+| `limit`   | número entero   | Cuántas tareas mostrar.                                                                |
+
+## show
+
+**Ámbito:** ámbito de proyecto y ámbito de propietario.
+
+Muestra una tarea con su estado, fecha de vencimiento y notas.
+
+| Argumento | Tipo   | Descripción                                                                  |
+| --------- | ------ | ---------------------------------------------------------------------------- |
+| `project` | texto  | Solo ámbito de propietario: id del proyecto en el que trabaja la herramienta de tareas, tomado de workspaces. |
+| `id`      | texto  | Id de la tarea, como `T-12`.                                                 |
+
+## history
+
+**Ámbito:** ámbito de proyecto y ámbito de propietario.
+
+Muestra lo que le ocurrió a una tarea, de la más antigua a la más reciente: quién hizo qué y cuándo.
+
+| Argumento | Tipo   | Descripción                                                                  |
+| --------- | ------ | ---------------------------------------------------------------------------- |
+| `project` | texto  | Solo ámbito de propietario: id del proyecto en el que trabaja la herramienta de tareas, tomado de workspaces. |
+| `id`      | texto  | Id de la tarea, como `T-12`.                                                 |
+
+## update
+
+**Ámbito:** ámbito de proyecto y ámbito de propietario.
+
+Cambia el título, las notas, la fecha de vencimiento o el lugar en el orden de una tarea. null borra las notas o la fecha de vencimiento.
+
+| Argumento   | Tipo           | Descripción                                                                |
+| ----------- | -------------- | -------------------------------------------------------------------------- |
+| `project`   | texto          | Solo ámbito de propietario: id del proyecto en el que trabaja la herramienta de tareas, tomado de workspaces. |
+| `id`        | texto          | Id de la tarea, como `T-12`.                                               |
+| `title`     | texto          | Título corto.                                                              |
+| `notes`     | texto o null   | Notas en Markdown.                                                         |
+| `due_date`  | texto o null   | Fecha de calendario, YYYY-MM-DD.                                           |
+| `placement` | objeto         | Adónde mover la tarea: `first`, `last`, o `before` o `after` un ancla.     |
+| `kind`      | texto          | Dentro de `placement`: `first`, `last`, `before` o `after`.                |
+| `anchor`    | texto          | Dentro de `placement`, con `before` y `after`: el id de la otra tarea.     |
+
+## done
+
+**Ámbito:** ámbito de proyecto y ámbito de propietario.
+
+Completa una o más tareas, con una nota opcional de lo que se hizo.
+
+| Argumento | Tipo            | Descripción                                                                  |
+| --------- | --------------- | ---------------------------------------------------------------------------- |
+| `project` | texto           | Solo ámbito de propietario: id del proyecto en el que trabaja la herramienta de tareas, tomado de workspaces. |
+| `ids`     | lista de texto  | Ids de tareas, como `T-12`.                                                  |
+| `note`    | texto o null    | Lo que se hizo.                                                              |
+
+## reopen
+
+**Ámbito:** ámbito de proyecto y ámbito de propietario.
+
+Reabre una o más tareas hechas.
+
+| Argumento | Tipo            | Descripción                                                                  |
+| --------- | --------------- | ---------------------------------------------------------------------------- |
+| `project` | texto           | Solo ámbito de propietario: id del proyecto en el que trabaja la herramienta de tareas, tomado de workspaces. |
+| `ids`     | lista de texto  | Ids de tareas, como `T-12`.                                                  |
+
+## delete
+
+**Ámbito:** ámbito de proyecto y ámbito de propietario.
+
+Elimina una tarea para siempre. Da su título actual como confirm; no se elimina nada cuando difiere. Una tarea que quieres conservar en otro lugar necesita move. El Mac del propietario muestra la eliminación tras su próxima actualización.
+
+| Argumento | Tipo   | Descripción                                                                       |
+| --------- | ------ | --------------------------------------------------------------------------------- |
+| `project` | texto  | Solo ámbito de propietario: id del proyecto en el que trabaja la herramienta de tareas, tomado de workspaces. |
+| `id`      | texto  | Id de la tarea, como `T-12`.                                                      |
+| `confirm` | texto  | El título actual de la tarea, escrito exactamente. No se elimina nada cuando difiere. |
+
+## move
+
+**Ámbito:** ámbito de proyecto y ámbito de propietario.
+
+Mueve una tarea a otro proyecto del mismo espacio de trabajo. La tarea recibe allí un id nuevo. Encuentra los ids de proyecto con projects. El Mac del propietario muestra el movimiento tras su próxima actualización.
+
+| Argumento     | Tipo   | Descripción                                                                                         |
+| ------------- | ------ | --------------------------------------------------------------------------------------------------- |
+| `id`          | texto  | Id de la tarea, como `T-12`.                                                                        |
+| `project`     | texto  | Ámbito de proyecto: id del proyecto al que mover la tarea, tomado de la herramienta projects. Ámbito de propietario: id del proyecto en el que está la tarea, tomado de workspaces. |
+| `destination` | texto  | Solo ámbito de propietario: id del proyecto al que mover la tarea, tomado de workspaces.            |
+
+## projects
+
+**Ámbito:** ámbito de proyecto.
+
+Lista los proyectos del espacio de trabajo al que pertenece esta conexión, con sus ids.
+
+No recibe argumentos.
+
+## workspaces
+
+**Ámbito:** ámbito de propietario.
+
+Lista los espacios de trabajo de esta cuenta con sus proyectos e ids.
+
+No recibe argumentos.
+
+## create_workspace
+
+**Ámbito:** ámbito de propietario.
+
+Crea un espacio de trabajo. Empieza con un proyecto Inbox.
+
+| Argumento | Tipo   | Descripción                         |
+| -------- | ------ | ----------------------------------- |
+| `name`   | texto  | Nombre, hasta 80 caracteres.        |
+
+## rename_workspace
+
+**Ámbito:** ámbito de propietario.
+
+Renombra un espacio de trabajo.
+
+| Argumento   | Tipo   | Descripción                         |
+| ----------- | ------ | ----------------------------------- |
+| `workspace` | texto  | Id del espacio de trabajo, tomado de workspaces. |
+| `name`      | texto  | Nombre, hasta 80 caracteres.        |
+
+## delete_workspace
+
+**Ámbito:** ámbito de propietario.
+
+Elimina un espacio de trabajo para siempre con todos sus proyectos y tareas. Da su nombre actual como confirm; no se elimina nada cuando difiere.
+
+| Argumento   | Tipo   | Descripción                                                                          |
+| ----------- | ------ | ------------------------------------------------------------------------------------ |
+| `workspace` | texto  | Id del espacio de trabajo, tomado de workspaces.                                     |
+| `confirm`   | texto  | El nombre actual del espacio de trabajo, escrito exactamente. No se elimina nada cuando difiere. |
+
+## create_project
+
+**Ámbito:** ámbito de propietario.
+
+Crea un proyecto en un espacio de trabajo.
+
+| Argumento   | Tipo   | Descripción                         |
+| ----------- | ------ | ----------------------------------- |
+| `workspace` | texto  | Id del espacio de trabajo, tomado de workspaces. |
+| `name`      | texto  | Nombre, hasta 80 caracteres.        |
+
+## rename_project
+
+**Ámbito:** ámbito de propietario.
+
+Renombra un proyecto. El Inbox no se puede renombrar.
+
+| Argumento | Tipo   | Descripción                         |
+| --------- | ------ | ----------------------------------- |
+| `project` | texto  | Id del proyecto, tomado de workspaces. |
+| `name`    | texto  | Nombre, hasta 80 caracteres.        |
+
+## delete_project
+
+**Ámbito:** ámbito de propietario.
+
+Elimina un proyecto para siempre con sus tareas. Da su nombre actual como confirm; no se elimina nada cuando difiere. El Inbox no se puede eliminar.
+
+| Argumento | Tipo   | Descripción                                                                         |
+| --------- | ------ | ----------------------------------------------------------------------------------- |
+| `project` | texto  | Id del proyecto, tomado de workspaces.                                              |
+| `confirm` | texto  | El nombre actual del proyecto, escrito exactamente. No se elimina nada cuando difiere. |
+
+## settings
+
+**Ámbito:** ámbito de propietario.
+
+Muestra los ajustes de la cuenta: zona horaria, aviso al agente y correo del día.
+
+No recibe argumentos.
+
+## update_settings
+
+**Ámbito:** ámbito de propietario.
+
+Cambia los ajustes de la cuenta. Da solo lo que cambia.
+
+| Argumento           | Tipo            | Descripción                                                                              |
+| ------------------- | --------------- | ---------------------------------------------------------------------------------------- |
+| `time_zone`         | texto           | Nombre de la zona horaria, como America/Sao_Paulo.                                       |
+| `agent_nudge`       | true o false    | Si next añade una línea sobre las tareas que vencen hoy.                                 |
+| `day_email`         | true o false    | Si se envía el correo del día.                                                           |
+| `day_email_minutes` | número entero   | Minutos después de medianoche, en tu zona horaria, a los que se envía el correo del día: de 0 a 1439. |
+
+## Prompts
+
+El servidor ofrece un prompt, `next`: Empieza a trabajar en la siguiente tarea de este proyecto.

@@ -1,0 +1,14 @@
+---
+title: 在智能体中使用这些文档
+description: 通过 MCP 或纯文本文件，把这些文档交给智能体。
+---
+
+这些文档有自己的 MCP 服务器。在 Claude Code 中：
+
+```bash
+claude mcp add --transport http todz-docs https://docs.todz.app/mcp
+```
+
+对于读取纯文本的智能体，[todz.app/llms.txt](https://todz.app/llms.txt) 列出了各个页面，[todz.app/llms-full.txt](https://todz.app/llms-full.txt) 则包含全部内容。
+
+如果想让智能体处理你的任务，请参见[连接智能体](/zh/connect-an-agent)。

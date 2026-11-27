@@ -1,0 +1,61 @@
+---
+title: Conectar un agente
+description: Inicia sesión en todz con Claude Code, Claude.ai o Codex mediante OAuth. Las claves de API se eliminaron.
+---
+
+El servidor MCP de todz en `https://api.todz.app/mcp` inicia la sesión de los clientes con MCP OAuth. Añade la URL a tu cliente. La primera llamada abre tu navegador y ahí apruebas la app. OAuth es la única forma de conectarse.
+
+Si ejecutas tu propio servidor, usa su URL en lugar de `https://api.todz.app/mcp`.
+
+## Cambio incompatible: las claves de API se eliminaron
+
+El 2026-11-27 todz eliminó las claves de API. Las claves de proyecto y las claves de propietario dejaron de funcionar, y el servidor borró todas las claves almacenadas. Un cliente que todavía envía una clave recibe `401` con una indicación hacia esta página.
+
+Para reconectar un agente que usaba una clave, ejecuta `claude mcp add --transport http todz https://api.todz.app/mcp` e inicia sesión, como se explica abajo. Quita el encabezado `Authorization` antiguo, y la variable `TODZ_API_KEY` si definiste una. La pantalla **Conectar un agente** de la app para Mac desaparece en la misma actualización.
+
+## Inicia sesión con OAuth
+
+1. Introduce tu correo de todz y supera la verificación.
+2. Abre el enlace de inicio de sesión del correo **en el mismo navegador**.
+3. Lee la pantalla de consentimiento: nombra la app y a dónde te devuelve.
+4. Elige un proyecto. El primero viene preseleccionado. O elige **Toda tu cuenta (ámbito de propietario)**, que nunca viene preseleccionado y advierte: "Puede leer y cambiar todas las tareas, y crear, renombrar y eliminar todos los espacios de trabajo y proyectos."
+5. Aprueba o deniega.
+
+Un ámbito de proyecto da las herramientas de tareas, y los otros proyectos de su espacio de trabajo para `move` y `projects`. Un ámbito de propietario da las herramientas de la cuenta y las mismas herramientas de tareas para cada proyecto de la cuenta, cada una con el id `project` tomado de `workspaces`. El historial de una tarea nombra la app con el nombre con el que se registró. Consulta [Herramientas MCP](/es/mcp-tools).
+
+Los tokens de acceso duran una hora y se renuevan solos. Los tokens de actualización duran 30 días y rotan en cada uso; si uno se usa dos veces, la app se desconecta. todz guarda los tokens solo como resúmenes (digests). El uso razonable y el límite de la nube se aplican a cada app conectada.
+
+Para desconectar una app, abre **Ajustes** › **Apps conectadas** en la app para Mac. La app se detiene al instante.
+
+Las direcciones de redirección deben ser `https` o una dirección de loopback (`127.0.0.1`, `localhost`, `[::1]`). Los esquemas personalizados se rechazan, como exige la especificación.
+
+### Claude Code
+
+```bash
+claude mcp add --transport http todz https://api.todz.app/mcp
+```
+
+Luego ejecuta `/mcp` en Claude Code y elige todz para iniciar sesión. Claude Code abre el navegador.
+
+### Claude.ai y Claude Desktop
+
+Abre **Ajustes** › **Conectores** › **Añadir conector personalizado**, introduce `https://api.todz.app/mcp` como URL y pulsa **Conectar**.
+
+### Codex
+
+Añade esto a `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.todz]
+url = "https://api.todz.app/mcp"
+```
+
+Luego inicia sesión:
+
+```bash
+codex mcp login todz
+```
+
+### Cursor
+
+Cursor inicia sesión en los servidores MCP con una dirección `cursor://`, que la especificación de MCP no permite y todz rechaza. Cursor no puede conectarse a todz hasta que inicie sesión con una dirección `https` o de loopback.

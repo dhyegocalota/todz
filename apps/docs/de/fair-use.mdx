@@ -1,0 +1,52 @@
+---
+title: Fair Use
+---
+
+todz ist kostenlos. Damit ein einzelnes Konto den Dienst nicht lahmlegen oder die Rechnung über den Tarif hinaustreiben kann, gelten für jedes Konto die folgenden Limits. Sie sind großzügig: Eine persönliche To-do-Liste kommt nicht annähernd heran.
+
+## Die Limits
+
+| Limit | Standard | Was darüber passiert |
+|---|---|---|
+| Workspaces pro Konto | 20 | Das Anlegen eines Workspace wird abgelehnt |
+| Projekte pro Workspace | 100 | Das Anlegen eines Projekts wird abgelehnt |
+| Offene Aufgaben pro Projekt | 5.000 | Das Hinzufügen oder Wiedereröffnen von Aufgaben wird abgelehnt; eine Aufgabe zu erledigen gibt einen Platz frei |
+| Titel | 500 Zeichen | Die Aufgabe wird abgelehnt |
+| Notizen | 20.000 Zeichen | Die Aufgabe wird abgelehnt |
+| Aufgabenänderungen pro Tag | 1.000 (UTC-Tag) | Zählt das Hinzufügen, Bearbeiten, Erledigen und Wiedereröffnen von Aufgaben, auch eine Aufgabe, die per Antwort auf die Tagesmail hinzugefügt wurde, und sonst nichts (das Anlegen eines Workspace oder Projekts zählt nicht). Änderungen werden bis Mitternacht UTC abgelehnt; Lesen funktioniert weiter |
+| Gespeicherter Aufgabentext | 50 MB | Schreiben wird abgelehnt; Lesen funktioniert weiter. Der Zähler ist eine Obergrenze: Er addiert jeden Titel, jede Notiz und jede Bearbeitung wie geschrieben und sinkt nicht, wenn du bearbeitest oder löschst, deshalb kann der Betreiber ihn für ein Konto zurücksetzen |
+| Neue Konten pro Netzwerk und Tag | 5 | Die Registrierung wird bis zum nächsten Tag abgelehnt |
+
+Eine Ablehnung sagt dir, was passiert ist. Der Server antwortet mit einem Code und einem schlichten Satz; für einen Agenten antwortet das Tool mit demselben Satz.
+
+## Wegwerf-E-Mail-Adressen
+
+Neue Konten können nicht mit der Adresse eines Wegwerf-Maildienstes eröffnet werden. Bestehende Konten sind nicht betroffen.
+
+## Sperrung
+
+Wird ein Konto missbraucht, kann der Betreiber es sperren. Ein gesperrtes Konto kann seine Aufgaben weiter lesen und sich abmelden. Es kann nichts ändern, und seine Agenten antworten nicht mehr, bis das Konto wiederhergestellt ist. Es wird nichts gelöscht.
+
+## Auslastung von todz cloud
+
+Die kostenlosen Plätze in todz cloud sind extrem begrenzt. todz cloud läuft mit einem festen Monatsbudget und nimmt deshalb höchstens 50 aktive Konten auf. Selbst-Hosting steht immer offen: [Betreibe deinen eigenen Server](/de/self-host) ohne Kontolimit. Ein Konto ist aktiv, wenn es sich angemeldet hat, in den letzten 90 Tagen angemeldet gesehen wurde oder eine Aufgabe geschrieben hat; ein Konto, das 90 Tage untätig bleibt, gibt seinen Platz frei und wartet bei seiner Rückkehr, falls die Cloud voll ist, wie eine neue Adresse auf einen Platz.
+
+- Bereits aufgenommene Konten werden wegen des Limits nie abgelehnt.
+- Ist die Cloud voll, sieht die Anfrage eines Anmeldelinks für jede Adresse gleich aus: Die Antwort lautet immer, dass ein Link unterwegs ist. Eine Adresse, die sich nicht anmelden darf, bekommt eine Mail mit dem Text „todz cloud ist gerade voll“, mit einem persönlichen Link zur Warteschlange unter todz.app/cloud-queue, der eine Woche gilt und in der sie ihre Adresse bestätigt, um eingeladen zu werden, wenn ein Platz frei wird, sowie einem Link zum [Selbst-Hosting](/de/self-host).
+- Nähert sich die Nutzung des Monats den im Tarif enthaltenen Kontingenten, wird der Betreiber per E-Mail benachrichtigt. Ab 95 % werden den Konten, die in diesem Monat am meisten schreiben, neue Schreibzugriffe mit „todz cloud is at capacity this month“ abgelehnt (HTTP 429, mit einem `Retry-After` der Sekunden bis zum Ersten des nächsten Monats, UTC), und das Lesen aller wird auf wenige Zugriffe pro Minute gedrosselt. Deine Aufgaben werden nicht gelöscht, und die übrigen Konten schreiben wie gewohnt weiter.
+- Jede Mail, die todz cloud sendet, zählt auf das monatliche Mailkontingent, deshalb bekommt eine Adresse höchstens 10 Mails am Tag.
+
+Selbst gehostete Server haben kein Kontolimit, es sei denn, sie setzen `CLOUD_ACCOUNTS_MAX` auf eine positive ganze Zahl.
+
+## Selbst gehostete Server
+
+Die Werte sind Worker-Variablen. Lass eine weg, um ihren Standard zu behalten; setze sie auf eine positive ganze Zahl, um ihn zu ändern:
+
+- `FAIR_USE_WORKSPACES_MAX`
+- `FAIR_USE_PROJECTS_PER_WORKSPACE_MAX`
+- `FAIR_USE_OPEN_TASKS_PER_PROJECT_MAX`
+- `FAIR_USE_WRITES_PER_DAY_MAX`
+- `FAIR_USE_STORED_BYTES_MAX` (in Bytes)
+- `FAIR_USE_SIGN_UPS_PER_CLIENT_DAY_MAX`
+
+Das Limit für neue Konten braucht außerdem das Secret `SIGN_UP_KEY_SECRET` (siehe [Server-Setup](/de/self-host#6-turnstile)); ohne es können sich keine neuen Konten registrieren. Ein Wert, der keine positive ganze Zahl ist, stoppt den Server mit einem Fehler, der die Variable nennt. Die Größen von Titel und Notizen sind fest, weil die App und die Agenten-Tools sie angeben.

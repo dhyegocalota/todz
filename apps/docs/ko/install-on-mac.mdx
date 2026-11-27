@@ -1,0 +1,94 @@
+---
+title: Mac에 설치
+description: Mac용 todz를 받아서 열고, 서명을 검증하거나 소스에서 빌드해요.
+---
+
+Mac용 todz는 App Store에 없고 아직 Apple의 공증도 받지 않았어요. 그래서 처음 열 때 macOS가 허용 여부를 물어요. todz.app의 **Mac용 다운로드**는 최신 릴리스를 내려 주는 [todz.app/download](https://todz.app/download)로 연결되고, 1절과 2절이 적용돼요. 직접 빌드하려면 5절을 보세요.
+
+<Warning>
+  앱은 공증을 받지 않았어요. Apple이 검사하지 않았기 때문에 macOS가 처음에는 열기를 거부해요. 다음 절처럼 시스템 설정에서 열어 주세요.
+</Warning>
+
+## 1. 다운로드하고 열기
+
+todz.app에서 **Mac용 다운로드**를 선택하세요.
+
+1. 열기 전에 2절로 다운로드를 검증해요. 그런 다음 디스크 이미지를 받아서 열고 `Todz.app`을 응용 프로그램 폴더로 끌어다 놓아요.
+2. `Todz.app`을 열어요. 처음에는 macOS가 거부해요.
+3. **시스템 설정** › **개인정보 보호 및 보안**을 열고 **보안**까지 스크롤해서 `Todz`에 관한 줄을 찾은 다음 **그래도 열기**를 클릭해요.
+4. 암호로 확인하고 앱을 다시 열어요.
+
+macOS는 한 번만 물어보고, 이후에는 평소처럼 열려요. 공증을 받지 않았기 때문에 `spctl --assess`는 앱을 거부해요. 이는 예상된 동작이며, 대신 아래의 검증으로 무엇을 실행하는지 확인할 수 있어요.
+
+## 2. 다운로드 검증하기
+
+각 릴리스는 `Todz-<version>.dmg`와 `Todz-<version>.dmg.sha256`, `Todz-<version>.dmg.sig`로 공개되고, 모두 `https://todz.app/download/<version>/` 아래에 있어요. 두 파일이 있는 폴더에서 합계를 확인해요.
+
+```bash
+shasum -a 256 -c Todz-<version>.dmg.sha256
+```
+
+다음 줄을 `allowed-signers`로 저장하세요. todz 릴리스 키예요.
+
+```text
+release@todz.app namespaces="todz-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdNjy4QZsK85d4WxjwiTql81GeptNXX2H4SUcM9QVNu
+```
+
+키만 놓고 `ssh-keygen -lf`로 출력한 핑거프린트는 다음과 같아요.
+
+```text
+SHA256:yBlPOn96/UZM6GGCo//eqZtFjWl440Hr6rxWa0VS5Tk
+```
+
+그런 다음 서명을 확인해요.
+
+```bash
+ssh-keygen -Y verify -f allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg
+```
+
+`Good "todz-release" signature for release@todz.app`라고 답해요.
+
+서명은 다운로드한 파일이 todz 릴리스 키로 서명된 바로 그 파일이라는 것을 증명해요. 하지만 todz.app 영역이나 todz의 Cloudflare 계정을 장악한 사람에게는 소용이 없어요. 이 페이지도 그 영역에서 제공되기 때문이에요.
+
+## 3. 앱 검증하기
+
+서명이 온전한지 확인해요. 온전하면 `valid on disk`와 `satisfies its Designated Requirement`로 끝나요.
+
+```bash
+codesign --verify --deep --strict --verbose=2 /Applications/Todz.app
+```
+
+누가 앱에 서명했는지 확인해요.
+
+```bash
+codesign -dv --verbose=4 /Applications/Todz.app
+```
+
+출력에는 `TeamIdentifier=XFWR794VS8`, `flags=0x10000(runtime)`이 들어 있고, 인증서 이름에는 소유자의 Apple ID 주소가 들어 있어요.
+
+## 4. 업데이트
+
+앱은 백그라운드에서 스스로 업데이트해요. 방법과 끄는 방법은 [업데이트](/ko/updates)에서 알려 줘요.
+
+## 5. 소스에서 빌드하기
+
+Xcode와 [XcodeGen](https://github.com/yonaskolb/XcodeGen)이 설치된 Mac이 필요해요.
+
+<Note>
+  `project.yml`은 소유자의 팀 `XFWR794VS8`로 서명하기 때문에 그 ID를 가진 Mac에서만 그대로 빌드할 수 있어요. 내 팀으로 빌드하려면 먼저 `DEVELOPMENT_TEAM`과 번들 식별자를 바꾸세요. [셀프 호스팅 가이드](/ko/self-host#7-macos-앱-빌드하고-서버에-연결하기)를 참고하세요. 직접 빌드한 앱은 서명에 쓴 팀을 그대로 보여 줘요.
+</Note>
+
+저장소의 루트에서 실행해요.
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+앱은 `apps/macos/build/Build/Products/Release/Todz.app`에 만들어져요. 개발용으로 서명한 빌드는 서명 팀이 아는 Mac에서만 열려요. 내가 가진 다른 Mac으로 옮기려면 서명이 유지되도록 zip으로 압축해서 복사한 다음 1절처럼 열어요.
+
+```bash
+ditto -c -k --keepParent apps/macos/build/Build/Products/Release/Todz.app Todz.zip
+```
+
+두 Mac에서 `shasum -a 256 Todz.zip`을 실행해서 복사본이 내가 만든 zip인지 확인하세요. 합계가 같다는 것은 복사본이 내가 만든 zip이라는 것만 증명하고, 누가 빌드했는지는 증명하지 않아요.

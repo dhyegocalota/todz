@@ -1,0 +1,41 @@
+---
+title: Privacidade
+description: Exatamente o que o todz conta, o que ele nunca guarda e como desativar.
+---
+
+O todz conta como é usado em totais diários. Ele nunca guarda um registro do que alguém fez, e nunca lê as suas tarefas para isso.
+
+## O que é contado
+
+Cada contagem é um número de um dia, com no máximo um rótulo curto.
+
+| Contagem | De onde vem | Rótulo |
+| --- | --- | --- |
+| Proprietários, workspaces, projetos | Os registros do próprio servidor, uma vez por noite | nenhum |
+| Tarefas adicionadas, tarefas concluídas | Uma contagem de cada projeto, uma vez por noite | nenhum |
+| Escritas de agentes | Uma contagem do que os agentes alteraram, uma vez por noite | o nome do agente, de uma lista fixa (Claude Code, Codex, Cursor, Gemini, Windsurf, Zed, VS Code); qualquer outro como `other` |
+| E-mails do dia enviados | Os registros do próprio servidor, uma vez por noite | nenhum |
+| Verificações de atualização | O app para Mac pedindo atualizações | a versão do app e a versão principal do macOS, como `0.2.1\|15` |
+| Relatórios de uso compartilhados | O app para Mac, só se você ativar **Compartilhar uso anônimo** | a versão do app e a versão principal do macOS |
+| Eventos de uso compartilhados | O mesmo relatório | um entre `popover_opened`, `day_closed`, `morning_glance`, `shortcut_used`, `multi_workspace` |
+
+## O que nunca é guardado
+
+- Nenhum título de tarefa, nota, nome de projeto, nome de workspace ou endereço de e-mail.
+- Nenhum endereço IP e nenhum user agent. O user agent de uma verificação de atualização é lido para extrair os dois números de versão e descartado.
+- Nenhum registro de eventos e nenhum carimbo de data e hora de um evento isolado. Apenas um dia e um total.
+- O código aleatório que o app para Mac envia com um relatório muda a cada 30 dias, serve só para frear abusos e nunca é guardado.
+
+Os totais são mantidos por 13 meses e depois apagados pelo servidor.
+
+## Compartilhar uso anônimo
+
+O app para Mac pergunta uma vez. Fica desativado até você dizer que sim, e você pode mudar isso a qualquer momento nos Ajustes. Quando ativado, o app guarda no seu Mac uma contagem dos cinco eventos acima e envia um relatório pequeno por dia: contagens, a versão do app, a versão principal do macOS e o código aleatório. Um relatório tem menos de 1 KB, e o servidor recusa qualquer coisa acima de 2 KB.
+
+## Auto-hospedagem
+
+Um servidor que você roda não conta nada. O ajuste `TELEMETRY` fica desligado a menos que valha exatamente `on`, e o guia de auto-hospedagem manda você removê-lo. Um app para Mac conectado ao seu servidor envia o relatório para o seu servidor, que o recusa.
+
+## Onde os números são lidos
+
+Só o proprietário do serviço hospedado os lê, em uma página de administração com login e exportação em CSV. O código é aberto: veja `apps/api/src/telemetry` no repositório.

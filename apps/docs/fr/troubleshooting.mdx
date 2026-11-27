@@ -1,0 +1,30 @@
+---
+title: Dépannage
+description: Le lien de connexion, Gatekeeper, un serveur plus ancien et les mises à jour qui ne s’installent pas.
+---
+
+## Le lien de connexion ne fait rien, ou indique qu’il n’a pas pu vous connecter
+
+Ouvrez le lien de l’e-mail sur le même Mac que celui qui l’a demandé. Un lien ouvert sur un autre Mac, ou après que vous en avez demandé un plus récent, est refusé avec « Impossible de vous connecter avec ce lien. Attendez une minute, puis rouvrez-le depuis l’e-mail. » Demandez-en un nouveau avec **Envoyer le lien** et ouvrez le message le plus récent.
+
+## Mon agent ne peut pas se connecter avec OAuth
+
+Ouvrez le lien de connexion du message dans le même navigateur que celui où vous avez saisi votre e-mail. Si le client signale une erreur de redirection, ou exige un schéma d’adresse personnalisé, todz le refuse, et ce client ne peut donc pas encore se connecter, voir [Connecter un agent](/fr/connect-an-agent).
+
+Si le navigateur affiche à chaque fois « Ce lien ne peut pas être utilisé pour connecter une app », le client réutilise un enregistrement que le serveur ne connaît plus. Effacez la connexion enregistrée du client et reconnectez-vous : dans Claude Code, lancez `/mcp`, choisissez todz, puis **Clear authentication**.
+
+## Trop d’essais
+
+« Trop d’essais. Attendez une minute, puis réessayez. » signifie que le serveur a limité les demandes de lien. Attendez une minute, puis appuyez une seule fois sur **Envoyer le lien**.
+
+## macOS n’ouvre pas l’app
+
+todz n’est pas notarisé, et macOS le refuse donc la première fois. Ouvrez todz une fois et fermez l’avertissement, puis allez dans **Réglages Système** › **Confidentialité et sécurité**, cliquez sur **Ouvrir quand même** et confirmez avec votre mot de passe ou Touch ID. Voir [Installer sur Mac](/fr/install-on-mac#1-installer-et-ouvrir-todz).
+
+## Serveur obsolète
+
+**Serveur obsolète** dans l’app signifie « Ce serveur est plus ancien que ce que cette app attend. Celui ou celle qui l’exploite peut le mettre à jour. » Sur votre propre serveur, déployez la version actuelle ; voir [Auto-hébergement](/fr/self-host).
+
+## Une mise à jour ne s’installe pas
+
+Si Sparkle indique que todz ne peut pas être mis à jour depuis l’emplacement où il a été téléchargé, faites glisser `Todz.app` dans Applications, ouvrez-le à partir de là, et vérifiez de nouveau. Voir [Mises à jour](/fr/updates).

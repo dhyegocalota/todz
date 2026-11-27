@@ -1,0 +1,94 @@
+---
+title: 在 Mac 上安装
+description: 下载 todz for Mac、打开它、验证签名，或从源代码构建。
+---
+
+todz for Mac 不在 App Store 上，也尚未经 Apple 公证，所以 macOS 会在第一次打开时要求你允许它。todz.app 上的**下载 Mac 版**会跳转到 [todz.app/download](https://todz.app/download)，那里提供最新版本；适用第 1 和第 2 节。如果想自己构建，请看第 5 节。
+
+<Warning>
+  这个 App 没有经过公证。Apple 没有扫描过它，所以 macOS 第一次会拒绝打开。请按下一节的方法从系统设置中打开它。
+</Warning>
+
+## 1. 下载并打开
+
+在 todz.app 上，选择**下载 Mac 版**：
+
+1. 打开之前，先按第 2 节验证下载的文件。然后下载磁盘映像，打开它，把 `Todz.app` 拖进“应用程序”。
+2. 打开 `Todz.app`。macOS 第一次会拒绝。
+3. 打开**系统设置** › **隐私与安全性**，滚动到**安全性**，找到关于 `Todz` 的那一行，点按**仍要打开**。
+4. 用你的密码确认，然后再次打开 App。
+
+macOS 只会询问一次；之后的启动都会正常打开。`spctl --assess` 会拒绝这个 App，因为它没有经过公证；这是预期的结果，下面的检查就是你了解自己运行的是什么的方法。
+
+## 2. 验证下载
+
+每个版本都以 `Todz-<version>.dmg` 发布，附带 `Todz-<version>.dmg.sha256` 和 `Todz-<version>.dmg.sig`，全部位于 `https://todz.app/download/<version>/` 之下。在存放这两个文件的文件夹里检查校验和：
+
+```bash
+shasum -a 256 -c Todz-<version>.dmg.sha256
+```
+
+把下面这一行保存为 `allowed-signers`。它是 todz 的发布密钥：
+
+```text
+release@todz.app namespaces="todz-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdNjy4QZsK85d4WxjwiTql81GeptNXX2H4SUcM9QVNu
+```
+
+仅针对该密钥，`ssh-keygen -lf` 打印出的指纹是：
+
+```text
+SHA256:yBlPOn96/UZM6GGCo//eqZtFjWl440Hr6rxWa0VS5Tk
+```
+
+然后检查签名：
+
+```bash
+ssh-keygen -Y verify -f allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg
+```
+
+它会回答 `Good "todz-release" signature for release@todz.app`。
+
+这个签名证明下载的文件正是 todz 发布密钥签过名的那个文件。但它无法防范控制 todz.app 区域或 todz 的 Cloudflare 账户的人，因为本页也是从该区域提供的。
+
+## 3. 验证 App
+
+检查签名是否完好。完好时，输出会以 `valid on disk` 和 `satisfies its Designated Requirement` 结尾：
+
+```bash
+codesign --verify --deep --strict --verbose=2 /Applications/Todz.app
+```
+
+检查是谁给这个 App 签的名：
+
+```bash
+codesign -dv --verbose=4 /Applications/Todz.app
+```
+
+输出中包含 `TeamIdentifier=XFWR794VS8`、`flags=0x10000(runtime)`，并且证书名称里有所有者的 Apple ID 地址。
+
+## 4. 更新
+
+这个 App 会在后台自行更新；[更新](/zh/updates)说明了方式，以及如何关闭。
+
+## 5. 从源代码构建
+
+你需要一台装有 Xcode 和 [XcodeGen](https://github.com/yonaskolb/XcodeGen) 的 Mac。
+
+<Note>
+  `project.yml` 使用所有者的团队 `XFWR794VS8` 签名，所以只有持有该身份的 Mac 才能原样构建。要用你自己的团队构建，请先替换 `DEVELOPMENT_TEAM` 和 bundle identifier，方法见[自行托管指南](/zh/self-host#7-构建-macos-应用并指向你的服务器)。自行构建的 App 会显示它签名所用的团队。
+</Note>
+
+在仓库的根目录下：
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+App 会生成在 `apps/macos/build/Build/Products/Release/Todz.app`。开发签名的构建只能在其签名团队认识的 Mac 上打开。要把它移到你拥有的另一台 Mac 上，请把它压缩成 zip 以保住签名，复制过去，然后按第 1 节的方法打开：
+
+```bash
+ditto -c -k --keepParent apps/macos/build/Build/Products/Release/Todz.app Todz.zip
+```
+
+在两台 Mac 上都运行 `shasum -a 256 Todz.zip`，检查复制过去的是否就是你制作的那个 zip。校验和一致只能证明复制件就是你制作的 zip，不能证明是谁构建的。

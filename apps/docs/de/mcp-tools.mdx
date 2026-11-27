@@ -1,0 +1,244 @@
+---
+title: MCP-Tools
+description: Die Tools und der Prompt, die ein Agent vom todz-MCP-Server bekommt, und der Scope, den jedes braucht.
+---
+
+Ein MCP-Client verbindet sich nur per OAuth mit dem todz-Server: Füge die URL in deinem Client hinzu und melde dich an, wie [Agent verbinden](/de/connect-an-agent) zeigt. Die Freigabe, die du genehmigst, bestimmt die Tool-Auswahl: Ein Projekt-Scope bekommt die Aufgaben-Tools eines Projekts, und ein Owner-Scope bekommt die Konto-Tools und dieselben Aufgaben-Tools für jedes Projekt des Kontos. Jedes Tool unten nennt den Scope, den es braucht.
+
+- Ein **Projekt-Scope** umfasst die To-do-Liste eines Projekts: das Projekt, das du auf dem Zustimmungsbildschirm gewählt hast. Er kann außerdem Aufgaben im Workspace dieses Projekts auflisten und verschieben. Er legt nie einen Workspace oder ein Projekt an, benennt keines um und löscht keines. Aufgaben-IDs sehen aus wie `T-12`.
+- Ein **Owner-Scope** umfasst das ganze Konto: seine Workspaces, seine Projekte und jede Aufgabe, sodass eine Verbindung alles offenlegt, was die App kann. Er ist auf dem Zustimmungsbildschirm nie vorausgewählt, und du trennst ihn unter **Einstellungen** › **Verbundene Apps**. Er erreicht kein anderes Konto.
+
+Bei einem Owner-Scope nimmt jedes Aufgaben-Tool ein erforderliches Argument `project`: die ID des Projekts, an dem es arbeitet, aus `workspaces`. Es gibt kein Standardprojekt. Ein Projekt eines anderen Kontos wird genauso beantwortet wie ein Projekt, das es nicht gibt. Ein Projekt-Scope hat kein Argument `project`, außer dass `move` dort das Ziel nimmt.
+
+Jedes Löschen verlangt ein Argument `confirm` mit dem aktuellen Namen (bei einer Aufgabe dem aktuellen Titel); weicht er ab, wird nichts gelöscht.
+
+## next
+
+**Scope:** Projekt-Scope und Owner-Scope.
+
+Die eine offene Aufgabe, an der in diesem Projekt jetzt gearbeitet werden soll, mit ihren Notizen.
+
+| Argument  | Typ    | Beschreibung                                                     |
+| --------- | ------ | ---------------------------------------------------------------- |
+| `project` | Text   | Nur Owner-Scope: ID des Projekts, an dem das Aufgaben-Tool arbeitet, aus workspaces. |
+
+## add
+
+**Scope:** Projekt-Scope und Owner-Scope.
+
+Eine oder mehrere Aufgaben hinzufügen. Gib jeder einen idempotency_key, damit ein erneuter Versuch sicher ist.
+
+| Argument          | Typ              | Beschreibung                                                                 |
+| ----------------- | ---------------- | ---------------------------------------------------------------------------- |
+| `project`         | Text             | Nur Owner-Scope: ID des Projekts, an dem das Aufgaben-Tool arbeitet, aus workspaces. |
+| `tasks`           | Liste            | Die hinzuzufügenden Aufgaben, je ein Objekt.                                 |
+| `title`           | Text             | Kurzer Titel.                                                                |
+| `notes`           | Text oder null   | Markdown-Notizen.                                                            |
+| `due_date`        | Text oder null   | Kalenderdatum, YYYY-MM-DD.                                                   |
+| `idempotency_key` | Text oder null   | Ein beliebiger, für diese Aufgabe eindeutiger String; wiederholst du ihn, kommt die bereits hinzugefügte Aufgabe zurück. |
+
+## list
+
+**Scope:** Projekt-Scope und Owner-Scope.
+
+Aufgaben nach Status, Fälligkeitsfenster und Text auflisten, in manueller Reihenfolge (erledigt: neueste zuerst).
+
+| Argument  | Typ               | Beschreibung                                                                           |
+| --------- | ----------------- | -------------------------------------------------------------------------------------- |
+| `project` | Text              | Nur Owner-Scope: ID des Projekts, an dem das Aufgaben-Tool arbeitet, aus workspaces.   |
+| `state`   | Text              | `open` oder `done`. Standard ist `open`.                                               |
+| `due`     | Liste von Text    | Einzuschließende Fälligkeitsfenster: `overdue`, `today`, `upcoming` oder `undated`. Leer bedeutet alle. |
+| `text`    | Text oder null    | Text, der in Titeln und Notizen gesucht wird.                                          |
+| `limit`   | Ganzzahl          | Wie viele Aufgaben angezeigt werden.                                                   |
+
+## show
+
+**Scope:** Projekt-Scope und Owner-Scope.
+
+Eine Aufgabe mit Status, Fälligkeitsdatum und Notizen anzeigen.
+
+| Argument  | Typ    | Beschreibung                                                                 |
+| --------- | ------ | ---------------------------------------------------------------------------- |
+| `project` | Text   | Nur Owner-Scope: ID des Projekts, an dem das Aufgaben-Tool arbeitet, aus workspaces. |
+| `id`      | Text   | Aufgaben-ID, etwa `T-12`.                                                    |
+
+## history
+
+**Scope:** Projekt-Scope und Owner-Scope.
+
+Zeigen, was mit einer Aufgabe geschah, älteste zuerst: wer was wann getan hat.
+
+| Argument  | Typ    | Beschreibung                                                                 |
+| --------- | ------ | ---------------------------------------------------------------------------- |
+| `project` | Text   | Nur Owner-Scope: ID des Projekts, an dem das Aufgaben-Tool arbeitet, aus workspaces. |
+| `id`      | Text   | Aufgaben-ID, etwa `T-12`.                                                    |
+
+## update
+
+**Scope:** Projekt-Scope und Owner-Scope.
+
+Titel, Notizen, Fälligkeitsdatum oder Platz in der Reihenfolge einer Aufgabe ändern. null löscht Notizen oder das Fälligkeitsdatum.
+
+| Argument    | Typ              | Beschreibung                                                               |
+| ----------- | ---------------- | -------------------------------------------------------------------------- |
+| `project`   | Text             | Nur Owner-Scope: ID des Projekts, an dem das Aufgaben-Tool arbeitet, aus workspaces. |
+| `id`        | Text             | Aufgaben-ID, etwa `T-12`.                                                  |
+| `title`     | Text             | Kurzer Titel.                                                              |
+| `notes`     | Text oder null   | Markdown-Notizen.                                                          |
+| `due_date`  | Text oder null   | Kalenderdatum, YYYY-MM-DD.                                                 |
+| `placement` | Objekt           | Wohin die Aufgabe verschoben wird: `first`, `last`, oder `before` oder `after` einen Anker. |
+| `kind`      | Text             | Innerhalb von `placement`: `first`, `last`, `before` oder `after`.         |
+| `anchor`    | Text             | Innerhalb von `placement`, bei `before` und `after`: die ID der anderen Aufgabe. |
+
+## done
+
+**Scope:** Projekt-Scope und Owner-Scope.
+
+Eine oder mehrere Aufgaben erledigen, optional mit einer Notiz dazu, was getan wurde.
+
+| Argument  | Typ              | Beschreibung                                                                 |
+| --------- | ---------------- | ---------------------------------------------------------------------------- |
+| `project` | Text             | Nur Owner-Scope: ID des Projekts, an dem das Aufgaben-Tool arbeitet, aus workspaces. |
+| `ids`     | Liste von Text   | Aufgaben-IDs, etwa `T-12`.                                                   |
+| `note`    | Text oder null   | Was getan wurde.                                                             |
+
+## reopen
+
+**Scope:** Projekt-Scope und Owner-Scope.
+
+Eine oder mehrere erledigte Aufgaben wieder öffnen.
+
+| Argument  | Typ              | Beschreibung                                                                 |
+| --------- | ---------------- | ---------------------------------------------------------------------------- |
+| `project` | Text             | Nur Owner-Scope: ID des Projekts, an dem das Aufgaben-Tool arbeitet, aus workspaces. |
+| `ids`     | Liste von Text   | Aufgaben-IDs, etwa `T-12`.                                                   |
+
+## delete
+
+**Scope:** Projekt-Scope und Owner-Scope.
+
+Eine Aufgabe endgültig löschen. Gib ihren aktuellen Titel als confirm an; weicht er ab, wird nichts gelöscht. Eine Aufgabe, die du woanders behalten willst, braucht move. Der Mac des Owners zeigt das Löschen nach seinem nächsten Update.
+
+| Argument  | Typ    | Beschreibung                                                                      |
+| --------- | ------ | --------------------------------------------------------------------------------- |
+| `project` | Text   | Nur Owner-Scope: ID des Projekts, an dem das Aufgaben-Tool arbeitet, aus workspaces. |
+| `id`      | Text   | Aufgaben-ID, etwa `T-12`.                                                         |
+| `confirm` | Text   | Der aktuelle Titel der Aufgabe, genau eingetippt. Weicht er ab, wird nichts gelöscht. |
+
+## move
+
+**Scope:** Projekt-Scope und Owner-Scope.
+
+Eine Aufgabe in ein anderes Projekt desselben Workspace verschieben. Die Aufgabe bekommt dort eine neue ID. Projekt-IDs findest du mit projects. Der Mac des Owners zeigt das Verschieben nach seinem nächsten Update.
+
+| Argument      | Typ    | Beschreibung                                                                                        |
+| ------------- | ------ | --------------------------------------------------------------------------------------------------- |
+| `id`          | Text   | Aufgaben-ID, etwa `T-12`.                                                                           |
+| `project`     | Text   | Projekt-Scope: ID des Projekts, in das die Aufgabe verschoben wird, aus dem Tool projects. Owner-Scope: ID des Projekts, in dem die Aufgabe liegt, aus workspaces. |
+| `destination` | Text   | Nur Owner-Scope: ID des Projekts, in das die Aufgabe verschoben wird, aus workspaces.               |
+
+## projects
+
+**Scope:** Projekt-Scope.
+
+Die Projekte des Workspace auflisten, zu dem diese Verbindung gehört, mit ihren IDs.
+
+Es nimmt keine Argumente.
+
+## workspaces
+
+**Scope:** Owner-Scope.
+
+Die Workspaces dieses Kontos mit ihren Projekten und IDs auflisten.
+
+Es nimmt keine Argumente.
+
+## create_workspace
+
+**Scope:** Owner-Scope.
+
+Einen Workspace anlegen. Er beginnt mit einem Projekt Inbox.
+
+| Argument | Typ    | Beschreibung                        |
+| -------- | ------ | ----------------------------------- |
+| `name`   | Text   | Name, bis zu 80 Zeichen.            |
+
+## rename_workspace
+
+**Scope:** Owner-Scope.
+
+Einen Workspace umbenennen.
+
+| Argument    | Typ    | Beschreibung                        |
+| ----------- | ------ | ----------------------------------- |
+| `workspace` | Text   | ID des Workspace, aus workspaces.   |
+| `name`      | Text   | Name, bis zu 80 Zeichen.            |
+
+## delete_workspace
+
+**Scope:** Owner-Scope.
+
+Einen Workspace mit allen seinen Projekten und Aufgaben endgültig löschen. Gib seinen aktuellen Namen als confirm an; weicht er ab, wird nichts gelöscht.
+
+| Argument    | Typ    | Beschreibung                                                                         |
+| ----------- | ------ | ------------------------------------------------------------------------------------ |
+| `workspace` | Text   | ID des Workspace, aus workspaces.                                                    |
+| `confirm`   | Text   | Der aktuelle Name des Workspace, genau eingetippt. Weicht er ab, wird nichts gelöscht. |
+
+## create_project
+
+**Scope:** Owner-Scope.
+
+Ein Projekt in einem Workspace anlegen.
+
+| Argument    | Typ    | Beschreibung                        |
+| ----------- | ------ | ----------------------------------- |
+| `workspace` | Text   | ID des Workspace, aus workspaces.   |
+| `name`      | Text   | Name, bis zu 80 Zeichen.            |
+
+## rename_project
+
+**Scope:** Owner-Scope.
+
+Ein Projekt umbenennen. Die Inbox kann nicht umbenannt werden.
+
+| Argument  | Typ    | Beschreibung                        |
+| --------- | ------ | ----------------------------------- |
+| `project` | Text   | ID des Projekts, aus workspaces.    |
+| `name`    | Text   | Name, bis zu 80 Zeichen.            |
+
+## delete_project
+
+**Scope:** Owner-Scope.
+
+Ein Projekt mit seinen Aufgaben endgültig löschen. Gib seinen aktuellen Namen als confirm an; weicht er ab, wird nichts gelöscht. Die Inbox kann nicht gelöscht werden.
+
+| Argument  | Typ    | Beschreibung                                                                        |
+| --------- | ------ | ----------------------------------------------------------------------------------- |
+| `project` | Text   | ID des Projekts, aus workspaces.                                                    |
+| `confirm` | Text   | Der aktuelle Name des Projekts, genau eingetippt. Weicht er ab, wird nichts gelöscht. |
+
+## settings
+
+**Scope:** Owner-Scope.
+
+Die Kontoeinstellungen anzeigen: Zeitzone, Agenten-Hinweis und Tagesmail.
+
+Es nimmt keine Argumente.
+
+## update_settings
+
+**Scope:** Owner-Scope.
+
+Die Kontoeinstellungen ändern. Gib nur an, was sich ändert.
+
+| Argument            | Typ              | Beschreibung                                                                             |
+| ------------------- | ---------------- | ---------------------------------------------------------------------------------------- |
+| `time_zone`         | Text             | Name der Zeitzone, etwa America/Sao_Paulo.                                               |
+| `agent_nudge`       | true oder false  | Ob next eine Zeile zu den heute fälligen Aufgaben hinzufügt.                             |
+| `day_email`         | true oder false  | Ob die Tagesmail gesendet wird.                                                          |
+| `day_email_minutes` | Ganzzahl         | Minuten nach Mitternacht, in deiner Zeitzone, zu denen die Tagesmail gesendet wird: 0 bis 1439. |
+
+## Prompts
+
+Der Server bietet einen Prompt, `next`: Beginne mit der nächsten Aufgabe dieses Projekts.

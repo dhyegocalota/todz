@@ -1,0 +1,94 @@
+---
+title: Instalar en Mac
+description: Descarga todz para Mac, ábrelo, verifica la firma o compílalo desde el código fuente.
+---
+
+todz para Mac no está en la App Store y todavía no está notarizado por Apple, así que macOS te pide permiso la primera vez. **Descargar para Mac** en todz.app lleva a [todz.app/download](https://todz.app/download), que sirve la última versión; se aplican las secciones 1 y 2. Para compilarlo tú mismo, consulta la sección 5.
+
+<Warning>
+  La app no está notarizada. Apple no la ha analizado, así que macOS se niega a abrirla la primera vez. Ábrela desde Ajustes del Sistema, como en la sección siguiente.
+</Warning>
+
+## 1. Descarga y abre la app
+
+Desde todz.app, elige **Descargar para Mac**:
+
+1. Verifica la descarga con la sección 2 antes de abrirla. Luego descarga la imagen de disco, ábrela y arrastra `Todz.app` a Aplicaciones.
+2. Abre `Todz.app`. macOS la rechaza la primera vez.
+3. Abre **Ajustes del Sistema** › **Privacidad y seguridad**, desplázate hasta **Seguridad**, busca la línea sobre `Todz` y haz clic en **Abrir igualmente**.
+4. Confirma con tu contraseña y abre la app de nuevo.
+
+macOS pregunta una sola vez; los siguientes inicios se abren con normalidad. `spctl --assess` rechaza la app porque no está notarizada; es lo esperado, y las comprobaciones de abajo son la forma de saber qué estás ejecutando.
+
+## 2. Verifica la descarga
+
+Cada versión se publica como `Todz-<version>.dmg` con un `Todz-<version>.dmg.sha256` y un `Todz-<version>.dmg.sig`, todos en `https://todz.app/download/<version>/`. Comprueba la suma, en la carpeta que contiene ambos archivos:
+
+```bash
+shasum -a 256 -c Todz-<version>.dmg.sha256
+```
+
+Guarda esta línea como `allowed-signers`. Es la clave de publicación de todz:
+
+```text
+release@todz.app namespaces="todz-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdNjy4QZsK85d4WxjwiTql81GeptNXX2H4SUcM9QVNu
+```
+
+Su huella, tal como la imprime `ssh-keygen -lf` para la clave sola, es:
+
+```text
+SHA256:yBlPOn96/UZM6GGCo//eqZtFjWl440Hr6rxWa0VS5Tk
+```
+
+Después comprueba la firma:
+
+```bash
+ssh-keygen -Y verify -f allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg
+```
+
+Responde `Good "todz-release" signature for release@todz.app`.
+
+La firma demuestra que una descarga es el archivo que firmó la clave de publicación de todz. No protege frente a alguien que controle la zona todz.app o la cuenta de Cloudflare de todz, porque esta página también se sirve desde esa zona.
+
+## 3. Verifica la app
+
+Comprueba que la firma esté intacta. Cuando lo está, termina con `valid on disk` y `satisfies its Designated Requirement`:
+
+```bash
+codesign --verify --deep --strict --verbose=2 /Applications/Todz.app
+```
+
+Comprueba quién firmó la app:
+
+```bash
+codesign -dv --verbose=4 /Applications/Todz.app
+```
+
+La salida contiene `TeamIdentifier=XFWR794VS8`, `flags=0x10000(runtime)` y, en el nombre del certificado, la dirección del ID de Apple del propietario.
+
+## 4. Actualizaciones
+
+La app se actualiza sola en segundo plano; [Actualizaciones](/es/updates) explica cómo y cómo desactivarlo.
+
+## 5. Compílala desde el código fuente
+
+Necesitas un Mac con Xcode y [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+
+<Note>
+  `project.yml` firma con el equipo del propietario, `XFWR794VS8`, así que solo un Mac que tenga esa identidad puede compilarlo tal cual. Para compilar con tu propio equipo, reemplaza antes `DEVELOPMENT_TEAM` y los identificadores de paquete, como en [la guía de autoalojamiento](/es/self-host#7-compila-la-app-de-macos-y-conecta-tu-servidor). Una app compilada por ti muestra el equipo con el que se firmó.
+</Note>
+
+Desde la raíz del repositorio:
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+La app queda en `apps/macos/build/Build/Products/Release/Todz.app`. Una compilación firmada para desarrollo solo se abre en los Mac que su equipo de firma conoce. Para pasarla a otro Mac tuyo, comprímela en zip para que su firma sobreviva, cópiala y ábrela como en la sección 1:
+
+```bash
+ditto -c -k --keepParent apps/macos/build/Build/Products/Release/Todz.app Todz.zip
+```
+
+Comprueba que la copia es el zip que creaste ejecutando `shasum -a 256 Todz.zip` en ambos Mac. Una suma coincidente solo demuestra que la copia es el zip que hiciste, no quién lo compiló.
