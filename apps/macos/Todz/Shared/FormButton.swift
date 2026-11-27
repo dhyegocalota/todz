@@ -1,4 +1,5 @@
 import SwiftUI
+import TodzKit
 
 private let shownOpacity: Double = 1
 private let hiddenOpacity: Double = 0
@@ -64,6 +65,7 @@ struct FormButton: View {
             }
         }
         .frame(maxWidth: isFullWidth ? .infinity : nil)
+        .todzMotion(.busySwap, value: isBusy)
     }
 
     private var accessibleTitle: String {

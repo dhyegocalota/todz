@@ -237,14 +237,14 @@ The owner asked the build loop to take every call (2026-11-24, "take every decis
 |---|---|---|
 | O1 | A: the Inbox, due today | 2026-11-24 |
 | O2 | A: opens the main window on Today with the task selected and the inspector shown, then closes the popover | 2026-11-24 |
-| O3 | A: done-today rows after the open rows, reopenable, the count in the foot | 2026-11-24 |
+| O3 | A: done-today rows after the open rows, reopenable, the count in the foot. Amended by [ADR 0112](../../adr/0112-the-menu-bar-popover-leads-with-an-up-next-card-and-says-less.md): the rows open from a collapsed `Done today` line and there is no foot | 2026-11-24 |
 | O4 | A: rows scroll between the pinned header, field and foot; at most 520 points high, 360 wide | 2026-11-24 |
 | O5 | A: the add field takes focus on open; ⌘N still focuses it | 2026-11-24 |
 | O6 | A: one workspace shows its name as plain text and no hint; the menu and the foot's hint `⌘1–N` from two. Amended after the code review: the switcher's items carry no key, the View menu is the one registration | 2026-11-24 |
 | O7 | B: ⌘1 to ⌘9 also in the main window's View menu, the only place they are registered and shown; the spec's non-goal is amended | 2026-11-24 |
 | O8 | A: one line and Open todz | 2026-11-24 |
 | O9 | A: always a Dock icon, no Quit item | 2026-11-24 |
-| O10 | A: the shell's `TaskRow` unchanged | 2026-11-24 |
+| O10 | A: the shell's `TaskRow` unchanged. Amended by [ADR 0112](../../adr/0112-the-menu-bar-popover-leads-with-an-up-next-card-and-says-less.md): a compact one-line row, the id only on hover and focus | 2026-11-24 |
 | Minor calls | as listed in § 6 | 2026-11-24 |
 
 ## 8. Every new copy string

@@ -8,7 +8,7 @@ const REPOSITORY_ADDRESS_FILE = 'apps/macos/TodzKit/Sources/TodzKit/RepositoryAd
 const OPEN_SOURCE_COPY_FILE = 'apps/macos/Copy/OpenSourceCopy.swift';
 const STAR_BUTTON_FILE = 'apps/macos/Todz/OpenSource/StarRepositoryButton.swift';
 const OPEN_SOURCE_LINK_FILE = 'apps/macos/Todz/OpenSource/OpenSourceLink.swift';
-const MENU_BAR_FOOT_FILE = 'apps/macos/Todz/MenuBar/MenuBarFoot.swift';
+const MENU_BAR_MORE_MENU_FILE = 'apps/macos/Todz/MenuBar/MenuBarMoreMenu.swift';
 const APP_COMMANDS_FILE = 'apps/macos/Todz/AppCommands.swift';
 const SETTINGS_FILE = 'apps/macos/Todz/Settings/SettingsView.swift';
 const LICENSE_BADGE = '[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)';
@@ -36,8 +36,8 @@ describe('the open source surfaces', () => {
     expect(readRepositoryFile(file)).toContain(OPEN_WORKSPACE_CALL);
   });
 
-  test('the popover footer, the todz menu and Settings each offer one of them', () => {
-    expect(readRepositoryFile(MENU_BAR_FOOT_FILE)).toContain('StarRepositoryButton()');
+  test('the popover More menu, the todz menu and Settings each offer one of them', () => {
+    expect(readRepositoryFile(MENU_BAR_MORE_MENU_FILE)).toContain('StarRepositoryButton()');
     expect(readRepositoryFile(APP_COMMANDS_FILE)).toContain('StarRepositoryButton()');
     expect(readRepositoryFile(SETTINGS_FILE)).toContain('OpenSourceLink()');
   });

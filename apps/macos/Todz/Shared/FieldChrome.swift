@@ -14,7 +14,7 @@ struct FieldChrome: ViewModifier {
             .background(.fill.quaternary, in: shape)
             .overlay { shape.strokeBorder(ringColor, lineWidth: ringWidth) }
             .opacity(state == .disabled ? FormMetrics.disabledOpacity : FormMetrics.enabledOpacity)
-            .todzAnimation(.snap, value: state)
+            .todzMotion(.focus, value: state)
     }
 
     private var shape: RoundedRectangle {

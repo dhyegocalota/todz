@@ -336,6 +336,8 @@ The `…` menu, in order: `Updated to {version}` (only while an update note is p
 | `.red` `Overdue` on light | about 3.4:1 (ADR 0104 measured the same pair) | 4.5:1 | known gap; the word carries the meaning, colour does not; owner question Q4 |
 | Text in the accent | not used | n/a | the accent only fills shapes |
 
+Re-checked 2026-11-27 for the build: the accent ratios recomputed from `#2F5BFF` against white and `#1E1E1E` come to 5.2:1 and 3.2:1, as stated. The in-process renders have no `AccentColor` asset (they draw the system blue) and no menu bar material, so the table was not re-measured from pixels.
+
 Meaning never rides on colour alone: overdue is the word, the agent is a glyph plus the client name, done is the filled check, offline is the word and the symbol. Increase Contrast and Reduce Transparency are the system's.
 
 ## 7. Components, tokens, copy and the build

@@ -8,7 +8,7 @@ struct RootView: View {
     var body: some View {
         @Bindable var windowState = windowState
         screen
-            .todzAnimation(.reveal, value: model.phase)
+            .todzMotion(.stageChange, value: model.phase)
             .task {
                 guard model.phase == .loading else { return }
                 await model.launch()
