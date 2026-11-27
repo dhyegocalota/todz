@@ -143,8 +143,8 @@ export const LANDING_COPY = {
       body: 'Changes wait while you are offline and land on every Mac the moment you are back.',
     },
     lock: {
-      title: 'Privacy for every workspace',
-      body: 'Share your screen without sharing every client. Touch ID keeps each workspace to itself until you switch.',
+      title: 'Privacy-first workspaces',
+      body: 'Each workspace stays separate on your screen and in your widgets. Touch ID guards every switch.',
     },
   },
   howItWorks: {
