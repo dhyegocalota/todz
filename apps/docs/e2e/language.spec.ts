@@ -12,6 +12,8 @@ enum DocsLanguage {
   Japanese = 'ja',
   Korean = 'ko',
   Chinese = 'zh',
+  Arabic = 'ar',
+  Hindi = 'hi',
 }
 
 const DOCS_DIRECTORY = resolve(import.meta.dirname, '..');
@@ -33,6 +35,8 @@ const FOLDER_OF: Record<DocsLanguage, string> = {
   [DocsLanguage.Japanese]: 'ja',
   [DocsLanguage.Korean]: 'ko',
   [DocsLanguage.Chinese]: 'zh',
+  [DocsLanguage.Arabic]: 'ar',
+  [DocsLanguage.Hindi]: 'hi',
 };
 const NATIVE_NAMES: Record<DocsLanguage, string> = {
   [DocsLanguage.English]: 'English',
@@ -43,8 +47,10 @@ const NATIVE_NAMES: Record<DocsLanguage, string> = {
   [DocsLanguage.Japanese]: '日本語',
   [DocsLanguage.Korean]: '한국어',
   [DocsLanguage.Chinese]: '简体中文',
+  [DocsLanguage.Arabic]: 'العربية',
+  [DocsLanguage.Hindi]: 'हिन्दी',
 };
-const TITLE_LANGUAGES = [DocsLanguage.PortugueseBrazil, DocsLanguage.Japanese];
+const TITLE_LANGUAGES = [DocsLanguage.PortugueseBrazil, DocsLanguage.Japanese, DocsLanguage.Arabic, DocsLanguage.Hindi];
 const BROWSER_LOCALES = ['pt-BR', 'ja-JP', 'de-DE'];
 
 function titleOf({ language, page }: { language: DocsLanguage; page: string }): string {
@@ -76,7 +82,7 @@ test.describe('the language switcher', () => {
     test.skip(testInfo.project.name !== DocsViewport.Desktop);
   });
 
-  test('lists the eight languages by their native names', async ({ page }) => {
+  test('lists the ten languages by their native names', async ({ page }) => {
     await page.goto(HOME_PATH);
     await waitForSwitcherHydration({ page });
     await page.locator(SWITCHER_LOCATOR).click();
