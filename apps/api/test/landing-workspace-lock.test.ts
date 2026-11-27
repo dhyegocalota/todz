@@ -13,7 +13,7 @@ const FIRST_CAPTURE = 1;
 const STRUCTURED_DATA_PATTERN = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/;
 const COUNT_PATTERN = /\d|\b(two|three|four|five|several|many|multiple|few|both|secret|private|hidden)\b/gi;
 const LOCK_SENTENCES = [lock.title, lock.body];
-const LOCK_FACTS = [/Touch ID/, /without a trace/, /Sleep/, /lock/, /quit/];
+const LOCK_FACTS = [/Privacy/, /Share your screen/, /Touch ID/, /each workspace/, /switch/];
 const CARD_PATTERN = /<li class="benefit-card glass reveal">[\s\S]*?<\/li>/g;
 const CARD_TITLE_MAX_WORDS = 5;
 const CARD_BODY_MAX_WORDS = 20;
