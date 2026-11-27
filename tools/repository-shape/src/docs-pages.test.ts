@@ -64,13 +64,27 @@ function tripleQuoted({ text, name }: { text: string; name: string }): string {
     .join(LINE_SEPARATOR);
 }
 
-function agentCommands(): string[] {
-  const swift = readRepositoryFile(AGENT_COMMAND);
-  const constants = swiftConstants(swift);
+function serverAddress(constants: Record<string, string>): string {
   const publicOrigin = singleCapture({ text: readRepositoryFile(WRANGLER_CONFIGURATION), pattern: PUBLIC_ORIGIN_PATTERN });
   const { serverPath } = constants;
   expect(serverPath).toBeDefined();
-  const address = `${publicOrigin}/${serverPath}`;
+  return `${publicOrigin}/${serverPath}`;
+}
+
+function oauthCommands(): string[] {
+  const address = serverAddress(swiftConstants(readRepositoryFile(AGENT_COMMAND)));
+  return [
+    `claude mcp add --transport http todz ${address}`,
+    `[mcp_servers.todz]\nurl = "${address}"`,
+    'codex mcp login todz',
+    `{ "mcpServers": { "todz": { "url": "${address}" } } }`,
+  ];
+}
+
+function agentCommands(): string[] {
+  const swift = readRepositoryFile(AGENT_COMMAND);
+  const constants = swiftConstants(swift);
+  const address = serverAddress(constants);
   const name = singleCapture({ text: readRepositoryFile(AGENT_SERVER), pattern: PROJECT_SERVER_PATTERN });
   const values = { ...constants, server: address, address, name, key: KEY_PLACEHOLDER };
   return [
@@ -99,9 +113,9 @@ function headingSlug(heading: string): string {
 }
 
 describe('the connect-an-agent page', () => {
-  test('holds the three commands of the key screen and nothing else in code blocks, with the cloud MCP URL and a key placeholder', () => {
+  test('holds the OAuth setups, then the three commands of the key screen and nothing else in code blocks, with the cloud MCP URL and a key placeholder', () => {
     const blocks = capturedNames({ text: pageText(CONNECT_PAGE), pattern: FENCE_BODY_PATTERN });
-    expect(blocks).toEqual(agentCommands());
+    expect(blocks).toEqual([...oauthCommands(), ...agentCommands()]);
   });
 
   test('warns that the key is a password: never committed, kept in the user-level configuration, revoked in the app when it leaks', () => {

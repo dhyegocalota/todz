@@ -75,7 +75,7 @@ export const DISCOVERY_COPY = {
   source: `todz is open source under the ${REPOSITORY.licenseName} license: ${REPOSITORY.url}`,
   connect: {
     heading: 'Connect an agent',
-    lead: 'Add the server to Claude Code with this command. The key comes from Connect an Agent in the app: one key per project.',
+    lead: 'The MCP server supports OAuth: add its URL to your client with no key and sign in in the browser. Keys are the fallback for clients without OAuth. To use a key, add the server to Claude Code with this command; the key comes from Connect an Agent in the app: one key per project.',
     setupsLink: 'Codex and Cursor setups',
   },
   tools: { heading: 'MCP tools', parametersHeading: 'MCP tool parameters' },
