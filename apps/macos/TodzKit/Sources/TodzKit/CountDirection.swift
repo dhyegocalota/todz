@@ -4,10 +4,11 @@ public enum CountDirection: Sendable, Equatable {
     case unchanged
 
     public static func of(from: Int, to: Int) -> CountDirection {
-        .unchanged
+        guard from != to else { return .unchanged }
+        return to < from ? .down : .up
     }
 
     public var countsDown: Bool {
-        false
+        self == .down
     }
 }

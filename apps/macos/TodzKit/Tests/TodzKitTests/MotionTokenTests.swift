@@ -47,8 +47,8 @@ private func isWellFormed(_ curve: MotionCurve) -> Bool {
         #expect(kept == everyToken)
     }
 
-    @Test func thePressTokenIsA110MillisecondSpringThatSettlesWithinIt() throws {
-        #expect(MotionToken.press.durationMilliseconds == 110)
+    @Test func thePressTokenIsA150MillisecondSpringThatSettlesWithinIt() throws {
+        #expect(MotionToken.press.durationMilliseconds == 150)
         #expect(MotionToken.press.curve == .spring(response: 0.075, dampingFraction: 0.9))
         let settling = try #require(settlingMilliseconds(MotionToken.press.curve))
         #expect(settling <= Double(MotionToken.press.durationMilliseconds))
