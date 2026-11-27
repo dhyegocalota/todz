@@ -6,6 +6,8 @@ import { DAY_EMAIL_COPY_FRENCH, DAY_EMAIL_EMPTY_COPY_FRENCH } from './day-email-
 import { DAY_EMAIL_COPY_JAPANESE, DAY_EMAIL_EMPTY_COPY_JAPANESE } from './day-email-copy-japanese';
 import { DAY_EMAIL_COPY_KOREAN, DAY_EMAIL_EMPTY_COPY_KOREAN } from './day-email-copy-korean';
 import { DAY_EMAIL_COPY_CHINESE, DAY_EMAIL_EMPTY_COPY_CHINESE } from './day-email-copy-chinese';
+import { DAY_EMAIL_COPY_ARABIC, DAY_EMAIL_EMPTY_COPY_ARABIC } from './day-email-copy-arabic';
+import { DAY_EMAIL_COPY_HINDI, DAY_EMAIL_EMPTY_COPY_HINDI } from './day-email-copy-hindi';
 import { EmailSlot } from '../../src/emails/email-slot';
 
 const SHARED_COPY = {
@@ -39,6 +41,8 @@ export const DAY_EMAIL_COPY_BY_LANGUAGE: Record<Language, DayEmailCopy> = {
   [Language.Japanese]: DAY_EMAIL_COPY_JAPANESE,
   [Language.Korean]: DAY_EMAIL_COPY_KOREAN,
   [Language.Chinese]: DAY_EMAIL_COPY_CHINESE,
+  [Language.Arabic]: DAY_EMAIL_COPY_ARABIC,
+  [Language.Hindi]: DAY_EMAIL_COPY_HINDI,
 };
 
 export type DayEmailEmptyCopy = typeof DAY_EMAIL_EMPTY_COPY;
@@ -52,4 +56,6 @@ export const DAY_EMAIL_EMPTY_COPY_BY_LANGUAGE: Record<Language, DayEmailEmptyCop
   [Language.Japanese]: DAY_EMAIL_EMPTY_COPY_JAPANESE,
   [Language.Korean]: DAY_EMAIL_EMPTY_COPY_KOREAN,
   [Language.Chinese]: DAY_EMAIL_EMPTY_COPY_CHINESE,
+  [Language.Arabic]: DAY_EMAIL_EMPTY_COPY_ARABIC,
+  [Language.Hindi]: DAY_EMAIL_EMPTY_COPY_HINDI,
 };

@@ -6,6 +6,8 @@ import { SIGN_IN_EMAIL_COPY_FRENCH } from './sign-in-email-copy-french';
 import { SIGN_IN_EMAIL_COPY_JAPANESE } from './sign-in-email-copy-japanese';
 import { SIGN_IN_EMAIL_COPY_KOREAN } from './sign-in-email-copy-korean';
 import { SIGN_IN_EMAIL_COPY_CHINESE } from './sign-in-email-copy-chinese';
+import { SIGN_IN_EMAIL_COPY_ARABIC } from './sign-in-email-copy-arabic';
+import { SIGN_IN_EMAIL_COPY_HINDI } from './sign-in-email-copy-hindi';
 export const SIGN_IN_EMAIL_COPY = {
   subject: 'Your todz sign-in link',
   preview: 'Your link to sign in to todz',
@@ -27,4 +29,6 @@ export const SIGN_IN_EMAIL_COPY_BY_LANGUAGE: Record<Language, SignInEmailCopy> =
   [Language.Japanese]: SIGN_IN_EMAIL_COPY_JAPANESE,
   [Language.Korean]: SIGN_IN_EMAIL_COPY_KOREAN,
   [Language.Chinese]: SIGN_IN_EMAIL_COPY_CHINESE,
+  [Language.Arabic]: SIGN_IN_EMAIL_COPY_ARABIC,
+  [Language.Hindi]: SIGN_IN_EMAIL_COPY_HINDI,
 };

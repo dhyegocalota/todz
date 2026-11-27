@@ -6,6 +6,8 @@ import { LANDING_COPY_FRENCH } from './landing-copy-french';
 import { LANDING_COPY_JAPANESE } from './landing-copy-japanese';
 import { LANDING_COPY_KOREAN } from './landing-copy-korean';
 import { LANDING_COPY_CHINESE } from './landing-copy-chinese';
+import { LANDING_COPY_ARABIC } from './landing-copy-arabic';
+import { LANDING_COPY_HINDI } from './landing-copy-hindi';
 import { formatShortId } from '@todz/core';
 import { AUTHOR, COMPANY } from '@todz/types';
 import { MCP_COPY, McpToolName } from '../mcp-copy';
@@ -200,4 +202,6 @@ export const LANDING_COPY_BY_LANGUAGE: Record<Language, LandingCopy> = {
   [Language.Japanese]: LANDING_COPY_JAPANESE,
   [Language.Korean]: LANDING_COPY_KOREAN,
   [Language.Chinese]: LANDING_COPY_CHINESE,
+  [Language.Arabic]: LANDING_COPY_ARABIC,
+  [Language.Hindi]: LANDING_COPY_HINDI,
 };

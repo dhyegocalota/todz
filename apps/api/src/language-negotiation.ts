@@ -18,6 +18,8 @@ const LANGUAGE_OF_PRIMARY_TAG = new Map<string, Language>([
   ['ja', Language.Japanese],
   ['ko', Language.Korean],
   [CHINESE_PRIMARY_TAG, Language.Chinese],
+  ['ar', Language.Arabic],
+  ['hi', Language.Hindi],
 ]);
 
 type LanguagePreference = { tag: string; quality: number };

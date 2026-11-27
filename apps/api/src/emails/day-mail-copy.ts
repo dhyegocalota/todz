@@ -6,6 +6,8 @@ import { DAY_MAIL_COPY_FRENCH } from './day-mail-copy-french';
 import { DAY_MAIL_COPY_JAPANESE } from './day-mail-copy-japanese';
 import { DAY_MAIL_COPY_KOREAN } from './day-mail-copy-korean';
 import { DAY_MAIL_COPY_CHINESE } from './day-mail-copy-chinese';
+import { DAY_MAIL_COPY_ARABIC } from './day-mail-copy-arabic';
+import { DAY_MAIL_COPY_HINDI } from './day-mail-copy-hindi';
 export const DAY_MAIL_COPY = {
   moreTasks: (count: number): string => `and ${count} more.`,
   overdue: ' · overdue',
@@ -24,4 +26,6 @@ export const DAY_MAIL_COPY_BY_LANGUAGE: Record<Language, DayMailCopy> = {
   [Language.Japanese]: DAY_MAIL_COPY_JAPANESE,
   [Language.Korean]: DAY_MAIL_COPY_KOREAN,
   [Language.Chinese]: DAY_MAIL_COPY_CHINESE,
+  [Language.Arabic]: DAY_MAIL_COPY_ARABIC,
+  [Language.Hindi]: DAY_MAIL_COPY_HINDI,
 };

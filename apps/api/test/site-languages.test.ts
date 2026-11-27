@@ -300,7 +300,7 @@ describe('the sitemap', () => {
           html: required({ value: block, description: 'its sitemap entry' }),
           pattern: /<xhtml:link rel="alternate" hreflang="[^"]+" href="[^"]+"\/>/g,
         }),
-      ).toHaveLength(9);
+      ).toHaveLength(Object.values(Language).length + 1);
       expect(block).toContain(`<xhtml:link rel="alternate" hreflang="x-default" href="${SITE_ORIGIN}/"/>`);
     });
   });

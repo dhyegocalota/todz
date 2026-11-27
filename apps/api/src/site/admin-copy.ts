@@ -6,6 +6,8 @@ import { ADMIN_COPY_FRENCH } from './admin-copy-french';
 import { ADMIN_COPY_JAPANESE } from './admin-copy-japanese';
 import { ADMIN_COPY_KOREAN } from './admin-copy-korean';
 import { ADMIN_COPY_CHINESE } from './admin-copy-chinese';
+import { ADMIN_COPY_ARABIC } from './admin-copy-arabic';
+import { ADMIN_COPY_HINDI } from './admin-copy-hindi';
 import { Metric } from '../telemetry/metric';
 import { ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES } from './admin-paths';
 
@@ -116,4 +118,6 @@ export const ADMIN_COPY_BY_LANGUAGE: Record<Language, AdminCopy> = {
   [Language.Japanese]: ADMIN_COPY_JAPANESE,
   [Language.Korean]: ADMIN_COPY_KOREAN,
   [Language.Chinese]: ADMIN_COPY_CHINESE,
+  [Language.Arabic]: ADMIN_COPY_ARABIC,
+  [Language.Hindi]: ADMIN_COPY_HINDI,
 };
