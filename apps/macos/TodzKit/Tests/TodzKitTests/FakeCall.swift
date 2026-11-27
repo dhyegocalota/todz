@@ -47,7 +47,7 @@ enum FakeCall: Equatable, Sendable {
     case deleteProject(session: String, projectIdentifier: String)
     case addTasks(session: String, projectIdentifier: String, drafts: [TaskDraft])
     case updateTask(session: String, projectIdentifier: String, number: Int, patch: TaskPatch)
-    case deleteTask(session: String, projectIdentifier: String, number: Int)
+    case deleteTask(session: String, projectIdentifier: String, number: Int, title: String)
     case completeTasks(session: String, projectIdentifier: String, numbers: [Int])
     case reopenTasks(session: String, projectIdentifier: String, numbers: [Int])
     case readHistory(session: String, projectIdentifier: String, number: Int)
@@ -91,7 +91,7 @@ enum FakeCall: Equatable, Sendable {
             let .deleteProject(_, projectIdentifier),
             let .addTasks(_, projectIdentifier, _),
             let .updateTask(_, projectIdentifier, _, _),
-            let .deleteTask(_, projectIdentifier, _),
+            let .deleteTask(_, projectIdentifier, _, _),
             let .completeTasks(_, projectIdentifier, _),
             let .reopenTasks(_, projectIdentifier, _),
             let .readHistory(_, projectIdentifier, _),
