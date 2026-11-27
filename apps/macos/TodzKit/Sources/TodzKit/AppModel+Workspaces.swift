@@ -1,6 +1,9 @@
 extension AppModel {
     @discardableResult
     public func createWorkspace(name: String) async -> Workspace? {
+        let isFirstWorkspace = workspaces.isEmpty
+        let isAuthorizedToCreate = isFirstWorkspace ? true : await isAuthorized(.createWorkspace)
+        guard isAuthorizedToCreate else { return nil }
         let created = await write(target: .newWorkspace, retry: { await self.createWorkspace(name: name) }) {
             try await service.createWorkspace(session: $0, name: name)
         }
@@ -20,7 +23,8 @@ extension AppModel {
     public func selectWorkspaces(_ selection: WorkspaceSelection) async {
         guard phase == .ready else { return }
         guard selection != self.selection else { return }
-        guard !selection.workspaces(in: workspaces).isEmpty else { return }
+        guard await isAuthorized(toShow: selection) else { return }
+        guard phase == .ready else { return }
         await show(selection)
     }
 
@@ -35,7 +39,8 @@ extension AppModel {
 
     public func chooseWorkspaces(_ selection: WorkspaceSelection) async {
         guard phase == .choosing else { return }
-        guard !selection.workspaces(in: workspaces).isEmpty else { return }
+        guard await isAuthorized(toShow: selection) else { return }
+        guard phase == .choosing else { return }
         phase = .ready
         await show(selection)
     }
@@ -86,6 +91,7 @@ extension AppModel {
     @discardableResult
     public func renameProject(projectIdentifier: String, name: String) async -> Project? {
         guard let workspace = activeWorkspace else { return nil }
+        guard !isInLockedWorkspace(projectIdentifier: projectIdentifier) else { refuseAsLocked(); return nil }
         let target = WriteTarget.projectName(projectIdentifier: projectIdentifier)
         let renamed = await write(target: target, retry: { await self.renameProject(projectIdentifier: projectIdentifier, name: name) }) {
             try await service.renameProject(session: $0, projectIdentifier: projectIdentifier, name: name)
@@ -99,6 +105,7 @@ extension AppModel {
 
     @discardableResult
     public func renameWorkspace(identifier: String, name: String) async -> Workspace? {
+        guard !isLocked(workspaceIdentifier: identifier) else { refuseAsLocked(); return nil }
         let target = WriteTarget.workspaceName(workspaceIdentifier: identifier)
         let renamed = await write(target: target, retry: { await self.renameWorkspace(identifier: identifier, name: name) }) {
             try await service.renameWorkspace(session: $0, workspaceIdentifier: identifier, name: name)
@@ -110,6 +117,7 @@ extension AppModel {
     }
 
     public func deleteWorkspace(identifier: String) async {
+        guard await isAuthorized(.removeWorkspace) else { return }
         let target = WriteTarget.workspaceRemoval(workspaceIdentifier: identifier)
         let wasShown = shownWorkspaces.contains { $0.identifier == identifier }
         let isDeleted = await write(target: target, retry: { await self.deleteWorkspace(identifier: identifier) }) { session in
@@ -132,6 +140,7 @@ extension AppModel {
     }
 
     public func deleteProject(projectIdentifier: String) async {
+        guard !isInLockedWorkspace(projectIdentifier: projectIdentifier) else { refuseAsLocked(); return }
         let target = WriteTarget.projectRemoval(projectIdentifier: projectIdentifier)
         let isDeleted = await write(target: target, retry: { await self.deleteProject(projectIdentifier: projectIdentifier) }) { session in
             try await deletionIsDone { try await service.deleteProject(session: session, projectIdentifier: projectIdentifier) }
@@ -191,7 +200,9 @@ extension AppModel {
     }
 
     private var selectionToShow: WorkspaceSelection? {
-        if let selection, !selection.workspaces(in: workspaces).isEmpty { return selection.limited(to: workspaces) }
+        let isCurrentGone = activeWorkspaceIdentifier.map { current in !workspaces.contains { $0.identifier == current } } == true
+        if workspaceLock.isLocked, isCurrentGone { return nil }
+        if let selection, !selection.workspaces(in: workspaces).isEmpty { return collapsedWhileLocked(selection.limited(to: workspaces)) }
         guard workspaces.count == 1, let sole = workspaces.first else { return nil }
         return .chosen([sole.identifier])
     }
@@ -205,9 +216,9 @@ extension AppModel {
     private func show(_ newSelection: WorkspaceSelection) async {
         let shown = newSelection.workspaces(in: workspaces)
         guard let primary = primary(of: shown) else { return }
-        let previousIdentifiers = Set(shownProjects.map(\.identifier))
+        let previousIdentifiers = Set(selectedWorkspaces.flatMap(\.projects).map(\.identifier))
         let shownIdentifiers = shown.flatMap(\.projects).map(\.identifier)
-        let isAnotherSet = shown.map(\.identifier) != shownWorkspaces.map(\.identifier)
+        let isAnotherSet = shown.map(\.identifier) != selectedWorkspaces.map(\.identifier)
         let isIncremental = isAnotherSet && !previousIdentifiers.isEmpty
         if isAnotherSet && !isIncremental { forgetActiveWorkspace() }
         if isIncremental { release(projectIdentifiers: previousIdentifiers.subtracting(shownIdentifiers)) }

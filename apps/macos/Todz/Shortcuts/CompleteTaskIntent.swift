@@ -23,6 +23,7 @@ struct CompleteTaskIntent: AppIntent {
         case let .alreadyDone(title):
             return .result(dialog: IntentDialog(LocalizedStringResource(stringLiteral: ShortcutsCopy.alreadyDone(title: title))))
         case .notFound: throw ShortcutRefusal.taskGone
+        case .workspaceLocked: throw ShortcutRefusal.workspaceLocked
         case .signedOut: throw ShortcutRefusal.signedOut
         }
     }

@@ -55,6 +55,8 @@ final class HarnessClock {
     let clock = HarnessClock()
     let session = UUID().uuidString
     let probes = ProbeRecorder()
+    let authenticator = FakeAuthenticator()
+    let lockPreference: WorkspaceLockPreference
     let servers: FakeServers
     let defaultURL: ServerAddress
     let preference: ServerPreference
@@ -66,7 +68,8 @@ final class HarnessClock {
         isLocalDataKept: Bool = false,
         sessionOrigin: String? = harnessDefaultServer,
         isVaultUnerasable: Bool = false,
-        cacheScheduler: CacheScheduler = .immediate
+        cacheScheduler: CacheScheduler = .immediate,
+        isWorkspaceLockOn: Bool = false
     ) throws {
         let timeZone = try #require(TimeZone(identifier: harnessTimeZoneIdentifier))
         let defaultURL = try ServerAddress.checked(text: defaultServer).get()
@@ -75,6 +78,8 @@ final class HarnessClock {
         defaults.removePersistentDomain(forName: defaultsName)
         if let storedServer { defaults.set(storedServer, forKey: harnessServerKey) }
         let preference = ServerPreference(defaults: defaults, domainName: defaultsName)
+        lockPreference = WorkspaceLockPreference(defaults: defaults, domainName: defaultsName)
+        lockPreference.store(isOn: isWorkspaceLockOn)
         let servers = FakeServers(service: service, signals: signals)
         let probes = probes
         let keys = keys
@@ -104,6 +109,7 @@ final class HarnessClock {
             pendingLinks: pendingLinks,
             store: store,
             cacheScheduler: cacheScheduler,
+            workspaceLock: WorkspaceLock(preference: lockPreference, authenticator: authenticator, now: { clock.now }),
             widgetStore: widgets,
             reloadWidgets: { MainActor.assumeIsolated { widgets.recordReload() } },
             timeZone: timeZone,

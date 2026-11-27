@@ -32,6 +32,10 @@ public enum WorkspaceShortcuts {
         zip(numbers, workspaces).map { (number: $0, workspace: $1) }
     }
 
+    public static func numbered(_ presented: [PresentedWorkspace]) -> [(number: Int, presented: PresentedWorkspace)] {
+        zip(numbers, presented).map { (number: $0, presented: $1) }
+    }
+
     public static func number(forKey key: String) -> Int? {
         guard let number = Int(key), numbers.contains(number) else { return nil }
         return number

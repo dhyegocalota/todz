@@ -16,11 +16,14 @@ struct WorkspacePickerScreen: View {
                     .bold()
                 Text(WorkspacePickerCopy.body)
                     .foregroundStyle(.secondary)
-                ForEach(model.workspaces, id: \.identifier) { workspace in
+                ForEach(model.presentedWorkspaces, id: \.identifier) { presented in
                     Button {
-                        Task { await model.chooseWorkspace(identifier: workspace.identifier) }
+                        Task {
+                            await model.chooseWorkspace(identifier: presented.identifier)
+                            model.announceConfirmationFailure()
+                        }
                     } label: {
-                        WorkspaceSummary(workspace: workspace)
+                        pickerRow(presented)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.vertical)
                     }
@@ -42,6 +45,13 @@ struct WorkspacePickerScreen: View {
         .multilineTextAlignment(.center)
         .sheet(isPresented: $isNamingWorkspace) {
             NameSheet(kind: .newWorkspace)
+        }
+    }
+
+    @ViewBuilder private func pickerRow(_ presented: PresentedWorkspace) -> some View {
+        switch presented {
+        case let .visible(workspace): WorkspaceSummary(workspace: workspace)
+        case .locked: LockedWorkspaceRow()
         }
     }
 }
