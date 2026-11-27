@@ -16,7 +16,7 @@ struct ExpectedRequest {
 
 func api(answering answer: StubAnswer) throws -> OwnerAPI {
     let baseURL = try #require(URL(string: baseText))
-    return OwnerAPI(baseURL: baseURL, appVersion: OwnerFixtures.appVersion, transport: StubURLProtocol.session(answering: answer))
+    return OwnerAPI(baseURL: baseURL, appVersion: OwnerFixtures.appVersion, language: OwnerFixtures.language, transport: StubURLProtocol.session(answering: answer))
 }
 
 func expectOnlyRequest(_ expected: ExpectedRequest) throws {
@@ -258,7 +258,7 @@ private func workspaceJSON(identifier: String, inboxIdentifier: String) -> Strin
     }
 
     @Test func theDefaultTransportKeepsNoCache() throws {
-        let configuration = OwnerAPI(baseURL: try #require(URL(string: baseText)), appVersion: OwnerFixtures.appVersion).transport.configuration
+        let configuration = OwnerAPI(baseURL: try #require(URL(string: baseText)), appVersion: OwnerFixtures.appVersion, language: OwnerFixtures.language).transport.configuration
         #expect(configuration.urlCache == nil)
         #expect(configuration.requestCachePolicy == .reloadIgnoringLocalCacheData)
     }

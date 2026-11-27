@@ -7,7 +7,7 @@ private let projectIdentifier = "p"
 private let closedAddress = "http://127.0.0.1:9"
 
 private func signals(_ address: String) throws -> SocketChangeSignals {
-    SocketChangeSignals(baseURL: try #require(URL(string: address)), appVersion: OwnerFixtures.appVersion)
+    SocketChangeSignals(baseURL: try #require(URL(string: address)), appVersion: OwnerFixtures.appVersion, language: OwnerFixtures.language)
 }
 
 @Suite struct SocketChangeSignalsTests {

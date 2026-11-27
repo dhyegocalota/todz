@@ -62,7 +62,7 @@ private func serverTasks(of workspace: Workspace, session: String) async throws 
         model = AppModel(
             defaultURL: address,
             preference: ServerPreference(defaults: defaults, domainName: defaultsName),
-            connect: { ServerConnection(service: OwnerAPI(baseURL: $0.url, appVersion: OwnerFixtures.appVersion), signals: SocketChangeSignals(baseURL: $0.url, appVersion: OwnerFixtures.appVersion)) },
+            connect: { ServerConnection(service: OwnerAPI(baseURL: $0.url, appVersion: OwnerFixtures.appVersion, language: OwnerFixtures.language), signals: SocketChangeSignals(baseURL: $0.url, appVersion: OwnerFixtures.appVersion, language: OwnerFixtures.language)) },
             probe: { _ in .matches },
             appVersion: OwnerFixtures.appVersion,
             linkScheme: harnessLinkScheme,
