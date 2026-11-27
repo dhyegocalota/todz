@@ -13,3 +13,5 @@ Every runbook step has an expected result and an `If it fails` line, and agents 
 - [Measure performance](performance.md): the load, stress and bounded production runs, the app probe walks and the landing check against the budgets of ADR 0061, with the dated results table.
 - [Open source](open-source.md): the pre-flight over the whole history before the repository goes public, the security address, and the settings to turn on after the flip, with the dated run log.
 - [Release the Mac app](release-the-mac-app.md): the keys once, then each release from a tagged `main` to `todz.app/download`, its checks and the releases table.
+- [Set up todz for development](set-up-for-development.md): an agent takes a machine from nothing to a green local gate, behind a one-line prompt.
+- [Self-host todz with an agent](self-host-with-an-agent.md): an agent runs a todz server on the owner's Cloudflare account, stopping only for logins, payments and secrets; the build loop walks it only up to its first login.

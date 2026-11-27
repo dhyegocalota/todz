@@ -12,6 +12,8 @@ const KEPT_LINK_TARGET_PATTERN = /^(?:https:\/\/|#)/;
 const TITLE_HEADING_PATTERN = /^# /m;
 const CODE_SPAN_PATTERN = /`[^`\n]*`/g;
 const MDX_UNSAFE_PATTERN = /[<{]/;
+const ACCORDION_TAG_PATTERN = /^<\/?Accordion[^>\n]*>$/gm;
+const AGENT_PROMPT_BLOCK_PATTERN = /```text\n[\s\S]*?\n```/g;
 const LINE_SEPARATOR = '\n';
 const PRIVATE_REFERENCE_PATTERN = /\bADRs?\b|docs\/(?:product|adr|runbooks)|\brunbook\b|\.test\.ts/i;
 const ROOT_README = 'README.md';
@@ -132,12 +134,13 @@ describe('the self-host guide', () => {
   });
 
   test('holds no character MDX parses as markup outside code (pin)', () => {
-    const prose = guide.replace(FENCED_BLOCK_PATTERN, '').replace(CODE_SPAN_PATTERN, '');
+    const prose = guide.replace(FENCED_BLOCK_PATTERN, '').replace(CODE_SPAN_PATTERN, '').replace(ACCORDION_TAG_PATTERN, '');
     expect(prose.split(LINE_SEPARATOR).filter((line) => MDX_UNSAFE_PATTERN.test(line))).toEqual([]);
   });
 
-  test('refers to no ADR, product document, runbook or test file of the private repository', () => {
-    expect(guide.split(LINE_SEPARATOR).filter((line) => PRIVATE_REFERENCE_PATTERN.test(line))).toEqual([]);
+  test('refers to no ADR, product document, runbook or test file of the private repository, except the runbook its prompt hands the agent', () => {
+    const guideWithoutPrompt = guide.replace(AGENT_PROMPT_BLOCK_PATTERN, '');
+    expect(guideWithoutPrompt.split(LINE_SEPARATOR).filter((line) => PRIVATE_REFERENCE_PATTERN.test(line))).toEqual([]);
   });
 
   test('every relative link resolves', () => {

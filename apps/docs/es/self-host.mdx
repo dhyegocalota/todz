@@ -5,6 +5,14 @@ sidebarTitle: Configuración del servidor
 
 Ejecuta tu propio servidor de todz en Cloudflare y apunta la app de macOS y tus agentes hacia él. El servidor es un único Worker con una base de datos D1 y un Durable Object por proyecto.
 
+Pega esto en tu agente de programación. Hace toda la configuración y solo se detiene para pedirte un inicio de sesión, un pago o un secreto.
+
+```text
+Self-host todz: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/self-host-with-an-agent.md end to end on my Cloudflare account, and stop only to ask me for logins, payments and secrets.
+```
+
+<Accordion title="Hazlo a mano">
+
 ## Qué necesitas
 
 - Una cuenta de Cloudflare con **Workers Paid** (el binding de correo lo necesita) y un dominio en esa cuenta. Más abajo, `example.com` representa ese dominio y `api.example.com` el servidor.
@@ -147,3 +155,5 @@ pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
 - La app oficial de todz.app se actualiza sola desde el appcast firmado de todz.app, incluso cuando apunta a tu servidor: el servidor que eliges y las actualizaciones de la app son independientes. Consulta [Instalar en Mac › Actualizaciones](https://docs.todz.app/es/install-on-mac#4-actualizaciones).
 - Una app que compilaste tú, como en el paso 7, nunca instala una actualización por sí sola; puede ofrecer la oficial, que reemplaza tu compilación. Para conservar tu propia compilación, vuelve a compilarla como arriba, o instala la app oficial y pega tu servidor en **Servidor**.
 - Mantén tu servidor al día. Cuando una app nueva necesita un servidor más reciente, la app dice que el servidor es más antiguo; actualiza primero el servidor.
+
+</Accordion>
