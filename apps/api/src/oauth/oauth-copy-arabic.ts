@@ -36,7 +36,7 @@ export const OAUTH_COPY_ARABIC: OAuthCopy = {
     approve: 'موافقة',
     approving: 'جارٍ الموافقة…',
     deny: 'رفض',
-    selectionHint: 'اختر مساحات عمل كاملة أو بعض مشاريعها فقط. يقرأ مهامها ويغيّرها، وينقل المهام بين مشاريع مساحة عمل واحدة.',
+    selectionHint: 'اختر مساحات عمل كاملة أو بعض مشاريعها فقط. يمكنه قراءة مهامها وتغييرها، ونقل المهام بين مشاريع مساحة عمل واحدة.',
     selectAll: 'تحديد كل مساحات العمل',
     workspaceIncludes: 'تشمل كل مشاريعها، الآن ولاحقًا',
     showProjects: 'إظهار المشاريع',
@@ -48,7 +48,7 @@ export const OAUTH_COPY_ARABIC: OAuthCopy = {
     summaryProjectMany: '{{count}} مشاريع',
     summaryBoth: '{{workspaces}} و{{projects}}',
     accountName: 'حسابك كله',
-    holdsOf: ({ clientName, held }: { clientName: string; held: string }) => `${clientName} لديه بالفعل: ${held}`,
+    holdsOf: ({ clientName, held }: { clientName: string; held: string }) => `لدى ${clientName} بالفعل: ${held}`,
   },
   return: {
     titleOf: (clientName: string) => `جارٍ إعادتك إلى ${clientName}`,
