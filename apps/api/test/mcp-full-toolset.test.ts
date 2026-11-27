@@ -21,10 +21,14 @@ const READ_ONLY_TOOLS: string[] = [
   McpOwnerToolName.Settings,
 ];
 const DESTRUCTIVE_TOOLS: string[] = [
+  McpToolName.Update,
   McpToolName.Delete,
   McpToolName.Move,
-  McpOwnerToolName.DeleteProject,
+  McpOwnerToolName.RenameWorkspace,
   McpOwnerToolName.DeleteWorkspace,
+  McpOwnerToolName.RenameProject,
+  McpOwnerToolName.DeleteProject,
+  McpOwnerToolName.UpdateSettings,
 ];
 
 const TASK_CALLS: [McpToolName, Record<string, unknown>][] = [

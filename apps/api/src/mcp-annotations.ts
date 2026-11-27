@@ -5,6 +5,7 @@ enum ToolEffect {
   Read = 'read',
   Create = 'create',
   Change = 'change',
+  Overwrite = 'overwrite',
   Remove = 'remove',
   Relocate = 'relocate',
 }
@@ -17,6 +18,7 @@ const HINTS_OF_EFFECT: Record<ToolEffect, Pick<ToolAnnotations, 'readOnlyHint' |
   [ToolEffect.Read]: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
   [ToolEffect.Create]: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   [ToolEffect.Change]: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  [ToolEffect.Overwrite]: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
   [ToolEffect.Remove]: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
   [ToolEffect.Relocate]: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
 };
@@ -27,7 +29,7 @@ const EFFECT_OF_TOOL: Record<ToolName, ToolEffect> = {
   [McpToolName.List]: ToolEffect.Read,
   [McpToolName.Show]: ToolEffect.Read,
   [McpToolName.History]: ToolEffect.Read,
-  [McpToolName.Update]: ToolEffect.Change,
+  [McpToolName.Update]: ToolEffect.Overwrite,
   [McpToolName.Done]: ToolEffect.Change,
   [McpToolName.Reopen]: ToolEffect.Change,
   [McpToolName.Delete]: ToolEffect.Remove,
@@ -35,13 +37,13 @@ const EFFECT_OF_TOOL: Record<ToolName, ToolEffect> = {
   [McpToolName.Projects]: ToolEffect.Read,
   [McpOwnerToolName.Workspaces]: ToolEffect.Read,
   [McpOwnerToolName.CreateWorkspace]: ToolEffect.Create,
-  [McpOwnerToolName.RenameWorkspace]: ToolEffect.Change,
+  [McpOwnerToolName.RenameWorkspace]: ToolEffect.Overwrite,
   [McpOwnerToolName.DeleteWorkspace]: ToolEffect.Remove,
   [McpOwnerToolName.CreateProject]: ToolEffect.Create,
-  [McpOwnerToolName.RenameProject]: ToolEffect.Change,
+  [McpOwnerToolName.RenameProject]: ToolEffect.Overwrite,
   [McpOwnerToolName.DeleteProject]: ToolEffect.Remove,
   [McpOwnerToolName.Settings]: ToolEffect.Read,
-  [McpOwnerToolName.UpdateSettings]: ToolEffect.Change,
+  [McpOwnerToolName.UpdateSettings]: ToolEffect.Overwrite,
 };
 
 export function annotationsOf(tool: ToolName): ToolAnnotations {
