@@ -4,10 +4,11 @@ import { runInDurableObject } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
+import { OAuthScope } from '../src/oauth/oauth-scope';
 import { ProjectFailureKind } from '../src/project-result';
-import { openKeyProject, openOwnedProject, resolveSessionOwner } from '../src/project-routing';
+import { openOAuthAccess, openOwnedProject, resolveSessionOwner } from '../src/project-routing';
 import { countingEnv } from './counting-namespace';
-import { seedKey, seedLiveOwner, seedOwner, seedProject, seedSession } from './directory-seed';
+import { seedLiveOwner, seedOwner, seedProject, seedProjectToken, seedSession } from './directory-seed';
 import { AGENT_ACTOR, CLOCK_NOW, TODAY, draftOf, newProjectStub, openTasksFilter, rejectionMessageOf, unwrap } from './task-fixtures';
 
 const LONG_SECRET_LENGTH = 1_000_000;
@@ -19,9 +20,9 @@ function newSecret(): string {
 }
 
 describe('a credential that is almost right opens nothing and addresses no Durable Object', () => {
-  async function seededKey(): Promise<string> {
+  async function seededToken(): Promise<string> {
     const secret = newSecret();
-    await seedKey({ projectId: await seedProject({ ownerId: await seedOwner() }), secret });
+    await seedProjectToken({ projectId: await seedProject({ ownerId: await seedOwner() }), secret });
     return secret;
   }
 
@@ -30,45 +31,45 @@ describe('a credential that is almost right opens nothing and addresses no Durab
     { name: 'a leading newline', change: (secret: string) => '\n' + secret },
     { name: 'upper case', change: (secret: string) => secret.toUpperCase() },
     { name: 'a prefix', change: (secret: string) => secret.slice(0, -1) },
-  ])('the key secret with $name', async ({ change }) => {
-    const secret = await seededKey();
+  ])('the token secret with $name', async ({ change }) => {
+    const secret = await seededToken();
     const { countedEnv, addressingCalls } = countingEnv();
-    expect(await openKeyProject({ env: countedEnv, secret: change(secret) })).toBeNull();
+    expect(await openOAuthAccess({ env: countedEnv, secret: change(secret), now: CLOCK_NOW })).toBeNull();
     expect(addressingCalls).toEqual([]);
   });
 
-  test('the digest of a seeded key used as a secret', async () => {
-    const secret = await seededKey();
+  test('the digest of a seeded token used as a secret', async () => {
+    const secret = await seededToken();
     const { countedEnv, addressingCalls } = countingEnv();
-    expect(await openKeyProject({ env: countedEnv, secret: await digestCredential(secret) })).toBeNull();
+    expect(await openOAuthAccess({ env: countedEnv, secret: await digestCredential(secret), now: CLOCK_NOW })).toBeNull();
     expect(addressingCalls).toEqual([]);
   });
 
   test('a secret of a million characters', async () => {
     const { countedEnv, addressingCalls } = countingEnv();
-    expect(await openKeyProject({ env: countedEnv, secret: 'a'.repeat(LONG_SECRET_LENGTH) })).toBeNull();
+    expect(await openOAuthAccess({ env: countedEnv, secret: 'a'.repeat(LONG_SECRET_LENGTH), now: CLOCK_NOW })).toBeNull();
     expect(addressingCalls).toEqual([]);
   });
 
   test('a whitespace-only secret', async () => {
-    expect(await openKeyProject({ env, secret: WHITESPACE_SECRET })).toBeNull();
+    expect(await openOAuthAccess({ env, secret: WHITESPACE_SECRET, now: CLOCK_NOW })).toBeNull();
     expect(await resolveSessionOwner({ env, secret: WHITESPACE_SECRET, now: CLOCK_NOW })).toBeNull();
   });
 
-  test('a session secret offered as a key and a key secret offered as a session', async () => {
+  test('a session secret offered as a token and a token secret offered as a session', async () => {
     const ownerId = await seedOwner();
     const sessionSecret = newSecret();
-    const keySecret = newSecret();
+    const tokenSecret = newSecret();
     await seedSession({ ownerId, secret: sessionSecret, expiresAt: CLOCK_NOW + MILLISECONDS_PER_HOUR });
-    await seedKey({ projectId: await seedProject({ ownerId }), secret: keySecret });
-    expect(await openKeyProject({ env, secret: sessionSecret })).toBeNull();
-    expect(await resolveSessionOwner({ env, secret: keySecret, now: CLOCK_NOW })).toBeNull();
+    await seedProjectToken({ projectId: await seedProject({ ownerId }), secret: tokenSecret });
+    expect(await openOAuthAccess({ env, secret: sessionSecret, now: CLOCK_NOW })).toBeNull();
+    expect(await resolveSessionOwner({ env, secret: tokenSecret, now: CLOCK_NOW })).toBeNull();
   });
 
-  test('a key revoked at instant 0', async () => {
+  test('a token expiring at instant 0', async () => {
     const secret = newSecret();
-    await seedKey({ projectId: await seedProject({ ownerId: await seedOwner() }), secret, revokedAt: 0 });
-    expect(await openKeyProject({ env, secret })).toBeNull();
+    await seedProjectToken({ projectId: await seedProject({ ownerId: await seedOwner() }), secret, expiresAt: 0 });
+    expect(await openOAuthAccess({ env, secret, now: CLOCK_NOW })).toBeNull();
   });
 
   test('a session that expired one millisecond before now', async () => {
@@ -94,17 +95,17 @@ describe('a project id that is not exactly the owned one opens nothing', () => {
   });
 });
 
-describe('a key of one project reaches nothing of another', () => {
+describe('a token of one project reaches nothing of another', () => {
   async function twoProjects() {
     const ownerId = await seedOwner();
     const secrets = { a: newSecret(), b: newSecret() };
-    await seedKey({ projectId: await seedProject({ ownerId }), secret: secrets.a });
-    await seedKey({ projectId: await seedProject({ ownerId }), secret: secrets.b });
-    const keyProjectA = await openKeyProject({ env, secret: secrets.a });
-    const keyProjectB = await openKeyProject({ env, secret: secrets.b });
-    if (keyProjectA === null || keyProjectB === null) throw new Error('both keys should open');
-    const stubA = keyProjectA.project;
-    const stubB = keyProjectB.project;
+    await seedProjectToken({ projectId: await seedProject({ ownerId }), secret: secrets.a });
+    await seedProjectToken({ projectId: await seedProject({ ownerId }), secret: secrets.b });
+    const accessA = await openOAuthAccess({ env, secret: secrets.a, now: CLOCK_NOW });
+    const accessB = await openOAuthAccess({ env, secret: secrets.b, now: CLOCK_NOW });
+    if (accessA?.scope !== OAuthScope.Project || accessB?.scope !== OAuthScope.Project) throw new Error('both tokens should open');
+    const stubA = accessA.grantProject.project;
+    const stubB = accessB.grantProject.project;
     unwrap(await stubA.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [draftOf('A one')] }));
     unwrap(
       await stubB.addTasks({

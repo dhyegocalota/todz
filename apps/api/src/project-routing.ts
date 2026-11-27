@@ -1,16 +1,6 @@
 import { digestCredential } from './credential-digest';
-import {
-  type KeyProjectRecord,
-  type KeyProjectSessionRecord,
-  type SessionOwnerRecord,
-  findKeyProject,
-  findKeyProjectAndSession,
-  findOwnedProject,
-  findSessionOwner,
-  findSessionProject,
-} from './directory';
+import { type GrantProjectRecord, type SessionOwnerRecord, findOwnedProject, findSessionOwner, findSessionProject } from './directory';
 import { findCandidateRows, findFirstInboxId } from './day-email/day-email-store';
-import { findKeyOwner } from './directory-owner-keys';
 import {
   findOwnedWorkspace,
   findWorkspaceProject,
@@ -29,24 +19,20 @@ export type SessionOwner = { readonly ownerId: string; readonly isSuspended: boo
 
 export type SiblingProject = { record: ProjectRecord; project: DurableObjectStub<ProjectStore> };
 
-export type KeyWorkspace = {
+export type GrantWorkspace = {
   projectId: string;
   listProjects: () => Promise<ProjectRecord[]>;
   openSibling: (projectId: string) => Promise<SiblingProject | null>;
 };
 
-export type KeyProject = {
+export type GrantProject = {
   project: DurableObjectStub<ProjectStore>;
-  workspace: KeyWorkspace;
-  keyDigest: string;
+  workspace: GrantWorkspace;
   timeZone: string;
   agentNudge: boolean;
   ownerId: string;
   isSuspended: boolean;
-  sessionClientName: string | null;
 };
-
-type McpSessionLookup = { sessionId: string; now: number };
 
 type CheckedProject = { projectId: string; ownedProjectId: string | null };
 
@@ -89,8 +75,8 @@ export function withTimedProjects({ env, record }: { env: Env; record: RecordWai
   return { ...env, PROJECT_STORE: timedNamespace };
 }
 
-// NB ADR 0101: a key reaches only the projects of its own workspace, found by the workspace id its key row joined to.
-function keyWorkspaceOf({ env, record }: { env: Env; record: KeyProjectRecord }): KeyWorkspace {
+// NB ADR 0109: a project grant reaches only the projects of its own workspace, found by the workspace id its project joined to.
+function grantWorkspaceOf({ env, record }: { env: Env; record: GrantProjectRecord }): GrantWorkspace {
   const { projectId, workspaceId } = record;
   return {
     projectId,
@@ -104,52 +90,24 @@ function keyWorkspaceOf({ env, record }: { env: Env; record: KeyProjectRecord })
   };
 }
 
-export async function openKeyProject({
-  env,
-  secret,
-  mcpSession,
-}: {
-  env: Env;
-  secret: string;
-  mcpSession?: McpSessionLookup;
-}): Promise<KeyProject | null> {
-  if (isBlankSecret(secret)) return null;
-  const keyDigest = await digestCredential(secret);
-  const { keyProject, sessionClientName } = await findKeyProjectOfSession({ env, keyDigest, mcpSession });
-  if (keyProject === null) return null;
-  return keyProjectOf({ env, record: keyProject, keyDigest, sessionClientName });
-}
-
-function keyProjectOf({
-  env,
-  record,
-  keyDigest,
-  sessionClientName,
-}: {
-  env: Env;
-  record: KeyProjectRecord;
-  keyDigest: string;
-  sessionClientName: string | null;
-}): KeyProject {
+function grantProjectOf({ env, record }: { env: Env; record: GrantProjectRecord }): GrantProject {
   return {
     project: openProject({ env, projectId: record.projectId }),
-    workspace: keyWorkspaceOf({ env, record }),
-    keyDigest,
+    workspace: grantWorkspaceOf({ env, record }),
     timeZone: record.timeZone,
     agentNudge: record.agentNudge,
     ownerId: record.ownerId,
     isSuspended: record.isSuspended,
-    sessionClientName,
   };
 }
 
 type OAuthAccessBase = { grantId: string; clientName: string };
 
 export type OAuthAccess =
-  | (OAuthAccessBase & { scope: OAuthScope.Project; keyProject: KeyProject })
+  | (OAuthAccessBase & { scope: OAuthScope.Project; grantProject: GrantProject })
   | (OAuthAccessBase & { scope: OAuthScope.Owner; owner: SessionOwner });
 
-// NB ADR 0109: an access token resolves to the same KeyProject a project key of its project does, or to the same SessionOwner an owner key does, and to nothing else.
+// NB ADR 0109: an access token resolves to the one project it was granted or to the one owner of its grant, and to nothing else.
 export async function openOAuthAccess({ env, secret, now }: { env: Env; secret: string; now: number }): Promise<OAuthAccess | null> {
   if (isBlankSecret(secret)) return null;
   const tokenDigest = await digestCredential(secret);
@@ -163,24 +121,8 @@ export async function openOAuthAccess({ env, secret, now }: { env: Env; secret: 
     scope: OAuthScope.Project,
     grantId,
     clientName,
-    keyProject: keyProjectOf({ env, record, keyDigest: tokenDigest, sessionClientName: null }),
+    grantProject: grantProjectOf({ env, record }),
   };
-}
-
-async function findKeyProjectOfSession({
-  env,
-  keyDigest,
-  mcpSession,
-}: {
-  env: Env;
-  keyDigest: string;
-  mcpSession?: McpSessionLookup;
-}): Promise<KeyProjectSessionRecord> {
-  if (mcpSession === undefined) {
-    return { keyProject: await findKeyProject({ directory: env.DIRECTORY, digest: keyDigest }), sessionClientName: null };
-  }
-  const { sessionId, now } = mcpSession;
-  return findKeyProjectAndSession({ directory: env.DIRECTORY, digest: keyDigest, sessionDigest: await digestCredential(sessionId), now });
 }
 
 export async function resolveSessionOwner({
@@ -206,17 +148,6 @@ export async function resolveSessionOwner({
   const owner = resolvedOwnerOf(sessionProject);
   checkedProjects.set(owner, { projectId, ownedProjectId: sessionProject.ownedProjectId });
   return owner;
-}
-
-export type OwnerKeyAccess = { owner: SessionOwner; keyDigest: string };
-
-// NB ADR 0101: an owner key resolves to the one owner of its row and to nothing else; it is looked up in its own table, never in the project keys.
-export async function openOwnerKey({ env, secret }: { env: Env; secret: string }): Promise<OwnerKeyAccess | null> {
-  if (isBlankSecret(secret)) return null;
-  const keyDigest = await digestCredential(secret);
-  const keyOwner = await findKeyOwner({ directory: env.DIRECTORY, digest: keyDigest });
-  if (keyOwner === null) return null;
-  return { owner: resolvedOwnerOf(keyOwner), keyDigest };
 }
 
 export async function findOwnedProjectId({

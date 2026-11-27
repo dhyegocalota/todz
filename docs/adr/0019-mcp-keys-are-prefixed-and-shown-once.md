@@ -1,6 +1,6 @@
 # 0019. MCP keys are prefixed and shown once
 
-- Status: Proposed
+- Status: Superseded by [0111](0111-api-keys-are-removed-and-an-mcp-client-connects-only-through-oauth.md); was: Proposed
 - Date: 2026-11-23
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) may overturn it
 - Inspired by: [the v1 product design](../product/README.md) (the key is shown once when created and stored as a digest; a repository's `.mcp.json` points at its project's key); [ADR 0014](0014-credentials-are-stored-as-sha-256-digests.md)

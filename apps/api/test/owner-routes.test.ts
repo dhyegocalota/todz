@@ -4,7 +4,6 @@ import { OWNER_ROUTES, OwnerRoute, matchOwnerRoute } from '../src/owner-routes';
 const ORIGIN = 'https://api.todz.test';
 const PROJECT = 'project-1';
 const WORKSPACE = 'workspace-1';
-const KEY = 'key-1';
 
 function matched({ method, path }: { method: string; path: string }): ReturnType<typeof matchOwnerRoute> {
   return matchOwnerRoute(new Request(`${ORIGIN}${path}`, { method }));
@@ -29,12 +28,6 @@ describe('matchOwnerRoute', () => {
     ['GET', `/owner/projects/${PROJECT}/changes`, OwnerRoute.ReadChanges, { projectId: PROJECT }],
     ['GET', `/owner/projects/${PROJECT}/changes?cursor=5`, OwnerRoute.ReadChanges, { projectId: PROJECT }],
     ['GET', `/owner/projects/${PROJECT}/socket`, OwnerRoute.WatchChanges, { projectId: PROJECT }],
-    ['GET', `/owner/projects/${PROJECT}/keys`, OwnerRoute.ListKeys, { projectId: PROJECT }],
-    ['POST', `/owner/projects/${PROJECT}/keys`, OwnerRoute.IssueKey, { projectId: PROJECT }],
-    ['DELETE', `/owner/projects/${PROJECT}/keys/${KEY}`, OwnerRoute.RevokeKey, { projectId: PROJECT, keyId: KEY }],
-    ['GET', '/owner/keys', OwnerRoute.ListOwnerKeys, {}],
-    ['POST', '/owner/keys', OwnerRoute.IssueOwnerKey, {}],
-    ['DELETE', `/owner/keys/${KEY}`, OwnerRoute.RevokeOwnerKey, { keyId: KEY }],
   ])('%s %s is %s', (method, path, route, params) => {
     expect(matched({ method, path })).toEqual({ route, params });
   });
@@ -68,8 +61,6 @@ describe('matchOwnerRoute', () => {
     ['DELETE', '/owner/workspaces'],
     ['GET', `/owner/workspaces/${WORKSPACE}`],
     ['GET', `/owner/projects/${PROJECT}`],
-    ['PATCH', `/owner/projects/${PROJECT}/keys/${KEY}`],
-    ['DELETE', `/owner/projects/${PROJECT}/keys`],
     ['GET', `/owner/projects/${PROJECT}/tasks`],
     ['GET', `/owner/projects/${PROJECT}/tasks/1/history/extra`],
     ['GET', `/owner/projects/${PROJECT}/socket/extra`],

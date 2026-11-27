@@ -1,20 +1,18 @@
 ---
 title: MCP tools
-description: The tools and the prompt an agent gets from the todz MCP server, and the key each one needs.
+description: The tools and the prompt an agent gets from the todz MCP server, and the scope each one needs.
 ---
 
-The default way to connect to the todz MCP server is OAuth: add the URL to your client and sign in, as [Connect an agent](/connect-an-agent) shows. The grant you approve picks the tool set: a project scope gets the task tools, and an owner scope gets the account tools. Keys are the fallback for clients without OAuth. Each tool below names the scope it needs.
+An MCP client connects to the todz server with OAuth only: add the URL to your client and sign in, as [Connect an agent](/connect-an-agent) shows. The grant you approve picks the tool set: a project scope gets the task tools, and an owner scope gets the account tools. Each tool below names the scope it needs.
 
-A project grant works like a project key, and an owner grant like an owner key.
+- A **project scope** holds the to-do list of one project: the project you picked on the consent screen. It can also list and move tasks inside the workspace of that project. It never creates, renames or deletes a workspace or a project. Task ids look like `T-12`.
+- An **owner scope** manages the account: its workspaces and projects. It is never preselected on the consent screen, and you disconnect it in **Settings** › **Connected apps**. It reaches no task and no other account. Connect it under its own name, `todz-account`, so it sits beside the `todz` server of a project instead of replacing it.
 
-- A **project key** holds the to-do list of one project: the project of the key the agent connected with. It can also list and move tasks inside the workspace of that project. It never creates, renames or deletes a workspace or a project. Task ids look like `T-12`.
-- An **owner key** manages the account: its workspaces and projects. It is off until you create one (today through the owner API, and in Settings from the next app release), it is shown once, you can revoke it there, and it is listed apart from the project keys. It reaches no task and no other account. Add it to your agent under its own name, `todz-account`, so it sits beside the `todz` server of a project key instead of replacing it.
-
-An agent holding a project key does not see the owner tools, and an agent holding an owner key does not see the task tools. Every delete asks for a `confirm` argument holding the current name (a task's current title); when it differs, nothing is deleted.
+An agent with a project scope does not see the owner tools, and an agent with an owner scope does not see the task tools. Every delete asks for a `confirm` argument holding the current name (a task's current title); when it differs, nothing is deleted.
 
 ## next
 
-**Scope:** project key.
+**Scope:** project scope.
 
 The one open task to work on now in this project, with its notes.
 
@@ -22,7 +20,7 @@ It takes no arguments.
 
 ## add
 
-**Scope:** project key.
+**Scope:** project scope.
 
 Add one or more tasks. Give each an idempotency_key to make a retry safe.
 
@@ -36,7 +34,7 @@ Add one or more tasks. Give each an idempotency_key to make a retry safe.
 
 ## list
 
-**Scope:** project key.
+**Scope:** project scope.
 
 List tasks by state, due window and text, in manual order (done: newest first).
 
@@ -49,7 +47,7 @@ List tasks by state, due window and text, in manual order (done: newest first).
 
 ## show
 
-**Scope:** project key.
+**Scope:** project scope.
 
 Show one task with its state, due date and notes.
 
@@ -59,7 +57,7 @@ Show one task with its state, due date and notes.
 
 ## history
 
-**Scope:** project key.
+**Scope:** project scope.
 
 Show what happened to a task, oldest first: who did what and when.
 
@@ -69,7 +67,7 @@ Show what happened to a task, oldest first: who did what and when.
 
 ## update
 
-**Scope:** project key.
+**Scope:** project scope.
 
 Change a task's title, notes, due date or place in the order. null clears notes or the due date.
 
@@ -85,7 +83,7 @@ Change a task's title, notes, due date or place in the order. null clears notes 
 
 ## done
 
-**Scope:** project key.
+**Scope:** project scope.
 
 Complete one or more tasks, with an optional note of what was done.
 
@@ -96,7 +94,7 @@ Complete one or more tasks, with an optional note of what was done.
 
 ## reopen
 
-**Scope:** project key.
+**Scope:** project scope.
 
 Reopen one or more done tasks.
 
@@ -106,7 +104,7 @@ Reopen one or more done tasks.
 
 ## delete
 
-**Scope:** project key.
+**Scope:** project scope.
 
 Delete a task for good. Give its current title as confirm; nothing is deleted when it differs. A task you mean to keep somewhere else needs move. The owner's Mac shows the deletion after its next update.
 
@@ -117,7 +115,7 @@ Delete a task for good. Give its current title as confirm; nothing is deleted wh
 
 ## move
 
-**Scope:** project key.
+**Scope:** project scope.
 
 Move a task to another project of the same workspace. The task gets a new id there. Find project ids with projects. The owner's Mac shows the move after its next update.
 
@@ -128,15 +126,15 @@ Move a task to another project of the same workspace. The task gets a new id the
 
 ## projects
 
-**Scope:** project key.
+**Scope:** project scope.
 
-List the projects of the workspace this key belongs to, with their ids.
+List the projects of the workspace this connection belongs to, with their ids.
 
 It takes no arguments.
 
 ## workspaces
 
-**Scope:** owner key.
+**Scope:** owner scope.
 
 List the workspaces of this account with their projects and ids.
 
@@ -144,7 +142,7 @@ It takes no arguments.
 
 ## create_workspace
 
-**Scope:** owner key.
+**Scope:** owner scope.
 
 Create a workspace. It starts with an Inbox project.
 
@@ -154,7 +152,7 @@ Create a workspace. It starts with an Inbox project.
 
 ## rename_workspace
 
-**Scope:** owner key.
+**Scope:** owner scope.
 
 Rename a workspace.
 
@@ -165,9 +163,9 @@ Rename a workspace.
 
 ## delete_workspace
 
-**Scope:** owner key.
+**Scope:** owner scope.
 
-Delete a workspace for good with all its projects, tasks and project keys. Give its current name as confirm; nothing is deleted when it differs.
+Delete a workspace for good with all its projects and tasks. Give its current name as confirm; nothing is deleted when it differs.
 
 | Argument    | Type   | Description                                                                          |
 | ----------- | ------ | ------------------------------------------------------------------------------------ |
@@ -176,7 +174,7 @@ Delete a workspace for good with all its projects, tasks and project keys. Give 
 
 ## create_project
 
-**Scope:** owner key.
+**Scope:** owner scope.
 
 Create a project in a workspace.
 
@@ -187,7 +185,7 @@ Create a project in a workspace.
 
 ## rename_project
 
-**Scope:** owner key.
+**Scope:** owner scope.
 
 Rename a project. The Inbox cannot be renamed.
 
@@ -198,9 +196,9 @@ Rename a project. The Inbox cannot be renamed.
 
 ## delete_project
 
-**Scope:** owner key.
+**Scope:** owner scope.
 
-Delete a project for good with its tasks and keys. Give its current name as confirm; nothing is deleted when it differs. The Inbox cannot be deleted.
+Delete a project for good with its tasks. Give its current name as confirm; nothing is deleted when it differs. The Inbox cannot be deleted.
 
 | Argument  | Type   | Description                                                                         |
 | --------- | ------ | ----------------------------------------------------------------------------------- |
@@ -209,7 +207,7 @@ Delete a project for good with its tasks and keys. Give its current name as conf
 
 ## settings
 
-**Scope:** owner key.
+**Scope:** owner scope.
 
 Show the account settings: time zone, agent nudge and day email.
 
@@ -217,7 +215,7 @@ It takes no arguments.
 
 ## update_settings
 
-**Scope:** owner key.
+**Scope:** owner scope.
 
 Change the account settings. Give only what changes.
 

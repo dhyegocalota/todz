@@ -6,7 +6,7 @@ Before a merge, `/open-pr` names the scenarios whose `paths` the diff touches; t
 
 | Scenario | Authors | Covers |
 |----------|---------|--------|
-| [`v1-walk`](v1-walk.md) | 2: the owner in the macOS app, an agent over MCP | An empty Mac to a workspace, a project and a key; an agent adding and completing tasks; the main window, the menu bar, the widget snapshot, isolation, revoke and offline |
+| [`v1-walk`](v1-walk.md) | 2: the owner in the macOS app, an agent over MCP | An empty Mac to a workspace, a project and an OAuth grant; an agent adding and completing tasks; the main window, the menu bar, the widget snapshot, isolation, revoke and offline |
 
 ## File shape
 

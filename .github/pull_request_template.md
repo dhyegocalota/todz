@@ -55,7 +55,7 @@ flowchart LR
 
 ## Blast radius
 
-<!-- MEDIUM or HIGH only. What this PR can break and for whom: surfaces touched (API keys or OAuth tokens, workspace isolation, MCP tool authorization, sync, billing, migrations, deploy, data), who notices first, how to roll back, whether rollback loses data. -->
+<!-- MEDIUM or HIGH only. What this PR can break and for whom: surfaces touched (OAuth tokens, workspace isolation, MCP tool authorization, sync, billing, migrations, deploy, data), who notices first, how to roll back, whether rollback loses data. -->
 
 ## Checklist
 

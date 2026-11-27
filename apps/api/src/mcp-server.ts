@@ -1,9 +1,8 @@
-import { CLIENT_INFO_META_KEY, type CallToolResult, McpServer, type ServerContext } from '@modelcontextprotocol/server';
+import { type CallToolResult, McpServer, type ServerContext } from '@modelcontextprotocol/server';
 import { type Actor, type DueNow, type Task, parseShortId } from '@todz/core';
 import { ActorKind, FairUseLimit, HistoryAction, RuleIssue } from '@todz/types';
 import type { FairUseLimits } from './fair-use-limits';
 import { NO_TEXT_BYTES, ONE_WRITE, textBytesOf } from './owner-write-quota';
-import { z } from 'zod';
 import { MCP_COPY, McpPromptName, McpToolName } from './mcp-copy';
 import {
   addedAnswer,
@@ -38,7 +37,7 @@ import {
 } from './mcp-tool-arguments';
 import { moveTask } from './move-task';
 import type { ProjectResult } from './project-result';
-import type { KeyWorkspace } from './project-routing';
+import type { GrantWorkspace } from './project-routing';
 import type { ProjectStore } from './project-store';
 import { batchFailureOf, completionFailureOf, draftsFailureOf, fieldsFailureOf } from './write-rules';
 
@@ -51,27 +50,19 @@ const WRITE_ANNOTATIONS = { destructiveHint: false };
 const DESTRUCTIVE_ANNOTATIONS = { destructiveHint: true };
 const NOTHING_DUE = 0;
 
-const EnvelopeClientSchema = z.object({ [CLIENT_INFO_META_KEY]: z.object({ name: z.string() }) });
-
 export type ClientNameOf = (ctx: ServerContext) => string | null;
 
 export type WriteRefusalTextOf = (args: { writes: number; bytes: number }) => Promise<string | null>;
 
 export type McpServerScope = {
   project: DurableObjectStub<ProjectStore>;
-  workspace: KeyWorkspace;
+  workspace: GrantWorkspace;
   today: string;
   agentNudge: boolean;
   clientNameOf: ClientNameOf;
   limits: FairUseLimits;
   refusalTextOf: WriteRefusalTextOf;
 };
-
-export function envelopeClientName(ctx: ServerContext): string | null {
-  const envelope = EnvelopeClientSchema.safeParse(ctx.mcpReq.envelope);
-  if (!envelope.success) return null;
-  return envelope.data[CLIENT_INFO_META_KEY].name;
-}
 
 function textAnswer(text: string): CallToolResult {
   return { content: [{ type: TEXT_CONTENT, text }] };
@@ -300,7 +291,7 @@ function registerWriteTools({ server, scope }: { server: McpServer; scope: McpSe
         ctx,
         write: async (actor) => {
           const sourceProject = (await scope.workspace.listProjects()).find((record) => record.id === scope.workspace.projectId);
-          if (sourceProject === undefined) throw new Error('a key project is in its own workspace');
+          if (sourceProject === undefined) throw new Error('a project grant is in its own workspace');
           const read = await project.readTask({ number });
           if (!read.ok) return errorAnswer(failureText(read.failure));
           const bytes = textBytesOf([read.value.title, read.value.notes]);

@@ -29,7 +29,7 @@ const SESSION_SECRET = 'a-security-headers-session-secret';
 const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
 const WWW_PREFIX = 'www.';
 const UNKNOWN_ORIGIN = 'https://unknown.example';
-const CRASH_BEARER = 'todz_a-crash-bearer-never-logged';
+const CRASH_BEARER = 'todz-at_a-crash-bearer-never-logged';
 const ADMIN_SETTINGS: Partial<Env> = {
   ADMIN_EMAIL: ADMIN_ADDRESS,
   TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY,
@@ -119,7 +119,7 @@ describe('the answers of the worker on every host kind', () => {
         return Reflect.get(target, property);
       },
     });
-    const request = new Request(`${API_ORIGIN}/mcp`, { method: 'POST', headers: { Authorization: 'Bearer todz_any-key' } });
+    const request = new Request(`${API_ORIGIN}/mcp`, { method: 'POST', headers: { Authorization: 'Bearer todz-at_any-token' } });
     const response = await answerOf({ request, settings: { DIRECTORY: failingDirectory } });
     expect(response.status).toBe(HttpStatus.InternalServerError);
     expect(await response.text()).toBe('');

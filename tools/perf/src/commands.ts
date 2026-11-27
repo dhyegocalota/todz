@@ -4,13 +4,14 @@ import { type ParsedArguments, flagValueOf, numberFlagOf } from './arguments';
 import { INITIALIZE_SAMPLE_COUNT, PERCENTILE_SLOWEST, STRESS_STEP_MS, TARGET_DURATION_MS, TARGET_RATE_PER_SECOND } from './budgets';
 import type { CliDependencies } from './cli';
 import { type LocalRunDependencies, runLocalLoad } from './local-run';
+import { mintLocalAccessToken } from './local-grant';
 import { measureInitialize } from './mcp-scenario';
 import { percentileOf } from './percentiles';
 import { cleanupProduction, runProduction } from './production-run';
 import { Verdict, isFailure, reportRows, rowText, REPORT_HEADER } from './report';
 import { ORIGIN_OF_TARGET, PerfTarget, RunKind, type RunPlan, perfTargetOf } from './run-plan';
 import { ScenarioKind } from './scenario-kind';
-import { seedFixture } from './seed';
+import { type MintAccessToken, seedFixture } from './seed';
 import { runSoak, soakAccess } from './soak';
 import { isStressPassing, runStress } from './stress';
 import { tailSummaryOf } from './tail-log';
@@ -67,6 +68,11 @@ function localOriginOf({ parsed, command }: { parsed: ParsedArguments; command: 
   return localPortOrigin(parsed);
 }
 
+function mintAccessTokenOf(dependencies: CliDependencies): MintAccessToken {
+  return ({ ownerId, projectId }) =>
+    mintLocalAccessToken({ execFile: dependencies.execFile, ownerId, projectId, epochNow: dependencies.epochNow() });
+}
+
 function localDependencies({ dependencies, origin }: { dependencies: CliDependencies; origin: string }): LocalRunDependencies {
   const { fetch, now, clock, schedule, openSignals } = dependencies;
   return { origin, fetch, now, clock, schedule, openSignals };
@@ -83,6 +89,7 @@ async function seeded({ dependencies, origin, identity }: { dependencies: CliDep
     identity,
     taskCount: HOT_PROJECT_TASK_COUNT,
     projectCount: OWNER_PROJECT_COUNT,
+    mintAccessToken: mintAccessTokenOf(dependencies),
   });
   dependencies.out(
     `seeded: ${HOT_PROJECT_TASK_COUNT} tasks in the hot project (${fixture.doneTasks} done), ${fixture.projectIds.length} projects\n`,
@@ -97,7 +104,7 @@ function loadHandler(dependencies: CliDependencies): Handler {
     const initializeSamples: Sample[] = [];
     await measureInitialize({
       origin,
-      key: fixture.hotKey,
+      token: fixture.hotToken,
       fetch: dependencies.fetch,
       now: dependencies.now,
       record: (sample) => initializeSamples.push(sample),
@@ -142,7 +149,14 @@ function seedHandler(dependencies: CliDependencies): Handler {
     const taskCount = numberFlagOf({ parsed, name: 'tasks' });
     const projectCount = numberFlagOf({ parsed, name: 'projects' });
     const origin = localOriginOf({ parsed, command: CliCommand.Seed });
-    const fixture = await seedFixture({ origin, fetch: dependencies.fetch, identity: SEED_IDENTITY, taskCount, projectCount });
+    const fixture = await seedFixture({
+      origin,
+      fetch: dependencies.fetch,
+      identity: SEED_IDENTITY,
+      taskCount,
+      projectCount,
+      mintAccessToken: mintAccessTokenOf(dependencies),
+    });
     dependencies.out(
       [
         `identity: ${SEED_IDENTITY}`,
@@ -164,6 +178,7 @@ function soakHandler(dependencies: CliDependencies): Handler {
       access,
       durationMs: minutes * MILLISECONDS_PER_MINUTE,
       dependencies: localDependencies({ dependencies, origin }),
+      mintAccessToken: mintAccessTokenOf(dependencies),
     });
     dependencies.out(`soak: ${result.updates} updates, ${result.lists} lists, ${result.failures} failed\n`);
     return exitCodeOf(result.failures === 0);
@@ -174,7 +189,7 @@ function productionHandler(dependencies: CliDependencies): Handler {
   return async (parsed) => {
     const cleanupRun = flagValueOf({ parsed, name: CLEANUP_FLAG });
     const productionDependencies = {
-      execFile: dependencies.execFile,
+      accessToken: dependencies.accessToken,
       fetch: dependencies.fetch,
       now: dependencies.now,
       epochNow: dependencies.epochNow,

@@ -1,4 +1,4 @@
-import { CLOUD_LEVEL_CACHE_MS, PROJECT_LIVE_KEYS_MAX } from '@todz/types';
+import { CLOUD_LEVEL_CACHE_MS } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { BudgetLevel } from '../src/cloud-budget';
@@ -7,9 +7,8 @@ import type { Env } from '../src/env';
 import { serveMcp } from '../src/mcp-endpoint';
 import { forgetStampedOwners } from '../src/owner-last-seen';
 import { isHeavyWriterRefusedOnCloud } from '../src/owner-write-quota';
-import { issueProjectKey } from '../src/project-keys';
 import { utcDayOf } from '../src/telemetry/telemetry-day';
-import { issuedKeyOf, seedEmailIdentity, seedOwner, seedOwnerKey, seedProject, seedSession } from './directory-seed';
+import { seedEmailIdentity, seedOwner, seedOwnerToken, seedProject, seedProjectToken, seedSession } from './directory-seed';
 import { recordingLimiter } from './email-sign-in-client';
 import { recordingEnv, serveOwnerCall, workerEnvWith } from './owner-client';
 import { CLOCK_NOW } from './task-fixtures';
@@ -47,12 +46,8 @@ async function seedSessionOf(ownerId: string): Promise<string> {
   return secret;
 }
 
-async function keyOf(ownerId: string): Promise<string> {
-  const projectId = await seedProject({ ownerId });
-  const { secret } = await issuedKeyOf(
-    issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }),
-  );
-  return secret;
+async function projectTokenOf(ownerId: string): Promise<string> {
+  return seedProjectToken({ projectId: await seedProject({ ownerId }) });
 }
 
 function cloudEnvWith({ isAllowed, settings = {} }: { isAllowed: boolean; settings?: Partial<Env> }): Env {
@@ -63,10 +58,10 @@ function ownerRead({ secret, workerEnv }: { secret: string; workerEnv: Env }): P
   return serveOwnerCall({ call: { method: 'GET', path: '/owner/workspaces', token: secret }, now: NOW, workerEnv });
 }
 
-function mcpPost({ key, workerEnv }: { key: string; workerEnv: Env }): Promise<Response> {
+function mcpPost({ token, workerEnv }: { token: string; workerEnv: Env }): Promise<Response> {
   const request = new Request('http://localhost:8787/mcp', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: '{}',
   });
   return serveMcp({ request, env: workerEnv, now: NOW });
@@ -115,16 +110,16 @@ describe('the read throttle through the owner API', () => {
 });
 
 describe('the read throttle through MCP', () => {
-  test('a heavy and an idle account are both throttled, for a project key and an owner key', async () => {
+  test('a heavy and an idle account are both throttled, for a project grant and an owner grant', async () => {
     await setLevel(BudgetLevel.Refusing);
     const heavyOwnerId = await seedHeavyOwner();
     const lightOwnerId = await seedOwner();
     const workerEnv = cloudEnvWith({ isAllowed: false });
-    const heavyProjectKey = await keyOf(heavyOwnerId);
-    const heavyOwnerKey = await seedOwnerKey({ ownerId: heavyOwnerId });
-    const lightProjectKey = await keyOf(lightOwnerId);
+    const heavyProjectToken = await projectTokenOf(heavyOwnerId);
+    const heavyOwnerToken = await seedOwnerToken({ ownerId: heavyOwnerId });
+    const lightProjectToken = await projectTokenOf(lightOwnerId);
     const statuses = await Promise.all(
-      [heavyProjectKey, heavyOwnerKey, lightProjectKey].map(async (key) => (await mcpPost({ key, workerEnv })).status),
+      [heavyProjectToken, heavyOwnerToken, lightProjectToken].map(async (token) => (await mcpPost({ token, workerEnv })).status),
     );
     expect(statuses).toEqual([TOO_MANY_STATUS, TOO_MANY_STATUS, TOO_MANY_STATUS]);
   });
@@ -138,13 +133,13 @@ describe('a signed-in request counts as activity', () => {
     expect(await lastSeenDayOf(ownerId)).toBe(utcDayOf(NOW));
   });
 
-  test('a project key request and an owner key request stamp the day too, and a self-hosted server stamps nothing', async () => {
-    const [keyOwnerId, ownerKeyOwnerId, selfHostedOwnerId] = [await seedOwner(), await seedOwner(), await seedOwner()];
+  test('a project grant request and an owner grant request stamp the day too, and a self-hosted server stamps nothing', async () => {
+    const [projectOwnerId, ownerGrantOwnerId, selfHostedOwnerId] = [await seedOwner(), await seedOwner(), await seedOwner()];
     const workerEnv = workerEnvWith({ CLOUD_ACCOUNTS_MAX: '13' });
-    await mcpPost({ key: await keyOf(keyOwnerId), workerEnv });
-    await mcpPost({ key: await seedOwnerKey({ ownerId: ownerKeyOwnerId }), workerEnv });
-    await mcpPost({ key: await keyOf(selfHostedOwnerId), workerEnv: workerEnvWith({}) });
-    expect([await lastSeenDayOf(keyOwnerId), await lastSeenDayOf(ownerKeyOwnerId), await lastSeenDayOf(selfHostedOwnerId)]).toEqual([
+    await mcpPost({ token: await projectTokenOf(projectOwnerId), workerEnv });
+    await mcpPost({ token: await seedOwnerToken({ ownerId: ownerGrantOwnerId }), workerEnv });
+    await mcpPost({ token: await projectTokenOf(selfHostedOwnerId), workerEnv: workerEnvWith({}) });
+    expect([await lastSeenDayOf(projectOwnerId), await lastSeenDayOf(ownerGrantOwnerId), await lastSeenDayOf(selfHostedOwnerId)]).toEqual([
       utcDayOf(NOW),
       utcDayOf(NOW),
       null,

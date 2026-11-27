@@ -1,6 +1,6 @@
 # 0034. The key screen shows a new key once, inside each client's command
 
-- Status: Proposed
+- Status: Superseded by [0111](0111-api-keys-are-removed-and-an-mcp-client-connects-only-through-oauth.md); was: Proposed
 - Date: 2026-11-24
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) may overturn it
 - Inspired by: [the v1 product design](../product/README.md) (macOS app → Connect an agent), [ADR 0019](0019-mcp-keys-are-prefixed-and-shown-once.md), the `connect-an-agent` research of 2026-11-24 into the three clients' documentation

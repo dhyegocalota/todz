@@ -15,6 +15,7 @@ export type CliDependencies = {
   clock: LoopClock;
   schedule: Scheduler;
   execFile: ExecFile;
+  accessToken: () => Promise<string>;
   readFile: (path: string) => Promise<string>;
   openSignals: (access: { origin: string; token: string; projectId: string }) => Promise<ChangeSignals>;
   onInterrupt: (handler: () => Promise<number>) => void;

@@ -5,15 +5,17 @@ import {
   completeOwnerTasks,
   createProject,
   createWorkspace,
-  issueKey,
+  readOwnerId,
   signInOwner,
 } from './owner-scenario';
 import { chunksOf, inSequence } from './sequence';
 
+export type MintAccessToken = (grant: { ownerId: string; projectId: string }) => Promise<string>;
+
 export type Fixture = {
   connection: OwnerConnection;
   hotProjectId: string;
-  hotKey: string;
+  hotToken: string;
   projectIds: string[];
   doneTasks: number;
   openNumbers: number[];
@@ -60,12 +62,14 @@ export async function seedFixture({
   identity,
   taskCount,
   projectCount,
+  mintAccessToken,
 }: {
   origin: string;
   fetch: typeof globalThis.fetch;
   identity: string;
   taskCount: number;
   projectCount: number;
+  mintAccessToken: MintAccessToken;
 }): Promise<Fixture> {
   const connection = await signInOwner({ origin, fetch, identity });
   const workspaceIndexes = Array.from({ length: Math.ceil(projectCount / PROJECTS_PER_WORKSPACE) }, (_, index) => index);
@@ -84,7 +88,7 @@ export async function seedFixture({
   return {
     connection,
     hotProjectId,
-    hotKey: await issueKey({ connection, projectId: hotProjectId }),
+    hotToken: await mintAccessToken({ ownerId: await readOwnerId(connection), projectId: hotProjectId }),
     projectIds: [...hotProjects, ...otherProjects.flat()],
     doneTasks: doneNumbers.length,
     openNumbers: numbers.slice(doneNumbers.length),

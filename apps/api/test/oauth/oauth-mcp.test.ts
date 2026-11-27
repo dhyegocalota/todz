@@ -43,7 +43,7 @@ function ownerChoice(): string {
 }
 
 async function toolNames({ era, token }: { era: ClientEra; token: string }): Promise<string[]> {
-  const client = await connectClient({ era, key: token, clientName: ENVELOPE_NAME });
+  const client = await connectClient({ era, token, clientName: ENVELOPE_NAME });
   const { tools } = await client.listTools();
   return tools.map((tool) => tool.name).sort();
 }
@@ -58,7 +58,7 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with a project-
   test('reads and writes only its project, and the history names the app it approved', async () => {
     const owner = await seededOwner();
     const tokens = await grantedTokens({ owner, choiceOf: firstChoice });
-    const client = await connectClient({ era, key: tokens.access_token, clientName: ENVELOPE_NAME });
+    const client = await connectClient({ era, token: tokens.access_token, clientName: ENVELOPE_NAME });
 
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'Ship OAuth' }] } });
     const history = await callTool({ client, name: McpToolName.History, args: { id: 'T-1' } });
@@ -73,7 +73,7 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with a project-
     const otherWorkspaceProjectId = await seedProject({ ownerId: owner.ownerId });
     const stranger = await seededOwner();
     const tokens = await grantedTokens({ owner, choiceOf: firstChoice });
-    const client = await connectClient({ era, key: tokens.access_token, clientName: ENVELOPE_NAME });
+    const client = await connectClient({ era, token: tokens.access_token, clientName: ENVELOPE_NAME });
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'Stay here' }] } });
 
     const toOtherWorkspace = await callTool({ client, name: McpToolName.Move, args: { id: 'T-1', project: otherWorkspaceProjectId } });
@@ -88,7 +88,7 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with a project-
     const owner = await seededOwner();
     await seedSiblingProject({ projectId: owner.projectId, name: 'Sibling' });
     const tokens = await grantedTokens({ owner, choiceOf: firstChoice });
-    const client = await connectClient({ era, key: tokens.access_token, clientName: ENVELOPE_NAME });
+    const client = await connectClient({ era, token: tokens.access_token, clientName: ENVELOPE_NAME });
 
     expect((await callTool({ client, name: McpToolName.Projects, args: {} })).text).toContain('Sibling');
   });
@@ -108,7 +108,7 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with an owner-s
       .bind('Stranger workspace', stranger.projectId)
       .run();
     const tokens = await grantedTokens({ owner, choiceOf: ownerChoice });
-    const client = await connectClient({ era, key: tokens.access_token, clientName: ENVELOPE_NAME });
+    const client = await connectClient({ era, token: tokens.access_token, clientName: ENVELOPE_NAME });
 
     const workspaces = await callTool({ client, name: McpOwnerToolName.Workspaces, args: {} });
 

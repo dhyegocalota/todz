@@ -1,15 +1,16 @@
 import { describe, expect, test } from 'vitest';
 import { openChangeFeed } from './change-feed';
-import { FAKE_PROJECT_KEY, FAKE_SESSION_TOKEN, fakeOwnerServer } from './fake-owner-server';
+import { FAKE_OWNER_ID, FAKE_SESSION_TOKEN, fakeOwnerServer } from './fake-owner-server';
 import { FAKE_SESSION_IDENTIFIER, fakeMcpServer } from './fake-mcp-server';
 import { McpEra, addTask, completeTasks, connectMeasuredMcp, listTasks, measureInitialize } from './mcp-scenario';
 import { type OwnerConnection, addOwnerTasks, completeOwnerTasks, listWorkspaces, readChanges, signInOwner } from './owner-scenario';
 import { ScenarioKind } from './scenario-kind';
-import { seedFixture } from './seed';
+import { type MintAccessToken, seedFixture } from './seed';
 import type { Sample } from './timed-fetch';
 
 const ORIGIN = 'http://localhost:8787';
-const MCP_KEY = 'todz_test_key';
+const MCP_TOKEN = 'todz-at_test_token';
+const MINTED_TOKEN = 'todz-at_minted_token';
 const FIXED_CLOCK = () => 0;
 
 type CallerOptions = { era: McpEra; samples: Sample[]; scenario?: ScenarioKind };
@@ -21,7 +22,7 @@ function connectionOf({ fetch }: { fetch: typeof globalThis.fetch }): OwnerConne
 async function connectedClient({ era, samples, scenario = ScenarioKind.List }: CallerOptions, server = fakeMcpServer()) {
   const client = await connectMeasuredMcp({
     origin: ORIGIN,
-    key: MCP_KEY,
+    token: MCP_TOKEN,
     era,
     fetch: server.fetch,
     now: FIXED_CLOCK,
@@ -41,7 +42,7 @@ describe('the modern era on the wire', () => {
     expect(server.rpcMethods()).toEqual(['server/discover', 'tools/call', 'tools/call', 'tools/call']);
     expect(server.requests.map((request) => request.method)).toEqual(['POST', 'POST', 'POST', 'POST']);
     expect(server.requests.every((request) => request.pathname === '/mcp')).toBe(true);
-    expect(server.requests.every((request) => request.headers.get('Authorization') === `Bearer ${MCP_KEY}`)).toBe(true);
+    expect(server.requests.every((request) => request.headers.get('Authorization') === `Bearer ${MCP_TOKEN}`)).toBe(true);
     expect(server.requests.some((request) => request.headers.has('Mcp-Session-Id'))).toBe(false);
   });
 
@@ -87,7 +88,7 @@ describe('the 2025 era on the wire', () => {
     const server = fakeMcpServer();
     await measureInitialize({
       origin: ORIGIN,
-      key: MCP_KEY,
+      token: MCP_TOKEN,
       fetch: server.fetch,
       now: FIXED_CLOCK,
       record: (sample) => samples.push(sample),
@@ -267,8 +268,13 @@ describe('the seed', () => {
 
   async function seeded() {
     const server = fakeOwnerServer();
-    const fixture = await seedFixture({ origin: ORIGIN, fetch: server.fetch, identity: 'perf-owner', ...COUNTS });
-    return { server, fixture };
+    const grants: { ownerId: string; projectId: string }[] = [];
+    const mintAccessToken: MintAccessToken = async (grant) => {
+      grants.push(grant);
+      return MINTED_TOKEN;
+    };
+    const fixture = await seedFixture({ origin: ORIGIN, fetch: server.fetch, identity: 'perf-owner', mintAccessToken, ...COUNTS });
+    return { server, fixture, grants };
   }
 
   test('five thousand tasks are posted as a hundred batches of fifty', async () => {
@@ -298,10 +304,10 @@ describe('the seed', () => {
     expect(fixture.projectIds).toHaveLength(200);
   });
 
-  test('the hot project is the first Inbox and its key is issued for it', async () => {
-    const { server, fixture } = await seeded();
+  test('the hot project is the first Inbox and its access token is minted for it and its owner', async () => {
+    const { fixture, grants } = await seeded();
     expect(fixture.hotProjectId).toBe('inbox-1');
-    expect(fixture.hotKey).toBe(FAKE_PROJECT_KEY);
-    expect(server.requests.some((request) => request.pathname === '/owner/projects/inbox-1/keys')).toBe(true);
+    expect(fixture.hotToken).toBe(MINTED_TOKEN);
+    expect(grants).toEqual([{ ownerId: FAKE_OWNER_ID, projectId: 'inbox-1' }]);
   });
 });

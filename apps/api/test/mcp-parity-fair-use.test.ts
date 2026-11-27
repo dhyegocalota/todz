@@ -6,7 +6,7 @@ import type { Env } from '../src/env';
 import { MCP_COPY, McpOwnerToolName, McpToolName } from '../src/mcp-copy';
 import { serveMcp } from '../src/mcp-endpoint';
 import { utcDayOf } from '../src/telemetry/telemetry-day';
-import { seedIssuedKey, seedOwner, seedOwnerKey, seedProject, seedSiblingProject, seedWorkspace } from './directory-seed';
+import { seedProjectWithToken, seedOwner, seedOwnerToken, seedProject, seedSiblingProject, seedWorkspace } from './directory-seed';
 import { ClientEra, callTool, connectClient } from './mcp-client';
 
 const FORBIDDEN_STATUS = 403;
@@ -41,19 +41,19 @@ async function exhaustToday(ownerId: string): Promise<void> {
 }
 
 function ownerKeyClient({ ownerId, workerEnv = env }: { ownerId: string; workerEnv?: Env }): Promise<Client> {
-  return seedOwnerKey({ ownerId }).then((key) =>
+  return seedOwnerToken({ ownerId }).then((token) =>
     connectClient({
       era: ClientEra.Modern,
-      key,
+      token,
       serve: (request) => serveMcp({ request, env: workerEnv, now: Date.now() }),
     }),
   );
 }
 
-function initializeRequest(key: string): Request {
+function initializeRequest(token: string): Request {
   return new Request(`${WORKER_ORIGIN}/mcp`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': JSON_MEDIA_TYPE, Accept: `${JSON_MEDIA_TYPE}, text/event-stream` },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': JSON_MEDIA_TYPE, Accept: `${JSON_MEDIA_TYPE}, text/event-stream` },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }),
   });
 }
@@ -61,9 +61,9 @@ function initializeRequest(key: string): Request {
 describe('a suspended owner key', () => {
   test('is refused on every call with the suspended code', async () => {
     const ownerId = await seedOwner();
-    const key = await seedOwnerKey({ ownerId });
+    const token = await seedOwnerToken({ ownerId });
     await env.DIRECTORY.prepare('UPDATE owners SET suspended_at = ? WHERE id = ?').bind(Date.now(), ownerId).run();
-    const response = await exports.default.fetch(initializeRequest(key));
+    const response = await exports.default.fetch(initializeRequest(token));
     expect(response.status).toBe(FORBIDDEN_STATUS);
     expect((await response.json<{ error: { code: number } }>()).error.code).toBe(SUSPENDED_JSON_RPC_CODE);
   });
@@ -71,9 +71,9 @@ describe('a suspended owner key', () => {
 
 describe('an owner at the daily cap', () => {
   test('cannot reopen or move a task, and the refusal costs no change', async () => {
-    const { projectId, key } = await seedIssuedKey();
+    const { projectId, token } = await seedProjectWithToken();
     const siblingId = await seedSiblingProject({ projectId, name: 'Side' });
-    const client = await connectClient({ era: ClientEra.Modern, key });
+    const client = await connectClient({ era: ClientEra.Modern, token });
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'One' }, { title: 'Two' }] } });
     await callTool({ client, name: McpToolName.Done, args: { ids: ['T-1'] } });
     await exhaustToday(await ownerOfProject(projectId));
@@ -89,8 +89,8 @@ describe('an owner at the daily cap', () => {
   });
 
   test('is refused for an invalid call before the cap: a wrong confirm and a missing task keep their own sentence', async () => {
-    const { projectId, key } = await seedIssuedKey();
-    const client = await connectClient({ era: ClientEra.Modern, key });
+    const { projectId, token } = await seedProjectWithToken();
+    const client = await connectClient({ era: ClientEra.Modern, token });
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'Keep' }] } });
     await exhaustToday(await ownerOfProject(projectId));
     expect(await callTool({ client, name: McpToolName.Delete, args: { id: 'T-1', confirm: 'nope' } })).toEqual({

@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-26
+- Amended by: [0111](0111-api-keys-are-removed-and-an-mcp-client-connects-only-through-oauth.md) (the key parts: keys are removed and a grant is the only credential)
 - Deciders: Dhyego Calota (owner); Claude (advisor, the loop's call under the owner's instruction to decide every call)
 - Inspired by: [0101](0101-an-owner-key-is-a-separate-off-by-default-scope-for-the-account-and-project-keys-never-gain-account-powers.md), [0102](0102-deleting-a-task-leaves-a-scrubbed-tombstone-for-sync-and-a-move-adds-to-the-destination-before-it-deletes-the-source.md)
 

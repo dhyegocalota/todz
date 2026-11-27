@@ -1,4 +1,4 @@
-import { DueWindow, MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE, PROJECT_LIVE_KEYS_MAX } from '@todz/types';
+import { DueWindow, MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { env, exports } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -8,8 +8,7 @@ import type { Env } from '../src/env';
 import { McpToolName } from '../src/mcp-copy';
 import { calendarDateInTimeZone } from '../src/owner-today';
 import { TurnstileAction } from '../src/turnstile';
-import { issueProjectKey } from '../src/project-keys';
-import { issuedKeyOf, seedIssuedKey, seedProject } from './directory-seed';
+import { seedProject, seedProjectToken, seedProjectWithToken } from './directory-seed';
 import {
   PUBLIC_HTTPS_ORIGIN,
   PUBLIC_ORIGIN,
@@ -589,16 +588,16 @@ describe('owner sessions', () => {
     await expectUnauthorized(await ownerCall({ method: 'PATCH', path: '/owner', rawBody: 'not json' }));
   });
 
-  test('an MCP key is not an owner session, and an owner session is not an MCP key', async () => {
-    const { key } = await seedIssuedKey();
-    await expectUnauthorized(await readOwner(key));
+  test('an MCP access token is not an owner session, and an owner session is not an MCP access token', async () => {
+    const { token: accessToken } = await seedProjectWithToken();
+    await expectUnauthorized(await readOwner(accessToken));
     const { token } = await signInOwner();
     const mcp = await exports.default.fetch(`${PUBLIC_ORIGIN}/mcp`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
     expect(mcp.status).toBe(UNAUTHORIZED_STATUS);
     expect(mcp.headers.get('WWW-Authenticate')).toBe(
       `Bearer error="invalid_token", resource_metadata="${PUBLIC_ORIGIN}/.well-known/oauth-protected-resource/mcp"`,
     );
-    expect(await mcp.text()).toBe('');
+    expect(await mcp.json()).toMatchObject({ error: 'invalid_token' });
   });
 });
 
@@ -791,10 +790,7 @@ describe('the owner time zone and the MCP today', () => {
   test('switching between Kiritimati and Pago Pago moves a task due on the Kiritimati date in and out of today', async () => {
     const { token, ownerId } = await signInOwner({ timeZone: KIRITIMATI_TIME_ZONE });
     const projectId = await seedProject({ ownerId });
-    const { secret } = await issuedKeyOf(
-      issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }),
-    );
-    const client = await connectClient({ era: ClientEra.Modern, key: secret });
+    const client = await connectClient({ era: ClientEra.Modern, token: await seedProjectToken({ projectId }) });
     const dueDate = calendarDateInTimeZone({ timeZone: KIRITIMATI_TIME_ZONE, now: Date.now() });
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'Due on the Kiritimati date', due_date: dueDate }] } });
     const listToday = (): Promise<{ text: string }> => callTool({ client, name: McpToolName.List, args: { due: [DueWindow.Today] } });

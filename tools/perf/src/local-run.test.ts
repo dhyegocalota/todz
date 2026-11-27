@@ -62,7 +62,7 @@ function setup({ isWedged = false }: { isWedged?: boolean } = {}) {
   const fixture: Fixture = {
     connection: { origin: ORIGIN, token: 'session-token', fetch },
     hotProjectId: 'inbox-1',
-    hotKey: 'todz_hot_key',
+    hotToken: 'todz-at_hot_token',
     projectIds: PROJECT_IDS,
     doneTasks: 4_900,
     openNumbers: [],
@@ -137,10 +137,10 @@ describe('runLocalLoad', () => {
     expect(calls.length).toBeGreaterThan(0);
   });
 
-  test('every MCP request carries the hot project key and every owner request the session', async () => {
+  test('every MCP request carries the hot project token and every owner request the session', async () => {
     const { mcp, owner, dependencies, fixture } = setup();
     await runLocalLoad({ plan: planOf(), fixture, dependencies });
-    expect(mcp.requests.every((request) => request.headers.get('Authorization') === 'Bearer todz_hot_key')).toBe(true);
+    expect(mcp.requests.every((request) => request.headers.get('Authorization') === 'Bearer todz-at_hot_token')).toBe(true);
     expect(owner.requests.every((request) => request.headers.get('Authorization') === 'Bearer session-token')).toBe(true);
   });
 
