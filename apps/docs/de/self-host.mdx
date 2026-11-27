@@ -82,7 +82,7 @@ pnpm --filter @todz/api exec wrangler email sending dns get example.com --zone-i
 
 ## 6. Turnstile
 
-Anmeldung und Admin bleiben geschlossen (`sign_in_unavailable` und „The admin is closed right now.“), bis Turnstile eingerichtet ist. Lege im Cloudflare-Dashboard ein Turnstile-Widget für `example.com` im Modus Managed an. Trage seinen Site-Key in `vars.TURNSTILE_SITE_KEY` in `apps/api/wrangler.jsonc` ein, deploye erneut mit `pnpm --filter @todz/api server:deploy` und speichere sein Secret:
+Anmeldung und Admin bleiben geschlossen (`sign_in_unavailable` und „Der Admin ist gerade geschlossen.“), bis Turnstile eingerichtet ist. Lege im Cloudflare-Dashboard ein Turnstile-Widget für `example.com` im Modus Managed an. Trage seinen Site-Key in `vars.TURNSTILE_SITE_KEY` in `apps/api/wrangler.jsonc` ein, deploye erneut mit `pnpm --filter @todz/api server:deploy` und speichere sein Secret:
 
 ```bash
 pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
