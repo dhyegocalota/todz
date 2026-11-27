@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/motion/01-add-and-complete.gif" width="820" alt="The todz window: a task is added and springs into Today, then it is completed">
+  <img src="docs/screenshots/motion/01-add-and-complete.webp" width="820" alt="The todz window: a task is added and springs into Today, then it is completed">
 </p>
 
 <p align="center">
