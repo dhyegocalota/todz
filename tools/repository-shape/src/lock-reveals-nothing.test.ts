@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'vitest';
-import { readRepositoryFile, repositoryFiles } from './repository-files';
+import { capturedNames, readRepositoryFile, repositoryFiles } from './repository-files';
 import { swiftCopyValue } from './swift-copy';
 
 const MACOS_SWIFT_PATHSPEC = 'apps/macos/*.swift';
 const SETTINGS_COPY = 'apps/macos/Copy/SettingsCopy.swift';
 const WORKSPACE_LOCK_COPY = 'apps/macos/Copy/WorkspaceLockCopy.swift';
+const REASON_NAME_PATTERN = /static var (reason\w+): String \{/g;
 const LOCK_REVEALING_WORDS = ['Locked workspace', 'lockedState', 'unlockRefusal'];
 const NEUTRAL_SETTINGS_COPY: Record<string, string> = {
   lockWorkspaces: 'Require Touch ID to switch workspaces',
@@ -14,9 +15,9 @@ const NEUTRAL_SETTINGS_COPY: Record<string, string> = {
   lockUnavailable: 'Set a password for this Mac to turn this on.',
 };
 const NEUTRAL_REASON_COPY: Record<string, string> = {
-  reasonSwitch: 'Switch workspaces',
-  reasonTurnOff: 'Change this setting',
-  reasonTimeout: 'Change this setting',
+  reasonSwitch: 'switch workspaces',
+  reasonTurnOff: 'change this setting',
+  reasonTimeout: 'change this setting',
 };
 
 describe('a locked session reveals nothing', () => {
@@ -31,5 +32,12 @@ describe('a locked session reveals nothing', () => {
 
   test.each(Object.entries(NEUTRAL_REASON_COPY))('the Touch ID reason %s names nothing hidden', (name, value) => {
     expect(swiftCopyValue({ text: readRepositoryFile(WORKSPACE_LOCK_COPY), name })).toBe(value);
+  });
+
+  test('every Touch ID reason completes the system sentence "todz is trying to …": lowercase, no final period', () => {
+    const copy = readRepositoryFile(WORKSPACE_LOCK_COPY);
+    const reasons = capturedNames({ text: copy, pattern: REASON_NAME_PATTERN }).map((name) => swiftCopyValue({ text: copy, name }));
+    expect(reasons.length).toBeGreaterThan(0);
+    expect(reasons.filter((reason) => !/^[a-z]/.test(reason) || reason.endsWith('.'))).toEqual([]);
   });
 });
