@@ -26,7 +26,6 @@ import { canonicalTimeZone } from './time-zone';
 import { TurnstileAction } from './turnstile';
 
 const LINK_VERIFIER_PATTERN = /^[A-Za-z0-9_-]{43}$/;
-const UNSCRIPTED_TIME_ZONE = 'UTC';
 
 const SignInBodySchema = z.object({
   identity_token: z.string().optional(),
@@ -97,15 +96,16 @@ async function identityOwner({
 }): Promise<IdentityOwner | null> {
   const knownOwnerId = await findIdentityOwner({ directory, provider: kind, subject });
   if (knownOwnerId !== null) return retimedOwner({ directory, ownerId: knownOwnerId, timeZone, supportedLanguage, now });
+  if (timeZone === null) throw new Error('a new owner is admitted only with a stated time zone');
   const ownerId = crypto.randomUUID();
-  const newOwnerTimeZone = timeZone === null ? UNSCRIPTED_TIME_ZONE : timeZone;
+
   try {
     const isInserted = await insertOwnerWithIdentity({
       directory,
       ownerId,
       provider: kind,
       subject,
-      timeZone: newOwnerTimeZone,
+      timeZone,
       language: newOwnerLanguage,
       now,
       cap,
@@ -114,7 +114,7 @@ async function identityOwner({
     return {
       owner: {
         id: ownerId,
-        timeZone: newOwnerTimeZone,
+        timeZone,
         agentNudge: AGENT_NUDGE_BY_DEFAULT,
         dayEmail: DAY_EMAIL_BY_DEFAULT,
         dayEmailMinutes: DAY_EMAIL_MINUTES_DEFAULT,
@@ -195,6 +195,8 @@ export async function admittedOwner({
   now: number;
   executionContext: ExecutionContext;
 }): Promise<OwnerRecord | Response> {
+  const isUnplacedNewOwner = timeZone === null && (await findIdentityOwner({ directory: env.DIRECTORY, provider: kind, subject })) === null;
+  if (isUnplacedNewOwner) return errorResponse(OwnerErrorCode.TimeZoneInvalid);
   const cloudRefusal = await cloudFullRefusalOf({ env, address: subject, now });
   if (cloudRefusal !== null) return cloudRefusal;
   const signUpRefusal = await signUpRefusalOf({ request, env, kind, subject, now });
