@@ -119,13 +119,13 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ in %@"
+            "value": "%@ em %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ in %@"
+            "value": "%@ en %@"
           }
         },
         "de": {
@@ -137,25 +137,25 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ in %@"
+            "value": "%@ dans %@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ in %@"
+            "value": "%2$@の%1$@"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ in %@"
+            "value": "%2$@의 %1$@"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ in %@"
+            "value": "%2$@ 中的 %1$@"
           }
         }
       }
@@ -225,43 +225,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · Last used %@"
+            "value": "%@ · Último uso %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · Last used %@"
+            "value": "%@ · Último uso: %@"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · Last used %@"
+            "value": "%@ · Zuletzt verwendet %@"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · Last used %@"
+            "value": "%@ · Dernière utilisation %@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · Last used %@"
+            "value": "%@ · 最終使用：%@"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · Last used %@"
+            "value": "%@ · 마지막 사용 %@"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · Last used %@"
+            "value": "%1$@ · 上次使用 %2$@"
           }
         }
       }
@@ -9083,43 +9083,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Every project in %@"
+            "value": "Todos os projetos em %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Every project in %@"
+            "value": "Todos los proyectos de %@"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Every project in %@"
+            "value": "Jedes Projekt in %@"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Every project in %@"
+            "value": "Tous les projets de %@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Every project in %@"
+            "value": "%@のすべてのプロジェクト"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Every project in %@"
+            "value": "%@의 모든 프로젝트"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Every project in %@"
+            "value": "%@ 中的所有项目"
           }
         }
       }
@@ -10461,43 +10461,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit %@ to…"
+            "value": "Limitar %@ a…"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit %@ to…"
+            "value": "Limitar %@ a…"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit %@ to…"
+            "value": "%@ beschränken auf…"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit %@ to…"
+            "value": "Limiter %@ à…"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit %@ to…"
+            "value": "%@を制限する…"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit %@ to…"
+            "value": "%@ 범위 제한…"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit %@ to…"
+            "value": "将 %@ 限制为…"
           }
         }
       }
@@ -10514,43 +10514,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit to…"
+            "value": "Limitar a…"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit to…"
+            "value": "Limitar a…"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit to…"
+            "value": "Beschränken auf…"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit to…"
+            "value": "Limiter à…"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit to…"
+            "value": "制限する…"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit to…"
+            "value": "범위 제한…"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Limit to…"
+            "value": "限制为…"
           }
         }
       }
@@ -15521,43 +15521,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove"
+            "value": "Remover"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove"
+            "value": "Quitar"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove"
+            "value": "Entfernen"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove"
+            "value": "Retirer"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove"
+            "value": "削除"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove"
+            "value": "제거"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove"
+            "value": "移除"
           }
         }
       }
@@ -15574,43 +15574,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove %@ from %@"
+            "value": "Remover %@ de %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove %@ from %@"
+            "value": "Quitar %@ de %@"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove %@ from %@"
+            "value": "%@ aus %@ entfernen"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove %@ from %@"
+            "value": "Retirer %@ de %@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove %@ from %@"
+            "value": "%2$@から%1$@を削除"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove %@ from %@"
+            "value": "%2$@에서 %1$@ 제거"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove %@ from %@"
+            "value": "从 %2$@ 中移除 %1$@"
           }
         }
       }
@@ -16422,43 +16422,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Resend code"
+            "value": "Reenviar código"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Resend code"
+            "value": "Reenviar código"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Resend code"
+            "value": "Code erneut senden"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Resend code"
+            "value": "Renvoyer le code"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Resend code"
+            "value": "コードを再送信"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Resend code"
+            "value": "코드 다시 보내기"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Resend code"
+            "value": "重新发送验证码"
           }
         }
       }
@@ -19493,43 +19493,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "That code didn't work. Check it, or ask for a new one."
+            "value": "Esse código não funcionou. Confira-o ou peça um novo."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "That code didn't work. Check it, or ask for a new one."
+            "value": "Ese código no funcionó. Compruébalo o pide uno nuevo."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "That code didn't work. Check it, or ask for a new one."
+            "value": "Dieser Code hat nicht funktioniert. Prüfe ihn oder fordere einen neuen an."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "That code didn't work. Check it, or ask for a new one."
+            "value": "Ce code n’a pas fonctionné. Vérifiez-le, ou demandez-en un nouveau."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "That code didn't work. Check it, or ask for a new one."
+            "value": "そのコードは使えませんでした。確認するか、新しいコードをリクエストしてください。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "That code didn't work. Check it, or ask for a new one."
+            "value": "코드가 맞지 않아요. 확인하거나 새 코드를 요청하세요."
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "That code didn't work. Check it, or ask for a new one."
+            "value": "该验证码无效。请检查一下，或重新获取一个。"
           }
         }
       }
@@ -19970,43 +19970,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "The app wasn't limited. It still has the access it had."
+            "value": "O app não foi limitado. Ele continua com o acesso que tinha."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "The app wasn't limited. It still has the access it had."
+            "value": "La app no se limitó. Todavía tiene el acceso que tenía."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "The app wasn't limited. It still has the access it had."
+            "value": "Die App wurde nicht beschränkt. Sie hat weiterhin den Zugriff, den sie hatte."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "The app wasn't limited. It still has the access it had."
+            "value": "L’app n’a pas été limitée. Elle a toujours l’accès qu’elle avait."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "The app wasn't limited. It still has the access it had."
+            "value": "アプリは制限されませんでした。引き続き、これまでのアクセス権があります。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "The app wasn't limited. It still has the access it had."
+            "value": "앱의 범위를 제한하지 못했어요. 기존 접근 권한이 그대로 남아 있어요."
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "The app wasn't limited. It still has the access it had."
+            "value": "该应用没有被限制。它仍保有原来的访问权限。"
           }
         }
       }
@@ -21822,43 +21822,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code."
+            "value": "Muitas tentativas. Use o link do e-mail ou peça um novo código."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code."
+            "value": "Demasiados intentos. Usa el enlace del correo o pide un código nuevo."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code."
+            "value": "Zu viele Versuche. Nutze den Link in der E-Mail oder fordere einen neuen Code an."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code."
+            "value": "Trop d’essais. Utilisez le lien de l’e-mail ou demandez un nouveau code."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code."
+            "value": "試行回数が多すぎます。メールのリンクを使うか、新しいコードをリクエストしてください。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code."
+            "value": "시도 횟수가 너무 많아요. 이메일의 링크를 사용하거나 새 코드를 요청하세요."
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code."
+            "value": "尝试次数过多。请使用邮件中的链接，或重新获取验证码。"
           }
         }
       }
@@ -21875,43 +21875,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+            "value": "Muitas tentativas. Use o link do e-mail ou peça um novo código. Tente de novo em %@."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+            "value": "Demasiados intentos. Usa el enlace del correo o pide un código nuevo. Vuelve a intentarlo en %@."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+            "value": "Zu viele Versuche. Nutze den Link in der E-Mail oder fordere einen neuen Code an. Versuche es in %@ erneut."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+            "value": "Trop d’essais. Utilisez le lien de l’e-mail ou demandez un nouveau code. Réessayez dans %@."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+            "value": "試行回数が多すぎます。メールのリンクを使うか、新しいコードをリクエストしてください。%@後にもう一度お試しください。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+            "value": "시도 횟수가 너무 많아요. 이메일의 링크를 사용하거나 새 코드를 요청하세요. %@ 뒤에 다시 시도하세요."
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+            "value": "尝试次数过多。请使用邮件中的链接，或重新获取验证码。请在 %@ 后重试。"
           }
         }
       }

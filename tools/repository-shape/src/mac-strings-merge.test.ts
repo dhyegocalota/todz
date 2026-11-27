@@ -46,10 +46,13 @@ describe('mergedCatalog', () => {
     ).toThrow('A translation is empty');
   });
 
-  test('refuses a key the catalog does not have', () => {
-    expect(() =>
-      mergedCatalog({ catalog: CATALOG, language: 'es', fragment: { Today: 'Hoy', Extra: 'x', '%lld left': { one: 'a', other: 'b' } } }),
-    ).toThrow('Extra');
+  test('leaves out a key the catalog no longer has, so a removed key may stay in a fragment', () => {
+    const merged = mergedCatalog({
+      catalog: CATALOG,
+      language: 'es',
+      fragment: { Today: 'Hoy', Extra: 'x', '%lld left': { one: 'a', other: 'b' } },
+    });
+    expect(Object.keys(merged.strings)).toEqual(['Today', '%lld left']);
   });
 
   test('refuses the wrong plural forms', () => {

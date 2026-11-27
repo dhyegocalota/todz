@@ -46,8 +46,6 @@ function localization({
 }
 
 export function mergedCatalog({ catalog, language, fragment }: { catalog: Catalog; language: string; fragment: Fragment }): Catalog {
-  const unknownKeys = Object.keys(fragment).filter((key) => !(key in catalog.strings));
-  if (unknownKeys.length > 0) throw new Error(`${language} has keys the catalog does not: ${unknownKeys.join(' | ')}`);
   const strings = Object.fromEntries(
     Object.entries(catalog.strings).map(([key, entry]) => [
       key,
