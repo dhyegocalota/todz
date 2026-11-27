@@ -34,6 +34,7 @@ Every learning touched by a change gets a `Revisited` line appended.
 | 2026-11-24 | A new sidebar row crashes the app in a view that only shows for the other rows | [2026-11-24-a-swiftui-subtree-that-reads-the-selection-itself-renders-once-more-with-the-new-item.md](2026-11-24-a-swiftui-subtree-that-reads-the-selection-itself-renders-once-more-with-the-new-item.md) | 2026-11-24 |
 | 2026-11-25 | A public owner route that answers differently for an account that exists tells so through `Server-Timing` | [2026-11-25-server-timing-wraps-the-public-owner-routes.md](2026-11-25-server-timing-wraps-the-public-owner-routes.md) | 2026-11-25 |
 | 2026-11-25 | A signed-in route with no quota lets one tenant fill the directory every tenant shares | [2026-11-25-a-signed-in-route-with-no-quota-lets-one-tenant-fill-the-shared-directory.md](2026-11-25-a-signed-in-route-with-no-quota-lets-one-tenant-fill-the-shared-directory.md) | 2026-11-25 |
+| 2026-11-27 | Approve keeps loading and never leaves the consent page when the client's callback redirects again | [2026-11-27-form-action-blocks-a-client-callback-that-redirects-again.md](2026-11-27-form-action-blocks-a-client-callback-that-redirects-again.md) | 2026-11-27 |
 
 ### tooling
 

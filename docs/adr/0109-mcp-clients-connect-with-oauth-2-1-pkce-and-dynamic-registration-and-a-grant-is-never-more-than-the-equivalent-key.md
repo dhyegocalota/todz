@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-26
-- Amended by: [0111](0111-api-keys-are-removed-and-an-mcp-client-connects-only-through-oauth.md) (the key parts: keys are removed and a grant is the only credential)
+- Amended by: [0111](0111-api-keys-are-removed-and-an-mcp-client-connects-only-through-oauth.md) (the key parts: keys are removed and a grant is the only credential), [0116](0116-an-oauth-decision-answers-a-page-that-returns-to-the-client-and-a-replayed-approval-is-told-so.md) (a decision answers a page that returns to the client instead of a redirect)
 - Deciders: Dhyego Calota (owner); Claude (advisor). The loop's call under the owner's standing instruction to decide every call, and the owner's order of 2026-11-27 ("quero MCP por OAuth").
 - Inspired by: the [MCP authorization specification, revision 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization); RFC 9728, RFC 8414, RFC 7591, RFC 7636, RFC 7009, RFC 8707, RFC 8252, RFC 9207 and the OAuth 2.1 draft; [ADR 0014](0014-credentials-are-stored-as-sha-256-digests.md), [ADR 0017](0017-a-2025-era-client-is-named-by-a-session-in-the-directory.md), [ADR 0040](0040-the-owner-signs-in-with-an-email-link-bound-to-the-mac-that-asked-for-it.md), [ADR 0051](0051-the-admin-signs-in-by-a-mail-link-bound-to-the-browser-that-asked-into-a-cookie-session.md), [ADR 0099](0099-the-todz-cloud-admits-at-most-fifty-active-accounts-and-a-monthly-budget-guard-stops-heavy-writes-before-any-included-quota-runs-out.md), [ADR 0101](0101-an-owner-key-is-a-separate-off-by-default-scope-for-the-account-and-project-keys-never-gain-account-powers.md)
 

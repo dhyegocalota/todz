@@ -193,6 +193,24 @@ export async function insertCode({
     .run();
 }
 
+export async function hasIssuedCode({
+  directory,
+  clientId,
+  redirectUri,
+  codeChallenge,
+}: {
+  directory: D1Database;
+  clientId: string;
+  redirectUri: string;
+  codeChallenge: string;
+}): Promise<boolean> {
+  const row = await directory
+    .prepare('SELECT 1 AS issued FROM oauth_codes WHERE client_id = ? AND redirect_uri = ? AND code_challenge = ? LIMIT 1')
+    .bind(clientId, redirectUri, codeChallenge)
+    .first<{ issued: number }>();
+  return row !== null;
+}
+
 // NB ADR 0109: one statement spends a code, so a second exchange of it never finds it unspent.
 export async function spendCode({
   directory,
