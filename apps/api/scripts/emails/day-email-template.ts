@@ -1,17 +1,18 @@
+import type { Language } from '@todz/types';
 import { Heading, Text } from 'react-email';
 import { createElement, type ReactElement } from 'react';
 import { EmailSlot } from '../../src/emails/email-slot';
 import type { GeneratedEmail } from '../../src/emails/generated-email';
-import { DAY_EMAIL_COPY, DAY_EMAIL_EMPTY_COPY } from './day-email-copy';
+import type { DayEmailCopy } from './day-email-copy';
 import { EmailLayout } from './email-layout';
 import { EmailClassName, HEADING_STYLE, MUTED_STYLE, PARAGRAPH_STYLE } from './email-style';
 import { renderEmail } from './render-email';
 
-type DayEmailCopy = typeof DAY_EMAIL_COPY;
+type DayEmailTemplateInput = { copy: DayEmailCopy; language: Language; hasTasks: boolean };
 
 const TASKS_STYLE = { ...PARAGRAPH_STYLE, whiteSpace: 'pre-line' } as const;
 
-function DayEmailTemplate({ copy, hasTasks }: { copy: DayEmailCopy; hasTasks: boolean }): ReactElement {
+function DayEmailTemplate({ copy, language, hasTasks }: DayEmailTemplateInput): ReactElement {
   const taskElements = [
     createElement(Text, { key: 'tasks', className: EmailClassName.Text, style: TASKS_STYLE }, EmailSlot.Tasks),
     createElement(Text, { key: 'more', className: EmailClassName.Muted, style: MUTED_STYLE }, EmailSlot.More),
@@ -19,6 +20,7 @@ function DayEmailTemplate({ copy, hasTasks }: { copy: DayEmailCopy; hasTasks: bo
   return createElement(
     EmailLayout,
     {
+      language,
       title: copy.subject,
       preview: copy.preview,
       footer: copy.footer,
@@ -30,15 +32,15 @@ function DayEmailTemplate({ copy, hasTasks }: { copy: DayEmailCopy; hasTasks: bo
   );
 }
 
-async function generatedDayEmail({ copy, hasTasks }: { copy: DayEmailCopy; hasTasks: boolean }): Promise<GeneratedEmail> {
-  const rendered = await renderEmail({ element: createElement(DayEmailTemplate, { copy, hasTasks }) });
+async function generatedDayEmail({ copy, language, hasTasks }: DayEmailTemplateInput): Promise<GeneratedEmail> {
+  const rendered = await renderEmail({ element: createElement(DayEmailTemplate, { copy, language, hasTasks }) });
   return { subject: copy.subject, ...rendered };
 }
 
-export function generatedDayEmailWithTasks(): Promise<GeneratedEmail> {
-  return generatedDayEmail({ copy: DAY_EMAIL_COPY, hasTasks: true });
+export function generatedDayEmailWithTasks({ copy, language }: { copy: DayEmailCopy; language: Language }): Promise<GeneratedEmail> {
+  return generatedDayEmail({ copy, language, hasTasks: true });
 }
 
-export function generatedDayEmailEmpty(): Promise<GeneratedEmail> {
-  return generatedDayEmail({ copy: DAY_EMAIL_EMPTY_COPY, hasTasks: false });
+export function generatedDayEmailEmpty({ copy, language }: { copy: DayEmailCopy; language: Language }): Promise<GeneratedEmail> {
+  return generatedDayEmail({ copy, language, hasTasks: false });
 }

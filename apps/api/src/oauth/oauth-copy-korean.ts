@@ -1,0 +1,71 @@
+import type { OAuthCopy } from './oauth-copy';
+export const OAUTH_COPY_KOREAN: OAuthCopy = {
+  meta: {
+    description: '앱을 내 todz 계정에 연결해요.',
+    signInTitle: '앱 연결 · todz',
+    inboxTitle: '받은 편지함을 확인하세요 · todz',
+    consentTitle: '앱 승인 · todz',
+    refusedTitle: '연결할 수 없어요 · todz',
+    linkTitle: '로그인 중 · todz',
+    returnTitle: '앱으로 돌아가는 중 · todz',
+    approvedTitle: '이미 승인됐어요 · todz',
+  },
+  signIn: {
+    titleOf: (clientName: string) => `${clientName} 연결을 위해 로그인`,
+    lead: 'todz 계정의 주소를 입력하세요. 링크를 메일로 보내 드리고, 링크는 이 브라우저에서 열려요.',
+    emailLabel: '이메일 주소',
+    emailPlaceholder: 'you@example.com',
+    submit: '링크 보내기',
+    submitting: '보내는 중…',
+    invalidAddress: '올바른 이메일 주소를 입력하세요.',
+    tooMany: '지금은 링크를 보낼 수 없어요. 잠시 뒤에 다시 시도해 주세요.',
+    unavailable: '이 서버에서는 앱 연결을 위한 로그인을 쓸 수 없어요.',
+  },
+  inbox: {
+    title: '받은 편지함을 확인하세요',
+    body: '그 주소로 로그인할 수 있다면 링크가 가는 중이에요. 링크는 이 브라우저에서 한 번만 쓸 수 있고, 누르면 여기로 돌아와요.',
+  },
+  consent: {
+    titleOf: (clientName: string) => `todz에 ${clientName}을 연결할까요?`,
+    redirectOf: (host: string) => `응답하면 todz가 ${host}(으)로 돌려보내요.`,
+    loopbackRedirectOf: (host: string) => `응답하면 todz가 ${host}(으)로 돌려보내요. 이 컴퓨터에 있는 앱이에요.`,
+    legend: '무엇에 접근할 수 있나요?',
+    projectHint: '프로젝트를 고르면 그 프로젝트의 작업을 읽고 바꿀 수 있고, 같은 워크스페이스의 다른 프로젝트로 옮길 수도 있어요.',
+    ownerLabel: '계정 전체(소유자 범위)',
+    ownerWarning: '모든 작업을 읽고 바꿀 수 있고, 모든 워크스페이스와 프로젝트를 만들고 이름을 바꾸고 삭제할 수 있어요.',
+    noProjects: '아직 프로젝트가 없어요. todz 앱에서 하나 만든 다음 다시 오세요.',
+    approve: '승인',
+    approving: '승인하는 중…',
+    deny: '거부',
+  },
+  return: {
+    titleOf: (clientName: string) => `${clientName}(으)로 돌아가는 중`,
+    body: '저절로 열리지 않으면 링크를 누르세요.',
+    actionOf: (clientName: string) => `${clientName}(으)로 돌아가기`,
+  },
+  approved: {
+    title: '이미 승인됐어요',
+    bodyOf: (clientName: string) =>
+      `이 요청은 이미 승인됐어요. ${clientName}(으)로 돌아가 연결을 마무리하세요. 그래도 다시 묻는다면 ${clientName}에서 처음부터 다시 시작하세요.`,
+  },
+  refusal: {
+    invalidTitle: '이 링크로는 앱을 연결할 수 없어요',
+    invalidBody:
+      '연결하려는 앱에서 처음부터 다시 시작하세요. 계속 여기로 오면 먼저 앱에 저장된 로그인 정보를 지우세요(Claude Code에서는 /mcp를 실행한 뒤 Clear authentication).',
+    choiceTitle: '그 선택은 사용할 수 없어요',
+    choiceBody: '연결하려는 앱에서 처음부터 다시 시작하고, 보이는 선택지 중에서 하나를 고르세요.',
+    forbiddenTitle: '요청이 거부됐어요',
+    forbiddenBody: '그 요청은 이 페이지에서 오지 않았어요. 연결하려는 앱에서 처음부터 다시 시작하세요.',
+  },
+  link: {
+    working: '로그인하는 중…',
+    failedTitle: '이 링크는 사용할 수 없어요.',
+    failedBody: '이 브라우저에서 새 링크를 요청하세요.',
+    failedAction: '새 링크 받기',
+    cloudFullTitle: 'todz cloud가 지금은 가득 찼어요',
+    cloudFullBodyOf: ({ selfHostUrl }: { selfHostUrl: string }) =>
+      `todz cloud가 지금은 가득 찼어요. 이메일을 남겨 두면 자리가 날 때 들어올 수 있어요. 아니면 나만의 서버를 운영하세요: ${selfHostUrl}`,
+    noScriptTitle: '로그인 마무리',
+    noScript: '로그인을 마무리하려면 이 페이지에 JavaScript가 필요해요. JavaScript를 켠 다음 링크를 다시 여세요.',
+  },
+};

@@ -16,7 +16,7 @@ function isSuspensionChoice(value: FormDataEntryValue | null): value is Suspensi
 }
 
 export async function serveAdminSuspension({ request, env }: SiteContext): Promise<Response> {
-  if (!isSameOriginPost({ request, env })) return adminCardAnswerOf({ notice: AdminNotice.Forbidden, siteKey: siteKeyOf(env) });
+  if (!isSameOriginPost({ request, env })) return adminCardAnswerOf({ request, notice: AdminNotice.Forbidden, siteKey: siteKeyOf(env) });
   const isSignedIn = await hasAdminSession({ request, env, now: Date.now() }).catch(() => false);
   if (!isSignedIn) return adminRedirectAnswerOf();
   const form = await request.formData();

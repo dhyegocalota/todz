@@ -51,7 +51,11 @@ export async function findSessionProject({
 }): Promise<SessionProjectRecord | null> {
   const row = await directory.prepare(SESSION_PROJECT_QUERY).bind(projectId, digest, now).first<SessionProjectRow>();
   if (row === null) return null;
-  return { ownerId: row.owner_id, isSuspended: row.suspended_at !== null, ownedProjectId: row.project_id };
+  return {
+    ownerId: row.owner_id,
+    isSuspended: row.suspended_at !== null,
+    ownedProjectId: row.project_id,
+  };
 }
 
 export async function findOwnedGrantProject({

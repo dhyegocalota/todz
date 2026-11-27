@@ -5,6 +5,8 @@ import {
   MILLISECONDS_PER_MINUTE,
   REPLY_DAILY_MAX,
 } from '@todz/types';
+import type { Language } from '@todz/types';
+import { languageOfValue } from '../language-negotiation';
 import { SignInProviderKind } from '../sign-in-provider';
 
 export enum DayEmailFailure {
@@ -15,9 +17,9 @@ export enum DayEmailFailure {
 
 export type OwnerIdentityRow = { time_zone: string; subject: string };
 
-export type CandidateRow = { owner_id: string; time_zone: string; day_email_minutes: number; address: string };
+export type CandidateRow = { owner_id: string; time_zone: string; day_email_minutes: number; language: string; address: string };
 
-const CANDIDATES_STATEMENT = `SELECT owners.id AS owner_id, owners.time_zone, owners.day_email_minutes, owner_identities.subject AS address
+const CANDIDATES_STATEMENT = `SELECT owners.id AS owner_id, owners.time_zone, owners.day_email_minutes, owners.language, owner_identities.subject AS address
 FROM owners
 JOIN owner_identities ON owner_identities.owner_id = owners.id AND owner_identities.provider = ?
 WHERE owners.day_email = 1
@@ -137,9 +139,23 @@ export async function insertReplyAddress({
 
 const LIVE_STOP_LINK_OWNER = 'SELECT owner_id FROM day_email_stop_links WHERE digest = ?1 AND expires_at > ?2';
 
-export async function isStopLinkLive({ directory, digest, now }: { directory: D1Database; digest: string; now: number }): Promise<boolean> {
-  const row = await directory.prepare(LIVE_STOP_LINK_OWNER).bind(digest, now).first<{ owner_id: string }>();
-  return row !== null;
+const LIVE_STOP_LINK_LANGUAGE =
+  'SELECT owners.language FROM day_email_stop_links JOIN owners ON owners.id = day_email_stop_links.owner_id WHERE day_email_stop_links.digest = ?1 AND day_email_stop_links.expires_at > ?2';
+
+export type StopLinkOwner = { language: Language | null };
+
+export async function stopLinkOwner({
+  directory,
+  digest,
+  now,
+}: {
+  directory: D1Database;
+  digest: string;
+  now: number;
+}): Promise<StopLinkOwner | null> {
+  const row = await directory.prepare(LIVE_STOP_LINK_LANGUAGE).bind(digest, now).first<{ language: string }>();
+  if (row === null) return null;
+  return { language: languageOfValue({ value: row.language }) };
 }
 
 export async function stopDayEmail({ directory, digest, now }: { directory: D1Database; digest: string; now: number }): Promise<boolean> {

@@ -204,7 +204,7 @@ describe('the admin routes on the site host', () => {
   }
 
   async function cardOf({ notice, siteKey = TURNSTILE_TEST_SITE_KEY }: { notice: AdminNotice; siteKey?: string | null }): Promise<string> {
-    return (await serveAdminSignInPage({ notice, siteKey })).text();
+    return (await serveAdminSignInPage({ request: adminRequest({ path: AdminPath.Panel }), notice, siteKey })).text();
   }
 
   beforeEach(async () => {
@@ -307,7 +307,7 @@ describe('the admin routes on the site host', () => {
     test('answers the link page with the admin headers, and HEAD answers its status', async () => {
       const get = await serveWith({ request: adminRequest({ path: AdminPath.LinkPage }), settings: ADMIN_SETTINGS });
       expect(get.status).toBe(OK_STATUS);
-      expect(await get.text()).toBe(await (await serveAdminLinkPage()).text());
+      expect(await get.text()).toBe(await (await serveAdminLinkPage({ request: adminRequest({ path: AdminPath.LinkPage }) })).text());
       expectAdminHeaders(get);
       const head = await serveWith({ request: adminRequest({ path: AdminPath.LinkPage, method: 'HEAD' }), settings: ADMIN_SETTINGS });
       expect(head.status).toBe(OK_STATUS);

@@ -8,6 +8,7 @@ import { HttpMethod } from './http-method';
 import { OwnerErrorCode, appTooOldResponse, errorResponse, noRouteResponse, suspendedResponse } from './owner-errors';
 import type { OwnerContext, PublicHandler, PublicRoute, SessionHandler, SessionRoute } from './owner-request';
 import { isReadThrottled } from './cloud-read-throttle';
+import { refreshOwnerLanguage } from './owner-language';
 import { stampOwnerSeen } from './owner-last-seen';
 import { OwnerRoute, RouteParam, matchOwnerRoute } from './owner-routes';
 import { signIn } from './owner-sign-in';
@@ -77,6 +78,7 @@ export async function serveOwner({
   const isSuspendedChange = isChanging && owner.isSuspended;
   if (isSuspendedChange) return suspendedResponse();
   executionContext.waitUntil(stampOwnerSeen({ env, ownerId: owner.ownerId, now }).catch(() => undefined));
+  executionContext.waitUntil(refreshOwnerLanguage({ request, env, owner }).catch(() => undefined));
   const isThrottledRead = !isChanging && (await isReadThrottled({ request, env, ownerId: owner.ownerId, now }));
   if (isThrottledRead) return withRetryAfter(errorResponse(OwnerErrorCode.RateLimited));
   return SESSION_HANDLERS[match.route]({ ...context, owner, secret });

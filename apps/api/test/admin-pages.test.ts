@@ -4,8 +4,9 @@ import { serveAdminLinkPage } from '../src/site/admin-link-page';
 import { serveAdminSignInPage } from '../src/site/admin-page';
 import { AdminNotice } from '../src/site/admin-notice';
 import { AdminField, AdminPath } from '../src/site/admin-paths';
-import { TEST_SITE_KEY, inlineSources, onlyInlineSource, sourceHash } from './page-script';
+import { TEST_SITE_KEY, inlineSources, onlyInlineSource, pageInlineSource, sourceHash } from './page-script';
 
+const ADMIN_URL = 'https://todz.app/admin';
 const OK_STATUS = 200;
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
 const NO_STORE = 'no-store';
@@ -53,11 +54,11 @@ async function pageOf(response: Promise<Response>): Promise<AdminPage> {
 }
 
 function signInPage({ notice, siteKey }: { notice: AdminNotice; siteKey: string | null }): Promise<AdminPage> {
-  return pageOf(serveAdminSignInPage({ notice, siteKey }));
+  return pageOf(serveAdminSignInPage({ request: new Request(ADMIN_URL), notice, siteKey }));
 }
 
 function linkPage(): Promise<AdminPage> {
-  return pageOf(serveAdminLinkPage());
+  return pageOf(serveAdminLinkPage({ request: new Request(ADMIN_URL) }));
 }
 
 function decoded(text: string): string {
@@ -134,7 +135,7 @@ function runLinkScript({ html, hash, answer }: { html: string; hash: string; ans
     return answer();
   };
   const addEventListener = (type: string, listener: () => void) => listeners.set(type, listener);
-  new Function('location', 'history', 'document', 'fetch', 'addEventListener', onlyInlineSource({ html, pattern: SCRIPT_PATTERN }))(
+  new Function('location', 'history', 'document', 'fetch', 'addEventListener', pageInlineSource({ html, pattern: SCRIPT_PATTERN }))(
     location,
     history,
     document,
@@ -307,8 +308,8 @@ describe('the sign-in page', () => {
   test('its script is the same for the widget and without it, and its callback name is the admin one', async () => {
     const withoutWidget = await signInPage({ notice: AdminNotice.None, siteKey: null });
     const withWidget = await signInPage({ notice: AdminNotice.None, siteKey: TEST_SITE_KEY });
-    const script = onlyInlineSource({ html: withWidget.html, pattern: SCRIPT_PATTERN });
-    expect(script).toBe(onlyInlineSource({ html: withoutWidget.html, pattern: SCRIPT_PATTERN }));
+    const script = pageInlineSource({ html: withWidget.html, pattern: SCRIPT_PATTERN });
+    expect(script).toBe(pageInlineSource({ html: withoutWidget.html, pattern: SCRIPT_PATTERN }));
     expect(script).toContain('adminTokenReady');
     expect(withWidget.html).toMatch(/data-callback="adminTokenReady"/);
     expect(script).toContain('adminTokenReady');

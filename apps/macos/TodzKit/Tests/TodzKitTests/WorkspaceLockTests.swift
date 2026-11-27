@@ -306,10 +306,10 @@ private let garden = Workspace(identifier: "garden", name: "Garden", createdAt: 
     @Test func widgetsSeeOnlyTheCurrentWorkspaceWheneverTheSwitchIsOn() async throws {
         let harness = try LockHarness(isOn: true)
         _ = await harness.lock.authorize(.switchWorkspaces)
-        #expect(harness.lock.visibleToWidgets([acme, side], current: "acme") == [acme])
-        #expect(harness.lock.visibleToWidgets([side], current: "acme").isEmpty)
+        #expect(harness.lock.shown([acme, side], current: "acme") == [acme])
+        #expect(harness.lock.shown([side], current: "acme").isEmpty)
         let off = try LockHarness()
-        #expect(off.lock.visibleToWidgets([acme, side], current: "acme") == [acme, side])
+        #expect(off.lock.shown([acme, side], current: "acme") == [acme, side])
     }
 
     @Test func collapsingChangesNothingWhileUnlockedOrOff() async throws {

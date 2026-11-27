@@ -1,3 +1,11 @@
+import { Language } from '@todz/types';
+import { ADMIN_COPY_PORTUGUESE_BRAZIL } from './admin-copy-portuguese-brazil';
+import { ADMIN_COPY_SPANISH } from './admin-copy-spanish';
+import { ADMIN_COPY_GERMAN } from './admin-copy-german';
+import { ADMIN_COPY_FRENCH } from './admin-copy-french';
+import { ADMIN_COPY_JAPANESE } from './admin-copy-japanese';
+import { ADMIN_COPY_KOREAN } from './admin-copy-korean';
+import { ADMIN_COPY_CHINESE } from './admin-copy-chinese';
 import { Metric } from '../telemetry/metric';
 import { ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES } from './admin-paths';
 
@@ -96,4 +104,17 @@ export const ADMIN_COPY = {
     mebibyteUnit: 'MB',
     empty: 'Nobody has written this week.',
   },
+};
+
+export type AdminCopy = typeof ADMIN_COPY;
+
+export const ADMIN_COPY_BY_LANGUAGE: Record<Language, AdminCopy> = {
+  [Language.English]: ADMIN_COPY,
+  [Language.PortugueseBrazil]: ADMIN_COPY_PORTUGUESE_BRAZIL,
+  [Language.Spanish]: ADMIN_COPY_SPANISH,
+  [Language.German]: ADMIN_COPY_GERMAN,
+  [Language.French]: ADMIN_COPY_FRENCH,
+  [Language.Japanese]: ADMIN_COPY_JAPANESE,
+  [Language.Korean]: ADMIN_COPY_KOREAN,
+  [Language.Chinese]: ADMIN_COPY_CHINESE,
 };

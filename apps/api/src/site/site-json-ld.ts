@@ -1,11 +1,12 @@
-import { COMPANY, REPOSITORY } from '@todz/types';
-import { LANDING_COPY, LANDING_DAY_LINES, LANDING_LOCK_LINE } from './landing-copy';
+import { COMPANY, LANGUAGE_PROFILES, Language, REPOSITORY } from '@todz/types';
+import { LANDING_COPY_BY_LANGUAGE } from './landing-copy';
+import { landingFeatureListOf } from './landing-lines';
+import { publicPathOf } from './language-paths';
 import { scriptJson } from './site-constants';
 import { OPEN_GRAPH_IMAGE } from './site-icons';
-import { DOCS_URL, DOWNLOAD_URL, SITE_URL } from './site-urls';
+import { DOCS_URL, DOWNLOAD_URL, LANDING_PATH, SITE_URL } from './site-urls';
 
 const SCHEMA_URL = 'https://schema.org';
-const LANGUAGE = 'en';
 const OPERATING_SYSTEM = 'macOS 14 or later';
 const APPLICATION_CATEGORY = 'BusinessApplication';
 const APPLICATION_SUB_CATEGORY = 'Productivity';
@@ -34,42 +35,55 @@ const ORGANIZATION = {
   logo: COMPANY.logo,
 };
 
-const WEBSITE = {
-  '@type': SchemaType.WebSite,
-  '@id': WEBSITE_ID,
-  name: LANDING_COPY.meta.siteName,
-  url: `${SITE_URL}/`,
-  inLanguage: LANGUAGE,
-  publisher: PUBLISHER,
-};
-
-const APPLICATION = {
-  '@type': SchemaType.SoftwareApplication,
-  '@id': APPLICATION_ID,
-  name: LANDING_COPY.meta.siteName,
-  description: LANDING_COPY.meta.description,
-  url: `${SITE_URL}/`,
-  image: `${SITE_URL}${OPEN_GRAPH_IMAGE.path}`,
-  operatingSystem: OPERATING_SYSTEM,
-  applicationCategory: APPLICATION_CATEGORY,
-  applicationSubCategory: APPLICATION_SUB_CATEGORY,
-  featureList: [...LANDING_DAY_LINES, LANDING_LOCK_LINE],
-  publisher: PUBLISHER,
-  codeRepository: REPOSITORY.url,
-  license: REPOSITORY.licenseSpdxUrl,
-  downloadUrl: DOWNLOAD_URL,
-  sameAs: [REPOSITORY.url, DOCS_URL],
-  offers: {
-    '@type': SchemaType.Offer,
-    price: FREE_PRICE,
-    priceCurrency: PRICE_CURRENCY,
-    availability: IN_STOCK_AVAILABILITY,
-    url: DOWNLOAD_URL,
-  },
-};
-
-function structuredDataOf(graph: object[]): string {
-  return scriptJson({ '@context': SCHEMA_URL, '@graph': graph });
+function websiteOf({ language, homeUrl }: { language: Language; homeUrl: string }): object {
+  return {
+    '@type': SchemaType.WebSite,
+    '@id': WEBSITE_ID,
+    name: LANDING_COPY_BY_LANGUAGE[language].meta.siteName,
+    url: homeUrl,
+    inLanguage: LANGUAGE_PROFILES[language].htmlLang,
+    publisher: PUBLISHER,
+  };
 }
 
-export const LANDING_STRUCTURED_DATA = structuredDataOf([ORGANIZATION, WEBSITE, APPLICATION]);
+function applicationOf({ language, homeUrl }: { language: Language; homeUrl: string }): object {
+  const { meta } = LANDING_COPY_BY_LANGUAGE[language];
+  return {
+    '@type': SchemaType.SoftwareApplication,
+    '@id': APPLICATION_ID,
+    name: meta.siteName,
+    description: meta.description,
+    url: homeUrl,
+    image: `${SITE_URL}${OPEN_GRAPH_IMAGE.path}`,
+    operatingSystem: OPERATING_SYSTEM,
+    applicationCategory: APPLICATION_CATEGORY,
+    applicationSubCategory: APPLICATION_SUB_CATEGORY,
+    featureList: landingFeatureListOf({ language }),
+    publisher: PUBLISHER,
+    codeRepository: REPOSITORY.url,
+    license: REPOSITORY.licenseSpdxUrl,
+    downloadUrl: DOWNLOAD_URL,
+    sameAs: [REPOSITORY.url, DOCS_URL],
+    offers: {
+      '@type': SchemaType.Offer,
+      price: FREE_PRICE,
+      priceCurrency: PRICE_CURRENCY,
+      availability: IN_STOCK_AVAILABILITY,
+      url: DOWNLOAD_URL,
+    },
+  };
+}
+
+export function landingStructuredDataOf({ language }: { language: Language }): string {
+  const homeUrl = `${SITE_URL}${publicPathOf({ language, path: LANDING_PATH })}`;
+  return scriptJson({
+    '@context': SCHEMA_URL,
+    '@graph': [ORGANIZATION, websiteOf({ language, homeUrl }), applicationOf({ language, homeUrl })],
+  });
+}
+
+export const LANDING_STRUCTURED_DATA_BY_LANGUAGE = Object.fromEntries(
+  Object.values(Language).map((language) => [language, landingStructuredDataOf({ language })]),
+) as Record<Language, string>;
+
+export const LANDING_STRUCTURED_DATA = LANDING_STRUCTURED_DATA_BY_LANGUAGE[Language.English];

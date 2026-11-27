@@ -1,8 +1,8 @@
-import { MILLISECONDS_PER_DAY } from '@todz/types';
+import { Language, MILLISECONDS_PER_DAY } from '@todz/types';
 import { createExecutionContext } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
-import { CLOUD_COPY } from '../src/cloud-copy';
+import { CLOUD_PAGE_COPY } from '../src/cloud-page-copy';
 import { countActiveAccounts, waitingAddresses } from '../src/cloud-queue-store';
 import { cloudQueueAddressOf, cloudQueueTokenOf } from '../src/cloud-queue-token';
 import type { Env } from '../src/env';
@@ -63,6 +63,7 @@ function join({
     request: postRequest({ fields, fetchSite }),
     env: siteEnv(settings),
     executionContext: createExecutionContext(),
+    language: Language.English,
   });
 }
 
@@ -85,6 +86,7 @@ function page({ search = '', settings = {} }: { search?: string; settings?: Part
     request: new Request(`${QUEUE_URL}${search}`),
     env: siteEnv(settings),
     executionContext: createExecutionContext(),
+    language: Language.English,
   });
 }
 
@@ -139,7 +141,7 @@ describe('the cloud queue page', () => {
     const answers = await Promise.all(['', '?token=garbage', `?token=${expired}`].map((search) => page({ search })));
     expect(answers.map((answer) => answer.status)).toEqual([BAD_REQUEST_STATUS, BAD_REQUEST_STATUS, BAD_REQUEST_STATUS]);
     const html = await answers[0]?.text();
-    expect(html).toContain(escapedHtml(CLOUD_COPY.queuePage.invalidTitle));
+    expect(html).toContain(escapedHtml(CLOUD_PAGE_COPY.queuePage.invalidTitle));
     expect(html).not.toContain('<form class="join-form');
   });
 
@@ -169,14 +171,14 @@ describe('joining the line with the signed link', () => {
     const first = await joinWith({ token, settings });
     await joinWith({ token, settings });
     expect(first.status).toBe(OK_STATUS);
-    expect(await first.text()).toContain(escapedHtml(CLOUD_COPY.queuePage.queuedTitle));
+    expect(await first.text()).toContain(escapedHtml(CLOUD_PAGE_COPY.queuePage.queuedTitle));
     expect(await queuedCount(address)).toBe(1);
   });
 
   test('a valid link queues its address even while the cloud has room, with the same answer', async () => {
     const address = freshAddress();
     const response = await joinWith({ token: await tokenOf({ address }), settings: { CLOUD_ACCOUNTS_MAX: '100000' } });
-    expect(await response.text()).toContain(escapedHtml(CLOUD_COPY.queuePage.queuedTitle));
+    expect(await response.text()).toContain(escapedHtml(CLOUD_PAGE_COPY.queuePage.queuedTitle));
     expect(await isQueued(address)).toBe(true);
   });
 

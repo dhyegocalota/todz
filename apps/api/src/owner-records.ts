@@ -1,4 +1,10 @@
-export type OwnerRecord = { id: string; timeZone: string; agentNudge: boolean; dayEmail: boolean; dayEmailMinutes: number };
+export type OwnerRecord = {
+  id: string;
+  timeZone: string;
+  agentNudge: boolean;
+  dayEmail: boolean;
+  dayEmailMinutes: number;
+};
 
 export type WorkspaceRecord = { id: string; name: string; createdAt: number; lastActivityAt: number | null };
 

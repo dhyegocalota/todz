@@ -1,0 +1,1 @@
+ALTER TABLE owners ADD COLUMN language TEXT NOT NULL DEFAULT 'en';
