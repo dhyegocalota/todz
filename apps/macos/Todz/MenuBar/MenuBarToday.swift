@@ -81,6 +81,7 @@ struct MenuBarToday: View {
                 .padding(.vertical, FormMetrics.fieldVerticalPadding)
                 .background(.fill.quaternary, in: Capsule())
                 .padding(.horizontal)
+                .padding(.bottom, FormMetrics.fieldVerticalPadding)
         case .none:
             EmptyView()
         }

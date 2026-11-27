@@ -10,20 +10,24 @@ struct MenuBarRowMetaLine: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        HStack {
-            if let tag = meta.tag {
-                Text(tag)
-            }
-            if let overdue = meta.overdue {
-                Label(DueLabel.text(dueDate: overdue, today: model.today, timeZone: model.timeZone), systemImage: overdueSymbol)
-                    .foregroundStyle(.red)
-                    .layoutPriority(1)
-            }
+        ViewThatFits(in: .horizontal) {
+            HStack { parts }
+            VStack(alignment: .leading) { parts }
         }
         .font(.subheadline)
         .foregroundStyle(.secondary)
         .lineLimit(1)
         .truncationMode(.tail)
+    }
+
+    @ViewBuilder private var parts: some View {
+        if let tag = meta.tag {
+            Text(tag)
+        }
+        if let overdue = meta.overdue {
+            Label(DueLabel.text(dueDate: overdue, today: model.today, timeZone: model.timeZone), systemImage: overdueSymbol)
+                .foregroundStyle(.red)
+        }
     }
 }
 
