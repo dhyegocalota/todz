@@ -3,6 +3,10 @@ enum SheetCopy {
         "Type \"\(name)\" to confirm."
     }
 
+    static func deleteTaskMessage(title: String) -> String {
+        "“\(title)” and its history are deleted permanently. It cannot be undone."
+    }
+
     static let newWorkspaceTitle = "New Workspace"
     static let newProjectTitle = "New Project"
     static let renameWorkspaceTitle = "Rename Workspace"
@@ -11,6 +15,7 @@ enum SheetCopy {
     static let deleteProjectTitle = "Delete Project"
     static let deleteWorkspaceMessage = "This permanently deletes the workspace, its projects, their tasks and the keys agents use to reach them. It cannot be undone."
     static let deleteProjectMessage = "This permanently deletes the project, its tasks and the keys agents use to reach it. It cannot be undone."
+    static let deleteTaskTitle = "Delete Task?"
     static let delete = "Delete"
     static let nameLabel = "Name"
     static let cancel = "Cancel"

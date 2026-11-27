@@ -27,6 +27,7 @@ private let cacheFolderName = "Cache"
     let updater = AppUpdater(bundle: .main)
     let applicationsMoveOffer = ApplicationsMoveOffer(bundle: .main)
     let panel = MenuBarPanel()
+    let menuBarItemNotice = MenuBarItemNotice()
     let gate: ProactiveGate
     var dayChangeObservation: (any NSObjectProtocol)?
     var dayTemperatureObservation: (any NSObjectProtocol)?
@@ -147,6 +148,7 @@ private let cacheFolderName = "Cache"
         startRibbon()
         dayCloseScheduler.start()
         morningGlanceTrigger.start()
+        Task { await menuBarItemNotice.offerIfHidden() }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -159,6 +161,7 @@ private let cacheFolderName = "Cache"
         ownerEngaged()
         Task { await model.takeWidgetRequests() }
         Task { await model.refreshOwnerSettings() }
+        Task { await menuBarItemNotice.offerIfHidden() }
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {

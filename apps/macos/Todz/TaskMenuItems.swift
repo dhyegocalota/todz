@@ -11,13 +11,19 @@ struct TaskMenuItems: View {
             windowState.toggleDone(task: selectedTask, item: model.selectedItem, model: model)
         }
         .keyboardShortcut(.return, modifiers: .command)
-        .disabled(!canToggle)
+        .disabled(!isTaskSelected)
         Button(MainWindowCopy.moveUp) { move(.up) }
             .keyboardShortcut(.upArrow, modifiers: [.command, .option])
             .disabled(!canMove(.up))
         Button(MainWindowCopy.moveDown) { move(.down) }
             .keyboardShortcut(.downArrow, modifiers: [.command, .option])
             .disabled(!canMove(.down))
+        Divider()
+        Button(MainWindowCopy.deleteTask) {
+            guard let selectedTask = model.selectedTask else { return }
+            windowState.requestDeletion(task: selectedTask, model: model)
+        }
+        .disabled(!isTaskSelected)
     }
 
     private var markTitle: String {
@@ -26,7 +32,7 @@ struct TaskMenuItems: View {
         return MainWindowCopy.markNotDone
     }
 
-    private var canToggle: Bool {
+    private var isTaskSelected: Bool {
         guard model.isReady, let selectedTask = model.selectedTask else { return false }
         return model.boardTask(selectedTask) != nil
     }

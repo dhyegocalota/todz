@@ -74,6 +74,19 @@ export async function updateTask(context: SessionContext): Promise<Response> {
   return Response.json({ task: taskJson(result.value) });
 }
 
+export async function deleteTask(context: SessionContext): Promise<Response> {
+  const project = await ownedProjectOf(context);
+  if (project === null) return errorResponse(OwnerErrorCode.NotFound);
+  const number = taskNumberOf(context);
+  const read = await project.readTask({ number });
+  if (!read.ok) return failureResponse(read.failure);
+  const refusal = await refusalOf({ context, writes: ONE_WRITE, bytes: NO_TEXT_BYTES });
+  if (refusal !== null) return refusal;
+  const result = await project.deleteTask({ number, confirmation: read.value.title });
+  if (!result.ok) return failureResponse(result.failure);
+  return new Response(null, { status: HttpStatus.NoContent });
+}
+
 export async function completeTasks(context: SessionContext): Promise<Response> {
   const body = await parsedBody({ request: context.request, schema: CompleteBodySchema });
   if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);

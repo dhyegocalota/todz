@@ -14,6 +14,7 @@ struct MenuBarRow: View {
     @Environment(DayCloseCoordinator.self) private var dayClose
     @Environment(\.openWindow) private var openWindow
     @State private var isHovered = false
+    @State private var deleting: BoardTask?
 
     var body: some View {
         padded
@@ -42,12 +43,21 @@ struct MenuBarRow: View {
                 navigate(press.key == .upArrow ? .up : .down)
                 return .handled
             }
+            .onKeyPress(keys: [.delete]) { press in
+                guard press.modifiers == .command else { return .ignored }
+                deleting = task
+                return .handled
+            }
             .onKeyPress(characters: CharacterSet(charactersIn: dayCloseOutcomes.keys.joined())) { press in
                 let isActionable = isActing && press.modifiers.isEmpty && dayClose.acceptsKeyActions
                 guard isActionable, let outcome = dayCloseOutcomes[press.characters] else { return .ignored }
                 act(outcome)
                 return .handled
             }
+            .contextMenu {
+                Button(MainWindowCopy.deleteTask) { deleting = task }
+            }
+            .taskDeletionDialog(task: $deleting)
     }
 
     @ViewBuilder private var padded: some View {

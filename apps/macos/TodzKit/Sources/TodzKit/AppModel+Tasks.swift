@@ -58,6 +58,27 @@ extension AppModel {
         enqueue(.field(key, .placement(placement)))
     }
 
+    public func delete(task key: TaskKey) async {
+        guard !isInLockedWorkspace(projectIdentifier: key.projectIdentifier) else { refuseAsLocked(); return }
+        let isDeleted = await write(target: .taskRemoval(key), retry: { await self.delete(task: key) }) { session in
+            try await taskDeletionIsDone {
+                try await service.deleteTask(session: session, projectIdentifier: key.projectIdentifier, number: key.number)
+            }
+        }
+        guard isDeleted != nil else { return }
+        board.remove(projectIdentifier: key.projectIdentifier, numbers: [key.number])
+        keepProject(identifier: key.projectIdentifier)
+        guard selectedTask == key else { return }
+        selectedTask = nil
+    }
+
+    private func taskDeletionIsDone(_ deletion: () async throws -> Void) async throws -> Bool {
+        do {
+            try await deletion()
+        } catch OwnerAPIError.taskNotFound {}
+        return true
+    }
+
     public func loadHistory(task key: TaskKey) async {
         guard session != nil else { return }
         histories[key] = .loading

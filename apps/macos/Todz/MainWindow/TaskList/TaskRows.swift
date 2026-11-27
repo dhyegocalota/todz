@@ -54,8 +54,14 @@ struct TaskRows: View {
                 toggleSelectedTask()
                 return .handled
             }
-            .onKeyPress(keys: [.delete, .deleteForward]) { _ in .handled }
-            .contextMenu(forSelectionType: TaskKey.self) { _ in
+            .onKeyPress(keys: [.delete, .deleteForward]) { press in
+                deleteOnChord(press)
+                return .handled
+            }
+            .contextMenu(forSelectionType: TaskKey.self) { keys in
+                if let key = keys.first {
+                    Button(MainWindowCopy.deleteTask) { windowState.requestDeletion(task: key, model: model) }
+                }
             } primaryAction: { keys in
                 guard !keys.isEmpty else { return }
                 windowState.openInspectorTitle()
@@ -88,6 +94,12 @@ struct TaskRows: View {
     private func toggleSelectedTask() {
         guard let selectedTask = model.selectedTask else { return }
         windowState.toggleDone(task: selectedTask, item: item, model: model)
+    }
+
+    private func deleteOnChord(_ press: KeyPress) {
+        let isDeleteChord = press.key == .delete && press.modifiers == .command
+        guard isDeleteChord, let selectedTask = model.selectedTask else { return }
+        windowState.requestDeletion(task: selectedTask, model: model)
     }
 
     private func move(section: TaskSection, source: IndexSet, offset: Int) {
