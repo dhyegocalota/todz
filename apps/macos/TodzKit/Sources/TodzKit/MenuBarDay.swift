@@ -18,11 +18,13 @@ public struct MenuBarDay: Equatable, Sendable {
     public let screen: MenuBarScreen
     public let upNext: BoardTask?
     public let queue: [BoardTask]
+    public let doneToday: [BoardTask]
     public let leftCount: Int
     public let doneCount: Int
     public let progress: Double
 
     public init(open: [BoardTask], doneToday: [BoardTask], pendingCount: Int, isClosingDay: Bool, load: MenuBarLoad) {
+        self.doneToday = doneToday
         let lingeringDone = open.filter { $0.task.state == .done }
         leftCount = open.count - lingeringDone.count
         doneCount = doneToday.count + lingeringDone.count
