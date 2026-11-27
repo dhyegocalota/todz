@@ -8,6 +8,8 @@ export const OAUTH_COPY = {
     consentTitle: 'Approve an app · todz',
     refusedTitle: "Can't connect · todz",
     linkTitle: 'Signing in · todz',
+    returnTitle: 'Returning to the app · todz',
+    approvedTitle: 'Already approved · todz',
   },
   signIn: {
     titleOf: (clientName: string) => `Sign in to connect ${clientName}`,
@@ -34,7 +36,18 @@ export const OAUTH_COPY = {
     ownerWarning: 'It can read and change every task, and create, rename and delete every workspace and project.',
     noProjects: 'You have no projects yet. Create one in the todz app, then come back.',
     approve: 'Approve',
+    approving: 'Approving…',
     deny: 'Deny',
+  },
+  return: {
+    titleOf: (clientName: string) => `Returning you to ${clientName}`,
+    body: "If it doesn't open by itself, use the link.",
+    actionOf: (clientName: string) => `Return to ${clientName}`,
+  },
+  approved: {
+    title: 'Already approved',
+    bodyOf: (clientName: string) =>
+      `This request was approved already. Return to ${clientName} to finish connecting. If it still asks, start again from ${clientName}.`,
   },
   refusal: {
     invalidTitle: "This link can't be used to connect an app",

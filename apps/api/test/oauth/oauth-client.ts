@@ -28,6 +28,8 @@ const COOKIE_PAIR_SEPARATOR = '; ';
 const MAIL_LINK_PATTERN = /\/oauth\/sign-in#token=([A-Za-z0-9_-]{43})&request=([A-Za-z0-9%._~*'()!-]+)/;
 const HIDDEN_INPUT_PATTERN = /<input type="hidden" name="([a-z_]+)" value="([^"]*)">/g;
 const RADIO_PATTERN = /<input type="radio" name="choice" value="([^"]+)"/g;
+const RETURN_LINK_PATTERN = /<a class="admin-link" href="([^"]+)" data-return>/;
+const LINK_GROUP = 1;
 const TOKEN_GROUP = 1;
 const REQUEST_GROUP = 2;
 const NAME_GROUP = 1;
@@ -346,6 +348,14 @@ export function redirectedParams(response: Response): URLSearchParams {
   return new URL(location).searchParams;
 }
 
+export async function returnedParams(response: Response): Promise<URLSearchParams> {
+  expect(response.status).toBe(OK_STATUS);
+  expect(response.headers.get('Location')).toBeNull();
+  const match = RETURN_LINK_PATTERN.exec(await response.text());
+  if (match === null) throw new Error('the answer should link back to the client');
+  return new URL(decodedHtml(match[LINK_GROUP]!)).searchParams;
+}
+
 export async function approvedCode({
   browser,
   params,
@@ -360,7 +370,7 @@ export async function approvedCode({
   now?: number;
 }): Promise<string> {
   const response = await decide({ browser, params, fields: { decision: 'approve', choice }, workerEnv, now });
-  const code = redirectedParams(response).get('code');
+  const code = (await returnedParams(response)).get('code');
   if (code === null) throw new Error('approving should redirect with a code');
   return code;
 }

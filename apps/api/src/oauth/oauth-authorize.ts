@@ -11,18 +11,19 @@ import {
   AuthorizationOutcomeKind,
   type AuthorizationRequest,
   authorizationOutcomeOf,
-  redirectAnswerOf,
+  redirectLocationOf,
+  refusalLocationOf,
   refusalRedirectOf,
   requestTextOf,
 } from './oauth-authorization-request';
 import { type OAuthBrowserSession, endedOAuthSessionCookie, oauthSessionOf } from './oauth-browser-session';
 import type { OAuthContext } from './oauth-context';
 import { OAuthError } from './oauth-errors';
-import { OAuthNotice, OAuthRefusal, consentPageOf, refusalPageOf, signInPageOf } from './oauth-pages';
+import { OAuthNotice, OAuthRefusal, approvedPageOf, consentPageOf, refusalPageOf, returnPageOf, signInPageOf } from './oauth-pages';
 import { OAUTH_CODE_LIFETIME_MS, OAUTH_DECISION_FIELDS, OAuthDecision, OAuthField, OAuthParameter } from './oauth-paths';
 import { OAuthScope } from './oauth-scope';
 import { linkGuardOf } from './oauth-sign-in';
-import { insertCode } from './oauth-store';
+import { hasIssuedCode, insertCode } from './oauth-store';
 
 type DecisionForm = { params: URLSearchParams; formToken: string | null; decision: string | null; choice: string | null };
 
@@ -113,13 +114,16 @@ async function approve(decided: Decided): Promise<Response> {
   });
   return endedSessionAnswerOf({
     decided,
-    answer: redirectAnswerOf({
-      redirectUri: request.redirectUri,
-      issuer: context.issuer,
-      values: [
-        [OAuthParameter.Code, code],
-        [OAuthParameter.State, request.state],
-      ],
+    answer: returnPageOf({
+      clientName: request.client.name,
+      location: redirectLocationOf({
+        redirectUri: request.redirectUri,
+        issuer: context.issuer,
+        values: [
+          [OAuthParameter.Code, code],
+          [OAuthParameter.State, request.state],
+        ],
+      }),
     }),
   });
 }
@@ -128,11 +132,14 @@ async function deny(decided: Decided): Promise<Response> {
   const { context, request } = decided;
   return endedSessionAnswerOf({
     decided,
-    answer: refusalRedirectOf({
-      redirectUri: request.redirectUri,
-      state: request.state,
-      error: OAuthError.AccessDenied,
-      issuer: context.issuer,
+    answer: returnPageOf({
+      clientName: request.client.name,
+      location: refusalLocationOf({
+        redirectUri: request.redirectUri,
+        state: request.state,
+        error: OAuthError.AccessDenied,
+        issuer: context.issuer,
+      }),
     }),
   });
 }
@@ -154,13 +161,33 @@ function signInAgainOf({ request, siteKey }: { request: AuthorizationRequest; si
   return signInPageOf({ clientName: request.client.name, params: request.params, notice: OAuthNotice.None, siteKey });
 }
 
+// NB ADR 0116: a decision posted again after its session ended is told it was approved when its request already got a code, never asked to sign in.
+async function approvedOrSignInAgainOf({
+  context,
+  request,
+  siteKey,
+}: {
+  context: OAuthContext;
+  request: AuthorizationRequest;
+  siteKey: string;
+}): Promise<Response> {
+  const isApprovedAlready = await hasIssuedCode({
+    directory: context.env.DIRECTORY,
+    clientId: request.client.id,
+    redirectUri: request.redirectUri,
+    codeChallenge: request.codeChallenge,
+  });
+  if (isApprovedAlready) return approvedPageOf(request.client.name);
+  return signInAgainOf({ request, siteKey });
+}
+
 function decide(form: DecisionForm): ValidRequestAnswer {
   return async (context, request) => {
     const guard = linkGuardOf(context);
     if (guard === null) return refusalPageOf(OAuthRefusal.Unavailable);
     if (!isSameOriginRequest({ request: context.request, origin: context.issuer })) return refusalPageOf(OAuthRefusal.Forbidden);
     const session = await oauthSessionOf(context);
-    if (session === null) return signInAgainOf({ request, siteKey: guard.siteKey });
+    if (session === null) return approvedOrSignInAgainOf({ context, request, siteKey: guard.siteKey });
     if (form.formToken === null) return refusalPageOf(OAuthRefusal.Forbidden);
     const expected = await formTokenOf({ session, request });
     const isFormTokenValid = await isSameSignature({ secret: session.secret, left: expected, right: form.formToken });
