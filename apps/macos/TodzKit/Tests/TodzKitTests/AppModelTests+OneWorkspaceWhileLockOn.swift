@@ -116,6 +116,26 @@ extension AppModelTests {
         #expect(harness.model.hiddenWorkspaceAction(for: secondChord) == nil)
     }
 
+    @Test func theCommandNumberChordsBeyondTheListReachTheModelWhileLocked() async throws {
+        let harness = try await singleWorkspaceHarness()
+        let control = try #require(WorkspaceAction.number(2).inAppChord)
+        let command = KeyChord(keyCode: control.keyCode, key: control.key, modifiers: WorkspaceShortcuts.listModifiers)
+        let firstControl = try #require(WorkspaceAction.number(1).inAppChord)
+        let firstCommand = KeyChord(keyCode: firstControl.keyCode, key: firstControl.key, modifiers: WorkspaceShortcuts.listModifiers)
+        #expect(harness.model.hiddenWorkspaceAction(for: firstCommand) == nil)
+        let action = try #require(harness.model.hiddenWorkspaceAction(for: command))
+        await harness.model.switchWorkspace(action: action)
+        #expect(harness.authenticator.asked == [.switchWorkspaces])
+        #expect(harness.model.activeWorkspace?.identifier == "secret")
+    }
+
+    @Test func noChordIsHiddenOnTheSignInScreen() async throws {
+        let harness = try AppModelHarness(isWorkspaceLockOn: true)
+        let secondChord = try #require(WorkspaceAction.number(2).inAppChord)
+        #expect(harness.model.phase != .ready)
+        #expect(harness.model.hiddenWorkspaceAction(for: secondChord) == nil)
+    }
+
     @Test func noChordIsHiddenWithTheSwitchOff() async throws {
         let harness = try await singleWorkspaceHarness(isLockOn: false)
         let thirdChord = try #require(WorkspaceAction.number(3).inAppChord)
