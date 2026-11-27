@@ -1,6 +1,6 @@
 # Workspace lock
 
-**Status:** Building
+**Status:** Shipped 2026-11-26
 **Tier:** 🔴 (a privacy guarantee: every path that could show another workspace is a bypass; a Settings change; no server, no schema, no deploy)
 **Owner approval:** approved by inheritance from [docs/product/README.md](../../product/README.md) (2026-11-23) and the owner's order of 2026-11-27, "uma feature flag desativada por padrão que deixe bem difícil fazer switch/selecionar diferentes workspaces… porque não quero outras pessoas bisbilhotando outros workspaces de jeito nenhum".
 **ADRs:** [0110](../../adr/0110-the-workspace-lock-hides-every-workspace-but-the-current-one-until-touch-id-or-the-mac-password-unlocks-a-session.md) (builds on [0080](../../adr/0080-the-workspace-picker-selects-several-workspaces-or-all-and-every-surface-shows-their-union-tagged-by-workspace.md))

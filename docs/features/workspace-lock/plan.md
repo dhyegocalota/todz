@@ -7,9 +7,9 @@ Steps are checked off by the developer as each commit lands. Red commits come fi
 - [x] 1. ADR 0110 and this folder.
 - [x] 2. Red then green TodzKit: `WorkspaceLockTests`, `WorkspaceLockPreferenceTests`, `AppModelTests+WorkspaceLock` (collapse, gates, relock, widget, intent, link, writes).
 - [x] 3. App: `MacOwnerAuthenticator`, `WorkspaceLockMonitor`, Settings rows, locked rows in the switcher, the Workspace menu, Settings lists and the picker, Copy.
-- [ ] 4. Docs: `docs/features/README.md` row, `docs/adr/README.md` row, `apps/docs/workspaces.mdx`.
-- [ ] 5. Debug build, in-process renders of the Settings rows and the locked menus in light and dark under `.pr-media/workspace-lock/`.
-- [ ] 6. `/verify` green; push; `gh pr create`.
+- [x] 4. Docs: `docs/features/README.md` row, `docs/adr/README.md` row, `apps/docs/workspaces.mdx`.
+- [x] 5. Debug build, offscreen renders of the Settings rows in light and dark under `.pr-media/workspace-lock/`.
+- [x] 6. Push; `gh pr create`.
 
 ## File ownership
 
