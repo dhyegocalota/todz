@@ -3,7 +3,7 @@
 **Status:** Shipped 2026-11-27
 **Tier:** 🟡 (a new pure model in TodzKit and a rebuilt popover, no server, no schema)
 **Owner approval:** approved 2026-11-27 by the owner's order "Menu bar redesign" in PROMPT.md and, for what the order does not say, by inheritance from [the product document](../../product/README.md); the choices of [design § 10](design.md#10-owner-decisions) are the loop's calls under the owner's standing order to decide every call
-**ADRs:** [0112](../../adr/0112-the-menu-bar-popover-leads-with-an-up-next-card-and-says-less.md)
+**ADRs:** [0112](../../adr/0112-the-menu-bar-popover-leads-with-an-up-next-card-and-says-less.md), [0113](../../adr/0113-a-locked-session-looks-like-a-one-workspace-account-with-no-placeholder-count-or-lock-chrome-and-one-neutral-way-back-in.md)
 **Not changing:** the menu bar count, the ribbon, the day temperature and the status item; the server and the owner API; the main window's task list and its row; the workspace switcher and the lock (track L of [the design](design.md#11-lock-reveals-nothing-track-l), which adds `Switch Workspace…` to the More menu after this feature), the motion tokens (track M re-points the popover to moments after this feature)
 
 ## Problem

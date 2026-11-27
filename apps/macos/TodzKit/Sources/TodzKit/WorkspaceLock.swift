@@ -31,17 +31,14 @@ import Observation
         authenticator.currentAvailability
     }
 
-    public func requiresAuthentication(for action: WorkspaceLockAction, current: String?) -> Bool {
+    public func requiresAuthentication(for action: WorkspaceLockAction) -> Bool {
         guard isEnabled else { return false }
         let isWeakening = action == .turnOff || action == .changeTimeout
-        guard !isWeakening else { return true }
-        guard isLocked else { return false }
-        guard case let .showWorkspaces(identifiers) = action, let current else { return true }
-        return !identifiers.subtracting([current]).isEmpty
+        return isWeakening || isLocked
     }
 
-    public func authorize(_ action: WorkspaceLockAction, current: String?) async -> Bool {
-        guard requiresAuthentication(for: action, current: current) else { return true }
+    public func authorize(_ action: WorkspaceLockAction) async -> Bool {
+        guard requiresAuthentication(for: action) else { return true }
         let isTurningOffWithNoPassword = action == .turnOff && availability == .passcodeNotSet
         guard !isTurningOffWithNoPassword else { return true }
         isConfirmationFailed = availability != .available
@@ -68,16 +65,16 @@ import Observation
         isUnlocked = false
     }
 
-    public func turnOff(current: String?) async -> Bool {
-        guard await authorize(.turnOff, current: current) else { return false }
+    public func turnOff() async -> Bool {
+        guard await authorize(.turnOff) else { return false }
         preference.store(isOn: false)
         isEnabled = false
         isUnlocked = false
         return true
     }
 
-    public func set(timeout: WorkspaceLockTimeout, current: String?) async -> Bool {
-        guard await authorize(.changeTimeout, current: current) else { return false }
+    public func set(timeout: WorkspaceLockTimeout) async -> Bool {
+        guard await authorize(.changeTimeout) else { return false }
         preference.store(timeout: timeout)
         self.timeout = timeout
         return true
@@ -103,13 +100,6 @@ import Observation
         let isIdle = now().timeIntervalSince(lastInput) >= timeout.seconds
         guard isIdle else { return false }
         return relock(because: .idle)
-    }
-
-    public func presented(_ workspaces: [Workspace], current: String?) -> [PresentedWorkspace] {
-        workspaces.map { workspace in
-            guard isLocked(workspaceIdentifier: workspace.identifier, current: current) else { return .visible(workspace) }
-            return .locked(identifier: workspace.identifier)
-        }
     }
 
     public func isLocked(workspaceIdentifier: String, current: String?) -> Bool {

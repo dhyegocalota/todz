@@ -8,7 +8,7 @@ public struct MenuBarRowMeta: Equatable, Sendable {
 
     public init(task: BoardTask, today: CalendarDate, shownWorkspaceCount: Int) {
         let dueDate = task.task.dueDate
-        let isOverdue = dueDate.map { $0 < today } ?? false
+        let isOverdue = dueDate.map { $0 < today } == true
         overdue = isOverdue ? dueDate : nil
         projectName = task.project.isInbox ? nil : task.project.name
         workspaceName = shownWorkspaceCount >= fewestWorkspacesToTag ? task.workspaceName : nil

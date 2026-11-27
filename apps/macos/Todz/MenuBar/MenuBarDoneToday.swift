@@ -8,8 +8,8 @@ private let expandedSymbol = "chevron.up"
 struct MenuBarDoneToday: View {
     let tasks: [BoardTask]
     let focus: FocusState<MenuBarFocus?>.Binding
+    @Binding var isExpanded: Bool
     let navigate: (MenuBarDirection) -> Void
-    @State private var isExpanded = false
 
     var body: some View {
         VStack(alignment: .leading) {

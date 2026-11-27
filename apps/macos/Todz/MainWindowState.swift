@@ -17,6 +17,7 @@ private let tomorrowOffset = 1
     var addFieldArming = AddFieldArming(opening: .addField)
     var waitingSignInLink: SignInLink?
     var isMainWindowRequested = false
+    var isChoosingWorkspace = false
     var agentClient: AgentClient = .claudeCode
     @ObservationIgnored private var lingerTimers: [TaskKey: Task<Void, Never>] = [:]
 
@@ -42,6 +43,14 @@ private let tomorrowOffset = 1
             return
         }
         Task { await model.signOut() }
+    }
+
+    func requestWorkspaceChoice(model: AppModel) {
+        Task {
+            let isConfirmed = await model.beginWorkspaceSwitch()
+            model.announceConfirmationFailure()
+            isChoosingWorkspace = isConfirmed && model.phase == .ready
+        }
     }
 
     func open(_ link: WidgetLink, from source: LinkSource) {

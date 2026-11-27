@@ -10,10 +10,10 @@ public enum MenuBarDirection: Sendable {
 }
 
 public enum MenuBarNavigation {
-    public static func targets(hasComposer: Bool, rows: [TaskKey], hasDoneToday: Bool) -> [MenuBarFocus] {
+    public static func targets(hasComposer: Bool, rows: [TaskKey], hasDoneToday: Bool, doneRows: [TaskKey]) -> [MenuBarFocus] {
         let composer: [MenuBarFocus] = hasComposer ? [.composer] : []
         let done: [MenuBarFocus] = hasDoneToday ? [.doneToday] : []
-        return composer + rows.map { MenuBarFocus.row($0) } + done
+        return composer + rows.map { MenuBarFocus.row($0) } + done + doneRows.map { MenuBarFocus.row($0) }
     }
 
     public static func next(from current: MenuBarFocus?, direction: MenuBarDirection, in targets: [MenuBarFocus]) -> MenuBarFocus? {

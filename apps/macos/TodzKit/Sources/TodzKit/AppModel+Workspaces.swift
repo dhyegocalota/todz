@@ -23,8 +23,7 @@ extension AppModel {
     public func selectWorkspaces(_ selection: WorkspaceSelection) async {
         guard phase == .ready else { return }
         guard selection != self.selection else { return }
-        guard await isAuthorized(toShow: selection) else { return }
-        guard phase == .ready else { return }
+        guard isShowable(selection) else { return }
         await show(selection)
     }
 
@@ -39,14 +38,13 @@ extension AppModel {
 
     public func chooseWorkspaces(_ selection: WorkspaceSelection) async {
         guard phase == .choosing else { return }
-        guard await isAuthorized(toShow: selection) else { return }
-        guard phase == .choosing else { return }
+        guard isShowable(selection) else { return }
         phase = .ready
         await show(selection)
     }
 
     public func switchWorkspace(number: Int) async {
-        guard let workspace = WorkspaceShortcuts.workspace(number: number, in: workspaces) else { return }
+        guard let workspace = WorkspaceShortcuts.workspace(number: number, in: visibleWorkspaces) else { return }
         await switchWorkspace(identifier: workspace.identifier)
     }
 
