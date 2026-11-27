@@ -4,7 +4,7 @@
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-27 by the owner's report to the loop that his Claude connector asked him to sign in again a few hours after he approved it
 **ADRs:** [0123](../../adr/0123-a-refresh-token-retried-within-the-leeway-gets-a-fresh-pair-and-the-cap-holds-a-refresh-every-five-minutes.md), amending [0109](../../adr/0109-mcp-clients-connect-with-oauth-2-1-pkce-and-dynamic-registration-and-a-grant-is-never-more-than-the-equivalent-key.md) §8
-**Not changing:** the token lifetimes, the token format and digests, the 30-second leeway, the revocation of a grant whose spent refresh token comes back after the leeway, the tables
+**Not changing:** the token lifetimes, the token format and digests, the revocation of a grant whose spent refresh token comes back after the leeway
 
 ## Problem
 
@@ -12,8 +12,9 @@ The owner's Claude connector (account scope) was approved at 11:54 UTC, refreshe
 
 ## Goals
 
-- A refresh token spent less than 30 seconds ago, presented again by its own client, answers a new working pair on the same grant.
+- The leeway shrinks from 30 to 5 seconds. A refresh token spent less than 5 seconds ago, presented again by its own client, answers a new working pair on the same grant, once: a second retry inside the leeway answers `invalid_grant` without revoking.
 - The leeway counts from the first spend; a retry never moves it.
+- Migration 0020 adds `oauth_tokens.retried_at` and the index `oauth_tokens (grant_id, expires_at)` for the expiry sweep of a grant.
 - A spent token presented after the leeway still deletes the whole grant; another client's token is still refused, inside the leeway too.
 - A grant holds 10,000 unexpired refresh tokens before it is revoked, a refresh every five minutes for 30 days.
 - Each project choice on the consent screen names its workspace and its project ("Personal › Inbox"), so two inboxes never read alike; it shows no counts.
@@ -25,4 +26,4 @@ The owner's Claude connector (account scope) was approved at 11:54 UTC, refreshe
 
 ## Test strategy summary
 
-`apps/api/test/oauth/oauth-token.test.ts` pins the retry within the leeway, two refreshes at once, the leeway counted from the first spend, a foreign client inside the leeway, a half-hourly client for 30 days under the cap, and the cap still revoking.
+`apps/api/test/oauth/oauth-token.test.ts` pins the retry within the leeway, a second retry refused, the sweep index, two refreshes at once, the leeway counted from the first spend, a foreign client inside the leeway, a half-hourly client for 30 days under the cap, and the cap still revoking.

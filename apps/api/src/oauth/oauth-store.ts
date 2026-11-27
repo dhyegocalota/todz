@@ -323,7 +323,7 @@ export async function insertGrant({
   return grantInsertion.meta.changes > 0;
 }
 
-// NB ADR 0123: one statement spends a refresh token for the client its grant belongs to, and honours it again within the leeway of its first spend.
+// NB ADR 0123: one statement spends a refresh token for the client its grant belongs to, and honours one retry of it within the leeway of its first spend.
 export async function spendRefreshToken({
   directory,
   digest,
@@ -337,9 +337,9 @@ export async function spendRefreshToken({
 }): Promise<string | null> {
   const row = await directory
     .prepare(
-      `UPDATE oauth_tokens SET spent_at = coalesce(spent_at, ?) WHERE digest = ? AND kind = ? AND (spent_at IS NULL OR spent_at >= ?) AND expires_at > ? AND grant_id IN (${CLIENT_GRANTS}) RETURNING grant_id`,
+      `UPDATE oauth_tokens SET spent_at = coalesce(spent_at, ?), retried_at = CASE WHEN spent_at IS NULL THEN NULL ELSE ? END WHERE digest = ? AND kind = ? AND (spent_at IS NULL OR (spent_at >= ? AND retried_at IS NULL)) AND expires_at > ? AND grant_id IN (${CLIENT_GRANTS}) RETURNING grant_id`,
     )
-    .bind(now, digest, OAuthTokenKind.Refresh, now - OAUTH_REFRESH_REUSE_LEEWAY_MS, now, clientId)
+    .bind(now, now, digest, OAuthTokenKind.Refresh, now - OAUTH_REFRESH_REUSE_LEEWAY_MS, now, clientId)
     .first<{ grant_id: string }>();
   if (row === null) return null;
   return row.grant_id;
