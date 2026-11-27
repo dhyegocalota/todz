@@ -96,7 +96,7 @@ describe('the proactive day copy', () => {
       swiftCopyValue({ text: mainWindowCopySource, name: 'tomorrow' }),
       swiftCopyValue({ text: menuBarCopySource, name: 'noDate' }),
     ]);
-    expect(menuBarCopySource).toContain(`\\(Self.left(count: left))${RIBBON_JOINER}\\(next)`);
+    expect(menuBarCopySource).toContain(`\\(left) left${RIBBON_JOINER}\\(next)`);
     expect(day.extras.ribbon.detail).toContain(RIBBON_JOINER);
     const siriPhrase = SIRI_PHRASE_PATTERN.exec(day.extras.siri.detail)?.[FIRST_CAPTURE];
     if (siriPhrase === undefined) throw new Error('the Siri chip quotes a phrase');
