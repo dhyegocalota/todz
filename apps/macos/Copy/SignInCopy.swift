@@ -25,6 +25,8 @@ enum SignInCopy {
     static var linkPromise: String { Localized.text("We'll email you a link. No password needed.") }
     static var inboxTitle: String { Localized.text("Check your inbox") }
     static var inboxSubtitle: String { Localized.text("We sent a sign-in link to") }
+    static var codeLabel: String { Localized.text("Sign-in code") }
+    static var codeHint: String { Localized.text("Enter the six digits from the email we sent you.") }
     static var sendAgain: String { Localized.text("Send Again") }
     static var useDifferentEmail: String { Localized.text("Use a Different Email") }
     static var signInRefused: String { Localized.text("Too many tries. Wait a minute, then try again.") }
