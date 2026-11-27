@@ -67,7 +67,10 @@ describe('mergedCatalog', () => {
   test('Arabic takes its six plural forms and Hindi takes one and other', () => {
     const arabic = { zero: 'a', one: 'b', two: 'c', few: 'd', many: 'e', other: 'f' };
     const merged = mergedCatalog({ catalog: CATALOG, language: 'ar', fragment: { Today: 'اليوم', '%lld left': arabic } });
-    expect(Object.keys(merged.strings['%lld left']!.localizations.ar!.variations!.plural).sort()).toEqual(Object.keys(arabic).sort());
+    const arabicLocalization = merged.strings['%lld left']!.localizations.ar!;
+    expect('variations' in arabicLocalization && Object.keys(arabicLocalization.variations.plural).sort()).toEqual(
+      Object.keys(arabic).sort(),
+    );
     expect(() =>
       mergedCatalog({ catalog: CATALOG, language: 'ar', fragment: { Today: 'اليوم', '%lld left': { one: 'x', other: 'y' } } }),
     ).toThrow('instead of');
