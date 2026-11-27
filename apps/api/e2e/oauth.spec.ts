@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { type Server, createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import path from 'node:path';
-import { type APIRequestContext, type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test';
+import { type APIRequestContext, type Browser, type BrowserContext, type Locator, type Page, expect, test } from '@playwright/test';
 import { PERSIST_FOLDER_VARIABLE } from './persist-folder';
 import { OAUTH_ORIGIN, OAUTH_SERVER_LOG_FILE_NAME } from './site-environment';
 import { JAVASCRIPT_CONTENT_TYPE, TURNSTILE_SCRIPT_URL, TURNSTILE_STUB } from './turnstile-stub';
@@ -11,6 +11,8 @@ import { JAVASCRIPT_CONTENT_TYPE, TURNSTILE_SCRIPT_URL, TURNSTILE_STUB } from '.
 const LOOPBACK_HOST = '127.0.0.1';
 const ANY_FREE_PORT = 0;
 const CALLBACK_PATH = '/callback';
+const LANDING_PATH = '/connected';
+const FOUND_STATUS = 302;
 const MCP_URL = `${OAUTH_ORIGIN}/mcp`;
 const CLIENT_NAME = 'Claude Code';
 const CLIENT_STATE = 'e2e-state';
@@ -29,7 +31,20 @@ type Tokens = { access_token: string; refresh_token: string; scope: string };
 type Pkce = { verifier: string; challenge: string };
 type ToolsAnswer = { result: { tools: { name: string }[] } };
 type Loopback = { redirectUri: string; server: Server };
-type Connection = { page: Page; request: APIRequestContext; address: string; redirectUri: string };
+type Connection = { page: Page; request: APIRequestContext; address: string; redirectUri: string; landingUri: string };
+type ConsentField = [string, string];
+type BouncingConnection = { connection: Connection; close: () => Promise<void> };
+type Approval = { code: string; consentFields: ConsentField[] };
+
+enum Press {
+  Click = 'click',
+  DoubleClick = 'double-click',
+}
+
+const PRESS_OF_KIND: Record<Press, (button: Locator) => Promise<void>> = {
+  [Press.Click]: (button) => button.click(),
+  [Press.DoubleClick]: (button) => button.dblclick(),
+};
 
 function serverLogPath(): string {
   const persistFolder = process.env[PERSIST_FOLDER_VARIABLE];
@@ -56,14 +71,27 @@ function pkcePair(): Pkce {
   return { verifier, challenge: createHash('sha256').update(verifier).digest('base64url') };
 }
 
-async function loopbackListener(): Promise<Loopback> {
+async function listening({ server, path: routePath }: { server: Server; path: string }): Promise<Loopback> {
+  await new Promise<void>((resolve) => server.listen(ANY_FREE_PORT, LOOPBACK_HOST, resolve));
+  const { port } = server.address() as AddressInfo;
+  return { redirectUri: `http://${LOOPBACK_HOST}:${port}${routePath}`, server };
+}
+
+function loopbackListener(routePath: string = CALLBACK_PATH): Promise<Loopback> {
   const server = createServer((_request, response) => {
     response.writeHead(200, { 'Content-Type': 'text/html' });
     response.end(CALLBACK_PAGE);
   });
-  await new Promise<void>((resolve) => server.listen(ANY_FREE_PORT, LOOPBACK_HOST, resolve));
-  const { port } = server.address() as AddressInfo;
-  return { redirectUri: `http://${LOOPBACK_HOST}:${port}${CALLBACK_PATH}`, server };
+  return listening({ server, path: routePath });
+}
+
+function bouncingListener(landingUri: string): Promise<Loopback> {
+  const server = createServer((request, response) => {
+    const { search } = new URL(request.url!, landingUri);
+    response.writeHead(FOUND_STATUS, { Location: `${landingUri}${search}` });
+    response.end();
+  });
+  return listening({ server, path: CALLBACK_PATH });
 }
 
 async function registerClient({ request, redirectUri }: { request: APIRequestContext; redirectUri: string }): Promise<string> {
@@ -114,18 +142,29 @@ async function signIn({ page, address, authorizeUrl }: { page: Page; address: st
   expect(page.url()).not.toContain('token=');
 }
 
-async function approvedCode({ page, choice, redirectUri }: { page: Page; choice: string | null; redirectUri: string }): Promise<string> {
+async function approvedCode({
+  page,
+  choice,
+  landingUri,
+  press,
+}: {
+  page: Page;
+  choice: string | null;
+  landingUri: string;
+  press: Press;
+}): Promise<Approval> {
   if (choice !== null) await page.locator(`input[name="choice"][value="${choice}"]`).check();
   await snapshot({ page, name: choice === null ? 'consent-project' : 'consent-owner' });
-  await page.getByRole('button', { name: 'Approve' }).click();
-  await page.waitForURL(`${redirectUri}?**`);
+  const consentFields = await consentFieldsOf(page);
+  await PRESS_OF_KIND[press](page.getByRole('button', { name: 'Approve' }));
+  await page.waitForURL(`${landingUri}?**`);
   await expect(page.getByText('Back in the client')).toBeVisible();
   const redirected = new URL(page.url()).searchParams;
   expect(redirected.get('state')).toBe(CLIENT_STATE);
   expect(redirected.get('iss')).toBe(OAUTH_ORIGIN);
   const code = redirected.get('code');
   if (code === null) throw new Error('approving should hand the client a code');
-  return code;
+  return { code, consentFields };
 }
 
 async function exchange({
@@ -159,16 +198,45 @@ async function exchange({
 async function connect({
   connection,
   choice,
+  press = Press.Click,
 }: {
   connection: Connection;
   choice: string | null;
-}): Promise<{ clientId: string; tokens: Tokens }> {
-  const { page, request, address, redirectUri } = connection;
+  press?: Press;
+}): Promise<{ clientId: string; tokens: Tokens; consentFields: ConsentField[] }> {
+  const { page, request, address, redirectUri, landingUri } = connection;
   const clientId = await registerClient({ request, redirectUri });
   const pkce = pkcePair();
   await signIn({ page, address, authorizeUrl: authorizeUrlOf({ clientId, challenge: pkce.challenge, redirectUri }) });
-  const code = await approvedCode({ page, choice, redirectUri });
-  return { clientId, tokens: await exchange({ request, clientId, code, pkce, redirectUri }) };
+  const { code, consentFields } = await approvedCode({ page, choice, landingUri, press });
+  return { clientId, tokens: await exchange({ request, clientId, code, pkce, redirectUri }), consentFields };
+}
+
+function consentFieldsOf(page: Page): Promise<ConsentField[]> {
+  return page
+    .locator('form')
+    .evaluate((form: HTMLFormElement) => [...new FormData(form)].map(([name, value]): [string, string] => [name, String(value)]));
+}
+
+async function replayConsent({ page, fields }: { page: Page; fields: ConsentField[] }): Promise<void> {
+  await page.goto(`${OAUTH_ORIGIN}/oauth/authorize`);
+  await page.evaluate(
+    ({ action, replayed }) => {
+      const form = document.createElement('form');
+      form.method = 'post';
+      form.action = action;
+      replayed.forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.append(input);
+      });
+      document.body.append(form);
+      form.submit();
+    },
+    { action: `${OAUTH_ORIGIN}/oauth/authorize`, replayed: [...fields, ['decision', 'approve']] },
+  );
 }
 
 function mcpCall({ request, token, method, params }: { request: APIRequestContext; token: string; method: string; params: unknown }) {
@@ -190,6 +258,16 @@ async function toolNames({ request, token }: { request: APIRequestContext; token
   return (messageOf(await response.text()) as ToolsAnswer).result.tools.map((tool) => tool.name);
 }
 
+async function createWorkspace({ request, token }: { request: APIRequestContext; token: string }): Promise<void> {
+  const created = await mcpCall({
+    request,
+    token,
+    method: 'tools/call',
+    params: { name: 'create_workspace', arguments: { name: WORKSPACE_NAME } },
+  });
+  expect(created.status()).toBe(200);
+}
+
 test('an MCP client connects with OAuth: register, sign in by link, consent, exchange, tools, refresh, revoke', async ({
   browser,
   request,
@@ -201,6 +279,7 @@ test('an MCP client connects with OAuth: register, sign in by link, consent, exc
     request,
     address: `oauth-${crypto.randomUUID()}@example.com`,
     redirectUri: loopback.redirectUri,
+    landingUri: loopback.redirectUri,
   };
 
   const unchallenged = await request.post(MCP_URL, { data: { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} } });
@@ -212,13 +291,7 @@ test('an MCP client connects with OAuth: register, sign in by link, consent, exc
   const owner = await connect({ connection, choice: OWNER_CHOICE });
   expect(owner.tokens.scope).toBe('owner');
   expect(await toolNames({ request, token: owner.tokens.access_token })).toContain('create_workspace');
-  const created = await mcpCall({
-    request,
-    token: owner.tokens.access_token,
-    method: 'tools/call',
-    params: { name: 'create_workspace', arguments: { name: WORKSPACE_NAME } },
-  });
-  expect(created.status()).toBe(200);
+  await createWorkspace({ request, token: owner.tokens.access_token });
 
   const project = await connect({ connection, choice: null });
   expect(project.tokens.scope).toMatch(/^project:/);
@@ -240,6 +313,55 @@ test('an MCP client connects with OAuth: register, sign in by link, consent, exc
   expect((await mcpCall({ request, token: renewed.access_token, method: 'tools/list', params: {} })).status()).toBe(401);
   await context.close();
   loopback.server.close();
+});
+
+async function bouncingConnection({ browser, request }: { browser: Browser; request: APIRequestContext }): Promise<BouncingConnection> {
+  const context = await browserContextOf(browser);
+  const landing = await loopbackListener(LANDING_PATH);
+  const bouncing = await bouncingListener(landing.redirectUri);
+  const connection: Connection = {
+    page: await context.newPage(),
+    request,
+    address: `oauth-${crypto.randomUUID()}@example.com`,
+    redirectUri: bouncing.redirectUri,
+    landingUri: landing.redirectUri,
+  };
+  async function close(): Promise<void> {
+    await context.close();
+    landing.server.close();
+    bouncing.server.close();
+  }
+  return { connection, close };
+}
+
+test('approving lands on the client even when its redirect URI redirects again to another origin', async ({ browser, request }) => {
+  const { connection, close } = await bouncingConnection({ browser, request });
+
+  const owner = await connect({ connection, choice: OWNER_CHOICE });
+  await createWorkspace({ request, token: owner.tokens.access_token });
+  const project = await connect({ connection, choice: null });
+
+  expect(owner.tokens.scope).toBe('owner');
+  expect(project.tokens.scope).toMatch(/^project:/);
+  await close();
+});
+
+test('a double click on Approve lands on the client once, and a replayed approval says it was already approved', async ({
+  browser,
+  request,
+}) => {
+  const { connection, close } = await bouncingConnection({ browser, request });
+
+  const owner = await connect({ connection, choice: OWNER_CHOICE, press: Press.DoubleClick });
+  await createWorkspace({ request, token: owner.tokens.access_token });
+  const project = await connect({ connection, choice: null, press: Press.DoubleClick });
+  expect(project.tokens.scope).toMatch(/^project:/);
+  await replayConsent({ page: connection.page, fields: project.consentFields });
+
+  await expect(connection.page.getByRole('heading', { level: 1, name: 'Already approved' })).toBeVisible();
+  await expect(connection.page.getByLabel('Email address')).toHaveCount(0);
+  await snapshot({ page: connection.page, name: 'already-approved' });
+  await close();
 });
 
 test('an unknown app gets an error page and is never redirected', async ({ browser }) => {

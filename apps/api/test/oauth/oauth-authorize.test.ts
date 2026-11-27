@@ -19,6 +19,8 @@ import {
   pkcePair,
   redirectedParams,
   registerClient,
+  returnedParams,
+  type SeededOwner,
   seededOwner,
   serveOAuthRequest,
   signedInBrowser,
@@ -229,24 +231,44 @@ describe('the consent screen', () => {
     expect(policy).toContain("form-action 'self' http://127.0.0.1:33418");
   });
 
-  test('approving a project redirects with a code, the state and the issuer', async () => {
+  test.each([
+    ['a project', (owner: SeededOwner) => owner.projectId],
+    ['the whole account', () => 'owner'],
+  ])(
+    'approving %s answers a page that returns to the client with a code, the state and the issuer, never a redirect a form policy could block',
+    async (_name, choiceOf) => {
+      const owner = await seededOwner();
+      const params = await freshRequest();
+      const browser = await signedInBrowser({ params, email: owner.email });
+
+      const response = await decide({ browser, params, fields: { decision: 'approve', choice: choiceOf(owner) } });
+
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
+      expect(response.headers.get('Referrer-Policy')).toBe('no-referrer');
+      const returned = await returnedParams(response);
+      expect(returned.get('code')).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      expect(returned.get('state')).toBe(CLIENT_STATE);
+      expect(returned.get('iss')).toBe(OAUTH_ORIGIN);
+    },
+  );
+
+  test('the consent form keeps Approve busy once submitted, so a second press never posts again', async () => {
     const owner = await seededOwner();
     const params = await freshRequest();
     const browser = await signedInBrowser({ params, email: owner.email });
 
-    const redirected = redirectedParams(await decide({ browser, params, fields: { decision: 'approve', choice: owner.projectId } }));
+    const html = await consentPage({ browser, params });
 
-    expect(redirected.get('code')).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    expect(redirected.get('state')).toBe(CLIENT_STATE);
-    expect(redirected.get('iss')).toBe(OAUTH_ORIGIN);
+    expect(html).toContain('<form class="join-form consent-form"');
+    expect(html).toMatch(/<button class="join-button" type="submit" name="decision" value="approve" data-submitting="Approving…">/);
   });
 
-  test('denying redirects with access_denied and the state', async () => {
+  test('denying answers a page that returns to the client with access_denied and the state', async () => {
     const owner = await seededOwner();
     const params = await freshRequest();
     const browser = await signedInBrowser({ params, email: owner.email });
 
-    const redirected = redirectedParams(await decide({ browser, params, fields: { decision: 'deny', choice: owner.projectId } }));
+    const redirected = await returnedParams(await decide({ browser, params, fields: { decision: 'deny', choice: owner.projectId } }));
 
     expect(redirected.get('error')).toBe('access_denied');
     expect(redirected.get('state')).toBe(CLIENT_STATE);
@@ -360,7 +382,7 @@ describe('a decision comes only from the consent form the server rendered', () =
     const params = await freshRequest();
     const browser = await signedInBrowser({ params, email: owner.email });
 
-    const redirected = redirectedParams(await decide({ browser, params, fields: { decision: 'deny', choice: 'owner' } }));
+    const redirected = await returnedParams(await decide({ browser, params, fields: { decision: 'deny', choice: 'owner' } }));
 
     expect(redirected.get('code')).toBeNull();
     expect(redirected.get('error')).toBe('access_denied');
@@ -445,5 +467,41 @@ describe('the consent form is bound to its session, its request and its origin',
 
     expect(response.status).toBe(200);
     expect(await response.text()).toContain('action="/oauth/sign-in-links"');
+  });
+
+  test.each([
+    ['a project', (owner: SeededOwner) => owner.projectId],
+    ['the whole account', () => 'owner'],
+  ])('an approval of %s posted again says it was already approved, never the email form, and yields no code', async (_name, choiceOf) => {
+    const owner = await seededOwner();
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+    const fields = { ...hiddenFieldsOf(await consentPage({ browser, params })), decision: 'approve', choice: choiceOf(owner) };
+    await browserVisit({ browser, request: formRequest({ path: '/oauth/authorize', fields }) });
+
+    const replayed = await browserVisit({ browser, request: formRequest({ path: '/oauth/authorize', fields }) });
+
+    expect(replayed.status).toBe(200);
+    expect(replayed.headers.get('Location')).toBeNull();
+    const html = await replayed.text();
+    expect(html).toContain('Already approved');
+    expect(html).not.toContain('action="/oauth/sign-in-links"');
+    expect(html).not.toContain('data-return');
+  });
+
+  test('a cross-site post of an approved request is refused, never told it was approved', async () => {
+    const owner = await seededOwner();
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+    const fields = { ...hiddenFieldsOf(await consentPage({ browser, params })), decision: 'approve', choice: owner.projectId };
+    await browserVisit({ browser, request: formRequest({ path: '/oauth/authorize', fields }) });
+
+    const replayed = await browserVisit({
+      browser,
+      request: formRequest({ path: '/oauth/authorize', fields, headers: { 'Sec-Fetch-Site': 'cross-site' } }),
+    });
+
+    expect(replayed.status).toBe(403);
+    expect(await replayed.text()).not.toContain('Already approved');
   });
 });
