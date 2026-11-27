@@ -5,6 +5,7 @@ extension AppModel {
         do {
             return try store.readOwner()
         } catch {
+            breadcrumbs.record(.ownerCacheUnreadable)
             keepInCache { try eraseCache() }
             return nil
         }
@@ -13,6 +14,7 @@ extension AppModel {
     func cacheToOpen(for owner: Owner) throws -> OwnerCache? {
         let cached = cachedOwner()
         guard let cached, cached.ownerIdentifier == owner.identifier else {
+            if cached != nil { breadcrumbs.record(.ownerMismatchAtSignIn) }
             forgetWindow()
             outbox = Outbox()
             try eraseCache()

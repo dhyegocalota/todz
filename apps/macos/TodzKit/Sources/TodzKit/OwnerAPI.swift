@@ -83,15 +83,17 @@ public protocol OwnerService: Sendable {
 public struct OwnerAPI: OwnerService {
     private let baseURL: URL
     private let appVersion: String
+    private let language: @Sendable () -> AppLanguage
     let transport: URLSession
 
-    public init(baseURL: URL, appVersion: String) {
-        self.init(baseURL: baseURL, appVersion: appVersion, transport: Self.uncachedTransport())
+    public init(baseURL: URL, appVersion: String, language: @escaping @Sendable () -> AppLanguage) {
+        self.init(baseURL: baseURL, appVersion: appVersion, language: language, transport: Self.uncachedTransport())
     }
 
-    public init(baseURL: URL, appVersion: String, transport: URLSession) {
+    public init(baseURL: URL, appVersion: String, language: @escaping @Sendable () -> AppLanguage, transport: URLSession) {
         self.baseURL = baseURL
         self.appVersion = appVersion
+        self.language = language
         self.transport = transport
     }
 
@@ -115,7 +117,7 @@ public struct OwnerAPI: OwnerService {
     }
 
     public func health() async throws -> ServerHealthAnswer {
-        var request = try OwnerRequest(method: .get, path: healthPath, session: nil).transportRequest(baseURL: baseURL, appVersion: appVersion)
+        var request = try OwnerRequest(method: .get, path: healthPath, session: nil).transportRequest(baseURL: baseURL, appVersion: appVersion, language: language())
         request.timeoutInterval = ServerTiming.probeSeconds
         let body: Data
         do {
@@ -263,7 +265,7 @@ public struct OwnerAPI: OwnerService {
 
     private func exchange(_ request: OwnerRequest) async throws -> (Data, URLResponse) {
         do {
-            return try await transport.data(for: request.transportRequest(baseURL: baseURL, appVersion: appVersion))
+            return try await transport.data(for: request.transportRequest(baseURL: baseURL, appVersion: appVersion, language: language()))
         } catch is URLError {
             throw OwnerAPIError.unreachable
         }

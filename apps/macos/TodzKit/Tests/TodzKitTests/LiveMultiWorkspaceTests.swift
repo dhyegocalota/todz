@@ -69,6 +69,7 @@ private func serverTasks(of workspace: Workspace, session: String) async throws 
             vault: vault,
             pendingLinks: InMemoryPendingLinkVault(),
             store: store,
+            breadcrumbs: LaunchBreadcrumbs(folder: nil, now: Date.init, maxByteCount: LaunchBreadcrumbs.standardMaxByteCount),
             workspaceLock: WorkspaceLock(preference: WorkspaceLockPreference(defaults: defaults, domainName: defaultsName), authenticator: FakeAuthenticator()),
             widgetStore: widgets,
             reloadWidgets: { MainActor.assumeIsolated { widgets.recordReload() } },

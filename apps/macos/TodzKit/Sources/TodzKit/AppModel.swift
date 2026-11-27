@@ -120,6 +120,7 @@ import Observation
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let pendingLinks: any PendingLinkVault
     @ObservationIgnored let store: any SyncStore
+    @ObservationIgnored let breadcrumbs: LaunchBreadcrumbs
     @ObservationIgnored let cacheWriter: ProjectCacheWriter
     @ObservationIgnored var taskViewsBuildCount = 0
     @ObservationIgnored private var storedTaskViews: (day: CalendarDate, isLocked: Bool, views: TaskViews)?
@@ -143,6 +144,7 @@ import Observation
         vault: any SessionVault,
         pendingLinks: any PendingLinkVault,
         store: any SyncStore,
+        breadcrumbs: LaunchBreadcrumbs,
         cacheScheduler: CacheScheduler = .immediate,
         workspaceLock: WorkspaceLock,
         widgetStore: any WidgetStore,
@@ -168,6 +170,7 @@ import Observation
         self.vault = vault
         self.pendingLinks = pendingLinks
         self.store = store
+        self.breadcrumbs = breadcrumbs
         self.cacheWriter = ProjectCacheWriter(store: store, scheduler: cacheScheduler)
         self.workspaceLock = workspaceLock
         self.widgetStore = widgetStore
@@ -445,7 +448,10 @@ import Observation
             return
         }
         let isAnotherOwnersCache = ownerIdentifier != nil && ownerIdentifier != owner.identifier
-        if isAnotherOwnersCache { try forgetCache() }
+        if isAnotherOwnersCache {
+            breadcrumbs.record(.ownerMismatchAtLaunch)
+            try forgetCache()
+        }
         isOwnerConfirmed = true
         ownerConfirmationFailures = 0
         ownerIdentifier = owner.identifier
