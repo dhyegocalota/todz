@@ -7,7 +7,6 @@ private let collapsedSymbol = "chevron.right"
 struct ServerDisclosure: View {
     @Binding var isExpanded: Bool
     @Environment(AppModel.self) private var model
-    @Environment(\.accessibilityReduceMotion) private var reducesMotion
     @AccessibilityFocusState private var isLineFocused: Bool
 
     var body: some View {
@@ -34,15 +33,16 @@ struct ServerDisclosure: View {
                 VersionLine()
             }
         }
+        .todzMotion(.disclosure, value: isExpanded)
         .onChange(of: model.serverURL) { isExpanded = false }
     }
 
     private func toggle() {
-        withAnimation(reducesMotion ? nil : .default) { isExpanded.toggle() }
+        isExpanded.toggle()
     }
 
     private func collapse() {
-        withAnimation(reducesMotion ? nil : .default) { isExpanded = false }
+        isExpanded = false
         isLineFocused = true
     }
 }

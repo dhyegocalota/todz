@@ -8,6 +8,11 @@ public enum MotionTransform: Sendable, Equatable {
     case none
     case scale(Double)
     case offset(vertical: Double)
+
+    public var scale: Double {
+        guard case let .scale(factor) = self else { return 1 }
+        return factor
+    }
 }
 
 private let instantUnderReduceMotion: Set<MotionMoment> = [.reorder, .press, .hover, .focus]

@@ -13,9 +13,11 @@ struct TaskRows: View {
     let focus: FocusState<MainWindowFocus?>.Binding
     @Environment(AppModel.self) private var model
     @Environment(MainWindowState.self) private var windowState
+    @State private var knownRows: ShownRows?
 
     var body: some View {
         @Bindable var model = model
+        let cascade = cascadeIndices
         ScrollViewReader { proxy in
             List(selection: $model.selectedTask) {
                 ForEach(sections) { section in
@@ -23,12 +25,14 @@ struct TaskRows: View {
                         ForEach(section.tasks, id: \.key) { task in
                             TaskRow(task: task, item: item)
                                 .todzEntrance(isEntering: arriving.contains(task.rowIdentity))
+                                .todzCascade(index: cascade[task.rowIdentity])
                                 .tag(task.key)
                         }
                         .onMove(perform: section.hasManualOrder ? { move(section: section, source: $0, offset: $1) } : nil)
                         ForEach(section.pendingTasks, id: \.idempotencyKey) { pendingTask in
                             PendingTaskRow(task: pendingTask, item: item)
                                 .todzEntrance(isEntering: arriving.contains(pendingTask.rowIdentity))
+                                .todzCascade(index: cascade[pendingTask.rowIdentity])
                                 .selectionDisabled()
                         }
                     } header: {
@@ -37,7 +41,10 @@ struct TaskRows: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .todzAnimation(.settle, value: shownSignature)
+            .todzMotion(.reorder, value: shownSignature)
+            .onChange(of: shownRows, initial: true) { _, shown in
+                knownRows = shown
+            }
             .focused(focus, equals: .list)
             .task {
                 guard windowState.openingFocus == .list else { return }
@@ -60,6 +67,18 @@ struct TaskRows: View {
                 Task { proxy.scrollTo(selectedTask) }
             }
         }
+    }
+
+    private var orderedIdentities: [RowIdentity] {
+        sections.flatMap { $0.tasks.map(\.rowIdentity) + $0.pendingTasks.map(\.rowIdentity) }
+    }
+
+    private var shownRows: ShownRows {
+        ShownRows(item: item, identities: Set(orderedIdentities))
+    }
+
+    private var cascadeIndices: [RowIdentity: Int] {
+        RowArrival.indices(known: knownRows, current: shownRows, ordered: orderedIdentities)
     }
 
     private var shownSignature: ShownSignature {

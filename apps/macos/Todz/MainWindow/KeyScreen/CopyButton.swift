@@ -1,4 +1,5 @@
 import SwiftUI
+import TodzKit
 
 private let copySymbol = "doc.on.doc"
 private let copiedSymbol = "checkmark"
@@ -11,7 +12,6 @@ struct CopyButton: View {
     let item: String
     let holdsSecret: Bool
     let disabledReason: String?
-    @Environment(\.accessibilityReduceMotion) private var reducesMotion
     @State private var copyCount = 0
     @State private var isCopied = false
 
@@ -24,7 +24,7 @@ struct CopyButton: View {
                     .opacity(isCopied ? shownOpacity : hiddenOpacity)
             }
         }
-        .animation(reducesMotion ? nil : .default, value: isCopied)
+        .todzMotion(.busySwap, value: isCopied)
         .disabled(because: disabledReason)
         .accessibilityLabel(KeyScreenCopy.copyItem(item: item))
         .task(id: copyCount) { await endCopied() }

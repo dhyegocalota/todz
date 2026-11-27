@@ -30,6 +30,6 @@ struct NewProjectButton: View {
         .help(MainWindowCopy.newProjectHelp(workspaceName: workspace.name))
         .accessibilityHint(MainWindowCopy.newProjectHelp(workspaceName: workspace.name))
         .onHover { isHovering = $0 }
-        .todzAnimation(.snap, value: isHovering)
+        .todzMotion(.hover, value: isHovering)
     }
 }

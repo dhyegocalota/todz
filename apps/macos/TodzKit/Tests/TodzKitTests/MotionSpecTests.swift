@@ -98,6 +98,19 @@ private func expectedTransform(_ moment: MotionMoment) -> MotionTransform {
     }
 }
 
+@Suite struct MotionTransformTests {
+    @Test func aScaleTransformCarriesItsFactorAndTheOthersDoNotScale() {
+        #expect(MotionTransform.scale(0.97).scale == 0.97)
+        #expect(MotionTransform.none.scale == 1)
+        #expect(MotionTransform.offset(vertical: 8).scale == 1)
+    }
+
+    @Test func thePressedScaleIsOnlyThereWithReduceMotionOff() {
+        #expect(spec(.press, isReduceMotionOn: false).transform.scale == 0.97)
+        #expect(spec(.press, isReduceMotionOn: true).transform.scale == 1)
+    }
+}
+
 @Suite struct MotionStaggerTests {
     @Test func theDelayIsTwelveMillisecondsPerRowUpToTheSixth() {
         let delays = (0 ... lastStaggeredIndex).map { MotionStagger.delayMilliseconds(index: $0, token: .snap) }
