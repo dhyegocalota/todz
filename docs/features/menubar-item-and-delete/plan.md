@@ -6,7 +6,8 @@ Lighter gates for an urgent 🟡 fix: no plan review; reviewer findings below IM
 - [x] (ec42c680) Red tests, committed alone: the owner route table and the parity row name `delete_task`; the Worker deletes a task through the owner route; `AppModel.delete(task:)`; `MenuBarItemPlacement`
 - [x] (the fix commit) The Worker: `OwnerRoute.DeleteTask` on `DELETE …/tasks/:number`, a `deleteTask` handler that reads the task and deletes it under one fair-use write, and the parity row
 - [x] (the fix commit) TodzKit: `OwnerService.deleteTask`, `OwnerAPI`, `WriteTarget.taskRemoval`, `AppModel.delete(task:)`, `MenuBarItemPlacement`
-- [x] (the fix commit) The app: the task deletion dialog in the window, **Delete Task…** in the row's context menu and the Task menu, ⌘⌫ on the focused list; the popover row's context menu and ⌘⌫; `MenuBarItemNotice` at the start of the proactive surfaces and on activation
+- [x] (the fix commit) The app: the task deletion dialog in the window, **Delete Task…** in the row's context menu and the Task menu, ⌘⌫ on the focused list; the popover row's context menu and ⌘⌫; `MenuBarItemNotice` at the start of the proactive surfaces and on a screen change, never polling
+- [x] (the identity commit) `menu-bar-item-identity.test.ts` pins one `MenuBarExtra` and no status item of todz's own, so the item stays `dev.todz.Todz-Item-0` across releases
 - [x] (light only, in the PR) An offscreen render of the notice's alert; the dark render draws white text on the alert's white offscreen material, so it is not evidence
 - [x] (swift test 1740 passed; Worker 2831 passed; shape 542 passed; typecheck green; the Debug app builds) `swift test`, the Debug app build, `pnpm --filter @todz/api test:unit`, `pnpm --filter @todz/repository-shape test`, `pnpm typecheck`, PR
 

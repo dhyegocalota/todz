@@ -19,6 +19,8 @@ Proven cause: macOS blocks it, not todz.
 - Accessibility reads the item as 44 by 24 points, labelled "todz, 1 left today", placed at (-1, 1439): parked below the bottom of the screen. Blocked 1Password and Tailscale sit at the same spot. Docker's visible item is at (3119, 3).
 - So the notch, the ribbon's width and the lock are not the cause: there is no notch, the item was the compact glyph and count, and the item exists in every phase. The ribbon is already capped at 180 points of text (ADR 0071).
 
+Why todz is on that list: the item's identity did not drift. Control Center keys the host as `dev.todz.Todz-Item-0`. The bundle identifier has been `dev.todz.Todz` for every Release since 2026-11-24, pinned by `macos-identities.test.ts`, and Debug builds have used `dev.todz.Todz.debug` since then. The installed 0.2.8 is signed by team `XFWR794VS8` like every release. `Item-0` is SwiftUI's name for the app's only `MenuBarExtra`; no source sets an autosave name, and #123 changed the popover, not the item. A host that is not on the list is shown, as Docker's item is. The list is the owner's choice in System Settings › Menu Bar, or an unrecorded toggle of it. The unified log keeps about a day, and the first `Moving host to blocked list` for todz is older than that, so the moment it was turned off cannot be seen. A stable identity keeps the choice across updates, both ways. `menu-bar-item-identity.test.ts` now pins one `MenuBarExtra` and no status item of todz's own, so a release never turns into a new host by accident.
+
 todz cannot remove itself from that list. What it can do is notice and say so: today a blocked todz is silent, and the owner sees no item, no Dock icon in menu-bar-only mode, and no clue.
 
 ### A task cannot be deleted in the app
@@ -52,7 +54,7 @@ No path deletes a task from the Mac app. This is not a regression: delete never 
 
 The delete: a row, the Task menu or ⌘⌫ asks for confirmation. Delete calls `AppModel.delete(task:)`, then `OwnerService.deleteTask`, then the route. The route reads the task, deletes it with the title it just read as the confirmation (as the MCP `delete` tool does), and answers 204. The model drops the number from the board, keeps the project cache and clears a selection that pointed at it. Widgets follow the board.
 
-The menu bar notice: when the proactive surfaces start, and again when the app becomes active, the app reads the frame of its status bar window. `MenuBarItemPlacement.isOnTheBar(itemFrame:screenFrames:)` says whether that frame sits in the top band of a screen. If it does not, and the owner has not chosen "Don't show this again", an alert says so once per launch.
+The menu bar notice: two seconds after the proactive surfaces start, and again when the screens change (a display attached, removed or rearranged), the app reads the frame of its status bar window. `MenuBarItemPlacement.isOnTheBar(itemFrame:screenFrames:)` says whether that frame sits in the top band of a screen. If it does not, and the owner has not chosen "Don't show this again", an alert says so once per launch.
 
 ### Interfaces
 

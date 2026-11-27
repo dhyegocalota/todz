@@ -9,12 +9,28 @@ private let settlingPause = Duration.seconds(2)
     private let defaults: UserDefaults
     private var isOffered = false
     private var isWaiting = false
+    private var screenObservation: (any NSObjectProtocol)?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
 
-    func offerIfHidden() async {
+    func start() {
+        screenObservation = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.check() }
+        }
+        check()
+    }
+
+    private func check() {
+        Task { await offerIfHidden() }
+    }
+
+    private func offerIfHidden() async {
         let isQuiet = isOffered || isWaiting || defaults.bool(forKey: declinedKey)
         guard !isQuiet else { return }
         isWaiting = true

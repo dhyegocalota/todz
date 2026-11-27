@@ -148,7 +148,7 @@ private let cacheFolderName = "Cache"
         startRibbon()
         dayCloseScheduler.start()
         morningGlanceTrigger.start()
-        Task { await menuBarItemNotice.offerIfHidden() }
+        menuBarItemNotice.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -161,7 +161,6 @@ private let cacheFolderName = "Cache"
         ownerEngaged()
         Task { await model.takeWidgetRequests() }
         Task { await model.refreshOwnerSettings() }
-        Task { await menuBarItemNotice.offerIfHidden() }
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {

@@ -18,6 +18,10 @@ The installed or running todz is never driven, and no todz build is launched on 
 - [x] Another owner's project answers 404 `not_found`, and the task stays.
 - [x] The parity table maps "Delete a task" to `delete_task` and the `delete` tool. Evidence: `mcp-parity.test.ts`.
 
+## Repository shape (`pnpm --filter @todz/repository-shape test`)
+
+- [x] The app has one `MenuBarExtra`, and no Swift source sets an autosave name, adds its own status item or binds `isInserted`. Evidence: `menu-bar-item-identity.test.ts`. It pins how things are today, so it was green from the start.
+
 ## Renders (hosted in process)
 
 - [x] The notice's alert, light: the message, the detail, **Open Menu Bar Settings**, **Not Now**, and "Don't show this again". The harness is not an app bundle, so it draws the generic icon where todz shows its own.
