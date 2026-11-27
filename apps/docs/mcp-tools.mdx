@@ -3,29 +3,34 @@ title: MCP tools
 description: The tools and the prompt an agent gets from the todz MCP server, and the scope each one needs.
 ---
 
-An MCP client connects to the todz server with OAuth only: add the URL to your client and sign in, as [Connect an agent](/connect-an-agent) shows. The grant you approve picks the tool set: a project scope gets the task tools, and an owner scope gets the account tools. Each tool below names the scope it needs.
+An MCP client connects to the todz server with OAuth only: add the URL to your client and sign in, as [Connect an agent](/connect-an-agent) shows. The grant you approve picks the tool set: a project scope gets the task tools of one project, and an owner scope gets the account tools and the same task tools for every project of the account. Each tool below names the scope it needs.
 
 - A **project scope** holds the to-do list of one project: the project you picked on the consent screen. It can also list and move tasks inside the workspace of that project. It never creates, renames or deletes a workspace or a project. Task ids look like `T-12`.
-- An **owner scope** manages the account: its workspaces and projects. It is never preselected on the consent screen, and you disconnect it in **Settings** › **Connected apps**. It reaches no task and no other account. Connect it under its own name, `todz-account`, so it sits beside the `todz` server of a project instead of replacing it.
+- An **owner scope** holds the whole account: its workspaces, its projects and every task, so one connection exposes everything the app can do. It is never preselected on the consent screen, and you disconnect it in **Settings** › **Connected apps**. It reaches no other account.
 
-An agent with a project scope does not see the owner tools, and an agent with an owner scope does not see the task tools. Every delete asks for a `confirm` argument holding the current name (a task's current title); when it differs, nothing is deleted.
+On an owner scope every task tool takes a required `project` argument: the id of the project it works on, from `workspaces`. There is no default project. A project of another account answers exactly like a project that does not exist. A project scope has no `project` argument, except that `move` takes the destination there.
+
+Every delete asks for a `confirm` argument holding the current name (a task's current title); when it differs, nothing is deleted.
 
 ## next
 
-**Scope:** project scope.
+**Scope:** project scope and owner scope.
 
 The one open task to work on now in this project, with its notes.
 
-It takes no arguments.
+| Argument  | Type   | Description                                                      |
+| --------- | ------ | ---------------------------------------------------------------- |
+| `project` | text   | Owner scope only: id of the project the task tool works on, from workspaces. |
 
 ## add
 
-**Scope:** project scope.
+**Scope:** project scope and owner scope.
 
 Add one or more tasks. Give each an idempotency_key to make a retry safe.
 
 | Argument          | Type           | Description                                                                  |
 | ----------------- | -------------- | ---------------------------------------------------------------------------- |
+| `project`         | text           | Owner scope only: id of the project the task tool works on, from workspaces. |
 | `tasks`           | list           | The tasks to add, one object each.                                           |
 | `title`           | text           | Short title.                                                                 |
 | `notes`           | text or null   | Markdown notes.                                                              |
@@ -34,45 +39,49 @@ Add one or more tasks. Give each an idempotency_key to make a retry safe.
 
 ## list
 
-**Scope:** project scope.
+**Scope:** project scope and owner scope.
 
 List tasks by state, due window and text, in manual order (done: newest first).
 
-| Argument | Type            | Description                                                                            |
-| -------- | --------------- | -------------------------------------------------------------------------------------- |
-| `state`  | text            | `open` or `done`. Defaults to `open`.                                                  |
-| `due`    | list of text    | Due windows to include: `overdue`, `today`, `upcoming` or `undated`. Empty means all. |
-| `text`   | text or null    | Text to find in titles and notes.                                                      |
-| `limit`  | whole number    | How many tasks to show.                                                                |
+| Argument  | Type            | Description                                                                            |
+| --------- | --------------- | -------------------------------------------------------------------------------------- |
+| `project` | text            | Owner scope only: id of the project the task tool works on, from workspaces.           |
+| `state`   | text            | `open` or `done`. Defaults to `open`.                                                  |
+| `due`     | list of text    | Due windows to include: `overdue`, `today`, `upcoming` or `undated`. Empty means all. |
+| `text`    | text or null    | Text to find in titles and notes.                                                      |
+| `limit`   | whole number    | How many tasks to show.                                                                |
 
 ## show
 
-**Scope:** project scope.
+**Scope:** project scope and owner scope.
 
 Show one task with its state, due date and notes.
 
-| Argument | Type   | Description           |
-| -------- | ------ | --------------------- |
-| `id`     | text   | Task id, like `T-12`. |
+| Argument  | Type   | Description                                                                  |
+| --------- | ------ | ---------------------------------------------------------------------------- |
+| `project` | text   | Owner scope only: id of the project the task tool works on, from workspaces. |
+| `id`      | text   | Task id, like `T-12`.                                                        |
 
 ## history
 
-**Scope:** project scope.
+**Scope:** project scope and owner scope.
 
 Show what happened to a task, oldest first: who did what and when.
 
-| Argument | Type   | Description           |
-| -------- | ------ | --------------------- |
-| `id`     | text   | Task id, like `T-12`. |
+| Argument  | Type   | Description                                                                  |
+| --------- | ------ | ---------------------------------------------------------------------------- |
+| `project` | text   | Owner scope only: id of the project the task tool works on, from workspaces. |
+| `id`      | text   | Task id, like `T-12`.                                                        |
 
 ## update
 
-**Scope:** project scope.
+**Scope:** project scope and owner scope.
 
 Change a task's title, notes, due date or place in the order. null clears notes or the due date.
 
 | Argument    | Type           | Description                                                                |
 | ----------- | -------------- | -------------------------------------------------------------------------- |
+| `project`   | text           | Owner scope only: id of the project the task tool works on, from workspaces. |
 | `id`        | text           | Task id, like `T-12`.                                                      |
 | `title`     | text           | Short title.                                                               |
 | `notes`     | text or null   | Markdown notes.                                                            |
@@ -83,46 +92,50 @@ Change a task's title, notes, due date or place in the order. null clears notes 
 
 ## done
 
-**Scope:** project scope.
+**Scope:** project scope and owner scope.
 
 Complete one or more tasks, with an optional note of what was done.
 
-| Argument | Type           | Description                |
-| -------- | -------------- | -------------------------- |
-| `ids`    | list of text   | Task ids, like `T-12`.     |
-| `note`   | text or null   | What was done.             |
+| Argument  | Type           | Description                                                                  |
+| --------- | -------------- | ---------------------------------------------------------------------------- |
+| `project` | text           | Owner scope only: id of the project the task tool works on, from workspaces. |
+| `ids`     | list of text   | Task ids, like `T-12`.                                                       |
+| `note`    | text or null   | What was done.                                                               |
 
 ## reopen
 
-**Scope:** project scope.
+**Scope:** project scope and owner scope.
 
 Reopen one or more done tasks.
 
-| Argument | Type           | Description                |
-| -------- | -------------- | -------------------------- |
-| `ids`    | list of text   | Task ids, like `T-12`.     |
+| Argument  | Type           | Description                                                                  |
+| --------- | -------------- | ---------------------------------------------------------------------------- |
+| `project` | text           | Owner scope only: id of the project the task tool works on, from workspaces. |
+| `ids`     | list of text   | Task ids, like `T-12`.                                                       |
 
 ## delete
 
-**Scope:** project scope.
+**Scope:** project scope and owner scope.
 
 Delete a task for good. Give its current title as confirm; nothing is deleted when it differs. A task you mean to keep somewhere else needs move. The owner's Mac shows the deletion after its next update.
 
-| Argument  | Type   | Description                                                                |
-| --------- | ------ | -------------------------------------------------------------------------- |
-| `id`      | text   | Task id, like `T-12`.                                                      |
+| Argument  | Type   | Description                                                                       |
+| --------- | ------ | --------------------------------------------------------------------------------- |
+| `project` | text   | Owner scope only: id of the project the task tool works on, from workspaces.      |
+| `id`      | text   | Task id, like `T-12`.                                                             |
 | `confirm` | text   | The current title of the task, typed exactly. Nothing is deleted when it differs. |
 
 ## move
 
-**Scope:** project scope.
+**Scope:** project scope and owner scope.
 
 Move a task to another project of the same workspace. The task gets a new id there. Find project ids with projects. The owner's Mac shows the move after its next update.
 
-| Argument  | Type   | Description                                                      |
-| --------- | ------ | ---------------------------------------------------------------- |
-| `id`      | text   | Task id, like `T-12`.                                            |
-| `project` | text   | Id of the project to move the task to, from the projects tool.   |
+| Argument      | Type   | Description                                                                                         |
+| ------------- | ------ | --------------------------------------------------------------------------------------------------- |
+| `id`          | text   | Task id, like `T-12`.                                                                               |
+| `project`     | text   | Project scope: id of the project to move the task to, from the projects tool. Owner scope: id of the project the task is in, from workspaces. |
+| `destination` | text   | Owner scope only: id of the project to move the task to, from workspaces.                           |
 
 ## projects
 

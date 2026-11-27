@@ -31,7 +31,7 @@ export const OAUTH_COPY = {
     legend: 'What may it reach?',
     projectHint: "A project lets it read and change that project's tasks, and move them to the other projects of its workspace.",
     ownerLabel: 'Your whole account (owner scope)',
-    ownerWarning: 'It can create, rename and delete every workspace and project.',
+    ownerWarning: 'It can read and change every task, and create, rename and delete every workspace and project.',
     noProjects: 'You have no projects yet. Create one in the todz app, then come back.',
     approve: 'Approve',
     deny: 'Deny',

@@ -4,7 +4,15 @@ import { type WorkspaceListing, listOwnerWorkspaces } from './directory-workspac
 import type { Env } from './env';
 import type { FairUseLimits } from './fair-use-limits';
 import { MCP_COPY, McpOwnerToolName } from './mcp-copy';
-import type { WriteRefusalTextOf } from './mcp-server';
+import { annotationsOf } from './mcp-annotations';
+import {
+  type ClientNameOf,
+  type McpServerScope,
+  TaskAccessKind,
+  type WriteRefusalTextOf,
+  mcpScopeOf,
+  registerTaskTools,
+} from './mcp-server';
 import { NO_TEXT_BYTES, ONE_WRITE, textBytesOf } from './owner-write-quota';
 import { canonicalTimeZone } from './time-zone';
 import { nameFailureOf } from './write-rules';
@@ -31,7 +39,7 @@ import {
   renameProject,
   renameWorkspace,
 } from './owner-workspace-actions';
-import { type SessionOwner, findOwnedProjectId, findOwnedWorkspaceId } from './project-routing';
+import { type SessionOwner, findOwnedProjectId, findOwnedWorkspaceId, openOwnedGrantProject } from './project-routing';
 
 const MCP_SERVER_NAME = 'todz';
 const MCP_SERVER_VERSION = '0.1.0';
@@ -39,9 +47,6 @@ const TEXT_CONTENT = 'text';
 const LINE_BREAK = '\n';
 const PROJECT_INDENT = '  ';
 const TIME_PART_WIDTH = 2;
-const READ_ONLY_ANNOTATIONS = { readOnlyHint: true };
-const WRITE_ANNOTATIONS = { destructiveHint: false };
-const DESTRUCTIVE_ANNOTATIONS = { destructiveHint: true };
 
 export type OwnerMcpScope = {
   env: Env;
@@ -49,7 +54,15 @@ export type OwnerMcpScope = {
   now: number;
   limits: FairUseLimits;
   refusalTextOf: WriteRefusalTextOf;
+  clientNameOf: ClientNameOf;
 };
+
+async function taskScopeOf({ scope, projectId }: { scope: OwnerMcpScope; projectId: string }): Promise<McpServerScope | null> {
+  const { env, owner, now, clientNameOf, limits, refusalTextOf } = scope;
+  const grantProject = await openOwnedGrantProject({ env, owner, projectId });
+  if (grantProject === null) return null;
+  return mcpScopeOf({ grantProject, now, clientNameOf, limits, refusalTextOf });
+}
 
 async function reserved({
   scope,
@@ -152,12 +165,12 @@ function registerReadTools({ server, scope }: { server: McpServer; scope: OwnerM
   const { env, owner } = scope;
   server.registerTool(
     McpOwnerToolName.Workspaces,
-    { description: MCP_COPY.ownerTools[McpOwnerToolName.Workspaces], annotations: READ_ONLY_ANNOTATIONS },
+    { description: MCP_COPY.ownerTools[McpOwnerToolName.Workspaces], annotations: annotationsOf(McpOwnerToolName.Workspaces) },
     async () => textAnswer(workspacesAnswer(await listOwnerWorkspaces({ directory: env.DIRECTORY, ownerId: owner.ownerId }))),
   );
   server.registerTool(
     McpOwnerToolName.Settings,
-    { description: MCP_COPY.ownerTools[McpOwnerToolName.Settings], annotations: READ_ONLY_ANNOTATIONS },
+    { description: MCP_COPY.ownerTools[McpOwnerToolName.Settings], annotations: annotationsOf(McpOwnerToolName.Settings) },
     async () => textAnswer(settingsLines(await readSettings({ env, owner })).join(LINE_BREAK)),
   );
 }
@@ -169,7 +182,7 @@ function registerSettingsTool({ server, scope }: { server: McpServer; scope: Own
     {
       description: MCP_COPY.ownerTools[McpOwnerToolName.UpdateSettings],
       inputSchema: UpdateSettingsArgumentsSchema,
-      annotations: WRITE_ANNOTATIONS,
+      annotations: annotationsOf(McpOwnerToolName.UpdateSettings),
     },
     async (args) => {
       const input = {
@@ -203,7 +216,7 @@ function registerWorkspaceTools({ server, scope }: { server: McpServer; scope: O
     {
       description: MCP_COPY.ownerTools[McpOwnerToolName.CreateWorkspace],
       inputSchema: NameArgumentsSchema,
-      annotations: WRITE_ANNOTATIONS,
+      annotations: annotationsOf(McpOwnerToolName.CreateWorkspace),
     },
     async ({ name }) =>
       reserved({
@@ -222,7 +235,7 @@ function registerWorkspaceTools({ server, scope }: { server: McpServer; scope: O
     {
       description: MCP_COPY.ownerTools[McpOwnerToolName.RenameWorkspace],
       inputSchema: RenameWorkspaceArgumentsSchema,
-      annotations: WRITE_ANNOTATIONS,
+      annotations: annotationsOf(McpOwnerToolName.RenameWorkspace),
     },
     async ({ workspace, name }) =>
       reservedForOwned({
@@ -240,7 +253,7 @@ function registerWorkspaceTools({ server, scope }: { server: McpServer; scope: O
     {
       description: MCP_COPY.ownerTools[McpOwnerToolName.DeleteWorkspace],
       inputSchema: DeleteWorkspaceArgumentsSchema,
-      annotations: DESTRUCTIVE_ANNOTATIONS,
+      annotations: annotationsOf(McpOwnerToolName.DeleteWorkspace),
     },
     async ({ workspace, confirm }) => {
       const confirmed = await findConfirmedWorkspace({ env, owner, workspaceId: workspace, confirmation: confirm });
@@ -266,7 +279,7 @@ function registerProjectTools({ server, scope }: { server: McpServer; scope: Own
     {
       description: MCP_COPY.ownerTools[McpOwnerToolName.CreateProject],
       inputSchema: CreateProjectArgumentsSchema,
-      annotations: WRITE_ANNOTATIONS,
+      annotations: annotationsOf(McpOwnerToolName.CreateProject),
     },
     async ({ workspace, name }) =>
       reservedForOwned({
@@ -284,7 +297,7 @@ function registerProjectTools({ server, scope }: { server: McpServer; scope: Own
     {
       description: MCP_COPY.ownerTools[McpOwnerToolName.RenameProject],
       inputSchema: RenameProjectArgumentsSchema,
-      annotations: WRITE_ANNOTATIONS,
+      annotations: annotationsOf(McpOwnerToolName.RenameProject),
     },
     async ({ project, name }) =>
       reservedForOwned({
@@ -302,7 +315,7 @@ function registerProjectTools({ server, scope }: { server: McpServer; scope: Own
     {
       description: MCP_COPY.ownerTools[McpOwnerToolName.DeleteProject],
       inputSchema: DeleteProjectArgumentsSchema,
-      annotations: DESTRUCTIVE_ANNOTATIONS,
+      annotations: annotationsOf(McpOwnerToolName.DeleteProject),
     },
     async ({ project, confirm }) => {
       const confirmed = await findConfirmedProject({ env, owner, projectId: project, confirmation: confirm });
@@ -325,5 +338,9 @@ export function buildOwnerMcpServer(scope: OwnerMcpScope): McpServer {
   registerWorkspaceTools({ server, scope });
   registerProjectTools({ server, scope });
   registerSettingsTool({ server, scope });
+  registerTaskTools({
+    server,
+    access: { kind: TaskAccessKind.Owner, scopeOf: (projectId) => taskScopeOf({ scope, projectId }) },
+  });
   return server;
 }

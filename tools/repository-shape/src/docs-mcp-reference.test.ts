@@ -23,9 +23,13 @@ const TABLE_NAME_PATTERN = /^\| `(\w+)`\s*\|/gm;
 const SCHEMA_KEY_PATTERN = /\b(\w+): (?:z|\w+Schema)\./g;
 const PLACEMENT_SCHEMA_NAME = 'Placement';
 const SCHEMA_END_MARKERS = ['});', '\n]);'];
-const SCHEMA_TOOLS = ['add', 'list', 'show', 'history', 'update', 'done', 'reopen', 'delete', 'move'];
-const ARGUMENTLESS_TOOLS = ['next', 'projects', 'workspaces', 'settings'];
+const SCHEMA_TOOLS = ['next', 'add', 'list', 'show', 'history', 'update', 'done', 'reopen', 'delete', 'move'];
+const ARGUMENTLESS_TOOLS = ['projects', 'workspaces', 'settings'];
+const PROJECT_ONLY_TOOLS = ['projects'];
+const OWNER_PROJECT_KEY = 'project';
+const OWNER_MOVE_SCHEMA = 'OwnerMove';
 const PROJECT_SCOPE_LINE = '**Scope:** project scope.';
+const TASK_SCOPE_LINE = '**Scope:** project scope and owner scope.';
 const OWNER_SCOPE_LINE = '**Scope:** owner scope.';
 const OWNER_SCHEMA_OF_TOOL: Record<string, string> = {
   create_workspace: 'Name',
@@ -93,9 +97,9 @@ function schemaKeys({ schema, sourcePath = ARGUMENTS_SOURCE }: { schema: string;
 
 function expectedKeys(tool: string): string[] {
   const name = `${tool.charAt(0).toUpperCase()}${tool.slice(1)}Arguments`;
-  const keys =
-    tool === 'update' ? [...schemaKeys({ schema: name }), ...schemaKeys({ schema: PLACEMENT_SCHEMA_NAME })] : schemaKeys({ schema: name });
-  return [...new Set(keys)];
+  const placementKeys = tool === 'update' ? schemaKeys({ schema: PLACEMENT_SCHEMA_NAME }) : [];
+  const ownerMoveKeys = tool === 'move' ? schemaKeys({ schema: `${OWNER_MOVE_SCHEMA}Arguments`, sourcePath: OWNER_ARGUMENTS_SOURCE }) : [];
+  return [...new Set([OWNER_PROJECT_KEY, ...schemaKeys({ schema: name }), ...placementKeys, ...ownerMoveKeys])];
 }
 
 function expectedOwnerKeys(tool: string): string[] {
@@ -124,10 +128,16 @@ describe('the MCP tools reference', () => {
     expect(section?.body.split(LINE_SEPARATOR)).toContain(description);
   });
 
-  test.each(toolMembers.map(({ value }) => value))('the %s section names the project scope', (tool) => {
+  test.each(PROJECT_ONLY_TOOLS)('the %s section names the project scope alone', (tool) => {
     const section = sections().find(({ heading }) => heading === tool);
     expect(section?.body.split(LINE_SEPARATOR)).toContain(PROJECT_SCOPE_LINE);
     expect(section?.body.split(LINE_SEPARATOR)).not.toContain(OWNER_SCOPE_LINE);
+  });
+
+  test.each(SCHEMA_TOOLS)('the %s section names both scopes', (tool) => {
+    const section = sections().find(({ heading }) => heading === tool);
+    expect(section?.body.split(LINE_SEPARATOR)).toContain(TASK_SCOPE_LINE);
+    expect(section?.body.split(LINE_SEPARATOR)).not.toContain(PROJECT_SCOPE_LINE);
   });
 
   test.each(ownerToolMembers.map(({ value }) => value))('the %s section names the owner scope', (tool) => {

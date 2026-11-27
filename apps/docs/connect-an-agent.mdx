@@ -18,10 +18,10 @@ To reconnect an agent that used a key, run `claude mcp add --transport http todz
 1. Enter your todz email and pass the check.
 2. Open the sign-in link from the mail **in the same browser**.
 3. Read the consent screen: it names the app and where it sends you back.
-4. Pick one project. The first one is preselected. Or pick **Your whole account (owner scope)**, which is never preselected and warns "It can create, rename and delete every workspace and project."
+4. Pick one project. The first one is preselected. Or pick **Your whole account (owner scope)**, which is never preselected and warns "It can read and change every task, and create, rename and delete every workspace and project."
 5. Approve, or Deny.
 
-A project scope gives the task tools, and the other projects of its workspace for `move` and `projects`. An owner scope gives the account tools only. The history of a task names the app by the name it registered. See [MCP tools](/mcp-tools).
+A project scope gives the task tools, and the other projects of its workspace for `move` and `projects`. An owner scope gives the account tools and the same task tools for every project of the account, each taking the `project` id from `workspaces`. The history of a task names the app by the name it registered. See [MCP tools](/mcp-tools).
 
 Access tokens last one hour and renew themselves. Refresh tokens last 30 days and rotate on every use; if one is used twice, the app is disconnected. todz stores tokens only as digests. Fair use and the cloud cap apply to every connected app.
 

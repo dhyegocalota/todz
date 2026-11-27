@@ -7,13 +7,12 @@ import { MCP_COPY } from './mcp-copy';
 import { FAIR_USE_COPY } from './fair-use-copy';
 import { fairUseLimitsOf } from './fair-use-limits';
 import { buildOwnerMcpServer } from './mcp-owner-server';
-import { type McpServerScope, buildMcpServer } from './mcp-server';
+import { type McpServerScope, buildMcpServer, mcpScopeOf } from './mcp-server';
 import { isReadThrottled } from './cloud-read-throttle';
 import { logCrash } from './crash-log';
 import { stampOwnerSeen } from './owner-last-seen';
 import { writeRefusalTextOf } from './owner-write-quota';
-import { calendarDateInTimeZone } from './owner-today';
-import { mcpChallengeOf } from './oauth/oauth-metadata';
+import { mcpChallengeOf, mcpResourceOf, oauthIssuerOf } from './oauth/oauth-metadata';
 import { OAuthScope } from './oauth/oauth-scope';
 import { type GrantProject, type OAuthAccess, type SessionOwner, openOAuthAccess } from './project-routing';
 import { isSignedInRateLimited, withRetryAfter } from './signed-in-limiter';
@@ -106,14 +105,16 @@ async function serveOwnerScope({
   request,
   env,
   owner,
+  clientName,
   now,
 }: {
   request: Request;
   env: Env;
   owner: SessionOwner;
+  clientName: string;
   now: number;
 }): Promise<Response> {
-  const scope = { env, owner, now, ...quotaFieldsOf({ env, ownerId: owner.ownerId, now }) };
+  const scope = { env, owner, now, clientNameOf: () => clientName, ...quotaFieldsOf({ env, ownerId: owner.ownerId, now }) };
   return createMcpHandler(() => buildOwnerMcpServer(scope), HANDLER_OPTIONS_OF_ERA[await eraOf(request)]).fetch(request);
 }
 
@@ -131,14 +132,12 @@ async function serveGrantProject({
   clientName: string;
   now: number;
 }): Promise<Response> {
-  const scope = {
-    project: grantProject.project,
-    workspace: grantProject.workspace,
-    today: calendarDateInTimeZone({ timeZone: grantProject.timeZone, now }),
-    agentNudge: grantProject.agentNudge,
+  const scope = mcpScopeOf({
+    grantProject,
+    now,
     clientNameOf: () => clientName,
     ...quotaFieldsOf({ env, ownerId: grantProject.ownerId, now }),
-  };
+  });
   return serveScope({ request, scope, era: await eraOf(request) });
 }
 
@@ -155,13 +154,15 @@ async function serveAccessToken({ request, env, secret, now }: CredentialRequest
   if (access === null) return rejectedCredential(env);
   const refusal = await gateRefusalOf({ request, env, now, ...grantGateOf(access) });
   if (refusal !== null) return refusal;
-  if (access.scope === OAuthScope.Owner) return serveOwnerScope({ request, env, owner: access.owner, now });
+  if (access.scope === OAuthScope.Owner) return serveOwnerScope({ request, env, owner: access.owner, clientName: access.clientName, now });
   return serveGrantProject({ request, env, grantProject: access.grantProject, clientName: access.clientName, now });
 }
 
 function formerCredentialRefusal(env: Env): Response {
+  const issuer = oauthIssuerOf(env);
+  const description = issuer === null ? MCP_COPY.apiKeysRemovedAtUnknownOrigin : MCP_COPY.apiKeysRemoved(mcpResourceOf(issuer));
   return Response.json(
-    { error: MCP_INVALID_TOKEN_ERROR, error_description: MCP_COPY.apiKeysRemoved },
+    { error: MCP_INVALID_TOKEN_ERROR, error_description: description },
     { status: HttpStatus.Unauthorized, headers: { 'WWW-Authenticate': mcpChallengeOf({ env, isCredentialSent: true }) } },
   );
 }
