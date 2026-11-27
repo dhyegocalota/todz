@@ -49,7 +49,7 @@ function codeOf(text: string): string[] {
   const body = bodyOf(text);
   return [
     ...occurrences({ text: body, pattern: FENCED_BLOCK_PATTERN }),
-    ...occurrences({ text: body.replace(FENCED_BLOCK_PATTERN, ''), pattern: INLINE_CODE_PATTERN }),
+    ...occurrences({ text: body.replace(FENCED_BLOCK_PATTERN, ''), pattern: INLINE_CODE_PATTERN }).sort(),
   ];
 }
 
