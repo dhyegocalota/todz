@@ -15,8 +15,12 @@ public struct MenuBarRowMeta: Equatable, Sendable {
         agentName = Self.agentName(of: task)
     }
 
+    public var hasSubline: Bool {
+        overdue != nil || projectName != nil || workspaceName != nil
+    }
+
     public var isEmpty: Bool {
-        overdue == nil && projectName == nil && workspaceName == nil && agentName == nil
+        !hasSubline && agentName == nil
     }
 
     private static func agentName(of task: BoardTask) -> String? {
