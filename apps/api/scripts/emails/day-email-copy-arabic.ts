@@ -2,21 +2,21 @@ import type { DayEmailCopy, DayEmailEmptyCopy } from './day-email-copy';
 import { EmailSlot } from '../../src/emails/email-slot';
 
 const SHARED_COPY = {
-  replyHint: `Reply from the address you sign in with, in one line, to add it to Today in the Inbox of ${EmailSlot.Workspace}.`,
-  footer: `Sent at ${EmailSlot.Time} because Email me my day is on in todz Settings, where it starts on.`,
-  stopLabel: 'Stop these emails',
+  replyHint: `ردّ من العنوان الذي تسجّل الدخول به، في سطر واحد، لإضافتها إلى اليوم في Inbox الخاص بـ ${EmailSlot.Workspace}.`,
+  footer: `أُرسل في ${EmailSlot.Time} لأن «أرسل لي يومي بالبريد» مفعّل في إعدادات todz، حيث يبدأ مفعّلًا.`,
+  stopLabel: 'أوقف هذه الرسائل',
 };
 
 export const DAY_EMAIL_COPY_ARABIC: DayEmailCopy = {
   ...SHARED_COPY,
-  subject: `Your day: ${EmailSlot.Count} due`,
-  preview: `${EmailSlot.Count} due today in todz. Reply to add a task.`,
-  heading: `${EmailSlot.Count} due today`,
+  subject: `يومك: يستحق ${EmailSlot.Count}`,
+  preview: `يستحق ${EmailSlot.Count} اليوم في todz. ردّ لإضافة مهمة.`,
+  heading: `يستحق ${EmailSlot.Count} اليوم`,
 };
 
 export const DAY_EMAIL_EMPTY_COPY_ARABIC: DayEmailEmptyCopy = {
   ...SHARED_COPY,
-  subject: 'Your day: nothing due',
-  preview: 'Nothing due today in todz. Reply to add a task.',
-  heading: 'Nothing due today',
+  subject: 'يومك: لا شيء يستحق',
+  preview: 'لا شيء يستحق اليوم في todz. ردّ لإضافة مهمة.',
+  heading: 'لا شيء يستحق اليوم',
 };

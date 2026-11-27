@@ -1,25 +1,25 @@
 import type { CloudPageCopy } from './cloud-page-copy';
 export const CLOUD_PAGE_COPY_ARABIC: CloudPageCopy = {
   fullMail: {
-    subject: 'todz cloud is full right now',
+    subject: 'todz cloud ممتلئ حاليًا',
     textOf: ({ queueUrl, selfHostUrl }: { queueUrl: string; selfHostUrl: string }): string =>
-      `todz cloud is full right now: free todz cloud spots are extremely limited. Confirm your address to get in line, and you'll get in when a spot opens: ${queueUrl}\n\nOr run your own server, which is always open: ${selfHostUrl}`,
+      `todz cloud ممتلئ حاليًا: مقاعد todz cloud المجانية محدودة للغاية. أكّد عنوانك لتنضم إلى قائمة الانتظار، وستدخل عندما يُفتح مقعد: ${queueUrl}\n\nأو شغّل خادمك الخاص، وهو مفتوح دائمًا: ${selfHostUrl}`,
   },
   queuePage: {
-    title: 'Get in line for todz cloud',
-    lead: 'Free todz cloud spots are extremely limited. Confirm below and we will write when one opens.',
-    joinAs: 'Join the line as',
-    invalidTitle: 'This link is no longer valid',
+    title: 'انضم إلى قائمة انتظار todz cloud',
+    lead: 'مقاعد todz cloud المجانية محدودة للغاية. أكّد أدناه وسنراسلك عندما يُفتح مقعد.',
+    joinAs: 'الانضمام إلى القائمة باسم',
+    invalidTitle: 'هذا الرابط لم يعد صالحًا',
     invalidBody:
-      'The link in the mail we sent when todz cloud was full works for a week. Ask for a new sign-in link in the app to get a new one.',
-    submit: 'Get in line',
-    submitting: 'Sending…',
-    queuedTitle: "You're on the list",
-    queuedBody: "We'll email you when a spot opens.",
-    tryAgain: "Couldn't add you right now. Try again in a minute.",
-    closed: 'The line is closed right now.',
-    forbidden: "That request didn't come from this site.",
-    selfHost: 'Or run your own server, which is always open:',
-    selfHostLink: 'self-host guide',
+      'الرابط في الرسالة التي أرسلناها عندما كان todz cloud ممتلئًا يعمل أسبوعًا. اطلب رابط تسجيل دخول جديدًا في التطبيق للحصول على رابط جديد.',
+    submit: 'انضم إلى القائمة',
+    submitting: 'جارٍ الإرسال…',
+    queuedTitle: 'أنت في القائمة',
+    queuedBody: 'سنراسلك بالبريد عندما يُفتح مقعد.',
+    tryAgain: 'تعذّرت إضافتك الآن. حاول مرة أخرى بعد دقيقة.',
+    closed: 'القائمة مغلقة حاليًا.',
+    forbidden: 'لم يأتِ هذا الطلب من هذا الموقع.',
+    selfHost: 'أو شغّل خادمك الخاص، وهو مفتوح دائمًا:',
+    selfHostLink: 'دليل الاستضافة الذاتية',
   },
 };

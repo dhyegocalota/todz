@@ -2,21 +2,21 @@ import type { DayEmailCopy, DayEmailEmptyCopy } from './day-email-copy';
 import { EmailSlot } from '../../src/emails/email-slot';
 
 const SHARED_COPY = {
-  replyHint: `Reply from the address you sign in with, in one line, to add it to Today in the Inbox of ${EmailSlot.Workspace}.`,
-  footer: `Sent at ${EmailSlot.Time} because Email me my day is on in todz Settings, where it starts on.`,
-  stopLabel: 'Stop these emails',
+  replyHint: `साइन इन वाले पते से एक पंक्ति में जवाब दें, ताकि वह ${EmailSlot.Workspace} के इनबॉक्स में आज की सूची में जुड़ जाए।`,
+  footer: `${EmailSlot.Time} पर भेजा गया क्योंकि todz सेटिंग में मुझे मेरा दिन ईमेल करें चालू है, जहाँ यह शुरू से चालू रहता है।`,
+  stopLabel: 'ये ईमेल बंद करें',
 };
 
 export const DAY_EMAIL_COPY_HINDI: DayEmailCopy = {
   ...SHARED_COPY,
-  subject: `Your day: ${EmailSlot.Count} due`,
-  preview: `${EmailSlot.Count} due today in todz. Reply to add a task.`,
-  heading: `${EmailSlot.Count} due today`,
+  subject: `आपका दिन: ${EmailSlot.Count} देय`,
+  preview: `todz में आज ${EmailSlot.Count} देय। टास्क जोड़ने के लिए जवाब दें।`,
+  heading: `आज ${EmailSlot.Count} देय`,
 };
 
 export const DAY_EMAIL_EMPTY_COPY_HINDI: DayEmailEmptyCopy = {
   ...SHARED_COPY,
-  subject: 'Your day: nothing due',
-  preview: 'Nothing due today in todz. Reply to add a task.',
-  heading: 'Nothing due today',
+  subject: 'आपका दिन: कुछ देय नहीं',
+  preview: 'todz में आज कुछ देय नहीं। टास्क जोड़ने के लिए जवाब दें।',
+  heading: 'आज कुछ देय नहीं',
 };
