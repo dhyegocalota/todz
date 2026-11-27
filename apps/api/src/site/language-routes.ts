@@ -12,7 +12,6 @@ import {
 } from '../page-preferences';
 import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import { isSameOriginRequest } from '../same-origin';
-import { DAY_EMAIL_STOP_PATH } from '../day-email/day-email-stop-url';
 import { OAuthPath } from '../oauth/oauth-paths';
 import { AdminPath } from './admin-paths';
 import { isCrawlerRequest } from './crawler';
@@ -33,7 +32,6 @@ const PRIVATE_RETURN_PATHS = new Set<string>([
   AdminPath.CloudQueue,
   OAuthPath.Authorize,
   OAuthPath.LinkPage,
-  DAY_EMAIL_STOP_PATH,
 ]);
 
 function returnTargetOf({ returned, language }: { returned: string | null; language: Language | null }): string | null {

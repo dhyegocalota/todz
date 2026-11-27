@@ -1,25 +1,25 @@
 import type { CloudPageCopy } from './cloud-page-copy';
 export const CLOUD_PAGE_COPY_SPANISH: CloudPageCopy = {
   fullMail: {
-    subject: 'todz cloud is full right now',
+    subject: 'todz cloud está lleno en este momento',
     textOf: ({ queueUrl, selfHostUrl }: { queueUrl: string; selfHostUrl: string }): string =>
-      `todz cloud is full right now: free todz cloud spots are extremely limited. Confirm your address to get in line, and you'll get in when a spot opens: ${queueUrl}\n\nOr run your own server, which is always open: ${selfHostUrl}`,
+      `todz cloud está lleno en este momento: los cupos gratuitos de todz cloud son extremadamente limitados. Confirma tu dirección para unirte a la lista de espera y entrarás cuando se abra un cupo: ${queueUrl}\n\nO ejecuta tu propio servidor, que siempre está abierto: ${selfHostUrl}`,
   },
   queuePage: {
-    title: 'Get in line for todz cloud',
-    lead: 'Free todz cloud spots are extremely limited. Confirm below and we will write when one opens.',
-    joinAs: 'Join the line as',
-    invalidTitle: 'This link is no longer valid',
+    title: 'Únete a la lista de espera de todz cloud',
+    lead: 'Los cupos gratuitos de todz cloud son extremadamente limitados. Confirma abajo y te escribiremos cuando se abra uno.',
+    joinAs: 'Unirte a la lista como',
+    invalidTitle: 'Este enlace ya no es válido',
     invalidBody:
-      'The link in the mail we sent when todz cloud was full works for a week. Ask for a new sign-in link in the app to get a new one.',
-    submit: 'Get in line',
-    submitting: 'Sending…',
-    queuedTitle: "You're on the list",
-    queuedBody: "We'll email you when a spot opens.",
-    tryAgain: "Couldn't add you right now. Try again in a minute.",
-    closed: 'The line is closed right now.',
-    forbidden: "That request didn't come from this site.",
-    selfHost: 'Or run your own server, which is always open:',
-    selfHostLink: 'self-host guide',
+      'El enlace del correo que enviamos cuando todz cloud estaba lleno funciona durante una semana. Pide un nuevo enlace de inicio de sesión en la app para obtener uno nuevo.',
+    submit: 'Unirme a la lista',
+    submitting: 'Enviando…',
+    queuedTitle: 'Estás en la lista',
+    queuedBody: 'Te escribiremos por correo cuando se abra un cupo.',
+    tryAgain: 'No se pudo añadirte en este momento. Vuelve a intentarlo en un minuto.',
+    closed: 'La lista está cerrada en este momento.',
+    forbidden: 'Esa solicitud no vino de este sitio.',
+    selfHost: 'O ejecuta tu propio servidor, que siempre está abierto:',
+    selfHostLink: 'guía de autoalojamiento',
   },
 };

@@ -115,16 +115,6 @@ describe('the selector of a private page', () => {
     expect(html).toContain('action="/language"');
   });
 
-  test('the day-email stop page shows a language selector that returns to the link', async () => {
-    const html = await (
-      await dayEmailStopResponse({ request: requestOf({ url: `${API_ORIGIN}${STOP_PATH}` }), env: workerEnvWith({}) })
-    ).text();
-    expect(html).toContain('<form class="language-form" method="post" action="/language">');
-    expect(html).toContain(`<input type="hidden" name="return" value="${STOP_PATH}">`);
-    Object.values(Language).forEach((language) => expect(html).toContain(`>${LANGUAGE_PROFILES[language].nativeName}</button>`));
-    expect(html).toMatch(/<button[^>]*aria-current="true"[^>]*>English<\/button>/);
-  });
-
   test.each(['/sign-in', '/sign-in/challenge'])('%s has no selector', async (path) => {
     const pageOf = path === '/sign-in' ? serveSignInPage : serveSignInChallengePage;
     const html = await (await pageOf({ request: requestOf({ url: `${API_ORIGIN}${path}` }), env: workerEnvWith({}) })).text();

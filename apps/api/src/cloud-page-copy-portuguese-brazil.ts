@@ -1,25 +1,25 @@
 import type { CloudPageCopy } from './cloud-page-copy';
 export const CLOUD_PAGE_COPY_PORTUGUESE_BRAZIL: CloudPageCopy = {
   fullMail: {
-    subject: 'todz cloud is full right now',
+    subject: 'O todz cloud está cheio agora',
     textOf: ({ queueUrl, selfHostUrl }: { queueUrl: string; selfHostUrl: string }): string =>
-      `todz cloud is full right now: free todz cloud spots are extremely limited. Confirm your address to get in line, and you'll get in when a spot opens: ${queueUrl}\n\nOr run your own server, which is always open: ${selfHostUrl}`,
+      `O todz cloud está cheio agora: as vagas gratuitas do todz cloud são extremamente limitadas. Confirme seu endereço para entrar na fila, e você entra quando abrir uma vaga: ${queueUrl}\n\nOu rode o seu próprio servidor, que está sempre aberto: ${selfHostUrl}`,
   },
   queuePage: {
-    title: 'Get in line for todz cloud',
-    lead: 'Free todz cloud spots are extremely limited. Confirm below and we will write when one opens.',
-    joinAs: 'Join the line as',
-    invalidTitle: 'This link is no longer valid',
+    title: 'Entre na fila do todz cloud',
+    lead: 'As vagas gratuitas do todz cloud são extremamente limitadas. Confirme abaixo e escreveremos quando uma abrir.',
+    joinAs: 'Entrar na fila como',
+    invalidTitle: 'Este link não é mais válido',
     invalidBody:
-      'The link in the mail we sent when todz cloud was full works for a week. Ask for a new sign-in link in the app to get a new one.',
-    submit: 'Get in line',
-    submitting: 'Sending…',
-    queuedTitle: "You're on the list",
-    queuedBody: "We'll email you when a spot opens.",
-    tryAgain: "Couldn't add you right now. Try again in a minute.",
-    closed: 'The line is closed right now.',
-    forbidden: "That request didn't come from this site.",
-    selfHost: 'Or run your own server, which is always open:',
-    selfHostLink: 'self-host guide',
+      'O link do e-mail que enviamos quando o todz cloud estava cheio vale por uma semana. Peça um novo link de acesso no app para receber outro.',
+    submit: 'Entrar na fila',
+    submitting: 'Enviando…',
+    queuedTitle: 'Você está na lista',
+    queuedBody: 'Enviaremos um e-mail quando uma vaga abrir.',
+    tryAgain: 'Não foi possível adicionar você agora. Tente de novo em um minuto.',
+    closed: 'A fila está fechada agora.',
+    forbidden: 'Esse pedido não veio deste site.',
+    selfHost: 'Ou rode o seu próprio servidor, que está sempre aberto:',
+    selfHostLink: 'guia de auto-hospedagem',
   },
 };

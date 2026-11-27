@@ -5,6 +5,8 @@ import {
   MILLISECONDS_PER_MINUTE,
   REPLY_DAILY_MAX,
 } from '@todz/types';
+import type { Language } from '@todz/types';
+import { ownerLanguageOf } from '../directory-owners';
 import { SignInProviderKind } from '../sign-in-provider';
 
 export enum DayEmailFailure {
@@ -137,9 +139,21 @@ export async function insertReplyAddress({
 
 const LIVE_STOP_LINK_OWNER = 'SELECT owner_id FROM day_email_stop_links WHERE digest = ?1 AND expires_at > ?2';
 
-export async function isStopLinkLive({ directory, digest, now }: { directory: D1Database; digest: string; now: number }): Promise<boolean> {
-  const row = await directory.prepare(LIVE_STOP_LINK_OWNER).bind(digest, now).first<{ owner_id: string }>();
-  return row !== null;
+const LIVE_STOP_LINK_LANGUAGE =
+  'SELECT owners.language FROM day_email_stop_links JOIN owners ON owners.id = day_email_stop_links.owner_id WHERE day_email_stop_links.digest = ?1 AND day_email_stop_links.expires_at > ?2';
+
+export async function stopLinkLanguage({
+  directory,
+  digest,
+  now,
+}: {
+  directory: D1Database;
+  digest: string;
+  now: number;
+}): Promise<Language | null> {
+  const row = await directory.prepare(LIVE_STOP_LINK_LANGUAGE).bind(digest, now).first<{ language: string }>();
+  if (row === null) return null;
+  return ownerLanguageOf(row.language);
 }
 
 export async function stopDayEmail({ directory, digest, now }: { directory: D1Database; digest: string; now: number }): Promise<boolean> {

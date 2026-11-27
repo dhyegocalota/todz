@@ -1,20 +1,20 @@
 import type { DayEmailStopCopy } from './day-email-stop-copy';
 export const DAY_EMAIL_STOP_COPY_JAPANESE: DayEmailStopCopy = {
   confirm: {
-    heading: 'Stop your day email?',
-    sentence: 'todz will stop mailing your day to this address.',
-    button: 'Stop my day email',
+    heading: '1日のメールを停止しますか？',
+    sentence: 'todzは、このアドレスへの1日のメールの送信を停止します。',
+    button: '1日のメールを停止',
   },
   done: {
-    heading: 'Your day email is off',
-    sentence: 'Turn it back on in todz Settings.',
+    heading: '1日のメールはオフです',
+    sentence: 'todzの設定で、もう一度オンにできます。',
   },
   gone: {
-    heading: 'This link no longer works',
-    sentence: 'Your day email is set in todz Settings.',
+    heading: 'このリンクは、もう使えません',
+    sentence: '1日のメールは、todzの設定で変更できます。',
   },
   limited: {
-    heading: 'Try again in a minute',
-    sentence: 'Too many tries from here.',
+    heading: '1分後にもう一度お試しください',
+    sentence: 'ここからの試行回数が多すぎます。',
   },
 };

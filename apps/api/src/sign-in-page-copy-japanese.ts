@@ -1,12 +1,12 @@
 import type { SignInPageCopy } from './sign-in-page-copy';
 export const SIGN_IN_PAGE_COPY_JAPANESE: SignInPageCopy = {
-  title: 'Sign in to todz',
-  challengeTitle: 'Check this browser',
-  checking: 'Checking this browser…',
-  checkFailed: "Couldn't check this browser. Reload the page.",
-  unavailable: 'Sign-in is unavailable right now. Try again later.',
-  opening: 'Opening todz on your Mac…',
-  openButton: 'Open todz',
-  notOpened: 'Nothing happened? Open this link on the Mac that asked for it, with todz installed.',
-  missingToken: 'This link is incomplete. Send a new one from todz.',
+  title: 'todzにサインイン',
+  challengeTitle: 'このブラウザを確認',
+  checking: 'このブラウザを確認しています…',
+  checkFailed: 'このブラウザを確認できませんでした。ページを再読み込みしてください。',
+  unavailable: 'サインインはいま利用できません。しばらくしてから、もう一度お試しください。',
+  opening: 'Macでtodzを開いています…',
+  openButton: 'todzを開く',
+  notOpened: '何も起きませんか？このリンクは、リクエストしたMacで、todzをインストールした状態で開いてください。',
+  missingToken: 'このリンクは不完全です。todzから新しいリンクを送信してください。',
 };

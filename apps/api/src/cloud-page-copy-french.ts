@@ -1,25 +1,25 @@
 import type { CloudPageCopy } from './cloud-page-copy';
 export const CLOUD_PAGE_COPY_FRENCH: CloudPageCopy = {
   fullMail: {
-    subject: 'todz cloud is full right now',
+    subject: 'todz cloud est complet pour le moment',
     textOf: ({ queueUrl, selfHostUrl }: { queueUrl: string; selfHostUrl: string }): string =>
-      `todz cloud is full right now: free todz cloud spots are extremely limited. Confirm your address to get in line, and you'll get in when a spot opens: ${queueUrl}\n\nOr run your own server, which is always open: ${selfHostUrl}`,
+      `todz cloud est complet pour le moment : les places gratuites sur todz cloud sont extrêmement limitées. Confirmez votre adresse pour entrer dans la file d’attente, et vous entrerez quand une place se libérera : ${queueUrl}\n\nOu faites tourner votre propre serveur, toujours ouvert : ${selfHostUrl}`,
   },
   queuePage: {
-    title: 'Get in line for todz cloud',
-    lead: 'Free todz cloud spots are extremely limited. Confirm below and we will write when one opens.',
-    joinAs: 'Join the line as',
-    invalidTitle: 'This link is no longer valid',
+    title: 'Entrer dans la file d’attente de todz cloud',
+    lead: 'Les places gratuites sur todz cloud sont extrêmement limitées. Confirmez ci-dessous et nous vous écrirons quand une place se libérera.',
+    joinAs: 'Rejoindre la file d’attente en tant que',
+    invalidTitle: 'Ce lien n’est plus valide',
     invalidBody:
-      'The link in the mail we sent when todz cloud was full works for a week. Ask for a new sign-in link in the app to get a new one.',
-    submit: 'Get in line',
-    submitting: 'Sending…',
-    queuedTitle: "You're on the list",
-    queuedBody: "We'll email you when a spot opens.",
-    tryAgain: "Couldn't add you right now. Try again in a minute.",
-    closed: 'The line is closed right now.',
-    forbidden: "That request didn't come from this site.",
-    selfHost: 'Or run your own server, which is always open:',
-    selfHostLink: 'self-host guide',
+      'Le lien du message envoyé quand todz cloud était complet fonctionne pendant une semaine. Demandez un nouveau lien de connexion dans l’app pour en obtenir un nouveau.',
+    submit: 'Entrer dans la file d’attente',
+    submitting: 'Envoi…',
+    queuedTitle: 'Vous êtes sur la liste',
+    queuedBody: 'Nous vous écrirons quand une place se libérera.',
+    tryAgain: 'Impossible de vous ajouter pour le moment. Réessayez dans une minute.',
+    closed: 'La file d’attente est fermée pour le moment.',
+    forbidden: 'Cette requête ne vient pas de ce site.',
+    selfHost: 'Ou faites tourner votre propre serveur, toujours ouvert :',
+    selfHostLink: 'guide d’auto-hébergement',
   },
 };

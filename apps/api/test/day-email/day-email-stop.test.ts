@@ -113,8 +113,30 @@ describe('GET /day-email/stop with a live token', () => {
     expect(html).toContain(STOP_PAGE_HEADING);
     expect(html).toContain(STOP_BUTTON);
     expect(html).toContain('method="post"');
-    expect(html.split(seeded.token)).toHaveLength(2);
+    expect(html).not.toContain(seeded.token);
+    expect(html).not.toContain('action="/language"');
     await expectUntouched(seeded);
+  });
+
+  test('speaks the stored language of the owner of the link, before the cookie and Accept-Language', async () => {
+    const seeded = await seededStop();
+    await env.DIRECTORY.prepare('UPDATE owners SET language = ? WHERE id = ?').bind('ja', seeded.ownerId).run();
+    const headers = { Cookie: 'todz_language=de', 'Accept-Language': 'ko' };
+    const confirm = await (await stopCall({ method: 'GET', token: seeded.token, headers })).text();
+    expect(confirm).toContain('<html lang="ja"');
+    expect(confirm).not.toContain(seeded.token);
+    const done = await (await stopCall({ method: 'POST', token: seeded.token, headers })).text();
+    expect(done).toContain('<html lang="ja"');
+  });
+
+  test('speaks the cookie, then Accept-Language, when the link names no live owner', async () => {
+    const gone = 'f'.repeat(DAY_EMAIL_STOP_TOKEN_LENGTH);
+    const cookie = await (
+      await stopCall({ method: 'GET', token: gone, headers: { Cookie: 'todz_language=de', 'Accept-Language': 'ko' } })
+    ).text();
+    const negotiated = await (await stopCall({ method: 'GET', token: gone, headers: { 'Accept-Language': 'ko' } })).text();
+    expect(cookie).toContain('<html lang="de"');
+    expect(negotiated).toContain('<html lang="ko"');
   });
 
   test('answers it again to a second GET', async () => {

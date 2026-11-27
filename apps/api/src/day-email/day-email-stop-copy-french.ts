@@ -1,20 +1,20 @@
 import type { DayEmailStopCopy } from './day-email-stop-copy';
 export const DAY_EMAIL_STOP_COPY_FRENCH: DayEmailStopCopy = {
   confirm: {
-    heading: 'Stop your day email?',
-    sentence: 'todz will stop mailing your day to this address.',
-    button: 'Stop my day email',
+    heading: 'Arrêter votre e-mail du jour ?',
+    sentence: 'todz cessera d’envoyer votre journée à cette adresse.',
+    button: 'Arrêter mon e-mail du jour',
   },
   done: {
-    heading: 'Your day email is off',
-    sentence: 'Turn it back on in todz Settings.',
+    heading: 'Votre e-mail du jour est désactivé',
+    sentence: 'Réactivez-le dans les Réglages de todz.',
   },
   gone: {
-    heading: 'This link no longer works',
-    sentence: 'Your day email is set in todz Settings.',
+    heading: 'Ce lien ne fonctionne plus',
+    sentence: 'Votre e-mail du jour se règle dans les Réglages de todz.',
   },
   limited: {
-    heading: 'Try again in a minute',
-    sentence: 'Too many tries from here.',
+    heading: 'Réessayez dans une minute',
+    sentence: 'Trop d’essais depuis ici.',
   },
 };
