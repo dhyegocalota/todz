@@ -19,6 +19,7 @@ struct MenuBarDayRing: View {
                 .trim(from: ringStart, to: progress)
                 .stroke(Color.accentColor, style: StrokeStyle(lineWidth: MenuBarMetrics.dayRingLineWidth, lineCap: .round))
                 .rotationEffect(quarterTurn)
+                .transaction { if isReduceMotionOn { $0.animation = nil } }
             Circle()
                 .fill(Color.accentColor)
                 .opacity(isClosed ? 1 : 0)

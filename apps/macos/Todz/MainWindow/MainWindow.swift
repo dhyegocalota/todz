@@ -45,6 +45,9 @@ struct MainWindow: View {
         .sheet(item: $windowState.sheet) { kind in
             NameSheet(kind: kind)
         }
+        .sheet(isPresented: $windowState.isChoosingWorkspace) {
+            WorkspaceChooserSheet()
+        }
         .sheet(item: $windowState.deletion) { kind in
             DeleteConfirmSheet(kind: kind)
         }

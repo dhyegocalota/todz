@@ -22,7 +22,7 @@ enum ConnectedAppFixtures {
         """
     }
 
-    static func projectScoped(identifier: String) -> ConnectedApp {
+    static func projectScoped(identifier: String, projectIdentifier: String = projectIdentifier) -> ConnectedApp {
         ConnectedApp(
             identifier: identifier,
             clientName: "Claude Code",

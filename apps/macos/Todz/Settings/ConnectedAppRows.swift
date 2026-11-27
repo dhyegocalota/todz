@@ -20,12 +20,12 @@ struct ConnectedAppRows: View {
             Text(KeyScreenCopy.listFailed)
                 .foregroundStyle(.red)
             Button(MainWindowCopy.tryAgain) { Task { await model.loadConnectedApps() } }
-        case let .loaded(apps):
-            if apps.isEmpty {
+        case .loaded:
+            if model.visibleConnectedApps.isEmpty {
                 Text(SettingsCopy.noConnectedApps)
                     .foregroundStyle(.secondary)
             }
-            ForEach(apps) { app in
+            ForEach(model.visibleConnectedApps) { app in
                 ConnectedAppRow(app: app)
             }
         }

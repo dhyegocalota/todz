@@ -2,8 +2,6 @@ import SwiftUI
 import TodzKit
 
 private let shownNamesSeparator = ", "
-private let lockedSymbol = "lock.fill"
-private let unlockedSymbol = "lock.open.fill"
 
 struct WorkspaceSwitcher: View {
     let workspace: Workspace
@@ -17,37 +15,28 @@ struct WorkspaceSwitcher: View {
             .padding()
     }
 
+    private var chrome: WorkspaceChrome {
+        WorkspaceChrome(visible: model.visibleWorkspaces, selection: model.selection, isMainWindow: isMainWindow)
+    }
+
     @ViewBuilder private var switcher: some View {
-        let isSoleWorkspaceInPopover = !isMainWindow && model.workspaces.count == 1
-        if isSoleWorkspaceInPopover {
+        if chrome.switcher == .plainName {
             Text(workspace.name)
                 .lineLimit(1)
         }
-        if !isSoleWorkspaceInPopover {
+        if chrome.switcher == .menu {
             menu
         }
     }
 
     private var menu: some View {
         Menu {
-            if !model.workspaceLock.isLocked {
+            if chrome.showsAllWorkspaces {
                 Toggle(MainWindowCopy.allWorkspaces, isOn: isAllSelected)
                 Divider()
             }
-            ForEach(model.presentedWorkspaces, id: \.identifier) { presented in
-                switch presented {
-                case let .visible(candidate):
-                    Toggle(candidate.name, isOn: isShown(candidate))
-                case let .locked(identifier):
-                    Button {
-                        Task {
-                            await model.switchWorkspace(identifier: identifier)
-                            model.announceConfirmationFailure()
-                        }
-                    } label: {
-                        LockedWorkspaceRow()
-                    }
-                }
+            ForEach(chrome.rows, id: \.workspace.identifier) { row in
+                Toggle(row.workspace.name, isOn: isShown(row.workspace))
             }
             if model.workspaceLock.isUnlocked {
                 Button(WorkspaceLockCopy.lockNow) {
@@ -71,35 +60,12 @@ struct WorkspaceSwitcher: View {
                 }
             }
         } label: {
-            HStack {
-                Text(shownNames)
-                    .lineLimit(1)
-                lockIndicator
-            }
+            Text(shownNames)
+                .lineLimit(1)
         }
         .menuStyle(.borderlessButton)
         .fixedSize(horizontal: isMainWindow, vertical: true)
         .accessibilityLabel(AccessibilityCopy.switcher(name: shownNames))
-        .accessibilityValue(lockState)
-    }
-
-    @ViewBuilder private var lockIndicator: some View {
-        if model.workspaceLock.isEnabled {
-            Image(systemName: model.workspaceLock.isUnlocked ? unlockedSymbol : lockedSymbol)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .help(lockHelp)
-                .accessibilityHidden(true)
-        }
-    }
-
-    private var lockHelp: String {
-        model.workspaceLock.isUnlocked ? WorkspaceLockCopy.unlockedHelp(timeout: model.workspaceLock.timeout) : WorkspaceLockCopy.lockedHelp
-    }
-
-    private var lockState: String {
-        guard model.workspaceLock.isEnabled else { return "" }
-        return model.workspaceLock.isUnlocked ? WorkspaceLockCopy.unlockedState : WorkspaceLockCopy.lockedState
     }
 
     private var shownNames: String {

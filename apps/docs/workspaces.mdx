@@ -48,11 +48,11 @@ Each row is tagged with its workspace before its project, as in `Acme · Launch`
 
 In the union, a task you add without naming a project (from the menu bar, a shortcut or the day close) goes to the Inbox of the primary workspace: the one that was shown before when it still is, else the first in the list. A new project and the keys of **Connect an Agent** go to the primary workspace too. Changing a task always writes to the project the task belongs to.
 
-## Lock other workspaces
+## Require Touch ID to switch workspaces
 
-todz › Settings › Privacy & updates has **Lock other workspaces**, off by default. While it is on, todz shows only the workspace you are in; every other workspace reads **Locked workspace**, with no name, count or project, in the switcher, the workspace menu, Settings, the widgets, Siri and Shortcuts, and `todz://` links.
+todz › Settings › Privacy & updates has **Require Touch ID to switch workspaces**, off by default. While it is on, todz shows only the workspace you are in and draws exactly what an account with one workspace draws: no placeholder, count, lock icon or name of any other workspace, in the switcher, the workspace menu, Settings and its connected apps, the widgets, Siri and Shortcuts, and `todz://` links, which answer as for a project that does not exist.
 
-Touch ID or your Mac password unlocks it, and then you switch as usual. todz locks again when the Mac sleeps or the screen locks, when the screensaver starts, after the idle time you pick (1, 5, 15 or 60 minutes) or when you choose **Lock Now**, and every launch starts locked. Turning the lock on asks for nothing. Turning it off, changing the idle time, opening another workspace and creating or deleting a workspace ask for Touch ID or your password.
+**Switch Workspace…** (⌘K, also in the menu bar popover's **…** menu) asks for Touch ID or your Mac password, and then you switch as usual. todz asks again when the Mac sleeps or the screen locks, when the screensaver starts, after the time you pick under **Ask again after** (1, 5, 15 or 60 minutes) or when you choose **Lock Now**, which shows only while the session is unlocked, and every launch starts locked. Turning the setting on asks for nothing. Turning it off, changing the time, opening another workspace and creating or deleting a workspace ask for Touch ID or your password.
 
 <Note>
   This keeps people at your Mac out of your other workspaces. It does not change the server: an agent connected with OAuth still reaches its project.

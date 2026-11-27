@@ -1,0 +1,10 @@
+# 0113. A locked session looks like a one-workspace account, with no placeholder, count or lock chrome, and one neutral way back in
+
+- Status: Accepted
+- Date: 2026-11-27
+- Deciders: Dhyego Calota (owner); Claude (advisor). The loop's call under the owner's standing instruction to decide every call, and the owner's rule of 2026-11-27: while a workspace is locked, nothing may show that other workspaces exist, "pra pessoa de fora que ver não pensar 'hm... ele tem outros projetos secretos'".
+- Inspired by: [0110](0110-the-workspace-lock-hides-every-workspace-but-the-current-one-until-touch-id-or-the-mac-password-unlocks-a-session.md); `docs/features/menubar-redesign/design.md` § 11
+
+## Decision
+
+It supersedes the placeholder parts of ADR 0110: the "Locked workspace" row, the lock glyph and its tooltips, and the "Unlock todz to use that workspace" refusal. Every surface that switches, lists or counts workspaces draws from one lock-filtered list, `visibleWorkspaces` (the current workspace alone while locked, all of them otherwise), so a locked session draws what an account with one workspace draws: no locked rows, counts, badges, placeholders or lock words in the sidebar, the switcher, the menu bar, the widgets or search. A link, an intent, an outbox change or a widget that names a locked workspace is answered as an unknown workspace ("This workspace is no longer available."). The way back in is the same for every account: `Switch Workspace…` (⌘K and the popover's `…` menu) asks for Touch ID or the Mac password whenever the session is locked, whether or not another workspace exists, with the neutral reason "switch workspaces"; ⌃1 to ⌃9, Previous, Next and the global hot keys reach only visible workspaces and say nothing beyond them. `Lock Now` shows only in an unlocked session. If the current workspace vanished while locked, the window shows only its loading state until the prompt is confirmed. The Settings switch and its timeout use neutral wording ("Require Touch ID to switch workspaces", "Ask again after"). What ADR 0110 decided about what is hidden, when the session relocks and how it unlocks is unchanged.

@@ -28,6 +28,25 @@ struct RootView: View {
             }
     }
 
+    @ViewBuilder private var choosing: some View {
+        if model.workspaceLock.isLocked {
+            LoadingScreen()
+                .overlay(alignment: .bottom) {
+                    Button(WorkspaceLockCopy.switchWorkspace) { Task { await confirmWorkspaceChoice() } }
+                        .padding()
+                }
+                .task { await confirmWorkspaceChoice() }
+        }
+        if !model.workspaceLock.isLocked {
+            WorkspacePickerScreen()
+        }
+    }
+
+    private func confirmWorkspaceChoice() async {
+        _ = await model.beginWorkspaceSwitch()
+        model.announceConfirmationFailure()
+    }
+
     @ViewBuilder private var screen: some View {
         switch model.phase {
         case .loading:
@@ -37,7 +56,7 @@ struct RootView: View {
         case .naming:
             FirstWorkspaceScreen()
         case .choosing:
-            WorkspacePickerScreen()
+            choosing
         case .ready:
             if let workspace = model.activeWorkspace {
                 MainWindow(workspace: workspace)
