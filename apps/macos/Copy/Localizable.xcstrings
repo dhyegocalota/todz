@@ -45,28 +45,6 @@
         }
       }
     },
-    "%@ · next: %@": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ · next: %@"
-          }
-        }
-      }
-    },
-    "%@. Next: %@": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@. Next: %@"
-          }
-        }
-      }
-    },
     "%lld changes weren't saved.": {
       "extractionState": "manual",
       "localizations": {
@@ -198,6 +176,29 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld left today in %@: %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld left · next: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left · next: %@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left · next: %@"
                 }
               }
             }
@@ -893,13 +894,46 @@
         }
       }
     },
-    "Changed %@ via %@": {
+    "Changed several details via %@": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Changed %@ via %@"
+            "value": "Changed several details via %@"
+          }
+        }
+      }
+    },
+    "Changed the due date via %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changed the due date via %@"
+          }
+        }
+      }
+    },
+    "Changed the notes via %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changed the notes via %@"
+          }
+        }
+      }
+    },
+    "Changed the title via %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changed the title via %@"
           }
         }
       }
@@ -4231,17 +4265,6 @@
         }
       }
     },
-    "Today, %@, %@": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Today, %@, %@"
-          }
-        }
-      }
-    },
     "Today, %lld left": {
       "extractionState": "manual",
       "localizations": {
@@ -4261,6 +4284,17 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Today, %lld left, %lld of %lld done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today, %lld left, %lld of %lld done"
           }
         }
       }
@@ -4729,13 +4763,46 @@
         }
       }
     },
-    "You changed %@": {
+    "You changed several details": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You changed %@"
+            "value": "You changed several details"
+          }
+        }
+      }
+    },
+    "You changed the due date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You changed the due date"
+          }
+        }
+      }
+    },
+    "You changed the notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You changed the notes"
+          }
+        }
+      }
+    },
+    "You changed the title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You changed the title"
           }
         }
       }
@@ -4983,50 +5050,6 @@
         }
       }
     },
-    "the due date": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "the due date"
-          }
-        }
-      }
-    },
-    "the notes": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "the notes"
-          }
-        }
-      }
-    },
-    "the order": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "the order"
-          }
-        }
-      }
-    },
-    "the title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "the title"
-          }
-        }
-      }
-    },
     "todz %@ and server %@ work together.": {
       "extractionState": "manual",
       "localizations": {
@@ -5038,13 +5061,13 @@
         }
       }
     },
-    "todz %@ is too old for this server. %@.": {
+    "todz %@ is too old for this server. Update todz to keep syncing.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "todz %@ is too old for this server. %@."
+            "value": "todz %@ is too old for this server. Update todz to keep syncing."
           }
         }
       }
@@ -5208,6 +5231,29 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "todz, %lld left today"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "todz, %lld left today. Next: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "todz, %lld left today. Next: %@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "todz, %lld left today. Next: %@"
                 }
               }
             }

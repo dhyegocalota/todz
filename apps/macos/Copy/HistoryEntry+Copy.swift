@@ -3,14 +3,16 @@ import TodzKit
 extension HistoryEntry {
     var sentence: String {
         let isMoveOnly = fields == [.order]
-        let fieldNames = fields.map(\.copy).formatted(.list(type: .and).locale(Localized.locale))
         switch action {
         case .created:
             return actor.line(owner: HistoryCopy.ownerAdded) { HistoryCopy.agentAdded(client: $0) }
         case .updated where isMoveOnly:
             return actor.line(owner: HistoryCopy.ownerMoved) { HistoryCopy.agentMoved(client: $0) }
         case .updated:
-            return actor.line(owner: HistoryCopy.ownerChanged(fields: fieldNames)) { HistoryCopy.agentChanged(fields: fieldNames, client: $0) }
+            guard fields.count == 1, let field = fields.first else {
+                return actor.line(owner: HistoryCopy.ownerChangedSeveral) { HistoryCopy.agentChangedSeveral(client: $0) }
+            }
+            return actor.line(owner: HistoryCopy.ownerChanged(field: field)) { HistoryCopy.agentChanged(field: field, client: $0) }
         case .completed:
             return actor.line(owner: HistoryCopy.ownerCompleted) { HistoryCopy.agentCompleted(client: $0) }
         case .reopened:

@@ -34,7 +34,7 @@ enum VersionCopy {
     static func accessibilityLabel(_ compatibility: VersionCompatibility) -> String {
         switch compatibility {
         case let .compatible(app, server): Localized.text("todz \(app) and server \(ServerStamp.date(of: server)) work together.")
-        case let .updateNeeded(app, _, _): Localized.text("todz \(app) is too old for this server. \(updateNeededStatus).")
+        case let .updateNeeded(app, _, _): Localized.text("todz \(app) is too old for this server. Update todz to keep syncing.")
         case let .serverBehind(app, _): Localized.text("The server is older than todz \(app) expects. It needs an update.")
         case let .serverUnknown(app): Localized.text("todz \(app).")
         }

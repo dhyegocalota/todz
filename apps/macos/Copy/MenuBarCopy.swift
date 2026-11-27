@@ -36,7 +36,7 @@ enum MenuBarCopy {
     }
 
     static func todayProgress(left: Int, done: Int, total: Int) -> String {
-        Localized.text("Today, \(Self.left(count: left)), \(progress(done: done, total: total))")
+        Localized.text("Today, \(left) left, \(done) of \(total) done")
     }
 
     static func left(count: Int) -> String {
@@ -48,7 +48,7 @@ enum MenuBarCopy {
     }
 
     static func ribbonRemaining(left: Int, next: String) -> String {
-        Localized.text("\(Self.left(count: left)) · next: \(next)")
+        Localized.text("\(left) left · next: \(next)")
     }
 
     static func ribbonLast(next: String) -> String {

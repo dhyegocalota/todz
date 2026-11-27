@@ -52,7 +52,7 @@ enum AccessibilityCopy {
 
     static func menuBarRibbon(_ content: RibbonContent) -> String {
         switch content {
-        case let .remaining(left, next): Localized.text("\(menuBarCount(count: left)). Next: \(MenuBarCopy.ribbonTask(next))")
+        case let .remaining(left, next): Localized.text("todz, \(left) left today. Next: \(MenuBarCopy.ribbonTask(next))")
         case let .last(next): Localized.text("todz, last one today: \(MenuBarCopy.ribbonTask(next))")
         }
     }
