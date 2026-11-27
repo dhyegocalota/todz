@@ -26,6 +26,11 @@ import {
   DAY_EMAIL_SENDS_PER_TICK_MAX,
   DAY_EMAIL_STOP_LINK_LIFETIME_MS,
   DAY_EMAIL_STOP_RATE_LIMIT_MAX,
+  EMAIL_CODE_LENGTH,
+  EMAIL_CODE_MISSES_PER_ADDRESS_MAX,
+  EMAIL_CODE_MISSES_PER_REQUEST_MAX,
+  EMAIL_CODE_RESEND_SECONDS,
+  SIGN_IN_CODE_RATE_LIMIT_MAX,
   DAY_EMAIL_STOP_RATE_LIMIT_PERIOD_SECONDS,
   DAY_EMAIL_STOP_TOKEN_LENGTH,
   APPCAST_ADDRESS_RATE_LIMIT_MAX,
@@ -188,6 +193,14 @@ describe('day email constants', () => {
   test('the stop link answers ten requests a minute to one client (pin)', () => {
     expect(DAY_EMAIL_STOP_RATE_LIMIT_MAX).toBe(10);
     expect(DAY_EMAIL_STOP_RATE_LIMIT_PERIOD_SECONDS).toBe(60);
+  });
+
+  test('the emailed code has six digits, is resent after thirty seconds and locks after five misses per request and ten per address (pin)', () => {
+    expect(EMAIL_CODE_LENGTH).toBe(6);
+    expect(EMAIL_CODE_RESEND_SECONDS).toBe(30);
+    expect(EMAIL_CODE_MISSES_PER_REQUEST_MAX).toBe(5);
+    expect(EMAIL_CODE_MISSES_PER_ADDRESS_MAX).toBe(10);
+    expect(SIGN_IN_CODE_RATE_LIMIT_MAX).toBe(10);
   });
 
   test('the usage report answers one a minute to one client, one to one install and sixty to the world, and the appcast counts one a minute to one client and sixty to the world (pin)', () => {
