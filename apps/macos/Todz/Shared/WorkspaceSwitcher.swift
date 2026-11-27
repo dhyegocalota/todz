@@ -2,6 +2,8 @@ import SwiftUI
 import TodzKit
 
 private let shownNamesSeparator = ", "
+private let lockedSymbol = "lock.fill"
+private let unlockedSymbol = "lock.open.fill"
 
 struct WorkspaceSwitcher: View {
     let workspace: Workspace
@@ -28,10 +30,29 @@ struct WorkspaceSwitcher: View {
 
     private var menu: some View {
         Menu {
-            Toggle(MainWindowCopy.allWorkspaces, isOn: isAllSelected)
-            Divider()
-            ForEach(model.workspaces, id: \.identifier) { candidate in
-                Toggle(candidate.name, isOn: isShown(candidate))
+            if !model.workspaceLock.isLocked {
+                Toggle(MainWindowCopy.allWorkspaces, isOn: isAllSelected)
+                Divider()
+            }
+            ForEach(model.presentedWorkspaces, id: \.identifier) { presented in
+                switch presented {
+                case let .visible(candidate):
+                    Toggle(candidate.name, isOn: isShown(candidate))
+                case let .locked(identifier):
+                    Button {
+                        Task {
+                            await model.switchWorkspace(identifier: identifier)
+                            model.announceConfirmationFailure()
+                        }
+                    } label: {
+                        LockedWorkspaceRow()
+                    }
+                }
+            }
+            if model.workspaceLock.isUnlocked {
+                Button(WorkspaceLockCopy.lockNow) {
+                    Task { await model.relockWorkspaces(because: .manual) }
+                }
             }
             if isMainWindow {
                 Divider()
@@ -50,12 +71,35 @@ struct WorkspaceSwitcher: View {
                 }
             }
         } label: {
-            Text(shownNames)
-                .lineLimit(1)
+            HStack {
+                Text(shownNames)
+                    .lineLimit(1)
+                lockIndicator
+            }
         }
         .menuStyle(.borderlessButton)
         .fixedSize(horizontal: isMainWindow, vertical: true)
         .accessibilityLabel(AccessibilityCopy.switcher(name: shownNames))
+        .accessibilityValue(lockState)
+    }
+
+    @ViewBuilder private var lockIndicator: some View {
+        if model.workspaceLock.isEnabled {
+            Image(systemName: model.workspaceLock.isUnlocked ? unlockedSymbol : lockedSymbol)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .help(lockHelp)
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var lockHelp: String {
+        model.workspaceLock.isUnlocked ? WorkspaceLockCopy.unlockedHelp(timeout: model.workspaceLock.timeout) : WorkspaceLockCopy.lockedHelp
+    }
+
+    private var lockState: String {
+        guard model.workspaceLock.isEnabled else { return "" }
+        return model.workspaceLock.isUnlocked ? WorkspaceLockCopy.unlockedState : WorkspaceLockCopy.lockedState
     }
 
     private var shownNames: String {

@@ -137,6 +137,7 @@ struct SettingsView: View {
 
     private var privacySection: some View {
         Section {
+            SettingsWorkspaceLock()
             if let appUpdater {
                 SettingsRow(title: UpdateCopy.automaticUpdates, detail: UpdateCopy.automaticUpdatesDetail) {
                     Toggle(UpdateCopy.automaticUpdates, isOn: automaticUpdates(appUpdater))

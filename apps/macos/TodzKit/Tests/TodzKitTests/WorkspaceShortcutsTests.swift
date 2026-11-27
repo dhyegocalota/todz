@@ -42,6 +42,14 @@ private func workspaces(count: Int) -> [Workspace] {
         #expect(numbered.map(\.workspace) == Array(listed.prefix(9)))
     }
 
+    @Test func presentedWorkspacesKeepTheirPositionsWhetherLockedOrNot() {
+        let listed = workspaces(count: 3)
+        let presented: [PresentedWorkspace] = [.visible(listed[0]), .locked(identifier: listed[1].identifier), .locked(identifier: listed[2].identifier)]
+        let numbered = WorkspaceShortcuts.numbered(presented)
+        #expect(numbered.map(\.number) == [1, 2, 3])
+        #expect(numbered.map(\.presented) == presented)
+    }
+
     @Test func aShortListIsNumberedWhole() {
         #expect(WorkspaceShortcuts.numbered(workspaces(count: 2)).map(\.number) == [1, 2])
     }

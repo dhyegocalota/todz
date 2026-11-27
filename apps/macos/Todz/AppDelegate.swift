@@ -17,6 +17,7 @@ private let cacheFolderName = "Cache"
         pendingLinks: FilePendingLinkVault(folder: AppConfiguration.sessionFolder),
         store: FileSyncStore(folder: AppConfiguration.sessionFolder.appending(path: cacheFolderName)),
         cacheScheduler: .background,
+        workspaceLock: WorkspaceLock(preference: WorkspaceLockPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain), authenticator: MacOwnerAuthenticator()),
         widgetStore: AppConfiguration.widgetStore,
         reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
         timeZone: .autoupdatingCurrent,
@@ -57,6 +58,7 @@ private let cacheFolderName = "Cache"
         onUsed: { [usageSharing] in usageSharing.record(.shortcutUsed, at: Date()) }
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
+    private lazy var workspaceLockMonitor = WorkspaceLockMonitor(model: model)
     private(set) lazy var dayTemperatureClock = DayTemperatureClock(
         now: Date.init,
         timeZone: { [model] in model.timeZone },
@@ -97,6 +99,7 @@ private let cacheFolderName = "Cache"
         PerfProbe.shared?.start(model: model)
         decideLaunchSurfaceStart(notification)
         workspaceShortcuts.start()
+        workspaceLockMonitor.start()
         observeWidgetRequests()
         observeDayChanges()
         startUsageSharing()
