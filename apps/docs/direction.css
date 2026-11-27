@@ -1,0 +1,11 @@
+html[lang='ar'] {
+  direction: rtl;
+}
+
+pre,
+code,
+[data-component-part='code-block'] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: start;
+}
