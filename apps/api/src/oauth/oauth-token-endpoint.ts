@@ -5,6 +5,8 @@ import { HttpStatus } from '../http-status';
 import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import type { OAuthContext } from './oauth-context';
 import { OAUTH_NO_STORE_HEADERS, OAuthError, oauthErrorResponse } from './oauth-errors';
+import { recordGrantDeletions } from './oauth-grant-deletion';
+import { GrantDeletionReason } from './oauth-grant-deletion-reason';
 import { OAuthGrantType, mcpResourceOf } from './oauth-metadata';
 import { OAUTH_GRANTS_PER_OWNER_MAX, OAuthParameter } from './oauth-paths';
 import { isVerifierOfChallenge } from './oauth-pkce';
@@ -14,7 +16,7 @@ import {
   type OAuthCodeRecord,
   findActiveClient,
   insertGrant,
-  revokeGrantOfSpentRefreshToken,
+  revokeGrantOfSupersededRefreshToken,
   revokeGrantOfToken,
   revokeReplayedCode,
   rotateTokens,
@@ -60,13 +62,14 @@ async function exchangeCode(tokenRequest: TokenRequest): Promise<Response> {
   const digest = await digestCredential(code);
   const spent = await spendCode({ directory: env.DIRECTORY, digest, now });
   if (spent === null) {
-    await revokeReplayedCode({ directory: env.DIRECTORY, digest, now });
+    const clientIds = await revokeReplayedCode({ directory: env.DIRECTORY, digest, now });
+    await recordGrantDeletions({ env, reason: GrantDeletionReason.ReplayedCode, clientIds, now });
     return oauthErrorResponse(OAuthError.InvalidGrant);
   }
   const refusal = await codeRefusalOf({ ...tokenRequest, spent });
   if (refusal !== null) return oauthErrorResponse(refusal);
   const tokens = await issuedTokenPair(now);
-  const isGranted = await insertGrant({
+  const { isGranted, evictedClientIds } = await insertGrant({
     directory: env.DIRECTORY,
     grantId: crypto.randomUUID(),
     codeDigest: digest,
@@ -75,6 +78,7 @@ async function exchangeCode(tokenRequest: TokenRequest): Promise<Response> {
     now,
     grantsPerOwnerMax: OAUTH_GRANTS_PER_OWNER_MAX,
   });
+  await recordGrantDeletions({ env, reason: GrantDeletionReason.Eviction, clientIds: evictedClientIds, now });
   if (!isGranted) return oauthErrorResponse(OAuthError.InvalidGrant);
   return tokenAnswerOf({ tokens, scope: grantedScopeOf(spent.projectId) });
 }
@@ -87,13 +91,21 @@ async function refresh({ context, form, client }: TokenRequest): Promise<Respons
   const digest = await digestCredential(refreshToken);
   const grantId = await spendRefreshToken({ directory: env.DIRECTORY, digest, clientId: client.id, now });
   if (grantId === null) {
-    await revokeGrantOfSpentRefreshToken({ directory: env.DIRECTORY, digest, clientId: client.id, now });
+    const clientIds = await revokeGrantOfSupersededRefreshToken({ directory: env.DIRECTORY, digest, clientId: client.id });
+    await recordGrantDeletions({ env, reason: GrantDeletionReason.ReuseAfterRotation, clientIds, now });
     return oauthErrorResponse(OAuthError.InvalidGrant);
   }
   const tokens = await issuedTokenPair(now);
-  const rotated = await rotateTokens({ directory: env.DIRECTORY, grantId, tokens: tokens.stored, now });
-  if (rotated === null) return oauthErrorResponse(OAuthError.InvalidGrant);
-  return tokenAnswerOf({ tokens, scope: grantedScopeOf(rotated.projectId) });
+  const { grant, cappedClientIds } = await rotateTokens({
+    directory: env.DIRECTORY,
+    grantId,
+    tokens: tokens.stored,
+    now,
+    parentDigest: digest,
+  });
+  await recordGrantDeletions({ env, reason: GrantDeletionReason.Cap, clientIds: cappedClientIds, now });
+  if (grant === null) return oauthErrorResponse(OAuthError.InvalidGrant);
+  return tokenAnswerOf({ tokens, scope: grantedScopeOf(grant.projectId) });
 }
 
 const HANDLER_OF_GRANT_TYPE: Record<OAuthGrantType, (tokenRequest: TokenRequest) => Promise<Response>> = {
@@ -127,6 +139,7 @@ export async function serveRevoke(context: OAuthContext): Promise<Response> {
   if (token === null) return oauthErrorResponse(OAuthError.InvalidRequest);
   const clientId = form.get(OAuthParameter.ClientId);
   if (clientId === null) return oauthErrorResponse(OAuthError.InvalidClient);
-  await revokeGrantOfToken({ directory: context.env.DIRECTORY, digest: await digestCredential(token), clientId });
+  const clientIds = await revokeGrantOfToken({ directory: context.env.DIRECTORY, digest: await digestCredential(token), clientId });
+  await recordGrantDeletions({ env: context.env, reason: GrantDeletionReason.ClientRevoke, clientIds, now: context.now });
   return new Response(null, { status: HttpStatus.Ok, headers: OAUTH_NO_STORE_HEADERS });
 }

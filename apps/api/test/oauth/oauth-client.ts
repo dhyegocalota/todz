@@ -384,12 +384,14 @@ export async function exchangeCode({
   code,
   verifier,
   redirectUri = LOOPBACK_REDIRECT_URI,
+  workerEnv,
   now,
 }: {
   clientId: string;
   code: string;
   verifier: string;
   redirectUri?: string;
+  workerEnv?: Env;
   now?: number;
 }): Promise<Response> {
   return serveOAuthRequest({
@@ -401,6 +403,7 @@ export async function exchangeCode({
       client_id: clientId,
       resource: MCP_RESOURCE,
     }),
+    workerEnv,
     now,
   });
 }

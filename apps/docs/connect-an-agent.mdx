@@ -23,7 +23,7 @@ To reconnect an agent that used a key, run `claude mcp add --transport http todz
 
 A project scope gives the task tools, and the other projects of its workspace for `move` and `projects`. An owner scope gives the account tools and the same task tools for every project of the account, each taking the `project` id from `workspaces`. The history of a task names the app by the name it registered. See [MCP tools](/mcp-tools).
 
-Access tokens last one hour and renew themselves. Refresh tokens last 30 days and rotate on every use; one retry within 5 seconds gets a fresh pair, and a spent one used again later disconnects the app. todz stores tokens only as digests. Fair use and the cloud cap apply to every connected app.
+Access tokens last one hour and renew themselves. Refresh tokens last 30 days and rotate on every use; a retry gets a fresh pair until the new token is used, and a spent one used after that disconnects the app. todz stores tokens only as digests. Fair use and the cloud cap apply to every connected app.
 
 To disconnect an app, open **Settings** › **Connected apps** in the Mac app. The app stops at once.
 

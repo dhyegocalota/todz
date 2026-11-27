@@ -12,6 +12,9 @@ import {
 } from './directory-workspaces';
 import type { WorkspaceListing } from './directory-workspaces';
 import type { Env } from './env';
+import { recordGrantDeletions } from './oauth/oauth-grant-deletion';
+import { GrantDeletionReason } from './oauth/oauth-grant-deletion-reason';
+import { clientIdsOfProjectGrants, clientIdsOfWorkspaceGrants } from './oauth/oauth-store';
 import { ActionFailureKind, type ActionResult, failed } from './owner-action-result';
 import type { ProjectRecord } from './owner-records';
 import { ProjectFailureKind, resultOf } from './project-result';
@@ -81,6 +84,7 @@ export async function deleteWorkspace({
 }: Acting & { workspaceId: string; expectedName: string | null }): Promise<ActionResult<null>> {
   const ownedWorkspaceId = await findOwnedWorkspaceId({ env, owner, workspaceId });
   if (ownedWorkspaceId === null) return failed(ActionFailureKind.NotFound);
+  const grantClientIds = await clientIdsOfWorkspaceGrants({ directory: env.DIRECTORY, workspaceId: ownedWorkspaceId });
   const deletedProjectIds = await deleteOwnerWorkspace({
     directory: env.DIRECTORY,
     ownerId: owner.ownerId,
@@ -88,6 +92,7 @@ export async function deleteWorkspace({
     expectedName,
   });
   if (deletedProjectIds === null) return failed(ActionFailureKind.NotFound);
+  await recordGrantDeletions({ env, reason: GrantDeletionReason.Cascade, clientIds: grantClientIds, now: Date.now() });
   await Promise.allSettled(deletedProjectIds.map((projectId) => wipeProjectStorage({ env, projectId })));
   return { ok: true, value: null };
 }
@@ -185,8 +190,10 @@ export async function deleteProject({
 }: Acting & { projectId: string; expectedName: string | null }): Promise<ActionResult<null>> {
   const changeable = await ownedChangeableProject({ env, owner, projectId });
   if (!changeable.ok) return changeable;
+  const grantClientIds = await clientIdsOfProjectGrants({ directory: env.DIRECTORY, projectId });
   const isDeleted = await deleteOwnerProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId, expectedName });
   if (!isDeleted) return failed(ActionFailureKind.NotFound);
+  await recordGrantDeletions({ env, reason: GrantDeletionReason.Cascade, clientIds: grantClientIds, now: Date.now() });
   await Promise.allSettled([wipeProjectStorage({ env, projectId })]);
   return { ok: true, value: null };
 }

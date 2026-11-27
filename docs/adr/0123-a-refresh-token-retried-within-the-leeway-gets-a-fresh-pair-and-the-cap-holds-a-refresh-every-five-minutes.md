@@ -2,6 +2,7 @@
 
 - Status: Accepted (the loop's call)
 - Date: 2026-11-27
+- Amended by: [0125](0125-a-refresh-token-stays-honoured-until-a-token-issued-from-it-or-a-sibling-is-used-and-every-grant-deletion-logs-its-reason.md) (lineage replaces the leeway and the single retry; the cap stays)
 - Deciders: Claude (the build loop's call, under the owner's report on 2026-11-27 that his Claude connector asked him to sign in again a few hours after he approved it, and the security review of PR #137)
 - Inspired by: [0109](0109-mcp-clients-connect-with-oauth-2-1-pkce-and-dynamic-registration-and-a-grant-is-never-more-than-the-equivalent-key.md), [the feature](../features/oauth-refresh-grant/spec.md)
 

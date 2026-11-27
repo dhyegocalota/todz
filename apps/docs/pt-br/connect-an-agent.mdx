@@ -23,7 +23,7 @@ Para reconectar um agente que usava uma chave, rode `claude mcp add --transport 
 
 Um escopo de projeto dá as ferramentas de tarefa, e os outros projetos do workspace dele para `move` e `projects`. Um escopo de proprietário dá as ferramentas da conta e as mesmas ferramentas de tarefa para todos os projetos da conta, cada uma recebendo o id `project` vindo de `workspaces`. O histórico de uma tarefa mostra o app pelo nome com que ele se registrou. Veja [Ferramentas MCP](/pt-br/mcp-tools).
 
-Os tokens de acesso duram uma hora e se renovam sozinhos. Os tokens de atualização duram 30 dias e giram a cada uso; uma única nova tentativa em até 5 segundos recebe um par novo, e um token já usado que volte depois desconecta o app. O todz guarda os tokens apenas como hashes. O uso justo e o limite do cloud valem para todo app conectado.
+Os tokens de acesso duram uma hora e se renovam sozinhos. Os tokens de atualização duram 30 dias e giram a cada uso; uma nova tentativa recebe um par novo até o token novo ser usado, e um token já usado que volte depois disso desconecta o app. O todz guarda os tokens apenas como hashes. O uso justo e o limite do cloud valem para todo app conectado.
 
 Para desconectar um app, abra **Ajustes** › **Apps conectados** no app para Mac. O app para na hora.
 

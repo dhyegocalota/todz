@@ -78,6 +78,7 @@ const CONSOLE_IDENTIFIER = /\bconsole\b/;
 const CONSOLE_CRASH_LOG = 'apps/api/src/crash-log.ts';
 const CONSOLE_DAY_EMAIL_LOG = 'apps/api/src/day-email/day-email-log.ts';
 const CONSOLE_EMAIL_SENDER = 'apps/api/src/email-sender.ts';
+const CONSOLE_GRANT_DELETION_LOG = 'apps/api/src/oauth/oauth-grant-deletion.ts';
 const SCHEDULED_MODULE = 'apps/api/src/scheduled.ts';
 const DAY_EMAIL_CRON = '*/15 * * * *';
 const METRICS_CRON = '0 3 * * *';
@@ -147,8 +148,13 @@ describe('the api source', () => {
     expect(sourceFiles.length).toBeGreaterThan(0);
   });
 
-  test('only the development email sender, the day email log and the crash log name console, so no other log carries a task, a secret or a digest', () => {
-    expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([CONSOLE_CRASH_LOG, CONSOLE_DAY_EMAIL_LOG, CONSOLE_EMAIL_SENDER]);
+  test('only the development email sender, the day email log, the crash log and the grant deletion log name console, so no other log carries a task, a secret or a digest', () => {
+    expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([
+      CONSOLE_GRANT_DELETION_LOG,
+      CONSOLE_CRASH_LOG,
+      CONSOLE_DAY_EMAIL_LOG,
+      CONSOLE_EMAIL_SENDER,
+    ]);
   });
 
   test('only the reply module names the producer of a reply owner, so the brand of the routing module opens nothing else (pin)', () => {

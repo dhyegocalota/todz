@@ -18,12 +18,13 @@ Each count is one number for one day, with at most one short label.
 | Update checks | The Mac app asking for updates | the app version and the macOS major version, such as `0.2.1\|15` |
 | Shared usage reports | The Mac app, only if you turn on **Share anonymous usage** | the app version and the macOS major version |
 | Shared usage events | The same report | one of `popover_opened`, `day_closed`, `morning_glance`, `shortcut_used`, `multi_workspace` |
+| Connected apps removed | The server, when an app's connection ends | one of `replayed_code`, `eviction`, `reuse_after_rotation`, `cap`, `client_revoke`, `settings_disconnect`, `cascade` |
 
 ## What is never stored
 
 - No task title, note, project name, workspace name or email address.
 - No IP address and no user agent. An update check's user agent is read for the two version numbers and dropped.
-- No log of events and no timestamp of any single event. Only a day and a total.
+- No log of events and no timestamp of any single event. Only a day and a total. The one exception: when an app's connection ends, the server writes one line to its own logs with the reason and the app's name, and no account, address or token.
 - The random code the Mac app sends with a report changes every 30 days, is used only to slow down abuse and is never stored.
 
 Totals are kept for 13 months and then deleted by the server.

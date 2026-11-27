@@ -1,4 +1,6 @@
 import { HttpStatus } from './http-status';
+import { recordGrantDeletions } from './oauth/oauth-grant-deletion';
+import { GrantDeletionReason } from './oauth/oauth-grant-deletion-reason';
 import { redirectHostOf } from './oauth/oauth-redirect-uri';
 import { scopeKindOf } from './oauth/oauth-scope';
 import { type ConnectedAppRecord, deleteConnectedApp, listConnectedApps } from './oauth/oauth-store';
@@ -30,8 +32,9 @@ async function listApps({ env, owner }: SessionContext): Promise<Response> {
 async function disconnectApp(context: SessionContext): Promise<Response> {
   const { env, owner } = context;
   const grantId = routeParam({ context, name: RouteParam.ConnectedAppId });
-  const isDeleted = await deleteConnectedApp({ directory: env.DIRECTORY, ownerId: owner.ownerId, grantId });
-  if (!isDeleted) return errorResponse(OwnerErrorCode.NotFound);
+  const clientIds = await deleteConnectedApp({ directory: env.DIRECTORY, ownerId: owner.ownerId, grantId });
+  if (clientIds.length === 0) return errorResponse(OwnerErrorCode.NotFound);
+  await recordGrantDeletions({ env, reason: GrantDeletionReason.SettingsDisconnect, clientIds, now: Date.now() });
   return new Response(null, { status: HttpStatus.NoContent });
 }
 

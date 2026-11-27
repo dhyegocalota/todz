@@ -1,8 +1,9 @@
-import { MILLISECONDS_PER_DAY } from '@todz/types';
+import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../../src/credential-digest';
 import { generateCredentialSecret } from '../../src/credential-secret';
+import type { Env } from '../../src/env';
 import { seedSession, seedSiblingProject } from '../directory-seed';
 import { ownerCall } from '../owner-client';
 import { CLOCK_NOW } from '../task-fixtures';
@@ -15,6 +16,7 @@ import {
   exchangeCode,
   firstChoice,
   formRequest,
+  oauthEnv,
   pkcePair,
   refreshRequest,
   registerClient,
@@ -29,8 +31,14 @@ const DELETION_METRIC = 'oauth_grants_deleted';
 const GRANTS_PER_OWNER_MAX = 20;
 const SPENT_REFRESH_TOKENS_MAX = 10_000;
 const DIGEST_LENGTH = 64;
+const LINK_WINDOW_MS = 16 * MILLISECONDS_PER_MINUTE;
+const TELEMETRY_SETTING = 'on';
 
 type DeletionLine = { event: string; reason: string; client_name: string };
+
+function telemetryOn(): Env {
+  return oauthEnv({ TELEMETRY: TELEMETRY_SETTING });
+}
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -91,7 +99,7 @@ describe('every grant deletion logs its reason and the client name, and counts t
     const countBefore = await deletionCount('replayed_code');
     const lines = loggedLines();
 
-    await exchangeCode({ clientId, code, verifier });
+    await exchangeCode({ clientId, code, verifier, workerEnv: telemetryOn() });
 
     await expectOneDeletion({ reason: 'replayed_code', lines: lines(), countBefore, secrets: [code, owner.email, owner.ownerId] });
   });
@@ -106,7 +114,7 @@ describe('every grant deletion logs its reason and the client name, and counts t
     const countBefore = await deletionCount('reuse_after_rotation');
     const lines = loggedLines();
 
-    await serveOAuthRequest({ request: refreshRequest({ clientId, refreshToken: tokens.refresh_token }) });
+    await serveOAuthRequest({ request: refreshRequest({ clientId, refreshToken: tokens.refresh_token }), workerEnv: telemetryOn() });
 
     await expectOneDeletion({
       reason: 'reuse_after_rotation',
@@ -134,7 +142,7 @@ describe('every grant deletion logs its reason and the client name, and counts t
     const countBefore = await deletionCount('cap');
     const lines = loggedLines();
 
-    await serveOAuthRequest({ request: refreshRequest({ clientId, refreshToken: tokens.refresh_token }) });
+    await serveOAuthRequest({ request: refreshRequest({ clientId, refreshToken: tokens.refresh_token }), workerEnv: telemetryOn() });
 
     await expectOneDeletion({ reason: 'cap', lines: lines(), countBefore, secrets: [tokens.refresh_token, owner.email, owner.ownerId] });
   });
@@ -147,6 +155,7 @@ describe('every grant deletion logs its reason and the client name, and counts t
 
     await serveOAuthRequest({
       request: formRequest({ path: '/oauth/revoke', fields: { token: tokens.refresh_token, client_id: clientId } }),
+      workerEnv: telemetryOn(),
     });
 
     await expectOneDeletion({
@@ -179,10 +188,16 @@ describe('every grant deletion logs its reason and the client name, and counts t
     )
       .bind(GRANTS_PER_OWNER_MAX - 1, clientId, owner.ownerId, CLOCK_NOW - 1, CLOCK_NOW - 1)
       .run();
+    const nextClientId = await registerClient();
+    const { verifier, challenge } = await pkcePair();
+    const params = authorizeParams({ clientId: nextClientId, challenge });
+    const later = CLOCK_NOW + LINK_WINDOW_MS;
+    const browser = await signedInBrowser({ params, email: owner.email, now: later });
+    const code = await approvedCode({ browser, params, choice: owner.projectId, now: later });
     const countBefore = await deletionCount('eviction');
     const lines = loggedLines();
 
-    await connectedClient({ choiceOf: firstChoice, email: owner.email });
+    await tokensOf(await exchangeCode({ clientId: nextClientId, code, verifier, workerEnv: telemetryOn(), now: later }));
 
     await expectOneDeletion({ reason: 'eviction', lines: lines(), countBefore, secrets: [owner.email, owner.ownerId] });
   });

@@ -66,6 +66,7 @@ export const ADMIN_COPY = {
       [Metric.UsageRollups]: 'Shared usage reports',
       [Metric.UsageVersions]: 'Reports by app version',
       [Metric.UsageEvents]: 'Shared usage events',
+      [Metric.OAuthGrantsDeleted]: 'OAuth grants deleted',
     } satisfies Record<Metric, string>,
   },
   cloudQueue: {

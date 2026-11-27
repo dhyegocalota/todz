@@ -64,4 +64,3 @@ export const OAUTH_GRANTS_PER_OWNER_MAX = 20;
 // NB ADR 0123: the cap holds a refresh every five minutes for the whole lifetime of a refresh token.
 export const OAUTH_SPENT_REFRESH_TOKENS_PER_GRANT_MAX = 10_000;
 export const OAUTH_LIVE_ACCESS_TOKENS_PER_GRANT_MAX = 10;
-export const OAUTH_REFRESH_REUSE_LEEWAY_MS = 5 * MILLISECONDS_PER_SECOND;

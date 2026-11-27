@@ -18,12 +18,13 @@ Chaque compte est un seul nombre pour un seul jour, avec au plus une courte éti
 | Recherches de mises à jour | L’app Mac qui cherche des mises à jour | la version de l’app et la version majeure de macOS, comme `0.2.1\|15` |
 | Rapports d’utilisation partagés | L’app Mac, seulement si vous activez **Partager l’utilisation anonyme** | la version de l’app et la version majeure de macOS |
 | Événements d’utilisation partagés | Le même rapport | l’un de `popover_opened`, `day_closed`, `morning_glance`, `shortcut_used`, `multi_workspace` |
+| Apps connectées retirées | Le serveur, quand la connexion d’une app prend fin | l’un de `replayed_code`, `eviction`, `reuse_after_rotation`, `cap`, `client_revoke`, `settings_disconnect`, `cascade` |
 
 ## Ce qui n’est jamais stocké
 
 - Aucun titre de tâche, aucune note, aucun nom de projet, aucun nom d’espace de travail ni aucune adresse e-mail.
 - Aucune adresse IP et aucun user agent. Le user agent d’une recherche de mises à jour est lu pour les deux numéros de version, puis abandonné.
-- Aucun journal d’événements et aucun horodatage d’un événement isolé. Seulement un jour et un total.
+- Aucun journal d’événements et aucun horodatage d’un événement isolé. Seulement un jour et un total. La seule exception : quand la connexion d’une app prend fin, le serveur écrit une ligne dans ses propres journaux, avec le motif et le nom de l’app, sans compte, adresse ni jeton.
 - Le code aléatoire que l’app Mac envoie avec un rapport change tous les 30 jours, ne sert qu’à freiner les abus et n’est jamais stocké.
 
 Les totaux sont conservés 13 mois, puis supprimés par le serveur.
