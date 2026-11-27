@@ -16,6 +16,7 @@ The owner's Claude connector (account scope) was approved at 11:54 UTC, refreshe
 - The leeway counts from the first spend; a retry never moves it.
 - A spent token presented after the leeway still deletes the whole grant; another client's token is still refused, inside the leeway too.
 - A grant holds 10,000 unexpired refresh tokens before it is revoked, a refresh every five minutes for 30 days.
+- Each project choice on the consent screen names its workspace and its project ("Personal › Inbox"), so two inboxes never read alike; it shows no counts.
 
 ## Non-goals
 

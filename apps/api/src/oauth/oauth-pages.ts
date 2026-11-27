@@ -27,6 +27,7 @@ import { isLoopbackRedirectUri, redirectHostOf, redirectOriginOf } from './oauth
 import { OAuthScope } from './oauth-scope';
 
 const TITLE_ID = 'oauth-title';
+const WORKSPACE_PROJECT_SEPARATOR = ' › ';
 const EMAIL_ID = 'oauth-email';
 
 export enum OAuthNotice {
@@ -190,7 +191,13 @@ function workspaceChoicesHtml({ listings, firstProjectId }: { listings: Workspac
     .map(({ workspace, projects }) =>
       [
         `<p class="consent-workspace">${escapedHtml(workspace.name)}</p>`,
-        ...projects.map((project) => projectChoiceHtml({ id: project.id, name: project.name, isChecked: project.id === firstProjectId })),
+        ...projects.map((project) =>
+          projectChoiceHtml({
+            id: project.id,
+            name: `${workspace.name}${WORKSPACE_PROJECT_SEPARATOR}${project.name}`,
+            isChecked: project.id === firstProjectId,
+          }),
+        ),
       ].join('\n'),
     )
     .join('\n');
