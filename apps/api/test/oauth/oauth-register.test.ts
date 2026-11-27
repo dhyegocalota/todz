@@ -66,6 +66,10 @@ describe('dynamic client registration (RFC 7591)', () => {
     ['user information', { redirect_uris: ['https://user:secret@client.example.com/callback'] }],
     ['a relative URI', { redirect_uris: ['/callback'] }],
     ['a loopback lookalike host', { redirect_uris: ['http://127.0.0.1.example.com/callback'] }],
+    ['a wildcard host', { redirect_uris: ['https://*/callback'] }],
+    ['a host with a policy separator', { redirect_uris: ['https://a;sandbox/callback'] }],
+    ['a host with a replacement pattern', { redirect_uris: ["https://a$'b/callback"] }],
+    ['a URI over 512 characters', { redirect_uris: [`https://client.example.com/${'a'.repeat(490)}`] }],
   ])('%s is refused as an invalid redirect URI', async (_label, fields) => {
     const response = await register(clientMetadata(fields));
 
@@ -81,6 +85,8 @@ describe('dynamic client registration (RFC 7591)', () => {
     ['an empty client name', { client_name: '   ' }],
     ['a 65-character client name', { client_name: 'a'.repeat(65) }],
     ['a client name with a control character', { client_name: 'Claude\u0007Code' }],
+    ['a client name with a right-to-left override', { client_name: 'Claude Code‮' }],
+    ['a client name with a zero-width space', { client_name: 'Claude​Code' }],
     ['a client name that is not a string', { client_name: 7 }],
   ])('%s is refused as invalid metadata', async (_label, fields) => {
     const response = await register(clientMetadata(fields));
@@ -118,6 +124,7 @@ describe('dynamic client registration (RFC 7591)', () => {
         PUBLIC_ORIGIN,
         OAUTH_LIMITER: recordingLimiter({ isAllowed: true }).limiter,
         OAUTH_REGISTER_LIMITER: recordingLimiter({ isAllowed: false }).limiter,
+        OAUTH_REGISTER_GLOBAL_LIMITER: recordingLimiter({ isAllowed: true }).limiter,
       }),
       now: CLOCK_NOW,
     });
@@ -147,20 +154,44 @@ describe('dynamic client registration (RFC 7591)', () => {
     expect(withoutAddress.status).toBe(503);
   });
 
-  test('the limiters are keyed by the client address', async () => {
+  test('the limiters are keyed by the client address, and registration also by one key for every client', async () => {
     const generalLimiter = recordingLimiter({ isAllowed: true });
     const registerLimiter = recordingLimiter({ isAllowed: true });
+    const globalLimiter = recordingLimiter({ isAllowed: true });
 
     const response = await serveOAuthRequest({
       request: new Request(
         `${PUBLIC_ORIGIN}${REGISTER_PATH}`,
         jsonRequest({ path: REGISTER_PATH, body: clientMetadata(), headers: { 'CF-Connecting-IP': CLIENT_ADDRESS } }),
       ),
-      workerEnv: oauthEnv({ PUBLIC_ORIGIN, OAUTH_LIMITER: generalLimiter.limiter, OAUTH_REGISTER_LIMITER: registerLimiter.limiter }),
+      workerEnv: oauthEnv({
+        PUBLIC_ORIGIN,
+        OAUTH_LIMITER: generalLimiter.limiter,
+        OAUTH_REGISTER_LIMITER: registerLimiter.limiter,
+        OAUTH_REGISTER_GLOBAL_LIMITER: globalLimiter.limiter,
+      }),
     });
 
     expect(response.status).toBe(201);
     expect(generalLimiter.keys).toEqual([`/oauth:${CLIENT_ADDRESS}`]);
     expect(registerLimiter.keys).toEqual([`${REGISTER_PATH}:${CLIENT_ADDRESS}`]);
+    expect(globalLimiter.keys).toEqual([REGISTER_PATH]);
+  });
+
+  test('the global registration limiter refuses every client at once', async () => {
+    const response = await serveOAuthRequest({
+      request: new Request(
+        `${PUBLIC_ORIGIN}${REGISTER_PATH}`,
+        jsonRequest({ path: REGISTER_PATH, body: clientMetadata(), headers: { 'CF-Connecting-IP': CLIENT_ADDRESS } }),
+      ),
+      workerEnv: oauthEnv({
+        PUBLIC_ORIGIN,
+        OAUTH_LIMITER: recordingLimiter({ isAllowed: true }).limiter,
+        OAUTH_REGISTER_LIMITER: recordingLimiter({ isAllowed: true }).limiter,
+        OAUTH_REGISTER_GLOBAL_LIMITER: recordingLimiter({ isAllowed: false }).limiter,
+      }),
+    });
+
+    expect(response.status).toBe(429);
   });
 });

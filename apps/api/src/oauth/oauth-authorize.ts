@@ -2,6 +2,8 @@ import { digestCredential, isSameSignature, keyedDigest } from '../credential-di
 import { generateCredentialSecret } from '../credential-secret';
 import { findOwnedProject } from '../directory';
 import { listOwnerWorkspaces } from '../directory-workspaces';
+import { enumValueOf } from '../enum-value';
+import { HttpHeader } from '../http-header';
 import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import { isSameOriginRequest } from '../same-origin';
 import {
@@ -13,7 +15,7 @@ import {
   refusalRedirectOf,
   requestTextOf,
 } from './oauth-authorization-request';
-import { type OAuthBrowserSession, oauthSessionOf } from './oauth-browser-session';
+import { type OAuthBrowserSession, endedOAuthSessionCookie, oauthSessionOf } from './oauth-browser-session';
 import type { OAuthContext } from './oauth-context';
 import { OAuthError } from './oauth-errors';
 import { OAuthNotice, OAuthRefusal, consentPageOf, refusalPageOf, signInPageOf } from './oauth-pages';
@@ -56,8 +58,7 @@ async function consentOrSignIn(context: OAuthContext, request: AuthorizationRequ
   const guard = linkGuardOf(context);
   if (guard === null) return refusalPageOf(OAuthRefusal.Unavailable);
   const session = await oauthSessionOf(context);
-  if (session === null)
-    return signInPageOf({ clientName: request.client.name, params: request.params, notice: OAuthNotice.None, siteKey: guard.siteKey });
+  if (session === null) return signInAgainOf({ request, siteKey: guard.siteKey });
   const listings = await listOwnerWorkspaces({ directory: context.env.DIRECTORY, ownerId: session.ownerId });
   return consentPageOf({ request, listings, formToken: await formTokenOf({ session, request }) });
 }
@@ -110,23 +111,38 @@ async function approve(decided: Decided): Promise<Response> {
       expiresAt: context.now + OAUTH_CODE_LIFETIME_MS,
     },
   });
-  return redirectAnswerOf({
-    redirectUri: request.redirectUri,
-    issuer: context.issuer,
-    values: [
-      [OAuthParameter.Code, code],
-      [OAuthParameter.State, request.state],
-    ],
+  return endedSessionAnswerOf({
+    decided,
+    answer: redirectAnswerOf({
+      redirectUri: request.redirectUri,
+      issuer: context.issuer,
+      values: [
+        [OAuthParameter.Code, code],
+        [OAuthParameter.State, request.state],
+      ],
+    }),
   });
 }
 
-async function deny({ context, request }: Decided): Promise<Response> {
-  return refusalRedirectOf({
-    redirectUri: request.redirectUri,
-    state: request.state,
-    error: OAuthError.AccessDenied,
-    issuer: context.issuer,
+async function deny(decided: Decided): Promise<Response> {
+  const { context, request } = decided;
+  return endedSessionAnswerOf({
+    decided,
+    answer: refusalRedirectOf({
+      redirectUri: request.redirectUri,
+      state: request.state,
+      error: OAuthError.AccessDenied,
+      issuer: context.issuer,
+    }),
   });
+}
+
+async function endedSessionAnswerOf({ decided, answer }: { decided: Decided; answer: Response }): Promise<Response> {
+  answer.headers.append(
+    HttpHeader.SetCookie,
+    await endedOAuthSessionCookie({ directory: decided.context.env.DIRECTORY, session: decided.session }),
+  );
+  return answer;
 }
 
 const ANSWER_OF_DECISION: Record<OAuthDecision, (decided: Decided) => Promise<Response>> = {
@@ -134,8 +150,8 @@ const ANSWER_OF_DECISION: Record<OAuthDecision, (decided: Decided) => Promise<Re
   [OAuthDecision.Deny]: deny,
 };
 
-function isDecision(candidate: string | null): candidate is OAuthDecision {
-  return candidate !== null && candidate in ANSWER_OF_DECISION;
+function signInAgainOf({ request, siteKey }: { request: AuthorizationRequest; siteKey: string }): Response {
+  return signInPageOf({ clientName: request.client.name, params: request.params, notice: OAuthNotice.None, siteKey });
 }
 
 function decide(form: DecisionForm): ValidRequestAnswer {
@@ -144,14 +160,15 @@ function decide(form: DecisionForm): ValidRequestAnswer {
     if (guard === null) return refusalPageOf(OAuthRefusal.Unavailable);
     if (!isSameOriginRequest({ request: context.request, origin: context.issuer })) return refusalPageOf(OAuthRefusal.Forbidden);
     const session = await oauthSessionOf(context);
-    if (session === null)
-      return signInPageOf({ clientName: request.client.name, params: request.params, notice: OAuthNotice.None, siteKey: guard.siteKey });
+    if (session === null) return signInAgainOf({ request, siteKey: guard.siteKey });
     if (form.formToken === null) return refusalPageOf(OAuthRefusal.Forbidden);
     const expected = await formTokenOf({ session, request });
     const isFormTokenValid = await isSameSignature({ secret: session.secret, left: expected, right: form.formToken });
     if (!isFormTokenValid) return refusalPageOf(OAuthRefusal.Forbidden);
-    if (!isDecision(form.decision)) return refusalPageOf(OAuthRefusal.Invalid);
-    return ANSWER_OF_DECISION[form.decision]({ context, request, session, choice: form.choice });
+    if (form.decision === null) return refusalPageOf(OAuthRefusal.Invalid);
+    const decision = enumValueOf({ enumeration: OAuthDecision, candidate: form.decision });
+    if (decision === null) return refusalPageOf(OAuthRefusal.Invalid);
+    return ANSWER_OF_DECISION[decision]({ context, request, session, choice: form.choice });
   };
 }
 

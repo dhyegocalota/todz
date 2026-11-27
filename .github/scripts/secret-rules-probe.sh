@@ -6,6 +6,7 @@ repository_root="$(cd "$(dirname "$0")/../.." && pwd)"
 probe_directory="$(mktemp -d)"
 github_lookalike_suffix="zuuqcRO1Je0lCr4ktYmgNBLoGoPVGhPIaT35"
 placeholder_lookalike_suffix="0hzOkrDZV4A8rpRu7Dl4AYIdZdf9JlKY"
+oauth_token_suffix="a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8s9T0u1V"
 trap 'rm -rf "$probe_directory"' EXIT
 
 scan() {
@@ -17,6 +18,14 @@ if scan; then
   echo "secret rules: a fresh token was NOT reported" >&2
   exit 1
 fi
+
+for oauth_prefix in todz-at_ todz-rt_; do
+  printf 'refresh = "%s%s"\n' "$oauth_prefix" "$oauth_token_suffix" > "$probe_directory/near-miss.txt"
+  if scan; then
+    echo "secret rules: a fresh todz OAuth token was NOT reported" >&2
+    exit 1
+  fi
+done
 
 printf 'API_KEY_PEPPER=todz-test-secret-%s\n' "$placeholder_lookalike_suffix" > "$probe_directory/near-miss.txt"
 if scan; then

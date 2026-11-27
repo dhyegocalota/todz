@@ -12,7 +12,7 @@ Connecting an agent means creating a key in the app and pasting it into a config
 
 ## Goals
 
-- Claude Code (`claude mcp add --transport http todz https://api.todz.app/mcp`), Claude.ai connectors, Codex and Cursor add `https://api.todz.app/mcp` with no key, following the MCP authorization specification (revision 2026-07-28).
+- Claude Code (`claude mcp add --transport http todz https://api.todz.app/mcp`), Claude.ai connectors, Codex, and Cursor once it uses a loopback or https redirect, add `https://api.todz.app/mcp` with no key, following the MCP authorization specification (revision 2026-07-28); a client with a custom-scheme redirect keeps using a project key.
 - Discovery: protected-resource metadata (RFC 9728) and authorization-server metadata (RFC 8414); a 401 from `/mcp` points at the former.
 - Dynamic client registration (RFC 7591) for public clients; authorization code with PKCE S256 only; exact redirect URIs (https, or loopback with any port).
 - Sign-in is the existing magic link, in the same browser, with Turnstile and the app sign-in's limiters, mail budget, cloud cap and sign-up limits.
@@ -44,7 +44,7 @@ sequenceDiagram
   B->>S: email + Turnstile (POST /oauth/sign-in-links)
   S-->>B: challenge cookie; mail with /oauth/sign-in#token
   B->>S: POST /oauth/sessions (token, time zone, challenge cookie)
-  S-->>B: __Secure-todz_oauth session cookie
+  S-->>B: __Host-todz_oauth session cookie
   B->>S: GET /oauth/authorize (consent), POST approve with form token
   S-->>B: 303 redirect_uri?code&state&iss
   B->>C: code on the loopback redirect
@@ -55,18 +55,18 @@ sequenceDiagram
 
 ### Interfaces
 
-- `GET /.well-known/oauth-protected-resource`, `GET /.well-known/oauth-protected-resource/mcp`, `GET /.well-known/oauth-authorization-server`
+- `GET /.well-known/oauth-protected-resource/mcp`, `GET /.well-known/oauth-authorization-server`
 - `POST /oauth/register`, `GET|POST /oauth/authorize`, `POST /oauth/sign-in-links`, `GET /oauth/sign-in`, `POST /oauth/sessions`, `POST /oauth/token`, `POST /oauth/revoke`
 - `GET /owner/connected-apps`, `DELETE /owner/connected-apps/:id`
 - D1 migration 0017: `oauth_clients`, `oauth_sessions`, `oauth_codes`, `oauth_grants`, `oauth_tokens`
-- Rate limiters `OAUTH_LIMITER` and `OAUTH_REGISTER_LIMITER`
+- Rate limiters `OAUTH_LIMITER`, `OAUTH_REGISTER_LIMITER` and `OAUTH_REGISTER_GLOBAL_LIMITER`
 
 ### Failure handling
 
 - Unknown client or unregistered redirect URI: an error page, never a redirect.
 - Every other authorize error: a redirect with the RFC 6749 error and the state.
 - Token errors: RFC 6749 JSON errors with `no-store`; `invalid_client` for an unknown client, `invalid_grant` for a bad, expired, spent or foreign code or refresh token.
-- A spent code or a spent refresh token presented again deletes the grant.
+- A spent code, or a refresh token spent more than 30 seconds ago, presented again deletes the grant.
 - Missing limiters or client address on a public host: the OAuth routes answer unavailable, like sign-in.
 
 ## Open questions → answers

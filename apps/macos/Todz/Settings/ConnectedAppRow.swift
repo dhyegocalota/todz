@@ -38,7 +38,6 @@ struct ConnectedAppRow: View {
     }
 
     private var lastUsed: String {
-        guard let lastUsedAt = app.lastUsedAt else { return SettingsCopy.connectedAppNeverUsed }
-        return DayFormat.moment(instant: lastUsedAt, timeZone: model.timeZone)
+        DayFormat.moment(instant: app.lastUsedAt, timeZone: model.timeZone)
     }
 }

@@ -17,6 +17,7 @@ import {
 } from './oauth-client';
 
 const IDLE_LIFETIME_MS = 30 * MILLISECONDS_PER_DAY;
+const UNUSED_LIFETIME_MS = MILLISECONDS_PER_DAY;
 
 async function clientCount(clientId: string): Promise<number> {
   const row = await env.DIRECTORY.prepare('SELECT count(*) AS clients FROM oauth_clients WHERE id = ?')
@@ -26,17 +27,17 @@ async function clientCount(clientId: string): Promise<number> {
 }
 
 describe('unused registrations expire', () => {
-  test('a registration with no grant is unknown to authorize 30 days later', async () => {
+  test('a registration never used is known for a day and unknown to authorize after it', async () => {
     const clientId = await registerClient({ now: CLOCK_NOW });
     const { challenge } = await pkcePair();
+    const request = () => authorizeRequest(authorizeParams({ clientId, challenge }));
 
-    const response = await serveOAuthRequest({
-      request: authorizeRequest(authorizeParams({ clientId, challenge })),
-      now: CLOCK_NOW + IDLE_LIFETIME_MS,
-    });
+    const withinTheDay = await serveOAuthRequest({ request: request(), now: CLOCK_NOW + UNUSED_LIFETIME_MS - 1 });
+    const afterTheDay = await serveOAuthRequest({ request: request(), now: CLOCK_NOW + UNUSED_LIFETIME_MS });
 
-    expect(response.status).toBe(400);
-    expect(response.headers.get('Location')).toBeNull();
+    expect(withinTheDay.status).toBe(200);
+    expect(afterTheDay.status).toBe(400);
+    expect(afterTheDay.headers.get('Location')).toBeNull();
   });
 
   test('the nightly run deletes idle registrations without a grant and keeps the connected ones', async () => {

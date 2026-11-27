@@ -1,5 +1,12 @@
 import { z } from 'zod';
 import { parsedJson } from '../parsed-json';
+import {
+  OAUTH_IDLE_CLIENT_LIFETIME_MS,
+  OAUTH_LIVE_ACCESS_TOKENS_PER_GRANT_MAX,
+  OAUTH_REFRESH_REUSE_LEEWAY_MS,
+  OAUTH_SPENT_REFRESH_TOKENS_PER_GRANT_MAX,
+  OAUTH_UNUSED_CLIENT_LIFETIME_MS,
+} from './oauth-paths';
 
 export enum OAuthTokenKind {
   Access = 'access',
@@ -71,8 +78,9 @@ type ConnectedAppRow = {
 
 const RedirectUrisSchema = z.array(z.string());
 
-const ACTIVE_CLIENT_QUERY =
-  'SELECT id, name, redirect_uris FROM oauth_clients WHERE id = ? AND (active_at > ? OR EXISTS (SELECT 1 FROM oauth_grants WHERE oauth_grants.client_id = oauth_clients.id))';
+const CLIENT_HAS_GRANT = 'EXISTS (SELECT 1 FROM oauth_grants WHERE oauth_grants.client_id = oauth_clients.id)';
+const CLIENT_IS_LIVE = `(${CLIENT_HAS_GRANT} OR (active_at > created_at AND active_at > ?) OR created_at > ?)`;
+const ACTIVE_CLIENT_QUERY = `SELECT id, name, redirect_uris FROM oauth_clients WHERE id = ? AND ${CLIENT_IS_LIVE}`;
 const ACCESS_GRANT_QUERY = `SELECT oauth_grants.id AS grant_id, oauth_clients.name AS client_name, owners.id AS owner_id, owners.suspended_at, owners.time_zone, owners.agent_nudge, oauth_grants.project_id, projects.workspace_id
 FROM oauth_tokens
 JOIN oauth_grants ON oauth_grants.id = oauth_tokens.grant_id
@@ -82,6 +90,7 @@ LEFT JOIN projects ON projects.id = oauth_grants.project_id
 LEFT JOIN workspaces ON workspaces.id = projects.workspace_id
 WHERE oauth_tokens.digest = ? AND oauth_tokens.kind = ? AND oauth_tokens.expires_at > ? AND (oauth_grants.project_id IS NULL OR workspaces.owner_id = oauth_grants.owner_id)`;
 const CLIENT_GRANTS = 'SELECT id FROM oauth_grants WHERE client_id = ?';
+const GRANT_EXISTS = 'EXISTS (SELECT 1 FROM oauth_grants WHERE id = ?)';
 
 function onlyResultOf<Row>(result: D1Result<unknown> | undefined): Row | null {
   if (result === undefined) throw new Error('the batch answers one result per statement');
@@ -109,17 +118,20 @@ export async function insertClient({
     .run();
 }
 
-// NB ADR 0109: a registration with no grant and no token issued for 30 days is unknown, so the nightly run may delete it.
+// NB ADR 0109: a registration never used lasts a day, one with no grant lasts 30 days after its last token, so the nightly run may delete the rest.
 export async function findActiveClient({
   directory,
   clientId,
-  activeSince,
+  now,
 }: {
   directory: D1Database;
   clientId: string;
-  activeSince: number;
+  now: number;
 }): Promise<OAuthClientRecord | null> {
-  const row = await directory.prepare(ACTIVE_CLIENT_QUERY).bind(clientId, activeSince).first<ClientRow>();
+  const row = await directory
+    .prepare(ACTIVE_CLIENT_QUERY)
+    .bind(clientId, now - OAUTH_IDLE_CLIENT_LIFETIME_MS, now - OAUTH_UNUSED_CLIENT_LIFETIME_MS)
+    .first<ClientRow>();
   if (row === null) return null;
   const redirectUris = RedirectUrisSchema.safeParse(parsedJson(row.redirect_uris));
   if (!redirectUris.success) throw new Error('a stored client has unreadable redirect URIs');
@@ -208,18 +220,46 @@ export async function spendCode({
   };
 }
 
-// NB ADR 0109: a spent code presented again deletes the grant it produced, and its tokens go with it.
-export async function revokeGrantOfSpentCode({ directory, digest }: { directory: D1Database; digest: string }): Promise<void> {
-  await directory
-    .prepare('DELETE FROM oauth_grants WHERE id = (SELECT grant_id FROM oauth_codes WHERE digest = ? AND consumed_at IS NOT NULL)')
-    .bind(digest)
-    .run();
+// NB ADR 0109: a spent code presented again is marked replayed and deletes the grant it produced; a grant whose code is marked is never stored.
+export async function revokeReplayedCode({
+  directory,
+  digest,
+  now,
+}: {
+  directory: D1Database;
+  digest: string;
+  now: number;
+}): Promise<void> {
+  await directory.batch([
+    directory.prepare('UPDATE oauth_codes SET replayed_at = ? WHERE digest = ? AND consumed_at IS NOT NULL').bind(now, digest),
+    directory
+      .prepare('DELETE FROM oauth_grants WHERE id = (SELECT grant_id FROM oauth_codes WHERE digest = ? AND consumed_at IS NOT NULL)')
+      .bind(digest),
+  ]);
 }
 
 function tokenInsertion({ directory, grantId, token, now }: { directory: D1Database; grantId: string; token: StoredToken; now: number }) {
   return directory
-    .prepare('INSERT INTO oauth_tokens (digest, grant_id, kind, created_at, expires_at) VALUES (?, ?, ?, ?, ?)')
-    .bind(token.digest, grantId, token.kind, now, token.expiresAt);
+    .prepare(`INSERT INTO oauth_tokens (digest, grant_id, kind, created_at, expires_at) SELECT ?, ?, ?, ?, ? WHERE ${GRANT_EXISTS}`)
+    .bind(token.digest, grantId, token.kind, now, token.expiresAt, grantId);
+}
+
+function tokensBeyondNewest({
+  directory,
+  grantId,
+  kind,
+  keep,
+}: {
+  directory: D1Database;
+  grantId: string;
+  kind: OAuthTokenKind;
+  keep: number;
+}) {
+  return directory
+    .prepare(
+      'DELETE FROM oauth_tokens WHERE grant_id = ? AND kind = ? AND digest NOT IN (SELECT digest FROM oauth_tokens WHERE grant_id = ? AND kind = ? ORDER BY created_at DESC, rowid DESC LIMIT ?)',
+    )
+    .bind(grantId, kind, grantId, kind, keep);
 }
 
 function clientActivity({ directory, grantId, now }: { directory: D1Database; grantId: string; now: number }) {
@@ -245,14 +285,14 @@ export async function insertGrant({
   tokens: StoredToken[];
   now: number;
   grantsPerOwnerMax: number;
-}): Promise<void> {
-  await directory.batch([
+}): Promise<boolean> {
+  const [grantInsertion] = await directory.batch([
     directory
       .prepare(
-        'INSERT INTO oauth_grants (id, client_id, owner_id, project_id, redirect_uri, created_at, last_used_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO oauth_grants (id, client_id, owner_id, project_id, redirect_uri, created_at, last_used_at) SELECT ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM oauth_codes WHERE digest = ? AND replayed_at IS NOT NULL)',
       )
-      .bind(grantId, code.clientId, code.ownerId, code.projectId, code.redirectUri, now, now),
-    directory.prepare('UPDATE oauth_codes SET grant_id = ? WHERE digest = ?').bind(grantId, codeDigest),
+      .bind(grantId, code.clientId, code.ownerId, code.projectId, code.redirectUri, now, now, codeDigest),
+    directory.prepare(`UPDATE oauth_codes SET grant_id = ? WHERE digest = ? AND ${GRANT_EXISTS}`).bind(grantId, codeDigest, grantId),
     ...tokens.map((token) => tokenInsertion({ directory, grantId, token, now })),
     clientActivity({ directory, grantId, now }),
     directory
@@ -261,6 +301,8 @@ export async function insertGrant({
       )
       .bind(code.ownerId, code.ownerId, grantsPerOwnerMax),
   ]);
+  if (grantInsertion === undefined) throw new Error('the batch answers one result per statement');
+  return grantInsertion.meta.changes > 0;
 }
 
 // NB ADR 0109: one statement spends a refresh token, and only for the client its grant belongs to.
@@ -285,43 +327,42 @@ export async function spendRefreshToken({
   return row.grant_id;
 }
 
-// NB ADR 0109: a spent refresh token presented again deletes its whole grant, the family.
+// NB ADR 0109: a spent refresh token presented again deletes its whole grant, the family, unless it was spent within the leeway of a racing retry.
 export async function revokeGrantOfSpentRefreshToken({
   directory,
   digest,
   clientId,
+  now,
 }: {
   directory: D1Database;
   digest: string;
   clientId: string;
+  now: number;
 }): Promise<void> {
   await directory
     .prepare(
-      `DELETE FROM oauth_grants WHERE id = (SELECT grant_id FROM oauth_tokens WHERE digest = ? AND kind = ? AND spent_at IS NOT NULL AND grant_id IN (${CLIENT_GRANTS}))`,
+      `DELETE FROM oauth_grants WHERE id = (SELECT grant_id FROM oauth_tokens WHERE digest = ? AND kind = ? AND spent_at IS NOT NULL AND spent_at < ? AND grant_id IN (${CLIENT_GRANTS}))`,
     )
-    .bind(digest, OAuthTokenKind.Refresh, clientId)
+    .bind(digest, OAuthTokenKind.Refresh, now - OAUTH_REFRESH_REUSE_LEEWAY_MS, clientId)
     .run();
 }
 
-// NB ADR 0109: a refresh replaces the grant's access tokens and keeps only the refresh token it spent, for reuse detection.
+// NB ADR 0109: a refresh keeps the live access tokens until they expire and the newest spent refresh tokens for reuse detection, so a race never kills a fresh token.
 export async function rotateTokens({
   directory,
   grantId,
-  spentDigest,
   tokens,
   now,
 }: {
   directory: D1Database;
   grantId: string;
-  spentDigest: string;
   tokens: StoredToken[];
   now: number;
 }): Promise<string | null> {
   const results = await directory.batch([
-    directory.prepare('DELETE FROM oauth_tokens WHERE grant_id = ? AND kind = ?').bind(grantId, OAuthTokenKind.Access),
-    directory
-      .prepare('DELETE FROM oauth_tokens WHERE grant_id = ? AND kind = ? AND spent_at IS NOT NULL AND digest <> ?')
-      .bind(grantId, OAuthTokenKind.Refresh, spentDigest),
+    directory.prepare('DELETE FROM oauth_tokens WHERE grant_id = ? AND expires_at <= ?').bind(grantId, now),
+    tokensBeyondNewest({ directory, grantId, kind: OAuthTokenKind.Access, keep: OAUTH_LIVE_ACCESS_TOKENS_PER_GRANT_MAX - 1 }),
+    tokensBeyondNewest({ directory, grantId, kind: OAuthTokenKind.Refresh, keep: OAUTH_SPENT_REFRESH_TOKENS_PER_GRANT_MAX }),
     ...tokens.map((token) => tokenInsertion({ directory, grantId, token, now })),
     directory.prepare('UPDATE oauth_grants SET last_used_at = ? WHERE id = ?').bind(now, grantId),
     clientActivity({ directory, grantId, now }),
@@ -401,23 +442,17 @@ export async function deleteConnectedApp({
   return deletion.meta.changes > 0;
 }
 
-export async function deleteSpentOAuthRows({
-  directory,
-  now,
-  idleSince,
-}: {
-  directory: D1Database;
-  now: number;
-  idleSince: number;
-}): Promise<void> {
+export async function deleteSpentOAuthRows({ directory, now }: { directory: D1Database; now: number }): Promise<void> {
   await directory.batch([
     directory.prepare('DELETE FROM oauth_codes WHERE expires_at <= ?').bind(now),
     directory.prepare('DELETE FROM oauth_sessions WHERE expires_at <= ?').bind(now),
     directory.prepare('DELETE FROM oauth_tokens WHERE expires_at <= ?').bind(now),
     directory
-      .prepare(
-        'DELETE FROM oauth_clients WHERE active_at <= ? AND NOT EXISTS (SELECT 1 FROM oauth_grants WHERE oauth_grants.client_id = oauth_clients.id)',
-      )
-      .bind(idleSince),
+      .prepare(`DELETE FROM oauth_clients WHERE NOT ${CLIENT_IS_LIVE}`)
+      .bind(now - OAUTH_IDLE_CLIENT_LIFETIME_MS, now - OAUTH_UNUSED_CLIENT_LIFETIME_MS),
   ]);
+}
+
+export async function deleteOAuthSession({ directory, digest }: { directory: D1Database; digest: string }): Promise<void> {
+  await directory.prepare('DELETE FROM oauth_sessions WHERE digest = ?').bind(digest).run();
 }

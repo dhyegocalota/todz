@@ -6,7 +6,7 @@ import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import type { OAuthContext } from './oauth-context';
 import { OAUTH_NO_STORE_HEADERS, OAuthError, oauthErrorResponse } from './oauth-errors';
 import { OAuthGrantType, mcpResourceOf } from './oauth-metadata';
-import { OAUTH_GRANTS_PER_OWNER_MAX, OAUTH_IDLE_CLIENT_LIFETIME_MS, OAuthParameter } from './oauth-paths';
+import { OAUTH_GRANTS_PER_OWNER_MAX, OAuthParameter } from './oauth-paths';
 import { isVerifierOfChallenge } from './oauth-pkce';
 import { grantedScopeOf } from './oauth-scope';
 import {
@@ -14,9 +14,9 @@ import {
   type OAuthCodeRecord,
   findActiveClient,
   insertGrant,
-  revokeGrantOfSpentCode,
   revokeGrantOfSpentRefreshToken,
   revokeGrantOfToken,
+  revokeReplayedCode,
   rotateTokens,
   spendCode,
   spendRefreshToken,
@@ -60,13 +60,13 @@ async function exchangeCode(tokenRequest: TokenRequest): Promise<Response> {
   const digest = await digestCredential(code);
   const spent = await spendCode({ directory: env.DIRECTORY, digest, now });
   if (spent === null) {
-    await revokeGrantOfSpentCode({ directory: env.DIRECTORY, digest });
+    await revokeReplayedCode({ directory: env.DIRECTORY, digest, now });
     return oauthErrorResponse(OAuthError.InvalidGrant);
   }
   const refusal = await codeRefusalOf({ ...tokenRequest, spent });
   if (refusal !== null) return oauthErrorResponse(refusal);
   const tokens = await issuedTokenPair(now);
-  await insertGrant({
+  const isGranted = await insertGrant({
     directory: env.DIRECTORY,
     grantId: crypto.randomUUID(),
     codeDigest: digest,
@@ -75,10 +75,10 @@ async function exchangeCode(tokenRequest: TokenRequest): Promise<Response> {
     now,
     grantsPerOwnerMax: OAUTH_GRANTS_PER_OWNER_MAX,
   });
+  if (!isGranted) return oauthErrorResponse(OAuthError.InvalidGrant);
   return tokenAnswerOf({ tokens, scope: grantedScopeOf(spent.projectId) });
 }
 
-// NB ADR 0109: every refresh rotates the pair; a spent refresh token presented again revokes the whole grant.
 async function refresh({ context, form, client }: TokenRequest): Promise<Response> {
   const { env, now, issuer } = context;
   const refreshToken = form.get(OAuthParameter.RefreshToken);
@@ -87,11 +87,11 @@ async function refresh({ context, form, client }: TokenRequest): Promise<Respons
   const digest = await digestCredential(refreshToken);
   const grantId = await spendRefreshToken({ directory: env.DIRECTORY, digest, clientId: client.id, now });
   if (grantId === null) {
-    await revokeGrantOfSpentRefreshToken({ directory: env.DIRECTORY, digest, clientId: client.id });
+    await revokeGrantOfSpentRefreshToken({ directory: env.DIRECTORY, digest, clientId: client.id, now });
     return oauthErrorResponse(OAuthError.InvalidGrant);
   }
   const tokens = await issuedTokenPair(now);
-  const projectId = await rotateTokens({ directory: env.DIRECTORY, grantId, spentDigest: digest, tokens: tokens.stored, now });
+  const projectId = await rotateTokens({ directory: env.DIRECTORY, grantId, tokens: tokens.stored, now });
   return tokenAnswerOf({ tokens, scope: grantedScopeOf(projectId) });
 }
 
@@ -101,7 +101,7 @@ const HANDLER_OF_GRANT_TYPE: Record<OAuthGrantType, (tokenRequest: TokenRequest)
 };
 
 function activeClientOf({ context, clientId }: { context: OAuthContext; clientId: string }): Promise<OAuthClientRecord | null> {
-  return findActiveClient({ directory: context.env.DIRECTORY, clientId, activeSince: context.now - OAUTH_IDLE_CLIENT_LIFETIME_MS });
+  return findActiveClient({ directory: context.env.DIRECTORY, clientId, now: context.now });
 }
 
 export async function serveToken(context: OAuthContext): Promise<Response> {

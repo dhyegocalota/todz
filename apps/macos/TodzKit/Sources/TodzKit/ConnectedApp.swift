@@ -11,7 +11,7 @@ public struct ConnectedApp: Sendable, Equatable, Identifiable {
     public let redirectHost: String
     public let scope: ConnectedAppScope
     public let createdAt: Date
-    public let lastUsedAt: Date?
+    public let lastUsedAt: Date
 
     public var id: String {
         identifier
@@ -43,7 +43,7 @@ extension ConnectedApp: Decodable {
             redirectHost: try container.decode(String.self, forKey: .redirectHost),
             scope: try Self.scope(in: container),
             createdAt: try container.decode(Date.self, forKey: .createdAt),
-            lastUsedAt: try container.decodeIfPresent(Date.self, forKey: .lastUsedAt)
+            lastUsedAt: try container.decode(Date.self, forKey: .lastUsedAt)
         )
     }
 

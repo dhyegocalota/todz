@@ -3,7 +3,7 @@ import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
 import { OAuthError } from './oauth-errors';
 import { RESPONSE_TYPES_SUPPORTED, mcpResourceOf } from './oauth-metadata';
-import { OAUTH_IDLE_CLIENT_LIFETIME_MS, OAuthParameter } from './oauth-paths';
+import { OAuthParameter } from './oauth-paths';
 import { CODE_CHALLENGE_METHOD, CODE_CHALLENGE_PATTERN } from './oauth-pkce';
 import { isRegisteredRedirectUri } from './oauth-redirect-uri';
 import { type OfferedScopes, offeredScopesOf } from './oauth-scope';
@@ -71,7 +71,7 @@ async function redirectableRequestOf({
   if (!isNamed) return null;
   const isStateTooLong = state !== null && state.length > STATE_LENGTH_MAX;
   if (isStateTooLong) return null;
-  const client = await findActiveClient({ directory: env.DIRECTORY, clientId, activeSince: now - OAUTH_IDLE_CLIENT_LIFETIME_MS });
+  const client = await findActiveClient({ directory: env.DIRECTORY, clientId, now });
   if (client === null) return null;
   if (!isRegisteredRedirectUri({ registered: client.redirectUris, requested: redirectUri })) return null;
   return { client, redirectUri, state };

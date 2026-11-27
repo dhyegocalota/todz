@@ -12,10 +12,15 @@ private let ownerScopedIdentifier = "app-owner"
         #expect(app.id == projectScopedIdentifier)
     }
 
-    @Test func decodesAnOwnerScopedAppThatWasNeverUsed() throws {
+    @Test func decodesAnOwnerScopedApp() throws {
         let app = try OwnerFixtures.decoded(ConnectedApp.self, from: ConnectedAppFixtures.ownerScopedJSON(identifier: ownerScopedIdentifier))
         #expect(app == ConnectedAppFixtures.ownerScoped(identifier: ownerScopedIdentifier))
-        #expect(app.lastUsedAt == nil)
+    }
+
+    @Test func refusesAnAppWithoutItsLastUse() {
+        let json = ConnectedAppFixtures.ownerScopedJSON(identifier: ownerScopedIdentifier)
+            .replacingOccurrences(of: "\"last_used_at\":\(OwnerFixtures.createdAtMilliseconds)", with: "\"last_used_at\":null")
+        #expect(throws: DecodingError.self) { try OwnerFixtures.decoded(ConnectedApp.self, from: json) }
     }
 
     @Test func refusesAProjectScopedAppWithoutItsProject() {

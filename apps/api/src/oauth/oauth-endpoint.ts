@@ -62,7 +62,7 @@ const ROUTE_OF_REQUEST: Record<string, OAuthRoute> = {
   }),
   [routeKey({ method: HttpMethod.Post, pathname: OAuthPath.Register })]: jsonRoute({
     handler: serveRegister,
-    limits: [OAuthLimit.Route, OAuthLimit.Registration],
+    limits: [OAuthLimit.Route, OAuthLimit.Registration, OAuthLimit.GlobalRegistration],
   }),
   [routeKey({ method: HttpMethod.Post, pathname: OAuthPath.Token })]: jsonRoute({ handler: serveToken, limits: [OAuthLimit.Route] }),
   [routeKey({ method: HttpMethod.Post, pathname: OAuthPath.Revoke })]: jsonRoute({ handler: serveRevoke, limits: [OAuthLimit.Route] }),

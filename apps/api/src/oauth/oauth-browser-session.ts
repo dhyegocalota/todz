@@ -5,13 +5,13 @@ import type { Env } from '../env';
 import { cookieHeaderOf, cookieValueOf } from '../request-cookie';
 import { SIGN_IN_LINK_LIFETIME_MS } from '../sign-in-links';
 import { OAUTH_SESSION_LIFETIME_MS } from './oauth-paths';
-import { findOAuthSessionOwner, insertOAuthSession } from './oauth-store';
+import { deleteOAuthSession, findOAuthSessionOwner, insertOAuthSession } from './oauth-store';
 
-const COOKIE_ATTRIBUTES = 'Path=/oauth; Secure; HttpOnly; SameSite=Lax';
+const COOKIE_ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=Lax';
 
 export enum OAuthCookie {
-  Challenge = '__Secure-todz_oauth_challenge',
-  Session = '__Secure-todz_oauth',
+  Challenge = '__Host-todz_oauth_challenge',
+  Session = '__Host-todz_oauth',
 }
 
 const LIFETIME_MS_OF_COOKIE: Record<OAuthCookie, number> = {
@@ -47,6 +47,18 @@ export async function openOAuthSession({
   const secret = generateCredentialSecret();
   await insertOAuthSession({ directory, digest: await digestCredential(secret), ownerId, now, expiresAt: now + OAUTH_SESSION_LIFETIME_MS });
   return secret;
+}
+
+// NB ADR 0109: one sign-in serves one consent, so a second app, or a page that tricks a click, needs a fresh link.
+export async function endedOAuthSessionCookie({
+  directory,
+  session,
+}: {
+  directory: D1Database;
+  session: OAuthBrowserSession;
+}): Promise<string> {
+  await deleteOAuthSession({ directory, digest: await digestCredential(session.secret) });
+  return clearedOAuthCookieHeaderOf(OAuthCookie.Session);
 }
 
 export async function oauthSessionOf({

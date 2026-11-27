@@ -25,6 +25,7 @@ import {
 } from './oauth-client';
 
 const OTHER_PORT_LOOPBACK_URI = 'http://127.0.0.1:51000/callback';
+const SESSION_COOKIE = '__Host-todz_oauth';
 
 async function freshRequest(fields: Record<string, string> = {}): Promise<URLSearchParams> {
   const clientId = await registerClient({ metadata: clientMetadata({ redirect_uris: [LOOPBACK_REDIRECT_URI, HTTPS_REDIRECT_URI] }) });
@@ -163,6 +164,36 @@ describe('the consent screen', () => {
     expect(html).not.toMatch(/value="owner" checked/);
     expect(html).toContain('Your whole account (owner scope)');
     expect(html).toContain('It can create, rename and delete every workspace and project.');
+    expect(decodedHtml(html)).toContain(
+      "A project lets it read and change that project's tasks, and move them to the other projects of its workspace.",
+    );
+  });
+
+  test('an unknown decision is refused, never answered with an error', async () => {
+    const owner = await seededOwner();
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+
+    const response = await decide({ browser, params, fields: { decision: 'toString', choice: owner.projectId } });
+
+    expect(response.status).toBe(400);
+    expect(response.headers.get('Location')).toBeNull();
+  });
+
+  test('a decision ends the browser session', async () => {
+    const owner = await seededOwner();
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+    const replayed = newBrowser();
+    replayed.cookies.set(SESSION_COOKIE, browser.cookies.get(SESSION_COOKIE)!);
+
+    const response = await decide({ browser, params, fields: { decision: 'deny', choice: owner.projectId } });
+
+    expect(response.headers.getSetCookie().some((cookie) => cookie.startsWith(`${SESSION_COOKIE}=;`) && cookie.includes('Max-Age=0'))).toBe(
+      true,
+    );
+    const again = await browserVisit({ browser: replayed, request: authorizeRequest(params) });
+    expect(await again.text()).toContain('action="/oauth/sign-in-links"');
   });
 
   test('a client that asked for project scope only is not offered the owner scope', async () => {

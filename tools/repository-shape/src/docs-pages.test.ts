@@ -73,12 +73,7 @@ function serverAddress(constants: Record<string, string>): string {
 
 function oauthCommands(): string[] {
   const address = serverAddress(swiftConstants(readRepositoryFile(AGENT_COMMAND)));
-  return [
-    `claude mcp add --transport http todz ${address}`,
-    `[mcp_servers.todz]\nurl = "${address}"`,
-    'codex mcp login todz',
-    `{ "mcpServers": { "todz": { "url": "${address}" } } }`,
-  ];
+  return [`claude mcp add --transport http todz ${address}`, `[mcp_servers.todz]\nurl = "${address}"`, 'codex mcp login todz'];
 }
 
 function agentCommands(): string[] {

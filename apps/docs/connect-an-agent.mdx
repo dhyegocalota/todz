@@ -1,6 +1,6 @@
 ---
 title: Connect an agent
-description: Sign Claude Code, Claude.ai, Codex or Cursor in to todz with OAuth, or give them a key to one project.
+description: Sign Claude Code, Claude.ai or Codex in to todz with OAuth, or give any client a key to one project.
 ---
 
 The todz MCP server at `https://api.todz.app/mcp` supports MCP OAuth. Add the URL to your client with no key. The first call opens your browser, and you approve the app there. If your client has no OAuth, use a [project key](#with-a-key-instead) instead.
@@ -52,13 +52,7 @@ codex mcp login todz
 
 ### Cursor
 
-Add this to `~/.cursor/mcp.json`:
-
-```json
-{ "mcpServers": { "todz": { "url": "https://api.todz.app/mcp" } } }
-```
-
-If Cursor's sign-in does not open, or it reports a redirect error, use a project key instead.
+Cursor signs in to MCP servers with a `cursor://` address, which the MCP specification does not allow and todz refuses. Connect Cursor [with a key](#with-a-key-instead).
 
 ## With a key instead
 

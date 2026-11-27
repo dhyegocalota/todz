@@ -25,8 +25,8 @@ import {
   spendLink,
 } from './oauth-client';
 
-const CHALLENGE_COOKIE = '__Secure-todz_oauth_challenge';
-const SESSION_COOKIE = '__Secure-todz_oauth';
+const CHALLENGE_COOKIE = '__Host-todz_oauth_challenge';
+const SESSION_COOKIE = '__Host-todz_oauth';
 const SESSION_LIFETIME_MS = 30 * MILLISECONDS_PER_MINUTE;
 const SITE_ORIGIN = 'https://todz.app';
 
@@ -62,7 +62,7 @@ describe('asking for a sign-in link from the authorize page', () => {
     expect(cookie).toContain('HttpOnly');
     expect(cookie).toContain('Secure');
     expect(cookie).toContain('SameSite=Lax');
-    expect(cookie).toContain('Path=/oauth');
+    expect(cookie).toContain('Path=/;');
     expect(cookie).not.toContain('Domain=');
     expect(mails).toHaveLength(1);
     const link = mailedLinkOf(mails[0]!);
@@ -143,7 +143,7 @@ describe('spending the link opens a short browser session', () => {
     expect(cookie).toContain('HttpOnly');
     expect(cookie).toContain('Secure');
     expect(cookie).toContain('SameSite=Lax');
-    expect(cookie).toContain('Path=/oauth');
+    expect(cookie).toContain('Path=/;');
     expect(cookie).toContain(`Max-Age=${SESSION_LIFETIME_MS / 1_000}`);
     expect(setCookieNamed({ response, name: CHALLENGE_COOKIE })).toContain('Max-Age=0');
     expect(browser.cookies.has(SESSION_COOKIE)).toBe(true);

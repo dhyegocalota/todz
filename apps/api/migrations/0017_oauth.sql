@@ -40,6 +40,7 @@ CREATE TABLE oauth_codes (
   code_challenge TEXT NOT NULL CHECK (length(code_challenge) = 43),
   expires_at INTEGER NOT NULL,
   consumed_at INTEGER,
+  replayed_at INTEGER,
   grant_id TEXT REFERENCES oauth_grants (id) ON DELETE SET NULL
 ) STRICT;
 

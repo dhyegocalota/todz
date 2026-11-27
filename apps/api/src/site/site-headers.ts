@@ -44,7 +44,7 @@ export async function siteContentSecurityPolicy({
 
 // NB ADR 0109: a form whose answer redirects to another origin needs that origin in form-action, or the browser blocks the redirect.
 export function withFormOrigin({ policy, origin }: { policy: string; origin: string }): string {
-  return policy.replace(FORM_ACTION_SELF, `${FORM_ACTION_SELF} ${origin}`);
+  return policy.replace(FORM_ACTION_SELF, () => `${FORM_ACTION_SELF} ${origin}`);
 }
 
 export function sitePageResponse({ html, contentSecurityPolicy }: { html: string; contentSecurityPolicy: string }): Response {

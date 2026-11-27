@@ -2,7 +2,8 @@ const SECURE_PROTOCOL = 'https:';
 const PLAIN_PROTOCOL = 'http:';
 const FRAGMENT_MARK = '#';
 const LOOPBACK_HOSTNAMES = ['127.0.0.1', 'localhost', '[::1]'];
-const REDIRECT_URI_LENGTH_MAX = 2_048;
+const REDIRECT_URI_LENGTH_MAX = 512;
+const PLAIN_HOSTNAME_PATTERN = /^(?:[a-z0-9-]+\.)*[a-z0-9-]+$|^\[[0-9a-f:.]+\]$/;
 
 function parsedUri(candidate: string): URL | null {
   if (!URL.canParse(candidate)) return null;
@@ -13,17 +14,17 @@ function isLoopbackUri(uri: URL): boolean {
   return uri.protocol === PLAIN_PROTOCOL && LOOPBACK_HOSTNAMES.includes(uri.hostname);
 }
 
-function hasExtraParts({ candidate, uri }: { candidate: string; uri: URL }): boolean {
-  return candidate.includes(FRAGMENT_MARK) || uri.username !== '' || uri.password !== '';
+function hasUnsafeParts({ candidate, uri }: { candidate: string; uri: URL }): boolean {
+  return candidate.includes(FRAGMENT_MARK) || uri.username !== '' || uri.password !== '' || !PLAIN_HOSTNAME_PATTERN.test(uri.hostname);
 }
 
-// NB ADR 0109: a redirect URI is https on any host or plain http on a loopback host, with no fragment and no user information.
+// NB ADR 0109: a redirect URI is https on any plain host name or plain http on a loopback host, with no fragment and no user information.
 export function isRegistrableRedirectUri(candidate: unknown): candidate is string {
   if (typeof candidate !== 'string') return false;
   if (candidate.length > REDIRECT_URI_LENGTH_MAX) return false;
   const uri = parsedUri(candidate);
   if (uri === null) return false;
-  if (hasExtraParts({ candidate, uri })) return false;
+  if (hasUnsafeParts({ candidate, uri })) return false;
   return uri.protocol === SECURE_PROTOCOL || isLoopbackUri(uri);
 }
 

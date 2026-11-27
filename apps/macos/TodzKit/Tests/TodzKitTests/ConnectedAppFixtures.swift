@@ -18,7 +18,7 @@ enum ConnectedAppFixtures {
         """
         {"id":"\(identifier)","client_name":"Cursor","redirect_host":"localhost","scope":"owner",\
         "project_id":null,"project_name":null,\
-        "created_at":\(OwnerFixtures.createdAtMilliseconds),"last_used_at":null}
+        "created_at":\(OwnerFixtures.createdAtMilliseconds),"last_used_at":\(OwnerFixtures.createdAtMilliseconds)}
         """
     }
 
@@ -40,7 +40,7 @@ enum ConnectedAppFixtures {
             redirectHost: "localhost",
             scope: .owner,
             createdAt: OwnerFixtures.date(milliseconds: OwnerFixtures.createdAtMilliseconds),
-            lastUsedAt: nil
+            lastUsedAt: OwnerFixtures.date(milliseconds: OwnerFixtures.createdAtMilliseconds)
         )
     }
 
@@ -51,7 +51,7 @@ enum ConnectedAppFixtures {
             redirectHost: "127.0.0.1",
             scope: .owner,
             createdAt: OwnerFixtures.date(milliseconds: createdAtMilliseconds),
-            lastUsedAt: nil
+            lastUsedAt: OwnerFixtures.date(milliseconds: OwnerFixtures.createdAtMilliseconds)
         )
     }
 }

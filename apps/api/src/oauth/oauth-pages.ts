@@ -210,7 +210,8 @@ export function consentPageOf({
   const { client, redirectUri, offeredScopes, params } = request;
   const firstProjectId = firstProjectIdOf(listings);
   const isProjectOffered = offeredScopes[OAuthScope.Project];
-  const projectChoices = isProjectOffered ? workspaceChoicesHtml({ listings, firstProjectId }) : '';
+  const projectHint = isProjectOffered ? `<p class="consent-warning">${escapedHtml(OAUTH_COPY.consent.projectHint)}</p>\n` : '';
+  const projectChoices = isProjectOffered ? `${projectHint}${workspaceChoicesHtml({ listings, firstProjectId })}` : '';
   const isWithoutProjects = isProjectOffered && firstProjectId === null;
   const noProjectsLine = isWithoutProjects ? `<p class="admin-body">${escapedHtml(OAUTH_COPY.consent.noProjects)}</p>` : '';
   const ownerChoice = offeredScopes[OAuthScope.Owner] ? ownerChoiceHtml() : '';

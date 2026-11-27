@@ -62,7 +62,6 @@ function authorizationServerMetadataOf(issuer: string) {
 }
 
 const DOCUMENT_OF_PATH: Record<OAuthMetadataPath, (issuer: string) => unknown> = {
-  [OAuthMetadataPath.ProtectedResource]: protectedResourceMetadataOf,
   [OAuthMetadataPath.McpProtectedResource]: protectedResourceMetadataOf,
   [OAuthMetadataPath.AuthorizationServer]: authorizationServerMetadataOf,
 };

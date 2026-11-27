@@ -14,7 +14,6 @@ export enum OAuthPath {
 }
 
 export enum OAuthMetadataPath {
-  ProtectedResource = '/.well-known/oauth-protected-resource',
   McpProtectedResource = '/.well-known/oauth-protected-resource/mcp',
   AuthorizationServer = '/.well-known/oauth-authorization-server',
 }
@@ -58,4 +57,8 @@ export const OAUTH_REFRESH_TOKEN_LIFETIME_MS = 30 * MILLISECONDS_PER_DAY;
 export const OAUTH_SESSION_LIFETIME_MINUTES = 30;
 export const OAUTH_SESSION_LIFETIME_MS = OAUTH_SESSION_LIFETIME_MINUTES * MILLISECONDS_PER_MINUTE;
 export const OAUTH_IDLE_CLIENT_LIFETIME_MS = 30 * MILLISECONDS_PER_DAY;
+export const OAUTH_UNUSED_CLIENT_LIFETIME_MS = MILLISECONDS_PER_DAY;
 export const OAUTH_GRANTS_PER_OWNER_MAX = 20;
+export const OAUTH_SPENT_REFRESH_TOKENS_PER_GRANT_MAX = 1_000;
+export const OAUTH_LIVE_ACCESS_TOKENS_PER_GRANT_MAX = 10;
+export const OAUTH_REFRESH_REUSE_LEEWAY_MS = 30 * MILLISECONDS_PER_SECOND;

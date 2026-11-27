@@ -13,6 +13,7 @@ import { isRegistrableRedirectUri } from './oauth-redirect-uri';
 import { insertClient } from './oauth-store';
 
 const REDIRECT_URIS_MAX = 5;
+const FORMAT_CHARACTER_PATTERN = /\p{Cf}/u;
 
 const RegistrationSchema = z.object({
   client_name: z.unknown(),
@@ -37,9 +38,10 @@ function redirectUrisOf(candidate: unknown): string[] | null {
   return candidate;
 }
 
-// NB ADR 0109: the registered name is the agent's name in the history, so it follows the core's agent name rule.
+// NB ADR 0109: the registered name is the agent's name in the history, so it follows the core's agent name rule and carries no invisible formatting.
 function clientNameOf(candidate: unknown): string | null {
   if (typeof candidate !== 'string') return null;
+  if (FORMAT_CHARACTER_PATTERN.test(candidate)) return null;
   const actor = resultOf(() => agentActor(candidate));
   if (!actor.ok) return null;
   return candidate.trim();

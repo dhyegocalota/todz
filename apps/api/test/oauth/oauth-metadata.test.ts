@@ -12,7 +12,13 @@ function wellKnownRequest(path: string): Request {
 }
 
 describe('the protected resource metadata (RFC 9728)', () => {
-  test.each(['/.well-known/oauth-protected-resource', '/.well-known/oauth-protected-resource/mcp'])(
+  test('the root document is not served, since its resource would have to be the bare origin (RFC 9728 §3.3)', async () => {
+    const response = await workerFetch(wellKnownRequest('/.well-known/oauth-protected-resource'));
+
+    expect(response.status).toBe(404);
+  });
+
+  test.each(['/.well-known/oauth-protected-resource/mcp'])(
     '%s names the MCP resource, this server as its authorization server and the two scopes',
     async (path) => {
       const response = await workerFetch(wellKnownRequest(path));

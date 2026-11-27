@@ -28,6 +28,7 @@ const ACCESS_TOKEN_PATTERN = /^todz-at_[A-Za-z0-9_-]{43}$/;
 const REFRESH_TOKEN_PATTERN = /^todz-rt_[A-Za-z0-9_-]{43}$/;
 const ACCESS_LIFETIME_SECONDS = 3_600;
 const CODE_LIFETIME_MS = 60 * MILLISECONDS_PER_SECOND;
+const REUSE_LEEWAY_MS = 30 * MILLISECONDS_PER_SECOND;
 const TOOLS_LIST_BODY = { jsonrpc: JSONRPC_VERSION, id: 1, method: 'tools/list', params: {} };
 
 async function approved(): Promise<{ clientId: string; code: string; verifier: string; projectId: string }> {
@@ -131,6 +132,16 @@ describe('exchanging an authorization code', () => {
     expect(await errorOf(refreshed)).toBe('invalid_grant');
   });
 
+  test('two exchanges of one code at once never leave a working token', async () => {
+    const { clientId, code, verifier } = await approved();
+
+    const answers = await Promise.all([exchangeCode({ clientId, code, verifier }), exchangeCode({ clientId, code, verifier })]);
+
+    const granted = await Promise.all(answers.filter((answer) => answer.status === 200).map(tokensOf));
+    const statuses = await Promise.all(granted.map((tokens) => mcpStatus({ token: tokens.access_token })));
+    expect(statuses.every((status) => status === 401)).toBe(true);
+  });
+
   test('an unknown client is an invalid client', async () => {
     const { code, verifier } = await approved();
 
@@ -164,35 +175,61 @@ describe('exchanging an authorization code', () => {
 });
 
 describe('refreshing', () => {
-  test('rotates the pair: the old access token and the old refresh token stop working', async () => {
+  function refreshAt({ clientId, refreshToken, now }: { clientId: string; refreshToken: string; now: number }): Promise<Response> {
+    return serveOAuthRequest({ request: refreshRequest({ clientId, refreshToken }), now });
+  }
+
+  test('rotates the pair: the old refresh token is spent and the old access token lives out its hour', async () => {
     const owner = await seededOwner();
     const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
 
-    const refreshed = await tokensOf(
-      await serveOAuthRequest({ request: refreshRequest({ clientId, refreshToken: tokens.refresh_token }) }),
-    );
+    const refreshed = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
 
     expect(refreshed.access_token).not.toBe(tokens.access_token);
     expect(refreshed.refresh_token).not.toBe(tokens.refresh_token);
     expect(refreshed.scope).toBe(`project:${owner.projectId}`);
-    expect(await mcpStatus({ token: tokens.access_token })).toBe(401);
+    expect(await mcpStatus({ token: tokens.access_token })).toBe(200);
     expect(await mcpStatus({ token: refreshed.access_token })).toBe(200);
   });
 
-  test('presenting a spent refresh token revokes the whole family', async () => {
+  test('presenting a spent refresh token after the leeway revokes the whole family', async () => {
     const owner = await seededOwner();
     const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
-    const refreshed = await tokensOf(
-      await serveOAuthRequest({ request: refreshRequest({ clientId, refreshToken: tokens.refresh_token }) }),
-    );
+    const refreshed = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
 
-    const reused = await serveOAuthRequest({ request: refreshRequest({ clientId, refreshToken: tokens.refresh_token }) });
+    const reused = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS + 1 });
 
     expect(reused.status).toBe(400);
     expect(await errorOf(reused)).toBe('invalid_grant');
     expect(await mcpStatus({ token: refreshed.access_token })).toBe(401);
-    const afterReuse = await serveOAuthRequest({ request: refreshRequest({ clientId, refreshToken: refreshed.refresh_token }) });
+    const afterReuse = await refreshAt({ clientId, refreshToken: refreshed.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS + 2 });
     expect(await errorOf(afterReuse)).toBe('invalid_grant');
+  });
+
+  test('a stolen token refreshed twice is still caught when the real client presents the first one', async () => {
+    const owner = await seededOwner();
+    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
+    const second = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
+    const third = await tokensOf(await refreshAt({ clientId, refreshToken: second.refresh_token, now: CLOCK_NOW + 1 }));
+
+    const realClient = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS + 1 });
+
+    expect(await errorOf(realClient)).toBe('invalid_grant');
+    expect(await mcpStatus({ token: third.access_token })).toBe(401);
+    const afterTheft = await refreshAt({ clientId, refreshToken: third.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS + 2 });
+    expect(await errorOf(afterTheft)).toBe('invalid_grant');
+  });
+
+  test('a racing retry within the leeway is refused without disconnecting the app', async () => {
+    const owner = await seededOwner();
+    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
+    const winner = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
+
+    const retry = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS });
+
+    expect(await errorOf(retry)).toBe('invalid_grant');
+    expect(await mcpStatus({ token: winner.access_token })).toBe(200);
+    expect((await refreshAt({ clientId, refreshToken: winner.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS })).status).toBe(200);
   });
 
   test('a refresh token of another client is refused and does not spend it', async () => {
@@ -282,10 +319,11 @@ describe('the consent page offers what a code can carry', () => {
     expect(tokens.scope).toBe('owner');
   });
 
-  test('the consent page is reachable after the exchange for another app', async () => {
+  test('one sign-in serves one consent: the next one asks for a link again', async () => {
     const owner = await seededOwner();
     const { browser, params } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
 
-    expect(await consentPage({ browser, params })).toContain('Claude Code');
+    expect(browser.cookies.has('__Host-todz_oauth')).toBe(false);
+    expect(await consentPage({ browser, params })).toContain('action="/oauth/sign-in-links"');
   });
 });
