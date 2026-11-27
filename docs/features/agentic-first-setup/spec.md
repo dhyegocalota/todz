@@ -1,6 +1,6 @@
 # Agentic-first setup
 
-**Status:** Building
+**Status:** Shipped 2026-11-27
 **Tier:** 🟡 (public docs, two runbooks and their shape tests; no server, no schema, no app code)
 **Owner approval:** the owner's order of 2026-11-27: "quero o self-host e dev environment para contribuir 100% agêntico com um prompt simples (1 ou 2 linhas no máximo) no início… óbvio que se a pessoa quiser saber cada comando ok, mas agentic-first".
 **ADRs:** [0124](../../adr/0124-setup-starts-from-a-one-line-prompt-and-an-agent-readable-runbook-behind-it.md)
