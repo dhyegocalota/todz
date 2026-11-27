@@ -2,19 +2,19 @@
 
 A coding agent follows these steps to run a todz server on its owner's Cloudflare account, and stops only to ask for a login, a payment, a secret or the choice of a domain ([ADR 0124](../adr/0124-setup-starts-from-a-one-line-prompt-and-an-agent-readable-runbook-behind-it.md)). The agent never deploys anywhere but that account; the build loop walks this runbook only up to its first login stop. The names and the reasons behind each edit are in the [self-host guide](https://docs.todz.app/self-host.md).
 
-1. **Check the machine.** Run `bash .agents/hooks/doctor.sh` inside a clone of the repository; with no clone, follow [Set up todz for development](set-up-for-development.md) first, through its install step.
+1. **Check the machine.** If you already ran the development setup, skip to step 3. Otherwise run `bash .agents/hooks/doctor.sh` inside a clone of the repository; with no clone, follow [Set up todz for development](set-up-for-development.md) first, through its install step.
    Expected: the doctor ends with `doctor: 0 missing required`, and `gitleaks` reads `ok`.
    If it fails: run the `fix:` command on each missing line after asking the owner, then run the doctor again.
 
-2. **Install and prove the code before renaming.** Run `pnpm install --frozen-lockfile`, then `pnpm verify all`.
+2. **Install and prove the code before renaming.** If you already ran the development setup, skip to step 3. Otherwise run `pnpm install --frozen-lockfile`, then `pnpm verify all`.
    Expected: the gate exits 0. Run it now: after step 5 some tests pin todz's own names and fail until they are updated.
    If it fails: the output names the gate; fix the machine, never skip a gate.
 
 3. **Sign in to Cloudflare.** Run `pnpm --filter @todz/api exec wrangler whoami`.
-   Expected: it prints the account's name and its 32-character id, and the plan the account is on.
-   If it fails: `You are not authenticated` is a login. Stop and ask the owner to run `! pnpm --filter @todz/api exec wrangler login` in the session and to say when the browser step is done, then repeat this step. More than one account listed: stop and ask which one.
+   Expected: it prints the account's name and its 32-character id.
+   If it fails: `You are not authenticated` is a login. Stop and ask the owner to run `! pnpm --filter @todz/api exec wrangler login` in the session and to say when the browser step is done, then repeat this step. With an API token in the environment (`CLOUDFLARE_API_TOKEN`) no login prompt appears and `whoami` prints the account the token belongs to; continue. More than one account listed: stop and ask which one.
 
-4. **Pick the domain.** The server lives on `api.<domain>` and the landing page on `<domain>` and `www.<domain>`, so the domain must be a zone of the account from step 3.
+4. **Pick the domain.** The server lives on `api.<domain>` and the landing page on `<domain>` and `www.<domain>`, so the domain must be a zone of the account from step 3. List the zones with `curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/zones` (`wrangler` has no command for it). Check a candidate with `curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/zones/<zone id>/dns_records?name=api.<domain>"`, then the same for `<domain>` and `www.<domain>`, reading `result` for a record of type A, AAAA or CNAME.
    Expected: one domain, taken from the owner's message or from the account's only zone, with no A, AAAA or CNAME record on `api`, the bare name or `www`.
    If it fails: with several zones and no choice made, stop and ask the owner which domain. A domain that is not on Cloudflare is not ready; stop and say so.
 
