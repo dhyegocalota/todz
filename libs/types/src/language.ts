@@ -1,3 +1,5 @@
+import { TextDirection } from './text-direction';
+
 export enum Language {
   English = 'en',
   PortugueseBrazil = 'pt-BR',
@@ -9,11 +11,6 @@ export enum Language {
   Chinese = 'zh',
   Arabic = 'ar',
   Hindi = 'hi',
-}
-
-export enum TextDirection {
-  Ltr = 'ltr',
-  Rtl = 'rtl',
 }
 
 export type LanguageProfile = {

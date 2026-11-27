@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { LANGUAGE_PROFILES, Language, TextDirection } from './language';
+import { LANGUAGE_PROFILES, Language } from './language';
+import { TextDirection } from './text-direction';
 
 const EXPECTED_CODES = ['en', 'pt-BR', 'es', 'de', 'fr', 'ja', 'ko', 'zh', 'ar', 'hi'];
 
