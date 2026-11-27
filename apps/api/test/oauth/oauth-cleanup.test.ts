@@ -69,7 +69,54 @@ describe('a grant stored by the Worker that ran before the scopes table', () => 
       .first<{ scopes: number }>();
     expect(scopes?.scopes).toBe(1);
   });
+
+  test('a grant the current Worker stored never becomes an account grant, even with no scope rows left', async () => {
+    const owner = await seededOwner();
+    const clientId = await registerClient({ now: CLOCK_NOW });
+    const grantId = crypto.randomUUID();
+    await env.DIRECTORY.prepare(
+      'INSERT INTO oauth_grants (id, client_id, owner_id, project_id, redirect_uri, created_at, last_used_at, is_scoped) VALUES (?, ?, ?, NULL, ?, ?, ?, 1)',
+    )
+      .bind(grantId, clientId, owner.ownerId, LOOPBACK_REDIRECT_URI, CLOCK_NOW, CLOCK_NOW)
+      .run();
+
+    await runOAuthCleanup({ scheduledTime: CLOCK_NOW, env: oauthEnv() });
+
+    const scopes = await env.DIRECTORY.prepare('SELECT count(*) AS scopes FROM oauth_grant_scopes WHERE grant_id = ?')
+      .bind(grantId)
+      .first<{ scopes: number }>();
+    expect(scopes?.scopes).toBe(0);
+  });
 });
+
+describe('a refresh token the Worker before rotated during the deploy', () => {
+  test('is linked by the nightly run to the token it was issued from, so that spent token is no longer honoured', async () => {
+    const owner = await seededOwner();
+    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
+    const parentDigest = await digestCredential(tokens.refresh_token);
+    const childToken = `todz-rt_${generateCredentialSecret()}`;
+    const rotatedAt = CLOCK_NOW + 1;
+    await env.DIRECTORY.batch([
+      env.DIRECTORY.prepare('UPDATE oauth_tokens SET spent_at = ? WHERE digest = ?').bind(rotatedAt, parentDigest),
+      env.DIRECTORY.prepare(
+        "INSERT INTO oauth_tokens (digest, grant_id, kind, created_at, expires_at, spent_at) SELECT ?, grant_id, 'refresh', ?, ?, ? FROM oauth_tokens WHERE digest = ?",
+      ).bind(await digestCredential(childToken), rotatedAt, CLOCK_NOW + MILLISECONDS_PER_DAY, rotatedAt + 1, parentDigest),
+    ]);
+
+    await runOAuthCleanup({ scheduledTime: CLOCK_NOW, env: oauthEnv() });
+
+    const child = await env.DIRECTORY.prepare('SELECT parent_digest FROM oauth_tokens WHERE digest = ?')
+      .bind(await digestCredential(childToken))
+      .first<{ parent_digest: string | null }>();
+    expect(child?.parent_digest).toBe(parentDigest);
+    const replayed = await serveOAuthRequest({
+      request: refreshRequest({ clientId, refreshToken: tokens.refresh_token }),
+      now: CLOCK_NOW + 2,
+    });
+    expect(replayed.status).toBe(400);
+  });
+});
+
 const UNUSED_LIFETIME_MS = MILLISECONDS_PER_DAY;
 
 async function clientCount(clientId: string): Promise<number> {
