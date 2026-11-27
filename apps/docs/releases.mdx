@@ -5,11 +5,48 @@ description: What each version of the Mac app brought.
 
 Every release is a GitHub tag named `mac-v<version>` at [github.com/dhyegocalota/todz/tags](https://github.com/dhyegocalota/todz/tags). The app reads [todz.app/download/appcast.xml](https://todz.app/download/appcast.xml) to update itself.
 
-## 2026-11-27: API keys were removed (breaking change)
+## 0.2.8
+
+**Breaking: API keys were removed.**
 
 - Project keys and owner keys no longer work, and the server deleted every stored key. Every MCP client connects with OAuth only.
 - A client that still sends a key gets a 401 that points to [Connect an agent](/connect-an-agent). To reconnect, run `claude mcp add --transport http todz https://api.todz.app/mcp` and sign in.
-- The **Connect an Agent** screen of the Mac app is gone in the same update. Disconnect an app in **Settings** › **Connected apps**.
+- The **Connect an Agent** screen of the Mac app now shows only the OAuth commands, with no key, plus **Connected apps**, where you disconnect an app.
+
+What else is new:
+
+- The menu bar popover is redesigned: a day ring and count, an **Up next** card, a glass composer, a quiet queue and **Done today** collapsed. A **More** menu holds **Quit**, **Check for Updates…**, **Star on GitHub** and **Switch Workspace…**. ⌘O opens todz, Space completes and ⌘↩ completes **Up next**. See [Keyboard shortcuts](/keyboard-shortcuts).
+- A locked workspace session looks like a one-workspace account. **Switch Workspace…** (⌘K) asks for Touch ID while locked, and the Settings option reads **Require Touch ID to switch workspaces**. See [Workspaces](/workspaces).
+- One motion system. Under **Reduce Motion** every animation becomes a crossfade or an instant change.
+- One OAuth connection with the account scope exposes every tool, task tools included, and each task tool takes an explicit project. See [MCP tools](/mcp-tools).
+
+## 0.2.7
+
+- A workspace lock in Settings, off by default: Touch ID or the Mac password before switching workspaces. See [Workspaces](/workspaces).
+- The menu bar count rolls, new rows spring in and the sidebar title flies to the toolbar.
+- Settings lists the apps connected to your account and lets you disconnect one.
+
+## 0.2.6
+
+- todz offers to move itself into **Applications**, only when you click and only when no todz is running. It never replaces an installed todz.
+
+## 0.2.5
+
+- Forms share one look: the name sheet, the first workspace, the typed-name confirmation, the server field and sign-in in a glass panel.
+- A recording shortcut row shows that it is listening, and **Connect an Agent** has rounded blocks and a destructive **Revoke**.
+
+## 0.2.4
+
+- The app drops tasks an agent deleted or moved away.
+- Settings shows the server's fair-use messages and manages your account keys. See [Fair use](/fair-use).
+- When the cloud is full or a daily cap is reached, the app keeps your changes queued and pauses sending until they can sync.
+
+## 0.2.3
+
+- Rename and delete a workspace from the **Workspace** menu, and delete a project.
+- A workspace shows its last activity.
+- Global workspace shortcuts are off until you turn them on, and register only when free.
+- **New Project** stays pinned under the sidebar list.
 
 ## 0.2.2
 

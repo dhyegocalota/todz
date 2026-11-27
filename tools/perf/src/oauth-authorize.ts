@@ -6,7 +6,7 @@ export type LoopbackReceiver = { redirectUri: string; callback: () => Promise<UR
 export type AuthorizeDependencies = {
   fetch: typeof globalThis.fetch;
   openUrl: (url: string) => Promise<void>;
-  receiver: () => Promise<LoopbackReceiver>;
+  receiver: (parameters: { state: string }) => Promise<LoopbackReceiver>;
 };
 
 enum OAuthPath {
@@ -15,6 +15,17 @@ enum OAuthPath {
   Token = '/oauth/token',
 }
 
+enum OAuthErrorCode {
+  InvalidRequest = 'invalid_request',
+  UnauthorizedClient = 'unauthorized_client',
+  AccessDenied = 'access_denied',
+  UnsupportedResponseType = 'unsupported_response_type',
+  InvalidScope = 'invalid_scope',
+  ServerError = 'server_error',
+  TemporarilyUnavailable = 'temporarily_unavailable',
+}
+
+const REFUSAL_LINE = 'the authorization was refused';
 const CLIENT_NAME = 'todz-perf';
 const PROJECT_SCOPE = 'project';
 const RESPONSE_TYPE = 'code';
@@ -86,10 +97,17 @@ function authorizationUrl({
   return url.toString();
 }
 
+function refusalOf(errorCode: string | null): string {
+  if (errorCode === null) return REFUSAL_LINE;
+  const isDefinedErrorCode = Object.values<string>(OAuthErrorCode).includes(errorCode);
+  if (!isDefinedErrorCode) return REFUSAL_LINE;
+  return `${REFUSAL_LINE}: ${errorCode}`;
+}
+
 function codeOf({ callback, state }: { callback: URLSearchParams; state: string }): string {
   if (callback.get('state') !== state) throw new Error('the authorization answered a state this run never sent');
   const code = callback.get('code');
-  if (code === null) throw new Error(`the authorization was refused: ${callback.get('error')}`);
+  if (code === null) throw new Error(refusalOf(callback.get('error')));
   return code;
 }
 
@@ -101,11 +119,11 @@ export async function authorizedAccessToken({
   dependencies: AuthorizeDependencies;
 }): Promise<string> {
   const { fetch } = dependencies;
-  const receiver = await dependencies.receiver();
+  const state = randomText(STATE_BYTE_LENGTH);
+  const receiver = await dependencies.receiver({ state });
   try {
     const clientId = await registeredClientId({ origin, redirectUri: receiver.redirectUri, fetch });
     const verifier = randomText(VERIFIER_BYTE_LENGTH);
-    const state = randomText(STATE_BYTE_LENGTH);
     await dependencies.openUrl(authorizationUrl({ origin, clientId, redirectUri: receiver.redirectUri, state, verifier }));
     const code = codeOf({ callback: await receiver.callback(), state });
     const response = await fetch(`${origin}${OAuthPath.Token}`, {

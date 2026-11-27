@@ -13,6 +13,7 @@ type Harness = {
   requests: { url: string; body: string }[];
   opened: string[];
   state: { isClosed: boolean };
+  receiverStates: string[];
 };
 
 function harness({
@@ -25,6 +26,7 @@ function harness({
   const requests: { url: string; body: string }[] = [];
   const opened: string[] = [];
   const state = { isClosed: false };
+  const receiverStates: string[] = [];
   const fetch: typeof globalThis.fetch = async (input, init) => {
     const url = String(input);
     requests.push({ url, body: String(init?.body) });
@@ -43,9 +45,12 @@ function harness({
     openUrl: async (url) => {
       opened.push(url);
     },
-    receiver: async () => receiver,
+    receiver: async ({ state: expectedState }) => {
+      receiverStates.push(expectedState);
+      return receiver;
+    },
   };
-  return { dependencies, requests, opened, state };
+  return { dependencies, requests, opened, state, receiverStates };
 }
 
 describe('authorizedAccessToken', () => {
@@ -94,6 +99,24 @@ describe('authorizedAccessToken', () => {
 
     expect(requests.map((request) => request.url)).toEqual([`${ORIGIN}/oauth/register`]);
     expect(state.isClosed).toBe(true);
+  });
+
+  test('the receiver is opened for the same state the authorization url carries', async () => {
+    const { dependencies, opened, receiverStates } = harness();
+
+    await authorizedAccessToken({ origin: ORIGIN, dependencies });
+
+    expect(receiverStates).toEqual([new URL(opened[0]!).searchParams.get('state')]);
+  });
+
+  test('a refusal naming a value the specification does not define prints a fixed line, never the value', async () => {
+    const { dependencies } = harness({
+      callbackOf: (url) => new URLSearchParams({ error: 'secret-token-123', state: new URL(url).searchParams.get('state')! }),
+    });
+
+    const failure = await authorizedAccessToken({ origin: ORIGIN, dependencies }).catch((error: Error) => error);
+
+    expect((failure as Error).message).toBe('the authorization was refused');
   });
 
   test('a denied authorization names the error and exchanges nothing', async () => {
