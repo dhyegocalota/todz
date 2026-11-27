@@ -5,6 +5,14 @@ sidebarTitle: 서버 설정
 
 Cloudflare에서 나만의 todz 서버를 운영하고, macOS 앱과 에이전트가 그 서버를 바라보게 해요. 서버는 D1 데이터베이스 하나와 프로젝트마다 Durable Object 하나가 딸린 Worker 하나예요.
 
+이것을 코딩 에이전트에 붙여넣어 주세요. 설정은 에이전트가 모두 진행하고, 로그인, 결제, 시크릿이 필요할 때만 멈춰서 물어봐요.
+
+```text
+Self-host todz: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/self-host-with-an-agent.md end to end on my Cloudflare account, and stop only to ask me for logins, payments and secrets.
+```
+
+<Accordion title="직접 하기">
+
 ## 필요한 것
 
 - **Workers Paid** 요금제의 Cloudflare 계정(이메일 바인딩에 필요해요)과 그 계정에 있는 도메인. 아래에서 `example.com`은 그 도메인을, `api.example.com`은 서버를 가리켜요.
@@ -147,3 +155,5 @@ pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
 - todz.app의 공식 앱은 내 서버를 가리키더라도 todz.app의 서명된 appcast에서 스스로 업데이트해요. 선택한 서버와 앱 업데이트는 서로 독립적이에요. [Mac에 설치 › 업데이트](https://docs.todz.app/ko/install-on-mac#4-업데이트)를 참고하세요.
 - 7단계처럼 직접 빌드한 앱은 스스로 업데이트를 설치하지 않아요. 공식 앱을 제안할 수 있고, 그것을 설치하면 내 빌드가 대체돼요. 내 빌드를 유지하려면 위처럼 다시 빌드하거나, 공식 앱을 설치하고 **서버**에 내 서버를 붙여 넣으세요.
 - 서버를 최신으로 유지하세요. 새 앱에 더 새로운 서버가 필요하면 앱이 서버가 오래됐다고 알려 줘요. 서버를 먼저 업데이트하세요.
+
+</Accordion>

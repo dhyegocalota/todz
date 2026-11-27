@@ -5,6 +5,14 @@ sidebarTitle: サーバのセットアップ
 
 Cloudflareで独自のtodzサーバを動かし、macOSアプリとエージェントをそのサーバに向けます。サーバは、D1データベース1つと、プロジェクトごとに1つのDurable Objectを備えた、1つのWorkerです。
 
+これをコーディングエージェントに貼り付けてください。セットアップはすべてエージェントが行い、ログイン、支払い、シークレットが必要なときだけ止まって尋ねます。
+
+```text
+Self-host todz: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/self-host-with-an-agent.md end to end on my Cloudflare account, and stop only to ask me for logins, payments and secrets.
+```
+
+<Accordion title="手動で行う">
+
 ## 必要なもの
 
 - **Workers Paid**のCloudflareアカウント（メールのバインディングに必要です）と、そのアカウントにあるドメイン。以下では、`example.com`がそのドメイン、`api.example.com`がサーバを指します。
@@ -147,3 +155,5 @@ pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
 - todz.appの公式アプリは、あなたのサーバを指していても、todz.appの署名付きappcastから自身をアップデートします。選んだサーバとアプリのアップデートは、互いに独立しています。[Macにインストール › アップデート](https://docs.todz.app/ja/install-on-mac#4-アップデート)をご覧ください。
 - 手順7のように自分でビルドしたアプリは、自動ではアップデートをインストールしません。公式のアプリを提案することがあり、それは自分のビルドを置き換えます。自分のビルドを使い続けるには、上のようにもう一度ビルドするか、公式のアプリをインストールして、**サーバ**にサーバを貼り付けてください。
 - サーバは常に最新に保ってください。新しいアプリがより新しいサーバを必要とするときは、アプリがサーバが古いと表示します。サーバを先にアップデートしてください。
+
+</Accordion>
