@@ -1,0 +1,94 @@
+---
+title: Mac पर इंस्टॉल करें
+description: Mac के लिए todz डाउनलोड करें, उसे खोलें, हस्ताक्षर की जाँच करें, या उसे सोर्स से बनाएँ।
+---
+
+Mac के लिए todz App Store में नहीं है और अभी Apple द्वारा नोटराइज़ भी नहीं किया गया है, इसलिए पहली बार macOS आपसे उसे अनुमति देने को कहता है। todz.app पर **Mac के लिए डाउनलोड करें** आपको [todz.app/download](https://todz.app/download) पर ले जाता है, जो नवीनतम रिलीज़ देता है; चरण 1 और 2 लागू होते हैं। इसे खुद बनाना हो, तो चरण 5 देखें।
+
+<Warning>
+  यह ऐप नोटराइज़ नहीं है। Apple ने इसे स्कैन नहीं किया है, इसलिए macOS इसे पहली बार खोलने से मना कर देता है। इसे सिस्टम सेटिंग से खोलें, जैसा अगले भाग में है।
+</Warning>
+
+## 1. डाउनलोड करें और खोलें
+
+todz.app से **Mac के लिए डाउनलोड करें** चुनें:
+
+1. खोलने से पहले चरण 2 से डाउनलोड की जाँच करें। फिर डिस्क इमेज डाउनलोड करें, उसे खोलें और `Todz.app` को एप्लिकेशन में खींच दें।
+2. `Todz.app` खोलें। पहली बार macOS मना कर देता है।
+3. **सिस्टम सेटिंग** › **गोपनीयता और सुरक्षा** खोलें, **सुरक्षा** तक स्क्रोल करें, `Todz` वाली पंक्ति ढूँढें और **फिर भी खोलें** पर क्लिक करें।
+4. अपने पासवर्ड से पुष्टि करें और ऐप को दोबारा खोलें।
+
+macOS एक ही बार पूछता है; बाद में ऐप सामान्य रूप से खुलता है। `spctl --assess` इस ऐप को ठुकरा देता है क्योंकि यह नोटराइज़ नहीं है; यह अपेक्षित है, और नीचे की जाँचें ही बताती हैं कि आप असल में क्या चला रहे हैं।
+
+## 2. डाउनलोड की जाँच करें
+
+हर रिलीज़ `Todz-<version>.dmg` के रूप में `Todz-<version>.dmg.sha256` और `Todz-<version>.dmg.sig` के साथ प्रकाशित होती है, सब `https://todz.app/download/<version>/` के अंतर्गत। जिस फ़ोल्डर में दोनों फ़ाइलें हैं, उसमें चेकसम जाँचें:
+
+```bash
+shasum -a 256 -c Todz-<version>.dmg.sha256
+```
+
+इस पंक्ति को `allowed-signers` नाम से सहेजें। यह todz की रिलीज़ कुंजी है:
+
+```text
+release@todz.app namespaces="todz-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdNjy4QZsK85d4WxjwiTql81GeptNXX2H4SUcM9QVNu
+```
+
+अकेली कुंजी के लिए `ssh-keygen -lf` जैसा प्रिंट करता है, उसके अनुसार इसका फ़िंगरप्रिंट यह है:
+
+```text
+SHA256:yBlPOn96/UZM6GGCo//eqZtFjWl440Hr6rxWa0VS5Tk
+```
+
+फिर हस्ताक्षर की जाँच करें:
+
+```bash
+ssh-keygen -Y verify -f allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg
+```
+
+यह `Good "todz-release" signature for release@todz.app` जवाब देता है।
+
+हस्ताक्षर साबित करता है कि डाउनलोड वही फ़ाइल है जिस पर todz की रिलीज़ कुंजी ने हस्ताक्षर किए थे। यह उस व्यक्ति से नहीं बचाता जो todz.app ज़ोन या todz के Cloudflare खाते को नियंत्रित करता है, क्योंकि यह पेज भी उसी ज़ोन से परोसा जाता है।
+
+## 3. ऐप की जाँच करें
+
+जाँचें कि हस्ताक्षर सही-सलामत है। सही होने पर यह `valid on disk` और `satisfies its Designated Requirement` पर खत्म होता है:
+
+```bash
+codesign --verify --deep --strict --verbose=2 /Applications/Todz.app
+```
+
+जाँचें कि ऐप पर किसने हस्ताक्षर किए:
+
+```bash
+codesign -dv --verbose=4 /Applications/Todz.app
+```
+
+आउटपुट में `TeamIdentifier=XFWR794VS8`, `flags=0x10000(runtime)` और, सर्टिफ़िकेट के नाम में, मालिक का Apple ID पता होता है।
+
+## 4. अपडेट
+
+ऐप बैकग्राउंड में अपने आप अपडेट होता है; [अपडेट](/hi/updates) बताता है कि कैसे, और उसे बंद कैसे करें।
+
+## 5. सोर्स से बनाएँ
+
+आपको Xcode और [XcodeGen](https://github.com/yonaskolb/XcodeGen) वाला Mac चाहिए।
+
+<Note>
+  `project.yml` मालिक की टीम `XFWR794VS8` से हस्ताक्षर करता है, इसलिए उसे जस का तस सिर्फ़ वही Mac बना सकता है जिसमें वह पहचान मौजूद हो। अपनी टीम से बनाने के लिए पहले `DEVELOPMENT_TEAM` और बंडल आइडेंटिफ़ायर बदलें, जैसा [सेल्फ़-होस्टिंग गाइड](/hi/self-host#7-macos-ऐप-बनाएँ-और-अपने-सर्वर-से-कनेक्ट-करें) में है। खुद बनाया ऐप वह टीम दिखाता है जिससे उस पर हस्ताक्षर हुए।
+</Note>
+
+रिपॉज़िटरी की रूट से:
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+ऐप `apps/macos/build/Build/Products/Release/Todz.app` पर बनता है। डेवलपमेंट-साइन्ड बिल्ड सिर्फ़ उन्हीं Mac पर खुलता है जिन्हें उसकी साइनिंग टीम जानती है। इसे अपने किसी दूसरे Mac पर ले जाने के लिए इसे ज़िप करें ताकि इसका हस्ताक्षर बचा रहे, कॉपी करें, और चरण 1 की तरह खोलें:
+
+```bash
+ditto -c -k --keepParent apps/macos/build/Build/Products/Release/Todz.app Todz.zip
+```
+
+दोनों Mac पर `shasum -a 256 Todz.zip` चलाकर जाँचें कि कॉपी वही ज़िप है जो आपने बनाई थी। मेल खाता चेकसम सिर्फ़ यह साबित करता है कि कॉपी वही ज़िप है जो आपने बनाई, यह नहीं कि उसे किसने बनाया।

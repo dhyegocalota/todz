@@ -1,0 +1,94 @@
+---
+title: التثبيت على Mac
+description: نزّل todz لـ Mac وافتحه وتحقق من التوقيع، أو ابنه من الشيفرة المصدرية.
+---
+
+todz لـ Mac ليس في App Store وليس موثَّقًا من Apple بعد، لذا يطلب منك macOS السماح به أول مرة. **تنزيل لـ Mac** على todz.app يقود إلى [todz.app/download](https://todz.app/download)، الذي يقدّم أحدث إصدار؛ وينطبق القسمان 1 و2. ولبنائه بنفسك بدلًا من ذلك، راجع القسم 5.
+
+<Warning>
+  التطبيق غير موثَّق. لم تفحصه <bdi>Apple</bdi>، لذا يرفض macOS فتحه أول مرة. افتحه من إعدادات النظام، كما في القسم التالي.
+</Warning>
+
+## 1. التنزيل والفتح
+
+من <bdi>todz.app</bdi>، اختر **تنزيل لـ Mac**:
+
+1. تحقق من التنزيل وفق القسم 2 قبل أن تفتحه. ثم نزّل صورة القرص، وافتحها واسحب `Todz.app` إلى التطبيقات.
+2. افتح `Todz.app`. يرفض macOS في المرة الأولى.
+3. افتح **إعدادات النظام** › **الخصوصية والأمان**، ومرّر إلى **الأمان**، وابحث عن السطر الخاص بـ `Todz` واضغط **فتح على أي حال**.
+4. أكّد بكلمة مرورك وافتح التطبيق مرة أخرى.
+
+يسأل macOS مرة واحدة؛ وتُفتح عمليات التشغيل اللاحقة بشكل عادي. يرفض `spctl --assess` التطبيق لأنه غير موثَّق؛ وهذا متوقع، والفحوص أدناه هي ما تعرف به ما تشغّله.
+
+## 2. تحقق من التنزيل
+
+يُنشر كل إصدار باسم `Todz-<version>.dmg` مع `Todz-<version>.dmg.sha256` و`Todz-<version>.dmg.sig`، جميعها تحت `https://todz.app/download/<version>/`. افحص المجموع، في المجلد الذي يحوي الملفين:
+
+```bash
+shasum -a 256 -c Todz-<version>.dmg.sha256
+```
+
+احفظ هذا السطر باسم `allowed-signers`. إنه مفتاح إصدار <bdi>todz</bdi>:
+
+```text
+release@todz.app namespaces="todz-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdNjy4QZsK85d4WxjwiTql81GeptNXX2H4SUcM9QVNu
+```
+
+وبصمته، كما يطبعها `ssh-keygen -lf` للمفتاح وحده، هي:
+
+```text
+SHA256:yBlPOn96/UZM6GGCo//eqZtFjWl440Hr6rxWa0VS5Tk
+```
+
+ثم تحقق من التوقيع:
+
+```bash
+ssh-keygen -Y verify -f allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg
+```
+
+يجيب بـ `Good "todz-release" signature for release@todz.app`.
+
+يثبت التوقيع أن التنزيل هو الملف الذي وقّعه مفتاح إصدار todz. ولا يحمي من شخص يتحكم في نطاق todz.app أو في حساب Cloudflare الخاص بـ <bdi>todz</bdi>، لأن هذه الصفحة تُقدَّم من ذلك النطاق أيضًا.
+
+## 3. تحقق من التطبيق
+
+تأكد أن التوقيع سليم. وينتهي الناتج بـ `valid on disk` و`satisfies its Designated Requirement` حين يكون سليمًا:
+
+```bash
+codesign --verify --deep --strict --verbose=2 /Applications/Todz.app
+```
+
+افحص من وقّع التطبيق:
+
+```bash
+codesign -dv --verbose=4 /Applications/Todz.app
+```
+
+يحوي الناتج `TeamIdentifier=XFWR794VS8` و`flags=0x10000(runtime)`، وفي اسم الشهادة عنوان Apple ID الخاص بالمالك.
+
+## 4. التحديثات
+
+يحدّث التطبيق نفسه في الخلفية؛ تشرح [التحديثات](/ar/updates) كيف، وكيف توقف ذلك.
+
+## 5. ابنِه من الشيفرة المصدرية
+
+تحتاج إلى جهاز Mac عليه Xcode و[XcodeGen](https://github.com/yonaskolb/XcodeGen).
+
+<Note>
+  يوقّع `project.yml` بفريق المالك، `XFWR794VS8`، لذا لا يستطيع بناءه كما هو إلا جهاز Mac يملك تلك الهوية. وللبناء بفريقك، استبدل `DEVELOPMENT_TEAM` ومعرّفات الحزم أولًا، كما في [دليل الاستضافة الذاتية](/ar/self-host#7-بناء-تطبيق-macos-وربطه-بخادمك). يعرض التطبيق الذي تبنيه الفريق الذي وُقّع به.
+</Note>
+
+من جذر المستودع:
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+يظهر التطبيق في `apps/macos/build/Build/Products/Release/Todz.app`. ولا تُفتح نسخة موقّعة للتطوير إلا على أجهزة Mac التي يعرفها فريق توقيعها. ولنقلها إلى جهاز Mac آخر تملكه، اضغطها بصيغة zip ليبقى توقيعها سليمًا، وانسخها، وافتحها كما في القسم 1:
+
+```bash
+ditto -c -k --keepParent apps/macos/build/Build/Products/Release/Todz.app Todz.zip
+```
+
+تأكد أن النسخة هي ملف zip الذي أنشأته بتشغيل `shasum -a 256 Todz.zip` على الجهازين. تطابق المجموع يثبت فقط أن النسخة هي ملف zip الذي أنشأته، لا من بناها.

@@ -1,0 +1,159 @@
+---
+title: सेल्फ़-होस्टिंग
+sidebarTitle: सर्वर सेटअप
+---
+
+Cloudflare पर अपना todz सर्वर चलाएँ और macOS ऐप व अपने एजेंटों को उसकी ओर इंगित करें। सर्वर एक Worker है, जिसके साथ एक D1 डेटाबेस और हर प्रोजेक्ट के लिए एक Durable Object है।
+
+इसे अपने कोडिंग एजेंट में पेस्ट करें। वह पूरा सेटअप कर देता है और सिर्फ़ तब रुकता है जब उसे आपसे लॉगिन, भुगतान या सीक्रेट चाहिए।
+
+```text
+Self-host todz: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/self-host-with-an-agent.md end to end on my Cloudflare account, and stop only to ask me for logins, payments and secrets.
+```
+
+<Accordion title="हाथ से करें">
+
+## आपको क्या चाहिए
+
+- **Workers Paid** पर एक Cloudflare खाता (ईमेल बाइंडिंग को यह चाहिए) और उसी खाते में एक डोमेन। नीचे `example.com` उसके लिए और `api.example.com` सर्वर के लिए है।
+- Node और pnpm, `.nvmrc` और `package.json` के संस्करणों में, और ऐप के लिए Xcode और XcodeGen वाला एक Mac।
+- आपके खाते में लॉग इन किया हुआ Wrangler: `pnpm --filter @todz/api exec wrangler login`।
+
+## 1. फ़ोर्क करें, इंस्टॉल करें और जाँचें
+
+रिपॉज़िटरी फ़ोर्क करें, फिर, कुछ भी नाम बदलने से पहले:
+
+```bash
+pnpm install
+pnpm verify all
+```
+
+गेट को gitleaks भी चाहिए; उसका डॉक्टर बताता है कि क्या कम है। इसे अभी चलाएँ, क्योंकि कुछ टेस्ट todz के अपने प्रोडक्शन नाम पिन करते हैं, जैसे API सोर्स और ईमेल भेजने वाले की जाँचें। चरण 2 के बाद ये पिन तब तक फ़ेल होते हैं जब तक आप उन्हें अपने नामों से अपडेट न करें।
+
+## 2. नाम बदलें
+
+`apps/api/wrangler.jsonc` संपादित करें:
+
+- `account_id`: आपके खाते का id।
+- `routes`: `api.todz.app`, `todz.app` और `www.todz.app` की जगह `api.example.com`, `example.com` और `www.example.com` रखें, और `custom_domain` को `true` ही रहने दें।
+- `vars.PUBLIC_ORIGIN`: `https://api.example.com`।
+- `vars.SITE_ORIGIN`: `https://example.com`, जहाँ लैंडिंग पेज और यह गाइड परोसी जाती है।
+- `send_email[0].allowed_sender_addresses`: आपका भेजने वाला, जैसे `noreply@example.com`।
+- `vars.TELEMETRY`: यह पंक्ति हटा दें। फ़ोर्क को इस फ़ाइल से `on` विरासत में मिलता है, इसलिए इसे हटाना ही टेलीमेट्री बंद करता है; यह तब तक बंद है जब तक मान ठीक `on` न हो (गोपनीयता पेज देखें)।
+- `vars.CLOUD_ACCOUNTS_MAX`: यह पंक्ति हटा दें। फ़ोर्क को इस फ़ाइल से todz cloud की खाता सीमा विरासत में मिलती है; इसके बिना आपका सर्वर हर खाता स्वीकार करता है (उचित उपयोग पेज देखें)।
+- `ratelimits`: उन्नीस बाइंडिंग रखें: साइन-इन और एडमिन के लिए तीन-तीन, दिन के ईमेल के जवाबों के लिए एक, उसके स्टॉप लिंक के लिए एक, साइन-इन किए हुए मालिकों के लिए एक, MCP क्लाइंट के लिए एक, उपयोग रिपोर्ट के लिए तीन, अपडेट जाँच के लिए दो, क्षमता पर पढ़ने के लिए एक और OAuth के लिए तीन (उसके रूट, और क्लाइंट रजिस्ट्रेशन प्रति क्लाइंट और कुल); हर `namespace_id` बदल दें, अगर आपका खाता `8601` से `8619` पहले से इस्तेमाल करता है।
+
+बाकी जैसा है वैसा रखें। ख़ासकर, `vars.SIGN_IN_PROVIDER` `email` ही रहता है, `vars.EMAIL_SENDER` `cloudflare` ही रहता है, और `workers_dev` व `preview_urls` `false` ही रहते हैं। `--var` को `wrangler deploy` में कभी न दें, और डैशबोर्ड में कभी वेरिएबल सेट न करें: नकली प्रोवाइडर, या ऐसा भेजने वाला जो सिर्फ़ लिंक लॉग करता है, साइन-इन को किसी के लिए भी खोल देता है।
+
+`apps/api/src/email-sender.ts` में `SENDER_ADDRESS` और `REPLY_TO_ADDRESS` को अपने पतों पर सेट करें।
+
+## 3. डेटाबेस बनाएँ और माइग्रेशन लागू करें
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 create todz-directory
+```
+
+छपा हुआ id `d1_databases[0].database_id` में रखें, फिर:
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+```
+
+## 4. डिप्लॉय करें
+
+```bash
+pnpm --filter @todz/api server:deploy
+```
+
+git क्लोन से डिप्लॉय करें: स्क्रिप्ट बिल्ड का नाम उस कमिट पर रखती है जिसे वह `git log` से पढ़ती है। डिप्लॉय सफल होने पर स्क्रिप्ट `todz server ready: https://api.example.com · server 2026.11.25+3f9c2ab · accepts app 0.2.4 or later  →  paste it in todz › Settings › Server` पर खत्म होती है: चरण 7 यही URL इस्तेमाल करता है, सर्वर के अपने संस्करण और उस सबसे पुराने ऐप संस्करण के साथ जिसे वह स्वीकार करता है। Cloudflare `api.example.com`, `example.com` और `www.example.com` के लिए DNS रिकॉर्ड और सर्टिफ़िकेट बनाता है; तीनों में से किसी पर पहले से A, AAAA या CNAME रिकॉर्ड नहीं होना चाहिए। चार चीज़ें जाँचें:
+- `curl -sS -H "Todz-App-Version: 0.2.4" https://api.example.com/owner/sign-in-method` का जवाब `{"method":"link"}` है, और हेडर के बिना वही अनुरोध `{"error":"app_too_old","minimum_app_version":"0.2.4"}` जवाब देता है;
+- `curl -sS https://api.example.com/health` का जवाब `{"service":"todz","origin":"https://api.example.com","version":"2026.11.25+3f9c2ab","minimum_app_version":"0.2.4"}` है, और उसका `version` वही है जो ready पंक्ति ने छापा;
+- खाते का `todz-api.<subdomain>.workers.dev` पता जवाब नहीं देता;
+- चरण 6 पूरा होने तक, लिंक भेजने पर 503 `sign_in_unavailable` मिलता है, जो सुरक्षित स्थिति है।
+
+## 5. ईमेल भेजना
+
+अपने डोमेन के लिए भेजना चालू करें और Cloudflare के बताए रिकॉर्ड जोड़ें। ज़ोन id डैशबोर्ड में डोमेन के Overview पेज पर है।
+
+```bash
+pnpm --filter @todz/api exec wrangler email sending enable example.com --zone-id <your zone id>
+pnpm --filter @todz/api exec wrangler email sending dns get example.com --zone-id <your zone id>
+```
+
+## 6. Turnstile
+
+साइन-इन और एडमिन तब तक बंद रहते हैं (`sign_in_unavailable` और "एडमिन अभी बंद है।") जब तक Turnstile सेट न हो। Cloudflare डैशबोर्ड में `example.com` के लिए Managed मोड में एक Turnstile विजेट बनाएँ। उसकी साइट कुंजी `vars.TURNSTILE_SITE_KEY` में रखें (`apps/api/wrangler.jsonc` में), `pnpm --filter @todz/api server:deploy` से दोबारा डिप्लॉय करें, और उसका सीक्रेट सहेजें:
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
+```
+
+Wrangler मान पूछता है, जो उसे आपके शेल इतिहास से बाहर रखता है। उसे कभी पाइप न करें, कभी export न करें, और कभी `wrangler.jsonc` में न लिखें।
+
+`https://example.com/admin` पर एडमिन, जहाँ आप अपने सर्वर के मेट्रिक्स पढ़ते हैं, सिर्फ़ उसी पते को साइन इन कराता है जिसे आप इसी तरह सहेजें; जब तक आप नहीं सहेजते, वह बंद रहता है:
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
+```
+
+नए खाते प्रति नेटवर्क प्रति दिन सीमित हैं ([उचित उपयोग](https://docs.todz.app/hi/fair-use) देखें), और सीमा हर पते को एक सीक्रेट से कुंजी बनाती है। इसे एक बार बनाएँ और इसी तरह सहेजें; जब तक आप नहीं करते, नए खाते साइन अप नहीं कर सकते और मौजूदा फिर भी कर सकते हैं:
+
+```bash
+openssl rand -hex 32 | pnpm --filter @todz/api exec wrangler secret put SIGN_UP_KEY_SECRET
+```
+
+## 7. macOS ऐप बनाएँ और अपने सर्वर से कनेक्ट करें
+
+`apps/macos/project.yml` में:
+- दोनों टार्गेट में `DEVELOPMENT_TEAM` की जगह अपनी टीम का id रखें (Xcode → Settings → Accounts; मुफ़्त Personal Team चलती है);
+- `bundleIdPrefix`, `TODZ_APP_BUNDLE_IDENTIFIER` और `TODZ_WIDGETS_BUNDLE_IDENTIFIER` के मान और `TODZ_APP_GROUP` को अपने आइडेंटिफ़ायर से बदलें।
+
+फिर बनाएँ:
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+आपका Release ऐप साइन-इन लिंक `todz` पर खोलता है, और इसके लिए सर्वर को किसी सेटिंग की ज़रूरत नहीं, क्योंकि लिंक माँगते समय ऐप अपनी स्कीम का नाम बताता है।
+
+फिर todz › सेटिंग › सर्वर खोलें और डिप्लॉय का छापा URL पेस्ट करें। ऐप उसे जाँचता है, जिस सर्वर पर था उससे साइन आउट करता है और आपके सर्वर पर नए सिरे से शुरू होता है। अपने ईमेल से साइन इन करें।
+
+## 8. MCP क्लाइंट को अपने सर्वर की ओर इंगित करें
+
+जो क्लाइंट MCP OAuth बोलते हैं, वे सिर्फ़ पते से कनेक्ट हो जाते हैं, और आप उन्हें ब्राउज़र में मंज़ूर करते हैं:
+
+```bash
+claude mcp add --transport http todz https://api.example.com/mcp
+```
+
+आपका सर्वर खुद अपना OAuth ऑथराइज़ेशन सर्वर है: जारीकर्ता `PUBLIC_ORIGIN` है, इसलिए उसका मेटाडेटा `https://api.example.com/.well-known/oauth-authorization-server` पर रहता है और साइन-इन मेल आपके भेजने वाले से आते हैं। और कुछ कॉन्फ़िगर करने की ज़रूरत नहीं, लेकिन OAuth साइन-इन को चरण 5 और 6 चाहिए, ऐप की तरह ही।
+
+OAuth ही वह एकमात्र तरीका है जिससे क्लाइंट कनेक्ट होता है, आपके सर्वर पर भी और todz cloud पर भी। जो क्लाइंट कोई और क्रेडेंशियल भेजता है, उसे 401 मिलता है जो डॉक्स के कनेक्ट पेज की ओर इशारा करता है।
+
+## अपडेट करना
+
+अपस्ट्रीम से पुल करें। पहले सर्वर अपडेट करें, फिर ऐप: अपने सर्वर से नया ऐप उस सर्वर का पता नहीं जाँच सकता। चलाएँ:
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+pnpm --filter @todz/api server:deploy
+```
+
+फिर ऐप को चरण 7 की तरह दोबारा बनाएँ; वह आपका पेस्ट किया सर्वर रखता है।
+
+जिस सर्वर पर पहले से मालिक हैं, उस पर जिस मालिक ने **मुझे मेरा दिन ईमेल करें** को कभी नहीं छुआ, उसे यह तभी मिलता है जब आप वह डिफ़ॉल्ट उसके लिए हाथ से चालू करें, जो तब सुरक्षित है जब ऐसे किसी मालिक को मेल नहीं जाएगा; नए मालिकों को यह तुरंत मिलता है।
+
+माइग्रेशन सिर्फ़ आगे बढ़ते हैं। साइन-इन गार्ड से पहले के किसी संस्करण पर कभी रोलबैक न करें, चाहे `wrangler rollback` से हो या डैशबोर्ड के Deployments पेज से। साइन-इन बंद करने के लिए सीक्रेट हटा दें:
+
+```bash
+pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
+```
+
+## ऐप अपडेट
+
+- todz.app का आधिकारिक ऐप todz.app के हस्ताक्षरित appcast से खुद को अपडेट करता है, तब भी जब वह आपके सर्वर की ओर इशारा करे: आपका चुना सर्वर और ऐप के अपडेट एक-दूसरे से स्वतंत्र हैं। [Mac पर इंस्टॉल करें › अपडेट](https://docs.todz.app/hi/install-on-mac#4-अपडेट) देखें।
+- जो ऐप आपने खुद बनाया, जैसे चरण 7 में, वह कभी खुद कोई अपडेट इंस्टॉल नहीं करता; वह आधिकारिक अपडेट की पेशकश कर सकता है, जो आपके बिल्ड की जगह ले लेता है। अपना बिल्ड रखने के लिए उसे ऊपर की तरह दोबारा बनाएँ, या आधिकारिक ऐप इंस्टॉल करें और अपना सर्वर **सर्वर** के तहत पेस्ट करें।
+- अपना सर्वर वर्तमान रखें। जब किसी नए ऐप को नया सर्वर चाहिए, तो ऐप कहता है कि सर्वर पुराना है; पहले सर्वर अपडेट करें।
+
+</Accordion>
