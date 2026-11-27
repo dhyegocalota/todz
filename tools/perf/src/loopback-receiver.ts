@@ -11,7 +11,7 @@ const OK_STATUS = 200;
 const BAD_REQUEST_STATUS = 400;
 const NOT_FOUND_STATUS = 404;
 
-export function openLoopbackReceiver(): Promise<LoopbackReceiver> {
+export function openLoopbackReceiver({ state }: { state: string }): Promise<LoopbackReceiver> {
   return new Promise((resolveReceiver, rejectReceiver) => {
     const callback = new Promise<URLSearchParams>((resolveCallback, rejectCallback) => {
       const server = createServer((request, response) => {
@@ -22,6 +22,11 @@ export function openLoopbackReceiver(): Promise<LoopbackReceiver> {
         const url = new URL(request.url, `http://${LOOPBACK_HOST}`);
         if (url.pathname !== CALLBACK_PATH) {
           response.writeHead(NOT_FOUND_STATUS).end();
+          return;
+        }
+        const isExpectedState = url.searchParams.get('state') === state;
+        if (!isExpectedState) {
+          response.writeHead(BAD_REQUEST_STATUS).end();
           return;
         }
         response.writeHead(OK_STATUS, { 'Content-Type': 'text/plain' }).end(CLOSE_TAB_TEXT);
