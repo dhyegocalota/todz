@@ -1,0 +1,70 @@
+---
+title: Versions
+description: Ce que chaque version de l’app Mac a apporté.
+---
+
+Chaque version est un tag GitHub nommé `mac-v<version>` sur [github.com/dhyegocalota/todz/tags](https://github.com/dhyegocalota/todz/tags). L’app lit [todz.app/download/appcast.xml](https://todz.app/download/appcast.xml) pour se mettre à jour.
+
+## 0.2.8
+
+**Changement majeur : les clés d’API ont été supprimées.**
+
+- Les clés de projet et les clés de propriétaire ne fonctionnent plus, et le serveur a supprimé toutes les clés stockées. Chaque client MCP se connecte uniquement avec OAuth.
+- Un client qui envoie encore une clé reçoit un 401 qui renvoie vers [Connecter un agent](/fr/connect-an-agent). Pour se reconnecter, lancez `claude mcp add --transport http todz https://api.todz.app/mcp` et connectez-vous.
+- L’écran **Connecter un agent** de l’app Mac n’affiche plus que les commandes OAuth, sans clé, plus **Apps connectées**, où vous déconnectez une app.
+
+Autres nouveautés :
+
+- Le panneau de la barre des menus est repensé : un anneau du jour et un compteur, une carte **À suivre**, un champ de saisie en verre, une file discrète et **Terminées aujourd’hui** repliées. Un menu **Plus** contient **Quitter**, **Rechercher des mises à jour…**, **Mettre une étoile sur GitHub** et **Changer d’espace de travail…**. ⌘O ouvre todz, Espace termine une tâche et ⌘↩ termine **À suivre**. Voir [Raccourcis clavier](/fr/keyboard-shortcuts).
+- Une session d’espace de travail verrouillée ressemble à un compte à un seul espace de travail. **Changer d’espace de travail…** (⌘K) demande Touch ID pendant le verrouillage, et l’option des Réglages devient **Exiger Touch ID pour changer d’espace de travail**. Voir [Espaces de travail](/fr/workspaces).
+- Un seul système d’animation. Avec **Réduire les animations**, chaque animation devient un fondu enchaîné ou un changement instantané.
+- Une connexion OAuth avec la portée du compte expose tous les outils, outils de tâches compris, et chaque outil de tâches prend un projet explicite. Voir [Outils MCP](/fr/mcp-tools).
+
+## 0.2.7
+
+- Un verrouillage des espaces de travail dans les Réglages, désactivé par défaut : Touch ID ou le mot de passe du Mac avant de changer d’espace de travail. Voir [Espaces de travail](/fr/workspaces).
+- Le compteur de la barre des menus défile, les nouvelles lignes jaillissent et le titre de la barre latérale s’envole vers la barre d’outils.
+- Les Réglages listent les apps connectées à votre compte et permettent d’en déconnecter une.
+
+## 0.2.6
+
+- todz propose de se déplacer dans **Applications**, seulement quand vous cliquez et seulement quand aucun todz n’est ouvert. Il ne remplace jamais un todz installé.
+
+## 0.2.5
+
+- Les formulaires partagent un même aspect : la feuille de nom, le premier espace de travail, la confirmation par saisie du nom, le champ du serveur et la connexion dans un panneau en verre.
+- Une ligne de raccourci en cours d’enregistrement montre qu’elle écoute, et **Connecter un agent** a des blocs arrondis et un **Révoquer** destructif.
+
+## 0.2.4
+
+- L’app abandonne les tâches qu’un agent a supprimées ou déplacées ailleurs.
+- Les Réglages affichent les messages d’utilisation raisonnable du serveur et gèrent les clés de votre compte. Voir [Utilisation raisonnable](/fr/fair-use).
+- Quand le cloud est complet ou qu’un plafond quotidien est atteint, l’app garde vos modifications en file d’attente et suspend l’envoi jusqu’à ce qu’elles puissent se synchroniser.
+
+## 0.2.3
+
+- Renommez et supprimez un espace de travail depuis le menu **Espace de travail**, et supprimez un projet.
+- Un espace de travail affiche sa dernière activité.
+- Les raccourcis globaux des espaces de travail sont désactivés tant que vous ne les activez pas, et ne s’enregistrent que lorsqu’ils sont libres.
+- **Nouveau projet** reste épinglé sous la liste de la barre latérale.
+
+## 0.2.2
+
+- Raccourcis des espaces de travail : ⌃1 … ⌃9, ⌃⌘[ et ⌃⌘], reconfigurables, depuis n’importe quelle app. Voir [Espaces de travail](/fr/workspaces).
+- Plusieurs espaces de travail à la fois, ou **Tous les espaces de travail**, étiquetés par espace de travail.
+- **Mettre une étoile à todz sur GitHub** dans le panneau et le menu todz, et **Open source sur GitHub** dans les Réglages.
+- Un arrière-plan pour l’image disque.
+- **Partager l’utilisation anonyme**, désactivé tant que vous n’avez pas dit oui. Voir [Confidentialité](/fr/privacy).
+
+## 0.2.1
+
+Aucun changement dans l’app. C’est la première mise à jour livrée par Sparkle, pour vérifier qu’une installation de la 0.2.0 se met à jour toute seule.
+
+## 0.2.0
+
+Le premier téléchargement public.
+
+- L’app se met à jour toute seule via Sparkle. Voir [Mises à jour](/fr/updates).
+- Un sélecteur d’espace de travail pour les comptes qui en ont plusieurs.
+- Animations : la coche se dessine avec une gerbe de menthe, le panneau éclot, et le coup d’œil du matin et la clôture de la journée glissent à l’écran.
+- Le bandeau de la barre des menus, la clôture de la journée, le coup d’œil du matin et l’e-mail du jour.

@@ -2,6 +2,26 @@
 
 Thank you for helping. todz is small and moves fast, so a short conversation first saves everyone time.
 
+To get ready to contribute, paste this into your coding agent:
+
+```text
+Set up todz for development: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/set-up-for-development.md until pnpm verify is green, and stop only to ask me for logins.
+```
+
+<details>
+<summary>Do it by hand</summary>
+
+```bash
+git clone https://github.com/dhyegocalota/todz.git && cd todz
+bash .agents/hooks/doctor.sh
+pnpm install --frozen-lockfile
+pnpm verify all
+```
+
+The doctor names anything missing and the command that installs it. The gate is `pnpm verify`.
+
+</details>
+
 ## Before you write code
 
 - **Bugs:** open an issue with the bug template: what you did, what you expected, what happened.

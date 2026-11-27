@@ -1,0 +1,94 @@
+---
+title: Auf dem Mac installieren
+description: todz für Mac laden, öffnen, die Signatur prüfen oder aus dem Quellcode bauen.
+---
+
+todz für Mac ist nicht im App Store und noch nicht von Apple notarisiert, deshalb bittet dich macOS beim ersten Mal, es zu erlauben. **Download für Mac** auf todz.app führt zu [todz.app/download](https://todz.app/download), das die neueste Version ausliefert; Abschnitt 1 und 2 gelten dafür. Willst du sie stattdessen selbst bauen, siehe Abschnitt 5.
+
+<Warning>
+  Die App ist nicht notarisiert. Apple hat sie nicht geprüft, deshalb weigert sich macOS, sie beim ersten Mal zu öffnen. Öffne sie in den Systemeinstellungen, wie im nächsten Abschnitt beschrieben.
+</Warning>
+
+## 1. Herunterladen und starten
+
+Wähle auf todz.app **Download für Mac**:
+
+1. Prüfe den Download mit Abschnitt 2, bevor du ihn öffnest. Lade dann das Disk-Image herunter, öffne es und ziehe `Todz.app` in den Ordner „Programme“.
+2. Öffne `Todz.app`. macOS weigert sich beim ersten Mal.
+3. Öffne **Systemeinstellungen** › **Datenschutz & Sicherheit**, scrolle zu **Sicherheit**, suche die Zeile zu `Todz` und klicke auf **Trotzdem öffnen**.
+4. Bestätige mit deinem Passwort und öffne die App erneut.
+
+macOS fragt nur einmal; spätere Starts öffnen normal. `spctl --assess` lehnt die App ab, weil sie nicht notarisiert ist; das ist zu erwarten, und mit den folgenden Prüfungen weißt du stattdessen, was du ausführst.
+
+## 2. Den Download verifizieren
+
+Jede Version wird als `Todz-<version>.dmg` mit einer `Todz-<version>.dmg.sha256` und einer `Todz-<version>.dmg.sig` veröffentlicht, alle unter `https://todz.app/download/<version>/`. Prüfe die Summe im Ordner, der beide Dateien enthält:
+
+```bash
+shasum -a 256 -c Todz-<version>.dmg.sha256
+```
+
+Speichere diese Zeile als `allowed-signers`. Sie ist der todz-Release-Schlüssel:
+
+```text
+release@todz.app namespaces="todz-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdNjy4QZsK85d4WxjwiTql81GeptNXX2H4SUcM9QVNu
+```
+
+Sein Fingerabdruck, wie `ssh-keygen -lf` ihn für den Schlüssel allein ausgibt, lautet:
+
+```text
+SHA256:yBlPOn96/UZM6GGCo//eqZtFjWl440Hr6rxWa0VS5Tk
+```
+
+Prüfe dann die Signatur:
+
+```bash
+ssh-keygen -Y verify -f allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg
+```
+
+Die Antwort lautet `Good "todz-release" signature for release@todz.app`.
+
+Die Signatur beweist, dass ein Download die Datei ist, die der todz-Release-Schlüssel signiert hat. Sie schützt nicht vor jemandem, der die Zone todz.app oder den Cloudflare-Account von todz kontrolliert, denn auch diese Seite wird aus dieser Zone ausgeliefert.
+
+## 3. Die App verifizieren
+
+Prüfe, ob die Signatur intakt ist. Sie endet mit `valid on disk` und `satisfies its Designated Requirement`, wenn sie es ist:
+
+```bash
+codesign --verify --deep --strict --verbose=2 /Applications/Todz.app
+```
+
+Prüfe, wer die App signiert hat:
+
+```bash
+codesign -dv --verbose=4 /Applications/Todz.app
+```
+
+Die Ausgabe enthält `TeamIdentifier=XFWR794VS8`, `flags=0x10000(runtime)` und, im Namen des Zertifikats, die Apple-ID-Adresse des Owners.
+
+## 4. Updates
+
+Die App aktualisiert sich im Hintergrund selbst; [Updates](/de/updates) erklärt, wie, und wie du das ausschaltest.
+
+## 5. Aus dem Quellcode bauen
+
+Du brauchst einen Mac mit Xcode und [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+
+<Note>
+  `project.yml` signiert mit dem Team des Owners, `XFWR794VS8`, deshalb kann nur ein Mac, der diese Identität besitzt, sie unverändert bauen. Um mit deinem eigenen Team zu bauen, ersetze zuerst `DEVELOPMENT_TEAM` und die Bundle-Identifier, wie in [der Self-Host-Anleitung](/de/self-host#7-macos-app-bauen-und-auf-deinen-server-zeigen-lassen). Eine selbst gebaute App zeigt das Team, mit dem sie signiert wurde.
+</Note>
+
+Aus dem Stammverzeichnis des Repositorys:
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+Die App landet unter `apps/macos/build/Build/Products/Release/Todz.app`. Ein mit Development-Signatur gebauter Build öffnet nur auf Macs, die sein Signing-Team kennt. Um ihn auf einen anderen Mac zu bringen, den du besitzt, zippe ihn, damit die Signatur erhalten bleibt, kopiere ihn und öffne ihn wie in Abschnitt 1:
+
+```bash
+ditto -c -k --keepParent apps/macos/build/Build/Products/Release/Todz.app Todz.zip
+```
+
+Prüfe, ob die Kopie das ZIP ist, das du erstellt hast, indem du `shasum -a 256 Todz.zip` auf beiden Macs ausführst. Eine übereinstimmende Summe beweist nur, dass die Kopie das ZIP ist, das du erstellt hast, nicht, wer es gebaut hat.

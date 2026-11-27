@@ -1,0 +1,159 @@
+---
+title: セルフホスト
+sidebarTitle: サーバのセットアップ
+---
+
+Cloudflareで独自のtodzサーバを動かし、macOSアプリとエージェントをそのサーバに向けます。サーバは、D1データベース1つと、プロジェクトごとに1つのDurable Objectを備えた、1つのWorkerです。
+
+これをコーディングエージェントに貼り付けてください。セットアップはすべてエージェントが行い、ログイン、支払い、シークレットが必要なときだけ止まって尋ねます。
+
+```text
+Self-host todz: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/self-host-with-an-agent.md end to end on my Cloudflare account, and stop only to ask me for logins, payments and secrets.
+```
+
+<Accordion title="手動で行う">
+
+## 必要なもの
+
+- **Workers Paid**のCloudflareアカウント（メールのバインディングに必要です）と、そのアカウントにあるドメイン。以下では、`example.com`がそのドメイン、`api.example.com`がサーバを指します。
+- Nodeとpnpm。バージョンは`.nvmrc`と`package.json`のとおりです。アプリ用には、XcodeとXcodeGenを入れたMacも必要です。
+- アカウントにログインしたWrangler：`pnpm --filter @todz/api exec wrangler login`。
+
+## 1. フォーク、インストール、確認
+
+リポジトリをフォークしたら、何かの名前を変更する前に、次を実行します。
+
+```bash
+pnpm install
+pnpm verify all
+```
+
+このゲートにはgitleaksも必要です。足りないものは、ドクターが教えてくれます。一部のテストがtodz自身の本番環境の名前（たとえばAPIソースとメール送信元のチェック）に固定されているため、今のうちに実行してください。手順2のあとは、自分の名前に更新するまで、それらの固定が失敗します。
+
+## 2. 名前を変更する
+
+`apps/api/wrangler.jsonc`を編集します。
+
+- `account_id`：自分のアカウントのID。
+- `routes`：`api.todz.app`、`todz.app`、`www.todz.app`を、`api.example.com`、`example.com`、`www.example.com`に置き換えます。`custom_domain`は`true`のままにします。
+- `vars.PUBLIC_ORIGIN`：`https://api.example.com`。
+- `vars.SITE_ORIGIN`：`https://example.com`。ランディングページとこのガイドが配信される場所です。
+- `send_email[0].allowed_sender_addresses`：自分の送信元。たとえば`noreply@example.com`。
+- `vars.TELEMETRY`：この行を削除します。フォークはこのファイルから`on`を引き継ぐため、削除することでテレメトリがオフになります。値がちょうど`on`でない限りオフです（プライバシーのページをご覧ください）。
+- `vars.CLOUD_ACCOUNTS_MAX`：この行を削除します。フォークはこのファイルからtodz cloudのアカウント上限を引き継ぎます。この行がなければ、サーバはすべてのアカウントを受け入れます（フェアユースのページをご覧ください）。
+- `ratelimits`：19個のバインディングはそのまま残します。内訳は、サインインと管理に各3つ、その日のメールへの返信に1つ、その停止リンクに1つ、サインイン済みのオーナーに1つ、MCPクライアントに1つ、使用状況レポートに3つ、アップデートの確認に2つ、容量超過時の読み取りに1つ、OAuthに3つ（そのルート、クライアントごとの登録、全体の登録）です。アカウントですでに`8601`〜`8619`を使っている場合は、各`namespace_id`を変更してください。
+
+そのほかはそのままにします。特に、`vars.SIGN_IN_PROVIDER`は`email`、`vars.EMAIL_SENDER`は`cloudflare`のままにし、`workers_dev`と`preview_urls`は`false`のままにします。`wrangler deploy`に`--var`を渡さないでください。ダッシュボードで変数を設定することも避けてください。偽のプロバイダや、リンクをログに出すだけの送信元があると、サインインが誰にでも開かれてしまいます。
+
+`apps/api/src/email-sender.ts`で、`SENDER_ADDRESS`と`REPLY_TO_ADDRESS`を自分のアドレスに設定します。
+
+## 3. データベースを作成してマイグレーションを適用する
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 create todz-directory
+```
+
+表示されたIDを`d1_databases[0].database_id`に入れてから、次を実行します。
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+```
+
+## 4. デプロイする
+
+```bash
+pnpm --filter @todz/api server:deploy
+```
+
+デプロイは、gitクローンから行ってください。スクリプトは、`git log`で読み取ったコミットにちなんでビルドに名前を付けます。デプロイが成功すると、スクリプトは`todz server ready: https://api.example.com · server 2026.11.25+3f9c2ab · accepts app 0.2.4 or later  →  paste it in todz › Settings › Server`という行で終わります。これは手順7で使うURLで、サーバ自身のバージョンと、受け付ける最も古いアプリのバージョンが含まれています。Cloudflareは、`api.example.com`、`example.com`、`www.example.com`のDNSレコードと証明書を作成します。この3つに、すでにA、AAAA、CNAMEのレコードがあってはいけません。次の4点を確認します。
+- `curl -sS -H "Todz-App-Version: 0.2.4" https://api.example.com/owner/sign-in-method`は`{"method":"link"}`と応答し、ヘッダなしの同じリクエストは`{"error":"app_too_old","minimum_app_version":"0.2.4"}`と応答します。
+- `curl -sS https://api.example.com/health`は`{"service":"todz","origin":"https://api.example.com","version":"2026.11.25+3f9c2ab","minimum_app_version":"0.2.4"}`と応答し、その`version`は、ready行に表示されたものと同じです。
+- アカウントの`todz-api.<subdomain>.workers.dev`アドレスは応答しません。
+- 手順6が終わるまでは、リンクの送信に503の`sign_in_unavailable`が返ります。これが安全な状態です。
+
+## 5. メールの送信
+
+ドメインの送信を有効にして、Cloudflareが示すレコードを追加します。ゾーンIDは、ダッシュボードのドメインの概要ページにあります。
+
+```bash
+pnpm --filter @todz/api exec wrangler email sending enable example.com --zone-id <your zone id>
+pnpm --filter @todz/api exec wrangler email sending dns get example.com --zone-id <your zone id>
+```
+
+## 6. Turnstile
+
+サインインと管理は、Turnstileを設定するまで閉じたままです（`sign_in_unavailable`と「管理は現在閉じています。」）。Cloudflareのダッシュボードで、`example.com`用のTurnstileウィジェットを、マネージドモードで作成します。そのサイトキーを`apps/api/wrangler.jsonc`の`vars.TURNSTILE_SITE_KEY`に入れ、`pnpm --filter @todz/api server:deploy`でもう一度デプロイしてから、そのシークレットを保存します。
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
+```
+
+Wranglerが値を尋ねるので、シェルの履歴に残りません。パイプで渡さず、exportせず、`wrangler.jsonc`にも書かないでください。
+
+`https://example.com/admin`の管理ページは、サーバのメトリクスを読む場所で、同じ方法で保存したアドレスだけをサインインさせます。保存するまでは、閉じたままです。
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
+```
+
+新規アカウントは、1日あたりのネットワークごとに上限が設けられており（[フェアユース](https://docs.todz.app/ja/fair-use)をご覧ください）、この上限は、シークレットで各アドレスをキーにします。一度だけ生成し、同じ方法で保存してください。保存するまでは、新規アカウントは登録できませんが、既存のアカウントはサインインできます。
+
+```bash
+openssl rand -hex 32 | pnpm --filter @todz/api exec wrangler secret put SIGN_UP_KEY_SECRET
+```
+
+## 7. macOSアプリをビルドしてサーバに向ける
+
+`apps/macos/project.yml`で次を行います。
+- 両方のターゲットで、`DEVELOPMENT_TEAM`を自分のチームのIDに置き換えます（Xcode → 設定 → アカウント。無料のPersonal Teamでも使えます）。
+- `bundleIdPrefix`、`TODZ_APP_BUNDLE_IDENTIFIER`と`TODZ_WIDGETS_BUNDLE_IDENTIFIER`の値、そして`TODZ_APP_GROUP`を、自分の識別子に置き換えます。
+
+続いて、ビルドします。
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+Releaseアプリは、サインインリンクを`todz`で開きます。アプリがリンクをリクエストするときにスキームを伝えるため、サーバ側で設定する必要はありません。
+
+続いて、todz › 設定 › サーバを開き、デプロイで表示されたURLを貼り付けます。アプリはそれを確認し、それまでのサーバからサインアウトして、あなたのサーバでまっさらな状態から始めます。メールアドレスでサインインしてください。
+
+## 8. MCPクライアントを自分のサーバに向ける
+
+MCP OAuthに対応したクライアントは、アドレスだけで接続でき、ブラウザで承認します。
+
+```bash
+claude mcp add --transport http todz https://api.example.com/mcp
+```
+
+あなたのサーバは、それ自体がOAuth認可サーバです。発行者は`PUBLIC_ORIGIN`なので、そのメタデータは`https://api.example.com/.well-known/oauth-authorization-server`にあり、サインインのメールはあなたの送信元から届きます。ほかに設定するものはありませんが、OAuthでのサインインには、アプリと同じく手順5と6が必要です。
+
+OAuthは、todz cloudと同じように、あなたのサーバでもクライアントが接続できる唯一の方法です。ほかの認証情報を送るクライアントには、ドキュメントの接続ページを案内する401が返ります。
+
+## アップデート
+
+上流からプルします。サーバを先にアップデートし、そのあとアプリをアップデートしてください。サーバより新しいアプリは、サーバのアドレスを確認できません。次を実行します。
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+pnpm --filter @todz/api server:deploy
+```
+
+続いて、手順7のようにアプリをもう一度ビルドします。貼り付けたサーバは、そのまま保持されます。
+
+すでにオーナーがいるサーバでは、**1日の予定をメールで受け取る**に一度も触れていないオーナーには、そのデフォルトを手動でオンにするまで、メールは届きません。そうしたオーナーにメールが送られても問題がなくなってからオンにするのが安全です。新しいオーナーには、すぐに届きます。
+
+マイグレーションは、前にしか進みません。サインインのガードより前のバージョンには、`wrangler rollback`でもダッシュボードのDeploymentsページでも、決してロールバックしないでください。サインインを閉じるには、シークレットを削除します。
+
+```bash
+pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
+```
+
+## アプリのアップデート
+
+- todz.appの公式アプリは、あなたのサーバを指していても、todz.appの署名付きappcastから自身をアップデートします。選んだサーバとアプリのアップデートは、互いに独立しています。[Macにインストール › アップデート](https://docs.todz.app/ja/install-on-mac#4-アップデート)をご覧ください。
+- 手順7のように自分でビルドしたアプリは、自動ではアップデートをインストールしません。公式のアプリを提案することがあり、それは自分のビルドを置き換えます。自分のビルドを使い続けるには、上のようにもう一度ビルドするか、公式のアプリをインストールして、**サーバ**にサーバを貼り付けてください。
+- サーバは常に最新に保ってください。新しいアプリがより新しいサーバを必要とするときは、アプリがサーバが古いと表示します。サーバを先にアップデートしてください。
+
+</Accordion>

@@ -1,0 +1,41 @@
+---
+title: Privacidad de espacios de trabajo
+description: Oculta tus otros espacios de trabajo tras Touch ID o la contraseña de tu Mac, y mira dónde permanecen fuera de la vista.
+---
+
+La privacidad de espacios de trabajo mantiene tus otros espacios de trabajo fuera de la vista en tu Mac. Mientras está activada, todz muestra solo el espacio de trabajo en el que estás y dibuja exactamente lo que dibuja una cuenta con un solo espacio de trabajo: ningún marcador de posición, recuento, icono de candado ni nombre de ningún otro espacio de trabajo. Touch ID o la contraseña de tu Mac los devuelve.
+
+## Actívala
+
+Abre todz › Ajustes › Privacidad y actualizaciones y activa **Pedir Touch ID para cambiar de espacio de trabajo**. Está desactivado por defecto, y activarlo no pide nada. **Volver a pedir después de** define cuánto dura una sesión desbloqueada: 1, 5, 15 o 60 minutos.
+
+## Dónde permanecen ocultos los otros espacios de trabajo
+
+Mientras la sesión está bloqueada, no aparecen en:
+
+- La barra lateral, el selector de espacios de trabajo y el menú de espacios de trabajo.
+- El recuento, la cinta y el popover de la barra de menús.
+- Los widgets. Sus datos en caché se purgan cuando la sesión se bloquea, así que un widget nunca dibuja un espacio de trabajo oculto.
+- Siri y Atajos.
+- Los enlaces `todz://`, que responden como si el proyecto no existiera.
+- Ajustes y sus **Apps conectadas**.
+- El vistazo de la mañana, el cierre del día y los atajos globales de espacios de trabajo.
+
+## Devuélvelos
+
+Elige **Cambiar de espacio de trabajo…** (⌘K, también en el menú **…** del popover de la barra de menús). todz pide Touch ID o la contraseña de tu Mac, y luego cambias como de costumbre. Crear o eliminar un espacio de trabajo, desactivar el ajuste y cambiar el tiempo piden lo mismo.
+
+## Cuándo vuelve a bloquearse
+
+- Cuando el Mac entra en reposo o la pantalla se bloquea, y cuando arranca el salvapantallas.
+- Cuando cierras todz: cada inicio empieza bloqueado.
+- Pasado el tiempo que elijas en **Volver a pedir después de**.
+- Cuando eliges **Bloquear ahora**, que solo aparece mientras la sesión está desbloqueada.
+
+## Lo que no protege
+
+<Warning>
+  La privacidad de espacios de trabajo es una pantalla de privacidad en tu Mac, no cifrado. Cualquiera que conozca la contraseña de tu Mac puede desbloquearla, y no cambia nada en el servidor: un agente conectado con OAuth sigue llegando a su proyecto.
+</Warning>
+
+Consulta [Espacios de trabajo](/es/workspaces) para cambiar, mostrar varios a la vez, renombrar y eliminar.

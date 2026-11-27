@@ -1,0 +1,41 @@
+---
+title: Datenschutz
+description: Was todz genau zählt, was es nie speichert und wie du es ausschaltest.
+---
+
+todz zählt, wie es benutzt wird, in Tagessummen. Es speichert nie ein Protokoll dessen, was jemand getan hat, und liest dafür nie deine Aufgaben.
+
+## Was gezählt wird
+
+Jede Zahl ist ein Wert für einen Tag, mit höchstens einem kurzen Label.
+
+| Zählung | Woher sie kommt | Label |
+| --- | --- | --- |
+| Owner, Workspaces, Projekte | Die eigenen Datensätze des Servers, einmal pro Nacht | keines |
+| Hinzugefügte Aufgaben, erledigte Aufgaben | Eine Zählung aus jedem Projekt, einmal pro Nacht | keines |
+| Schreibzugriffe von Agenten | Eine Zählung dessen, was Agenten geändert haben, einmal pro Nacht | der Name des Agenten aus einer festen Liste (Claude Code, Codex, Cursor, Gemini, Windsurf, Zed, VS Code), alles andere als `other` |
+| Gesendete Tagesmails | Die eigenen Datensätze des Servers, einmal pro Nacht | keines |
+| Update-Prüfungen | Die Mac-App, die nach Updates fragt | die App-Version und die macOS-Hauptversion, etwa `0.2.1\|15` |
+| Geteilte Nutzungsberichte | Die Mac-App, nur wenn du **Anonyme Nutzungsdaten teilen** einschaltest | die App-Version und die macOS-Hauptversion |
+| Geteilte Nutzungsereignisse | Derselbe Bericht | eines von `popover_opened`, `day_closed`, `morning_glance`, `shortcut_used`, `multi_workspace` |
+
+## Was nie gespeichert wird
+
+- Kein Aufgabentitel, keine Notiz, kein Projektname, kein Workspace-Name und keine E-Mail-Adresse.
+- Keine IP-Adresse und kein User-Agent. Der User-Agent einer Update-Prüfung wird auf die zwei Versionsnummern gelesen und verworfen.
+- Kein Ereignisprotokoll und kein Zeitstempel eines einzelnen Ereignisses. Nur ein Tag und eine Summe.
+- Der Zufallscode, den die Mac-App mit einem Bericht sendet, wechselt alle 30 Tage, dient nur dazu, Missbrauch zu bremsen, und wird nie gespeichert.
+
+Die Summen werden 13 Monate aufbewahrt und dann vom Server gelöscht.
+
+## Anonyme Nutzungsdaten teilen
+
+Die Mac-App fragt einmal. Es ist aus, bis du Ja sagst, und du kannst es jederzeit in den Einstellungen ändern. Wenn es an ist, führt die App auf deinem Mac eine Zählung der fünf obigen Ereignisse und sendet einmal am Tag einen kleinen Bericht: Zählungen, die App-Version, die macOS-Hauptversion und den Zufallscode. Ein Bericht ist kleiner als 1 KB, und der Server lehnt alles über 2 KB ab.
+
+## Selbst hosten
+
+Ein Server, den du betreibst, zählt nichts. Die Einstellung `TELEMETRY` ist aus, es sei denn, sie ist genau auf `on` gesetzt, und die Self-Host-Anleitung lässt dich sie entfernen. Eine Mac-App, die bei deinem Server angemeldet ist, sendet ihren Bericht an deinen Server, der ihn ablehnt.
+
+## Wo die Zahlen gelesen werden
+
+Nur der Owner des gehosteten Dienstes liest sie, auf einer Admin-Seite mit Anmeldung und CSV-Export. Der Code ist offen: siehe `apps/api/src/telemetry` im Repository.
