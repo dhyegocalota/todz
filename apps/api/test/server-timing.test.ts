@@ -5,7 +5,7 @@ import { HttpStatus } from '../src/http-status';
 import { McpToolName } from '../src/mcp-copy';
 import { serveMcp } from '../src/mcp-endpoint';
 import { timedEnv } from '../src/server-timing';
-import { seedIssuedKey } from './directory-seed';
+import { seedProjectWithToken } from './directory-seed';
 import { ClientEra, callTool, connectClient } from './mcp-client';
 import { createOwnedProject, ownerCall, projectCall } from './owner-client';
 import { CLOCK_NOW, TODAY, openTasksFilter, unwrap } from './task-fixtures';
@@ -30,9 +30,9 @@ function projectDurationOf(response: Response): number {
 }
 
 async function listAnswerOf(era: ClientEra): Promise<Response> {
-  const { key } = await seedIssuedKey();
+  const { token } = await seedProjectWithToken();
   const answers: Response[] = [];
-  const client = await connectClient({ era, key, onResponse: (response) => answers.push(response) });
+  const client = await connectClient({ era, token, onResponse: (response) => answers.push(response) });
   answers.length = 0;
   await callTool({ client, name: McpToolName.List, args: {} });
   const answer = answers.find((response) => response.status === HttpStatus.Ok);
@@ -40,10 +40,10 @@ async function listAnswerOf(era: ClientEra): Promise<Response> {
   return answer;
 }
 
-function legacyInitializeRequest(key: string): Request {
+function legacyInitializeRequest(token: string): Request {
   return new Request(MCP_URL, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
     body: JSON.stringify(LEGACY_INITIALIZE_BODY),
   });
 }
@@ -82,9 +82,9 @@ describe('Server-Timing', () => {
   });
 
   test('a streamed answer has the same bytes with the header as the handler gives without it', async () => {
-    const { key } = await seedIssuedKey();
-    const direct = await serveMcp({ request: legacyInitializeRequest(key), env, now: CLOCK_NOW });
-    const served = await exports.default.fetch(legacyInitializeRequest(key));
+    const { token } = await seedProjectWithToken();
+    const direct = await serveMcp({ request: legacyInitializeRequest(token), env, now: CLOCK_NOW });
+    const served = await exports.default.fetch(legacyInitializeRequest(token));
     expect(served.headers.get(HttpHeader.ServerTiming)).toMatch(SERVER_TIMING_PATTERN);
     expect(await served.text()).toBe(await direct.text());
   });

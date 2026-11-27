@@ -131,7 +131,7 @@ export async function createProject({
   return textOf(fieldOf({ value: fieldOf({ value: answer, name: 'project' }), name: 'id' }));
 }
 
-export async function issueKey({ connection, projectId }: { connection: OwnerConnection; projectId: string }): Promise<string> {
-  const answer = await answerOf({ connection, method: 'POST', path: `${projectPath(projectId)}/keys` });
-  return textOf(fieldOf({ value: answer, name: 'secret' }));
+export async function readOwnerId(connection: OwnerConnection): Promise<string> {
+  const answer = await answerOf({ connection, method: 'GET', path: '/owner' });
+  return textOf(fieldOf({ value: fieldOf({ value: answer, name: 'owner' }), name: 'id' }));
 }

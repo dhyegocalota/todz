@@ -139,7 +139,7 @@ async function connectedClients({
   const connect = (era: McpEra, scenario: McpScenarioKind) =>
     connectMeasuredMcp({
       origin: dependencies.origin,
-      key: fixture.hotKey,
+      token: fixture.hotToken,
       era,
       fetch: dependencies.fetch,
       now: dependencies.now,

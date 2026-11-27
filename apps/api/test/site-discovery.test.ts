@@ -24,7 +24,6 @@ const XML_TYPE = 'application/xml; charset=utf-8';
 const MANIFEST_TYPE = 'application/manifest+json';
 const PUBLIC_CACHE_CONTROL = 'public, max-age=3600';
 const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';
-const KEY_PLACEHOLDER = '<key>';
 const BACKGROUND_COLOR = '#070812';
 const SITEMAP_NAMESPACE = 'http://www.sitemaps.org/schemas/sitemap/0.9';
 const LOCATION_PATTERN = /<loc>([^<]*)<\/loc>/g;
@@ -198,7 +197,7 @@ describe('the discovery files', () => {
 });
 
 describe('llms.txt', () => {
-  const claudeCodeLine = agentSetupOf({ client: AgentClient.ClaudeCode, serverUrl: MCP_URL, key: KEY_PLACEHOLDER });
+  const claudeCodeLine = agentSetupOf({ client: AgentClient.ClaudeCode, serverUrl: MCP_URL });
 
   test('starts with the name and a blockquote, then holds the facts', async () => {
     const body = await bodyOf(DiscoveryPath.Llms);
@@ -259,9 +258,7 @@ describe('llms-full.txt', () => {
 
   test('holds the three setups in full and every tool parameter text', async () => {
     const body = await bodyOf(DiscoveryPath.LlmsFull);
-    Object.values(AgentClient).forEach((client) =>
-      expect(body).toContain(agentSetupOf({ client, serverUrl: MCP_URL, key: KEY_PLACEHOLDER })),
-    );
+    Object.values(AgentClient).forEach((client) => expect(body).toContain(agentSetupOf({ client, serverUrl: MCP_URL })));
     Object.values(MCP_COPY.fields).forEach((text) => expect(body).toContain(text));
   });
 });

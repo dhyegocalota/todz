@@ -20,7 +20,7 @@ function enumValues({ path, pattern }: { path: string; pattern: RegExp }): strin
 const projectTools = enumValues({ path: COPY_SOURCE, pattern: TOOL_ENUM_PATTERN });
 const ownerTools = enumValues({ path: COPY_SOURCE, pattern: OWNER_TOOL_ENUM_PATTERN });
 const ownerRoutes = enumValues({ path: ROUTES_SOURCE, pattern: ROUTE_ENUM_PATTERN });
-const toolOfScope: Record<string, string[]> = { [ParityScope.ProjectKey]: projectTools, [ParityScope.OwnerKey]: ownerTools };
+const toolOfScope: Record<string, string[]> = { [ParityScope.Project]: projectTools, [ParityScope.Owner]: ownerTools };
 
 describe('every app action is reachable over MCP or says why not', () => {
   test('every owner API route of the app has exactly one row, and every row names a real route', () => {
@@ -28,7 +28,7 @@ describe('every app action is reachable over MCP or says why not', () => {
     expect([...rowRoutes].sort()).toEqual([...ownerRoutes].sort());
   });
 
-  test('a row with a tool names a tool of the server registry, of the scope of its key', () => {
+  test('a row with a tool names a tool of the server registry, of its scope', () => {
     const withTool = APP_ACTIONS.filter(({ tool }) => tool !== null);
     expect(withTool.length).toBeGreaterThan(0);
     withTool.forEach(({ action, tool, scope }) => {
@@ -43,10 +43,10 @@ describe('every app action is reachable over MCP or says why not', () => {
     expect(projectTools.filter((tool) => ownerTools.includes(tool))).toEqual([]);
   });
 
-  test('a row without a tool says why in a sentence and is never scoped to a key', () => {
-    const scopedToKey = [ParityScope.ProjectKey, ParityScope.OwnerKey];
+  test('a row without a tool says why in a sentence and is never scoped to a tool set', () => {
+    const scopedToTools = [ParityScope.Project, ParityScope.Owner];
     APP_ACTIONS.filter(({ tool }) => tool === null).forEach(({ action, scope, reason }) => {
-      expect(scopedToKey, `${action} has no tool`).not.toContain(scope);
+      expect(scopedToTools, `${action} has no tool`).not.toContain(scope);
       expect(reason, `${action} states its reason`).toMatch(/\w+ \w+ \w+/);
     });
   });

@@ -1,7 +1,6 @@
 import { FORMATTER_LOCALE, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_SECOND, REPOSITORY } from '@todz/types';
 
 export const DARK_THEME_COLOR = '#070812';
-export const KEY_PLACEHOLDER = '<key>';
 export const REPOSITORY_API_ORIGIN = 'https://api.github.com';
 export const REPOSITORY_API_URL = `${REPOSITORY_API_ORIGIN}/repos/${REPOSITORY.path}`;
 export const REPOSITORY_API_ACCEPT = 'application/vnd.github+json';

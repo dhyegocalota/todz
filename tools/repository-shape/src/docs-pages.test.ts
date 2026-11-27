@@ -4,28 +4,15 @@ import { swiftCopyValue } from './swift-copy';
 
 const DOCS_DIRECTORY = 'apps/docs';
 const PAGE_EXTENSION = '.mdx';
-const AGENT_COMMAND = 'apps/macos/TodzKit/Sources/TodzKit/AgentCommand.swift';
-const AGENT_SERVER = 'apps/macos/TodzKit/Sources/TodzKit/AgentServer.swift';
-const PROJECT_SERVER_PATTERN = /case project = "([\w-]+)"/;
 const WRANGLER_CONFIGURATION = 'apps/api/wrangler.jsonc';
-const KEY_SCREEN_COPY = 'apps/macos/Copy/KeyScreenCopy.swift';
 const SIGN_IN_COPY = 'apps/macos/Copy/SignInCopy.swift';
 const SETTINGS_COPY = 'apps/macos/Copy/SettingsCopy.swift';
-const KEY_PLACEHOLDER = '<key>';
 const PUBLIC_ORIGIN_PATTERN = /"PUBLIC_ORIGIN": "([^"]+)"/;
-const CONSTANT_PATTERN = /^private let (\w+) = "([^"]*)"$/gm;
-const INTERPOLATION_PATTERN = /\\\((\w+)\)/g;
-const SWIFT_STRING = '((?:[^"\\\\]|\\\\.)*)';
-const CLAUDE_CODE_LINE_PATTERN = new RegExp(`\\.claudeCode\\(line: "${SWIFT_STRING}"\\)`);
-const SHELL_LINE_PATTERN = new RegExp(`shellLine: "${SWIFT_STRING}"`);
+const SERVER_PATH = 'mcp';
 const FENCE_BODY_PATTERN = /```[^\n]*\n([\s\S]*?)\n```/g;
-const WARNING_PATTERN = /<Warning>([\s\S]*?)<\/Warning>/;
-const WARNING_PHRASES = ['password', 'Never commit', '`.cursor/mcp.json`', '`--scope project`', 'revoke'];
 const BOLD_PATTERN = /\*\*([^*\n]+)\*\*/g;
 const GUIDE_LINK_PATTERN = /\]\(\/self-host#([\w-]+)\)/g;
 const GUIDE_HEADING_PATTERN = /^## (.+)$/gm;
-const INDENTATION_PATTERN = /^ {4}/;
-const LINE_SEPARATOR = '\n';
 const FIRST_CAPTURE = 1;
 const CONNECT_PAGE = 'connect-an-agent';
 const QUICKSTART_PAGE = 'quickstart';
@@ -41,53 +28,14 @@ function singleCapture({ text, pattern }: { text: string; pattern: RegExp }): st
   return match![FIRST_CAPTURE]!;
 }
 
-function swiftConstants(text: string): Record<string, string> {
-  return Object.fromEntries([...text.matchAll(CONSTANT_PATTERN)].map((match) => [match[1]!, match[2]!]));
-}
-
-function filled({ template, values }: { template: string; values: Record<string, string> }): string {
-  return template.replace(INTERPOLATION_PATTERN, (_, name: string) => {
-    const value = values[name];
-    if (value === undefined) throw new Error(`${name} has no value in the agent command`);
-    return value;
-  });
-}
-
-function tripleQuoted({ text, name }: { text: string; name: string }): string {
-  const body = singleCapture({
-    text,
-    pattern: new RegExp(`private func ${name}\\([^)]*\\) -> String \\{\\n\\s+"""\\n([\\s\\S]*?)\\n\\s+"""`),
-  });
-  return body
-    .split(LINE_SEPARATOR)
-    .map((line) => line.replace(INDENTATION_PATTERN, ''))
-    .join(LINE_SEPARATOR);
-}
-
-function serverAddress(constants: Record<string, string>): string {
+function serverAddress(): string {
   const publicOrigin = singleCapture({ text: readRepositoryFile(WRANGLER_CONFIGURATION), pattern: PUBLIC_ORIGIN_PATTERN });
-  const { serverPath } = constants;
-  expect(serverPath).toBeDefined();
-  return `${publicOrigin}/${serverPath}`;
+  return `${publicOrigin}/${SERVER_PATH}`;
 }
 
 function oauthCommands(): string[] {
-  const address = serverAddress(swiftConstants(readRepositoryFile(AGENT_COMMAND)));
+  const address = serverAddress();
   return [`claude mcp add --transport http todz ${address}`, `[mcp_servers.todz]\nurl = "${address}"`, 'codex mcp login todz'];
-}
-
-function agentCommands(): string[] {
-  const swift = readRepositoryFile(AGENT_COMMAND);
-  const constants = swiftConstants(swift);
-  const address = serverAddress(constants);
-  const name = singleCapture({ text: readRepositoryFile(AGENT_SERVER), pattern: PROJECT_SERVER_PATTERN });
-  const values = { ...constants, server: address, address, name, key: KEY_PLACEHOLDER };
-  return [
-    singleCapture({ text: swift, pattern: CLAUDE_CODE_LINE_PATTERN }),
-    tripleQuoted({ text: swift, name: 'codexConfiguration' }),
-    singleCapture({ text: swift, pattern: SHELL_LINE_PATTERN }),
-    tripleQuoted({ text: swift, name: 'cursorJSON' }),
-  ].map((template) => filled({ template, values }));
 }
 
 function appLabel({ file, name }: { file: string; name: string }): string {
@@ -108,22 +56,14 @@ function headingSlug(heading: string): string {
 }
 
 describe('the connect-an-agent page', () => {
-  test('holds the OAuth setups, then the three commands of the key screen and nothing else in code blocks, with the cloud MCP URL and a key placeholder', () => {
+  test('holds the OAuth setups and nothing else in code blocks, with the cloud MCP URL', () => {
     const blocks = capturedNames({ text: pageText(CONNECT_PAGE), pattern: FENCE_BODY_PATTERN });
-    expect(blocks).toEqual([...oauthCommands(), ...agentCommands()]);
-  });
-
-  test('warns that the key is a password: never committed, kept in the user-level configuration, revoked in the app when it leaks', () => {
-    const warning = singleCapture({ text: pageText(CONNECT_PAGE), pattern: WARNING_PATTERN });
-    const screenTitle = appLabel({ file: KEY_SCREEN_COPY, name: 'title' });
-    const missingPhrases = [...WARNING_PHRASES, `**${screenTitle}**`].filter((phrase) => !warning.includes(phrase));
-    expect(missingPhrases).toEqual([]);
+    expect(blocks).toEqual(oauthCommands());
   });
 });
 
 describe('the labels the pages name', () => {
   const expectedLabels = [
-    { page: CONNECT_PAGE, label: () => appLabel({ file: KEY_SCREEN_COPY, name: 'title' }) },
     { page: QUICKSTART_PAGE, label: () => appLabel({ file: SIGN_IN_COPY, name: 'sendLink' }) },
     { page: QUICKSTART_PAGE, label: () => appLabel({ file: SETTINGS_COPY, name: 'server' }) },
     { page: QUICKSTART_PAGE, label: () => appLabel({ file: SETTINGS_COPY, name: 'useTodzCloud' }) },

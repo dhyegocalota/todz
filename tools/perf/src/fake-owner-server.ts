@@ -2,7 +2,7 @@ import { fieldOf, listOf, numberOf, textOf } from './json-reader';
 import { type RecordedRequest, type RecordingFetch, recordingFetch } from './recording-fetch';
 
 export const FAKE_SESSION_TOKEN = 'session-token';
-export const FAKE_PROJECT_KEY = 'todz_fake_project_key';
+export const FAKE_OWNER_ID = 'owner-1';
 
 const CREATED = 201;
 const OK = 200;
@@ -27,7 +27,8 @@ export function fakeOwnerServer(): RecordingFetch {
     {
       method: 'POST',
       pattern: /^\/owner\/sessions$/,
-      answer: () => Response.json({ session_token: FAKE_SESSION_TOKEN, owner: { id: 'owner-1', time_zone: 'UTC' } }, { status: CREATED }),
+      answer: () =>
+        Response.json({ session_token: FAKE_SESSION_TOKEN, owner: { id: FAKE_OWNER_ID, time_zone: 'UTC' } }, { status: CREATED }),
     },
     {
       method: 'POST',
@@ -86,9 +87,9 @@ export function fakeOwnerServer(): RecordingFetch {
       },
     },
     {
-      method: 'POST',
-      pattern: /^\/owner\/projects\/([^/]+)\/keys$/,
-      answer: () => Response.json({ key: { id: 'key-1', hint: 'fake', created_at: 0 }, secret: FAKE_PROJECT_KEY }, { status: CREATED }),
+      method: 'GET',
+      pattern: /^\/owner$/,
+      answer: () => Response.json({ owner: { id: FAKE_OWNER_ID, time_zone: 'UTC' } }, { status: OK }),
     },
   ];
   return recordingFetch((request) => {

@@ -1,10 +1,9 @@
 import type { Client } from '@modelcontextprotocol/client';
-import { INBOX_PROJECT_NAME, OWNER_KEY_PREFIX, OWNER_WORKSPACES_MAX, PROJECT_KEY_PREFIX, RuleIssue } from '@todz/types';
+import { INBOX_PROJECT_NAME, OWNER_WORKSPACES_MAX, RuleIssue } from '@todz/types';
 import { env, exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
-import { generateCredentialSecret } from '../src/credential-secret';
 import { MCP_COPY, McpOwnerToolName, McpToolName } from '../src/mcp-copy';
-import { seedIssuedKey, seedOwner, seedOwnerKey, seedProject, seedRevokedOwnerKey, seedWorkspace } from './directory-seed';
+import { accessSecret, revokeToken, seedOwner, seedOwnerToken, seedProject, seedProjectWithToken, seedWorkspace } from './directory-seed';
 import { ClientEra, callTool, connectClient } from './mcp-client';
 
 const MCP_URL = 'http://localhost:8787/mcp';
@@ -15,8 +14,8 @@ type OwnerSetup = { ownerId: string; client: Client };
 
 async function connectedOwner(era: ClientEra = ClientEra.Modern): Promise<OwnerSetup> {
   const ownerId = await seedOwner();
-  const key = await seedOwnerKey({ ownerId });
-  return { ownerId, client: await connectClient({ era, key }) };
+  const token = await seedOwnerToken({ ownerId });
+  return { ownerId, client: await connectClient({ era, token }) };
 }
 
 function idsIn(text: string): string[] {
@@ -180,7 +179,7 @@ describe('the account tools', () => {
 describe('the settings tools', () => {
   test('settings shows the time zone, the agent nudge and the day email of the owner of the key', async () => {
     const ownerId = await seedOwner('Pacific/Kiritimati');
-    const client = await connectClient({ era: ClientEra.Modern, key: await seedOwnerKey({ ownerId }) });
+    const client = await connectClient({ era: ClientEra.Modern, token: await seedOwnerToken({ ownerId }) });
     const { text } = await callTool({ client, name: McpOwnerToolName.Settings, args: {} });
     expect(text.split('\n')).toEqual(
       expect.arrayContaining([
@@ -240,8 +239,8 @@ describe('the settings tools', () => {
 
 describe('the two scopes never mix', () => {
   test('a project key does not list the account tools and cannot call one', async () => {
-    const { key } = await seedIssuedKey();
-    const client = await connectClient({ era: ClientEra.Modern, key });
+    const { token } = await seedProjectWithToken();
+    const client = await connectClient({ era: ClientEra.Modern, token });
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name).filter((name) => Object.values<string>(McpOwnerToolName).includes(name))).toEqual([]);
     await expect(
@@ -249,25 +248,24 @@ describe('the two scopes never mix', () => {
     ).rejects.toThrow();
   });
 
-  test('an owner key cannot call a task tool', async () => {
+  test('an owner token cannot call a task tool', async () => {
     const { client } = await connectedOwner();
     await expect(callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'No' }] } })).rejects.toThrow();
   });
 
   test.each([
-    { name: 'a revoked owner key', secret: async () => seedRevokedOwnerKey({ ownerId: await seedOwner() }) },
-    { name: 'an owner key never issued', secret: async () => `${OWNER_KEY_PREFIX}${generateCredentialSecret()}` },
-    { name: 'the random part of an owner key without its prefix', secret: async () => generateCredentialSecret() },
+    {
+      name: 'a revoked owner token',
+      secret: async () => {
+        const token = await seedOwnerToken({ ownerId: await seedOwner() });
+        await revokeToken(token);
+        return token;
+      },
+    },
+    { name: 'an owner token never issued', secret: async () => accessSecret() },
   ])('$name answers 401 and nothing else', async ({ secret }) => {
     const response = await exports.default.fetch(MCP_URL, { method: 'POST', headers: { Authorization: `Bearer ${await secret()}` } });
     expect(response.status).toBe(UNAUTHORIZED_STATUS);
     expect(await response.text()).toBe('');
-  });
-
-  test('an owner key under the project key prefix opens nothing', async () => {
-    const ownerKey = await seedOwnerKey({ ownerId: await seedOwner() });
-    const asProjectKey = ownerKey.replace(OWNER_KEY_PREFIX, PROJECT_KEY_PREFIX);
-    const response = await exports.default.fetch(MCP_URL, { method: 'POST', headers: { Authorization: `Bearer ${asProjectKey}` } });
-    expect(response.status).toBe(UNAUTHORIZED_STATUS);
   });
 });

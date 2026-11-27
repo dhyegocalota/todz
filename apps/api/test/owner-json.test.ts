@@ -1,7 +1,7 @@
 import { type Actor, OWNER_ACTOR, type Task, agentActor, parseCalendarDate } from '@todz/core';
 import { ActorKind, HistoryAction, TaskField, TaskState } from '@todz/types';
 import { describe, expect, test } from 'vitest';
-import { actorJson, historyEntryJson, keyJson, ownerJson, projectJson, taskJson, workspaceJson } from '../src/owner-json';
+import { actorJson, historyEntryJson, ownerJson, projectJson, taskJson, workspaceJson } from '../src/owner-json';
 import { CLOCK_NOW } from './task-fixtures';
 
 const AGENT_NAME = 'Claude Code';
@@ -72,12 +72,6 @@ describe('workspaceJson', () => {
     expect(
       workspaceJson({ workspace: { id: 'w-1', name: 'Empty', createdAt: CLOCK_NOW, lastActivityAt: CLOCK_NOW + 2 }, projects: [] }),
     ).toMatchObject({ projects: [] });
-  });
-});
-
-describe('keyJson', () => {
-  test('names the id, the hint and the creation time and nothing else', () => {
-    expect(keyJson({ id: 'k-1', hint: 'abcd', createdAt: CLOCK_NOW })).toEqual({ id: 'k-1', hint: 'abcd', created_at: CLOCK_NOW });
   });
 });
 

@@ -25,7 +25,7 @@ function nameOf(name: string): ActionResult<string> {
   return { ok: false, failure: { kind: ActionFailureKind.RuleViolated, failure: nameResult.failure } };
 }
 
-// NB ADR 0101: every account action starts from a SessionOwner, so an owner key and a session reach exactly the same rows and no others.
+// NB ADR 0101: every account action starts from a SessionOwner, so an owner grant and a session reach exactly the same rows and no others.
 export async function createWorkspace({
   env,
   owner,

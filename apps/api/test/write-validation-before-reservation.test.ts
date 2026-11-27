@@ -2,9 +2,9 @@ import { formatShortId } from '@todz/core';
 import { TASK_BATCH_MAX_SIZE, TASK_NOTES_MAX_LENGTH } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
-import { seedIssuedKey } from './directory-seed';
+import { seedProjectToken, seedProjectWithToken } from './directory-seed';
 import { ClientEra, callTool, connectClient } from './mcp-client';
-import { type OwnedProject, createOwnedProject, issueMcpKey, projectCall } from './owner-client';
+import { type OwnedProject, createOwnedProject, projectCall } from './owner-client';
 
 const UNPROCESSABLE_STATUS = 422;
 const OVER_BATCH_SIZE = TASK_BATCH_MAX_SIZE + 1;
@@ -81,8 +81,8 @@ describe('MCP validates a write before it reserves', () => {
     { name: 'an over-size batch', tasks: draftsOf({ count: OVER_BATCH_SIZE }) },
     { name: 'a batch with over-limit notes', tasks: draftsOf({ count: TASK_BATCH_MAX_SIZE, notes: OVER_NOTES }) },
   ])('$name is an error answer and reserves nothing', async ({ tasks }) => {
-    const { projectId, key } = await seedIssuedKey();
-    const client = await connectClient({ era: ClientEra.Modern, key });
+    const { projectId, token } = await seedProjectWithToken();
+    const client = await connectClient({ era: ClientEra.Modern, token });
     const answer = await callTool({ client, name: 'add', args: { tasks } });
     expect(answer.isError).toBe(true);
     expect(await usageOf(await ownerOfProject(projectId))).toEqual({ writes: 0, bytes: 0 });
@@ -90,8 +90,8 @@ describe('MCP validates a write before it reserves', () => {
 
   test('an over-size done batch is an error answer and reserves nothing', async () => {
     const project = await createOwnedProject();
-    const key = await issueMcpKey({ token: project.token, projectId: project.projectId });
-    const client = await connectClient({ era: ClientEra.Modern, key });
+    const mcpToken = await seedProjectToken({ projectId: project.projectId });
+    const client = await connectClient({ era: ClientEra.Modern, token: mcpToken });
     const ids = Array.from({ length: OVER_BATCH_SIZE }, (_, index) => formatShortId(index + 1));
     const answer = await callTool({ client, name: 'done', args: { ids } });
     expect(answer.isError).toBe(true);

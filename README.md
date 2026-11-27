@@ -41,14 +41,14 @@
 ## Connect an agent
 
 1. Open todz and sign in with your email.
-2. Open **Connect an Agent** and copy your client's command.
-3. Paste it in your terminal, sign in when your agent opens the browser, then ask it for the next task:
+2. Paste this in your terminal, then sign in in the browser when your agent asks:
 
    ```bash
    claude mcp add --transport http todz https://api.todz.app/mcp
    ```
+3. Ask your agent for the next task.
 
-Codex, Cursor and every MCP tool: [docs.todz.app](https://docs.todz.app/connect-an-agent). More of the app: [a tour](https://docs.todz.app/tour).
+Codex and every MCP tool: [docs.todz.app](https://docs.todz.app/connect-an-agent). More of the app: [a tour](https://docs.todz.app/tour).
 
 ## Contributing
 

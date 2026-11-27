@@ -2,10 +2,9 @@ import { INBOX_PROJECT_NAME } from '@todz/types';
 import { env, exports } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
-import { digestCredential } from '../src/credential-digest';
 import { deleteOwnerProject, deleteOwnerWorkspace } from '../src/directory-workspaces';
-import { openMcpSession } from '../src/mcp-sessions';
 import { countingEnv } from './counting-namespace';
+import { seedProjectToken } from './directory-seed';
 import type { Env } from '../src/env';
 import type { ProjectStore } from '../src/project-store';
 import { ownerCall, serveOwnerCall, signInOwner, workerEnvWith } from './owner-client';
@@ -23,7 +22,6 @@ const MCP_URL = 'http://localhost:8787/mcp';
 
 type ProjectBody = { id: string; name: string; is_inbox: boolean; created_at: number };
 type WorkspaceBody = { id: string; name: string; created_at: number; projects: ProjectBody[] };
-type IssuedBody = { key: { id: string }; secret: string };
 type CountRow = { total: number };
 
 async function createWorkspace({ token, name }: { token: string; name: string }): Promise<WorkspaceBody> {
@@ -44,12 +42,6 @@ function inboxOf(workspace: WorkspaceBody): ProjectBody {
   return inbox;
 }
 
-async function issueKey({ token, projectId }: { token: string; projectId: string }): Promise<string> {
-  const response = await ownerCall({ method: 'POST', path: `/owner/projects/${projectId}/keys`, token });
-  if (response.status !== CREATED_STATUS) throw new Error(`issue key answered ${response.status}`);
-  return (await response.json<IssuedBody>()).secret;
-}
-
 async function listWorkspaces(token: string): Promise<WorkspaceBody[]> {
   const response = await ownerCall({ method: 'GET', path: '/owner/workspaces', token });
   expect(response.status).toBe(OK_STATUS);
@@ -66,13 +58,6 @@ function deleteProject({ token, projectId }: { token: string; projectId: string 
 
 function mcpCall(secret: string): Promise<Response> {
   return exports.default.fetch(MCP_URL, { method: 'POST', headers: { Authorization: `Bearer ${secret}` } });
-}
-
-function mcpSessionCall({ secret, sessionId }: { secret: string; sessionId: string }): Promise<Response> {
-  return exports.default.fetch(MCP_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${secret}`, 'Mcp-Session-Id': sessionId },
-  });
 }
 
 async function countRows({ sql, bindings }: { sql: string; bindings: string[] }): Promise<number> {
@@ -94,8 +79,8 @@ async function storedWorkspaceRows(workspaceId: string): Promise<number> {
   return countRows({ sql: 'SELECT count(*) AS total FROM workspaces WHERE id = ?', bindings: [workspaceId] });
 }
 
-async function storedKeyRows(projectId: string): Promise<number> {
-  return countRows({ sql: 'SELECT count(*) AS total FROM project_keys WHERE project_id = ?', bindings: [projectId] });
+async function storedGrantRows(projectId: string): Promise<number> {
+  return countRows({ sql: 'SELECT count(*) AS total FROM oauth_grants WHERE project_id = ?', bindings: [projectId] });
 }
 
 async function projectStoreTableCount(projectId: string): Promise<number> {
@@ -107,11 +92,11 @@ async function projectStoreTableCount(projectId: string): Promise<number> {
 }
 
 describe('DELETE /owner/workspaces/:workspaceId', () => {
-  test('answers 204 and removes the workspace with its Inbox, its projects and their keys', async () => {
+  test('answers 204 and removes the workspace with its Inbox, its projects and their grants', async () => {
     const { token } = await signInOwner();
     const doomed = await createWorkspace({ token, name: 'Doomed' });
     const launch = await createProject({ token, workspaceId: doomed.id, name: 'Launch' });
-    await issueKey({ token, projectId: launch.id });
+    await seedProjectToken({ projectId: launch.id });
     const kept = await createWorkspace({ token, name: 'Kept' });
     const projectIds = [...doomed.projects, launch].map((project) => project.id);
     const response = await deleteWorkspace({ token, workspaceId: doomed.id });
@@ -119,17 +104,17 @@ describe('DELETE /owner/workspaces/:workspaceId', () => {
     expect(await response.text()).toBe('');
     expect(await storedWorkspaceRows(doomed.id)).toBe(0);
     expect(await storedProjectRows(projectIds)).toBe(0);
-    expect(await storedKeyRows(launch.id)).toBe(0);
+    expect(await storedGrantRows(launch.id)).toBe(0);
     expect((await listWorkspaces(token)).map((workspace) => workspace.id)).toEqual([kept.id]);
   });
 
-  test('revokes every MCP key of the deleted projects at once: the key answers 401 right after', async () => {
+  test('revokes every grant of the deleted projects at once: its token answers 401 right after', async () => {
     const { token } = await signInOwner();
     const workspace = await createWorkspace({ token, name: 'Keyed' });
-    const secret = await issueKey({ token, projectId: inboxOf(workspace).id });
-    expect((await mcpCall(secret)).status).not.toBe(UNAUTHORIZED_STATUS);
+    const accessToken = await seedProjectToken({ projectId: inboxOf(workspace).id });
+    expect((await mcpCall(accessToken)).status).not.toBe(UNAUTHORIZED_STATUS);
     await deleteWorkspace({ token, workspaceId: workspace.id });
-    const refused = await mcpCall(secret);
+    const refused = await mcpCall(accessToken);
     expect(refused.status).toBe(UNAUTHORIZED_STATUS);
     expect(await refused.text()).toBe('');
   });
@@ -184,29 +169,29 @@ describe('DELETE /owner/workspaces/:workspaceId', () => {
 });
 
 describe('DELETE /owner/projects/:projectId', () => {
-  test('answers 204 and removes the project and its keys, leaving its workspace and siblings', async () => {
+  test('answers 204 and removes the project and its grants, leaving its workspace and siblings', async () => {
     const { token } = await signInOwner();
     const workspace = await createWorkspace({ token, name: 'Work' });
     const project = await createProject({ token, workspaceId: workspace.id, name: 'Launch' });
     const sibling = await createProject({ token, workspaceId: workspace.id, name: 'Garden' });
-    await issueKey({ token, projectId: project.id });
+    await seedProjectToken({ projectId: project.id });
     const response = await deleteProject({ token, projectId: project.id });
     expect(response.status).toBe(NO_CONTENT_STATUS);
     expect(await storedProjectRows([project.id])).toBe(0);
-    expect(await storedKeyRows(project.id)).toBe(0);
+    expect(await storedGrantRows(project.id)).toBe(0);
     expect(await storedProjectRows([sibling.id])).toBe(1);
     expect((await listWorkspaces(token))[0]?.projects.map((listed) => listed.id)).toEqual([workspace.projects[0]?.id, sibling.id]);
   });
 
-  test('revokes the MCP key of the deleted project at once and wipes its storage', async () => {
+  test('revokes the grant of the deleted project at once and wipes its storage', async () => {
     const { token } = await signInOwner();
     const workspace = await createWorkspace({ token, name: 'Work' });
     const project = await createProject({ token, workspaceId: workspace.id, name: 'Launch' });
-    const secret = await issueKey({ token, projectId: project.id });
-    expect((await mcpCall(secret)).status).not.toBe(UNAUTHORIZED_STATUS);
+    const accessToken = await seedProjectToken({ projectId: project.id });
+    expect((await mcpCall(accessToken)).status).not.toBe(UNAUTHORIZED_STATUS);
     expect(await projectStoreTableCount(project.id)).toBeGreaterThan(0);
     await deleteProject({ token, projectId: project.id });
-    expect((await mcpCall(secret)).status).toBe(UNAUTHORIZED_STATUS);
+    expect((await mcpCall(accessToken)).status).toBe(UNAUTHORIZED_STATUS);
     expect(await projectStoreTableCount(project.id)).toBe(0);
   });
 
@@ -228,23 +213,23 @@ describe('DELETE /owner/projects/:projectId', () => {
     expect(await response.json()).toEqual(NOT_FOUND);
   });
 
-  test('another owner gets 404 and the project, its key and its storage stay', async () => {
+  test('another owner gets 404 and the project, its grant and its storage stay', async () => {
     const alice = await signInOwner();
     const bob = await signInOwner();
     const workspace = await createWorkspace({ token: alice.token, name: 'Alice' });
     const project = await createProject({ token: alice.token, workspaceId: workspace.id, name: 'Alice project' });
-    const secret = await issueKey({ token: alice.token, projectId: project.id });
+    const accessToken = await seedProjectToken({ projectId: project.id });
     const response = await deleteProject({ token: bob.token, projectId: project.id });
     expect(response.status).toBe(NOT_FOUND_STATUS);
     expect(await response.json()).toEqual(NOT_FOUND);
     expect(await storedProjectRows([project.id])).toBe(1);
-    expect(await storedKeyRows(project.id)).toBe(1);
-    expect((await mcpCall(secret)).status).not.toBe(UNAUTHORIZED_STATUS);
+    expect(await storedGrantRows(project.id)).toBe(1);
+    expect((await mcpCall(accessToken)).status).not.toBe(UNAUTHORIZED_STATUS);
     expect(await projectStoreTableCount(project.id)).toBeGreaterThan(0);
   });
 });
 
-describe('another owner deleting a project that has no key', () => {
+describe('another owner deleting a project that has no grant', () => {
   test('answers 404 and the project stays', async () => {
     const alice = await signInOwner();
     const bob = await signInOwner();
@@ -254,23 +239,6 @@ describe('another owner deleting a project that has no key', () => {
     expect(response.status).toBe(NOT_FOUND_STATUS);
     expect(await response.json()).toEqual(NOT_FOUND);
     expect(await storedProjectRows([project.id])).toBe(1);
-  });
-});
-
-describe('a deleted project with an MCP session open', () => {
-  test('the session answers 401 right after the workspace is deleted', async () => {
-    const { token } = await signInOwner();
-    const workspace = await createWorkspace({ token, name: 'Open session' });
-    const secret = await issueKey({ token, projectId: inboxOf(workspace).id });
-    const sessionId = await openMcpSession({
-      directory: env.DIRECTORY,
-      keyDigest: await digestCredential(secret),
-      clientName: 'Claude Code',
-      now: Date.now(),
-    });
-    expect((await mcpSessionCall({ secret, sessionId })).status).not.toBe(UNAUTHORIZED_STATUS);
-    await deleteWorkspace({ token, workspaceId: workspace.id });
-    expect((await mcpSessionCall({ secret, sessionId })).status).toBe(UNAUTHORIZED_STATUS);
   });
 });
 

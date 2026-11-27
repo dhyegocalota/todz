@@ -10,7 +10,7 @@ import type { ProjectStore } from '../../src/project-store';
 import { type WorkCounts, countedWorkEnv, rowsReadBy, seedLargeProject, seedProjectsOf } from '../budget-counters';
 import { resetDayEmails, seedDayOwner, seedProjectOf, tick } from '../day-email/day-email-client';
 import { deliverReply, inboxTasks, ownerReplyOf, seedReplyContext } from '../day-email/reply-client';
-import { seedIssuedKey, seedNudgedKey } from '../directory-seed';
+import { seedProjectWithToken, seedNudgedProjectWithToken } from '../directory-seed';
 import { recordingBinding } from '../email-sign-in-client';
 import { ClientEra, callTool, connectClient } from '../mcp-client';
 import { createOwnedProject, serveOwnerCall, signInOwner } from '../owner-client';
@@ -94,12 +94,12 @@ function toolCallCounts(served: ServedRequest[]): WorkCounts {
 async function countedToolCall({
   era,
   projectId,
-  key,
+  token,
   name,
 }: {
   era: ClientEra;
   projectId: string;
-  key: string;
+  token: string;
   name: McpToolName;
 }): Promise<WorkCounts> {
   unwrap(
@@ -110,7 +110,7 @@ async function countedToolCall({
     }),
   );
   const served: ServedRequest[] = [];
-  const client = await connectClient({ era, key, serve: countingServe(served) });
+  const client = await connectClient({ era, token, serve: countingServe(served) });
   await callTool({ client, name, args: {} });
   return toolCallCounts(served);
 }
@@ -141,24 +141,6 @@ describe('the directory and Durable Object work of a request', () => {
     expectWithin({ counts, budget: { ...OWNER_PROJECT_ROUTE_BUDGET, projectCalls: 0 } });
   });
 
-  test('a 2025-era call with a session id the directory does not know answers 404 in one round trip', async () => {
-    const { key } = await seedIssuedKey();
-    const { countedEnv, counts } = countedWorkEnv();
-    const request = new Request(MCP_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json, text/event-stream',
-        'Mcp-Session-Id': 'a-session-nobody-opened',
-      },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
-    });
-    const response = await serveMcp({ request, env: countedEnv, now: Date.now() });
-    expect(response.status).toBe(HttpStatus.NotFound);
-    expectWithin({ counts, budget: { ...MCP_LIST_BUDGET_OF_ERA[ClientEra.Legacy], projectCalls: 0 } });
-  });
-
   test('the workspace list of an owner with 200 projects in 20 workspaces', async () => {
     const { token, ownerId } = await signInOwner();
     await seedProjectsOf({ ownerId });
@@ -172,14 +154,14 @@ describe('the directory and Durable Object work of a request', () => {
 
   describe.each([ClientEra.Legacy, ClientEra.Modern])('the %s MCP client', (era) => {
     test('a list tools/call', async () => {
-      const { key, projectId } = await seedNudgedKey();
-      const counts = await countedToolCall({ era, projectId, key, name: McpToolName.List });
+      const { token, projectId } = await seedNudgedProjectWithToken();
+      const counts = await countedToolCall({ era, projectId, token, name: McpToolName.List });
       expectWithin({ counts, budget: MCP_LIST_BUDGET_OF_ERA[era] });
     });
 
     test('a next tools/call with the nudge on', async () => {
-      const { key, projectId } = await seedNudgedKey();
-      const counts = await countedToolCall({ era, projectId, key, name: McpToolName.Next });
+      const { token, projectId } = await seedNudgedProjectWithToken();
+      const counts = await countedToolCall({ era, projectId, token, name: McpToolName.Next });
       expect(counts.projectCalls).toBeGreaterThan(1);
       expectWithin({ counts, budget: MCP_NEXT_NUDGED_BUDGET_OF_ERA[era] });
     });

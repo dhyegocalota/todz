@@ -252,17 +252,7 @@ export async function deleteOwnerWorkspace({
   workspaceId: string;
   expectedName: string | null;
 }): Promise<string[] | null> {
-  const [, , projectDeletion, workspaceDeletion] = await directory.batch([
-    directory
-      .prepare(
-        'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT project_keys.digest FROM project_keys JOIN projects ON projects.id = project_keys.project_id JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ? AND (? IS NULL OR workspaces.name = ?))',
-      )
-      .bind(workspaceId, ownerId, expectedName, expectedName),
-    directory
-      .prepare(
-        'DELETE FROM project_keys WHERE project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.workspace_id = ? AND workspaces.owner_id = ? AND (? IS NULL OR workspaces.name = ?))',
-      )
-      .bind(workspaceId, ownerId, expectedName, expectedName),
+  const [projectDeletion, workspaceDeletion] = await directory.batch([
     directory
       .prepare(
         'DELETE FROM projects WHERE workspace_id IN (SELECT id FROM workspaces WHERE id = ? AND owner_id = ? AND (? IS NULL OR name = ?)) RETURNING id',
@@ -288,17 +278,7 @@ export async function deleteOwnerProject({
   projectId: string;
   expectedName: string | null;
 }): Promise<boolean> {
-  const [, , projectDeletion] = await directory.batch([
-    directory
-      .prepare(
-        'DELETE FROM mcp_sessions WHERE key_digest IN (SELECT digest FROM project_keys WHERE project_id = ? AND project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ? AND (? IS NULL OR projects.name = ?)))',
-      )
-      .bind(projectId, ownerId, expectedName, expectedName),
-    directory
-      .prepare(
-        'DELETE FROM project_keys WHERE project_id = ? AND project_id IN (SELECT projects.id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE workspaces.owner_id = ? AND (? IS NULL OR projects.name = ?))',
-      )
-      .bind(projectId, ownerId, expectedName, expectedName),
+  const [projectDeletion] = await directory.batch([
     directory
       .prepare(
         'DELETE FROM projects WHERE id = ? AND is_inbox = 0 AND workspace_id IN (SELECT id FROM workspaces WHERE owner_id = ?) AND (? IS NULL OR name = ?)',

@@ -5,6 +5,12 @@ description: What each version of the Mac app brought.
 
 Every release is a GitHub tag named `mac-v<version>` at [github.com/dhyegocalota/todz/tags](https://github.com/dhyegocalota/todz/tags). The app reads [todz.app/download/appcast.xml](https://todz.app/download/appcast.xml) to update itself.
 
+## 2026-11-27: API keys were removed (breaking change)
+
+- Project keys and owner keys no longer work, and the server deleted every stored key. Every MCP client connects with OAuth only.
+- A client that still sends a key gets a 401 that points to [Connect an agent](/connect-an-agent). To reconnect, run `claude mcp add --transport http todz https://api.todz.app/mcp` and sign in.
+- The **Connect an Agent** screen of the Mac app is gone in the same update. Disconnect an app in **Settings** › **Connected apps**.
+
 ## 0.2.2
 
 - Workspace shortcuts: ⌃1 … ⌃9, ⌃⌘[ and ⌃⌘], rebindable, from any app. See [Workspaces](/workspaces).
@@ -24,5 +30,4 @@ The first public download.
 - The app updates itself through Sparkle. See [Updates](/updates).
 - A workspace picker for accounts with several workspaces.
 - Motion: the check draws in with a mint burst, the popover blooms, and the morning glance and day close slide in.
-- A key revoked in Connect an Agent leaves the list at once.
 - The menu bar ribbon, the day close, the morning glance and the day email.

@@ -11,7 +11,7 @@ export function forgetStampedOwners(): void {
   stampedDayOfOwner.clear();
 }
 
-// NB ADR 0099: a signed-in owner or an agent key is active the day it is seen, so a read-only owner keeps its spot; an isolate stamps an owner once a day and the statement writes at most once a day.
+// NB ADR 0099: a signed-in owner or an agent grant is active the day it is seen, so a read-only owner keeps its spot; an isolate stamps an owner once a day and the statement writes at most once a day.
 export async function stampOwnerSeen({ env, ownerId, now }: { env: Env; ownerId: string; now: number }): Promise<void> {
   if (cloudAccountsMaxOf(env) === null) return;
   const day = utcDayOf(now);
