@@ -1,6 +1,6 @@
 # Menu bar redesign
 
-**Status:** In review
+**Status:** Shipped 2026-11-27
 **Tier:** 🟡 (a new pure model in TodzKit and a rebuilt popover, no server, no schema)
 **Owner approval:** approved 2026-11-27 by the owner's order "Menu bar redesign" in PROMPT.md and, for what the order does not say, by inheritance from [the product document](../../product/README.md); the choices of [design § 10](design.md#10-owner-decisions) are the loop's calls under the owner's standing order to decide every call
 **ADRs:** [0112](../../adr/0112-the-menu-bar-popover-leads-with-an-up-next-card-and-says-less.md)
