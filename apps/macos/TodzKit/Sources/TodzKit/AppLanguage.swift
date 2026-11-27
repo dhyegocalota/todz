@@ -13,6 +13,8 @@ public enum AppLanguage: String, CaseIterable, Sendable {
     case japanese = "ja"
     case korean = "ko"
     case chinese = "zh"
+    case arabic = "ar"
+    case hindi = "hi"
 
     public var nativeName: String {
         switch self {
@@ -24,7 +26,13 @@ public enum AppLanguage: String, CaseIterable, Sendable {
         case .japanese: "日本語"
         case .korean: "한국어"
         case .chinese: "简体中文"
+        case .arabic: "العربية"
+        case .hindi: "हिन्दी"
         }
+    }
+
+    public var isRightToLeft: Bool {
+        self == .arabic
     }
 
     public static func bestMatch(preferred: [String]) -> AppLanguage {

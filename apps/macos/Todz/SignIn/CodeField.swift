@@ -27,6 +27,7 @@ struct CodeField: View {
                 .accessibilityValue(entry.text)
                 .accessibilityHint(SignInCopy.codeHint)
             boxes
+                .environment(\.layoutDirection, .leftToRight)
                 .accessibilityHidden(true)
                 .allowsHitTesting(false)
         }

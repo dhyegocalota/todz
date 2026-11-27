@@ -9,6 +9,7 @@ struct TodayListWidget: Widget {
         StaticConfiguration(kind: kind, provider: TodayTimelineProvider()) { entry in
             TodayListView(entry: entry)
                 .widgetURL(WidgetLink.today.url(scheme: AppLinkScheme.required(bundle: .main)))
+                .languageDirection()
                 .containerBackground(.background, for: .widget)
         }
         .configurationDisplayName(MainWindowCopy.today)
