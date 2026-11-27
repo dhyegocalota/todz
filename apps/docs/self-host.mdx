@@ -33,7 +33,7 @@ Edit `apps/api/wrangler.jsonc`:
 - `send_email[0].allowed_sender_addresses`: your sender, for example `noreply@example.com`.
 - `vars.TELEMETRY`: delete this line. A fork inherits `on` from this file, so removing it is what turns telemetry off; it is off unless the value is exactly `on` (see the Privacy page).
 - `vars.CLOUD_ACCOUNTS_MAX`: delete this line. A fork inherits todz cloud's account cap from this file; without it your server admits every account (see the Fair use page).
-- `ratelimits`: keep the sixteen bindings, three each for sign-in and the admin, one for replies to the day email, one for its stop link, one for signed-in owners, one for keys, three for the usage report, two for the update check and one for reads at capacity; change each `namespace_id` if your account already uses `8601` to `8616`.
+- `ratelimits`: keep the eighteen bindings, three each for sign-in and the admin, one for replies to the day email, one for its stop link, one for signed-in owners, one for keys, three for the usage report, two for the update check, one for reads at capacity and two for OAuth (its routes and client registration); change each `namespace_id` if your account already uses `8601` to `8618`.
 
 Keep the rest as it is. In particular, `vars.SIGN_IN_PROVIDER` stays `email`, `vars.EMAIL_SENDER` stays `cloudflare`, and `workers_dev` and `preview_urls` stay `false`. Never pass `--var` to `wrangler deploy`, and never set variables in the dashboard: a fake provider, or a sender that only logs the link, opens sign-in to anyone.
 
@@ -113,7 +113,15 @@ Then open todz › Settings › Server and paste the URL the deploy printed. The
 
 ## 8. Point an MCP client at your server
 
-**Connect an Agent** shows a ready command with your server and a new key. For Claude Code it has this shape:
+Clients that speak MCP OAuth connect with the address alone, and you approve them in the browser:
+
+```bash
+claude mcp add --transport http todz https://api.example.com/mcp
+```
+
+Your server is its own OAuth authorization server: the issuer is `PUBLIC_ORIGIN`, so its metadata lives at `https://api.example.com/.well-known/oauth-authorization-server` and the sign-in mails come from your sender. Nothing else needs configuring, but OAuth sign-in needs steps 5 and 6, like the app's.
+
+For a client without OAuth, **Connect an Agent** shows a ready command with your server and a new key. For Claude Code it has this shape:
 
 ```bash
 claude mcp add --transport http todz 'https://api.example.com/mcp' --header 'Authorization: Bearer <key>'

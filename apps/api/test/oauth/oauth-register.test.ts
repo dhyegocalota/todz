@@ -110,7 +110,10 @@ describe('dynamic client registration (RFC 7591)', () => {
 
   test('the registration limiter refuses with a retry after', async () => {
     const response = await serveOAuthRequest({
-      request: new Request(`${PUBLIC_ORIGIN}${REGISTER_PATH}`, jsonRequest({ path: REGISTER_PATH, body: clientMetadata() })),
+      request: new Request(
+        `${PUBLIC_ORIGIN}${REGISTER_PATH}`,
+        jsonRequest({ path: REGISTER_PATH, body: clientMetadata(), headers: { 'CF-Connecting-IP': CLIENT_ADDRESS } }),
+      ),
       workerEnv: oauthEnv({
         PUBLIC_ORIGIN,
         OAUTH_LIMITER: recordingLimiter({ isAllowed: true }).limiter,

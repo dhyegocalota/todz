@@ -7,7 +7,7 @@ import {
   isLegacyRequest,
 } from '@modelcontextprotocol/server';
 import { agentActor } from '@todz/core';
-import { ActorKind, OWNER_KEY_PREFIX, RuleIssue } from '@todz/types';
+import { ActorKind, OAUTH_ACCESS_TOKEN_PREFIX, OWNER_KEY_PREFIX, RuleIssue } from '@todz/types';
 import { z } from 'zod';
 import { bearerSecret, unauthorized } from './bearer-secret';
 import type { Env } from './env';
@@ -25,7 +25,9 @@ import { openMcpSession } from './mcp-sessions';
 import { calendarDateInTimeZone } from './owner-today';
 import { parsedJson } from './parsed-json';
 import { resultOf } from './project-result';
-import { type KeyProject, openKeyProject, openOwnerKey } from './project-routing';
+import { mcpChallengeOf } from './oauth/oauth-metadata';
+import { OAuthScope } from './oauth/oauth-scope';
+import { type KeyProject, type OAuthAccess, type SessionOwner, openKeyProject, openOAuthAccess, openOwnerKey } from './project-routing';
 import { isSignedInRateLimited, withRetryAfter } from './signed-in-limiter';
 
 const SESSION_REQUIRED_CODE = -32000;
@@ -39,6 +41,14 @@ enum ProtocolEra {
   Legacy = 'legacy',
   Modern = 'modern',
 }
+
+enum McpCredential {
+  OwnerKey = 'owner-key',
+  AccessToken = 'access-token',
+  ProjectKey = 'project-key',
+}
+
+type CredentialRequest = { request: Request; env: Env; secret: string; now: number };
 
 // NB ADR 0016: a 2025-era request is served statelessly, a modern one by a handler that rejects the 2025 era.
 const HANDLER_OPTIONS_OF_ERA: Record<ProtocolEra, CreateMcpHandlerOptions> = {
@@ -159,47 +169,79 @@ async function serveLegacy(legacyRequest: LegacyRequest): Promise<Response> {
   return serveScope({ request, scope: legacyScope({ legacyRequest, clientName }), era: ProtocolEra.Legacy });
 }
 
-async function serveOwnerKey({
+async function gateRefusalOf({
   request,
   env,
-  secret,
+  limiterKey,
+  ownerId,
+  isSuspended,
   now,
 }: {
   request: Request;
   env: Env;
-  secret: string;
+  limiterKey: string;
+  ownerId: string;
+  isSuspended: boolean;
   now: number;
-}): Promise<Response> {
-  const access = await openOwnerKey({ env, secret });
-  if (access === null) return unauthorized();
-  const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.MCP_LIMITER, key: access.owner.ownerId });
+}): Promise<Response | null> {
+  const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.MCP_LIMITER, key: limiterKey });
   if (isRateLimited) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
-  const isThrottledOwner = await isReadThrottled({ request, env, ownerId: access.owner.ownerId, now });
+  const isThrottledOwner = await isReadThrottled({ request, env, ownerId, now });
   if (isThrottledOwner) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
-  await stampOwnerSeen({ env, ownerId: access.owner.ownerId, now }).catch(logCrash);
-  if (access.owner.isSuspended) return suspendedRefusal();
+  await stampOwnerSeen({ env, ownerId, now }).catch(logCrash);
+  if (isSuspended) return suspendedRefusal();
   if (request.method !== MCP_METHOD) return methodNotAllowed();
-  const isLegacy = await isLegacyRequest(request);
-  const era = isLegacy ? ProtocolEra.Legacy : ProtocolEra.Modern;
-  const scope = { env, owner: access.owner, now, ...quotaFieldsOf({ env, ownerId: access.owner.ownerId, now }) };
-  return createMcpHandler(() => buildOwnerMcpServer(scope), HANDLER_OPTIONS_OF_ERA[era]).fetch(request);
+  return null;
 }
 
-export async function serveMcp({ request, env, now }: { request: Request; env: Env; now: number }): Promise<Response> {
-  const secret = bearerSecret(request);
-  if (secret === null) return unauthorized();
-  if (secret.startsWith(OWNER_KEY_PREFIX)) return serveOwnerKey({ request, env, secret, now });
+function rejectedCredential(env: Env): Response {
+  return unauthorized(mcpChallengeOf({ env, isCredentialSent: true }));
+}
+
+async function eraOf(request: Request): Promise<ProtocolEra> {
+  const isLegacy = await isLegacyRequest(request);
+  return isLegacy ? ProtocolEra.Legacy : ProtocolEra.Modern;
+}
+
+async function serveOwnerScope({
+  request,
+  env,
+  owner,
+  now,
+}: {
+  request: Request;
+  env: Env;
+  owner: SessionOwner;
+  now: number;
+}): Promise<Response> {
+  const scope = { env, owner, now, ...quotaFieldsOf({ env, ownerId: owner.ownerId, now }) };
+  return createMcpHandler(() => buildOwnerMcpServer(scope), HANDLER_OPTIONS_OF_ERA[await eraOf(request)]).fetch(request);
+}
+
+async function serveOwnerKey({ request, env, secret, now }: CredentialRequest): Promise<Response> {
+  const access = await openOwnerKey({ env, secret });
+  if (access === null) return rejectedCredential(env);
+  const { owner } = access;
+  const refusal = await gateRefusalOf({
+    request,
+    env,
+    limiterKey: owner.ownerId,
+    ownerId: owner.ownerId,
+    isSuspended: owner.isSuspended,
+    now,
+  });
+  if (refusal !== null) return refusal;
+  return serveOwnerScope({ request, env, owner, now });
+}
+
+async function serveProjectKey({ request, env, secret, now }: CredentialRequest): Promise<Response> {
   const sessionId = request.headers.get(SESSION_HEADER);
   const hasSession = sessionId !== null && sessionId.trim() !== '';
   const keyProject = await openKeyProject({ env, secret, mcpSession: hasSession ? { sessionId, now } : undefined });
-  if (keyProject === null) return unauthorized();
-  const isRateLimited = await isSignedInRateLimited({ request, env, limiter: env.MCP_LIMITER, key: keyProject.keyDigest });
-  if (isRateLimited) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
-  const isThrottledOwner = await isReadThrottled({ request, env, ownerId: keyProject.ownerId, now });
-  if (isThrottledOwner) return withRetryAfter(new Response(null, { status: HttpStatus.TooManyRequests }));
-  await stampOwnerSeen({ env, ownerId: keyProject.ownerId, now }).catch(logCrash);
-  if (keyProject.isSuspended) return suspendedRefusal();
-  if (request.method !== MCP_METHOD) return methodNotAllowed();
+  if (keyProject === null) return rejectedCredential(env);
+  const { keyDigest, ownerId, isSuspended } = keyProject;
+  const refusal = await gateRefusalOf({ request, env, limiterKey: keyDigest, ownerId, isSuspended, now });
+  if (refusal !== null) return refusal;
   const today = calendarDateInTimeZone({ timeZone: keyProject.timeZone, now });
   const isLegacy = await isLegacyRequest(request);
   if (isLegacy) return serveLegacy({ request, env, keyProject, today, now });
@@ -209,7 +251,67 @@ export async function serveMcp({ request, env, now }: { request: Request; env: E
     today,
     agentNudge: keyProject.agentNudge,
     clientNameOf: envelopeClientName,
-    ...quotaFieldsOf({ env, ownerId: keyProject.ownerId, now }),
+    ...quotaFieldsOf({ env, ownerId, now }),
   };
   return serveScope({ request, scope, era: ProtocolEra.Modern });
+}
+
+// NB ADR 0109: a grant's app is named by its registration in both eras, so an OAuth client keeps no MCP session rows.
+async function serveGrantProject({
+  request,
+  env,
+  keyProject,
+  clientName,
+  now,
+}: {
+  request: Request;
+  env: Env;
+  keyProject: KeyProject;
+  clientName: string;
+  now: number;
+}): Promise<Response> {
+  const scope = {
+    project: keyProject.project,
+    workspace: keyProject.workspace,
+    today: calendarDateInTimeZone({ timeZone: keyProject.timeZone, now }),
+    agentNudge: keyProject.agentNudge,
+    clientNameOf: () => clientName,
+    ...quotaFieldsOf({ env, ownerId: keyProject.ownerId, now }),
+  };
+  return serveScope({ request, scope, era: await eraOf(request) });
+}
+
+function grantGateOf(access: OAuthAccess): { limiterKey: string; ownerId: string; isSuspended: boolean } {
+  if (access.scope === OAuthScope.Owner) {
+    return { limiterKey: access.owner.ownerId, ownerId: access.owner.ownerId, isSuspended: access.owner.isSuspended };
+  }
+  return { limiterKey: access.grantId, ownerId: access.keyProject.ownerId, isSuspended: access.keyProject.isSuspended };
+}
+
+// NB ADR 0109: an OAuth access token is served exactly as the equivalent project key or owner key, never more.
+async function serveAccessToken({ request, env, secret, now }: CredentialRequest): Promise<Response> {
+  const access = await openOAuthAccess({ env, secret, now });
+  if (access === null) return rejectedCredential(env);
+  const refusal = await gateRefusalOf({ request, env, now, ...grantGateOf(access) });
+  if (refusal !== null) return refusal;
+  if (access.scope === OAuthScope.Owner) return serveOwnerScope({ request, env, owner: access.owner, now });
+  return serveGrantProject({ request, env, keyProject: access.keyProject, clientName: access.clientName, now });
+}
+
+const SERVE_OF_CREDENTIAL: Record<McpCredential, (credentialRequest: CredentialRequest) => Promise<Response>> = {
+  [McpCredential.OwnerKey]: serveOwnerKey,
+  [McpCredential.AccessToken]: serveAccessToken,
+  [McpCredential.ProjectKey]: serveProjectKey,
+};
+
+function credentialOf(secret: string): McpCredential {
+  if (secret.startsWith(OWNER_KEY_PREFIX)) return McpCredential.OwnerKey;
+  if (secret.startsWith(OAUTH_ACCESS_TOKEN_PREFIX)) return McpCredential.AccessToken;
+  return McpCredential.ProjectKey;
+}
+
+export async function serveMcp({ request, env, now }: { request: Request; env: Env; now: number }): Promise<Response> {
+  const secret = bearerSecret(request);
+  if (secret === null) return unauthorized(mcpChallengeOf({ env, isCredentialSent: false }));
+  return SERVE_OF_CREDENTIAL[credentialOf(secret)]({ request, env, secret, now });
 }

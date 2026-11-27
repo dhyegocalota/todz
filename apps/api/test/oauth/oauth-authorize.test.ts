@@ -12,6 +12,7 @@ import {
   clientMetadata,
   consentPage,
   decide,
+  decodedHtml,
   formRequest,
   hiddenFieldsOf,
   newBrowser,
@@ -66,7 +67,7 @@ describe('authorize refuses without redirecting until the client and its redirec
     expect(response.headers.get('Location')).toBeNull();
     expect(response.headers.get('Content-Type')).toContain('text/html');
     expect(response.headers.get('Content-Security-Policy')).toContain("frame-ancestors 'none'");
-    expect(await response.text()).toContain("This link can't be used to connect an app");
+    expect(decodedHtml(await response.text())).toContain("This link can't be used to connect an app");
   });
 
   test('a repeated client id renders an error page', async () => {

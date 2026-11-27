@@ -8,6 +8,7 @@ const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
 const CACHE_CONTROL = 'no-cache, no-transform';
 const CONNECT_SELF = "connect-src 'self'";
 const MANIFEST_SELF = "manifest-src 'self'";
+const FORM_ACTION_SELF = "form-action 'self'";
 
 export async function siteContentSecurityPolicy({
   style,
@@ -35,10 +36,15 @@ export async function siteContentSecurityPolicy({
     ...manifestDirectives,
     ...connectDirectives,
     ...widgetOrigins.map((origin) => `frame-src ${origin}`),
-    "form-action 'self'",
+    FORM_ACTION_SELF,
     "frame-ancestors 'none'",
     "base-uri 'none'",
   ].join('; ');
+}
+
+// NB ADR 0109: a form whose answer redirects to another origin needs that origin in form-action, or the browser blocks the redirect.
+export function withFormOrigin({ policy, origin }: { policy: string; origin: string }): string {
+  return policy.replace(FORM_ACTION_SELF, `${FORM_ACTION_SELF} ${origin}`);
 }
 
 export function sitePageResponse({ html, contentSecurityPolicy }: { html: string; contentSecurityPolicy: string }): Response {

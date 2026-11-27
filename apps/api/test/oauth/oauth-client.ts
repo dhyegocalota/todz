@@ -18,13 +18,14 @@ export const HTTPS_REDIRECT_URI = 'https://client.example.com/oauth/callback';
 export const CLIENT_NAME = 'Claude Code';
 export const CLIENT_STATE = 'state-from-the-client';
 export const TIME_ZONE = 'America/Sao_Paulo';
+const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
 
 const FORM_MEDIA_TYPE = 'application/x-www-form-urlencoded';
 const JSON_MEDIA_TYPE = 'application/json';
 const SAME_ORIGIN = 'same-origin';
 const FETCH_SITE_HEADER = 'Sec-Fetch-Site';
 const COOKIE_PAIR_SEPARATOR = '; ';
-const MAIL_LINK_PATTERN = /\/oauth\/sign-in#token=([A-Za-z0-9_-]{43})&request=([^\s"]+)/;
+const MAIL_LINK_PATTERN = /\/oauth\/sign-in#token=([A-Za-z0-9_-]{43})&request=([A-Za-z0-9%._~*'()!-]+)/;
 const HIDDEN_INPUT_PATTERN = /<input type="hidden" name="([a-z_]+)" value="([^"]*)">/g;
 const RADIO_PATTERN = /<input type="radio" name="choice" value="([^"]+)"/g;
 const TOKEN_GROUP = 1;
@@ -59,7 +60,7 @@ export type Browser = { cookies: Map<string, string> };
 export type Pkce = { verifier: string; challenge: string };
 
 export function oauthEnv(settings: Partial<Env> = {}): Env {
-  return workerEnvWith({ ...EMAIL_SETTINGS, ...settings });
+  return workerEnvWith({ ...EMAIL_SETTINGS, TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY, ...settings });
 }
 
 export async function serveOAuthRequest({

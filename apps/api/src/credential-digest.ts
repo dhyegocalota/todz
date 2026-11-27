@@ -15,6 +15,11 @@ export async function keyedDigest({ secret, text }: { secret: string; text: stri
   return hexadecimalOf(await crypto.subtle.sign(KEYED_DIGEST_ALGORITHM.name, key, encoder.encode(text)));
 }
 
+export async function isSameSignature({ secret, left, right }: { secret: string; left: string; right: string }): Promise<boolean> {
+  const [leftDigest, rightDigest] = await Promise.all([keyedDigest({ secret, text: left }), keyedDigest({ secret, text: right })]);
+  return leftDigest === rightDigest;
+}
+
 export async function digestCredential(secret: string): Promise<string> {
   const digest = await crypto.subtle.digest(DIGEST_ALGORITHM, new TextEncoder().encode(secret));
   return hexadecimalOf(digest);

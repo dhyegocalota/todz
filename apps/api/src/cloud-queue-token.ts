@@ -1,5 +1,5 @@
 import { CLOUD_QUEUE_LINK_LIFETIME_DAYS, MILLISECONDS_PER_DAY } from '@todz/types';
-import { keyedDigest } from './credential-digest';
+import { isSameSignature, keyedDigest } from './credential-digest';
 import { normalizedAddress } from './email-address';
 import type { Env } from './env';
 
@@ -29,11 +29,6 @@ function textOfHexadecimal(hexadecimal: string): string | null {
 
 function signedTextOf({ address, expiresAt }: { address: string; expiresAt: number }): string {
   return `${PURPOSE}:${address}:${expiresAt}`;
-}
-
-async function isSameSignature({ secret, left, right }: { secret: string; left: string; right: string }): Promise<boolean> {
-  const [leftDigest, rightDigest] = await Promise.all([keyedDigest({ secret, text: left }), keyedDigest({ secret, text: right })]);
-  return leftDigest === rightDigest;
 }
 
 export function queueSecretOf(env: Env): string | null {

@@ -9,6 +9,9 @@ import { HttpStatus } from './http-status';
 import { serveMcp } from './mcp-endpoint';
 import { serveServerCard } from './mcp-server-card';
 import { serveOwner } from './owner-endpoint';
+import { isOAuthPath, serveOAuth } from './oauth/oauth-endpoint';
+import { serveOAuthMetadata } from './oauth/oauth-metadata';
+import { MCP_PATH, OAuthMetadataPath } from './oauth/oauth-paths';
 import { noRouteResponse } from './owner-errors';
 import { runScheduled } from './scheduled';
 import { withSecurityHeaders } from './security-headers';
@@ -23,7 +26,6 @@ import { USAGE_PATH, serveUsageRollup } from './telemetry/usage-rollup';
 
 export { ProjectStore } from './project-store';
 
-const MCP_PATH = '/mcp';
 const OWNER_PATH = '/owner';
 
 type Route = ({ request, env }: { request: Request; env: Env }) => Promise<Response>;
@@ -38,6 +40,12 @@ const ROUTE_OF_PATH: Record<string, Route> = {
   [SIGN_IN_PAGE_PATH]: ({ request, env }) => serveSignInPage({ request, env }),
   [SIGN_IN_CHALLENGE_PAGE_PATH]: ({ request, env }) => serveSignInChallengePage({ request, env }),
   [USAGE_PATH]: ({ request, env }) => serveUsageRollup({ request, env }),
+  ...Object.fromEntries(
+    Object.values(OAuthMetadataPath).map((path): [string, Route] => [
+      path,
+      async ({ request, env }) => serveOAuthMetadata({ request, env }),
+    ]),
+  ),
 };
 
 function isOwnerPath(pathname: string): boolean {
@@ -49,6 +57,7 @@ async function serveApi({ request, env, executionContext }: HostContext): Promis
   if (isOwnerPath(pathname)) {
     return serveTimed({ env, serve: (observedEnv) => serveOwner({ request, env: observedEnv, now: Date.now(), executionContext }) });
   }
+  if (isOAuthPath(pathname)) return serveOAuth({ request, env, now: Date.now(), executionContext });
   const route = ROUTE_OF_PATH[pathname];
   if (route === undefined) return noRouteResponse();
   return route({ request, env });

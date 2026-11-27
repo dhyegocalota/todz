@@ -12,6 +12,6 @@ export function bearerSecret(request: Request): string | null {
   return secret;
 }
 
-export function unauthorized(): Response {
-  return new Response(null, { status: HttpStatus.Unauthorized, headers: { 'WWW-Authenticate': BEARER_CHALLENGE } });
+export function unauthorized(challenge = BEARER_CHALLENGE): Response {
+  return new Response(null, { status: HttpStatus.Unauthorized, headers: { 'WWW-Authenticate': challenge } });
 }

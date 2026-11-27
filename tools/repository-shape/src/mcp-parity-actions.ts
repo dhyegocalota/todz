@@ -61,6 +61,13 @@ export const APP_ACTIONS: AppAction[] = [
   withoutTool({ action: 'List the owner keys', ownerRoute: 'list_owner_keys', scope: ParityScope.NotOverMcp, reason: CREDENTIAL_REASON }),
   withoutTool({ action: 'Issue an owner key', ownerRoute: 'issue_owner_key', scope: ParityScope.NotOverMcp, reason: CREDENTIAL_REASON }),
   withoutTool({ action: 'Revoke an owner key', ownerRoute: 'revoke_owner_key', scope: ParityScope.NotOverMcp, reason: CREDENTIAL_REASON }),
+  withoutTool({
+    action: 'List the connected apps',
+    ownerRoute: 'list_connected_apps',
+    scope: ParityScope.NotOverMcp,
+    reason: CREDENTIAL_REASON,
+  }),
+  withoutTool({ action: 'Disconnect an app', ownerRoute: 'disconnect_app', scope: ParityScope.NotOverMcp, reason: CREDENTIAL_REASON }),
   withoutTool({ action: 'Sign in', ownerRoute: 'sign_in', scope: ParityScope.NotOverMcp, reason: IDENTITY_REASON }),
   withoutTool({
     action: 'Read the sign-in method',

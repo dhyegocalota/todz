@@ -5,6 +5,7 @@ export enum RouteParam {
   ProjectId = 'projectId',
   Number = 'number',
   KeyId = 'keyId',
+  ConnectedAppId = 'connectedAppId',
 }
 
 export enum OwnerRoute {
@@ -34,11 +35,14 @@ export enum OwnerRoute {
   ListOwnerKeys = 'list_owner_keys',
   IssueOwnerKey = 'issue_owner_key',
   RevokeOwnerKey = 'revoke_owner_key',
+  ListConnectedApps = 'list_connected_apps',
+  DisconnectApp = 'disconnect_app',
 }
 
 const TASK_NUMBER_PATTERN = '[1-9][0-9]{0,8}';
 const WORKSPACE_PATH = `/owner/workspaces/:${RouteParam.WorkspaceId}`;
 const OWNER_KEYS_PATH = '/owner/keys';
+const CONNECTED_APPS_PATH = '/owner/connected-apps';
 const PROJECT_PATH = `/owner/projects/:${RouteParam.ProjectId}`;
 const TASK_PATH = `${PROJECT_PATH}/tasks/:${RouteParam.Number}(${TASK_NUMBER_PATTERN})`;
 
@@ -77,6 +81,8 @@ export const OWNER_ROUTES: Record<OwnerRoute, OwnerRouteDefinition> = {
   [OwnerRoute.ListOwnerKeys]: definition({ method: HttpMethod.Get, pathname: OWNER_KEYS_PATH }),
   [OwnerRoute.IssueOwnerKey]: definition({ method: HttpMethod.Post, pathname: OWNER_KEYS_PATH }),
   [OwnerRoute.RevokeOwnerKey]: definition({ method: HttpMethod.Delete, pathname: `${OWNER_KEYS_PATH}/:${RouteParam.KeyId}` }),
+  [OwnerRoute.ListConnectedApps]: definition({ method: HttpMethod.Get, pathname: CONNECTED_APPS_PATH }),
+  [OwnerRoute.DisconnectApp]: definition({ method: HttpMethod.Delete, pathname: `${CONNECTED_APPS_PATH}/:${RouteParam.ConnectedAppId}` }),
 };
 
 function namedParams(groups: Record<string, string | undefined>): Record<string, string> {

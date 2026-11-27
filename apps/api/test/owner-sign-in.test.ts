@@ -594,7 +594,11 @@ describe('owner sessions', () => {
     await expectUnauthorized(await readOwner(key));
     const { token } = await signInOwner();
     const mcp = await exports.default.fetch(`${PUBLIC_ORIGIN}/mcp`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-    await expectUnauthorized(mcp);
+    expect(mcp.status).toBe(UNAUTHORIZED_STATUS);
+    expect(mcp.headers.get('WWW-Authenticate')).toBe(
+      `Bearer error="invalid_token", resource_metadata="${PUBLIC_ORIGIN}/.well-known/oauth-protected-resource/mcp"`,
+    );
+    expect(await mcp.text()).toBe('');
   });
 });
 

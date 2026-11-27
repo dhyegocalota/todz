@@ -2,6 +2,7 @@ import { runCloudCapacity } from './cloud-capacity-run';
 import { runDayEmails } from './day-email/day-email-run';
 import type { Env } from './env';
 import { enumValueOf } from './enum-value';
+import { runOAuthCleanup } from './oauth/oauth-cleanup';
 import { runMetricsNightly } from './telemetry/metrics-nightly';
 
 // NB ADR 0063: wrangler.jsonc's triggers must name each cron: the day email every quarter hour.
@@ -13,7 +14,7 @@ export enum ScheduledCron {
 type ScheduledRun = { scheduledTime: number; env: Env };
 
 async function runNightly(run: ScheduledRun): Promise<void> {
-  const outcomes = await Promise.allSettled([runMetricsNightly(run), runCloudCapacity(run)]);
+  const outcomes = await Promise.allSettled([runMetricsNightly(run), runCloudCapacity(run), runOAuthCleanup(run)]);
   const failure = outcomes.find((outcome) => outcome.status === 'rejected');
   if (failure !== undefined) throw failure.reason;
 }

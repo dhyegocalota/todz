@@ -4,12 +4,15 @@ const HEXADECIMAL_RADIX = 16;
 const HEXADECIMAL_BYTE_WIDTH = 2;
 const BASE64_PADDING_PATTERN = /=+$/;
 
-export function generateCredentialSecret(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(SECRET_BYTE_LENGTH));
+export function base64UrlOf(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes))
     .replace(BASE64_PADDING_PATTERN, '')
     .replaceAll('+', '-')
     .replaceAll('/', '_');
+}
+
+export function generateCredentialSecret(): string {
+  return base64UrlOf(crypto.getRandomValues(new Uint8Array(SECRET_BYTE_LENGTH)));
 }
 
 function generateHexadecimalSecret(byteLength: number): string {

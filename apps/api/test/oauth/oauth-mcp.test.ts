@@ -2,7 +2,7 @@ import { JSONRPC_VERSION } from '@modelcontextprotocol/server';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { deleteOwnerProject, deleteOwnerWorkspace } from '../../src/directory-workspaces';
-import { McpOwnerToolName, McpToolName } from '../../src/mcp-copy';
+import { MCP_COPY, McpOwnerToolName, McpToolName } from '../../src/mcp-copy';
 import { seedProject, seedSiblingProject } from '../directory-seed';
 import { ClientEra, callTool, connectClient } from '../mcp-client';
 import { ownerCall } from '../owner-client';
@@ -61,7 +61,7 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with a project-
     const client = await connectClient({ era, key: tokens.access_token, clientName: ENVELOPE_NAME });
 
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'Ship OAuth' }] } });
-    const history = await callTool({ client, name: McpToolName.History, args: { task: 'T-1' } });
+    const history = await callTool({ client, name: McpToolName.History, args: { id: 'T-1' } });
 
     expect(history.text).toContain(REGISTERED_NAME);
     expect(history.text).not.toContain(ENVELOPE_NAME);
@@ -76,11 +76,12 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with a project-
     const client = await connectClient({ era, key: tokens.access_token, clientName: ENVELOPE_NAME });
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'Stay here' }] } });
 
-    const toOtherWorkspace = await callTool({ client, name: McpToolName.Move, args: { task: 'T-1', project: otherWorkspaceProjectId } });
-    const toStranger = await callTool({ client, name: McpToolName.Move, args: { task: 'T-1', project: stranger.projectId } });
+    const toOtherWorkspace = await callTool({ client, name: McpToolName.Move, args: { id: 'T-1', project: otherWorkspaceProjectId } });
+    const toStranger = await callTool({ client, name: McpToolName.Move, args: { id: 'T-1', project: stranger.projectId } });
 
-    expect(toOtherWorkspace.isError).toBe(true);
-    expect(toStranger.isError).toBe(true);
+    expect(toOtherWorkspace).toEqual({ text: MCP_COPY.projectNotInWorkspace, isError: true });
+    expect(toStranger).toEqual({ text: MCP_COPY.projectNotInWorkspace, isError: true });
+    expect((await callTool({ client, name: McpToolName.List, args: {} })).text).toContain('Stay here');
   });
 
   test('reaches the sibling projects of its workspace, as a project key does', async () => {
