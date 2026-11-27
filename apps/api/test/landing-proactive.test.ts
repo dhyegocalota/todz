@@ -4,9 +4,11 @@ import { DAY_EMAIL_COPY } from '../scripts/emails/day-email-copy';
 import { escapedHtml } from '../src/escaped-html';
 import { EmailSlot } from '../src/emails/email-slot';
 import { MCP_COPY } from '../src/mcp-copy';
-import { LANDING_COPY, LANDING_DAY_LINES, LANDING_LOCK_LINE } from '../src/site/landing-copy';
+import { LANDING_COPY } from '../src/site/landing-copy';
+import { LANDING_DAY_LINES, LANDING_LOCK_LINE } from '../src/site/landing-lines';
 import { LANDING_MARKDOWN_FILE } from '../src/site/landing-markdown';
 import { serveLandingPage } from '../src/site/landing-page';
+import { ENGLISH_PREFERENCES } from './english-preferences';
 import { DISCOVERY_FILES } from '../src/site/site-discovery';
 import { DiscoveryPath } from '../src/site/site-urls';
 import { SITE_STYLE } from '../src/site/site-style';
@@ -47,7 +49,7 @@ const PROACTIVE_FACTS = [
 ];
 
 async function landingHtml(): Promise<string> {
-  return serveLandingPage({ stars: null }).text();
+  return serveLandingPage({ stars: null, preferences: ENGLISH_PREFERENCES }).text();
 }
 
 function dayCardOf(html: string): string {

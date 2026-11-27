@@ -37,6 +37,10 @@ const KEYBOARD_ORDER = [
   '.site-header .brand',
   HEADER_GUIDE_LINK,
   HEADER_INSTALL_LINK,
+  '.language-summary',
+  '.theme-option[value=system]',
+  '.theme-option[value=light]',
+  '.theme-option[value=dark]',
   '.hero-free-link',
   '.hero .download-button',
 ];
@@ -245,7 +249,7 @@ test.describe('reduced motion', () => {
 test.describe('the join path is gone', () => {
   test('the landing has no form and the join path answers 404 to a post and to a get', async ({ page, request }) => {
     await page.goto(SitePath.Landing);
-    await expect(page.locator('form')).toHaveCount(0);
+    await expect(page.locator('form:not(.language-form):not(.theme-form)')).toHaveCount(0);
     const posted = await request.post(SitePath.Join, { form: { email: 'maria@example.com' } });
     expect(posted.status()).toBe(NOT_FOUND_STATUS);
     const fetched = await request.get(SitePath.Join);

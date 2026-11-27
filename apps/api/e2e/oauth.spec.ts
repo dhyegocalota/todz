@@ -226,7 +226,7 @@ async function connect({
 
 function consentFieldsOf(page: Page): Promise<ConsentField[]> {
   return page
-    .locator('form')
+    .locator('form.consent-form')
     .evaluate((form: HTMLFormElement) => [...new FormData(form)].map(([name, value]): [string, string] => [name, String(value)]));
 }
 

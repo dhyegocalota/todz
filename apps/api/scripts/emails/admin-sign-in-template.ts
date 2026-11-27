@@ -1,28 +1,27 @@
+import type { Language } from '@todz/types';
 import { Button, Heading, Link, Section, Text } from 'react-email';
 import { createElement, type ReactElement } from 'react';
 import { EmailSlot } from '../../src/emails/email-slot';
 import type { GeneratedEmail } from '../../src/emails/generated-email';
-import { ADMIN_SIGN_IN_EMAIL_COPY } from './admin-sign-in-email-copy';
+import type { AdminSignInEmailCopy } from './admin-sign-in-email-copy';
 import { EmailLayout } from './email-layout';
 import { ACTION_STYLE, BUTTON_STYLE, EmailClassName, HEADING_STYLE, LINK_STYLE, MUTED_STYLE, PARAGRAPH_STYLE } from './email-style';
 import { renderEmail } from './render-email';
 
-export function AdminSignInTemplate(): ReactElement {
+type AdminSignInTemplateInput = { copy: AdminSignInEmailCopy; language: Language };
+
+export function AdminSignInTemplate({ copy, language }: AdminSignInTemplateInput): ReactElement {
   return createElement(
     EmailLayout,
-    { title: ADMIN_SIGN_IN_EMAIL_COPY.subject, preview: ADMIN_SIGN_IN_EMAIL_COPY.preview, footer: ADMIN_SIGN_IN_EMAIL_COPY.footer },
-    createElement(Heading, { as: 'h1', className: EmailClassName.Text, style: HEADING_STYLE }, ADMIN_SIGN_IN_EMAIL_COPY.heading),
-    createElement(Text, { className: EmailClassName.Text, style: PARAGRAPH_STYLE }, ADMIN_SIGN_IN_EMAIL_COPY.intro),
+    { language, title: copy.subject, preview: copy.preview, footer: copy.footer },
+    createElement(Heading, { as: 'h1', className: EmailClassName.Text, style: HEADING_STYLE }, copy.heading),
+    createElement(Text, { className: EmailClassName.Text, style: PARAGRAPH_STYLE }, copy.intro),
     createElement(
       Section,
       { style: ACTION_STYLE },
-      createElement(
-        Button,
-        { href: EmailSlot.Link, className: EmailClassName.Button, style: BUTTON_STYLE },
-        ADMIN_SIGN_IN_EMAIL_COPY.action,
-      ),
+      createElement(Button, { href: EmailSlot.Link, className: EmailClassName.Button, style: BUTTON_STYLE }, copy.action),
     ),
-    createElement(Text, { className: EmailClassName.Muted, style: MUTED_STYLE }, ADMIN_SIGN_IN_EMAIL_COPY.fallback),
+    createElement(Text, { className: EmailClassName.Muted, style: MUTED_STYLE }, copy.fallback),
     createElement(
       Text,
       { style: MUTED_STYLE },
@@ -31,7 +30,7 @@ export function AdminSignInTemplate(): ReactElement {
   );
 }
 
-export async function generatedAdminSignInEmail(): Promise<GeneratedEmail> {
-  const rendered = await renderEmail({ element: createElement(AdminSignInTemplate) });
-  return { subject: ADMIN_SIGN_IN_EMAIL_COPY.subject, ...rendered };
+export async function generatedAdminSignInEmail({ copy, language }: AdminSignInTemplateInput): Promise<GeneratedEmail> {
+  const rendered = await renderEmail({ element: createElement(AdminSignInTemplate, { copy, language }) });
+  return { subject: copy.subject, ...rendered };
 }

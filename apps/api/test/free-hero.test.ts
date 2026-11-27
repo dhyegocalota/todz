@@ -1,6 +1,8 @@
+import { Language } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { serveLandingPage } from '../src/site/landing-page';
+import { ENGLISH_PREFERENCES } from './english-preferences';
 import { SITE_STYLE } from '../src/site/site-style';
 import { starPillHtml } from '../src/site/star-pill';
 import { DOCS_INSTALL_URL } from '../src/site/site-urls';
@@ -18,7 +20,7 @@ const REDUCED_MOTION_MEDIA = '@media (prefers-reduced-motion: reduce){';
 const STAR_STATES = [null, 0, 42, 1234];
 
 async function landingHtml(stars: number | null = 1234): Promise<string> {
-  return serveLandingPage({ stars }).text();
+  return serveLandingPage({ stars, preferences: ENGLISH_PREFERENCES }).text();
 }
 
 function heroOf(html: string): string {
@@ -147,7 +149,7 @@ describe('the final panel', () => {
 
   test.each(STAR_STATES)('the self-host card carries the star pill for %s stars', async (stars) => {
     const selfHost = selfHostCardOf(waysOf(await landingHtml(stars)));
-    expect(selfHost).toContain(starPillHtml(stars));
+    expect(selfHost).toContain(starPillHtml({ stars, language: Language.English }));
   });
 
   test('the styles give the panel its two columns from the wide breakpoint, and no two equal columns', () => {

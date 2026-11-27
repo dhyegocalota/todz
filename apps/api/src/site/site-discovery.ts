@@ -1,15 +1,18 @@
+import { LANGUAGE_PROFILES, Language } from '@todz/types';
 import { MCP_COPY, McpToolName } from '../mcp-copy';
+import { publicPathOf } from './language-paths';
 import { SERVER_CARD_FILE, SERVER_CARD_MEDIA_TYPE } from '../mcp-server-card';
 import { AgentClient, agentSetupOf } from './agent-setup';
 import { DISCOVERY_COPY, DOCS_PAGES, TOOL_PARAMETERS } from './discovery-copy';
 import { type DiscoveryFile, NO_HEADERS, OPEN_READ_HEADERS } from './discovery-response';
-import { LANDING_COPY, LANDING_DAY_LINES, LANDING_LOCK_LINE } from './landing-copy';
+import { LANDING_COPY } from './landing-copy';
+import { LANDING_DAY_LINES, LANDING_LOCK_LINE } from './landing-lines';
 import { LANDING_MARKDOWN_FILE } from './landing-markdown';
 import { fenced, linesOf } from './markdown-lines';
 import { DOCS_SELF_HOST_URL } from './self-host-redirect';
 import { DARK_THEME_COLOR } from './site-constants';
 import { SITE_ICONS, SiteIcon } from './site-icons';
-import { DOCS_MCP_URL, DOCS_URL, DiscoveryPath, MCP_URL, SERVER_CARD_PATH, SITE_URL } from './site-urls';
+import { DOCS_MCP_URL, DOCS_URL, DiscoveryPath, LANDING_PATH, MCP_URL, SERVER_CARD_PATH, SITE_URL } from './site-urls';
 
 const PLAIN_TYPE = 'text/plain';
 const HTML_TYPE = 'text/html';
@@ -19,6 +22,7 @@ const XML_TYPE = 'application/xml; charset=utf-8';
 const MANIFEST_TYPE = 'application/manifest+json';
 const SITEMAP_NAMESPACE = 'http://www.sitemaps.org/schemas/sitemap/0.9';
 const JSON_TYPE = 'application/json';
+const XHTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
 const CATALOG_IDENTIFIER = 'urn:air:todz.app:mcp:todz';
 const MANIFEST_ICONS = [SiteIcon.Icon192, SiteIcon.Icon512, SiteIcon.Maskable192, SiteIcon.Maskable512];
 const CRAWLERS = [
@@ -50,10 +54,24 @@ const ROBOTS_TEXT = linesOf([
   `Sitemap: ${DOCS_URL}${DiscoveryPath.Sitemap}`,
 ]);
 
+const SITEMAP_ALTERNATES = [
+  ...Object.values(Language).map((language) => ({
+    hreflang: LANGUAGE_PROFILES[language].htmlLang,
+    href: `${SITE_URL}${publicPathOf({ language, path: LANDING_PATH })}`,
+  })),
+  { hreflang: 'x-default', href: `${SITE_URL}${publicPathOf({ language: Language.English, path: LANDING_PATH })}` },
+];
+
+const SITEMAP_ALTERNATE_LINKS = SITEMAP_ALTERNATES.map(
+  ({ hreflang, href }) => `<xhtml:link rel="alternate" hreflang="${hreflang}" href="${href}"/>`,
+).join('');
+
 const SITEMAP_XML = linesOf([
   '<?xml version="1.0" encoding="UTF-8"?>',
-  `<urlset xmlns="${SITEMAP_NAMESPACE}">`,
-  `<url><loc>${SITE_URL}/</loc></url>`,
+  `<urlset xmlns="${SITEMAP_NAMESPACE}" xmlns:xhtml="${XHTML_NAMESPACE}">`,
+  ...Object.values(Language).map(
+    (language) => `<url><loc>${SITE_URL}${publicPathOf({ language, path: LANDING_PATH })}</loc>${SITEMAP_ALTERNATE_LINKS}</url>`,
+  ),
   '</urlset>',
 ]);
 

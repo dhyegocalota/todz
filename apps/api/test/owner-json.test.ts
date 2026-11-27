@@ -1,5 +1,5 @@
 import { type Actor, OWNER_ACTOR, type Task, agentActor, parseCalendarDate } from '@todz/core';
-import { ActorKind, HistoryAction, TaskField, TaskState } from '@todz/types';
+import { ActorKind, HistoryAction, Language, TaskField, TaskState } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { actorJson, historyEntryJson, ownerJson, projectJson, taskJson, workspaceJson } from '../src/owner-json';
 import { CLOCK_NOW } from './task-fixtures';
@@ -27,7 +27,14 @@ function openTask(overrides: Partial<Task> = {}): Task {
 
 describe('ownerJson', () => {
   test('names the id, the time zone, the agent nudge and the day email in snake case', () => {
-    const owner = { id: 'owner-1', timeZone: 'America/Sao_Paulo', agentNudge: true, dayEmail: true, dayEmailMinutes: 450 };
+    const owner = {
+      id: 'owner-1',
+      timeZone: 'America/Sao_Paulo',
+      agentNudge: true,
+      dayEmail: true,
+      dayEmailMinutes: 450,
+      language: Language.Japanese,
+    };
     expect(ownerJson(owner)).toEqual({
       id: 'owner-1',
       time_zone: 'America/Sao_Paulo',

@@ -1,7 +1,8 @@
 import { AppLinkScheme } from './app-link-scheme';
 import type { Env } from './env';
-import { SIGN_IN_PAGE_COPY } from './sign-in-page-copy';
+import { SIGN_IN_PAGE_COPY_BY_LANGUAGE } from './sign-in-page-copy';
 import { SIGN_IN_PAGE_ICON } from './sign-in-page-icon';
+import { PAGE_THEME_STYLE, type PageAppearance, colorSchemeMetaOf, htmlTagOf } from './standalone-page';
 import { TURNSTILE_TOKEN_PATTERN_SOURCE, TurnstileAction } from './turnstile';
 import { TURNSTILE_EXPLICIT_SCRIPT_URL, type TurnstilePage, serveTurnstilePage, turnstilePagePolicy } from './turnstile-page';
 
@@ -64,6 +65,7 @@ const PAGE_SCRIPT = `{
 }`;
 
 const PAGE_STYLE = `:root{color-scheme:light dark}
+${PAGE_THEME_STYLE}
 body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font:1rem system-ui;background:Canvas;color:CanvasText}
 main{box-sizing:border-box;max-width:332px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
 h1{margin:0;font-size:22px;font-weight:700}
@@ -74,13 +76,14 @@ button{font:inherit;padding:8px 16px;border:0;border-radius:8px;background:Accen
 body[data-state=${CHECKING_STATE}] .${CHECKING_STATE},body[data-state=${FAILED_STATE}] .${FAILED_STATE},body[data-state=${READY_STATE}] .${READY_STATE}{display:block}
 body[data-state] .missing{display:none}`;
 
-function pageHtml(main: string): string {
+function pageHtml({ main, appearance }: { main: string; appearance: PageAppearance }): string {
   return `<!doctype html>
-<html lang="en">
+${htmlTagOf(appearance)}
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${SIGN_IN_PAGE_COPY.title}</title>
+${colorSchemeMetaOf(appearance.theme)}
+<title>${SIGN_IN_PAGE_COPY_BY_LANGUAGE[appearance.language].title}</title>
 <style>${PAGE_STYLE}</style>
 </head>
 <body>
@@ -90,28 +93,36 @@ ${main}
 `;
 }
 
-function availableHtml(siteKey: string): string {
-  return pageHtml(`<main>
+function availableHtml({ siteKey, ...appearance }: PageAppearance & { siteKey: string }): string {
+  const copy = SIGN_IN_PAGE_COPY_BY_LANGUAGE[appearance.language];
+  const main = `<main>
 ${SIGN_IN_PAGE_ICON}
-<h1>${SIGN_IN_PAGE_COPY.title}</h1>
-<p class="missing">${SIGN_IN_PAGE_COPY.missingToken}</p>
-<p class="${CHECKING_STATE}">${SIGN_IN_PAGE_COPY.checking}</p>
+<h1>${copy.title}</h1>
+<p class="missing">${copy.missingToken}</p>
+<p class="${CHECKING_STATE}">${copy.checking}</p>
 <div id="${CHECK_ID}" class="${CHECKING_STATE}" data-sitekey="${siteKey}"></div>
-<p class="${FAILED_STATE}">${SIGN_IN_PAGE_COPY.checkFailed}</p>
-<p class="${READY_STATE}">${SIGN_IN_PAGE_COPY.opening}</p>
-<button id="${OPEN_BUTTON_ID}" class="${READY_STATE}" type="button">${SIGN_IN_PAGE_COPY.openButton}</button>
-<p class="${READY_STATE} footnote">${SIGN_IN_PAGE_COPY.notOpened}</p>
+<p class="${FAILED_STATE}">${copy.checkFailed}</p>
+<p class="${READY_STATE}">${copy.opening}</p>
+<button id="${OPEN_BUTTON_ID}" class="${READY_STATE}" type="button">${copy.openButton}</button>
+<p class="${READY_STATE} footnote">${copy.notOpened}</p>
 </main>
-<script>${PAGE_SCRIPT}</script>`);
+<script>${PAGE_SCRIPT}</script>`;
+  return pageHtml({ main, appearance });
+}
+
+function unavailableHtml(appearance: PageAppearance): string {
+  const copy = SIGN_IN_PAGE_COPY_BY_LANGUAGE[appearance.language];
+  const main = `<main>
+${SIGN_IN_PAGE_ICON}
+<h1>${copy.title}</h1>
+<p>${copy.unavailable}</p>
+</main>`;
+  return pageHtml({ main, appearance });
 }
 
 const SIGN_IN_PAGE: TurnstilePage = {
   available: availableHtml,
-  unavailable: pageHtml(`<main>
-${SIGN_IN_PAGE_ICON}
-<h1>${SIGN_IN_PAGE_COPY.title}</h1>
-<p>${SIGN_IN_PAGE_COPY.unavailable}</p>
-</main>`),
+  unavailable: unavailableHtml,
   contentSecurityPolicy: await turnstilePagePolicy({ script: PAGE_SCRIPT, style: PAGE_STYLE }),
 };
 

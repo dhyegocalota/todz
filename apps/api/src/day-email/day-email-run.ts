@@ -1,4 +1,4 @@
-import { DAY_EMAIL_PROJECTS_PER_OWNER_MAX, DAY_EMAIL_SENDS_PER_TICK_MAX } from '@todz/types';
+import { DAY_EMAIL_PROJECTS_PER_OWNER_MAX, DAY_EMAIL_SENDS_PER_TICK_MAX, type Language } from '@todz/types';
 import { type EmailSender, emailSenderForOrigin } from '../email-sender';
 import { dayMail } from '../emails/day-mail';
 import type { Env } from '../env';
@@ -24,7 +24,7 @@ enum OwnerOutcome {
 
 type DayEmailRun = { scheduledTime: number; env: Env };
 
-type DueOwner = { candidate: DayEmailCandidate; day: string };
+type DueOwner = { candidate: DayEmailCandidate; day: string; language: Language };
 
 type OwnerMail = DayEmailRun & { dueOwner: DueOwner; sender: EmailSender; publicOrigin: string };
 
@@ -73,6 +73,7 @@ async function deliverDay({ scheduledTime, env, dueOwner, sender, publicOrigin }
           workspaceName: inboxWorkspace.name,
           hasSeveralWorkspaces: workspaces.length > 1,
           minutes: candidate.minutes,
+          language: dueOwner.language,
         }),
       );
     },
@@ -156,7 +157,10 @@ export async function runDayEmails({ scheduledTime, env }: DayEmailRun): Promise
   const dueOwners = candidates.flatMap((candidate) => {
     const day = dueDayOf({ timeZone: candidate.timeZone, minutes: candidate.minutes, now: scheduledTime });
     if (day === null) return [];
-    return [{ candidate, day }];
+    const { language } = candidate;
+    if (language !== null) return [{ candidate, day, language }];
+    logDayEmailEvent({ event: DayEmailEvent.LanguageUnsupported, ownerId: candidate.owner.ownerId });
+    return [];
   });
   const outcomes = await mailDueOwners({
     dueOwners,

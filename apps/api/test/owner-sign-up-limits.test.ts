@@ -1,4 +1,4 @@
-import { SIGN_UPS_PER_CLIENT_DAY_MAX } from '@todz/types';
+import { Language, SIGN_UPS_PER_CLIENT_DAY_MAX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
@@ -62,6 +62,7 @@ describe('the daily sign-up cap per client', () => {
       provider: SignInProviderKind.Email,
       subject: knownSubject,
       timeZone: 'UTC',
+      language: Language.English,
       now: NOW,
       cap: null,
     });

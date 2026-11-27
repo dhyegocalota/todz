@@ -29,20 +29,22 @@ export function adminPageAnswerOf({ page, status, cookies }: AdminAnswerParts & 
 }
 
 export async function adminCardAnswerOf({
+  request,
   notice,
   siteKey,
   cookies,
 }: {
+  request: Request;
   notice: AdminNotice;
   siteKey: string | null;
   cookies?: string[];
 }): Promise<Response> {
-  const page = await serveAdminSignInPage({ notice, siteKey });
+  const page = await serveAdminSignInPage({ request, notice, siteKey });
   return adminPageAnswerOf({ page, status: STATUS_OF_NOTICE[notice], cookies });
 }
 
-export function adminClosedAnswerOf({ env, cookies }: { env: Env; cookies?: string[] }): Promise<Response> {
-  return adminCardAnswerOf({ notice: AdminNotice.Closed, siteKey: siteKeyOf(env), cookies });
+export function adminClosedAnswerOf({ request, env, cookies }: { request: Request; env: Env; cookies?: string[] }): Promise<Response> {
+  return adminCardAnswerOf({ request, notice: AdminNotice.Closed, siteKey: siteKeyOf(env), cookies });
 }
 
 export function adminJsonAnswerOf({ status, cookies }: AdminAnswerParts): Response {

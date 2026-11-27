@@ -167,7 +167,7 @@ test.describe('the landing with a released version', () => {
       await expect(page.locator(DOWNLOAD_NOTE)).toContainText(LANDING_COPY.download.note);
       await expect(page.locator(`${DOWNLOAD_NOTE} a`)).toHaveAttribute('href', INSTALL_STEPS_URL);
       await expect(page.locator('.hero .eyebrow-pill')).toHaveText(LANDING_COPY.hero.eyebrow);
-      await expect(page.locator('form')).toHaveCount(0);
+      await expect(page.locator('form:not(.language-form):not(.theme-form)')).toHaveCount(0);
       const hasSidewaysScroll = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
       expect(hasSidewaysScroll).toBe(false);
     });

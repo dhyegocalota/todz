@@ -90,7 +90,7 @@ describe('the markdown landing', () => {
     const response = await siteGet({ path: '/' });
     expect(response.headers.get('Content-Type')).toBe('text/html; charset=utf-8');
     expect(response.headers.get('Link')).toBe(MARKDOWN_ALTERNATE_LINK);
-    expect(response.headers.get('Vary')).toBe('Accept');
+    expect(response.headers.get('Vary')).toBe('Accept, Cookie, Accept-Language');
   });
 
   test('the landing answers markdown to Accept: text/markdown, the same body as /index.md', async () => {

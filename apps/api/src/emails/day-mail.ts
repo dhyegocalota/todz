@@ -1,7 +1,7 @@
-import { DAY_EMAIL_LINES_MAX, MINUTES_PER_HOUR, TASK_SHORT_ID_PREFIX } from '@todz/types';
+import { DAY_EMAIL_LINES_MAX, type Language, MINUTES_PER_HOUR, TASK_SHORT_ID_PREFIX } from '@todz/types';
 import { stopUrlOf } from '../day-email/day-email-stop-url';
 import type { EmailMessage } from '../email-sender';
-import { DAY_MAIL_COPY } from './day-mail-copy';
+import { DAY_MAIL_COPY_BY_LANGUAGE, type DayMailCopy } from './day-mail-copy';
 import { EmailSlot, type EmailSlotValues, filledTextOf } from './email-slot';
 import { filledEmailOf } from './filled-email';
 import type { GeneratedEmail } from './generated-email';
@@ -19,6 +19,7 @@ type DayMailInput = {
   workspaceName: string;
   hasSeveralWorkspaces: boolean;
   minutes: number;
+  language: Language;
 };
 
 enum MailHeader {
@@ -43,24 +44,27 @@ function timeOf(minutes: number): string {
   return parts.map((part) => String(part).padStart(TIME_PART_LENGTH, TIME_PART_FILL)).join(TIME_SEPARATOR);
 }
 
-function lineOf({ task, hasSeveralWorkspaces }: { task: DayMailTask; hasSeveralWorkspaces: boolean }): string {
+function lineOf({ task, hasSeveralWorkspaces, copy }: { task: DayMailTask; hasSeveralWorkspaces: boolean; copy: DayMailCopy }): string {
   const projectNames = hasSeveralWorkspaces ? [task.workspaceName, task.projectName] : [task.projectName];
-  const overdueMark = task.isOverdue ? DAY_MAIL_COPY.overdue : NO_OVERDUE_MARK;
+  const overdueMark = task.isOverdue ? copy.overdue : NO_OVERDUE_MARK;
   const label = `${TASK_SHORT_ID_PREFIX}${task.number} ${task.title}`;
-  return `${label}${DAY_MAIL_COPY.lineSeparator}${projectNames.join(DAY_MAIL_COPY.workspaceSeparator)}${overdueMark}`;
+  return `${label}${copy.lineSeparator}${projectNames.join(copy.workspaceSeparator)}${overdueMark}`;
 }
 
-function moreSentenceOf(moreTasks: number): string {
+function moreSentenceOf({ moreTasks, copy }: { moreTasks: number; copy: DayMailCopy }): string {
   if (moreTasks === 0) return NO_MORE_TASKS;
-  return DAY_MAIL_COPY.moreTasks(moreTasks);
+  return copy.moreTasks(moreTasks);
 }
 
 function valuesOf(input: DayMailInput): EmailSlotValues {
-  const lines = input.tasks.slice(0, DAY_EMAIL_LINES_MAX).map((task) => lineOf({ task, hasSeveralWorkspaces: input.hasSeveralWorkspaces }));
+  const copy = DAY_MAIL_COPY_BY_LANGUAGE[input.language];
+  const lines = input.tasks
+    .slice(0, DAY_EMAIL_LINES_MAX)
+    .map((task) => lineOf({ task, hasSeveralWorkspaces: input.hasSeveralWorkspaces, copy }));
   return {
     [EmailSlot.Count]: String(input.count),
     [EmailSlot.Tasks]: lines.join(LINE_SEPARATOR),
-    [EmailSlot.More]: moreSentenceOf(input.count - lines.length),
+    [EmailSlot.More]: moreSentenceOf({ moreTasks: input.count - lines.length, copy }),
     [EmailSlot.Workspace]: input.workspaceName,
     [EmailSlot.Time]: timeOf(input.minutes),
     [EmailSlot.Origin]: input.origin,
@@ -73,7 +77,7 @@ function subjectOf({ email, values }: { email: GeneratedEmail; values: EmailSlot
 }
 
 export function dayMail(input: DayMailInput): EmailMessage {
-  const email = input.count === 0 ? DAY_EMAIL_EMPTY : DAY_EMAIL;
+  const email = input.count === 0 ? DAY_EMAIL_EMPTY[input.language] : DAY_EMAIL[input.language];
   const values = valuesOf(input);
   const message = filledEmailOf({ email, values, to: input.to, subject: subjectOf({ email, values }), replyTo: input.replyTo });
   return {

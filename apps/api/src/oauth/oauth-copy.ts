@@ -1,5 +1,11 @@
-import { CLOUD_COPY } from '../cloud-copy';
-
+import { Language } from '@todz/types';
+import { OAUTH_COPY_PORTUGUESE_BRAZIL } from './oauth-copy-portuguese-brazil';
+import { OAUTH_COPY_SPANISH } from './oauth-copy-spanish';
+import { OAUTH_COPY_GERMAN } from './oauth-copy-german';
+import { OAUTH_COPY_FRENCH } from './oauth-copy-french';
+import { OAUTH_COPY_JAPANESE } from './oauth-copy-japanese';
+import { OAUTH_COPY_KOREAN } from './oauth-copy-korean';
+import { OAUTH_COPY_CHINESE } from './oauth-copy-chinese';
 export const OAUTH_COPY = {
   meta: {
     description: 'Connect an app to your todz account.',
@@ -64,8 +70,22 @@ export const OAUTH_COPY = {
     failedBody: 'Ask for a new one from this browser.',
     failedAction: 'Get a new link',
     cloudFullTitle: 'todz cloud is full right now',
-    cloudFullBody: CLOUD_COPY.full,
+    cloudFullBodyOf: ({ selfHostUrl }: { selfHostUrl: string }) =>
+      `todz cloud is full right now. Leave your email and you'll get in when a spot opens, or run your own server: ${selfHostUrl}`,
     noScriptTitle: 'Finish signing in',
     noScript: 'This page needs JavaScript to finish signing you in. Turn it on, then open the link again.',
   },
+};
+
+export type OAuthCopy = typeof OAUTH_COPY;
+
+export const OAUTH_COPY_BY_LANGUAGE: Record<Language, OAuthCopy> = {
+  [Language.English]: OAUTH_COPY,
+  [Language.PortugueseBrazil]: OAUTH_COPY_PORTUGUESE_BRAZIL,
+  [Language.Spanish]: OAUTH_COPY_SPANISH,
+  [Language.German]: OAUTH_COPY_GERMAN,
+  [Language.French]: OAUTH_COPY_FRENCH,
+  [Language.Japanese]: OAUTH_COPY_JAPANESE,
+  [Language.Korean]: OAUTH_COPY_KOREAN,
+  [Language.Chinese]: OAUTH_COPY_CHINESE,
 };

@@ -100,7 +100,7 @@ function tokenOf({ name, scheme }: { name: string; scheme: Scheme }): string {
   const pattern = new RegExp(`--color-${name}:(#[0-9A-Fa-f]{6})`, 'g');
   const values = capturedNames({ text: readRepositoryFile(SITE_STYLE), pattern });
   expect(values).toHaveLength(SCHEME_COUNT);
-  return values[scheme === 'light' ? 0 : 1]!;
+  return values[scheme === 'light' ? 1 : 0]!;
 }
 
 function singleCapture({ text, pattern }: { text: string; pattern: RegExp }): string {
