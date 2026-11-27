@@ -28,7 +28,7 @@ const ACCESS_TOKEN_PATTERN = /^todz-at_[A-Za-z0-9_-]{43}$/;
 const REFRESH_TOKEN_PATTERN = /^todz-rt_[A-Za-z0-9_-]{43}$/;
 const ACCESS_LIFETIME_SECONDS = 3_600;
 const CODE_LIFETIME_MS = 60 * MILLISECONDS_PER_SECOND;
-const REUSE_LEEWAY_MS = 30 * MILLISECONDS_PER_SECOND;
+const REUSE_LEEWAY_MS = 5 * MILLISECONDS_PER_SECOND;
 const SPENT_REFRESH_TOKENS_MAX = 10_000;
 const HALF_HOURLY_REFRESHES_PER_LIFETIME = (30 * MILLISECONDS_PER_DAY) / (MILLISECONDS_PER_HOUR / 2);
 const DIGEST_LENGTH = 64;
@@ -261,6 +261,27 @@ describe('refreshing', () => {
     expect(await mcpStatus({ token: retry.access_token })).toBe(200);
     expect((await refreshAt({ clientId, refreshToken: winner.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS })).status).toBe(200);
     expect((await refreshAt({ clientId, refreshToken: retry.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS })).status).toBe(200);
+  });
+
+  test('only the first retry within the leeway is honoured, and a second one is refused without disconnecting the app', async () => {
+    const owner = await seededOwner();
+    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
+    const winner = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
+    const retry = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + 1 }));
+
+    const secondRetry = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + 2 });
+
+    expect(await errorOf(secondRetry)).toBe('invalid_grant');
+    expect(await mcpStatus({ token: winner.access_token })).toBe(200);
+    expect(await mcpStatus({ token: retry.access_token })).toBe(200);
+  });
+
+  test('the expiry sweep of a grant reads its tokens by an index on grant and expiry', async () => {
+    const index = await env.DIRECTORY.prepare(
+      "SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = 'oauth_tokens' AND sql LIKE '%(grant_id, expires_at)%'",
+    ).first<{ sql: string }>();
+
+    expect(index).not.toBeNull();
   });
 
   test('two refreshes of one token at once both get a working pair', async () => {
