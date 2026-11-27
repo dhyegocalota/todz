@@ -17,6 +17,7 @@ import {
   hasAdminSession,
   isSameOriginPost,
 } from './admin-session';
+import { serveAdminCodeSession } from './admin-code-sign-in';
 import { serveAdminSession, serveAdminSignInLink } from './admin-sign-in';
 import { deleteAdminSession } from './admin-store';
 import { serveAdminStoredTextReset } from './admin-stored-text-reset';
@@ -68,5 +69,6 @@ export const ADMIN_ROUTES: AdminRoute[] = [
   { method: HttpMethod.Post, path: AdminPath.StoredTextResets, route: serveAdminStoredTextReset },
   { method: HttpMethod.Post, path: AdminPath.SignInLinks, route: serveAdminSignInLink },
   { method: HttpMethod.Post, path: AdminPath.Sessions, route: serveAdminSession },
+  { method: HttpMethod.Post, path: AdminPath.CodeSessions, route: serveAdminCodeSession },
   { method: HttpMethod.Post, path: AdminPath.SignOut, route: serveSignOut },
 ];

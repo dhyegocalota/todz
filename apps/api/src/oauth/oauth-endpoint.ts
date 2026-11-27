@@ -13,6 +13,7 @@ import { oauthIssuerOf } from './oauth-metadata';
 import { OAuthRefusal, refusalPageOf } from './oauth-pages';
 import { OAUTH_PATH_PREFIX, OAuthPath } from './oauth-paths';
 import { serveRegister } from './oauth-register';
+import { serveOAuthCode } from './oauth-code-sign-in';
 import { serveOAuthSession, serveOAuthSignInLink } from './oauth-sign-in';
 import { serveRevoke, serveToken } from './oauth-token-endpoint';
 
@@ -56,6 +57,7 @@ const ROUTE_OF_REQUEST: Record<string, OAuthRoute> = {
   [routeKey({ method: HttpMethod.Post, pathname: OAuthPath.Authorize })]: pageRoute(serveDecision),
   [routeKey({ method: HttpMethod.Post, pathname: OAuthPath.SignInLinks })]: pageRoute(serveOAuthSignInLink),
   [routeKey({ method: HttpMethod.Get, pathname: OAuthPath.LinkPage })]: pageRoute(serveOAuthLinkPage),
+  [routeKey({ method: HttpMethod.Post, pathname: OAuthPath.CodeSessions })]: pageRoute(serveOAuthCode),
   [routeKey({ method: HttpMethod.Post, pathname: OAuthPath.Sessions })]: jsonRoute({
     handler: serveOAuthSession,
     limits: [OAuthLimit.Route],

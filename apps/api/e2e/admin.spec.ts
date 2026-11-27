@@ -16,6 +16,10 @@ const OTHER_ADDRESS = 'someone.else@example.com';
 const MAIL_PAGE_URL = 'http://mail.test/';
 const HTML_CONTENT_TYPE = 'text/html';
 const MAILED_LINK_PATTERN = /https?:\/\/[^\s)\]]+\/admin\/sign-in#token=[A-Za-z0-9_-]{43}/;
+const CODE_PATTERN = /(?:^|\s)([0-9]{6})(?:\s|$)/;
+const CODE_LABEL = 'Sign-in code';
+const WRONG_CODE = '000000';
+const WRONG_NOTICE = "That code didn't work. Check it and try again.";
 const LOGGED_MESSAGE_START = '{"to":';
 const SIGN_IN_TITLE = 'Sign in to the admin';
 const INBOX_TITLE = 'Check your inbox';
@@ -73,9 +77,19 @@ async function newContextWithTurnstile({ browser, baseURL }: { browser: Browser;
 async function askForLink({ page, address }: { page: Page; address: string }): Promise<void> {
   await page.goto(AdminPath.Panel);
   await expect(page.getByRole('heading', { level: 1, name: SIGN_IN_TITLE })).toBeVisible();
+  await expect(page.getByLabel('Email address')).toBeFocused();
   await page.getByLabel('Email address').fill(address);
   await page.getByRole('button', { name: 'Email me a link' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: INBOX_TITLE })).toBeFocused();
+  await expect(page.getByRole('heading', { level: 1, name: INBOX_TITLE })).toBeVisible();
+  await expect(page.getByLabel(CODE_LABEL)).toBeFocused();
+}
+
+function mailedCodeTo(address: string): string {
+  const message = messagesTo(address).at(-1);
+  if (message === undefined) throw new Error(`no mail was logged for ${address}`);
+  const code = CODE_PATTERN.exec(message.text)?.[1];
+  if (code === undefined) throw new Error('the mail holds no sign-in code');
+  return code;
 }
 
 async function openFromMailPage({ context, link }: { context: BrowserContext; link: string }): Promise<Page> {
@@ -160,6 +174,19 @@ test.describe('the admin walk', () => {
     await expect(mailPage).toHaveURL(new RegExp(`${AdminPath.Metrics}$`));
     await expect(mailPage.getByRole('heading', { level: 1, name: METRICS_TITLE })).toBeVisible();
     expect(mailPage.url()).not.toContain('token=');
+  });
+
+  test('a wrong code is refused on the card, and the typed code from a new mail signs in', async () => {
+    await adminPage.goto(AdminPath.Metrics);
+    await adminPage.getByRole('button', { name: SIGN_OUT_LABEL }).click();
+    await expect(adminPage.getByRole('heading', { level: 1, name: SIGN_IN_TITLE })).toBeVisible();
+    await askForLink({ page: adminPage, address: ADMIN_ADDRESS });
+    await expect.poll(() => messagesTo(ADMIN_ADDRESS).length, { timeout: LINK_POLL_TIMEOUT_MS }).toBe(3);
+    await adminPage.keyboard.type(WRONG_CODE);
+    await expect(adminPage.getByText(WRONG_NOTICE)).toBeVisible();
+    await adminPage.keyboard.type(mailedCodeTo(ADMIN_ADDRESS));
+    await expect(adminPage).toHaveURL(new RegExp(`${AdminPath.Metrics}$`));
+    await expect(adminPage.getByRole('heading', { level: 1, name: METRICS_TITLE })).toBeVisible();
   });
 });
 

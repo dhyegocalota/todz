@@ -29,6 +29,8 @@ const MAIL_LINK_PATTERN = /\/oauth\/sign-in#token=([A-Za-z0-9_-]{43})&request=([
 const HIDDEN_INPUT_PATTERN = /<input type="hidden" name="([a-z_]+)" value="([^"]*)">/g;
 const RADIO_PATTERN = /<input type="radio" name="choice" value="([^"]+)"/g;
 const RETURN_LINK_PATTERN = /<a class="admin-link" href="([^"]+)" data-return>/;
+const MAIL_CODE_PATTERN = /(?:^|\s)([0-9]{6})(?:\s|$)/;
+const CODE_GROUP = 1;
 const LINK_GROUP = 1;
 const TOKEN_GROUP = 1;
 const REQUEST_GROUP = 2;
@@ -231,6 +233,13 @@ export function mailedLinkOf(text: string): MailedLink {
   const match = MAIL_LINK_PATTERN.exec(text);
   if (match === null) throw new Error('the mail should carry an OAuth sign-in link');
   return { token: match[TOKEN_GROUP]!, request: decodeURIComponent(match[REQUEST_GROUP]!) };
+}
+
+export function mailedCodeOf(line: string): string {
+  const { text } = z.object({ text: z.string() }).parse(JSON.parse(line));
+  const code = MAIL_CODE_PATTERN.exec(text)?.[CODE_GROUP];
+  if (code === undefined) throw new Error('the mail should carry a sign-in code');
+  return code;
 }
 
 export async function askForLink({

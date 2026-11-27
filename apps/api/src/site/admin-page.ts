@@ -184,6 +184,7 @@ export async function serveAdminSignInPage({
   request: Request;
   notice: AdminNotice;
   siteKey: string | null;
+  address?: string;
 }): Promise<Response> {
   const page = SIGN_IN_PAGES[notice];
   const preferences = adminPreferencesOf({ request });

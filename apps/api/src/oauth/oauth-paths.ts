@@ -11,6 +11,7 @@ export enum OAuthPath {
   SignInLinks = '/oauth/sign-in-links',
   LinkPage = '/oauth/sign-in',
   Sessions = '/oauth/sessions',
+  CodeSessions = '/oauth/code-sessions',
 }
 
 export enum OAuthMetadataPath {
@@ -44,6 +45,7 @@ export enum OAuthField {
   Choice = 'choice',
   Token = 'token',
   TimeZone = 'time_zone',
+  EmailCode = 'email_code',
 }
 
 export const OAUTH_DECISION_FIELDS: string[] = [OAuthField.FormToken, OAuthField.Decision, OAuthField.Choice];
