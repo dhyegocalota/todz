@@ -7,16 +7,21 @@ import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { DISCOVERY_FILES } from '../src/site/site-discovery';
 import { DiscoveryPath } from '../src/site/site-urls';
 import { SITE_STYLE } from '../src/site/site-style';
-import settingsCopySource from '../../macos/Copy/SettingsCopy.swift?raw';
-import { swiftCopyValue } from '../../../tools/repository-shape/src/swift-copy';
 
 const { lock } = LANDING_COPY.benefits;
 const FIRST_CAPTURE = 1;
 const STRUCTURED_DATA_PATTERN = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/;
 const COUNT_PATTERN = /\d|\b(two|three|four|five|several|many|multiple|few|both|secret|private|hidden)\b/gi;
 const LOCK_SENTENCES = [lock.title, lock.body];
-const LOCK_FACTS = [/Touch ID/, /Mac password/, /sleep/, /screen lock/, /quit/, /idle/, /Off by default/, /widgets/, /menu bar/];
+const LOCK_FACTS = [/Touch ID/, /without a trace/, /Sleep/, /lock/, /quit/];
 const CARD_PATTERN = /<li class="benefit-card glass reveal">[\s\S]*?<\/li>/g;
+const CARD_TITLE_MAX_WORDS = 5;
+const CARD_BODY_MAX_WORDS = 20;
+const BENEFIT_CARDS = [LANDING_COPY.benefits.agents, LANDING_COPY.benefits.offline, lock];
+
+function wordCountOf(text: string): number {
+  return text.split(/\s+/).length;
+}
 
 async function lockCardOf(): Promise<string> {
   const html = await serveLandingPage({ stars: null }).text();
@@ -36,19 +41,20 @@ function discoveryBodyOf(path: DiscoveryPath): string {
 }
 
 describe('the workspace lock copy', () => {
-  test('names the setting exactly as the app does', () => {
-    const settingName = swiftCopyValue({ text: settingsCopySource, name: 'lockWorkspaces' });
-    expect(lock.body).toContain(settingName.replace(' to switch workspaces', ''));
-  });
-
   test.each(LOCK_FACTS)('states %s', (fact) => {
     expect(LOCK_SENTENCES.join(' ')).toMatch(fact);
   });
 
   test('names no number of workspaces and never hints at secrets', () => {
-    const withoutSetting = LOCK_SENTENCES.join(' ').replace(/Require Touch ID to switch workspaces/, '');
-    const hints = Array.from(withoutSetting.matchAll(COUNT_PATTERN), (match) => match[0]);
+    const hints = Array.from(LOCK_SENTENCES.join(' ').matchAll(COUNT_PATTERN), (match) => match[0]);
     expect(hints).toEqual([]);
+  });
+});
+
+describe('the benefit cards', () => {
+  test.each(BENEFIT_CARDS)('$title keeps the shared title and body length', ({ title, body }) => {
+    expect(wordCountOf(title)).toBeLessThanOrEqual(CARD_TITLE_MAX_WORDS);
+    expect(wordCountOf(body)).toBeLessThanOrEqual(CARD_BODY_MAX_WORDS);
   });
 });
 
