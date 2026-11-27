@@ -30,6 +30,7 @@ const ACCESS_LIFETIME_SECONDS = 3_600;
 const CODE_LIFETIME_MS = 60 * MILLISECONDS_PER_SECOND;
 const REUSE_LEEWAY_MS = 30 * MILLISECONDS_PER_SECOND;
 const SPENT_REFRESH_TOKENS_MAX = 1_000;
+const HALF_HOURLY_REFRESHES_PER_LIFETIME = (30 * MILLISECONDS_PER_DAY) / (MILLISECONDS_PER_HOUR / 2);
 const DIGEST_LENGTH = 64;
 const TOOLS_LIST_BODY = { jsonrpc: JSONRPC_VERSION, id: 1, method: 'tools/list', params: {} };
 
@@ -63,12 +64,11 @@ async function seedSpentRefreshTokens({ refreshToken, count }: { refreshToken: s
   const grant = await env.DIRECTORY.prepare('SELECT grant_id FROM oauth_tokens WHERE digest = ?')
     .bind(await digestCredential(refreshToken))
     .first<{ grant_id: string }>();
-  const insertions = Array.from({ length: count }, (_, index) =>
-    env.DIRECTORY.prepare(
-      "INSERT INTO oauth_tokens (digest, grant_id, kind, created_at, expires_at, spent_at) VALUES (?, ?, 'refresh', ?, ?, ?)",
-    ).bind(String(index).padStart(DIGEST_LENGTH, '0'), grant!.grant_id, CLOCK_NOW - 1, CLOCK_NOW + MILLISECONDS_PER_DAY, CLOCK_NOW - 1),
-  );
-  await env.DIRECTORY.batch(insertions);
+  await env.DIRECTORY.prepare(
+    "WITH RECURSIVE seeds(position) AS (SELECT 1 UNION ALL SELECT position + 1 FROM seeds WHERE position < ?) INSERT INTO oauth_tokens (digest, grant_id, kind, created_at, expires_at, spent_at) SELECT printf('%0' || ? || 'd', position), ?, 'refresh', ?, ?, ? FROM seeds",
+  )
+    .bind(count, DIGEST_LENGTH, grant!.grant_id, CLOCK_NOW - 1, CLOCK_NOW + MILLISECONDS_PER_DAY, CLOCK_NOW - 1)
+    .run();
 }
 
 describe('exchanging an authorization code', () => {
@@ -249,16 +249,66 @@ describe('refreshing', () => {
     expect(await errorOf(firstAgain)).toBe('invalid_grant');
   });
 
-  test('a racing retry within the leeway is refused without disconnecting the app', async () => {
+  test('a retry within the leeway gets a working pair and keeps the app connected', async () => {
     const owner = await seededOwner();
     const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
     const winner = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
 
-    const retry = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS });
+    const retry = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS }));
 
-    expect(await errorOf(retry)).toBe('invalid_grant');
+    expect(retry.refresh_token).not.toBe(winner.refresh_token);
     expect(await mcpStatus({ token: winner.access_token })).toBe(200);
+    expect(await mcpStatus({ token: retry.access_token })).toBe(200);
     expect((await refreshAt({ clientId, refreshToken: winner.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS })).status).toBe(200);
+    expect((await refreshAt({ clientId, refreshToken: retry.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS })).status).toBe(200);
+  });
+
+  test('two refreshes of one token at once both get a working pair', async () => {
+    const owner = await seededOwner();
+    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
+
+    const racing = await Promise.all([
+      refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }),
+      refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }),
+    ]);
+
+    const pairs = await Promise.all(racing.map(tokensOf));
+    expect(await Promise.all(pairs.map((pair) => mcpStatus({ token: pair.access_token })))).toEqual([200, 200]);
+  });
+
+  test('the leeway counts from the first spend, so a retry never stretches it', async () => {
+    const owner = await seededOwner();
+    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
+    await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
+    const retry = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS }));
+
+    const reused = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS + 1 });
+
+    expect(await errorOf(reused)).toBe('invalid_grant');
+    expect(await mcpStatus({ token: retry.access_token })).toBe(401);
+  });
+
+  test('a spent refresh token of another client is refused within the leeway too', async () => {
+    const owner = await seededOwner();
+    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
+    const winner = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
+    const otherClientId = await registerClient();
+
+    const stolen = await refreshAt({ clientId: otherClientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + 1 });
+
+    expect(await errorOf(stolen)).toBe('invalid_grant');
+    expect(await mcpStatus({ token: winner.access_token })).toBe(200);
+  });
+
+  test('a client refreshing every half hour for the refresh token lifetime stays under the cap', async () => {
+    const owner = await seededOwner();
+    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
+    const second = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
+    await seedSpentRefreshTokens({ refreshToken: second.refresh_token, count: HALF_HOURLY_REFRESHES_PER_LIFETIME });
+
+    const response = await refreshAt({ clientId, refreshToken: second.refresh_token, now: CLOCK_NOW + 1 });
+
+    expect(response.status).toBe(200);
   });
 
   test('a refresh token of another client is refused and does not spend it', async () => {
