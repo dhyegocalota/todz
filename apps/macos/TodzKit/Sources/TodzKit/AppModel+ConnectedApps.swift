@@ -15,12 +15,14 @@ extension AppModel {
         }
     }
 
-    // NB ADR 0113: a locked session lists no grant that names a project of a locked workspace.
+    // NB ADR 0113: a locked session lists only the grants of projects in a visible workspace, and the account-wide ones.
     public var visibleConnectedApps: [ConnectedApp] {
         guard case let .loaded(apps) = connectedApps else { return [] }
+        guard workspaceLock.isLocked else { return apps }
+        let visibleProjectIdentifiers = Set(visibleWorkspaces.flatMap(\.projects).map(\.identifier))
         return apps.filter { app in
             guard case let .project(projectIdentifier, _) = app.scope else { return true }
-            return !isInLockedWorkspace(projectIdentifier: projectIdentifier)
+            return visibleProjectIdentifiers.contains(projectIdentifier)
         }
     }
 

@@ -323,6 +323,16 @@ extension AppModelTests {
         #expect(harness.model.visibleConnectedApps.map(\.identifier).sorted() == ["in-acme", "owner-wide"])
     }
 
+    @Test func aConnectedAppOfAProjectThisMacDoesNotKnowIsHiddenWhileTheLockIsOn() async throws {
+        let harness = try await lockedHarness()
+        harness.service.connectedApps = [
+            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch"),
+            ConnectedAppFixtures.projectScoped(identifier: "in-unknown", projectIdentifier: "made-by-an-agent")
+        ]
+        await harness.model.loadConnectedApps()
+        #expect(harness.model.visibleConnectedApps.map(\.identifier) == ["in-acme"])
+    }
+
     @Test func withoutTheLockEveryConnectedAppIsListed() async throws {
         let harness = try await lockedHarness(isLockOn: false)
         harness.service.connectedApps = [
