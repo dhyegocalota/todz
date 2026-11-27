@@ -91,8 +91,9 @@ async function refresh({ context, form, client }: TokenRequest): Promise<Respons
     return oauthErrorResponse(OAuthError.InvalidGrant);
   }
   const tokens = await issuedTokenPair(now);
-  const projectId = await rotateTokens({ directory: env.DIRECTORY, grantId, tokens: tokens.stored, now });
-  return tokenAnswerOf({ tokens, scope: grantedScopeOf(projectId) });
+  const rotated = await rotateTokens({ directory: env.DIRECTORY, grantId, tokens: tokens.stored, now });
+  if (rotated === null) return oauthErrorResponse(OAuthError.InvalidGrant);
+  return tokenAnswerOf({ tokens, scope: grantedScopeOf(rotated.projectId) });
 }
 
 const HANDLER_OF_GRANT_TYPE: Record<OAuthGrantType, (tokenRequest: TokenRequest) => Promise<Response>> = {

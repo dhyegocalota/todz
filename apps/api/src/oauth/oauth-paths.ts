@@ -46,6 +46,8 @@ export enum OAuthField {
   TimeZone = 'time_zone',
 }
 
+export const OAUTH_DECISION_FIELDS: string[] = [OAuthField.FormToken, OAuthField.Decision, OAuthField.Choice];
+
 export enum OAuthDecision {
   Approve = 'approve',
   Deny = 'deny',

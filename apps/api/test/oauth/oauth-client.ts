@@ -120,7 +120,7 @@ export function formRequest({
   headers,
 }: {
   path: string;
-  fields: Record<string, string>;
+  fields: Record<string, string> | [string, string][];
   headers?: Record<string, string>;
 }): Request {
   return bodyRequest({ path, body: new URLSearchParams(fields).toString(), mediaType: FORM_MEDIA_TYPE, headers });

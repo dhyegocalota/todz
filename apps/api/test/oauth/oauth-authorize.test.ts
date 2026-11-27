@@ -277,6 +277,96 @@ describe('the consent screen', () => {
   });
 });
 
+describe('a decision comes only from the consent form the server rendered', () => {
+  test.each([
+    ['a decision', { decision: 'approve' }],
+    ['a choice', { choice: 'owner' }],
+    ['a form token', { form_token: 'smuggled' }],
+  ])('an authorize query carrying %s is refused without redirecting', async (_name, fields) => {
+    const params = await freshRequest(fields);
+
+    const response = await authorize(params);
+
+    expect(response.status).toBe(400);
+    expect(response.headers.get('Location')).toBeNull();
+  });
+
+  test('a signed-in browser opening a query that carries a decision gets no consent form', async () => {
+    const owner = await seededOwner();
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+    const smuggled = withParams({ params, changes: { decision: 'approve', choice: 'owner' } });
+
+    const response = await browserVisit({ browser, request: authorizeRequest(smuggled) });
+
+    expect(response.status).toBe(400);
+    expect(await response.text()).not.toContain('name="form_token"');
+  });
+
+  test('the consent form carries only the authorization parameters and its form token', async () => {
+    const owner = await seededOwner();
+    const params = await freshRequest({ prompt: 'consent' });
+    const browser = await signedInBrowser({ params, email: owner.email });
+
+    const html = await consentPage({ browser, params });
+
+    const hiddenNames = Object.keys(hiddenFieldsOf(html));
+    expect(hiddenNames).toContain('form_token');
+    expect(hiddenNames).toContain('client_id');
+    expect(hiddenNames).not.toContain('prompt');
+  });
+
+  test.each([
+    [
+      'decision',
+      [
+        ['decision', 'deny'],
+        ['decision', 'approve'],
+      ],
+    ],
+    [
+      'choice',
+      [
+        ['decision', 'approve'],
+        ['choice', 'owner'],
+        ['choice', 'owner'],
+      ],
+    ],
+    [
+      'form token',
+      [
+        ['decision', 'approve'],
+        ['choice', 'owner'],
+        ['form_token', 'smuggled'],
+      ],
+    ],
+  ] as [string, [string, string][]][])('a body that repeats the %s is refused and yields no code', async (_name, extra) => {
+    const owner = await seededOwner();
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+    const html = await consentPage({ browser, params });
+
+    const response = await browserVisit({
+      browser,
+      request: formRequest({ path: '/oauth/authorize', fields: [...Object.entries(hiddenFieldsOf(html)), ...extra] }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.headers.get('Location')).toBeNull();
+  });
+
+  test('Deny never yields a code, whatever choice the body carries', async () => {
+    const owner = await seededOwner();
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+
+    const redirected = redirectedParams(await decide({ browser, params, fields: { decision: 'deny', choice: 'owner' } }));
+
+    expect(redirected.get('code')).toBeNull();
+    expect(redirected.get('error')).toBe('access_denied');
+  });
+});
+
 describe('the consent form is bound to its session, its request and its origin', () => {
   async function consentFields(): Promise<{
     owner: Awaited<ReturnType<typeof seededOwner>>;

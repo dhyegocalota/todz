@@ -347,7 +347,15 @@ export async function revokeGrantOfSpentRefreshToken({
     .run();
 }
 
-// NB ADR 0109: a refresh keeps the live access tokens until they expire and the newest spent refresh tokens for reuse detection, so a race never kills a fresh token.
+export type RotatedGrant = { projectId: string | null };
+
+function grantAtSpentRefreshCap({ directory, grantId }: { directory: D1Database; grantId: string }) {
+  return directory
+    .prepare('DELETE FROM oauth_grants WHERE id = ? AND (SELECT count(*) FROM oauth_tokens WHERE grant_id = ? AND kind = ?) >= ?')
+    .bind(grantId, grantId, OAuthTokenKind.Refresh, OAUTH_SPENT_REFRESH_TOKENS_PER_GRANT_MAX);
+}
+
+// NB ADR 0109: a refresh keeps the live access tokens until they expire and every unexpired spent refresh token for reuse detection; a grant that reaches the cap is revoked instead of forgetting one.
 export async function rotateTokens({
   directory,
   grantId,
@@ -358,19 +366,19 @@ export async function rotateTokens({
   grantId: string;
   tokens: StoredToken[];
   now: number;
-}): Promise<string | null> {
+}): Promise<RotatedGrant | null> {
   const results = await directory.batch([
     directory.prepare('DELETE FROM oauth_tokens WHERE grant_id = ? AND expires_at <= ?').bind(grantId, now),
     tokensBeyondNewest({ directory, grantId, kind: OAuthTokenKind.Access, keep: OAUTH_LIVE_ACCESS_TOKENS_PER_GRANT_MAX - 1 }),
-    tokensBeyondNewest({ directory, grantId, kind: OAuthTokenKind.Refresh, keep: OAUTH_SPENT_REFRESH_TOKENS_PER_GRANT_MAX }),
+    grantAtSpentRefreshCap({ directory, grantId }),
     ...tokens.map((token) => tokenInsertion({ directory, grantId, token, now })),
     directory.prepare('UPDATE oauth_grants SET last_used_at = ? WHERE id = ?').bind(now, grantId),
     clientActivity({ directory, grantId, now }),
     directory.prepare('SELECT project_id FROM oauth_grants WHERE id = ?').bind(grantId),
   ]);
   const grant = onlyResultOf<{ project_id: string | null }>(results.at(-1));
-  if (grant === null) throw new Error('a rotated grant has no row');
-  return grant.project_id;
+  if (grant === null) return null;
+  return { projectId: grant.project_id };
 }
 
 export async function findAccessGrant({

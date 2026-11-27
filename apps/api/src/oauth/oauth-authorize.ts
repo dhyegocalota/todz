@@ -19,12 +19,10 @@ import { type OAuthBrowserSession, endedOAuthSessionCookie, oauthSessionOf } fro
 import type { OAuthContext } from './oauth-context';
 import { OAuthError } from './oauth-errors';
 import { OAuthNotice, OAuthRefusal, consentPageOf, refusalPageOf, signInPageOf } from './oauth-pages';
-import { OAUTH_CODE_LIFETIME_MS, OAuthDecision, OAuthField, OAuthParameter } from './oauth-paths';
+import { OAUTH_CODE_LIFETIME_MS, OAUTH_DECISION_FIELDS, OAuthDecision, OAuthField, OAuthParameter } from './oauth-paths';
 import { OAuthScope } from './oauth-scope';
 import { linkGuardOf } from './oauth-sign-in';
 import { insertCode } from './oauth-store';
-
-const DECISION_FIELDS: string[] = [OAuthField.FormToken, OAuthField.Decision, OAuthField.Choice];
 
 type DecisionForm = { params: URLSearchParams; formToken: string | null; decision: string | null; choice: string | null };
 
@@ -74,7 +72,9 @@ async function decisionFormOf(request: Request): Promise<DecisionForm | null> {
   const isReadableForm = isBoundedRequest({ request }) && hasMediaType({ request, mediaType: MediaType.Form });
   if (!isReadableForm) return null;
   const form = new URLSearchParams(await request.text());
-  const params = new URLSearchParams([...form.entries()].filter(([name]) => !DECISION_FIELDS.includes(name)));
+  const hasRepeatedDecisionField = OAUTH_DECISION_FIELDS.some((name) => form.getAll(name).length > 1);
+  if (hasRepeatedDecisionField) return null;
+  const params = new URLSearchParams([...form.entries()].filter(([name]) => !OAUTH_DECISION_FIELDS.includes(name)));
   return {
     params,
     formToken: form.get(OAuthField.FormToken),

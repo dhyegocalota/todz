@@ -38,7 +38,8 @@ export const OAUTH_COPY = {
   },
   refusal: {
     invalidTitle: "This link can't be used to connect an app",
-    invalidBody: 'Start again from the app you are connecting.',
+    invalidBody:
+      'Start again from the app you are connecting. If it keeps landing here, clear its saved sign-in first (in Claude Code: /mcp, then Clear authentication).',
     choiceTitle: "That choice isn't available",
     choiceBody: 'Start again from the app you are connecting and pick one of the choices shown.',
     forbiddenTitle: 'Request refused',

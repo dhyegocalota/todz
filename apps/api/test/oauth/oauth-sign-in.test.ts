@@ -99,6 +99,27 @@ describe('asking for a sign-in link from the authorize page', () => {
     expect(mails).toEqual([]);
   });
 
+  test.each([['decision'], ['choice'], ['form_token']])('a request field carrying %s is refused and mails nothing', async (name) => {
+    const params = await freshParams();
+    params.set(name, 'owner');
+
+    const { response, mails } = await askForLink({ browser: newBrowser(), params });
+
+    expect(response.status).toBe(400);
+    expect(mails).toEqual([]);
+  });
+
+  test('the mailed link carries only the authorization parameters', async () => {
+    const params = await freshParams();
+    params.set('prompt', 'consent');
+
+    const { mails } = await askForLink({ browser: newBrowser(), params });
+
+    const request = new URLSearchParams(mailedLinkOf(mails[0]!).request);
+    expect(request.has('prompt')).toBe(false);
+    expect(request.get('client_id')).toBe(params.get('client_id'));
+  });
+
   test('a malformed address asks again and mails nothing', async () => {
     const params = await freshParams();
 

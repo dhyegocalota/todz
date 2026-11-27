@@ -3,7 +3,7 @@ import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
 import { OAuthError } from './oauth-errors';
 import { RESPONSE_TYPES_SUPPORTED, mcpResourceOf } from './oauth-metadata';
-import { OAuthParameter } from './oauth-paths';
+import { OAUTH_DECISION_FIELDS, OAuthParameter } from './oauth-paths';
 import { CODE_CHALLENGE_METHOD, CODE_CHALLENGE_PATTERN } from './oauth-pkce';
 import { isRegisteredRedirectUri } from './oauth-redirect-uri';
 import { type OfferedScopes, offeredScopesOf } from './oauth-scope';
@@ -39,7 +39,7 @@ type ValidatedParts = { codeChallenge: string; offeredScopes: OfferedScopes };
 
 const UNREDIRECTABLE: AuthorizationOutcome = { kind: AuthorizationOutcomeKind.Unredirectable };
 
-const AUTHORIZATION_PARAMETERS = [
+const AUTHORIZATION_PARAMETERS: string[] = [
   OAuthParameter.ResponseType,
   OAuthParameter.ClientId,
   OAuthParameter.RedirectUri,
@@ -54,6 +54,15 @@ function hasRepeatedParameter(params: URLSearchParams): boolean {
   return AUTHORIZATION_PARAMETERS.some((name) => params.getAll(name).length > 1);
 }
 
+// NB ADR 0109: a request carrying a decision field is refused and only the authorization parameters are echoed, so a decision comes from the rendered form alone.
+function carriesDecisionField(params: URLSearchParams): boolean {
+  return OAUTH_DECISION_FIELDS.some((name) => params.has(name));
+}
+
+function authorizationParametersOf(params: URLSearchParams): URLSearchParams {
+  return new URLSearchParams([...params.entries()].filter(([name]) => AUTHORIZATION_PARAMETERS.includes(name)));
+}
+
 async function redirectableRequestOf({
   params,
   env,
@@ -64,6 +73,7 @@ async function redirectableRequestOf({
   now: number;
 }): Promise<RedirectableRequest | null> {
   if (hasRepeatedParameter(params)) return null;
+  if (carriesDecisionField(params)) return null;
   const clientId = params.get(OAuthParameter.ClientId);
   const redirectUri = params.get(OAuthParameter.RedirectUri);
   const state = params.get(OAuthParameter.State);
@@ -118,7 +128,7 @@ export async function authorizationOutcomeOf({
       state,
       scope: params.get(OAuthParameter.Scope),
       resource: params.get(OAuthParameter.Resource),
-      params,
+      params: authorizationParametersOf(params),
       ...parts,
     },
   };
