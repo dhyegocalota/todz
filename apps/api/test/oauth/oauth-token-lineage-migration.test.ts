@@ -14,6 +14,8 @@ const SECOND_DIGEST = '2'.repeat(64);
 const THIRD_DIGEST = '3'.repeat(64);
 const ROTATED_AT = CLOCK_NOW + 1;
 const ROTATED_AGAIN_AT = CLOCK_NOW + 2;
+const RETRIED_AT = CLOCK_NOW + 3;
+const RETRY_CHILD_DIGEST = '4'.repeat(64);
 
 async function parentOf(digest: string): Promise<string | null> {
   const row = await env.MIGRATION_DIRECTORY.prepare('SELECT parent_digest FROM oauth_tokens WHERE digest = ?')
@@ -52,8 +54,22 @@ describe('migration 0021 links the refresh tokens issued before it to the token 
         ROTATED_AGAIN_AT,
         expiresAt,
       ),
+      env.MIGRATION_DIRECTORY.prepare('UPDATE oauth_tokens SET retried_at = ? WHERE digest = ?').bind(RETRIED_AT, FIRST_DIGEST),
+      env.MIGRATION_DIRECTORY.prepare(
+        "INSERT INTO oauth_tokens (digest, grant_id, kind, created_at, expires_at) VALUES (?, ?, 'refresh', ?, ?)",
+      ).bind(RETRY_CHILD_DIGEST, GRANT_ID, RETRIED_AT, expiresAt),
     ]);
     await applyMigrationNamed(MIGRATION_NAME);
+  });
+
+  test('a token issued by an honoured retry names the retried token', async () => {
+    expect(await parentOf(RETRY_CHILD_DIGEST)).toBe(FIRST_DIGEST);
+  });
+
+  test('keeps the retried_at column the Worker before it still writes', async () => {
+    const { results } = await env.MIGRATION_DIRECTORY.prepare("SELECT name FROM pragma_table_info('oauth_tokens')").all<{ name: string }>();
+
+    expect(results.map(({ name }) => name)).toContain('retried_at');
   });
 
   test('the token issued by the code keeps no parent', async () => {

@@ -1,9 +1,12 @@
-import { MILLISECONDS_PER_DAY } from '@todz/types';
+import { MILLISECONDS_PER_DAY, OAUTH_ACCESS_TOKEN_PREFIX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
+import { digestCredential } from '../../src/credential-digest';
+import { generateCredentialSecret } from '../../src/credential-secret';
 import { runOAuthCleanup } from '../../src/oauth/oauth-cleanup';
 import { CLOCK_NOW } from '../task-fixtures';
 import {
+  LOOPBACK_REDIRECT_URI,
   authorizeParams,
   authorizeRequest,
   connectedClient,
@@ -13,10 +16,60 @@ import {
   refreshRequest,
   registerClient,
   seededOwner,
+  serveMcpCall,
   serveOAuthRequest,
 } from './oauth-client';
 
 const IDLE_LIFETIME_MS = 30 * MILLISECONDS_PER_DAY;
+const TOOLS_LIST_BODY = { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} };
+
+async function grantStoredBeforeScopes(): Promise<{ grantId: string; accessToken: string }> {
+  const owner = await seededOwner();
+  const clientId = await registerClient({ now: CLOCK_NOW });
+  const grantId = crypto.randomUUID();
+  const accessToken = `${OAUTH_ACCESS_TOKEN_PREFIX}${generateCredentialSecret()}`;
+  await env.DIRECTORY.batch([
+    env.DIRECTORY.prepare(
+      'INSERT INTO oauth_grants (id, client_id, owner_id, project_id, redirect_uri, created_at, last_used_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).bind(grantId, clientId, owner.ownerId, owner.projectId, LOOPBACK_REDIRECT_URI, CLOCK_NOW, CLOCK_NOW),
+    env.DIRECTORY.prepare("INSERT INTO oauth_tokens (digest, grant_id, kind, created_at, expires_at) VALUES (?, ?, 'access', ?, ?)").bind(
+      await digestCredential(accessToken),
+      grantId,
+      CLOCK_NOW,
+      CLOCK_NOW + MILLISECONDS_PER_DAY,
+    ),
+  ]);
+  return { grantId, accessToken };
+}
+
+describe('a grant stored by the Worker that ran before the scopes table', () => {
+  test('is refused, never answered with a failure, until the nightly run gives it the scope of its project', async () => {
+    const { grantId, accessToken } = await grantStoredBeforeScopes();
+
+    const before = await serveMcpCall({ token: accessToken, body: TOOLS_LIST_BODY });
+    await runOAuthCleanup({ scheduledTime: CLOCK_NOW, env: oauthEnv() });
+    const after = await serveMcpCall({ token: accessToken, body: TOOLS_LIST_BODY });
+
+    expect(before.status).toBe(401);
+    expect(after.status).toBe(200);
+    const grant = await env.DIRECTORY.prepare('SELECT reaches_workspace FROM oauth_grants WHERE id = ?')
+      .bind(grantId)
+      .first<{ reaches_workspace: number }>();
+    expect(grant?.reaches_workspace).toBe(1);
+  });
+
+  test('is given its scope once, however often the nightly run comes back', async () => {
+    const { grantId } = await grantStoredBeforeScopes();
+
+    await runOAuthCleanup({ scheduledTime: CLOCK_NOW, env: oauthEnv() });
+    await runOAuthCleanup({ scheduledTime: CLOCK_NOW, env: oauthEnv() });
+
+    const scopes = await env.DIRECTORY.prepare('SELECT count(*) AS scopes FROM oauth_grant_scopes WHERE grant_id = ?')
+      .bind(grantId)
+      .first<{ scopes: number }>();
+    expect(scopes?.scopes).toBe(1);
+  });
+});
 const UNUSED_LIFETIME_MS = MILLISECONDS_PER_DAY;
 
 async function clientCount(clientId: string): Promise<number> {

@@ -4,6 +4,8 @@ import { digestCredential } from '../../src/credential-digest';
 import { seedProject, seedSiblingProject } from '../directory-seed';
 import {
   CLIENT_NAME,
+  HTTPS_REDIRECT_URI,
+  LOOPBACK_REDIRECT_URI,
   type SeededOwner,
   authorizeParams,
   clientMetadata,
@@ -222,10 +224,18 @@ describe('a choice the server refuses', () => {
 });
 
 describe('what the client already holds', () => {
-  async function pageOf({ owner, clientName = CLIENT_NAME }: { owner: SeededOwner; clientName?: string }): Promise<string> {
-    const clientId = await registerClient({ metadata: clientMetadata({ client_name: clientName }) });
+  async function pageOf({
+    owner,
+    clientName = CLIENT_NAME,
+    redirectUri = LOOPBACK_REDIRECT_URI,
+  }: {
+    owner: SeededOwner;
+    clientName?: string;
+    redirectUri?: string;
+  }): Promise<string> {
+    const clientId = await registerClient({ metadata: clientMetadata({ client_name: clientName, redirect_uris: [redirectUri] }) });
     const { challenge } = await pkcePair();
-    const params = authorizeParams({ clientId, challenge });
+    const params = authorizeParams({ clientId, challenge, redirectUri });
     const browser = await signedInBrowser({ params, email: owner.email });
     return consentPage({ browser, params });
   }
@@ -268,6 +278,13 @@ describe('what the client already holds', () => {
     await connectedClient({ choiceOf: () => projectChoiceOf(owner.projectId), email: owner.email });
 
     expect(await pageOf({ owner, clientName: 'Cursor' })).not.toContain('already has');
+  });
+
+  test('never names what a look-alike client with the same name but another redirect host holds', async () => {
+    const { owner } = await selectable();
+    await connectedClient({ choiceOf: () => projectChoiceOf(owner.projectId), email: owner.email });
+
+    expect(await pageOf({ owner, redirectUri: HTTPS_REDIRECT_URI })).not.toContain('already has');
   });
 
   test('never names what another owner holds under the same client name', async () => {

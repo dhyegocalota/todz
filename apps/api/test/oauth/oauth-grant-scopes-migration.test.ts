@@ -96,6 +96,18 @@ describe('migration 0022 moves the single project of every grant and code into s
     expect(await scopesOfGrant(PROJECT_GRANT_ID)).toEqual([{ kind: 'project', workspace_id: null, project_id: PROJECT_ID }]);
   });
 
+  test('a grant of one project keeps reaching the other projects of its workspace, and the account does not', async () => {
+    const { results } = await env.MIGRATION_DIRECTORY.prepare('SELECT id, reaches_workspace FROM oauth_grants ORDER BY id').all<{
+      id: string;
+      reaches_workspace: number;
+    }>();
+
+    expect(results).toEqual([
+      { id: ACCOUNT_GRANT_ID, reaches_workspace: 0 },
+      { id: PROJECT_GRANT_ID, reaches_workspace: 1 },
+    ]);
+  });
+
   test('a whole-account grant becomes one explicit account scope', async () => {
     expect(await scopesOfGrant(ACCOUNT_GRANT_ID)).toEqual([{ kind: 'account', workspace_id: null, project_id: null }]);
   });

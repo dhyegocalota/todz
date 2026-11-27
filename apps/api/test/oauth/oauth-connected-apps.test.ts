@@ -301,6 +301,52 @@ describe('Narrowing a connected app', () => {
     expect(app.project_id).toBe(owner.projectId);
   });
 
+  test.each([
+    ['two projects of one workspace narrowed to one of them', (tree: Tree) => [tree.owner.projectId, tree.siblingId]],
+    ['a project in each of two workspaces narrowed to one of them', (tree: Tree) => [tree.owner.projectId, tree.otherProjectId]],
+  ])('%s never reaches the rest of that workspace', async (_name, projectsOf) => {
+    const reachTree = await tree();
+    const { owner, session } = reachTree;
+    const thirdId = await seedSiblingProject({ projectId: owner.projectId, name: 'Third' });
+    const { tokens } = await connectedClient({ choiceOf: () => projectsOf(reachTree).map(projectChoiceOf), email: owner.email });
+    const { id } = await onlyAppOf(session);
+
+    const response = await narrow({ session, id, body: { scopes: [projectScopeOf(owner.projectId)] } });
+
+    expect(response.status).toBe(200);
+    const client = await connectClient({ era: ClientEra.Modern, token: tokens.access_token, serve: serveOAuthMcp });
+    const names = (await client.listTools()).tools.map((tool) => tool.name);
+    expect(names).not.toContain('projects');
+    expect(await callTool({ client, name: 'list', args: { project: thirdId } })).toEqual({ text: MCP_COPY.accountNotFound, isError: true });
+    const workspaces = await callTool({ client, name: 'workspaces', args: {} });
+    expect(workspaces.text).not.toContain('Third');
+  });
+
+  test('a selection that loses all but one project to a deletion never reaches the rest of that workspace', async () => {
+    const { owner, session, siblingId } = await tree();
+    const thirdId = await seedSiblingProject({ projectId: owner.projectId, name: 'Third' });
+    const { tokens } = await connectedClient({
+      choiceOf: () => [projectChoiceOf(owner.projectId), projectChoiceOf(siblingId)],
+      email: owner.email,
+    });
+
+    await ownerCall({ method: 'DELETE', path: `/owner/projects/${siblingId}`, token: session });
+
+    const client = await connectClient({ era: ClientEra.Modern, token: tokens.access_token, serve: serveOAuthMcp });
+    const names = (await client.listTools()).tools.map((tool) => tool.name);
+    expect(names).not.toContain('projects');
+    expect(await callTool({ client, name: 'list', args: { project: thirdId } })).toEqual({ text: MCP_COPY.accountNotFound, isError: true });
+  });
+
+  test('a single project chosen on the consent screen still reaches the other projects of its workspace', async () => {
+    const { owner } = await tree();
+    const { tokens } = await connectedClient({ choiceOf: () => projectChoiceOf(owner.projectId), email: owner.email });
+
+    const client = await connectClient({ era: ClientEra.Modern, token: tokens.access_token, serve: serveOAuthMcp });
+
+    expect((await client.listTools()).tools.map((tool) => tool.name)).toContain('projects');
+  });
+
   test('a workspace plus one of its own projects is folded into the workspace', async () => {
     const { owner, session, workspaceId } = await tree();
     await connectedClient({ choiceOf: () => 'owner', email: owner.email });

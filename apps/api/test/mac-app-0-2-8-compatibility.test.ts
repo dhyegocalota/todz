@@ -14,6 +14,8 @@ const REDIRECT_URI = 'https://claude.ai/api/mcp/auth_callback';
 const CREATED_STATUS = 201;
 const ACCEPTED_STATUS = 202;
 const NO_CONTENT_STATUS = 204;
+const VISIBLE_WORKSPACE_NAME = 'Thrifty Traveler';
+const HIDDEN_WORKSPACE_NAME = 'Secret Garden';
 
 const IssuedSessionSchema = z.object({ session_token: z.string(), owner: z.object({ id: z.string() }).passthrough() });
 
@@ -46,6 +48,18 @@ async function sessionOf(owner: SeededOwner): Promise<string> {
   const secret = generateCredentialSecret();
   await seedSession({ ownerId: owner.ownerId, secret, expiresAt: Date.now() + MILLISECONDS_PER_DAY });
   return secret;
+}
+
+type ConnectedApp = z.output<typeof ConnectedAppSchema>;
+
+function lockedVisibleApps({ apps, visibleProjectIds }: { apps: ConnectedApp[]; visibleProjectIds: string[] }): ConnectedApp[] {
+  return apps.filter((app) => app.scope === 'owner' || visibleProjectIds.includes(app.project_id));
+}
+
+async function nameWorkspaceOf({ projectId, name }: { projectId: string; name: string }): Promise<void> {
+  await env.DIRECTORY.prepare('UPDATE workspaces SET name = ? WHERE id = (SELECT workspace_id FROM projects WHERE id = ?)')
+    .bind(name, projectId)
+    .run();
 }
 
 async function workspaceOf(projectId: string): Promise<string> {
@@ -110,6 +124,45 @@ describe('the Worker keeps answering the Mac app 0.2.8 the way its decoders expe
 
     const answer = ConnectedAppsAnswerSchema.parse(await response.json());
     expect(answer.connected_apps).toHaveLength(4);
+  });
+
+  test('a locked 0.2.8 that sees one workspace never shows a selection reaching into another, nor its names', async () => {
+    const owner = await seededOwner();
+    const hiddenProjectId = await seedProject({ ownerId: owner.ownerId });
+    await nameWorkspaceOf({ projectId: owner.projectId, name: VISIBLE_WORKSPACE_NAME });
+    await nameWorkspaceOf({ projectId: hiddenProjectId, name: HIDDEN_WORKSPACE_NAME });
+    await seedGrant({
+      owner,
+      scopes: [
+        { kind: 'project', workspaceId: null, projectId: owner.projectId },
+        { kind: 'project', workspaceId: null, projectId: hiddenProjectId },
+      ],
+    });
+
+    const response = await ownerCall({ method: 'GET', path: '/owner/connected-apps', token: await sessionOf(owner) });
+
+    const [app] = ConnectedAppsAnswerSchema.parse(await response.json()).connected_apps;
+    expect(lockedVisibleApps({ apps: [app!], visibleProjectIds: [owner.projectId] })).toEqual([]);
+    expect(JSON.stringify({ ...app, scopes: undefined })).not.toContain(HIDDEN_WORKSPACE_NAME);
+    expect(JSON.stringify({ ...app, scopes: undefined })).not.toContain(VISIBLE_WORKSPACE_NAME);
+  });
+
+  test('a locked 0.2.8 still shows a selection that stays inside the visible workspace', async () => {
+    const owner = await seededOwner();
+    const siblingId = await seedSiblingProject({ projectId: owner.projectId, name: 'Website' });
+    await nameWorkspaceOf({ projectId: owner.projectId, name: VISIBLE_WORKSPACE_NAME });
+    await seedGrant({
+      owner,
+      scopes: [
+        { kind: 'project', workspaceId: null, projectId: owner.projectId },
+        { kind: 'project', workspaceId: null, projectId: siblingId },
+      ],
+    });
+
+    const response = await ownerCall({ method: 'GET', path: '/owner/connected-apps', token: await sessionOf(owner) });
+
+    const apps = ConnectedAppsAnswerSchema.parse(await response.json()).connected_apps;
+    expect(lockedVisibleApps({ apps, visibleProjectIds: [owner.projectId, siblingId] })).toHaveLength(1);
   });
 
   test('the other calls of 0.2.8 that AUTH touches keep their answers', async () => {
