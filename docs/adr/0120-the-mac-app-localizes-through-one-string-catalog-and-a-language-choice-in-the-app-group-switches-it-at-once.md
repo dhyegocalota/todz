@@ -1,0 +1,7 @@
+# 0120. The Mac app localizes through one String Catalog, and a language choice in the App Group switches it at once
+
+- Status: Accepted (the loop's call)
+- Date: 2026-11-27
+- Deciders: Claude (the build loop's call, under the owner's v1.2 order of 2026-11-27: the app and its widgets in eight languages)
+- Inspired by: [0035](0035-with-the-personal-team-the-widgets-share-the-app-group.md)
+The loop's call: one `Localizable.xcstrings` is compiled into the app and the widget extension, and every key has English, Português (Brasil), Español, Deutsch, Français, 日本語, 한국어 and 简体中文 with state `translated`; plurals are catalog plural variations (ja, ko and zh have one form). The Language choice (System or one of the eight) lives in the App Group defaults, so the widgets read the same value, and a copy string resolves through the `<code>.lproj` bundle of the effective language, so a change applies without a relaunch in the window, Settings, the popover and the widgets. System takes the Mac's best match among the eight, else English; a stored value outside the eight is refused. Appearance (System, Light, Dark) sets `NSApp.appearance` to nil, `.aqua` or `.darkAqua`; the widgets follow the desktop. Every request carries `Accept-Language` with the effective language, so the server mails in it. The alternatives were `AppleLanguages` plus a relaunch (it cannot reach the widget process and costs a relaunch) and per-surface string tables (eight files per module, no single place to prove completeness).
