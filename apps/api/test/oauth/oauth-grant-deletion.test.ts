@@ -4,7 +4,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../../src/credential-digest';
 import { generateCredentialSecret } from '../../src/credential-secret';
 import type { Env } from '../../src/env';
-import { seedSession, seedSiblingProject } from '../directory-seed';
+import { seedProject, seedSession, seedSiblingProject } from '../directory-seed';
 import { ownerCall } from '../owner-client';
 import { CLOCK_NOW } from '../task-fixtures';
 import {
@@ -18,6 +18,7 @@ import {
   formRequest,
   oauthEnv,
   pkcePair,
+  projectChoiceOf,
   refreshRequest,
   registerClient,
   seededOwner,
@@ -94,7 +95,7 @@ describe('every grant deletion logs its reason and the client name, and counts t
     const { verifier, challenge } = await pkcePair();
     const params = authorizeParams({ clientId, challenge });
     const browser = await signedInBrowser({ params, email: owner.email });
-    const code = await approvedCode({ browser, params, choice: owner.projectId });
+    const code = await approvedCode({ browser, params, choice: projectChoiceOf(owner.projectId) });
     await tokensOf(await exchangeCode({ clientId, code, verifier }));
     const countBefore = await deletionCount('replayed_code');
     const lines = loggedLines();
@@ -193,7 +194,7 @@ describe('every grant deletion logs its reason and the client name, and counts t
     const params = authorizeParams({ clientId: nextClientId, challenge });
     const later = CLOCK_NOW + LINK_WINDOW_MS;
     const browser = await signedInBrowser({ params, email: owner.email, now: later });
-    const code = await approvedCode({ browser, params, choice: owner.projectId, now: later });
+    const code = await approvedCode({ browser, params, choice: projectChoiceOf(owner.projectId), now: later });
     const countBefore = await deletionCount('eviction');
     const lines = loggedLines();
 
@@ -205,7 +206,7 @@ describe('every grant deletion logs its reason and the client name, and counts t
   test('the deletion of the project the grant belongs to', async () => {
     const owner = await seededOwner();
     const siblingId = await seedSiblingProject({ projectId: owner.projectId, name: 'Website' });
-    await connectedClient({ choiceOf: () => siblingId, email: owner.email });
+    await connectedClient({ choiceOf: () => projectChoiceOf(siblingId), email: owner.email });
     const session = await sessionOf(owner);
     const countBefore = await deletionCount('cascade');
     const lines = loggedLines();
@@ -228,5 +229,51 @@ describe('every grant deletion logs its reason and the client name, and counts t
     await ownerCall({ method: 'DELETE', path: `/owner/workspaces/${workspace!.workspace_id}`, token: session });
 
     await expectOneDeletion({ reason: 'cascade', lines: lines(), countBefore, secrets: [session, owner.email, owner.ownerId] });
+  });
+});
+
+describe('a project or workspace deletion logs a cascade only for the grants that lose their last scope', () => {
+  async function grantCountOf(owner: SeededOwner): Promise<number> {
+    const row = await env.DIRECTORY.prepare('SELECT count(*) AS total FROM oauth_grants WHERE owner_id = ?')
+      .bind(owner.ownerId)
+      .first<{ total: number }>();
+    return row!.total;
+  }
+
+  async function workspaceOf(projectId: string): Promise<string> {
+    const row = await env.DIRECTORY.prepare('SELECT workspace_id FROM projects WHERE id = ?')
+      .bind(projectId)
+      .first<{ workspace_id: string }>();
+    return row!.workspace_id;
+  }
+
+  test('a grant that keeps another scope is not deleted and logs nothing when one of its projects goes', async () => {
+    const owner = await seededOwner();
+    const siblingId = await seedSiblingProject({ projectId: owner.projectId, name: 'Website' });
+    const otherProjectId = await seedProject({ ownerId: owner.ownerId });
+    await connectedClient({ choiceOf: () => [projectChoiceOf(siblingId), projectChoiceOf(otherProjectId)], email: owner.email });
+    const session = await sessionOf(owner);
+    const lines = loggedLines();
+
+    await ownerCall({ method: 'DELETE', path: `/owner/projects/${siblingId}`, token: session });
+
+    expect(deletionLinesOf(lines())).toEqual([]);
+    expect(await grantCountOf(owner)).toBe(1);
+  });
+
+  test('a workspace deletion logs the grant it empties and keeps the one that holds a project elsewhere', async () => {
+    const owner = await seededOwner();
+    const siblingId = await seedSiblingProject({ projectId: owner.projectId, name: 'Website' });
+    const otherProjectId = await seedProject({ ownerId: owner.ownerId });
+    await connectedClient({ choiceOf: () => projectChoiceOf(owner.projectId), email: owner.email });
+    await connectedClient({ choiceOf: () => [projectChoiceOf(siblingId), projectChoiceOf(otherProjectId)], email: owner.email });
+    const session = await sessionOf(owner);
+    const countBefore = await deletionCount('cascade');
+    const lines = loggedLines();
+
+    await ownerCall({ method: 'DELETE', path: `/owner/workspaces/${await workspaceOf(owner.projectId)}`, token: session });
+
+    await expectOneDeletion({ reason: 'cascade', lines: lines(), countBefore, secrets: [session, owner.email, owner.ownerId] });
+    expect(await grantCountOf(owner)).toBe(1);
   });
 });

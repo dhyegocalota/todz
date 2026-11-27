@@ -14,6 +14,7 @@ import {
   firstChoice,
   formRequest,
   pkcePair,
+  projectChoiceOf,
   refreshRequest,
   registerClient,
   seededOwner,
@@ -39,7 +40,7 @@ async function approved(): Promise<{ clientId: string; code: string; verifier: s
   const { verifier, challenge } = await pkcePair();
   const params = authorizeParams({ clientId, challenge });
   const browser = await signedInBrowser({ params, email: owner.email });
-  const code = await approvedCode({ browser, params, choice: owner.projectId });
+  const code = await approvedCode({ browser, params, choice: projectChoiceOf(owner.projectId) });
   return { clientId, code, verifier, projectId: owner.projectId };
 }
 
