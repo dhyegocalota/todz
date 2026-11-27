@@ -136,15 +136,15 @@ export const LANDING_COPY = {
     },
     agents: {
       title: 'Agents add tasks over MCP',
-      body: 'Claude Code, Codex and Cursor read, add and finish tasks after one sign-in. Every change says who made it.',
+      body: 'Claude Code, Codex and Cursor read, add and finish your tasks. Every change says who made it.',
     },
     offline: {
       title: 'Works offline, syncs everywhere',
-      body: 'Changes wait while you are offline and land on every Mac when you are back.',
+      body: 'Changes wait while you are offline and land on every Mac the moment you are back.',
     },
     lock: {
-      title: 'Other workspaces vanish without a trace',
-      body: 'Turn on Require Touch ID to switch workspaces and the app shows only the one you are in, menu bar and widgets too. Touch ID or your Mac password brings the rest back; sleep, screen lock, quit and idle lock them again. Off by default.',
+      title: 'Workspaces behind Touch ID',
+      body: 'Other workspaces vanish without a trace until Touch ID brings them back. Sleep, lock or quit hides them again.',
     },
   },
   howItWorks: {
