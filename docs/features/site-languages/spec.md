@@ -1,6 +1,6 @@
 # Site languages
 
-**Status:** Approved
+**Status:** Shipped 2026-11-27
 **Tier:** 🔴
 **Owner approval:** approved by inheritance from [docs/product/README.md](../../product/README.md) (approved 2026-11-23) and the owner's v1.2 order of 2026-11-27: "agora mete uma i18n com lang selector + theme switcher (dark/light) igual do zapbip.. todas as langs suportadas"
 **ADRs:** [0117](../../adr/0117-the-site-and-its-mail-speak-eight-languages-with-a-url-per-language-and-a-cookie-before-accept-language.md), [0118](../../adr/0118-the-theme-is-a-cookie-the-server-renders-so-there-is-no-boot-script-and-no-flash.md)
