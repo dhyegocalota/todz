@@ -71,6 +71,25 @@ extension AppModelTests {
         #expect(harness.model.workspaceLock.isLocked)
     }
 
+    @Test func theNumberChordsBeyondTheListReachTheModelWhileLockedWithoutDrawingRows() async throws {
+        let harness = try await singleWorkspaceHarness()
+        let secondChord = try #require(WorkspaceAction.number(2).inAppChord)
+        let firstChord = try #require(WorkspaceAction.number(1).inAppChord)
+        #expect(harness.model.hiddenWorkspaceAction(for: firstChord) == nil)
+        let action = try #require(harness.model.hiddenWorkspaceAction(for: secondChord))
+        #expect(harness.model.visibleWorkspaces.map(\.identifier) == ["acme"])
+        await harness.model.switchWorkspace(action: action)
+        #expect(harness.authenticator.asked == [.switchWorkspaces])
+        #expect(harness.model.activeWorkspace?.identifier == "secret")
+        #expect(harness.model.hiddenWorkspaceAction(for: secondChord) == nil)
+    }
+
+    @Test func noChordIsHiddenWithTheSwitchOff() async throws {
+        let harness = try await singleWorkspaceHarness(isLockOn: false)
+        let thirdChord = try #require(WorkspaceAction.number(3).inAppChord)
+        #expect(harness.model.hiddenWorkspaceAction(for: thirdChord) == nil)
+    }
+
     @Test func aNumberBeyondTheVisibleListAsksThenResolvesAgainstEveryWorkspace() async throws {
         let harness = try await singleWorkspaceHarness(active: "secret")
         await harness.model.switchWorkspace(number: 2)

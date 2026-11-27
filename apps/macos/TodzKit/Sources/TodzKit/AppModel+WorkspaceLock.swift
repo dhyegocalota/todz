@@ -12,13 +12,28 @@ extension AppModel {
         return !selected.isEmpty && selected.allSatisfy { visibleWorkspaces.contains($0) }
     }
 
-    // NB ADR 0122: a locked session shows one workspace, so a selection beyond it asks the Mac owner first.
+    // NB ADR 0122: with the switch on one workspace is selected, locked or not; another one is chosen alone and asks the Mac owner while locked.
     func isShowableAfterAsking(_ selection: WorkspaceSelection) async -> Bool {
+        guard !isWideningToSeveralWorkspaces(selection) else { return false }
         guard !isShowable(selection) else { return true }
         let isSelectingKnownWorkspaces = !selection.workspaces(in: workspaces).isEmpty
-        guard workspaceLock.isLocked, isSelectingKnownWorkspaces else { return false }
+        let isAskingFromALockedSession = workspaceLock.isLocked && isSelectingKnownWorkspaces
+        guard isAskingFromALockedSession else { return false }
         guard await isAuthorized(.switchWorkspaces) else { return false }
         return isShowable(selection)
+    }
+
+    private func isWideningToSeveralWorkspaces(_ selection: WorkspaceSelection) -> Bool {
+        guard workspaceLock.isEnabled else { return false }
+        return selection == .all || selection.workspaces(in: workspaces).count > 1
+    }
+
+    public func hiddenWorkspaceAction(for chord: KeyChord) -> WorkspaceAction? {
+        guard workspaceLock.isLocked else { return nil }
+        return WorkspaceAction.all.first { action in
+            guard case let .number(number) = action else { return false }
+            return action.inAppChord == chord && number > visibleWorkspaces.count
+        }
     }
 
     public func isLocked(workspaceIdentifier: String) -> Bool {
@@ -39,15 +54,11 @@ extension AppModel {
         await workspaceLock.authorize(action)
     }
 
-    func collapsedWhileLocked(_ selection: WorkspaceSelection) -> WorkspaceSelection? {
-        guard workspaceLock.isLocked else { return selection }
+    func collapsedToOneWorkspace(_ selection: WorkspaceSelection) -> WorkspaceSelection? {
+        guard workspaceLock.isEnabled else { return selection }
         let selected = selection.workspaces(in: workspaces)
-        guard let shown = workspaceLock.visible(selected, current: activeWorkspaceIdentifier).first else { return nil }
+        guard let shown = workspaceLock.shown(selected, current: activeWorkspaceIdentifier).first else { return nil }
         return .chosen([shown.identifier])
-    }
-
-    var widgetWorkspaces: [Workspace] {
-        workspaceLock.visibleToWidgets(shownWorkspaces, current: activeWorkspaceIdentifier)
     }
 
     public func prepareWidgetsForTermination() {

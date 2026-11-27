@@ -24,6 +24,7 @@ extension AppModel {
         guard phase == .ready else { return }
         guard selection != self.selection else { return }
         guard await isShowableAfterAsking(selection) else { return }
+        guard phase == .ready else { return }
         await show(selection)
     }
 
@@ -39,11 +40,17 @@ extension AppModel {
     public func chooseWorkspaces(_ selection: WorkspaceSelection) async {
         guard phase == .choosing else { return }
         guard await isShowableAfterAsking(selection) else { return }
+        guard phase == .choosing else { return }
         phase = .ready
         await show(selection)
     }
 
     public func switchWorkspace(number: Int) async {
+        guard let listed = WorkspaceShortcuts.workspace(number: number, in: visibleWorkspaces) else { return await switchToUnlistedWorkspace(number: number) }
+        await switchWorkspace(identifier: listed.identifier)
+    }
+
+    private func switchToUnlistedWorkspace(number: Int) async {
         guard await isAuthorized(.switchWorkspaces) else { return }
         guard let workspace = WorkspaceShortcuts.workspace(number: number, in: visibleWorkspaces) else { return }
         await switchWorkspace(identifier: workspace.identifier)
@@ -201,7 +208,7 @@ extension AppModel {
     private var selectionToShow: WorkspaceSelection? {
         let isCurrentGone = activeWorkspaceIdentifier.map { current in !workspaces.contains { $0.identifier == current } } == true
         if workspaceLock.isLocked, isCurrentGone { return nil }
-        if let selection, !selection.workspaces(in: workspaces).isEmpty { return collapsedWhileLocked(selection.limited(to: workspaces)) }
+        if let selection, !selection.workspaces(in: workspaces).isEmpty { return collapsedToOneWorkspace(selection.limited(to: workspaces)) }
         guard workspaces.count == 1, let sole = workspaces.first else { return nil }
         return .chosen([sole.identifier])
     }

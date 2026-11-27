@@ -109,12 +109,10 @@ extension AppModelTests {
         #expect(harness.model.activeWorkspace?.identifier == "acme")
     }
 
-    @Test func aRelockCollapsesToTheWorkspaceOnScreenAndReleasesTheOthers() async throws {
-        let harness = try await lockedHarness()
-        _ = await harness.model.beginWorkspaceSwitch()
-        await harness.model.selectWorkspaces(.all)
+    @Test func turningTheSwitchOnCollapsesToTheWorkspaceOnScreenAndReleasesTheOthers() async throws {
+        let harness = try await lockedHarness(isLockOn: false, selection: .all)
         #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
-        await harness.model.relockWorkspaces(because: .screenLocked)
+        await harness.model.turnWorkspaceLockOn()
         #expect(harness.model.workspaceLock.isLocked)
         #expect(harness.model.selection == .chosen(["acme"]))
         #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
@@ -125,12 +123,10 @@ extension AppModelTests {
         #expect(harness.model.visibleWorkspaces.map(\.identifier) == ["acme"])
     }
 
-    @Test func aRelockErasesTheOtherWorkspacesCachedTasksAndKeepsTheCurrent() async throws {
-        let harness = try await lockedHarness()
-        _ = await harness.model.beginWorkspaceSwitch()
-        await harness.model.selectWorkspaces(.all)
+    @Test func turningTheSwitchOnErasesTheOtherWorkspacesCachedTasksAndKeepsTheCurrent() async throws {
+        let harness = try await lockedHarness(isLockOn: false, selection: .all)
         #expect(harness.store.projects["secret-inbox"] != nil)
-        await harness.model.relockWorkspaces(because: .manual)
+        await harness.model.turnWorkspaceLockOn()
         #expect(harness.store.projects["secret-inbox"] == nil)
         #expect(harness.store.projects["secret-garden"] == nil)
         #expect(harness.store.projects["acme-inbox"] != nil)
@@ -151,9 +147,8 @@ extension AppModelTests {
     @Test func anUnlockedSessionNeverWidensTheSharedSnapshot() async throws {
         let harness = try await lockedHarness()
         _ = await harness.model.beginWorkspaceSwitch()
-        await harness.model.selectWorkspaces(.all)
         await harness.published()
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
         let snapshot = try #require(harness.widgets.snapshot)
         #expect(snapshot.workspaceName == "acme")
         #expect(snapshot.open.map(\.title) == ["Acme 1", "Acme 2"])

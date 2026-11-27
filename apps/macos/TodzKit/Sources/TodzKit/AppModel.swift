@@ -196,7 +196,7 @@ import Observation
 
     // NB ADR 0110: while the lock holds, the one current workspace is all that any surface can show.
     public var shownWorkspaces: [Workspace] {
-        workspaceLock.visible(selectedWorkspaces, current: activeWorkspaceIdentifier)
+        workspaceLock.shown(selectedWorkspaces, current: activeWorkspaceIdentifier)
     }
 
     public var taggedWorkspaceName: [String: String] {
