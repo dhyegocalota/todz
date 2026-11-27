@@ -3,7 +3,7 @@
 **Status:** Shipped 2026-11-27
 **Tier:** 🔴 (a privacy guarantee: every path that widens the selection is a bypass; TodzKit and the Mac app only, no server, no schema, no deploy)
 **Owner approval:** the owner's report of 2026-11-27: "quando eu lock workspaces, ainda posso ter múltiplos selecionados e selecionar múltiplos; corrige aí". The reading below is the loop's call (ADR 0122).
-**ADRs:** [0122](../../adr/0122-one-rule-in-todzkit-decides-the-selection-a-locked-session-shows-and-every-path-that-widens-it-asks-the-mac-owner.md) (builds on [0110](../../adr/0110-the-workspace-lock-hides-every-workspace-but-the-current-one-until-touch-id-or-the-mac-password-unlocks-a-session.md), amends [0113](../../adr/0113-a-locked-session-looks-like-a-one-workspace-account-with-no-placeholder-count-or-lock-chrome-and-one-neutral-way-back-in.md))
+**ADRs:** [0122](../../adr/0122-the-workspace-lock-switch-on-shows-one-workspace-and-refuses-widening.md) (builds on [0110](../../adr/0110-the-workspace-lock-hides-every-workspace-but-the-current-one-until-touch-id-or-the-mac-password-unlocks-a-session.md), amends [0113](../../adr/0113-a-locked-session-looks-like-a-one-workspace-account-with-no-placeholder-count-or-lock-chrome-and-one-neutral-way-back-in.md))
 **Not changing:** the server, the owner API, the widget extension's code, the relock triggers and the idle timeout
 
 ## Problem
@@ -24,7 +24,7 @@ With the switch on, the app still offered All workspaces and per-workspace toggl
 
 ## Alternatives
 
-See [ADR 0122](../../adr/0122-one-rule-in-todzkit-decides-the-selection-a-locked-session-shows-and-every-path-that-widens-it-asks-the-mac-owner.md): keep multi-select when unlocked (the reported bug), draw a disabled All workspaces (a tell), patch each view (forgettable).
+See [ADR 0122](../../adr/0122-the-workspace-lock-switch-on-shows-one-workspace-and-refuses-widening.md): keep multi-select when unlocked (the reported bug), draw a disabled All workspaces (a tell), patch each view (forgettable).
 
 ## Rollback
 

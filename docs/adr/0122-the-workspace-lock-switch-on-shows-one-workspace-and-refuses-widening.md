@@ -1,4 +1,4 @@
-# 0122. One rule in TodzKit decides the selection a locked session shows, and every path that widens it asks the Mac owner
+# 0122. The workspace lock switch on shows one workspace and refuses widening
 
 - Status: Accepted (the loop's call)
 - Date: 2026-11-27
