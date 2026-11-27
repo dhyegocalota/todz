@@ -817,3 +817,14 @@ The owner rotates the Keychain token after a run that went wrong, when it may ha
 | 2026-11-27 | 8c3d8fe | 18 | Release 0.2.7: two `pnpm release:mac` attempts stopped at `generate_keys timed out after 120s` before any upload, the owner being away from the Keychain prompt; nothing was deployed and `/download/latest` still 302s to /download/0.2.6. The release waits for the owner. |
 | 2026-11-27 | 505e24e | 8 | Main moved docs-only (#118) after 8c3d8fe; `scripts/deploy-worker.sh` Current Version ID `05128138-9bcb-41d8-8786-ec7342d32e06`, `server 2026.11.27+505e24e`, accepts app 0.2.4 or later; no migration pending. |
 | 2026-11-27 | 505e24e | 18 | Release 0.2.7 (build 2481) with the owner at the Keychain prompts: Worker `17b06909-13b0-427f-aa84-87bc6b16b964`; `/download/latest` 302 to /download/0.2.7/Todz-0.2.7.dmg, the sum `OK`, `Good "todz-release" signature for release@todz.app`, the appcast lists 0.2.7 with `sparkle:edSignature`; tag `mac-v0.2.7`. |
+| 2026-11-27 | 161983b | 1 | `pnpm verify all`: 9 gates green at 161983b5. |
+| 2026-11-27 | 161983b | 2 | `"status":"active"`. |
+| 2026-11-27 | 161983b | 5 | Bookmark `0000011a-00000000-00005130-2c683f63750a4871cbe25b46317d0d30`. |
+| 2026-11-27 | 161983b | 6 | `before-161983b5.sql` exported, deleted after step 14. |
+| 2026-11-27 | 161983b | 7 | Pending `0018_drop_api_keys.sql`; applied; second list: nothing to apply. |
+| 2026-11-27 | 161983b | 8 | Current Version ID `771b6814-3a6c-41de-9e3a-cd38f40dc93c`, `server 2026.11.27+161983b`, accepts app 0.2.4 or later. |
+| 2026-11-27 | 161983b | 14 | `/health` 200; `POST /mcp` with a former key `Bearer todz_x` 401 `invalid_token` whose description points to https://docs.todz.app/connect-an-agent. |
+| 2026-11-27 | 161983b | 18 | Release 0.2.8 (build 2544): the first `pnpm release:mac` failed "/download/latest does not redirect to …/0.2.8/Todz-0.2.8.dmg" right after the candidate deploy and rolled back to `771b6814`; `scripts/deploy-worker.sh` (`9c7b86fb-e1c9-47fd-85c7-a359afde64c9`), then the retry from the complete build: Worker `e47082c8-3952-470e-ba2e-9f3cc0bd4f82`; `/download/latest` 302 to /download/0.2.8/Todz-0.2.8.dmg, the sum `OK`, `Good "todz-release" signature for release@todz.app`, the appcast lists 0.2.8 with `sparkle:edSignature`; tag `mac-v0.2.8`. |
+| 2026-11-27 | bba65b6 | 7 | Nothing to apply. |
+| 2026-11-27 | bba65b6 | 8 | #128 (consent return page) and #127 (workspace privacy landing): Current Version ID `452e7f3d-32bf-42aa-9805-b47afe0cc69c`, `server 2026.11.27+bba65b6`, accepts app 0.2.4 or later. |
+| 2026-11-27 | bba65b6 | 14 | `/health` names `2026.11.27+bba65b6`; `/download/latest` 302 to /download/0.2.8/Todz-0.2.8.dmg; the landing and `llms.txt` carry "Other workspaces vanish without a trace"; docs.todz.app/workspace-privacy 200; a former key 401; the OAuth authorization-server metadata 200. |
