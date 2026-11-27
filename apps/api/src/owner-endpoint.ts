@@ -3,6 +3,7 @@ import { isAppVersionAccepted } from './app-version';
 import { bearerSecret, unauthorized } from './bearer-secret';
 import type { Env } from './env';
 import { ACCOUNT_HANDLERS } from './owner-account';
+import { CONNECTED_APP_HANDLERS } from './owner-connected-apps';
 import { HttpMethod } from './http-method';
 import { OwnerErrorCode, appTooOldResponse, errorResponse, noRouteResponse, suspendedResponse } from './owner-errors';
 import { OWNER_KEY_HANDLERS } from './owner-key-routes';
@@ -25,6 +26,7 @@ const SESSION_HANDLERS: Record<SessionRoute, SessionHandler> = {
   ...WORKSPACE_HANDLERS,
   ...KEY_HANDLERS,
   ...OWNER_KEY_HANDLERS,
+  ...CONNECTED_APP_HANDLERS,
   ...TASK_HANDLERS,
 };
 

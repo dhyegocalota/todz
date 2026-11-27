@@ -53,6 +53,10 @@ struct KeysAnswer: Decodable {
     let keys: [ProjectKey]
 }
 
+struct ConnectedAppsAnswer: Decodable {
+    let connectedApps: [ConnectedApp]
+}
+
 struct SignInMethodAnswer: Decodable {
     let method: SignInMethod
 }

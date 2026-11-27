@@ -50,6 +50,9 @@ const USAGE_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8613';
 const APPCAST_RATE_LIMIT_NAMESPACE_ID = '8614';
 const APPCAST_ADDRESS_RATE_LIMIT_NAMESPACE_ID = '8615';
 const CLOUD_READ_RATE_LIMIT_NAMESPACE_ID = '8616';
+const OAUTH_RATE_LIMIT_NAMESPACE_ID = '8617';
+const OAUTH_REGISTER_RATE_LIMIT_NAMESPACE_ID = '8618';
+const OAUTH_REGISTER_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8619';
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -66,7 +69,7 @@ const NO_LOCAL_PROVIDER_PATTERN = /"(fake|console)"/;
 const SEND_EMAIL_BINDING_PATTERN =
   /"send_email":\s*\[\s*\{\s*"name":\s*"EMAIL",\s*"allowed_sender_addresses":\s*\["noreply@todz\.app"\]\s*,?\s*\}\s*,?\s*\]/;
 const ASSETS_PATTERN =
-  /"assets":\s*\{\s*"directory":\s*"\.\/public",\s*"binding":\s*"ASSETS",\s*"run_worker_first":\s*\[\s*"\/owner",\s*"\/owner\/\*",\s*"\/mcp",\s*"\/sign-in",\s*"\/sign-in\/challenge",\s*"\/day-email\/stop",\s*"\/health",\s*"\/download\/appcast\.xml"\s*,?\s*\]\s*,?\s*\}/;
+  /"assets":\s*\{\s*"directory":\s*"\.\/public",\s*"binding":\s*"ASSETS",\s*"run_worker_first":\s*\[\s*"\/owner",\s*"\/owner\/\*",\s*"\/mcp",\s*"\/oauth\/\*",\s*"\/\.well-known\/oauth-authorization-server",\s*"\/\.well-known\/oauth-protected-resource\/mcp",\s*"\/sign-in",\s*"\/sign-in\/challenge",\s*"\/day-email\/stop",\s*"\/health",\s*"\/download\/appcast\.xml"\s*,?\s*\]\s*,?\s*\}/;
 const DEBUG_API_BASE_URL_PATTERN = /configs:\s*\n\s+Debug:\s*\n\s+TODZ_API_BASE_URL: (\S+)\s*\n/;
 const RELEASE_API_BASE_URL_PATTERN = /\n\s+Release:\s*\n\s+TODZ_API_BASE_URL: (\S+)\s*\n/;
 const INFO_PLIST_API_BASE_URL_PATTERN = /TodzAPIBaseURL: \$\(TODZ_API_BASE_URL\)/;
@@ -292,6 +295,21 @@ describe('the api source', () => {
         name: 'CLOUD_READ_LIMITER',
         namespace_id: CLOUD_READ_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('CLOUD_READ_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'OAUTH_LIMITER',
+        namespace_id: OAUTH_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('OAUTH_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'OAUTH_REGISTER_LIMITER',
+        namespace_id: OAUTH_REGISTER_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('OAUTH_REGISTER_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'OAUTH_REGISTER_GLOBAL_LIMITER',
+        namespace_id: OAUTH_REGISTER_GLOBAL_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('OAUTH_REGISTER_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
   });

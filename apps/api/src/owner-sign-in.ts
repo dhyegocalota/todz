@@ -128,6 +128,30 @@ export async function signIn({ request, env, now, executionContext }: OwnerConte
     now,
   });
   if (subject === null) return errorResponse(OwnerErrorCode.IdentityRejected);
+  const admitted = await admittedOwner({ request, env, kind, subject, timeZone, now, executionContext });
+  if (admitted instanceof Response) return admitted;
+  const sessionToken = await openOwnerSession({ directory: env.DIRECTORY, ownerId: admitted.id, now });
+  return Response.json({ session_token: sessionToken, owner: ownerJson(admitted) }, { status: HttpStatus.Created });
+}
+
+// NB ADR 0109: the app sign-in and the OAuth browser sign-in admit a verified subject through this one path: the cloud cap, the sign-up limits, the account and its welcome.
+export async function admittedOwner({
+  request,
+  env,
+  kind,
+  subject,
+  timeZone,
+  now,
+  executionContext,
+}: {
+  request: Request;
+  env: Env;
+  kind: SignInProviderKind;
+  subject: string;
+  timeZone: string;
+  now: number;
+  executionContext: ExecutionContext;
+}): Promise<OwnerRecord | Response> {
   const cloudRefusal = await cloudFullRefusalOf({ env, address: subject, now });
   if (cloudRefusal !== null) return cloudRefusal;
   const signUpRefusal = await signUpRefusalOf({ request, env, kind, subject, now });
@@ -136,8 +160,7 @@ export async function signIn({ request, env, now, executionContext }: OwnerConte
   const identity = await identityOwner({ directory: env.DIRECTORY, kind, subject, timeZone, now, cap });
   if (identity === null) return cloudFullResponse();
   const { owner, isNewOwner } = identity;
-  const sessionToken = await openOwnerSession({ directory: env.DIRECTORY, ownerId: owner.id, now });
   const isWelcomedOwner = isNewOwner && kind === SignInProviderKind.Email;
   if (isWelcomedOwner) executionContext.waitUntil(sendWelcome({ request, env, address: subject }).catch(() => undefined));
-  return Response.json({ session_token: sessionToken, owner: ownerJson(owner) }, { status: HttpStatus.Created });
+  return owner;
 }

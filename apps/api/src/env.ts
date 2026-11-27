@@ -20,6 +20,9 @@ export type Env = {
   DAY_EMAIL_STOP_LIMITER?: RateLimit;
   OWNER_LIMITER?: RateLimit;
   MCP_LIMITER?: RateLimit;
+  OAUTH_LIMITER?: RateLimit;
+  OAUTH_REGISTER_LIMITER?: RateLimit;
+  OAUTH_REGISTER_GLOBAL_LIMITER?: RateLimit;
   REPOSITORY_API_ORIGIN?: string;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;

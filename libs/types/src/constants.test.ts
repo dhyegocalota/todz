@@ -45,6 +45,8 @@ import {
   MILLISECONDS_PER_MINUTE,
   MILLISECONDS_PER_SECOND,
   MINIMUM_APP_VERSION,
+  OAUTH_ACCESS_TOKEN_PREFIX,
+  OAUTH_REFRESH_TOKEN_PREFIX,
   OWNER_KEY_PREFIX,
   OWNER_LIVE_KEYS_MAX,
   PROJECT_KEY_PREFIX,
@@ -150,6 +152,16 @@ describe('mcp constants', () => {
   test('an owner key starts with todz-owner_, which no project key can start with (pin)', () => {
     expect(OWNER_KEY_PREFIX).toBe('todz-owner_');
     expect(OWNER_KEY_PREFIX.startsWith(PROJECT_KEY_PREFIX)).toBe(false);
+  });
+
+  test('OAuth tokens start with todz-at_ and todz-rt_, which no project key or owner key can start with', () => {
+    expect(OAUTH_ACCESS_TOKEN_PREFIX).toBe('todz-at_');
+    expect(OAUTH_REFRESH_TOKEN_PREFIX).toBe('todz-rt_');
+    [OAUTH_ACCESS_TOKEN_PREFIX, OAUTH_REFRESH_TOKEN_PREFIX].forEach((prefix) => {
+      expect(prefix.startsWith(PROJECT_KEY_PREFIX)).toBe(false);
+      expect(prefix.startsWith(OWNER_KEY_PREFIX)).toBe(false);
+      expect(OWNER_KEY_PREFIX.startsWith(prefix)).toBe(false);
+    });
   });
 
   test('an owner holds at most five live owner keys', () => {

@@ -6,7 +6,7 @@ import { REPOSITORY } from '@todz/types';
 import { PERSIST_FOLDER_VARIABLE } from './e2e/persist-folder';
 import { ProjectName } from './e2e/project-name';
 import { FAKE_GITHUB_PORT } from './e2e/fake-github';
-import { ADMIN_ADDRESS, SERVER_LOG_FILE_NAME } from './e2e/site-environment';
+import { ADMIN_ADDRESS, OAUTH_ORIGIN, OAUTH_SERVER_LOG_FILE_NAME, SERVER_LOG_FILE_NAME } from './e2e/site-environment';
 
 const SITE_PORT = 8791;
 const INSPECTOR_PORT = 9291;
@@ -18,6 +18,10 @@ const STAGED_FOLDER_NAME = 'staged-assets';
 const STAGED_STATE_FOLDER_NAME = 'staged-state';
 const STAGED_SERVER_LOG_FILE_NAME = 'staged-server.log';
 const STAGE_SCRIPT = 'e2e/stage-fixture-site.sh';
+const OAUTH_PORT = 8795;
+const OAUTH_INSPECTOR_PORT = 9295;
+const OAUTH_SITE_ORIGIN = 'http://localhost:8796';
+const OAUTH_STATE_FOLDER_NAME = 'oauth-state';
 const API_ORIGIN = 'http://localhost:8787';
 const FAKE_GITHUB_ORIGIN = `http://localhost:${FAKE_GITHUB_PORT}`;
 const UNREACHABLE_GITHUB_ORIGIN = 'http://localhost:8794';
@@ -55,11 +59,21 @@ function persistFolder(): string {
   return createdFolder;
 }
 
+function oauthVariables(): Record<string, string> {
+  return {
+    SIGN_IN_PROVIDER: 'email',
+    EMAIL_SENDER: 'console',
+    PUBLIC_ORIGIN: OAUTH_ORIGIN,
+    SITE_ORIGIN: OAUTH_SITE_ORIGIN,
+    TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
+    TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
+  };
+}
+
 function siteServerCommand({
   port,
   inspectorPort,
-  siteOrigin,
-  githubOrigin,
+  variables,
   stateFolder,
   logFile,
   assetsArguments,
@@ -67,15 +81,14 @@ function siteServerCommand({
 }: {
   port: number;
   inspectorPort: number;
-  siteOrigin: string;
-  githubOrigin: string;
+  variables: Record<string, string>;
   stateFolder: string;
   logFile: string;
   assetsArguments: string[];
   beforeServing: string[];
 }): string {
   const persistArgument = `--persist-to ${stateFolder}`;
-  const variableArguments = Object.entries(siteVariablesOf({ siteOrigin, githubOrigin })).map(([name, value]) => `--var ${name}:${value}`);
+  const variableArguments = Object.entries(variables).map(([name, value]) => `--var ${name}:${value}`);
   const migrate = `pnpm exec wrangler d1 migrations apply ${DATABASE_NAME} --local ${persistArgument}`;
   const serve = [
     'pnpm exec wrangler dev',
@@ -93,8 +106,7 @@ function defaultServerCommand(): string {
   return siteServerCommand({
     port: SITE_PORT,
     inspectorPort: INSPECTOR_PORT,
-    siteOrigin: SITE_ORIGIN,
-    githubOrigin: FAKE_GITHUB_ORIGIN,
+    variables: siteVariablesOf({ siteOrigin: SITE_ORIGIN, githubOrigin: FAKE_GITHUB_ORIGIN }),
     stateFolder: persistFolder(),
     logFile: path.join(persistFolder(), SERVER_LOG_FILE_NAME),
     assetsArguments: [],
@@ -107,12 +119,23 @@ function stagedServerCommand(): string {
   return siteServerCommand({
     port: STAGED_SITE_PORT,
     inspectorPort: STAGED_INSPECTOR_PORT,
-    siteOrigin: STAGED_SITE_ORIGIN,
-    githubOrigin: UNREACHABLE_GITHUB_ORIGIN,
+    variables: siteVariablesOf({ siteOrigin: STAGED_SITE_ORIGIN, githubOrigin: UNREACHABLE_GITHUB_ORIGIN }),
     stateFolder: path.join(persistFolder(), STAGED_STATE_FOLDER_NAME),
     logFile: path.join(persistFolder(), STAGED_SERVER_LOG_FILE_NAME),
     assetsArguments: [`--assets ${stagedFolder}`],
     beforeServing: [`bash ${STAGE_SCRIPT} ${stagedFolder}`],
+  });
+}
+
+function oauthServerCommand(): string {
+  return siteServerCommand({
+    port: OAUTH_PORT,
+    inspectorPort: OAUTH_INSPECTOR_PORT,
+    variables: oauthVariables(),
+    stateFolder: path.join(persistFolder(), OAUTH_STATE_FOLDER_NAME),
+    logFile: path.join(persistFolder(), OAUTH_SERVER_LOG_FILE_NAME),
+    assetsArguments: [],
+    beforeServing: [],
   });
 }
 
@@ -150,5 +173,6 @@ export default defineConfig({
     },
     { command: defaultServerCommand(), url: SITE_ORIGIN, reuseExistingServer: false, timeout: SERVER_START_TIMEOUT_MS },
     { command: stagedServerCommand(), url: STAGED_SITE_ORIGIN, reuseExistingServer: false, timeout: SERVER_START_TIMEOUT_MS },
+    { command: oauthServerCommand(), url: `${OAUTH_ORIGIN}/health`, reuseExistingServer: false, timeout: SERVER_START_TIMEOUT_MS },
   ],
 });

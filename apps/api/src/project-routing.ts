@@ -19,6 +19,8 @@ import {
   listWorkspaceProjects,
 } from './directory-workspaces';
 import type { Env } from './env';
+import { OAuthScope } from './oauth/oauth-scope';
+import { findAccessGrant } from './oauth/oauth-store';
 import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 import type { ProjectStore } from './project-store';
 import { type RecordWait, measured } from './timed-call';
@@ -115,15 +117,53 @@ export async function openKeyProject({
   const keyDigest = await digestCredential(secret);
   const { keyProject, sessionClientName } = await findKeyProjectOfSession({ env, keyDigest, mcpSession });
   if (keyProject === null) return null;
+  return keyProjectOf({ env, record: keyProject, keyDigest, sessionClientName });
+}
+
+function keyProjectOf({
+  env,
+  record,
+  keyDigest,
+  sessionClientName,
+}: {
+  env: Env;
+  record: KeyProjectRecord;
+  keyDigest: string;
+  sessionClientName: string | null;
+}): KeyProject {
   return {
-    project: openProject({ env, projectId: keyProject.projectId }),
-    workspace: keyWorkspaceOf({ env, record: keyProject }),
+    project: openProject({ env, projectId: record.projectId }),
+    workspace: keyWorkspaceOf({ env, record }),
     keyDigest,
-    timeZone: keyProject.timeZone,
-    agentNudge: keyProject.agentNudge,
-    ownerId: keyProject.ownerId,
-    isSuspended: keyProject.isSuspended,
+    timeZone: record.timeZone,
+    agentNudge: record.agentNudge,
+    ownerId: record.ownerId,
+    isSuspended: record.isSuspended,
     sessionClientName,
+  };
+}
+
+type OAuthAccessBase = { grantId: string; clientName: string };
+
+export type OAuthAccess =
+  | (OAuthAccessBase & { scope: OAuthScope.Project; keyProject: KeyProject })
+  | (OAuthAccessBase & { scope: OAuthScope.Owner; owner: SessionOwner });
+
+// NB ADR 0109: an access token resolves to the same KeyProject a project key of its project does, or to the same SessionOwner an owner key does, and to nothing else.
+export async function openOAuthAccess({ env, secret, now }: { env: Env; secret: string; now: number }): Promise<OAuthAccess | null> {
+  if (isBlankSecret(secret)) return null;
+  const tokenDigest = await digestCredential(secret);
+  const grant = await findAccessGrant({ directory: env.DIRECTORY, digest: tokenDigest, now });
+  if (grant === null) return null;
+  const { grantId, clientName, ownerId, isSuspended, timeZone, agentNudge, projectId, workspaceId } = grant;
+  if (projectId === null) return { scope: OAuthScope.Owner, grantId, clientName, owner: resolvedOwnerOf({ ownerId, isSuspended }) };
+  if (workspaceId === null) throw new Error('a project grant reached no workspace');
+  const record = { projectId, workspaceId, timeZone, agentNudge, ownerId, isSuspended };
+  return {
+    scope: OAuthScope.Project,
+    grantId,
+    clientName,
+    keyProject: keyProjectOf({ env, record, keyDigest: tokenDigest, sessionClientName: null }),
   };
 }
 

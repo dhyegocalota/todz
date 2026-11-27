@@ -20,6 +20,11 @@ const DIRECTORY_TABLES = [
   'mail_meter',
   'mcp_sessions',
   'metrics_daily',
+  'oauth_clients',
+  'oauth_codes',
+  'oauth_grants',
+  'oauth_sessions',
+  'oauth_tokens',
   'owner_identities',
   'owner_keys',
   'owner_usage',
@@ -81,7 +86,7 @@ describe('the handler routes the paths the static assets never answer (the asset
 });
 
 describe('the directory', () => {
-  test('lists exactly the twenty-one directory tables', async () => {
+  test('lists exactly the twenty-six directory tables', async () => {
     expect(await directoryTables()).toEqual(DIRECTORY_TABLES);
   });
 
