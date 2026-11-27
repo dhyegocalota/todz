@@ -313,10 +313,12 @@ describe('the selector', () => {
     expect(html).toContain('<form class="language-form" method="post" action="/language">');
     expect(html).toContain(`<input type="hidden" name="return" value="${pathPrefix}/">`);
     Object.entries(LANGUAGE_PROFILES).forEach(([candidate, profile]) => {
-      const button = new RegExp(`<button[^>]*name="language"[^>]*value="${candidate}"[^>]*>${escapedPattern(profile.nativeName)}</button>`);
+      const button = new RegExp(
+        `<button[^>]*name="language"[^>]*value="${candidate}"[^>]*>(?:<svg[^>]*data-flag[\\s\\S]*?</svg>)?${escapedPattern(profile.nativeName)}</button>`,
+      );
       expect(html).toMatch(button);
     });
-    const current = elementsOf({ html, pattern: /<button[^>]*name="language"[^>]*aria-current="true"[^>]*>([^<]*)<\/button>/g });
+    const current = elementsOf({ html, pattern: /<button[^>]*name="language"[^>]*aria-current="true"[^>]*>(?:<svg[\s\S]*?<\/svg>)?([^<]*)<\/button>/g });
     expect(current.map(([, name]) => name)).toEqual([LANGUAGE_PROFILES[language].nativeName]);
   });
 
