@@ -1,0 +1,52 @@
+---
+title: Uso justo
+---
+
+O todz é gratuito. Para que uma conta não derrube o serviço nem leve a fatura além do plano, toda conta tem os limites abaixo. Eles são generosos: uma lista de tarefas pessoal nem chega perto.
+
+## Os limites
+
+| Limite | Padrão | O que acontece ao passar |
+|---|---|---|
+| Workspaces por conta | 20 | Criar um workspace é recusado |
+| Projetos por workspace | 100 | Criar um projeto é recusado |
+| Tarefas abertas por projeto | 5.000 | Adicionar ou reabrir tarefas é recusado; concluir uma libera uma vaga |
+| Título | 500 caracteres | A tarefa é recusada |
+| Notas | 20.000 caracteres | A tarefa é recusada |
+| Alterações de tarefa por dia | 1.000 (dia UTC) | Conta adicionar, editar, concluir e reabrir tarefas, inclusive uma tarefa adicionada ao responder o e-mail do dia, e nada além disso (criar um workspace ou um projeto não conta). As alterações são recusadas até a meia-noite UTC; a leitura continua funcionando |
+| Texto de tarefas guardado | 50 MB | As escritas são recusadas; a leitura continua funcionando. A contagem é um limite superior: soma cada título, nota e edição como foi escrito e não diminui quando você edita ou apaga, então o operador pode zerá-la para uma conta |
+| Contas novas por rede por dia | 5 | Criar conta é recusado até o dia seguinte |
+
+Uma recusa diz o que aconteceu. O servidor responde com um código e uma frase simples; para um agente, a ferramenta responde com a mesma frase.
+
+## Endereços de e-mail descartáveis
+
+Não é possível abrir contas novas com o endereço de um serviço de e-mail descartável. As contas existentes não são afetadas.
+
+## Suspensão
+
+Se uma conta for usada de forma abusiva, o operador pode suspendê-la. Uma conta suspensa ainda pode ler as tarefas e sair. Ela não pode alterar nada, e os agentes dela param de responder até a conta ser restaurada. Nada é apagado.
+
+## Capacidade do todz cloud
+
+As vagas gratuitas do todz cloud são extremamente limitadas. O todz cloud roda com um orçamento mensal fixo, então admite no máximo 50 contas ativas. A auto-hospedagem está sempre aberta: [rode o seu próprio servidor](/pt-br/self-host) sem limite de contas. Uma conta está ativa quando entrou, foi vista conectada ou escreveu uma tarefa nos últimos 90 dias; uma conta que fica parada por 90 dias libera a vaga e, se o cloud estiver cheio quando ela voltar, espera por uma vaga como um endereço novo.
+
+- Contas já admitidas nunca são recusadas por causa do limite.
+- Quando o cloud está cheio, pedir um link de acesso parece igual para todo endereço: a resposta é sempre que um link está a caminho. Um endereço que não pode entrar recebe um e-mail dizendo "o todz cloud está cheio agora", com um link pessoal para a fila em todz.app/cloud-queue, que funciona por uma semana e onde ele confirma o endereço para ser convidado quando abrir uma vaga, e um link para [auto-hospedar](/pt-br/self-host).
+- Quando o uso do mês se aproxima das cotas incluídas no plano, o operador recebe um e-mail. Acima de 95%, as contas que mais escrevem no mês têm novas escritas recusadas com "o todz cloud está no limite de capacidade neste mês" (HTTP 429, com um `Retry-After` de segundos até o dia primeiro do mês seguinte, UTC), e a leitura de todos desacelera para poucas por minuto. Suas tarefas não são apagadas, e as demais contas continuam escrevendo normalmente.
+- Todo e-mail que o todz cloud envia conta para a franquia mensal de e-mails, então um endereço não recebe mais de 10 e-mails por dia.
+
+Servidores auto-hospedados não têm limite de contas, a menos que definam `CLOUD_ACCOUNTS_MAX` como um número inteiro positivo.
+
+## Servidores auto-hospedados
+
+As contagens são variáveis do Worker. Deixe uma de fora para manter o padrão; defina como um número inteiro positivo para mudá-la:
+
+- `FAIR_USE_WORKSPACES_MAX`
+- `FAIR_USE_PROJECTS_PER_WORKSPACE_MAX`
+- `FAIR_USE_OPEN_TASKS_PER_PROJECT_MAX`
+- `FAIR_USE_WRITES_PER_DAY_MAX`
+- `FAIR_USE_STORED_BYTES_MAX` (em bytes)
+- `FAIR_USE_SIGN_UPS_PER_CLIENT_DAY_MAX`
+
+O limite de contas novas também precisa do segredo `SIGN_UP_KEY_SECRET` (veja [Configuração do servidor](/pt-br/self-host#6-turnstile)); sem ele, não é possível criar contas novas. Um valor que não seja um número inteiro positivo faz o servidor parar com um erro que nomeia a variável. Os tamanhos de título e de notas são fixos, porque o app e as ferramentas dos agentes os declaram.

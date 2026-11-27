@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
+import { DOCS_FOLDER_OF } from './docs-languages';
 import { readRepositoryFile, repositoryFiles, repositoryPath } from './repository-files';
 
 const SELF_PATH = 'tools/repository-shape/src/api-keys-removed.test.ts';
@@ -16,7 +17,13 @@ const CURRENT_STATE_PATHSPECS = [
   'README.md',
 ];
 const TEST_PATHSPEC = 'apps/api/test';
-const BREAKING_NOTE_PATHS = ['apps/docs/connect-an-agent.mdx', 'apps/docs/releases.mdx', 'apps/api/src/mcp-copy.ts'];
+const BREAKING_NOTE_PAGES = ['connect-an-agent', 'releases'];
+const BREAKING_NOTE_PATHS = [
+  'apps/api/src/mcp-copy.ts',
+  ...Object.values(DOCS_FOLDER_OF).flatMap((folder) =>
+    BREAKING_NOTE_PAGES.map((page) => (folder ? `apps/docs/${folder}/${page}.mdx` : `apps/docs/${page}.mdx`)),
+  ),
+];
 const DROPPED_TABLE_PATTERN = /(?:FROM|INTO|UPDATE|JOIN|TABLE)\s+(?:project_keys|owner_keys|mcp_sessions)\b/i;
 const KEY_COPY_PATTERN =
   /project key|owner key|agent key|api key|TODZ_API_KEY|--header 'Authorization|Authorization: Bearer|PROJECT_KEY_PREFIX|OWNER_KEY_PREFIX|LIVE_KEYS/i;

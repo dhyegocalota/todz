@@ -1,0 +1,244 @@
+---
+title: Ferramentas MCP
+description: As ferramentas e o prompt que um agente recebe do servidor MCP do todz, e o escopo de que cada uma precisa.
+---
+
+Um cliente MCP se conecta ao servidor do todz apenas com OAuth: adicione a URL ao seu cliente e entre na conta, como mostra [Conectar um agente](/pt-br/connect-an-agent). A permissão que você aprova define o conjunto de ferramentas: um escopo de projeto recebe as ferramentas de tarefa de um projeto, e um escopo de proprietário recebe as ferramentas da conta e as mesmas ferramentas de tarefa para todos os projetos da conta. Cada ferramenta abaixo indica o escopo de que precisa.
+
+- Um **escopo de projeto** guarda a lista de tarefas de um projeto: o projeto que você escolheu na tela de consentimento. Ele também pode listar e mover tarefas dentro do workspace desse projeto. Nunca cria, renomeia nem exclui um workspace ou um projeto. Os ids de tarefa são como `T-12`.
+- Um **escopo de proprietário** guarda a conta inteira: seus workspaces, seus projetos e todas as tarefas, então uma conexão expõe tudo o que o app pode fazer. Ele nunca vem selecionado na tela de consentimento, e você o desconecta em **Ajustes** › **Apps conectados**. Ele não alcança nenhuma outra conta.
+
+Em um escopo de proprietário, toda ferramenta de tarefa recebe um argumento `project` obrigatório: o id do projeto em que ela trabalha, vindo de `workspaces`. Não existe projeto padrão. Um projeto de outra conta responde exatamente como um projeto que não existe. Um escopo de projeto não tem o argumento `project`, exceto que `move` recebe o destino ali.
+
+Toda exclusão pede um argumento `confirm` com o nome atual (o título atual, no caso de uma tarefa); quando ele é diferente, nada é excluído.
+
+## next
+
+**Escopo:** escopo de projeto e escopo de proprietário.
+
+A única tarefa aberta para trabalhar agora neste projeto, com as notas dela.
+
+| Argumento | Tipo   | Descrição                                                        |
+| --------- | ------ | ---------------------------------------------------------------- |
+| `project` | texto  | Só no escopo de proprietário: id do projeto em que a ferramenta de tarefa trabalha, vindo de workspaces. |
+
+## add
+
+**Escopo:** escopo de projeto e escopo de proprietário.
+
+Adiciona uma ou mais tarefas. Dê a cada uma uma idempotency_key para tornar uma nova tentativa segura.
+
+| Argumento         | Tipo           | Descrição                                                                    |
+| ----------------- | -------------- | ---------------------------------------------------------------------------- |
+| `project`         | texto          | Só no escopo de proprietário: id do projeto em que a ferramenta de tarefa trabalha, vindo de workspaces. |
+| `tasks`           | lista          | As tarefas a adicionar, um objeto para cada.                                 |
+| `title`           | texto          | Título curto.                                                                |
+| `notes`           | texto ou null  | Notas em Markdown.                                                           |
+| `due_date`        | texto ou null  | Data do calendário, YYYY-MM-DD.                                              |
+| `idempotency_key` | texto ou null  | Qualquer texto único para esta tarefa; repeti-lo devolve a tarefa já adicionada. |
+
+## list
+
+**Escopo:** escopo de projeto e escopo de proprietário.
+
+Lista tarefas por estado, janela de vencimento e texto, na ordem manual (concluídas: as mais novas primeiro).
+
+| Argumento | Tipo            | Descrição                                                                              |
+| --------- | --------------- | -------------------------------------------------------------------------------------- |
+| `project` | texto           | Só no escopo de proprietário: id do projeto em que a ferramenta de tarefa trabalha, vindo de workspaces. |
+| `state`   | texto           | `open` ou `done`. O padrão é `open`.                                                   |
+| `due`     | lista de texto  | Janelas de vencimento a incluir: `overdue`, `today`, `upcoming` ou `undated`. Vazio significa todas. |
+| `text`    | texto ou null   | Texto a procurar nos títulos e nas notas.                                              |
+| `limit`   | número inteiro  | Quantas tarefas mostrar.                                                               |
+
+## show
+
+**Escopo:** escopo de projeto e escopo de proprietário.
+
+Mostra uma tarefa com o estado, a data de vencimento e as notas.
+
+| Argumento | Tipo   | Descrição                                                                    |
+| --------- | ------ | ---------------------------------------------------------------------------- |
+| `project` | texto  | Só no escopo de proprietário: id do projeto em que a ferramenta de tarefa trabalha, vindo de workspaces. |
+| `id`      | texto  | Id da tarefa, como `T-12`.                                                   |
+
+## history
+
+**Escopo:** escopo de projeto e escopo de proprietário.
+
+Mostra o que aconteceu com uma tarefa, da mais antiga para a mais nova: quem fez o quê e quando.
+
+| Argumento | Tipo   | Descrição                                                                    |
+| --------- | ------ | ---------------------------------------------------------------------------- |
+| `project` | texto  | Só no escopo de proprietário: id do projeto em que a ferramenta de tarefa trabalha, vindo de workspaces. |
+| `id`      | texto  | Id da tarefa, como `T-12`.                                                   |
+
+## update
+
+**Escopo:** escopo de projeto e escopo de proprietário.
+
+Muda o título, as notas, a data de vencimento ou a posição de uma tarefa na ordem. null limpa as notas ou a data de vencimento.
+
+| Argumento   | Tipo           | Descrição                                                                  |
+| ----------- | -------------- | -------------------------------------------------------------------------- |
+| `project`   | texto          | Só no escopo de proprietário: id do projeto em que a ferramenta de tarefa trabalha, vindo de workspaces. |
+| `id`        | texto          | Id da tarefa, como `T-12`.                                                 |
+| `title`     | texto          | Título curto.                                                              |
+| `notes`     | texto ou null  | Notas em Markdown.                                                         |
+| `due_date`  | texto ou null  | Data do calendário, YYYY-MM-DD.                                            |
+| `placement` | objeto         | Para onde mover a tarefa: `first`, `last`, ou `before` ou `after` uma âncora. |
+| `kind`      | texto          | Dentro de `placement`: `first`, `last`, `before` ou `after`.               |
+| `anchor`    | texto          | Dentro de `placement`, com `before` e `after`: o id da outra tarefa.       |
+
+## done
+
+**Escopo:** escopo de projeto e escopo de proprietário.
+
+Conclui uma ou mais tarefas, com uma nota opcional do que foi feito.
+
+| Argumento | Tipo            | Descrição                                                                    |
+| --------- | --------------- | ---------------------------------------------------------------------------- |
+| `project` | texto           | Só no escopo de proprietário: id do projeto em que a ferramenta de tarefa trabalha, vindo de workspaces. |
+| `ids`     | lista de texto  | Ids de tarefa, como `T-12`.                                                  |
+| `note`    | texto ou null   | O que foi feito.                                                             |
+
+## reopen
+
+**Escopo:** escopo de projeto e escopo de proprietário.
+
+Reabre uma ou mais tarefas concluídas.
+
+| Argumento | Tipo            | Descrição                                                                    |
+| --------- | --------------- | ---------------------------------------------------------------------------- |
+| `project` | texto           | Só no escopo de proprietário: id do projeto em que a ferramenta de tarefa trabalha, vindo de workspaces. |
+| `ids`     | lista de texto  | Ids de tarefa, como `T-12`.                                                  |
+
+## delete
+
+**Escopo:** escopo de projeto e escopo de proprietário.
+
+Exclui uma tarefa em definitivo. Informe o título atual dela como confirm; nada é excluído quando ele é diferente. Uma tarefa que você quer manter em outro lugar precisa de move. O Mac do proprietário mostra a exclusão após a próxima atualização.
+
+| Argumento | Tipo   | Descrição                                                                         |
+| --------- | ------ | --------------------------------------------------------------------------------- |
+| `project` | texto  | Só no escopo de proprietário: id do projeto em que a ferramenta de tarefa trabalha, vindo de workspaces. |
+| `id`      | texto  | Id da tarefa, como `T-12`.                                                        |
+| `confirm` | texto  | O título atual da tarefa, digitado exatamente. Nada é excluído quando ele é diferente. |
+
+## move
+
+**Escopo:** escopo de projeto e escopo de proprietário.
+
+Move uma tarefa para outro projeto do mesmo workspace. A tarefa recebe um novo id lá. Encontre os ids de projeto com projects. O Mac do proprietário mostra a mudança após a próxima atualização.
+
+| Argumento     | Tipo   | Descrição                                                                                           |
+| ------------- | ------ | --------------------------------------------------------------------------------------------------- |
+| `id`          | texto  | Id da tarefa, como `T-12`.                                                                          |
+| `project`     | texto  | Escopo de projeto: id do projeto para onde mover a tarefa, vindo da ferramenta projects. Escopo de proprietário: id do projeto em que a tarefa está, vindo de workspaces. |
+| `destination` | texto  | Só no escopo de proprietário: id do projeto para onde mover a tarefa, vindo de workspaces.          |
+
+## projects
+
+**Escopo:** escopo de projeto.
+
+Lista os projetos do workspace a que esta conexão pertence, com os ids deles.
+
+Não recebe argumentos.
+
+## workspaces
+
+**Escopo:** escopo de proprietário.
+
+Lista os workspaces desta conta com os projetos e os ids deles.
+
+Não recebe argumentos.
+
+## create_workspace
+
+**Escopo:** escopo de proprietário.
+
+Cria um workspace. Ele começa com um projeto Caixa de entrada.
+
+| Argumento | Tipo   | Descrição                           |
+| --------- | ------ | ----------------------------------- |
+| `name`    | texto  | Nome, de até 80 caracteres.         |
+
+## rename_workspace
+
+**Escopo:** escopo de proprietário.
+
+Renomeia um workspace.
+
+| Argumento   | Tipo   | Descrição                             |
+| ----------- | ------ | ------------------------------------- |
+| `workspace` | texto  | Id do workspace, vindo de workspaces. |
+| `name`      | texto  | Nome, de até 80 caracteres.           |
+
+## delete_workspace
+
+**Escopo:** escopo de proprietário.
+
+Exclui um workspace em definitivo, com todos os projetos e tarefas dele. Informe o nome atual dele como confirm; nada é excluído quando ele é diferente.
+
+| Argumento   | Tipo   | Descrição                                                                            |
+| ----------- | ------ | ------------------------------------------------------------------------------------ |
+| `workspace` | texto  | Id do workspace, vindo de workspaces.                                                |
+| `confirm`   | texto  | O nome atual do workspace, digitado exatamente. Nada é excluído quando ele é diferente. |
+
+## create_project
+
+**Escopo:** escopo de proprietário.
+
+Cria um projeto em um workspace.
+
+| Argumento   | Tipo   | Descrição                             |
+| ----------- | ------ | ------------------------------------- |
+| `workspace` | texto  | Id do workspace, vindo de workspaces. |
+| `name`      | texto  | Nome, de até 80 caracteres.           |
+
+## rename_project
+
+**Escopo:** escopo de proprietário.
+
+Renomeia um projeto. A Caixa de entrada não pode ser renomeada.
+
+| Argumento | Tipo   | Descrição                           |
+| --------- | ------ | ----------------------------------- |
+| `project` | texto  | Id do projeto, vindo de workspaces. |
+| `name`    | texto  | Nome, de até 80 caracteres.         |
+
+## delete_project
+
+**Escopo:** escopo de proprietário.
+
+Exclui um projeto em definitivo, com as tarefas dele. Informe o nome atual dele como confirm; nada é excluído quando ele é diferente. A Caixa de entrada não pode ser excluída.
+
+| Argumento | Tipo   | Descrição                                                                           |
+| --------- | ------ | ----------------------------------------------------------------------------------- |
+| `project` | texto  | Id do projeto, vindo de workspaces.                                                 |
+| `confirm` | texto  | O nome atual do projeto, digitado exatamente. Nada é excluído quando ele é diferente. |
+
+## settings
+
+**Escopo:** escopo de proprietário.
+
+Mostra os ajustes da conta: fuso horário, lembrete do agente e e-mail do dia.
+
+Não recebe argumentos.
+
+## update_settings
+
+**Escopo:** escopo de proprietário.
+
+Muda os ajustes da conta. Informe apenas o que muda.
+
+| Argumento           | Tipo               | Descrição                                                                                |
+| ------------------- | ------------------ | ---------------------------------------------------------------------------------------- |
+| `time_zone`         | texto              | Nome do fuso horário, como America/Sao_Paulo.                                            |
+| `agent_nudge`       | verdadeiro ou falso | Se next acrescenta uma linha sobre as tarefas que vencem hoje.                          |
+| `day_email`         | verdadeiro ou falso | Se o e-mail do dia é enviado.                                                           |
+| `day_email_minutes` | número inteiro     | Minutos depois da meia-noite, no seu fuso horário, em que o e-mail do dia é enviado: de 0 a 1439. |
+
+## Prompts
+
+O servidor oferece um prompt, `next`: Comece a trabalhar na próxima tarefa deste projeto.

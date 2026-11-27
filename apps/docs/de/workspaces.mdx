@@ -1,0 +1,70 @@
+---
+title: Workspaces
+description: Zwischen Workspaces wechseln, mehrere gleichzeitig anzeigen, die Tasten neu belegen, umbenennen und löschen.
+---
+
+Ein Workspace enthält die Projekte eines Unternehmens und beginnt mit einer Inbox. Jeder Workspace ist von den anderen isoliert.
+
+## Wechseln
+
+Wähle einen Workspace im Workspace-Menü des Fensters oder benutze die Tasten, solange todz im Vordergrund ist:
+
+| Tasten | Aktion |
+| --- | --- |
+| ⌃1 … ⌃9 | Zu Workspace 1 … 9 gehen, in der Reihenfolge des Workspace-Menüs |
+| ⌃⌘[ | **Vorheriger Workspace**, am ersten springt es herum |
+| ⌃⌘] | **Nächster Workspace**, am letzten springt es herum |
+
+Ein Workspace nach dem neunten hat keine eigene Taste; gehe mit **Vorheriger Workspace** und **Nächster Workspace** zu ihm. Dieselben Tasten stehen im Untermenü **Mit Control wechseln** des Workspace-Menüs. Die Tasten ⌘1 … ⌘9 der Liste bleiben, wie sie sind.
+
+## Aus jeder App wechseln
+
+**Aus jeder App wechseln** ist standardmäßig aus, damit die obigen Tasten bei den Apps bleiben, die du benutzt. Schalte es in **Workspace-Kurzbefehle** in todz › Einstellungen ein, und die Workspaces 1 … 9 wechseln aus jeder App mit ⌃⌥⌘1 … ⌃⌥⌘9. Dafür ist keine zusätzliche Berechtigung nötig.
+
+- Drücke in der Zeile eines Workspace auf **Aufnehmen**, dann auf die neuen Tasten; Esc bricht ab (**Abbrechen**).
+- Halte zwei von ⌃, ⌥ oder ⌘ mit der Taste gedrückt, sonst lehnt todz sie ab. Tasten, die ein anderer Workspace oder eine der obigen In-App-Tasten schon benutzt, werden abgelehnt.
+- Eine Zeile, die du nie geändert hast, folgt den Standards.
+- todz kann die Kurzbefehle anderer Apps nicht sehen. Es registriert jede Taste exklusiv: Hält eine andere App diese Taste bereits exklusiv, zeigt die Zeile **Von einer anderen App belegt**, und todz registriert sie nicht. Benutzt eine andere App dieselbe Taste auf gewöhnliche Weise, können beide reagieren, wähle also Tasten, die andere Apps nicht benutzen; der Standard ⌃⌥⌘ meidet die gängigen.
+- Vorheriger Workspace und Nächster Workspace sowie die obigen In-App-Tasten lassen sich in dieser Version nicht ändern; das Neubelegen kommt in einem späteren Release zurück.
+
+<Note>
+  Die In-App-Tasten ⌃1–⌃9 können mit den Tasten „Zu Schreibtisch wechseln“ von Mission Control kollidieren, solange todz im Vordergrund ist. Sind beide an, gewinnt das System; schalte sie in den Systemeinstellungen aus.
+</Note>
+
+## Mehrere Workspaces anzeigen
+
+Das Workspace-Menü listet deine Workspaces als Schalter auf, mit **Alle Workspaces** zuerst. Wähle mehrere oder alle; todz merkt sich die Wahl auf diesem Mac.
+
+- **Alle Workspaces** schließt einen Workspace ein, den du später anlegst. Eine Auswahl, die du von Hand getroffen hast, wächst nie von selbst.
+- Den zuletzt gewählten Workspace auszuschalten ändert nichts.
+- Ein Workspace, der verschwindet, verlässt die Auswahl.
+- Eine Workspace-Taste oder die Auswahl beim ersten Start wählt genau einen Workspace.
+
+Bei zwei oder mehr angezeigten sind Heute, Demnächst, Inbox und Erledigt eine sortierte Liste über alle. Der Zähler der Menüleiste, das Popover, die Widgets, der Tagesabschluss, der Morgenüberblick und das Band zeigen dieselbe Vereinigung.
+
+Jede Zeile ist vor ihrem Projekt mit ihrem Workspace markiert, wie in `Acme · Launch`. Bei einem angezeigten Workspace wird nichts markiert. Ein Widget zeichnet dieselbe Markierung, und das Abhaken einer Aufgabe in einem Widget erledigt sie in ihrem eigenen Workspace.
+
+## Wohin eine neue Aufgabe geht
+
+In der Vereinigung geht eine Aufgabe, die du ohne Projekt hinzufügst (aus der Menüleiste, über einen Kurzbefehl oder im Tagesabschluss), in die Inbox des primären Workspace: den, der zuvor angezeigt wurde, wenn er es noch ist, sonst den ersten der Liste. Ein neues Projekt und die Schlüssel von **Agent verbinden** gehen ebenfalls in den primären Workspace. Das Ändern einer Aufgabe schreibt immer in das Projekt, zu dem die Aufgabe gehört.
+
+## Touch ID zum Wechseln des Workspace verlangen
+
+todz › Einstellungen › Datenschutz & Updates hat **Touch ID zum Wechseln des Workspace verlangen**, standardmäßig aus. Solange es an ist, zeigt todz nur den Workspace, in dem du bist, und **Workspace wechseln…** (⌘K) fragt nach Touch ID oder deinem Mac-Passwort. Siehe [Workspace-Privatsphäre](/de/workspace-privacy), wo andere Workspaces verborgen bleiben, wann es wieder sperrt und was es nicht schützt.
+
+## Löschen und umbenennen
+
+Um einen Workspace umzubenennen, wähle **Workspace umbenennen…** im Workspace-Menü oder nutze todz › Einstellungen › Workspaces. Der Name folgt den Regeln eines neuen: 1 bis 80 Zeichen, keine Steuerzeichen, getrimmt.
+
+Um einen Workspace zu löschen, wähle **Workspace löschen…** im Workspace-Menü oder nutze todz › Einstellungen › Workspaces. Tippe zur Bestätigung den Namen des Workspace ein.
+
+- Seine Projekte und ihre Daten werden sofort entfernt und lassen sich nicht wiederherstellen.
+- Jeder mit seinen Projekten verbundene Agent hört sofort auf zu arbeiten.
+- Die Inbox wird mit ihm gelöscht.
+- Löschst du den letzten Workspace, bleibt dir keiner; todz bietet an, einen anzulegen.
+
+Um ein Projekt zu löschen, klicke es in der Seitenleiste mit der rechten Maustaste an und wähle **Projekt löschen…**, tippe dann seinen Namen ein. Die Inbox kann nicht gelöscht werden. Die mit dem Projekt verbundenen Agenten hören sofort auf zu arbeiten.
+
+<Note>
+  Jeder Mac verwirft die gelöschten Daten, sobald er das nächste Mal vom Server hört.
+</Note>

@@ -1,0 +1,70 @@
+---
+title: Espaces de travail
+description: Changez d’espace de travail, affichez-en plusieurs à la fois, reconfigurez les touches, renommez et supprimez.
+---
+
+Un espace de travail contient les projets d’une entreprise et commence avec une Boîte de réception. Chaque espace de travail est isolé des autres.
+
+## Changer
+
+Choisissez un espace de travail dans le menu des espaces de travail de la fenêtre, ou utilisez les touches tant que todz est au premier plan :
+
+| Touches | Action |
+| --- | --- |
+| ⌃1 … ⌃9 | Aller à l’espace de travail 1 … 9, dans l’ordre du menu des espaces de travail |
+| ⌃⌘[ | **Espace de travail précédent**, avec retour au dernier après le premier |
+| ⌃⌘] | **Espace de travail suivant**, avec retour au premier après le dernier |
+
+Un espace de travail au-delà du neuvième n’a pas de touche propre ; atteignez-le avec **Espace de travail précédent** et **Espace de travail suivant**. Les mêmes touches figurent dans le sous-menu **Changer avec Contrôle** du menu des espaces de travail. Les touches ⌘1 … ⌘9 de la liste restent comme elles sont.
+
+## Changer depuis n’importe quelle app
+
+**Changer depuis n’importe quelle app** est désactivé par défaut, si bien que les touches ci-dessus restent aux apps que vous utilisez. Activez-le dans **Raccourcis des espaces de travail** dans todz › Réglages, et les espaces de travail 1 … 9 se changent depuis n’importe quelle app avec ⌃⌥⌘1 … ⌃⌥⌘9. Cela ne demande aucune autorisation supplémentaire.
+
+- Appuyez sur **Enregistrer** sur la ligne d’un espace de travail, puis sur les nouvelles touches ; Échap annule (**Annuler**).
+- Maintenez deux touches parmi ⌃, ⌥ ou ⌘ avec la touche, sinon todz la refuse. Les touches qu’un autre espace de travail ou l’une des touches internes à l’app ci-dessus utilise déjà sont refusées.
+- Une ligne que vous n’avez jamais modifiée suit les valeurs par défaut.
+- todz ne voit pas les raccourcis des autres apps. Il enregistre chaque touche de façon exclusive : si une autre app détient déjà cette touche de façon exclusive, la ligne affiche **Utilisé par une autre app** et todz ne l’enregistre pas. Si une autre app utilise la même touche de façon ordinaire, les deux peuvent répondre, choisissez donc des touches que les autres apps n’utilisent pas ; la valeur par défaut ⌃⌥⌘ évite les plus courantes.
+- Espace de travail précédent et Espace de travail suivant, ainsi que les touches internes à l’app ci-dessus, ne peuvent pas être changés dans cette version ; leur reconfiguration reviendra dans une version ultérieure.
+
+<Note>
+  Les touches internes ⌃1–⌃9 peuvent entrer en conflit avec les touches Passer au bureau de Mission Control tant que todz est au premier plan. Si les deux sont activées, le système l’emporte ; désactivez-les dans Réglages Système.
+</Note>
+
+## Afficher plusieurs espaces de travail
+
+Le menu des espaces de travail liste vos espaces de travail sous forme d’interrupteurs, avec **Tous les espaces de travail** en premier. Choisissez-en plusieurs, ou tous ; todz mémorise le choix sur ce Mac.
+
+- **Tous les espaces de travail** inclut un espace de travail que vous créez plus tard. Un ensemble que vous avez choisi à la main ne grandit jamais tout seul.
+- Désactiver le dernier espace de travail choisi ne change rien.
+- Un espace de travail qui disparaît quitte la sélection.
+- Une touche d’espace de travail ou le sélecteur du premier lancement sélectionne exactement un espace de travail.
+
+Avec deux espaces de travail ou plus affichés, Aujourd’hui, À venir, Boîte de réception et Terminées forment une seule liste triée sur l’ensemble. Le compteur de la barre des menus, le panneau, les widgets, la clôture de la journée, le coup d’œil du matin et le ruban montrent la même union.
+
+Chaque ligne est étiquetée avec son espace de travail avant son projet, comme dans `Acme · Launch`. Avec un seul espace de travail affiché, rien n’est étiqueté. Un widget dessine la même étiquette, et cocher une tâche dans un widget la termine dans son propre espace de travail.
+
+## Où va une nouvelle tâche
+
+Dans l’union, une tâche que vous ajoutez sans nommer de projet (depuis la barre des menus, un raccourci ou la clôture de la journée) va dans la Boîte de réception de l’espace de travail principal : celui qui était affiché avant s’il l’est encore, sinon le premier de la liste. Un nouveau projet et les touches de **Connecter un agent** vont aussi dans l’espace de travail principal. Modifier une tâche écrit toujours dans le projet auquel elle appartient.
+
+## Exiger Touch ID pour changer d’espace de travail
+
+todz › Réglages › Confidentialité et mises à jour propose **Exiger Touch ID pour changer d’espace de travail**, désactivé par défaut. Tant qu’il est activé, todz n’affiche que l’espace de travail dans lequel vous êtes, et **Changer d’espace de travail…** (⌘K) demande Touch ID ou le mot de passe de votre Mac. Voir [Confidentialité des espaces de travail](/fr/workspace-privacy) pour savoir où les autres espaces de travail restent masqués, quand il se verrouille de nouveau et ce qu’il ne protège pas.
+
+## Supprimer et renommer
+
+Pour renommer un espace de travail, choisissez **Renommer l’espace de travail…** dans le menu des espaces de travail, ou utilisez todz › Réglages › Espaces de travail. Le nom suit les règles d’un nouveau nom : de 1 à 80 caractères, sans caractères de contrôle, sans espaces autour.
+
+Pour supprimer un espace de travail, choisissez **Supprimer l’espace de travail…** dans le menu des espaces de travail, ou utilisez todz › Réglages › Espaces de travail. Saisissez le nom de l’espace de travail pour confirmer.
+
+- Ses projets et leurs données sont supprimés aussitôt et ne peuvent pas être restaurés.
+- Tout agent connecté à ses projets cesse de fonctionner immédiatement.
+- La Boîte de réception est supprimée avec lui.
+- Supprimer le dernier espace de travail ne vous en laisse aucun ; todz propose d’en créer un.
+
+Pour supprimer un projet, faites un clic droit dessus dans la barre latérale et choisissez **Supprimer le projet…**, puis saisissez son nom. La Boîte de réception ne peut pas être supprimée. Les agents connectés au projet cessent de fonctionner aussitôt.
+
+<Note>
+  Chaque Mac abandonne les données supprimées la prochaine fois qu’il a des nouvelles du serveur.
+</Note>

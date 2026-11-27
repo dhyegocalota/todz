@@ -1,0 +1,30 @@
+---
+title: Solución de problemas
+description: El enlace de inicio de sesión, Gatekeeper, un servidor más antiguo y actualizaciones que no se instalan.
+---
+
+## El enlace de inicio de sesión no hace nada, o dice que no pudo iniciar tu sesión
+
+Abre el enlace del correo en el mismo Mac que lo pidió. Un enlace abierto en otro Mac, o después de haber pedido uno más reciente, se rechaza con "No se pudo iniciar sesión con ese enlace. Espera un minuto y vuelve a abrirlo desde el correo." Pide uno nuevo con **Enviar enlace** y abre el correo más reciente.
+
+## Mi agente no puede iniciar sesión con OAuth
+
+Abre el enlace de inicio de sesión del correo en el mismo navegador donde introdujiste tu correo. Si el cliente informa de un error de redirección, o necesita un esquema de dirección personalizado, todz lo rechaza, así que ese cliente todavía no puede conectarse; consulta [Conectar un agente](/es/connect-an-agent).
+
+Si el navegador dice "Este enlace no se puede usar para conectar una app" cada vez, el cliente está reutilizando un registro que el servidor ya no conoce. Borra el inicio de sesión guardado del cliente y conéctalo de nuevo: en Claude Code, ejecuta `/mcp`, elige todz y luego **Clear authentication**.
+
+## Demasiados intentos
+
+"Demasiados intentos. Espera un minuto y vuelve a intentarlo." significa que el servidor limitó las solicitudes de enlace. Espera un minuto y pulsa **Enviar enlace** una sola vez.
+
+## macOS no abre la app
+
+todz no está notarizado, así que macOS lo rechaza la primera vez. Abre todz una vez y descarta la advertencia; luego ve a **Ajustes del Sistema** › **Privacidad y seguridad**, haz clic en **Abrir igualmente** y confirma con tu contraseña o Touch ID. Consulta [Instalar en Mac](/es/install-on-mac#1-descarga-y-abre-la-app).
+
+## Servidor más antiguo
+
+**Servidor más antiguo** en la app significa "Este servidor es más antiguo de lo que la app espera. Quien lo administra puede actualizarlo." En tu propio servidor, despliega la versión actual; consulta [Autoalojamiento](/es/self-host).
+
+## Una actualización no se instala
+
+Si Sparkle dice que todz no se puede actualizar desde la ubicación a la que se descargó, arrastra `Todz.app` a Aplicaciones, ábrela desde allí y vuelve a comprobar. Consulta [Actualizaciones](/es/updates).

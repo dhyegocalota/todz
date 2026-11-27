@@ -1,0 +1,94 @@
+---
+title: Macにインストール
+description: Mac版のtodzをダウンロードして開き、署名を検証するか、ソースからビルドします。
+---
+
+Mac版のtodzはApp Storeにはなく、まだAppleによる公証も受けていないため、初回はmacOSに許可を求められます。todz.appの**Mac版をダウンロード**は、最新のリリースを配布する[todz.app/download](https://todz.app/download)につながっています。この場合は、手順1と2が該当します。自分でビルドする場合は、手順5をご覧ください。
+
+<Warning>
+  このアプリは公証されていません。Appleによるスキャンを受けていないため、macOSは初回に開くことを拒否します。次の手順のとおり、システム設定から開いてください。
+</Warning>
+
+## 1. ダウンロードして開く
+
+todz.appで**Mac版をダウンロード**を選びます。
+
+1. 開く前に、手順2でダウンロードを検証します。続いてディスクイメージをダウンロードして開き、`Todz.app`をアプリケーションにドラッグします。
+2. `Todz.app`を開きます。初回はmacOSが拒否します。
+3. **システム設定** › **プライバシーとセキュリティ**を開き、**セキュリティ**までスクロールして、`Todz`に関する行を見つけ、**このまま開く**をクリックします。
+4. パスワードで確認し、もう一度アプリを開きます。
+
+macOSが確認するのは一度だけで、2回目以降は通常どおり開きます。`spctl --assess`は、公証されていないためこのアプリを拒否します。これは想定どおりの動作です。代わりに、以下の確認で、実行するものが何かを確かめられます。
+
+## 2. ダウンロードを検証する
+
+各リリースは、`Todz-<version>.dmg`として、`Todz-<version>.dmg.sha256`と`Todz-<version>.dmg.sig`とともに公開されます。これらはすべて`https://todz.app/download/<version>/`にあります。2つのファイルがあるフォルダで、チェックサムを確認します。
+
+```bash
+shasum -a 256 -c Todz-<version>.dmg.sha256
+```
+
+次の行を`allowed-signers`として保存します。これはtodzのリリース鍵です。
+
+```text
+release@todz.app namespaces="todz-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdNjy4QZsK85d4WxjwiTql81GeptNXX2H4SUcM9QVNu
+```
+
+`ssh-keygen -lf`がこの鍵だけに対して出力するフィンガープリントは、次のとおりです。
+
+```text
+SHA256:yBlPOn96/UZM6GGCo//eqZtFjWl440Hr6rxWa0VS5Tk
+```
+
+続いて、署名を確認します。
+
+```bash
+ssh-keygen -Y verify -f allowed-signers -I release@todz.app -n todz-release -s Todz-<version>.dmg.sig < Todz-<version>.dmg
+```
+
+`Good "todz-release" signature for release@todz.app`と応答します。
+
+署名が証明するのは、ダウンロードしたものがtodzのリリース鍵で署名されたファイルであることです。todz.appのゾーンやtodzのCloudflareアカウントを掌握している人物に対しては、保護になりません。このページもそのゾーンから配信されているためです。
+
+## 3. アプリを検証する
+
+署名が損なわれていないことを確認します。損なわれていなければ、出力の最後は`valid on disk`と`satisfies its Designated Requirement`になります。
+
+```bash
+codesign --verify --deep --strict --verbose=2 /Applications/Todz.app
+```
+
+アプリに誰が署名したかを確認します。
+
+```bash
+codesign -dv --verbose=4 /Applications/Todz.app
+```
+
+出力には、`TeamIdentifier=XFWR794VS8`、`flags=0x10000(runtime)`が含まれ、証明書の名前にはオーナーのApple IDのアドレスが含まれます。
+
+## 4. アップデート
+
+アプリはバックグラウンドで自動的にアップデートされます。方法とオフにする方法は[アップデート](/ja/updates)をご覧ください。
+
+## 5. ソースからビルドする
+
+XcodeがインストールされたMacと、[XcodeGen](https://github.com/yonaskolb/XcodeGen)が必要です。
+
+<Note>
+  `project.yml`はオーナーのチーム`XFWR794VS8`で署名するため、そのIDを持つMacでしか、そのままではビルドできません。自分のチームでビルドするには、最初に`DEVELOPMENT_TEAM`とバンドル識別子を置き換えてください。手順は[セルフホストガイド](/ja/self-host#7-macosアプリをビルドしてサーバに向ける)にあります。自分でビルドしたアプリには、署名に使ったチームが表示されます。
+</Note>
+
+リポジトリのルートから、次を実行します。
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+アプリは`apps/macos/build/Build/Products/Release/Todz.app`にできます。開発用に署名されたビルドは、その署名チームが認識しているMacでしか開きません。所有している別のMacに移すには、署名が保たれるようにzipにしてコピーし、手順1と同じように開きます。
+
+```bash
+ditto -c -k --keepParent apps/macos/build/Build/Products/Release/Todz.app Todz.zip
+```
+
+コピーが作成したzipであることを確かめるには、両方のMacで`shasum -a 256 Todz.zip`を実行します。チェックサムが一致すれば、コピーが作成したzipであることは証明されますが、誰がビルドしたかは証明されません。
