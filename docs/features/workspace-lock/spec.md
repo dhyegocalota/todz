@@ -17,7 +17,7 @@ Anyone at an unlocked Mac can open todz and switch to any workspace. The owner w
 - Touch ID or the Mac password unlocks the session; then workspaces switch normally until a relock.
 - Authentication is required to show another workspace (picker, menus, ⌃1…9, ⌃⌘[ ], global hot keys, choosing at launch), to create or delete a workspace, to turn the switch off and to change the idle timeout.
 - A relock happens on system sleep, display sleep, screen lock, screensaver start, the idle timeout (1, 5 default, 15 or 60 minutes with no input delivered to todz) and Lock Now; a launch is always locked.
-- On a relock the selection collapses to the workspace on screen, the other workspaces' boards, watches and cached tasks are released, and the shared widget snapshot is rewritten from that workspace alone before every timeline reloads.
+- On a relock the selection collapses to the workspace on screen, the other workspaces' boards, watches and cached tasks are released (a locked launch erases their cached tasks too), and the shared widget snapshot is rewritten from that workspace alone before every timeline reloads.
 - Widget requests, `todz://` task links, App Intents and the task writes that name a locked workspace are refused and return nothing of it.
 
 ## Non-goals

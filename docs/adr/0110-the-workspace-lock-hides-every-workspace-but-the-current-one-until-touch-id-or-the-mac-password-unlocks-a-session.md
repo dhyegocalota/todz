@@ -13,5 +13,5 @@ A Settings switch, off by default and stored per Mac, turns the lock on without 
 
 - This is a privacy lock for people at this Mac, not an access control: the server is unchanged, and an agent holding a key still reaches its project.
 - The shared container holds only the snapshot and the request files, so locking leaves no other workspace's name or task there; the widget extension never reads what the app never writes.
-- A relock drops the other workspaces' cached tasks from the app's folder through the existing release of projects that leave the shown set; the workspace list in the cache keeps its names. Someone who can run commands as this macOS user can still read that folder and edit the preference that holds the switch: the lock is for people using the app, not for a shell.
+- A relock and a locked launch erase the other workspaces' cached tasks from the app's folder; the workspace list in the cache keeps its names. Someone who can run commands as this macOS user can still read that folder and edit the preference that holds the switch: the lock is for people using the app, not for a shell.
 - Relocking never signs out and never loses a waiting change: the outbox is untouched.

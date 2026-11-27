@@ -32,6 +32,7 @@ extension AppModel {
         guard let primary = primary(of: shownWorkspaces) else { return }
         activeWorkspaceIdentifier = primary.identifier
         selection = selection.map(collapsedWhileLocked)
+        forgetLockedWorkspaces()
         loadCachedProjects(of: shownWorkspaces)
         phase = .ready
         followActiveProjects()

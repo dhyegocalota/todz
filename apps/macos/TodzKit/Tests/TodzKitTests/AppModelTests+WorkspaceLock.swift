@@ -154,6 +154,28 @@ extension AppModelTests {
         #expect(harness.model.presentedWorkspaces[1] == .locked(identifier: "secret"))
     }
 
+    @Test func aRelockErasesTheOtherWorkspacesCachedTasksAndKeepsTheCurrent() async throws {
+        let harness = try await lockedHarness()
+        await harness.model.selectWorkspaces(.all)
+        #expect(harness.store.projects["secret-inbox"] != nil)
+        await harness.model.relockWorkspaces(because: .manual)
+        #expect(harness.store.projects["secret-inbox"] == nil)
+        #expect(harness.store.projects["secret-garden"] == nil)
+        #expect(harness.store.projects["acme-inbox"] != nil)
+    }
+
+    @Test func aLockedLaunchErasesTheOtherWorkspacesCachedTasksLeftByAnEarlierSession() async throws {
+        let harness = try AppModelHarness(isWorkspaceLockOn: true)
+        let acme = harness.seedWorkspace(name: "acme")
+        let secret = harness.seedWorkspace(name: "secret")
+        harness.cache([acme, secret], active: acme)
+        harness.cacheTasks(projectIdentifier: "acme-inbox", count: 1, cursor: 1)
+        harness.cacheTasks(projectIdentifier: "secret-inbox", count: 1, cursor: 1)
+        await harness.signedIn()
+        #expect(harness.store.projects["secret-inbox"] == nil)
+        #expect(harness.store.projects["acme-inbox"] != nil)
+    }
+
     @Test func aRelockRewritesTheSharedSnapshotFromTheCurrentWorkspaceAndReloadsTheWidgets() async throws {
         let harness = try await lockedHarness()
         await harness.model.selectWorkspaces(.all)

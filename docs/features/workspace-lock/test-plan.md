@@ -28,6 +28,7 @@ Unit tests run with Swift Testing in `apps/macos/TodzKit` (`swift test`) against
 - [ ] Each of sleep, screen lock, screensaver, idle and Lock Now locks an unlocked session; a locked or switched-off lock ignores them.
 - [ ] Idle fires at the chosen timeout exactly and input restarts the clock.
 - [ ] A relock collapses the selection to the workspace on screen, releases the others' board and watch, rewrites the snapshot from that workspace alone and reloads the widgets.
+- [ ] A relock and a locked launch erase the other workspaces' cached tasks and keep the current one's.
 - [ ] Turning the switch on collapses at once without asking.
 
 ## Bypass paths

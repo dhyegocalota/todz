@@ -65,10 +65,18 @@ extension AppModel {
         await lockToCurrentWorkspace()
     }
 
-    // NB ADR 0110: a relock releases every other workspace from memory and rewrites the shared snapshot from the current one alone.
+    // NB ADR 0110: a relock releases every other workspace from memory and the cache and rewrites the shared snapshot from the current one alone.
     private func lockToCurrentWorkspace() async {
         if phase == .ready, let current = activeWorkspaceIdentifier { await selectWorkspaces(.chosen([current])) }
+        forgetLockedWorkspaces()
         publishedWidgetSnapshot = nil
         publishWidgets()
+    }
+
+    func forgetLockedWorkspaces() {
+        workspaces
+            .filter { isLocked(workspaceIdentifier: $0.identifier) }
+            .flatMap(\.projects)
+            .forEach { forgetProject(identifier: $0.identifier) }
     }
 }
