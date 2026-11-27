@@ -86,6 +86,8 @@ public protocol OwnerService: Sendable {
     func listOwnerKeys(session: String) async throws -> [ProjectKey]
     func issueOwnerKey(session: String) async throws -> IssuedKey
     func revokeOwnerKey(session: String, keyIdentifier: String) async throws
+    func listConnectedApps(session: String) async throws -> [ConnectedApp]
+    func disconnectConnectedApp(session: String, connectedAppIdentifier: String) async throws
 }
 
 public struct OwnerAPI: OwnerService {
@@ -271,6 +273,14 @@ public struct OwnerAPI: OwnerService {
 
     public func revokeOwnerKey(session: String, keyIdentifier: String) async throws {
         _ = try await send(OwnerRequest(method: .delete, path: "\(ownerKeysPath)/\(keyIdentifier)", session: session))
+    }
+
+    public func listConnectedApps(session: String) async throws -> [ConnectedApp] {
+        throw OwnerAPIError.unreachable
+    }
+
+    public func disconnectConnectedApp(session: String, connectedAppIdentifier: String) async throws {
+        throw OwnerAPIError.unreachable
     }
 
     private func answer<Answer: Decodable>(_ type: Answer.Type, to request: OwnerRequest) async throws -> Answer {
