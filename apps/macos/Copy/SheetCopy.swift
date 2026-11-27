@@ -3,6 +3,10 @@ enum SheetCopy {
         Localized.text("Type \"\(name)\" to confirm.")
     }
 
+    static func deleteTaskMessage(title: String) -> String {
+        Localized.text("“\(title)” and its history are deleted permanently. It cannot be undone.")
+    }
+
     static var newWorkspaceTitle: String { Localized.text("New Workspace") }
     static var newProjectTitle: String { Localized.text("New Project") }
     static var renameWorkspaceTitle: String { Localized.text("Rename Workspace") }
@@ -11,6 +15,7 @@ enum SheetCopy {
     static var deleteProjectTitle: String { Localized.text("Delete Project") }
     static var deleteWorkspaceMessage: String { Localized.text("This permanently deletes the workspace, its projects, their tasks and the keys agents use to reach them. It cannot be undone.") }
     static var deleteProjectMessage: String { Localized.text("This permanently deletes the project, its tasks and the keys agents use to reach it. It cannot be undone.") }
+    static var deleteTaskTitle: String { Localized.text("Delete Task?") }
     static var delete: String { Localized.text("Delete") }
     static var nameLabel: String { Localized.text("Name") }
     static var cancel: String { Localized.text("Cancel") }

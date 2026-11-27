@@ -42,11 +42,19 @@ struct MenuBarRow: View {
                 navigate(press.key == .upArrow ? .up : .down)
                 return .handled
             }
+            .onKeyPress(keys: [.delete]) { press in
+                guard press.modifiers == .command else { return .ignored }
+                Task { TaskDeletionPrompt.confirm(task, model: model) }
+                return .handled
+            }
             .onKeyPress(characters: CharacterSet(charactersIn: dayCloseOutcomes.keys.joined())) { press in
                 let isActionable = isActing && press.modifiers.isEmpty && dayClose.acceptsKeyActions
                 guard isActionable, let outcome = dayCloseOutcomes[press.characters] else { return .ignored }
                 act(outcome)
                 return .handled
+            }
+            .contextMenu {
+                Button(MainWindowCopy.deleteTask) { TaskDeletionPrompt.confirm(task, model: model) }
             }
     }
 

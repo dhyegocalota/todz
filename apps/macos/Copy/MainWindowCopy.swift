@@ -32,6 +32,7 @@ enum MainWindowCopy {
     static var moveDown: String { Localized.text("Move Down") }
     static var markDone: String { Localized.text("Mark as Done") }
     static var markNotDone: String { Localized.text("Mark as Not Done") }
+    static var deleteTask: String { Localized.text("Delete Task…") }
     static var showInspector: String { Localized.text("Show Inspector") }
     static var hideInspector: String { Localized.text("Hide Inspector") }
     static var taskMenu: String { Localized.text("Task") }

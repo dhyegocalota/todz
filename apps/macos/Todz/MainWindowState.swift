@@ -64,6 +64,11 @@ private let tomorrowOffset = 1
         model.follow(link)
     }
 
+    func requestDeletion(task key: TaskKey, model: AppModel) {
+        guard let task = model.boardTask(key) else { return }
+        TaskDeletionPrompt.confirm(task, model: model)
+    }
+
     func openInspectorTitle() {
         isInspectorPresented = true
         focusRequest = .inspectorTitle

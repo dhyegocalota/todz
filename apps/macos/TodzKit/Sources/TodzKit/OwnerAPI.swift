@@ -72,6 +72,7 @@ public protocol OwnerService: Sendable {
     func deleteProject(session: String, projectIdentifier: String) async throws
     func addTasks(session: String, projectIdentifier: String, drafts: [TaskDraft]) async throws -> [AddedTask]
     func updateTask(session: String, projectIdentifier: String, number: Int, patch: TaskPatch) async throws -> TaskRecord
+    func deleteTask(session: String, projectIdentifier: String, number: Int, title: String) async throws
     func completeTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [CompletedTask]
     func reopenTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [ReopenedTask]
     func readHistory(session: String, projectIdentifier: String, number: Int) async throws -> [HistoryEntry]
@@ -217,6 +218,11 @@ public struct OwnerAPI: OwnerService {
     public func updateTask(session: String, projectIdentifier: String, number: Int, patch: TaskPatch) async throws -> TaskRecord {
         let path = taskPath(projectIdentifier: projectIdentifier, number: number)
         return try await answer(TaskAnswer.self, to: OwnerRequest(method: .patch, path: path, session: session, body: patch)).task
+    }
+
+    public func deleteTask(session: String, projectIdentifier: String, number: Int, title: String) async throws {
+        let path = taskPath(projectIdentifier: projectIdentifier, number: number)
+        _ = try await send(OwnerRequest(method: .delete, path: path, session: session, body: DeleteTaskBody(title: title)))
     }
 
     public func completeTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [CompletedTask] {

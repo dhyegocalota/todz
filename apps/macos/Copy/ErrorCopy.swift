@@ -16,6 +16,7 @@ enum ErrorCopy {
     static var dueDateInvalid: String { Localized.text("That date isn't valid.") }
     static var inboxIsFixed: String { Localized.text("The Inbox can't be renamed or deleted.") }
     static var taskGone: String { Localized.text("This task is no longer available.") }
+    static var taskChangedBeforeDelete: String { Localized.text("This task changed before it could be deleted, so it was kept. Check it, then delete it again.") }
     static var projectGone: String { Localized.text("This project is no longer available.") }
     static var workspaceGone: String { Localized.text("This workspace is no longer available.") }
     static var ruleUnexpected: String { Localized.text("todz couldn't save this change.") }

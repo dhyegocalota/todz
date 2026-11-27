@@ -31,6 +31,8 @@ const CompleteBodySchema = z.object({ numbers: z.array(TaskNumberSchema), note: 
 
 const ReopenBodySchema = z.object({ numbers: z.array(TaskNumberSchema) });
 
+const DeleteBodySchema = z.object({ title: z.string() });
+
 function patchOf(body: z.output<typeof UpdateBodySchema>): TaskPatch {
   return { ...fieldPatchOf(body), ...('placement' in body && { placement: body.placement }) };
 }
@@ -72,6 +74,18 @@ export async function updateTask(context: SessionContext): Promise<Response> {
   const result = await project.updateTask({ actor: OWNER_ACTOR, number: taskNumberOf(context), patch: patchOf(body) });
   if (!result.ok) return failureResponse(result.failure);
   return Response.json({ task: taskJson(result.value) });
+}
+
+export async function deleteTask(context: SessionContext): Promise<Response> {
+  const body = await parsedBody({ request: context.request, schema: DeleteBodySchema });
+  if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
+  const project = await ownedProjectOf(context);
+  if (project === null) return errorResponse(OwnerErrorCode.NotFound);
+  const refusal = await refusalOf({ context, writes: ONE_WRITE, bytes: NO_TEXT_BYTES });
+  if (refusal !== null) return refusal;
+  const result = await project.deleteTask({ number: taskNumberOf(context), confirmation: body.title });
+  if (!result.ok) return failureResponse(result.failure);
+  return new Response(null, { status: HttpStatus.NoContent });
 }
 
 export async function completeTasks(context: SessionContext): Promise<Response> {

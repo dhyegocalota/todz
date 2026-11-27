@@ -23,6 +23,11 @@ enum MenuBarCopy {
     static var upNextHelp: String { Localized.text("Mark the next task done (⌘↩)") }
     static var updateAvailable: String { Localized.text("Update available") }
     static let newTaskKeycap = "⌘N"
+    static var hiddenItemTitle: String { Localized.text("macOS is keeping todz off the menu bar") }
+    static var hiddenItemDetail: String { Localized.text("Turn on todz under Allow in the Menu Bar, in System Settings › Menu Bar, to see today's count and open the popover.") }
+    static var hiddenItemOpenSettings: String { Localized.text("Open Menu Bar Settings") }
+    static var hiddenItemNotNow: String { Localized.text("Not Now") }
+    static var hiddenItemSuppression: String { Localized.text("Don't show this again") }
     static var placeholderTitles: [String] {
         [
             Localized.text("Send the homepage copy to Sam"),

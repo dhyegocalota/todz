@@ -11,7 +11,7 @@ extension RuleIssue {
         case .dueDateInvalid: ErrorCopy.dueDateInvalid
         case .completionNoteTooLong, .batchEmpty, .batchTooLarge, .idempotencyKeyInvalid, .clientNameInvalid, .taskNumberInvalid,
             .nothingToUpdate, .placementAnchorInvalid, .searchTextTooLong, .limitInvalid, .titleInvalid, .notesInvalid,
-            .completionNoteInvalid, .nameInvalid, .orderKeyTooLong:
+            .completionNoteInvalid, .nameInvalid, .orderKeyTooLong, .confirmationMismatch:
             ErrorCopy.ruleUnexpected
         }
     }

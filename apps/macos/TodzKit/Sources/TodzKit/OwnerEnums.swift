@@ -51,4 +51,5 @@ public enum RuleIssue: String, Codable, Sendable, CaseIterable {
     case completionNoteInvalid = "completion_note_invalid"
     case nameInvalid = "name_invalid"
     case orderKeyTooLong = "order_key_too_long"
+    case confirmationMismatch = "confirmation_mismatch"
 }
