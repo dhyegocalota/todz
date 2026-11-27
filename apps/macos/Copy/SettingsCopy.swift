@@ -46,21 +46,6 @@ enum SettingsCopy {
     static let lockTimeoutFifteenMinutes = "15 minutes"
     static let lockTimeoutOneHour = "1 hour"
     static let lockUnavailable = "Set a password for this Mac to use this lock."
-    static let ownerKeys = "Account keys"
-    static let ownerKeysDetail = "An account key lets an AI agent create, rename and delete your workspaces and projects and change these settings. It cannot read your tasks. It is off until you create one. Keep it out of any repository."
-    static let noOwnerKeys = "No account keys. Agents can still use your project keys."
-    static let createOwnerKey = "Create an account key"
-    static let ownerKeysAtLimit = "You have five account keys. Revoke one to create another."
-    static let ownerKeyCreatedTitle = "Your account key"
-    static let ownerKeyCreatedBody = "Copy it now: it is shown once, and anyone who holds it can delete your workspaces. Revoke it here if it leaks."
-    static let ownerKeyCommandCaption = "Run it in your project's folder to give Claude Code the key."
-    static let ownerKeyCommand = "Claude Code command"
-    static let copyOwnerKey = "Copy key"
-    static let ownerKeyDone = "Done"
-    static let revokeOwnerKey = "Revoke"
-    static let revokeOwnerKeyTitle = "Revoke this key?"
-    static let revokeOwnerKeyMessage = "Agents that use it lose access at once."
-    static let ownerKeyNotCreated = "The key wasn't created."
     static let connectedApps = "Connected apps"
     static let connectedAppsDetail = "Apps you approved in the browser to use todz over MCP. Disconnecting one signs it out right away."
     static let noConnectedApps = "No connected apps yet. Add todz to Claude Code, Claude.ai or Codex with its address and approve it in the browser."
@@ -129,23 +114,6 @@ enum SettingsCopy {
         case .hourly: menuBarRibbonHourly
         case .dayClose: menuBarRibbonDayClose
         case .agentChange: menuBarRibbonAgentChange
-        }
-    }
-
-    static func ownerKeyEnding(hint: String) -> String {
-        "Account key ending in \(hint)"
-    }
-
-    static func ownerKeyMasked(hint: String) -> String {
-        "todz-owner_…\(hint)"
-    }
-
-    static func ownerKeyFailure(_ failure: OwnerKeyFailure) -> String {
-        switch failure {
-        case .limitReached: ownerKeysAtLimit
-        case .notCreated: ownerKeyNotCreated
-        case .notRevoked: KeyScreenCopy.revokeFailed
-        case let .refused(message): message
         }
     }
 

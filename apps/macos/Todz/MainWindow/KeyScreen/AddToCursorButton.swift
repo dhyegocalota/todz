@@ -6,8 +6,6 @@ private let addToCursorSymbol = "arrow.up.forward.app"
 
 struct AddToCursorButton: View {
     let serverURL: URL
-    let secret: String?
-    let disabledReason: String?
     @State private var didNotOpen = false
 
     var body: some View {
@@ -16,17 +14,14 @@ struct AddToCursorButton: View {
                 Label(KeyScreenCopy.addToCursor, systemImage: addToCursorSymbol)
             }
             .buttonStyle(.bordered)
-            .disabled(because: disabledReason)
             if didNotOpen {
                 ValidationLine(text: KeyScreenCopy.cursorDidNotOpen, tone: .issue)
             }
         }
-        .onChange(of: secret) { didNotOpen = false }
     }
 
     private func open() {
-        guard let secret else { return }
-        let link = AgentCommand.cursorLink(serverURL: serverURL, secret: secret)
+        let link = AgentCommand.cursorLink(serverURL: serverURL)
         guard let handlerApplicationURL = NSWorkspace.shared.urlForApplication(toOpen: link) else {
             didNotOpen = true
             return
