@@ -53,7 +53,7 @@ describe('the screenshots the landing serves', () => {
 
   test('the landing shows exactly the served screenshots, each with its intrinsic width and height', () => {
     const shots = shotsTheLandingShows();
-    expect(shots.map(({ path }) => path).sort()).toEqual([...SERVED].sort());
+    expect([...new Set(shots.map(({ path }) => path))].sort()).toEqual([...SERVED].sort());
     expect(shots.filter((shot) => !SERVED.includes(shot.path) || !isIntrinsicSize(shot))).toEqual([]);
   });
 });

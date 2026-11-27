@@ -4,7 +4,7 @@ import { DAY_EMAIL_COPY } from '../scripts/emails/day-email-copy';
 import { escapedHtml } from '../src/escaped-html';
 import { EmailSlot } from '../src/emails/email-slot';
 import { MCP_COPY } from '../src/mcp-copy';
-import { LANDING_COPY, LANDING_DAY_LINES } from '../src/site/landing-copy';
+import { LANDING_COPY, LANDING_DAY_LINES, LANDING_LOCK_LINE } from '../src/site/landing-copy';
 import { LANDING_MARKDOWN_FILE } from '../src/site/landing-markdown';
 import { serveLandingPage } from '../src/site/landing-page';
 import { DISCOVERY_FILES } from '../src/site/site-discovery';
@@ -111,7 +111,7 @@ describe('the proactive day card', () => {
   test('is the first benefit card, with the agents and offline cards after it', async () => {
     const html = await landingHtml();
     const cardOpenings = html.match(/<li (?:id="[^"]*" )?class="benefit-card[^"]*">/g);
-    expect(cardOpenings).toEqual([DAY_CARD_OPENING, PLAIN_CARD_OPENING, PLAIN_CARD_OPENING]);
+    expect(cardOpenings).toEqual([DAY_CARD_OPENING, PLAIN_CARD_OPENING, PLAIN_CARD_OPENING, PLAIN_CARD_OPENING]);
     expect(html.indexOf(escapedHtml(day.title))).toBeLessThan(html.indexOf(escapedHtml(LANDING_COPY.benefits.agents.title)));
     expect(html).not.toContain(escapedHtml('Your menu bar and widgets'));
   });
@@ -200,7 +200,7 @@ describe('the proactive day in the structured data', () => {
     const graph: { '@graph': { featureList?: string[] }[] } = JSON.parse(structuredData);
     const featureLists = graph['@graph'].map((node) => node.featureList).filter((list): list is string[] => list !== undefined);
     const featureList = featureLists.flat();
-    expect(featureList).toEqual(LANDING_DAY_LINES);
+    expect(featureList).toEqual([...LANDING_DAY_LINES, LANDING_LOCK_LINE]);
     PROACTIVE_FACTS.forEach((fact) => expect(featureList.some((feature) => fact.test(feature))).toBe(true));
   });
 });

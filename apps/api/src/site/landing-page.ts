@@ -185,13 +185,14 @@ ${dayExtrasHtml()}
 }
 
 function benefitsHtml(): string {
-  const { agents, offline } = LANDING_COPY.benefits;
+  const { agents, offline, lock } = LANDING_COPY.benefits;
   return `<section class="benefits page-width" aria-labelledby="benefits-title">
 <h2 id="benefits-title" class="visually-hidden">${escapedHtml(LANDING_COPY.benefits.heading)}</h2>
 <ul class="benefit-list">
 ${dayCardHtml()}
 ${benefitHtml({ well: `<div class="benefit-well benefit-well-agents"><div class="benefit-shot-agents ${cropClassOf(LandingShot.AgentTasks)}">${shotImage({ shot: LandingShot.AgentTasks, alt: LANDING_COPY.alt.agentTasks })}</div></div>`, ...agents })}
 ${benefitHtml({ well: `<div class="benefit-well">${glyphHtml({ glyph: SiteGlyph.Offline, className: 'offline-glyph' })}</div>`, ...offline })}
+${benefitHtml({ well: `<div class="benefit-well benefit-well-agents"><div class="benefit-shot-agents ${cropClassOf(LandingShot.WorkspaceLock)}">${shotImage({ shot: LandingShot.WorkspaceLock, alt: LANDING_COPY.alt.workspaceLock })}</div>${glyphHtml({ glyph: SiteGlyph.Lock, className: 'lock-glyph' })}</div>`, ...lock })}
 </ul>
 </section>`;
 }

@@ -43,6 +43,7 @@
         "pages": [
           "tour",
           "workspaces",
+          "workspace-privacy",
           "keyboard-shortcuts",
           "updates",
           "privacy",

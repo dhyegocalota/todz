@@ -4,6 +4,7 @@ export enum LandingShot {
   Popover = 'popover',
   WidgetMedium = 'widget-medium',
   AgentTasks = 'agent-tasks',
+  WorkspaceLock = 'workspace-lock',
 }
 
 export type CropBox = { x: number; y: number; width: number; height: number };
@@ -55,6 +56,13 @@ export const LANDING_SHOTS: Record<LandingShot, ShotFile> = {
     width: 1600,
     height: 1013,
     crop: { x: 322, y: 150, width: 838, height: 364 },
+    webpWidths: [828, 1600],
+  }),
+  [LandingShot.WorkspaceLock]: shotOf({
+    path: '/landing/mac-sync/01-agent-add-live.png',
+    width: 1600,
+    height: 1013,
+    crop: { x: 12, y: 20, width: 838, height: 364 },
     webpWidths: [828, 1600],
   }),
 };

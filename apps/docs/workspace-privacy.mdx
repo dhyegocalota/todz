@@ -1,0 +1,41 @@
+---
+title: Workspace privacy
+description: Hide your other workspaces behind Touch ID or your Mac password, and see where they stay out of sight.
+---
+
+Workspace privacy keeps your other workspaces out of sight on your Mac. While it is on, todz shows only the workspace you are in and draws exactly what an account with one workspace draws: no placeholder, count, lock icon or name of any other workspace. Touch ID or your Mac password brings them back.
+
+## Turn it on
+
+Open todz › Settings › Privacy & updates and turn on **Require Touch ID to switch workspaces**. It is off by default, and turning it on asks for nothing. **Ask again after** sets how long an unlocked session lasts: 1, 5, 15 or 60 minutes.
+
+## Where other workspaces stay hidden
+
+While the session is locked, they are absent from:
+
+- The sidebar, the workspace switcher and the workspace menu.
+- The menu bar count, ribbon and popover.
+- The widgets. Their cached data is purged when the session locks, so a widget never draws a hidden workspace.
+- Siri and Shortcuts.
+- `todz://` links, which answer as for a project that does not exist.
+- Settings and its **Connected apps**.
+- The morning glance, the day close and the global workspace shortcuts.
+
+## Bring them back
+
+Choose **Switch Workspace…** (⌘K, also in the **…** menu of the menu bar popover). todz asks for Touch ID or your Mac password, and then you switch as usual. Creating or deleting a workspace, turning the setting off and changing the time ask the same way.
+
+## When it locks again
+
+- When the Mac sleeps or the screen locks, and when the screensaver starts.
+- When you quit todz: every launch starts locked.
+- After the time you pick under **Ask again after**.
+- When you choose **Lock Now**, which shows only while the session is unlocked.
+
+## What it does not protect
+
+<Warning>
+  Workspace privacy is a privacy screen on your Mac, not encryption. Anyone who knows your Mac password can unlock it, and it does not change the server: an agent connected with OAuth still reaches its project.
+</Warning>
+
+See [Workspaces](/workspaces) to switch, show several at once, rename and delete.

@@ -1,5 +1,5 @@
 import { COMPANY, REPOSITORY } from '@todz/types';
-import { LANDING_COPY, LANDING_DAY_LINES } from './landing-copy';
+import { LANDING_COPY, LANDING_DAY_LINES, LANDING_LOCK_LINE } from './landing-copy';
 import { scriptJson } from './site-constants';
 import { OPEN_GRAPH_IMAGE } from './site-icons';
 import { DOCS_URL, DOWNLOAD_URL, SITE_URL } from './site-urls';
@@ -53,7 +53,7 @@ const APPLICATION = {
   operatingSystem: OPERATING_SYSTEM,
   applicationCategory: APPLICATION_CATEGORY,
   applicationSubCategory: APPLICATION_SUB_CATEGORY,
-  featureList: LANDING_DAY_LINES,
+  featureList: [...LANDING_DAY_LINES, LANDING_LOCK_LINE],
   publisher: PUBLISHER,
   codeRepository: REPOSITORY.url,
   license: REPOSITORY.licenseSpdxUrl,
