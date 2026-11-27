@@ -137,5 +137,8 @@ Every command runs from the repository root, one command per call. Cloudflare ca
 | 2026-11-26 | 0.2.1 | 2069 | 3ecdab2 | `66b6c61c8af95dda257e9dc1c7de31ab339f10119259b24751fea1c8dcc68b25` |
 | 2026-11-26 | 0.2.2 | 2165 | f7d4810 | `012156e22501b7784ae3ef949981a8bd9e16b3d92a7b0f29092016be64f3b5fb` |
 | 2026-11-26 | 0.2.3 | 2300 | aef5360a | `87c94a426c460e2a5a6ce464e73a4a6c74f51527dfe1c3900c9b09a17173c244` |
+| 2026-11-26 | 0.2.4 | 2395 | 00ed0f42 | `9bd3e628b55c411cda32e6cfe7613f1cfa3984bb74363883db5cbc7fa71e6571` |
+| 2026-11-26 | 0.2.5 | 2414 | 86b2a653 | `485ae2ee34a0a27dd2c00a4188e834592d45e05041c2348d30856cc083e1353f` |
+| 2026-11-26 | 0.2.6 | 2450 | 91c1662f | `b9547d79d6cb42d9f9528d256db70dff1646221b5289781b8521e1f86277bf11` |
 
-The first attempt at 0.2.3 failed with "the served signature does not verify" and the release command rolled the Worker back; the retry passed and tagged `mac-v0.2.3`.
+The first attempt at 0.2.3 failed with "the served signature does not verify" and the release command rolled the Worker back; the retry passed and tagged `mac-v0.2.3`. The first attempts at 0.2.4 and 0.2.6 stopped at an unanswered `generate_keys` Keychain prompt (60 s, then 120 s after #107) before any upload; each retry passed.

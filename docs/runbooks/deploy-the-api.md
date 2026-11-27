@@ -782,3 +782,29 @@ The owner rotates the Keychain token after a run that went wrong, when it may ha
 | 2026-11-26 | 7ec2b2a | 9 | One entry per host, service todz-api; newest deployment at 100 percent a472c53d; `DIRECTORY` d1 id dc22b1c3-... |
 | 2026-11-26 | 7ec2b2a | 14 | All answers as expected; /health `{"service":"todz","origin":"https://api.todz.app","version":"2026.11.26+7ec2b2a","minimum_app_version":"0.2.0"}`; POST todz.app/join 404; workers.dev host timed out (no answer from the Worker). |
 | 2026-11-26 | 7ec2b2a | 17 | All files 200 with the expected types; GPTBot 200, ClaudeBot 200, beacon 0; Lighthouse three runs all five scores 1, five audits 1. |
+| 2026-11-26 | 00ed0f4 | 1 | `pnpm verify all`: 9 gates green at 00ed0f42 (docs), on the main checkout; batch of #102, #103 and #105 for release 0.2.4. |
+| 2026-11-26 | 00ed0f4 | 2 | `whoami`: User API Token, one account e2035d8e0b7173d520ccf643f6f4661c; verify `"status":"active"`. |
+| 2026-11-26 | 00ed0f4 | 3 | `api.todz.app` has only the Worker's own `AAAA 100::`. |
+| 2026-11-26 | 00ed0f4 | 4 | D1 `todz-directory` uuid dc22b1c3-1869-44a0-b805-91bf92017f19, `success:true`. |
+| 2026-11-26 | 00ed0f4 | 5 | Bookmark `000000be-00000000-0000512f-07ff0393df11ea1d9bcf502616da92e9`. |
+| 2026-11-26 | 00ed0f4 | 6 | `before-00ed0f4.sql` exported, deleted after step 14; the waitlist table is already dropped. |
+| 2026-11-26 | 00ed0f4 | 7 | No migrations to apply. |
+| 2026-11-26 | 00ed0f4 | 8 | Current Version ID `b77a194c-59fa-4644-a288-07b0ef000217`, `server 2026.11.26+00ed0f4`, accepts app 0.2.0 or later. |
+| 2026-11-26 | 00ed0f4 | 9 | Domain entries api.todz.app, todz.app and www.todz.app on todz-api; newest deployment 100 percent b77a194c. |
+| 2026-11-26 | 00ed0f4 | 18 | Release 0.2.4: the first `pnpm release:mac` stopped at `generate_keys timed out after 60s` before any upload; the retry redeployed as b2d0de3a-c4e9-4d29-97bb-f04bccac04a1 and published 0.2.4. |
+| 2026-11-26 | ca3ae35 | 1 | `pnpm verify all`: 9 gates green at ca3ae350 (docs); #106, minimum app 0.2.4, `--skip-release`. |
+| 2026-11-26 | ca3ae35 | 5 | Bookmark `000000c3-00000000-0000512f-8df5934bae827f49256e6a25c7eb6b0c`. |
+| 2026-11-26 | ca3ae35 | 7 | No migrations to apply. |
+| 2026-11-26 | ca3ae35 | 8 | Current Version ID `9bee5be0-c4ab-45b0-ad1f-c04387845a97`, `server 2026.11.26+ca3ae35`, accepts app 0.2.4 or later. |
+| 2026-11-26 | ca3ae35 | 14 | Probes 1–16 as expected: `{"method":"link"}`, then `app_too_old` with minimum 0.2.4, the /health stamp, sign-in pages 200, /mcp 401, landing 200 with HSTS and CSP, self-host and www 301 to docs, owner route on the site and landing on the API 404, admin 200 noindex, api admin 404, /owner 401, lockup png 200; the workers.dev probe was not run. The export was deleted. |
+| 2026-11-26 | ca3ae35 | 26 | The owner put `CLOUDFLARE_ANALYTICS_TOKEN` in his own terminal; `wrangler secret list` names ADMIN_EMAIL, CLOUDFLARE_ANALYTICS_TOKEN, SIGN_UP_KEY_SECRET and TURNSTILE_SECRET_KEY. |
+| 2026-11-26 | 86b2a65 | 1 | `pnpm verify all`: 9 gates green at 86b2a653 (docs); #107 and #108 for release 0.2.5. |
+| 2026-11-26 | 86b2a65 | 8 | `scripts/deploy-worker.sh`: Current Version ID `db02080e-97d8-478d-a93e-03b62c0ce950`, `server 2026.11.26+86b2a65`; steps 5–7 skipped, no migration pending (the script re-checks). |
+| 2026-11-26 | 86b2a65 | 18 | Release 0.2.5 redeployed as 8a17c00c-f159-48dc-85ee-411cd6a3dc1d; probes 1–4 as expected. |
+| 2026-11-26 | 91c1662 | 1 | `pnpm verify all`: 9 gates green at 91c1662f (docs); batch of #104 cloud capacity, #109, #110, #111 and #112. |
+| 2026-11-26 | 91c1662 | 5 | Bookmark `000000cc-00000000-00005130-0536c5a3b657d58fdfa8ba14bff4ce33`. |
+| 2026-11-26 | 91c1662 | 6 | `before-91c1662.sql` exported, deleted after step 14. |
+| 2026-11-26 | 91c1662 | 7 | Pending `0016_cloud_capacity.sql`; applied (8 commands); second list: nothing to apply. |
+| 2026-11-26 | 91c1662 | 8 | Current Version ID `ac33cbd1-8c99-4a29-83d9-f37371460d4e`, `server 2026.11.26+91c1662`, accepts app 0.2.4 or later; new `CLOUD_READ_LIMITER (10 requests/60s)`, `CLOUD_ACCOUNTS_MAX ("50")` and `CLOUDFLARE_ACCOUNT_ID`. |
+| 2026-11-26 | 91c1662 | 14 | Probes 1–16 as expected; `todz.app/cloud-queue` without a token 400 (the Invalid page); `POST api.todz.app/owner/cloud-queue` 404 (removed). |
+| 2026-11-26 | 91c1662 | 18 | Release 0.2.6: the first `pnpm release:mac` stopped at `generate_keys timed out after 120s` before any upload; the retry redeployed as 1814b0fd-a2c0-4d90-bfd6-c2cb518df0f9 and published 0.2.6 (build 2450); `/download/latest` 302 to /download/0.2.6. |
