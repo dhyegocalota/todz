@@ -263,9 +263,6 @@ test.describe('the first visit', () => {
   });
 });
 
-const SHOT_DIRECTORY =
-  '/private/tmp/claude-501/-Users-dhyegocalota-orca-workspaces-todz-auto-todz-build-loop-run-1-20261127T1350/9f60ff6b-add7-45b7-98e1-e609b8b518d8/scratchpad/footer-controls/';
-
 test.describe('the controls live in the footer', () => {
   test('are in the footer and absent from the header', async ({ page }) => {
     await page.goto(LANDING_PATH);
@@ -313,17 +310,4 @@ test.describe('the controls live in the footer', () => {
     expect(await overflows()).toBe(false);
     await expect(page.locator('.language-form')).toBeInViewport();
   });
-
-  for (const scheme of ['light', 'dark'] as const) {
-    test(`footer screenshot in ${scheme}`, async ({ browser, baseURL, viewport }) => {
-      const context = await browser.newContext({ viewport, colorScheme: scheme });
-      await context.addCookies([{ name: PreferenceCookie.Theme, value: scheme, url: baseUrlOf(baseURL) }]);
-      const page = await context.newPage();
-      await page.goto(LANDING_PATH);
-      await page.locator('summary.language-summary').click();
-      await page.waitForTimeout(600);
-      await page.screenshot({ path: `${SHOT_DIRECTORY}footer-${viewport?.width}-${scheme}.png` });
-      await context.close();
-    });
-  }
 });
