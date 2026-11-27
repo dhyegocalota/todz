@@ -294,12 +294,43 @@ extension AppModelTests {
         #expect(addition == .added(title: "Buy milk", destination: .inbox, workspaceName: "acme", isOffline: false))
     }
 
-    @Test func aLinkToATaskOfALockedWorkspaceOpensTodayAndSaysToUnlock() async throws {
+    @Test func aLinkToATaskOfALockedWorkspaceOpensTodayAndAnswersAsAnUnknownProjectDoes() async throws {
         let harness = try await lockedHarness()
         harness.model.follow(.task(secretKey))
-        #expect(harness.model.banner == .workspaceGone)
+        #expect(harness.model.banner == nil)
         #expect(harness.model.selectedItem == .today)
         #expect(harness.model.selectedTask == nil)
+    }
+
+    @Test func aLinkToALockedWorkspaceAnswersExactlyAsALinkToAnUnknownProjectDoes() async throws {
+        let locked = try await lockedHarness()
+        let unknown = try await lockedHarness()
+        locked.model.follow(.task(secretKey))
+        unknown.model.follow(.task(TaskKey(projectIdentifier: "nowhere-inbox", number: 1)))
+        #expect(locked.model.banner == unknown.model.banner)
+        #expect(locked.model.selectedItem == unknown.model.selectedItem)
+        #expect(locked.model.selectedTask == unknown.model.selectedTask)
+    }
+
+    @Test func theConnectedAppsOfALockedWorkspaceAreHiddenWhileTheLockIsOn() async throws {
+        let harness = try await lockedHarness()
+        harness.service.connectedApps = [
+            ConnectedAppFixtures.connectedApp(identifier: "owner-wide", createdAtMilliseconds: OwnerFixtures.createdAtMilliseconds),
+            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch"),
+            ConnectedAppFixtures.projectScoped(identifier: "in-secret", projectIdentifier: "secret-garden")
+        ]
+        await harness.model.loadConnectedApps()
+        #expect(harness.model.visibleConnectedApps.map(\.identifier).sorted() == ["in-acme", "owner-wide"])
+    }
+
+    @Test func withoutTheLockEveryConnectedAppIsListed() async throws {
+        let harness = try await lockedHarness(isLockOn: false)
+        harness.service.connectedApps = [
+            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch"),
+            ConnectedAppFixtures.projectScoped(identifier: "in-secret", projectIdentifier: "secret-garden")
+        ]
+        await harness.model.loadConnectedApps()
+        #expect(harness.model.visibleConnectedApps.map(\.identifier).sorted() == ["in-acme", "in-secret"])
     }
 
     @Test func aLinkToATaskOfTheCurrentWorkspaceStillOpens() async throws {
@@ -433,11 +464,8 @@ extension AppModelTests {
         #expect(locked == unknown)
     }
 
-    @Test func aLinkARenameAndADeletionNamingALockedWorkspaceAnswerThatItIsNoLongerAvailable() async throws {
+    @Test func aRenameAndADeletionNamingALockedWorkspaceAnswerThatItIsNoLongerAvailable() async throws {
         let harness = try await lockedHarness()
-        harness.model.follow(.task(secretKey))
-        #expect(harness.model.banner == .workspaceGone)
-        harness.model.dismissBanner()
         #expect(await harness.model.renameWorkspace(identifier: "secret", name: "Peek") == nil)
         #expect(harness.model.banner == .workspaceGone)
         harness.model.dismissBanner()

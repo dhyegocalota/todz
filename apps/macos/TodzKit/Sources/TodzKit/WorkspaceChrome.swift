@@ -13,9 +13,6 @@ public struct WorkspaceChrome: Equatable, Sendable {
     public let switcher: WorkspaceSwitcherStyle
     public let showsAllWorkspaces: Bool
     public let rows: [WorkspaceChromeRow]
-    public let showsSwitchHint: Bool
-    public let lastShortcutNumber: Int
-    public let canStep: Bool
 
     public init(visible: [Workspace], selection: WorkspaceSelection?, isMainWindow: Bool) {
         let hasSeveral = visible.count > 1
@@ -23,8 +20,5 @@ public struct WorkspaceChrome: Equatable, Sendable {
         switcher = isMainWindow || hasSeveral ? .menu : .plainName
         showsAllWorkspaces = hasSeveral
         rows = visible.map { WorkspaceChromeRow(workspace: $0, isChecked: checked?.contains($0) == true) }
-        showsSwitchHint = hasSeveral
-        lastShortcutNumber = WorkspaceShortcuts.lastNumber(of: visible)
-        canStep = hasSeveral
     }
 }

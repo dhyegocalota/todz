@@ -36,9 +36,8 @@ extension AppModel {
         }
     }
 
-    // NB ADR 0113: a link that names a task of a locked workspace opens Today and answers as an unknown workspace, and shows nothing of that task.
+    // NB ADR 0113: a link that names a task of a locked workspace opens Today and answers as an unknown project, with no banner.
     private func open(_ link: WidgetLink) {
-        if case let .task(key) = link, isInLockedWorkspace(projectIdentifier: key.projectIdentifier) { refuseAsLocked() }
         guard case let .task(key) = link, isInToday(key) else {
             selectedItem = .today
             selectedTask = nil

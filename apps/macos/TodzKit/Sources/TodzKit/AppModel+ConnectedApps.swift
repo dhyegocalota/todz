@@ -15,6 +15,15 @@ extension AppModel {
         }
     }
 
+    // NB ADR 0113: a locked session lists no grant that names a project of a locked workspace.
+    public var visibleConnectedApps: [ConnectedApp] {
+        guard case let .loaded(apps) = connectedApps else { return [] }
+        return apps.filter { app in
+            guard case let .project(projectIdentifier, _) = app.scope else { return true }
+            return !isInLockedWorkspace(projectIdentifier: projectIdentifier)
+        }
+    }
+
     public func disconnectConnectedApp(_ app: ConnectedApp) async {
         guard !isChangingConnectedApps else { return }
         isChangingConnectedApps = true

@@ -61,10 +61,6 @@ enum MenuBarCopy {
         }
     }
 
-    static func switchHint(last: Int) -> String {
-        "Switch workspace ⌘1–\(last)"
-    }
-
     static func result(of outcome: LingerOutcome) -> String {
         switch outcome {
         case .done: done
