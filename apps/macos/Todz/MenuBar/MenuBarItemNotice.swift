@@ -3,15 +3,22 @@ import TodzKit
 
 private let declinedKey = "declinesHiddenMenuBarItemNotice"
 private let menuBarSettingsAddress = "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension"
-private let settlingPause = Duration.seconds(2)
 
 @MainActor final class MenuBarItemNotice {
     private let defaults: UserDefaults
-    private var isOffered = false
-    private var isWaiting = false
+    private let gate: ProactiveGate
     private var screenObservation: (any NSObjectProtocol)?
+    private lazy var check = HiddenMenuBarItemCheck(
+        gate: gate,
+        isDeclined: { [defaults] in defaults.bool(forKey: declinedKey) },
+        pause: { try await Task.sleep(for: $0) },
+        itemFrame: { Self.statusItemFrame() },
+        screenFrames: { NSScreen.screens.map(\.frame) },
+        offer: { [weak self] in self?.offer() }
+    )
 
-    init(defaults: UserDefaults = .standard) {
+    init(gate: ProactiveGate, defaults: UserDefaults = .standard) {
+        self.gate = gate
         self.defaults = defaults
     }
 
@@ -21,29 +28,13 @@ private let settlingPause = Duration.seconds(2)
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.check() }
+            MainActor.assumeIsolated { self?.recheck() }
         }
-        check()
+        recheck()
     }
 
-    private func check() {
-        Task { await offerIfHidden() }
-    }
-
-    private func offerIfHidden() async {
-        let isQuiet = isOffered || isWaiting || defaults.bool(forKey: declinedKey)
-        guard !isQuiet else { return }
-        isWaiting = true
-        defer { isWaiting = false }
-        do {
-            try await Task.sleep(for: settlingPause)
-        } catch {
-            return
-        }
-        guard let itemFrame = Self.statusItemFrame() else { return }
-        guard !MenuBarItemPlacement.isOnTheBar(itemFrame: itemFrame, screenFrames: NSScreen.screens.map(\.frame)) else { return }
-        isOffered = true
-        offer()
+    func recheck() {
+        Task { await check.run() }
     }
 
     private func offer() {
@@ -55,7 +46,7 @@ private let settlingPause = Duration.seconds(2)
         NSWorkspace.shared.open(address)
     }
 
-    static func makeAlert() -> NSAlert {
+    private static func makeAlert() -> NSAlert {
         let alert = NSAlert()
         alert.messageText = MenuBarCopy.hiddenItemTitle
         alert.informativeText = MenuBarCopy.hiddenItemDetail

@@ -50,9 +50,7 @@ struct MainWindow: View {
         }
         .sheet(item: $windowState.deletion) { kind in
             DeleteConfirmSheet(kind: kind)
-        }
-        .taskDeletionDialog(task: $windowState.deletingTask)
-        .onChange(of: windowState.focusRequest) { _, request in
+        }        .onChange(of: windowState.focusRequest) { _, request in
             guard let request else { return }
             windowState.focusRequest = nil
             Task { focus = request }

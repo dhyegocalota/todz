@@ -16,6 +16,7 @@ enum ErrorCopy {
     static let dueDateInvalid = "That date isn't valid."
     static let inboxIsFixed = "The Inbox can't be renamed or deleted."
     static let taskGone = "This task is no longer available."
+    static let taskChangedBeforeDelete = "This task changed before it could be deleted, so it was kept. Check it, then delete it again."
     static let projectGone = "This project is no longer available."
     static let workspaceGone = "This workspace is no longer available."
     static let ruleUnexpected = "todz couldn't save this change."

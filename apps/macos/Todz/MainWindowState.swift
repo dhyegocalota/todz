@@ -9,7 +9,6 @@ private let tomorrowOffset = 1
     var isInspectorPresented = true
     var sheet: NameSheetKind?
     var deletion: DeletionKind?
-    var deletingTask: BoardTask?
     var focusRequest: MainWindowFocus?
     var isConfirmingSignOut = false
     var lingers = CompletionLingers()
@@ -66,7 +65,8 @@ private let tomorrowOffset = 1
     }
 
     func requestDeletion(task key: TaskKey, model: AppModel) {
-        deletingTask = model.boardTask(key)
+        guard let task = model.boardTask(key) else { return }
+        TaskDeletionPrompt.confirm(task, model: model)
     }
 
     func openInspectorTitle() {

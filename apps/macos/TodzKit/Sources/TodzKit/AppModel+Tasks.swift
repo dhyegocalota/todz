@@ -60,16 +60,27 @@ extension AppModel {
 
     public func delete(task key: TaskKey) async {
         guard !isInLockedWorkspace(projectIdentifier: key.projectIdentifier) else { refuseAsLocked(); return }
+        guard let shown = board.task(projectIdentifier: key.projectIdentifier, number: key.number) else { return }
         let isDeleted = await write(target: .taskRemoval(key), retry: { await self.delete(task: key) }) { session in
             try await taskDeletionIsDone {
-                try await service.deleteTask(session: session, projectIdentifier: key.projectIdentifier, number: key.number)
+                try await service.deleteTask(session: session, projectIdentifier: key.projectIdentifier, number: key.number, title: shown.title)
             }
         }
-        guard isDeleted != nil else { return }
+        guard isDeleted != nil else { return keepChangedTask(key) }
         board.remove(projectIdentifier: key.projectIdentifier, numbers: [key.number])
+        outbox = outbox.droppingChanges(taskKey: key, isHeadSent: headInFlightSession == session)
+        keepOutbox()
         keepProject(identifier: key.projectIdentifier)
         guard selectedTask == key else { return }
         selectedTask = nil
+    }
+
+    private func keepChangedTask(_ key: TaskKey) {
+        let target = WriteTarget.taskRemoval(key)
+        guard ruleIssues[target] == .confirmationMismatch else { return }
+        ruleIssues[target] = nil
+        raise(.taskChangedBeforeDelete)
+        requestPull(projectIdentifier: key.projectIdentifier)
     }
 
     private func taskDeletionIsDone(_ deletion: () async throws -> Void) async throws -> Bool {

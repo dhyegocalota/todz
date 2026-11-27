@@ -62,6 +62,14 @@ public struct Outbox: Codable, Sendable, Equatable {
         return (Outbox(changes: counted), isAtLimit: attempts >= attemptLimit)
     }
 
+    public func droppingChanges(taskKey: TaskKey, isHeadSent: Bool) -> Outbox {
+        let kept = changes.enumerated().filter { index, waiting in
+            let isTheSentHead = isHeadSent && index == changes.startIndex
+            return isTheSentHead || waiting.change.taskKey != taskKey
+        }
+        return Outbox(changes: kept.map(\.element))
+    }
+
     public func droppingChanges(projectIdentifier: String) -> (Outbox, dropped: Int) {
         let kept = changes.filter { $0.change.projectIdentifier != projectIdentifier }
         return (Outbox(changes: kept), dropped: changes.count - kept.count)

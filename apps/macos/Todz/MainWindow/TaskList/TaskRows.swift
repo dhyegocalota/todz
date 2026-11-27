@@ -99,7 +99,7 @@ struct TaskRows: View {
     private func deleteOnChord(_ press: KeyPress) {
         let isDeleteChord = press.key == .delete && press.modifiers == .command
         guard isDeleteChord, let selectedTask = model.selectedTask else { return }
-        windowState.requestDeletion(task: selectedTask, model: model)
+        Task { windowState.requestDeletion(task: selectedTask, model: model) }
     }
 
     private func move(section: TaskSection, source: IndexSet, offset: Int) {

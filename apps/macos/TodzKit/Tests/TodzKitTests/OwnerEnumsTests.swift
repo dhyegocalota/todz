@@ -49,7 +49,7 @@ private func decodedRawValues<Value: Decodable & RawRepresentable<String>>(_ typ
             "batch_empty", "batch_too_large", "idempotency_key_invalid", "client_name_invalid", "task_number_invalid",
             "nothing_to_update", "placement_anchor_invalid", "search_text_too_long", "limit_invalid", "name_empty",
             "name_too_long", "title_invalid", "notes_invalid", "completion_note_invalid", "name_invalid",
-            "order_key_too_long",
+            "order_key_too_long", "confirmation_mismatch",
         ]
         #expect(try decodedRawValues(RuleIssue.self, rawValues: rawValues) == rawValues)
         #expect(RuleIssue.allCases.map(\.rawValue) == rawValues)

@@ -8,6 +8,7 @@ Lighter gates for an urgent 🟡 fix: no plan review; reviewer findings below IM
 - [x] (the fix commit) TodzKit: `OwnerService.deleteTask`, `OwnerAPI`, `WriteTarget.taskRemoval`, `AppModel.delete(task:)`, `MenuBarItemPlacement`
 - [x] (the fix commit) The app: the task deletion dialog in the window, **Delete Task…** in the row's context menu and the Task menu, ⌘⌫ on the focused list; the popover row's context menu and ⌘⌫; `MenuBarItemNotice` at the start of the proactive surfaces and on a screen change, never polling
 - [x] (the identity commit) `menu-bar-item-identity.test.ts` pins one `MenuBarExtra` and no status item of todz's own, so the item stays `dev.todz.Todz-Item-0` across releases
+- [x] (79a8b8f0 red, then the review commit) The review's findings: the placement reads above-the-top and screenless as on the bar; `HiddenMenuBarItemCheck` in TodzKit with the gate and the pause injected, run at launch, on screen changes and on reopen; one `TaskDeletionAlert` with Cancel first on every path; the delete carries the synced title, drops the task's waiting changes and says when an agent changed it first; the gone-project path is tested. The move race stays open, the spec says why
 - [x] (light only, in the PR) An offscreen render of the notice's alert; the dark render draws white text on the alert's white offscreen material, so it is not evidence
 - [x] (swift test 1740 passed; Worker 2831 passed; shape 542 passed; typecheck green; the Debug app builds) `swift test`, the Debug app build, `pnpm --filter @todz/api test:unit`, `pnpm --filter @todz/repository-shape test`, `pnpm typecheck`, PR
 
@@ -18,5 +19,5 @@ Lighter gates for an urgent 🟡 fix: no plan review; reviewer findings below IM
 | ⌘⌫ as a menu key equivalent | Every text field loses delete-to-line-start | ⌘⌫ in the add field deletes the selected task instead of the text | The menu item carries no key equivalent; ⌘⌫ is a key press on the focused list or row |
 | The placement rule reads a visible item as hidden | The alert shows on every launch for an owner whose item is on the bar | The alert appears with the item visible | "Don't show this again" silences it; revert the notice commit |
 | A second display below the main one | The parked frame lands on that display's top edge and reads as on the bar | No alert on a blocked Mac with that arrangement | Accepted: a missed notice, never a false one |
-| The delete races an agent's rename | 422 `confirmation_mismatch`, which the app cannot decode | "Change not saved" and the task stays | Delete again |
+| The delete races an agent's rename | 422 `confirmation_mismatch` | The "changed before it could be deleted" banner, the task stays and the project pulls | Delete again |
 | A deleted task's queued edit | The outbox sends an update for a task that is gone | 404 `task_not_found` drops the change as refused (ADR 0028) | None needed |

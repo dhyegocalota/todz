@@ -34,10 +34,10 @@ No path deletes a task from the Mac app. This is not a regression: delete never 
 
 ## Goals
 
-- When macOS keeps todz off the menu bar, todz tells the owner once per launch, with a button that opens System Settings › Menu Bar and a "Don't show this again" choice. It never tells a launch for an intent (ADR 0066), and never when the item is on the bar.
+- When macOS keeps todz off the menu bar, todz tells the owner once per launch, with a button that opens System Settings › Menu Bar and a "Don't show this again" choice. It never tells a launch for an intent (ADR 0066), never while the proactive gate is quiet (ADR 0068), and never when the item is on the bar, above the top edge of an auto-hidden or full-screen bar, or when no screen is attached.
 - The owner deletes a task from the window: the row's context menu has **Delete Task…**, the Task menu has **Delete Task…**, and ⌘⌫ on the focused list asks too. The popover's rows have the same context menu item, and ⌘⌫ on a focused row asks too.
-- Every path asks once, "Delete Task?", naming the task in the message, with Delete and Cancel. Cancel is the default.
-- A delete calls a new owner route, `DELETE /owner/projects/:projectId/tasks/:number`. The task leaves the board, the selection, the cache and the widgets. A task already gone counts as deleted. A locked workspace refuses, as it does for a project.
+- Every path asks once through the same AppKit alert, "Delete Task?", naming the task in the message: Cancel first, so Return cancels, and Delete second, drawn as destructive.
+- A delete calls a new owner route, `DELETE /owner/projects/:projectId/tasks/:number`, carrying the title the app last synced. The task leaves the board, the selection, the cache, the widgets and the queue of changes waiting to be sent. A task already gone counts as deleted. A task an agent renamed since is kept, with a banner that says so. A locked workspace refuses, as it does for a project.
 - The delete leaves the ADR 0102 tombstone, so every other Mac learns it through `deleted_numbers`.
 
 ## Non-goals
@@ -52,22 +52,23 @@ No path deletes a task from the Mac app. This is not a regression: delete never 
 
 ### Data flow
 
-The delete: a row, the Task menu or ⌘⌫ asks for confirmation. Delete calls `AppModel.delete(task:)`, then `OwnerService.deleteTask`, then the route. The route reads the task, deletes it with the title it just read as the confirmation (as the MCP `delete` tool does), and answers 204. The model drops the number from the board, keeps the project cache and clears a selection that pointed at it. Widgets follow the board.
+The delete: a row, the Task menu or ⌘⌫ runs `TaskDeletionPrompt`, which shows `TaskDeletionAlert`. Delete calls `AppModel.delete(task:)`, then `OwnerService.deleteTask` with the board's title, then the route. The route deletes the task with that title as the confirmation, inside the store's transaction (ADR 0102), and answers 204. The model drops the number from the board, drops the task's waiting changes except a head already in flight, keeps the project cache and clears a selection that pointed at it. Widgets follow the board.
 
-The menu bar notice: two seconds after the proactive surfaces start, and again when the screens change (a display attached, removed or rearranged), the app reads the frame of its status bar window. `MenuBarItemPlacement.isOnTheBar(itemFrame:screenFrames:)` says whether that frame sits in the top band of a screen. If it does not, and the owner has not chosen "Don't show this again", an alert says so once per launch.
+The menu bar notice: `HiddenMenuBarItemCheck` runs when the proactive surfaces start, when the screens change (a display attached, removed or rearranged) and when the owner opens todz again from Finder or the Dock. It waits two seconds for the item to settle, then reads the frame of the status bar button. `MenuBarItemPlacement.isOnTheBar(itemFrame:screenFrames:)` says whether that frame sits in, or above, the top band of a screen. If it does not, the gate is not quiet and the owner has not chosen "Don't show this again", an alert says so, once per launch. Nothing polls.
 
 ### Interfaces
 
-- Owner API: `DELETE /owner/projects/:projectId/tasks/:number`, route `delete_task`. It answers 204 when deleted, 404 `not_found` for a project that is not the owner's, 404 `task_not_found` for a missing or deleted task, and 422 `confirmation_mismatch` when an agent renames the task between the read and the delete. It costs one write of the fair-use quota.
-- TodzKit: `OwnerService.deleteTask(session:projectIdentifier:number:)`, `AppModel.delete(task:)`, `WriteTarget.taskRemoval(TaskKey)`, `MenuBarItemPlacement`.
-- App: `MainWindowState.deletingTask`, `TaskDeletionDialog`, `MenuBarItemNotice`.
+- Owner API: `DELETE /owner/projects/:projectId/tasks/:number`, route `delete_task`. It answers 204 when deleted, 404 `not_found` for a project that is not the owner's, 404 `task_not_found` for a missing or deleted task, 400 `invalid_request` without a body `{ "title": … }`, and 422 `confirmation_mismatch` when the title is not the task's current one. It costs one write of the fair-use quota.
+- TodzKit: `OwnerService.deleteTask(session:projectIdentifier:number:title:)`, `AppModel.delete(task:)`, `WriteTarget.taskRemoval(TaskKey)`, `RuleIssue.confirmationMismatch`, `AppBanner.taskChangedBeforeDelete`, `Outbox.droppingChanges(taskKey:isHeadSent:)`, `TaskDeletionAlert`, `HiddenMenuBarItemCheck`, `MenuBarItemPlacement`.
+- App: `TaskDeletionPrompt`, `MenuBarItemNotice`. The Settings pane address `x-apple.systempreferences:com.apple.ControlCenter-Settings.extension` is the bundle identifier of `/System/Library/ExtensionKit/Extensions/ControlCenterSettings.appex` on macOS 26.6.2, whose Info.plist sets `allowsXAppleSystemPreferencesURLScheme` to true.
 
 ### Failure handling
 
 - Offline: the network banner with Try Again, and the task stays.
 - `task_not_found`: the task is gone, so it leaves the board.
 - `not_found` for the project: the project-gone reload, as for every task write.
-- A rename racing the delete answers 422 with an issue this app does not decode, so the app shows "change not saved" and the task stays.
+- An agent's rename since the last sync answers 422 `confirmation_mismatch`: the task stays, the banner says it changed before it could be deleted, and the project pulls.
+- A move racing an owner's delete is not handled here. Treating `task_not_found` on the move's source delete as an edited source would also delete the destination copy when two moves race and the loser added first, which loses the task; telling the two apart needs a mark on the tombstone, a store change for its own fix.
 - A locked workspace: the lock refusal, nothing is sent.
 
 ## Open questions → answers
@@ -79,4 +80,4 @@ The menu bar notice: two seconds after the proactive surfaces start, and again w
 
 ## Test strategy summary
 
-Unit tests in TodzKit for the model's delete (sent, removed, selection cleared, already gone, offline, locked, refused) and for the placement rule (the parked frame, a visible frame, a second screen). Worker tests for the route (204, gone from the feed into `deleted_numbers`, 404 for a second delete, for a stranger's project and for a missing number, the route table and the parity table). An offscreen render of the alert. The live walk is skipped: no todz build is ever launched on the owner's screen.
+Unit tests in TodzKit for the model's delete (sent with the shown title, removed, waiting changes dropped, selection cleared, already gone, renamed, project gone, offline, locked), the alert (button order, key equivalents, destructive flag), the check (once, declined, quiet, screenless, waiting, cancelled) and the placement rule (parked, visible, above the top, a second screen, no screen). Worker tests for the route (204, gone from the feed into `deleted_numbers`, 400 without a title, 422 for another title, 404 for a second delete, for a stranger's project and for a missing number, the route table and the parity table). Offscreen renders of both alerts. The live walk is skipped: no todz build is ever launched on the owner's screen.
