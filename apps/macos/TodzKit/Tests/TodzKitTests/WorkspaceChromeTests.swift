@@ -8,33 +8,30 @@ private func listed(count: Int) -> [Workspace] {
 @Suite struct WorkspaceChromeTests {
     @Test func aSoleWorkspaceInThePopoverIsAPlainNameWithNoSwitchingChrome() {
         let visible = listed(count: 1)
-        let chrome = WorkspaceChrome(visible: visible, selection: .chosen(["workspace-1"]), isMainWindow: false, isSingleSelection: false)
+        let chrome = WorkspaceChrome(visible: visible, selection: .chosen(["workspace-1"]), isMainWindow: false)
         #expect(chrome.switcher == .plainName)
         #expect(!chrome.showsAllWorkspaces)
+        #expect(!chrome.showsAlongside)
         #expect(chrome.rows == [WorkspaceChromeRow(workspace: visible[0], isChecked: true)])
     }
 
     @Test func aSoleWorkspaceInTheMainWindowKeepsItsMenuWithoutAllWorkspaces() {
-        let chrome = WorkspaceChrome(visible: listed(count: 1), selection: .chosen(["workspace-1"]), isMainWindow: true, isSingleSelection: false)
+        let chrome = WorkspaceChrome(visible: listed(count: 1), selection: .chosen(["workspace-1"]), isMainWindow: true)
         #expect(chrome.switcher == .menu)
         #expect(!chrome.showsAllWorkspaces)
+        #expect(!chrome.showsAlongside)
     }
 
-    @Test(arguments: [false, true]) func severalWorkspacesDrawAMenuWithAllWorkspaces(isMainWindow: Bool) {
-        let chrome = WorkspaceChrome(visible: listed(count: 3), selection: .chosen(["workspace-2"]), isMainWindow: isMainWindow, isSingleSelection: false)
+    @Test(arguments: [false, true]) func severalWorkspacesDrawAMenuWithAllWorkspacesAndShowAlongside(isMainWindow: Bool) {
+        let chrome = WorkspaceChrome(visible: listed(count: 3), selection: .chosen(["workspace-2"]), isMainWindow: isMainWindow)
         #expect(chrome.switcher == .menu)
         #expect(chrome.showsAllWorkspaces)
+        #expect(chrome.showsAlongside)
         #expect(chrome.rows.map(\.isChecked) == [false, true, false])
     }
 
-    @Test func withTheSwitchOnTheMenuOffersNoAllWorkspaces() {
-        let chrome = WorkspaceChrome(visible: listed(count: 3), selection: .chosen(["workspace-2"]), isMainWindow: true, isSingleSelection: true)
-        #expect(chrome.switcher == .menu)
-        #expect(!chrome.showsAllWorkspaces)
-    }
-
     @Test func theAllSelectionChecksEveryRow() {
-        let chrome = WorkspaceChrome(visible: listed(count: 2), selection: .all, isMainWindow: true, isSingleSelection: false)
+        let chrome = WorkspaceChrome(visible: listed(count: 2), selection: .all, isMainWindow: true)
         #expect(chrome.rows.map(\.isChecked) == [true, true])
     }
 }

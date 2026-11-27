@@ -19,6 +19,7 @@ enum MainWindowCopy {
     static var yesterday: String { Localized.text("Yesterday") }
     static var newWorkspace: String { Localized.text("New Workspace…") }
     static var allWorkspaces: String { Localized.text("All Workspaces") }
+    static var showAlongside: String { Localized.text("Show Alongside") }
     static var newProject: String { Localized.text("New Project…") }
     static var newProjectButton: String { Localized.text("New Project") }
     static var renameProject: String { Localized.text("Rename…") }

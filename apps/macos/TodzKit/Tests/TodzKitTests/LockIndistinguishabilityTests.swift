@@ -25,7 +25,7 @@ private let hiddenCounts = Array(1...12)
 }
 
 @MainActor private func chrome(of harness: AppModelHarness, isMainWindow: Bool) -> WorkspaceChrome {
-    WorkspaceChrome(visible: harness.model.visibleWorkspaces, selection: harness.model.selection, isMainWindow: isMainWindow, isSingleSelection: harness.model.workspaceLock.isEnabled)
+    WorkspaceChrome(visible: harness.model.visibleWorkspaces, selection: harness.model.selection, isMainWindow: isMainWindow)
 }
 
 @MainActor @Suite struct LockIndistinguishabilityTests {

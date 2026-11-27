@@ -33,7 +33,7 @@ extension AppModel {
         selection = cached.selection
         guard let primary = primary(of: shownWorkspaces) else { return }
         activeWorkspaceIdentifier = primary.identifier
-        selection = selection.flatMap(collapsedToOneWorkspace)
+        selection = selection.map(pinnedWhileLocked)
         forgetLockedWorkspaces()
         loadCachedProjects(of: shownWorkspaces)
         phase = .ready
