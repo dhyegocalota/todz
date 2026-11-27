@@ -33,7 +33,7 @@ const VERIFY_COMMAND = 'pnpm verify';
 const WHOAMI_COMMAND = 'wrangler whoami';
 const MIGRATIONS_COMMAND = 'wrangler d1 migrations apply todz-directory --remote';
 const DEPLOY_COMMAND = 'pnpm --filter @todz/api server:deploy';
-const DEPLOY_WITH_VARIABLE_PATTERN = /wrangler deploy|--var/;
+const DEPLOY_WITH_VARIABLE_PATTERN = /wrangler deploy[^\n]*--var/;
 
 function pageOf({ folder }: { folder: string }): string {
   return posix.join(DOCS_DIRECTORY, folder, `${SELF_HOST_PAGE}${PAGE_EXTENSION}`);

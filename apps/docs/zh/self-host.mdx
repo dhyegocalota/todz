@@ -5,6 +5,14 @@ sidebarTitle: 服务器设置
 
 在 Cloudflare 上运行你自己的 todz 服务器，并让 macOS App 和你的智能体指向它。服务器是一个 Worker，带一个 D1 数据库，每个项目一个 Durable Object。
 
+把下面这段粘贴给你的编码智能体。它会完成全部设置，只有在需要你登录、付款或提供密钥时才会停下来询问。
+
+```text
+Self-host todz: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/self-host-with-an-agent.md end to end on my Cloudflare account, and stop only to ask me for logins, payments and secrets.
+```
+
+<Accordion title="手动操作">
+
 ## 你需要什么
 
 - 一个开通了 **Workers Paid** 的 Cloudflare 账户（电子邮件绑定需要它），以及该账户中的一个域名。下文中，`example.com` 代表这个域名，`api.example.com` 代表服务器。
@@ -147,3 +155,5 @@ pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
 - 来自 todz.app 的官方 App 会从 todz.app 经过签名的 appcast 自行更新，即使它指向你的服务器：你选择的服务器与 App 的更新互不相干。参见[在 Mac 上安装 › 更新](https://docs.todz.app/zh/install-on-mac#4-更新)。
 - 你按第 7 步自行构建的 App 永远不会自动安装更新；它可能会提供官方版本，而官方版本会替换你的构建。要保留你自己的构建，请按上文再构建一次，或者安装官方 App，并把你的服务器粘贴到**服务器**下。
 - 请让你的服务器保持最新。当新的 App 需要更新的服务器时，App 会提示服务器较旧；请先更新服务器。
+
+</Accordion>
