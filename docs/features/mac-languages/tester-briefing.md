@@ -35,3 +35,10 @@
 - Touch ID reasons must complete the system's "is trying to …" sentence in every language.
 - The 6 shortcut phrases keep the application name in every language.
 - The launch breadcrumb: erase the cached owner file by hand, relaunch, and expect exactly one line.
+
+## Added to this PR: the sign-in code and the grant scopes
+
+- "Check your inbox" has six code boxes over one VoiceOver field with `oneTimeCode` AutoFill: typing advances, backspace goes back, a paste anywhere fills the boxes and submits. A wrong code shakes the boxes (Reduce Motion: a red ring only), a locked answer shows the server's wait, and "Resend code" waits 30 seconds and sends a new verifier.
+- Settings › Connected apps lists each grant's scopes in words (the account, every project of a workspace, a project in its workspace), with Limit to… and Remove, and Disconnect as before. While the session is locked it names only visible workspaces, hides a grant that covers none, and offers no Limit or Remove, because a narrowing from a partial view would drop scopes it cannot see.
+- Autofocus: the sign-in email field, then the code field's first box, the add-task field and every one-field sheet already take focus on open; the code field and the email field do not take it while the server form is open.
+- Attack: paste text around a code; paste while the challenge token is still loading (the code is held and sent when it arrives); five wrong codes; narrow an account grant while locked (it must be impossible).

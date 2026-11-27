@@ -313,28 +313,65 @@ extension AppModelTests {
         let harness = try await lockedHarness()
         harness.service.connectedApps = [
             ConnectedAppFixtures.connectedApp(identifier: "owner-wide", createdAtMilliseconds: OwnerFixtures.createdAtMilliseconds),
-            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch"),
-            ConnectedAppFixtures.projectScoped(identifier: "in-secret", projectIdentifier: "secret-garden")
+            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch", workspaceIdentifier: "acme"),
+            ConnectedAppFixtures.projectScoped(identifier: "in-secret", projectIdentifier: "secret-garden", workspaceIdentifier: "secret")
         ]
         await harness.model.loadConnectedApps()
         #expect(harness.model.visibleConnectedApps.map(\.identifier).sorted() == ["in-acme", "owner-wide"])
     }
 
-    @Test func aConnectedAppOfAProjectThisMacDoesNotKnowIsHiddenWhileTheLockIsOn() async throws {
+    @Test func aConnectedAppOfAWorkspaceThisMacDoesNotKnowIsHiddenWhileTheLockIsOn() async throws {
         let harness = try await lockedHarness()
         harness.service.connectedApps = [
-            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch"),
-            ConnectedAppFixtures.projectScoped(identifier: "in-unknown", projectIdentifier: "made-by-an-agent")
+            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch", workspaceIdentifier: "acme"),
+            ConnectedAppFixtures.projectScoped(identifier: "in-unknown", projectIdentifier: "made-by-an-agent", workspaceIdentifier: "nowhere")
         ]
         await harness.model.loadConnectedApps()
         #expect(harness.model.visibleConnectedApps.map(\.identifier) == ["in-acme"])
     }
 
+    @Test func aGrantOfSeveralWorkspacesNamesOnlyTheVisibleOnesWhileTheLockIsOn() async throws {
+        let harness = try await lockedHarness()
+        let mixed = ConnectedApp(
+            identifier: "mixed",
+            clientName: "Claude",
+            redirectHost: "claude.ai",
+            scopes: [
+                .workspace(identifier: "secret", name: "secret"),
+                .workspace(identifier: "acme", name: "acme"),
+                .project(identifier: "secret-garden", name: "garden", workspaceIdentifier: "secret", workspaceName: "secret"),
+            ],
+            createdAt: fixedInstant,
+            lastUsedAt: fixedInstant
+        )
+        harness.service.connectedApps = [mixed]
+        await harness.model.loadConnectedApps()
+        #expect(harness.model.visibleConnectedApps.map(\.scopes) == [[.workspace(identifier: "acme", name: "acme")]])
+    }
+
+    @Test func aGrantOfOnlyLockedWorkspacesIsNotListedWhileTheLockIsOn() async throws {
+        let harness = try await lockedHarness()
+        let hidden = ConnectedApp(identifier: "hidden", clientName: "Claude", redirectHost: "claude.ai", scopes: [.workspace(identifier: "secret", name: "secret")], createdAt: fixedInstant, lastUsedAt: fixedInstant)
+        harness.service.connectedApps = [hidden]
+        await harness.model.loadConnectedApps()
+        #expect(harness.model.visibleConnectedApps.isEmpty)
+    }
+
+    @Test func aLockedSessionNeverNarrowsAGrantBecauseItCouldDropWhatItCannotSee() async throws {
+        let harness = try await lockedHarness()
+        harness.service.connectedApps = [ConnectedAppFixtures.ownerScoped(identifier: "owner-wide")]
+        await harness.model.loadConnectedApps()
+        harness.service.calls = []
+        await harness.model.narrowConnectedApp(ConnectedAppFixtures.ownerScoped(identifier: "owner-wide"), to: [.workspace(identifier: "acme", name: "acme")])
+        #expect(!harness.model.canNarrowConnectedApps)
+        #expect(harness.service.calls.isEmpty)
+    }
+
     @Test func withoutTheLockEveryConnectedAppIsListed() async throws {
         let harness = try await lockedHarness(isLockOn: false)
         harness.service.connectedApps = [
-            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch"),
-            ConnectedAppFixtures.projectScoped(identifier: "in-secret", projectIdentifier: "secret-garden")
+            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch", workspaceIdentifier: "acme"),
+            ConnectedAppFixtures.projectScoped(identifier: "in-secret", projectIdentifier: "secret-garden", workspaceIdentifier: "secret")
         ]
         await harness.model.loadConnectedApps()
         #expect(harness.model.visibleConnectedApps.map(\.identifier).sorted() == ["in-acme", "in-secret"])

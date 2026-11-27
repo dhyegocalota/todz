@@ -107,6 +107,59 @@
         }
       }
     },
+    "%@ in %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in %@"
+          }
+        },
+        "zh": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in %@"
+          }
+        }
+      }
+    },
     "%@ via %@": {
       "extractionState": "manual",
       "localizations": {
@@ -160,55 +213,55 @@
         }
       }
     },
-    "%@ · %@ · Last used %@": {
+    "%@ · Last used %@": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · %@ · Last used %@"
+            "value": "%@ · Last used %@"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · %@ · Último uso %@"
+            "value": "%@ · Last used %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · %@ · Último uso: %@"
+            "value": "%@ · Last used %@"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · %@ · Zuletzt verwendet %@"
+            "value": "%@ · Last used %@"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · %@ · Dernière utilisation %@"
+            "value": "%@ · Last used %@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · %@ · 最終使用：%@"
+            "value": "%@ · Last used %@"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ · %@ · 마지막 사용 %@"
+            "value": "%@ · Last used %@"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ · %2$@ · 上次使用 %3$@"
+            "value": "%@ · Last used %@"
           }
         }
       }
@@ -7334,43 +7387,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete Task?"
+            "value": "Excluir tarefa?"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete Task?"
+            "value": "¿Eliminar tarea?"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete Task?"
+            "value": "Aufgabe löschen?"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete Task?"
+            "value": "Supprimer la tâche ?"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete Task?"
+            "value": "タスクを削除しますか？"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete Task?"
+            "value": "작업을 삭제할까요?"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete Task?"
+            "value": "删除任务？"
           }
         }
       }
@@ -7864,43 +7917,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Don't show this again"
+            "value": "Não mostrar isto de novo"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Don't show this again"
+            "value": "No volver a mostrar"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Don't show this again"
+            "value": "Nicht mehr anzeigen"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Don't show this again"
+            "value": "Ne plus afficher"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Don't show this again"
+            "value": "今後は表示しない"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Don't show this again"
+            "value": "다시 표시 안 함"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Don't show this again"
+            "value": "不再显示"
           }
         }
       }
@@ -8871,43 +8924,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enter the six digits from the email we sent you."
+            "value": "Informe os seis dígitos do e-mail que enviamos para você."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enter the six digits from the email we sent you."
+            "value": "Introduce los seis dígitos del correo que te enviamos."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enter the six digits from the email we sent you."
+            "value": "Gib die sechs Ziffern aus der E-Mail ein, die wir dir gesendet haben."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enter the six digits from the email we sent you."
+            "value": "Saisissez les six chiffres de l’e-mail que nous vous avons envoyé."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enter the six digits from the email we sent you."
+            "value": "送信したメールに記載された6桁の数字を入力してください。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enter the six digits from the email we sent you."
+            "value": "보내 드린 이메일에 있는 여섯 자리 숫자를 입력하세요."
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enter the six digits from the email we sent you."
+            "value": "请输入我们发给你的邮件中的六位数字。"
           }
         }
       }
@@ -9014,6 +9067,59 @@
           "stringUnit": {
             "state": "translated",
             "value": "每小时"
+          }
+        }
+      }
+    },
+    "Every project in %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every project in %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every project in %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every project in %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every project in %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every project in %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every project in %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every project in %@"
+          }
+        },
+        "zh": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every project in %@"
           }
         }
       }
@@ -10339,6 +10445,112 @@
           "stringUnit": {
             "state": "translated",
             "value": "浅色、深色，或跟随 Mac 的设置。小组件跟随桌面。"
+          }
+        }
+      }
+    },
+    "Limit %@ to…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit %@ to…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit %@ to…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit %@ to…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit %@ to…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit %@ to…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit %@ to…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit %@ to…"
+          }
+        },
+        "zh": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit %@ to…"
+          }
+        }
+      }
+    },
+    "Limit to…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to…"
+          }
+        },
+        "zh": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limit to…"
           }
         }
       }
@@ -13772,43 +13984,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Menu Bar Settings"
+            "value": "Abrir os Ajustes da Barra de Menus"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Menu Bar Settings"
+            "value": "Abrir ajustes de la barra de menús"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Menu Bar Settings"
+            "value": "Menüleisten-Einstellungen öffnen"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Menu Bar Settings"
+            "value": "Ouvrir les réglages de la barre des menus"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Menu Bar Settings"
+            "value": "メニューバーの設定を開く"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Menu Bar Settings"
+            "value": "메뉴 막대 설정 열기"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Menu Bar Settings"
+            "value": "打开菜单栏设置"
           }
         }
       }
@@ -14767,59 +14979,6 @@
         }
       }
     },
-    "Project: %@": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Project: %@"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Projeto: %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Proyecto: %@"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Projekt: %@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Projet : %@"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "プロジェクト：%@"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "프로젝트: %@"
-          }
-        },
-        "zh": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "项目：%@"
-          }
-        }
-      }
-    },
     "Projects": {
       "extractionState": "manual",
       "localizations": {
@@ -15346,6 +15505,112 @@
           "stringUnit": {
             "state": "translated",
             "value": "正在刷新"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "zh": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
+    "Remove %@ from %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@ from %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@ from %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@ from %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@ from %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@ from %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@ from %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@ from %@"
+          }
+        },
+        "zh": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@ from %@"
           }
         }
       }
@@ -16145,6 +16410,59 @@
         }
       }
     },
+    "Resend code": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resend code"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resend code"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resend code"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resend code"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resend code"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resend code"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resend code"
+          }
+        },
+        "zh": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resend code"
+          }
+        }
+      }
+    },
     "Respect Focus": {
       "extractionState": "manual",
       "localizations": {
@@ -16459,59 +16777,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "选择一个任务，查看它的详细信息。"
-          }
-        }
-      }
-    },
-    "Send Again": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send Again"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enviar de novo"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enviar de nuevo"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erneut senden"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Renvoyer"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "もう一度送信"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "다시 보내기"
-          }
-        },
-        "zh": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "再次发送"
           }
         }
       }
@@ -17931,43 +18196,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign-in code"
+            "value": "Código de acesso"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign-in code"
+            "value": "Código de inicio de sesión"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign-in code"
+            "value": "Anmeldecode"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign-in code"
+            "value": "Code de connexion"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign-in code"
+            "value": "サインインコード"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign-in code"
+            "value": "로그인 코드"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign-in code"
+            "value": "登录验证码"
           }
         }
       }
@@ -19216,6 +19481,59 @@
         }
       }
     },
+    "That code didn't work. Check it, or ask for a new one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That code didn't work. Check it, or ask for a new one."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That code didn't work. Check it, or ask for a new one."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That code didn't work. Check it, or ask for a new one."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That code didn't work. Check it, or ask for a new one."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That code didn't work. Check it, or ask for a new one."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That code didn't work. Check it, or ask for a new one."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That code didn't work. Check it, or ask for a new one."
+          }
+        },
+        "zh": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That code didn't work. Check it, or ask for a new one."
+          }
+        }
+      }
+    },
     "That date isn't valid.": {
       "extractionState": "manual",
       "localizations": {
@@ -19636,6 +19954,59 @@
           "stringUnit": {
             "state": "translated",
             "value": "该应用没有被断开连接。它仍有访问权限。"
+          }
+        }
+      }
+    },
+    "The app wasn't limited. It still has the access it had.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app wasn't limited. It still has the access it had."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app wasn't limited. It still has the access it had."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app wasn't limited. It still has the access it had."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app wasn't limited. It still has the access it had."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app wasn't limited. It still has the access it had."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app wasn't limited. It still has the access it had."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app wasn't limited. It still has the access it had."
+          }
+        },
+        "zh": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app wasn't limited. It still has the access it had."
           }
         }
       }
@@ -20578,43 +20949,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "This task changed before it could be deleted, so it was kept. Check it, then delete it again."
+            "value": "Esta tarefa mudou antes de poder ser excluída, então foi mantida. Confira e exclua de novo."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "This task changed before it could be deleted, so it was kept. Check it, then delete it again."
+            "value": "Esta tarea cambió antes de poder eliminarse, así que se conservó. Revísala y vuelve a eliminarla."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "This task changed before it could be deleted, so it was kept. Check it, then delete it again."
+            "value": "Diese Aufgabe wurde geändert, bevor sie gelöscht werden konnte, deshalb wurde sie behalten. Prüfe sie und lösche sie dann erneut."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "This task changed before it could be deleted, so it was kept. Check it, then delete it again."
+            "value": "Cette tâche a changé avant de pouvoir être supprimée, elle a donc été conservée. Vérifiez-la, puis supprimez-la de nouveau."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "This task changed before it could be deleted, so it was kept. Check it, then delete it again."
+            "value": "このタスクは削除される前に変更されたため、残されています。内容を確認してから、もう一度削除してください。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "This task changed before it could be deleted, so it was kept. Check it, then delete it again."
+            "value": "삭제하기 전에 이 작업이 변경되어 그대로 남겨 두었어요. 내용을 확인한 뒤 다시 삭제하세요."
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "This task changed before it could be deleted, so it was kept. Check it, then delete it again."
+            "value": "该任务在被删除之前发生了更改，所以已保留。请检查一下，然后再次删除。"
           }
         }
       }
@@ -21439,6 +21810,112 @@
         }
       }
     },
+    "Too many tries. Use the link in the email or ask for a new code.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code."
+          }
+        },
+        "zh": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code."
+          }
+        }
+      }
+    },
+    "Too many tries. Use the link in the email or ask for a new code. Try again in %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+          }
+        },
+        "zh": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Use the link in the email or ask for a new code. Try again in %@."
+          }
+        }
+      }
+    },
     "Too many tries. Wait a minute, then try again.": {
       "extractionState": "manual",
       "localizations": {
@@ -21610,43 +22087,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn on todz under Allow in the Menu Bar, in System Settings › Menu Bar, to see today's count and open the popover."
+            "value": "Ative o todz em Permitir na Barra de Menus, em Ajustes do Sistema › Barra de Menus, para ver a contagem de hoje e abrir o popover."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn on todz under Allow in the Menu Bar, in System Settings › Menu Bar, to see today's count and open the popover."
+            "value": "Activa todz en Permitir en la barra de menús, en Ajustes del Sistema › Barra de menús, para ver el recuento de hoy y abrir el popover."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn on todz under Allow in the Menu Bar, in System Settings › Menu Bar, to see today's count and open the popover."
+            "value": "Schalte todz unter „In Menüleiste erlauben“ in Systemeinstellungen › Menüleiste ein, um den Zähler für heute zu sehen und das Popover zu öffnen."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn on todz under Allow in the Menu Bar, in System Settings › Menu Bar, to see today's count and open the popover."
+            "value": "Activez todz sous Autoriser dans la barre des menus, dans Réglages Système › Barre des menus, pour voir le compteur du jour et ouvrir le panneau."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn on todz under Allow in the Menu Bar, in System Settings › Menu Bar, to see today's count and open the popover."
+            "value": "今日の件数を表示してポップオーバを開くには、システム設定 › メニューバーの「メニューバーに追加することを許可」でtodzをオンにしてください。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn on todz under Allow in the Menu Bar, in System Settings › Menu Bar, to see today's count and open the popover."
+            "value": "오늘의 개수를 보고 팝오버를 열려면 시스템 설정 › 메뉴 막대의 ‘메뉴 막대에서 허용’ 아래에서 todz를 켜세요."
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn on todz under Allow in the Menu Bar, in System Settings › Menu Bar, to see today's count and open the popover."
+            "value": "请在系统设置 › 菜单栏的“允许在菜单栏显示”下开启 todz，以查看今天的计数并打开弹出窗口。"
           }
         }
       }
@@ -25077,43 +25554,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS is keeping todz off the menu bar"
+            "value": "O macOS está mantendo o todz fora da barra de menus"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS is keeping todz off the menu bar"
+            "value": "macOS está manteniendo todz fuera de la barra de menús"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS is keeping todz off the menu bar"
+            "value": "macOS hält todz aus der Menüleiste fern"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS is keeping todz off the menu bar"
+            "value": "macOS garde todz hors de la barre des menus"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS is keeping todz off the menu bar"
+            "value": "macOSがtodzをメニューバーに表示していません"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS is keeping todz off the menu bar"
+            "value": "macOS가 todz를 메뉴 막대에 표시하지 않고 있어요"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS is keeping todz off the menu bar"
+            "value": "macOS 没有让 todz 显示在菜单栏中"
           }
         }
       }
@@ -26346,43 +26823,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "“%@” and its history are deleted permanently. It cannot be undone."
+            "value": "“%@” e o histórico dela são excluídos em definitivo. Não dá para desfazer."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "“%@” and its history are deleted permanently. It cannot be undone."
+            "value": "«%@» y su historial se eliminan para siempre. No se puede deshacer."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "“%@” and its history are deleted permanently. It cannot be undone."
+            "value": "„%@“ und ihr Verlauf werden endgültig gelöscht. Das lässt sich nicht rückgängig machen."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "“%@” and its history are deleted permanently. It cannot be undone."
+            "value": "« %@ » et son historique sont supprimés définitivement. Cette action est irréversible."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "“%@” and its history are deleted permanently. It cannot be undone."
+            "value": "「%@」とその履歴は完全に削除されます。この操作は取り消せません。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "“%@” and its history are deleted permanently. It cannot be undone."
+            "value": "“%@” 작업과 그 기록이 영구적으로 삭제돼요. 되돌릴 수 없어요."
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "“%@” and its history are deleted permanently. It cannot be undone."
+            "value": "“%@”及其历史记录会被永久删除。此操作无法撤销。"
           }
         }
       }

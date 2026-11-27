@@ -10,6 +10,7 @@ struct CodeField: View {
     @Binding var entry: CodeEntry
     let failureCount: Int
     let isBusy: Bool
+    let isAutofocused: Bool
     let onComplete: (String) -> Void
     @FocusState private var isFocused: Bool
     @State private var isInvalid = false
@@ -33,7 +34,7 @@ struct CodeField: View {
         .contentShape(Rectangle())
         .onTapGesture { isFocused = true }
         .todzShake(trigger: failureCount)
-        .onAppear { isFocused = true }
+        .onAppear { isFocused = isAutofocused }
         .onChange(of: failureCount) { _, _ in fail() }
     }
 
@@ -65,7 +66,7 @@ struct CodeField: View {
     private func fail() {
         isInvalid = true
         entry = CodeEntry()
-        isFocused = true
+        isFocused = isAutofocused
         Task {
             try? await Task.sleep(for: invalidHold)
             isInvalid = false

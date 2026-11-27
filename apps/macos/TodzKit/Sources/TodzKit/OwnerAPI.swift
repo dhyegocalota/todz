@@ -32,6 +32,7 @@ private func taskPath(projectIdentifier: String, number: Int) -> String {
 }
 
 private let connectedAppsPath = "/owner/connected-apps"
+private let retryAfterHeader = "Retry-After"
 
 private struct HealthBody: Decodable {
     let service: String
@@ -57,6 +58,7 @@ public protocol OwnerService: Sendable {
     func signInMethod() async throws -> SignInMethod
     func requestSignInLink(email: String, challenge: String, turnstileToken: String, linkScheme: AppLinkScheme) async throws
     func signIn(identityToken: String, linkVerifier: String?, turnstileToken: String?, timeZone: String) async throws -> IssuedSession
+    func signIn(email: String, emailCode: String, linkVerifier: String, turnstileToken: String, timeZone: String) async throws -> IssuedSession
     func signOut(session: String) async throws
     func readOwner(session: String) async throws -> Owner
     func updateOwner(session: String, timeZone: String) async throws -> Owner
@@ -79,6 +81,7 @@ public protocol OwnerService: Sendable {
     func readChanges(session: String, projectIdentifier: String, cursor: Int) async throws -> ChangePage
     func listConnectedApps(session: String) async throws -> [ConnectedApp]
     func disconnectConnectedApp(session: String, connectedAppIdentifier: String) async throws
+    func narrowConnectedApp(session: String, connectedAppIdentifier: String, scopes: [ConnectedScope]) async throws -> ConnectedApp
 }
 
 public struct OwnerAPI: OwnerService {
@@ -146,6 +149,11 @@ public struct OwnerAPI: OwnerService {
 
     public func signIn(identityToken: String, linkVerifier: String?, turnstileToken: String?, timeZone: String) async throws -> IssuedSession {
         let body = SignInBody(identityToken: identityToken, linkVerifier: linkVerifier, turnstileToken: turnstileToken, timeZone: timeZone)
+        return try await answer(IssuedSession.self, to: OwnerRequest(method: .post, path: sessionsPath, session: nil, body: body))
+    }
+
+    public func signIn(email: String, emailCode: String, linkVerifier: String, turnstileToken: String, timeZone: String) async throws -> IssuedSession {
+        let body = EmailCodeSignInBody(email: email, emailCode: emailCode, linkVerifier: linkVerifier, turnstileToken: turnstileToken, timeZone: timeZone)
         return try await answer(IssuedSession.self, to: OwnerRequest(method: .post, path: sessionsPath, session: nil, body: body))
     }
 
@@ -256,6 +264,11 @@ public struct OwnerAPI: OwnerService {
         _ = try await send(OwnerRequest(method: .delete, path: "\(connectedAppsPath)/\(connectedAppIdentifier)", session: session))
     }
 
+    public func narrowConnectedApp(session: String, connectedAppIdentifier: String, scopes: [ConnectedScope]) async throws -> ConnectedApp {
+        let request = try OwnerRequest(method: .patch, path: "\(connectedAppsPath)/\(connectedAppIdentifier)", session: session, body: NarrowBody(scopes: scopes))
+        return try await answer(NarrowedConnectedAppAnswer.self, to: request).connectedApp
+    }
+
     private func answer<Answer: Decodable>(_ type: Answer.Type, to request: OwnerRequest) async throws -> Answer {
         try OwnerCoding.decoder().decode(Answer.self, from: try await send(request))
     }
@@ -264,7 +277,7 @@ public struct OwnerAPI: OwnerService {
         let (body, response) = try await exchange(request)
         guard let response = response as? HTTPURLResponse else { throw OwnerAPIError.unreachable }
         guard ResponseStatus.successes.contains(response.statusCode) else {
-            throw OwnerErrorBody.failure(status: response.statusCode, body: body)
+            throw OwnerErrorBody.failure(status: response.statusCode, body: body, retryAfterSeconds: response.value(forHTTPHeaderField: retryAfterHeader).flatMap { Int($0) })
         }
         return body
     }

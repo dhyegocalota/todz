@@ -1,5 +1,7 @@
 public enum SignInError: Equatable, Sendable {
     case identityRejected
+    case codeRejected
+    case codeLocked(retryAfterSeconds: Int?)
     case signInUnavailable
     case signInRefused
     case invalidAddress
@@ -25,11 +27,12 @@ public enum SignInError: Equatable, Sendable {
         case .identityRejected: self = .identityRejected
         case .signInUnavailable: self = .signInUnavailable
         case .signInRefused: self = .signInRefused
+        case let .codeLocked(retryAfterSeconds): self = .codeLocked(retryAfterSeconds: retryAfterSeconds)
         case .appTooOld: self = .appTooOld
         case let .fairUseRefused(message), let .fairUsePaused(message): self = .fairUseRefused(message: message)
         case .timeZoneInvalid: self = .timeZoneInvalid
         case .unreachable: self = .unreachable
-        case .unauthorized, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead, .ruleViolated, .invalidRequest, .limitReached, .unexpected:
+        case .unauthorized, .notFound, .taskNotFound, .inboxIsFixed, .cursorAhead, .ruleViolated, .invalidRequest, .limitReached, .scopeNotNarrower, .unexpected:
             self = .unexpected
         }
     }

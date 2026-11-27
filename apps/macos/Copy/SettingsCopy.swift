@@ -56,6 +56,9 @@ enum SettingsCopy {
     static var connectedAppsDetail: String { Localized.text("Apps you approved in the browser to use todz over MCP. Disconnecting one signs it out right away.") }
     static var noConnectedApps: String { Localized.text("No connected apps yet. Add todz to Claude Code, Claude.ai or Codex with its address and approve it in the browser.") }
     static var connectedAppAccountScope: String { Localized.text("Your whole account") }
+    static var removeScope: String { Localized.text("Remove") }
+    static var limitConnectedApp: String { Localized.text("Limit to…") }
+    static var connectedAppNotNarrowed: String { Localized.text("The app wasn't limited. It still has the access it had.") }
     static var disconnectConnectedApp: String { Localized.text("Disconnect") }
     static var disconnectConnectedAppMessage: String { Localized.text("It loses access at once. You can connect it again from the app.") }
     static var connectedAppNotDisconnected: String { Localized.text("The app wasn't disconnected. It still has access.") }
@@ -142,20 +145,30 @@ enum SettingsCopy {
         Localized.text("Disconnect \(clientName)?")
     }
 
-    static func connectedAppScope(_ scope: ConnectedAppScope) -> String {
+    static func connectedAppScope(_ scope: ConnectedScope) -> String {
         switch scope {
-        case let .project(_, name): Localized.text("Project: \(name)")
-        case .owner: connectedAppAccountScope
+        case .account: connectedAppAccountScope
+        case let .workspace(_, name): Localized.text("Every project in \(name)")
+        case let .project(_, name, _, workspaceName): Localized.text("\(name) in \(workspaceName)")
         }
     }
 
-    static func connectedAppSummary(scope: String, redirectHost: String, lastUsed: String) -> String {
-        Localized.text("\(scope) · \(redirectHost) · Last used \(lastUsed)")
+    static func connectedAppSummary(redirectHost: String, lastUsed: String) -> String {
+        Localized.text("\(redirectHost) · Last used \(lastUsed)")
+    }
+
+    static func removeScopeLabel(scope: String, clientName: String) -> String {
+        Localized.text("Remove \(scope) from \(clientName)")
+    }
+
+    static func limitLabel(clientName: String) -> String {
+        Localized.text("Limit \(clientName) to…")
     }
 
     static func connectedAppFailure(_ failure: ConnectedAppFailure) -> String {
         switch failure {
         case .notDisconnected: connectedAppNotDisconnected
+        case .notNarrowed: connectedAppNotNarrowed
         }
     }
 

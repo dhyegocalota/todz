@@ -13,6 +13,8 @@ import Observation
     public internal(set) var pendingLink: PendingSignInLink?
     public internal(set) var signInChallengeToken: String?
     public internal(set) var challengeRound = 0
+    public internal(set) var isSubmittingCode = false
+    public internal(set) var codeFailureCount = 0
     public internal(set) var workspaces: [Workspace] = [] {
         didSet { storedTaskViews = nil }
     }

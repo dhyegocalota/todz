@@ -27,7 +27,9 @@ enum SignInCopy {
     static var inboxSubtitle: String { Localized.text("We sent a sign-in link to") }
     static var codeLabel: String { Localized.text("Sign-in code") }
     static var codeHint: String { Localized.text("Enter the six digits from the email we sent you.") }
-    static var sendAgain: String { Localized.text("Send Again") }
+    static var resendCode: String { Localized.text("Resend code") }
+    static var codeRejected: String { Localized.text("That code didn't work. Check it, or ask for a new one.") }
+    static var codeLockedBare: String { Localized.text("Too many tries. Use the link in the email or ask for a new code.") }
     static var useDifferentEmail: String { Localized.text("Use a Different Email") }
     static var signInRefused: String { Localized.text("Too many tries. Wait a minute, then try again.") }
     static var linkRefused: String { Localized.text("Couldn't sign in with that link. Wait a minute, then open it from the email again.") }
@@ -49,6 +51,12 @@ enum SignInCopy {
     static var linkLifetime: String {
         let minutes = Int(Measurement(value: SignInLinkTiming.lifetime, unit: UnitDuration.seconds).converted(to: .minutes).value)
         return Localized.text("The link works for \(minutes) minutes, on this Mac only.")
+    }
+
+    static func codeLocked(retryAfterSeconds: Int?) -> String {
+        guard let retryAfterSeconds else { return codeLockedBare }
+        let wait = Duration.seconds(retryAfterSeconds).formatted(.units(allowed: [.hours, .minutes, .seconds], width: .wide).locale(Localized.locale))
+        return Localized.text("Too many tries. Use the link in the email or ask for a new code. Try again in \(wait).")
     }
 
     static func sendAgainWaiting(seconds: Int) -> String {

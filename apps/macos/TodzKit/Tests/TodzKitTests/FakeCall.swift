@@ -4,6 +4,7 @@ enum FakeRoute: Hashable, Sendable {
     case signInMethod
     case requestSignInLink
     case signIn
+    case signInWithCode
     case signOut
     case readOwner
     case updateOwner
@@ -26,6 +27,7 @@ enum FakeRoute: Hashable, Sendable {
     case readChanges
     case listConnectedApps
     case disconnectConnectedApp
+    case narrowConnectedApp
 }
 
 enum FakeCall: Equatable, Sendable {
@@ -54,6 +56,8 @@ enum FakeCall: Equatable, Sendable {
     case readChanges(session: String, projectIdentifier: String, cursor: Int)
     case listConnectedApps(session: String)
     case disconnectConnectedApp(session: String, connectedAppIdentifier: String)
+    case narrowConnectedApp(session: String, connectedAppIdentifier: String, scopes: [ConnectedScope])
+    case signInWithCode(email: String, emailCode: String, linkVerifier: String, turnstileToken: String, timeZone: String)
 
     var route: FakeRoute {
         switch self {
@@ -82,6 +86,8 @@ enum FakeCall: Equatable, Sendable {
         case .readChanges: .readChanges
         case .listConnectedApps: .listConnectedApps
         case .disconnectConnectedApp: .disconnectConnectedApp
+        case .narrowConnectedApp: .narrowConnectedApp
+        case .signInWithCode: .signInWithCode
         }
     }
 
@@ -98,7 +104,7 @@ enum FakeCall: Equatable, Sendable {
             let .readChanges(_, projectIdentifier, _):
             projectIdentifier
         case .signInMethod, .requestSignInLink, .signIn, .signOut, .readOwner, .updateOwner, .updateAgentNudge, .updateDayEmail, .updateDayEmailMinutes, .listWorkspaces, .createWorkspace, .renameWorkspace, .deleteWorkspace, .createProject,
-            .listConnectedApps, .disconnectConnectedApp:
+            .listConnectedApps, .disconnectConnectedApp, .narrowConnectedApp, .signInWithCode:
             nil
         }
     }
