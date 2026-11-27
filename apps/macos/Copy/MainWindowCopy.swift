@@ -4,50 +4,51 @@ enum MainWindowCopy {
     }
 
     static func newProjectHelp(workspaceName: String) -> String {
-        "Adds a project to \(workspaceName)"
+        Localized.text("Adds a project to \(workspaceName)")
     }
 
     static let windowTitle = "todz"
-    static let inbox = "Inbox"
-    static let today = "Today"
-    static let upcoming = "Upcoming"
-    static let done = "Done"
-    static let projects = "Projects"
-    static let doneToday = "Done Today"
-    static let tomorrow = "Tomorrow"
-    static let todayGroup = "Today"
-    static let yesterday = "Yesterday"
-    static let newWorkspace = "New Workspace…"
-    static let allWorkspaces = "All Workspaces"
-    static let newProject = "New Project…"
-    static let newProjectButton = "New Project"
-    static let renameProject = "Rename…"
-    static let deleteProject = "Delete Project…"
-    static let renameWorkspace = "Rename Workspace…"
-    static let deleteWorkspace = "Delete Workspace…"
-    static let signOut = "Sign Out"
-    static let newTask = "New Task"
-    static let refresh = "Refresh"
-    static let moveUp = "Move Up"
-    static let moveDown = "Move Down"
-    static let markDone = "Mark as Done"
-    static let markNotDone = "Mark as Not Done"
-    static let deleteTask = "Delete Task…"
-    static let showInspector = "Show Inspector"
-    static let hideInspector = "Hide Inspector"
-    static let taskMenu = "Task"
-    static let addPlaceholder = "Add a task"
-    static let loading = "Loading…"
-    static let tryAgain = "Try Again"
-    static let dismiss = "Dismiss"
-    static let inboxEmptyTitle = "Inbox is empty"
-    static let inboxEmptyBody = "Add a task with ⌘N."
-    static let todayEmptyTitle = "Nothing due today"
-    static let todayEmptyBody = "Tasks due today or earlier show up here."
-    static let upcomingEmptyTitle = "Nothing upcoming"
-    static let upcomingEmptyBody = "Tasks with a future due date show up here."
-    static let doneEmptyTitle = "Nothing done yet"
-    static let doneEmptyBody = "Completed tasks show up here."
-    static let projectEmptyTitle = "No open tasks"
-    static let projectEmptyBody = "Add a task with ⌘N."
+    static var inbox: String { Localized.text("Inbox") }
+    static var today: String { Localized.text("Today") }
+    static var upcoming: String { Localized.text("Upcoming") }
+    static var done: String { Localized.text("Done") }
+    static var projects: String { Localized.text("Projects") }
+    static var doneToday: String { Localized.text("Done Today") }
+    static var tomorrow: String { Localized.text("Tomorrow") }
+    static var todayGroup: String { Localized.text("Today") }
+    static var yesterday: String { Localized.text("Yesterday") }
+    static var newWorkspace: String { Localized.text("New Workspace…") }
+    static var allWorkspaces: String { Localized.text("All Workspaces") }
+    static var showAlongside: String { Localized.text("Show Alongside") }
+    static var newProject: String { Localized.text("New Project…") }
+    static var newProjectButton: String { Localized.text("New Project") }
+    static var renameProject: String { Localized.text("Rename…") }
+    static var deleteProject: String { Localized.text("Delete Project…") }
+    static var renameWorkspace: String { Localized.text("Rename Workspace…") }
+    static var deleteWorkspace: String { Localized.text("Delete Workspace…") }
+    static var signOut: String { Localized.text("Sign Out") }
+    static var newTask: String { Localized.text("New Task") }
+    static var refresh: String { Localized.text("Refresh") }
+    static var moveUp: String { Localized.text("Move Up") }
+    static var moveDown: String { Localized.text("Move Down") }
+    static var markDone: String { Localized.text("Mark as Done") }
+    static var markNotDone: String { Localized.text("Mark as Not Done") }
+    static var deleteTask: String { Localized.text("Delete Task…") }
+    static var showInspector: String { Localized.text("Show Inspector") }
+    static var hideInspector: String { Localized.text("Hide Inspector") }
+    static var taskMenu: String { Localized.text("Task") }
+    static var addPlaceholder: String { Localized.text("Add a task") }
+    static var loading: String { Localized.text("Loading…") }
+    static var tryAgain: String { Localized.text("Try Again") }
+    static var dismiss: String { Localized.text("Dismiss") }
+    static var inboxEmptyTitle: String { Localized.text("Inbox is empty") }
+    static var inboxEmptyBody: String { Localized.text("Add a task with ⌘N.") }
+    static var todayEmptyTitle: String { Localized.text("Nothing due today") }
+    static var todayEmptyBody: String { Localized.text("Tasks due today or earlier show up here.") }
+    static var upcomingEmptyTitle: String { Localized.text("Nothing upcoming") }
+    static var upcomingEmptyBody: String { Localized.text("Tasks with a future due date show up here.") }
+    static var doneEmptyTitle: String { Localized.text("Nothing done yet") }
+    static var doneEmptyBody: String { Localized.text("Completed tasks show up here.") }
+    static var projectEmptyTitle: String { Localized.text("No open tasks") }
+    static var projectEmptyBody: String { Localized.text("Add a task with ⌘N.") }
 }

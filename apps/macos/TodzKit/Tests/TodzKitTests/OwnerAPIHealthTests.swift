@@ -101,7 +101,7 @@ private final class HealthStubProtocol: URLProtocol {
 
 private func healthAPI(answering answer: HealthStubAnswer, deadline: TimeInterval = ServerTiming.probeSeconds) throws -> OwnerAPI {
     let baseURL = try #require(URL(string: baseText))
-    return OwnerAPI(baseURL: baseURL, appVersion: OwnerFixtures.appVersion, transport: HealthStubProtocol.session(answering: answer, deadline: deadline))
+    return OwnerAPI(baseURL: baseURL, appVersion: OwnerFixtures.appVersion, language: OwnerFixtures.language, transport: HealthStubProtocol.session(answering: answer, deadline: deadline))
 }
 
 private func recordedRequests() -> [URLRequest] {
@@ -123,6 +123,12 @@ private func recordedRequests() -> [URLRequest] {
         _ = try await healthAPI(answering: .response(status: 200, body: todzBody)).health()
         let request = try #require(recordedRequests().first)
         #expect(request.value(forHTTPHeaderField: "Todz-App-Version") == OwnerFixtures.appVersion)
+    }
+
+    @Test func theRequestCarriesTheEffectiveLanguage() async throws {
+        _ = try await healthAPI(answering: .response(status: 200, body: todzBody)).health()
+        let request = try #require(recordedRequests().first)
+        #expect(request.value(forHTTPHeaderField: "Accept-Language") == OwnerFixtures.language().rawValue)
     }
 
     @Test func aTodzAnswerStatesItsVersionAndTheOldestAppItAccepts() async throws {

@@ -50,8 +50,8 @@ extension AppModelTests {
         #expect(model.taskViews?.today.open.map(\.task.title) == ["Acme 1", "Acme 2"])
     }
 
-    @Test func aLaunchRememberingAllCollapsesToTheCurrentAndNeverPullsOrWatchesTheOthers() async throws {
-        let harness = try await lockedHarness(selection: .all)
+    @Test func aLockedLaunchNeverPullsOrWatchesAWorkspaceOutsideTheKeptSet() async throws {
+        let harness = try await lockedHarness()
         #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
         #expect(harness.model.selection == .chosen(["acme"]))
         #expect(pulledProjects(harness).isDisjoint(with: ["secret-inbox", "secret-garden"]))
@@ -60,7 +60,7 @@ extension AppModelTests {
     }
 
     @Test func theWidgetSnapshotNeverHoldsALockedWorkspace() async throws {
-        let harness = try await lockedHarness(selection: .all)
+        let harness = try await lockedHarness()
         let snapshot = try #require(harness.widgets.snapshot)
         let rows = snapshot.open + snapshot.pending + snapshot.doneToday
         #expect(snapshot.workspaceName == "acme")
@@ -109,23 +109,10 @@ extension AppModelTests {
         #expect(harness.model.activeWorkspace?.identifier == "acme")
     }
 
-    @Test func turningTheSwitchOnCollapsesToTheWorkspaceOnScreenAndReleasesTheOthers() async throws {
-        let harness = try await lockedHarness(isLockOn: false, selection: .all)
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
-        await harness.model.turnWorkspaceLockOn()
-        #expect(harness.model.workspaceLock.isLocked)
-        #expect(harness.model.selection == .chosen(["acme"]))
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
-        #expect(harness.model.taskViews?.today.open.map(\.task.title) == ["Acme 1", "Acme 2"])
-        #expect(harness.model.board.tasks(projectIdentifier: "secret-inbox").isEmpty)
-        await harness.signals.cancelled(harness.watchKey("secret-inbox"))
-        #expect(harness.signals.cancellationCount(of: harness.watchKey("secret-inbox")) == 1)
-        #expect(harness.model.visibleWorkspaces.map(\.identifier) == ["acme"])
-    }
-
-    @Test func turningTheSwitchOnErasesTheOtherWorkspacesCachedTasksAndKeepsTheCurrent() async throws {
+    @Test func turningTheSwitchOnErasesTheCachedTasksOfEveryWorkspaceOutsideTheSet() async throws {
         let harness = try await lockedHarness(isLockOn: false, selection: .all)
         #expect(harness.store.projects["secret-inbox"] != nil)
+        await harness.model.pickWorkspace(identifier: "acme", gesture: .click)
         await harness.model.turnWorkspaceLockOn()
         #expect(harness.store.projects["secret-inbox"] == nil)
         #expect(harness.store.projects["secret-garden"] == nil)
@@ -155,27 +142,27 @@ extension AppModelTests {
         #expect(!String(describing: snapshot).contains("Secret"))
     }
 
-    @Test func terminatingWritesTheCurrentWorkspaceAndReloadsTheTimelines() async throws {
+    @Test func terminatingWritesTheSelectedSetAndReloadsTheTimelines() async throws {
         let harness = try await lockedHarness()
         _ = await harness.model.beginWorkspaceSwitch()
         await harness.model.selectWorkspaces(.all)
         harness.widgets.snapshot = nil
         harness.widgets.calls = []
         harness.model.prepareWidgetsForTermination()
-        #expect(harness.widgets.snapshot?.open.map(\.title) == ["Acme 1", "Acme 2"])
+        #expect(harness.widgets.snapshot?.open.map(\.title) == ["Acme 1", "Acme 2", "Secret 1"])
         #expect(harness.widgets.calls.contains(.reload))
     }
 
-    @Test func inputAfterTheTimeoutRelocksAndCollapsesTheModel() async throws {
+    @Test func inputAfterTheTimeoutRelocksAndPinsTheSelectedSet() async throws {
         let harness = try await lockedHarness()
         _ = await harness.model.beginWorkspaceSwitch()
         await harness.model.selectWorkspaces(.all)
         harness.clock.now = harness.clock.now.addingTimeInterval(WorkspaceLockTimeout.standard.seconds)
         harness.model.noteWorkspaceLockInput()
         #expect(harness.model.workspaceLock.isLocked)
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
         await harness.model.workspaceRelock?.value
-        #expect(harness.model.selection == .chosen(["acme"]))
+        #expect(harness.model.selection == .chosen(["acme", "secret"]))
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
     }
 
     @Test func aCurrentWorkspaceThatVanishedWhileLockedShowsNothingAndGoesToThePickerWhichAsks() async throws {
@@ -199,10 +186,9 @@ extension AppModelTests {
         #expect(harness.authenticator.asked == [.switchWorkspaces, .switchWorkspaces])
     }
 
-    @Test func aRelockRewritesTheSharedSnapshotFromTheCurrentWorkspaceAndReloadsTheWidgets() async throws {
+    @Test func aRelockRewritesTheSharedSnapshotFromTheSelectedSetAndReloadsTheWidgets() async throws {
         let harness = try await lockedHarness()
         _ = await harness.model.beginWorkspaceSwitch()
-        await harness.model.selectWorkspaces(.all)
         await harness.published()
         #expect(harness.widgets.snapshot?.open.map(\.title) == ["Acme 1", "Acme 2"])
         harness.widgets.snapshot = nil
@@ -231,16 +217,16 @@ extension AppModelTests {
         harness.clock.now = harness.clock.now.addingTimeInterval(WorkspaceLockTimeout.standard.seconds)
         await harness.model.relockWorkspacesIfIdle()
         #expect(harness.model.workspaceLock.isLocked)
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
     }
 
-    @Test func turningTheSwitchOnCollapsesAtOnceWithoutAsking() async throws {
+    @Test func turningTheSwitchOnKeepsTheSetAtOnceWithoutAsking() async throws {
         let harness = try await lockedHarness(isLockOn: false, selection: .all)
         await harness.model.turnWorkspaceLockOn()
         #expect(harness.authenticator.asked.isEmpty)
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
         #expect(harness.lockPreference.isOn)
-        #expect(harness.widgets.snapshot?.open.map(\.title) == ["Acme 1", "Acme 2"])
+        #expect(harness.widgets.snapshot?.open.map(\.title) == ["Acme 1", "Acme 2", "Secret 1"])
     }
 
     @Test func turningTheSwitchOffAndChangingTheTimeoutAsk() async throws {
@@ -278,7 +264,7 @@ extension AppModelTests {
     }
 
     @Test func intentQueriesNeverReturnALockedWorkspacesTasks() async throws {
-        let harness = try await lockedHarness(selection: .all)
+        let harness = try await lockedHarness()
         #expect(harness.model.shortcutTasks(for: [secretKey]).isEmpty)
         #expect(harness.model.shortcutTasks(matching: "Secret").isEmpty)
         #expect(harness.model.shortcutSuggestedTasks.map(\.title) == ["Acme 1", "Acme 2"])
@@ -286,7 +272,7 @@ extension AppModelTests {
     }
 
     @Test func anIntentToAddNamesOnlyTheCurrentWorkspace() async throws {
-        let harness = try await lockedHarness(selection: .all)
+        let harness = try await lockedHarness()
         let addition = await harness.model.addFromShortcut(title: "Buy milk", isDueToday: false)
         #expect(addition == .added(title: "Buy milk", destination: .inbox, workspaceName: "acme", isOffline: false))
     }
@@ -313,28 +299,65 @@ extension AppModelTests {
         let harness = try await lockedHarness()
         harness.service.connectedApps = [
             ConnectedAppFixtures.connectedApp(identifier: "owner-wide", createdAtMilliseconds: OwnerFixtures.createdAtMilliseconds),
-            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch"),
-            ConnectedAppFixtures.projectScoped(identifier: "in-secret", projectIdentifier: "secret-garden")
+            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch", workspaceIdentifier: "acme"),
+            ConnectedAppFixtures.projectScoped(identifier: "in-secret", projectIdentifier: "secret-garden", workspaceIdentifier: "secret")
         ]
         await harness.model.loadConnectedApps()
         #expect(harness.model.visibleConnectedApps.map(\.identifier).sorted() == ["in-acme", "owner-wide"])
     }
 
-    @Test func aConnectedAppOfAProjectThisMacDoesNotKnowIsHiddenWhileTheLockIsOn() async throws {
+    @Test func aConnectedAppOfAWorkspaceThisMacDoesNotKnowIsHiddenWhileTheLockIsOn() async throws {
         let harness = try await lockedHarness()
         harness.service.connectedApps = [
-            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch"),
-            ConnectedAppFixtures.projectScoped(identifier: "in-unknown", projectIdentifier: "made-by-an-agent")
+            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch", workspaceIdentifier: "acme"),
+            ConnectedAppFixtures.projectScoped(identifier: "in-unknown", projectIdentifier: "made-by-an-agent", workspaceIdentifier: "nowhere")
         ]
         await harness.model.loadConnectedApps()
         #expect(harness.model.visibleConnectedApps.map(\.identifier) == ["in-acme"])
     }
 
+    @Test func aGrantOfSeveralWorkspacesNamesOnlyTheVisibleOnesWhileTheLockIsOn() async throws {
+        let harness = try await lockedHarness()
+        let mixed = ConnectedApp(
+            identifier: "mixed",
+            clientName: "Claude",
+            redirectHost: "claude.ai",
+            scopes: [
+                .workspace(identifier: "secret", name: "secret"),
+                .workspace(identifier: "acme", name: "acme"),
+                .project(identifier: "secret-garden", name: "garden", workspaceIdentifier: "secret", workspaceName: "secret"),
+            ],
+            createdAt: fixedInstant,
+            lastUsedAt: fixedInstant
+        )
+        harness.service.connectedApps = [mixed]
+        await harness.model.loadConnectedApps()
+        #expect(harness.model.visibleConnectedApps.map(\.scopes) == [[.workspace(identifier: "acme", name: "acme")]])
+    }
+
+    @Test func aGrantOfOnlyLockedWorkspacesIsNotListedWhileTheLockIsOn() async throws {
+        let harness = try await lockedHarness()
+        let hidden = ConnectedApp(identifier: "hidden", clientName: "Claude", redirectHost: "claude.ai", scopes: [.workspace(identifier: "secret", name: "secret")], createdAt: fixedInstant, lastUsedAt: fixedInstant)
+        harness.service.connectedApps = [hidden]
+        await harness.model.loadConnectedApps()
+        #expect(harness.model.visibleConnectedApps.isEmpty)
+    }
+
+    @Test func aLockedSessionNeverNarrowsAGrantBecauseItCouldDropWhatItCannotSee() async throws {
+        let harness = try await lockedHarness()
+        harness.service.connectedApps = [ConnectedAppFixtures.ownerScoped(identifier: "owner-wide")]
+        await harness.model.loadConnectedApps()
+        harness.service.calls = []
+        await harness.model.narrowConnectedApp(ConnectedAppFixtures.ownerScoped(identifier: "owner-wide"), to: [.workspace(identifier: "acme", name: "acme")])
+        #expect(!harness.model.canNarrowConnectedApps)
+        #expect(harness.service.calls.isEmpty)
+    }
+
     @Test func withoutTheLockEveryConnectedAppIsListed() async throws {
         let harness = try await lockedHarness(isLockOn: false)
         harness.service.connectedApps = [
-            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch"),
-            ConnectedAppFixtures.projectScoped(identifier: "in-secret", projectIdentifier: "secret-garden")
+            ConnectedAppFixtures.projectScoped(identifier: "in-acme", projectIdentifier: "acme-launch", workspaceIdentifier: "acme"),
+            ConnectedAppFixtures.projectScoped(identifier: "in-secret", projectIdentifier: "secret-garden", workspaceIdentifier: "secret")
         ]
         await harness.model.loadConnectedApps()
         #expect(harness.model.visibleConnectedApps.map(\.identifier).sorted() == ["in-acme", "in-secret"])

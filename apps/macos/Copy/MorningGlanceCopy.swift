@@ -1,8 +1,8 @@
 enum MorningGlanceCopy {
-    static let overdue = "Overdue"
-    static let openToday = "Open Today in todz"
+    static var overdue: String { Localized.text("Overdue") }
+    static var openToday: String { Localized.text("Open Today in todz") }
 
     static func more(count: Int) -> String {
-        "+\(count) more"
+        Localized.text("+\(count) more")
     }
 }

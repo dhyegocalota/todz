@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import TodzKit
 
@@ -16,7 +17,7 @@ struct WorkspaceSwitcher: View {
     }
 
     private var chrome: WorkspaceChrome {
-        WorkspaceChrome(visible: model.visibleWorkspaces, selection: model.selection, isMainWindow: isMainWindow, isSingleSelection: model.workspaceLock.isEnabled)
+        WorkspaceChrome(visible: model.visibleWorkspaces, selection: model.selection, isMainWindow: isMainWindow)
     }
 
     @ViewBuilder private var switcher: some View {
@@ -37,6 +38,13 @@ struct WorkspaceSwitcher: View {
             }
             ForEach(chrome.rows, id: \.workspace.identifier) { row in
                 Toggle(row.workspace.name, isOn: isShown(row.workspace))
+            }
+            if chrome.showsAlongside {
+                Menu(MainWindowCopy.showAlongside) {
+                    ForEach(chrome.rows, id: \.workspace.identifier) { row in
+                        Toggle(row.workspace.name, isOn: isShownAlongside(row.workspace))
+                    }
+                }
             }
             if model.workspaceLock.isUnlocked {
                 Button(WorkspaceLockCopy.lockNow) {
@@ -82,11 +90,24 @@ struct WorkspaceSwitcher: View {
         }
     }
 
+    private var rowGesture: WorkspaceSwitcherGesture {
+        NSEvent.modifierFlags.contains(.command) ? .commandClick : .click
+    }
+
     private func isShown(_ candidate: Workspace) -> Binding<Bool> {
+        shownBinding(of: candidate) { rowGesture }
+    }
+
+    private func isShownAlongside(_ candidate: Workspace) -> Binding<Bool> {
+        shownBinding(of: candidate) { .showAlongside }
+    }
+
+    private func shownBinding(of candidate: Workspace, gesture: @escaping () -> WorkspaceSwitcherGesture) -> Binding<Bool> {
         Binding {
             model.shownWorkspaces.contains { $0.identifier == candidate.identifier }
         } set: { _ in
-            Task { await model.pickWorkspace(identifier: candidate.identifier) }
+            let picked = gesture()
+            Task { await model.pickWorkspace(identifier: candidate.identifier, gesture: picked) }
         }
     }
 }

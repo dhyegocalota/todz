@@ -1,13 +1,13 @@
 enum SyncCopy {
-    static let offline = "Offline"
-    static let offlineHelp = "Can't reach todz. Your changes are kept on this Mac and sent when it's back."
-    static let signOutMessage = "They haven't reached todz yet. Signing out erases them from this Mac."
+    static var offline: String { Localized.text("Offline") }
+    static var offlineHelp: String { Localized.text("Can't reach todz. Your changes are kept on this Mac and sent when it's back.") }
+    static var signOutMessage: String { Localized.text("They haven't reached todz yet. Signing out erases them from this Mac.") }
 
     static func offlineWaiting(count: Int) -> String {
-        InflectedCopy.text("Offline · ^[\(count) change](inflect: true) waiting")
+        Localized.text("Offline · \(count) changes waiting")
     }
 
     static func signOutTitle(count: Int) -> String {
-        InflectedCopy.text("Sign out and lose ^[\(count) change](inflect: true)?")
+        Localized.text("Sign out and lose \(count) changes?")
     }
 }

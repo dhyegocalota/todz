@@ -9,21 +9,23 @@ extension AppModelTests {
         return harness
     }
 
-    @Test func anUnlockedSessionWithTheSwitchOnRefusesAllWorkspaces() async throws {
+    @Test func anUnlockedSessionWithTheSwitchOnShowsAllWorkspacesWithoutAskingAgain() async throws {
         let harness = try await unlockedHarness()
         await harness.model.selectWorkspaces(.all)
-        #expect(harness.model.selection == .chosen(["acme"]))
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
+        #expect(harness.model.selection == .all)
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
         #expect(harness.authenticator.asked == [.switchWorkspaces])
     }
 
-    @Test func anUnlockedSessionWithTheSwitchOnRefusesSeveralWorkspaces() async throws {
+    @Test func anUnlockedSessionWithTheSwitchOnShowsSeveralWorkspacesWithoutAskingAgain() async throws {
         let harness = try await unlockedHarness()
         await harness.model.selectWorkspaces(.chosen(["acme", "secret"]))
-        #expect(harness.model.selection == .chosen(["acme"]))
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
         await harness.model.toggleWorkspace(identifier: "secret")
         #expect(harness.model.selection == .chosen(["acme"]))
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
+        await harness.model.toggleWorkspace(identifier: "secret")
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
+        #expect(harness.authenticator.asked == [.switchWorkspaces])
     }
 
     @Test func anUnlockedSessionWithTheSwitchOnStillSwitchesToOneOtherWorkspaceWithoutAsking() async throws {
@@ -34,13 +36,13 @@ extension AppModelTests {
         #expect(harness.authenticator.asked == [.switchWorkspaces])
     }
 
-    @Test func unlockingACollapsedLaunchThatRememberedAllLeavesOneWorkspace() async throws {
+    @Test func aLockedLaunchThatRememberedAllPinsItsWorkspacesAndUnlockingKeepsThem() async throws {
         let harness = try await unlockedHarness(selection: .all)
-        #expect(harness.model.selection == .chosen(["acme"]))
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
+        #expect(harness.model.selection == .chosen(["acme", "secret"]))
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
     }
 
-    @Test func thePickerRefusesAllWorkspacesAfterTheSwitchPrompt() async throws {
+    @Test func thePickerEntersWithAllWorkspacesAfterTheSwitchPrompt() async throws {
         let harness = try AppModelHarness(isWorkspaceLockOn: true)
         harness.seedWorkspace(name: "acme")
         harness.seedWorkspace(name: "secret")
@@ -48,22 +50,21 @@ extension AppModelTests {
         await harness.model.launch()
         #expect(await harness.model.beginWorkspaceSwitch())
         await harness.model.chooseWorkspaces(.all)
-        #expect(harness.model.phase == .choosing)
-        await harness.model.chooseWorkspace(identifier: "acme")
         #expect(harness.model.phase == .ready)
-        #expect(harness.model.selection == .chosen(["acme"]))
-    }
-
-    @Test func turningTheSwitchOffBringsSeveralBackButNeverTheOldSelection() async throws {
-        let harness = try await unlockedHarness(selection: .all)
-        #expect(await harness.model.turnWorkspaceLockOff())
-        #expect(harness.model.selection == .chosen(["acme"]))
-        await harness.model.selectWorkspaces(.all)
+        #expect(harness.model.selection == .all)
         #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
     }
 
+    @Test func turningTheSwitchOffKeepsTheSelectedSetAndAllStillWorks() async throws {
+        let harness = try await unlockedHarness(selection: .all)
+        #expect(await harness.model.turnWorkspaceLockOff())
+        #expect(harness.model.selection == .chosen(["acme", "secret"]))
+        await harness.model.selectWorkspaces(.all)
+        #expect(harness.model.selection == .all)
+    }
+
     @Test func pinTurningTheSwitchOnWhileASwitchPromptIsOpenNeverLeavesTwoWorkspaces() async throws {
-        let harness = try await singleWorkspaceHarness(isLockOn: false, selection: .all)
+        let harness = try await singleWorkspaceHarness(isLockOn: false)
         await harness.model.turnWorkspaceLockOn()
         harness.authenticator.isHolding = true
         let opening = Task { await harness.model.switchWorkspace(identifier: "secret") }
@@ -77,21 +78,16 @@ extension AppModelTests {
         #expect(harness.authenticator.asked == [.switchWorkspaces])
     }
 
-    @Test func pinALockedLaunchThatRememberedAllOffersTheListAndEntersWithOneWorkspace() async throws {
+    @Test func pinALockedLaunchThatRememberedAllWithNoCurrentOpensEveryRememberedWorkspace() async throws {
         let harness = try AppModelHarness(isWorkspaceLockOn: true)
         let acme = harness.seedWorkspace(name: "acme")
         let side = harness.seedWorkspace(name: "secret")
         harness.store.owner = OwnerCache(ownerIdentifier: harness.ownerIdentifier, workspaces: [acme, side], activeWorkspaceIdentifier: nil, selection: .all)
         await harness.signedIn()
-        #expect(harness.model.phase == .choosing)
-        #expect(harness.model.visibleWorkspaces.isEmpty)
-        #expect(await harness.model.beginWorkspaceSwitch())
-        await harness.model.chooseWorkspaces(.all)
-        #expect(harness.model.phase == .choosing)
-        await harness.model.chooseWorkspace(identifier: "acme")
         #expect(harness.model.phase == .ready)
-        #expect(harness.model.selection == .chosen(["acme"]))
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
+        #expect(harness.model.selection == .chosen(["acme", "secret"]))
+        #expect(harness.model.visibleWorkspaces.map(\.identifier) == ["acme", "secret"])
+        #expect(harness.authenticator.asked.isEmpty)
     }
 
     @Test func theNumberOfTheCurrentWorkspaceNeitherAsksNorMovesWhileLocked() async throws {

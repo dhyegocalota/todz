@@ -1,31 +1,31 @@
 enum SheetCopy {
     static func typeNamePrompt(name: String) -> String {
-        "Type \"\(name)\" to confirm."
+        Localized.text("Type \"\(name)\" to confirm.")
     }
 
     static func deleteTaskMessage(title: String) -> String {
-        "“\(title)” and its history are deleted permanently. It cannot be undone."
+        Localized.text("“\(title)” and its history are deleted permanently. It cannot be undone.")
     }
 
-    static let newWorkspaceTitle = "New Workspace"
-    static let newProjectTitle = "New Project"
-    static let renameWorkspaceTitle = "Rename Workspace"
-    static let renameProjectTitle = "Rename Project"
-    static let deleteWorkspaceTitle = "Delete Workspace"
-    static let deleteProjectTitle = "Delete Project"
-    static let deleteWorkspaceMessage = "This permanently deletes the workspace, its projects, their tasks and the keys agents use to reach them. It cannot be undone."
-    static let deleteProjectMessage = "This permanently deletes the project, its tasks and the keys agents use to reach it. It cannot be undone."
-    static let deleteTaskTitle = "Delete Task?"
-    static let delete = "Delete"
-    static let nameLabel = "Name"
-    static let cancel = "Cancel"
-    static let create = "Create"
-    static let rename = "Rename"
-    static let creating = "Creating…"
-    static let renaming = "Renaming…"
-    static let deleting = "Deleting…"
-    static let renameUnchanged = "Type a new name to rename."
-    static let deleteMismatch = "Type the name exactly as shown."
-    static let newWorkspaceDetail = "A workspace keeps its own projects and tasks."
-    static let newProjectDetail = "A project groups tasks, and agents connect to it with their own keys."
+    static var newWorkspaceTitle: String { Localized.text("New Workspace") }
+    static var newProjectTitle: String { Localized.text("New Project") }
+    static var renameWorkspaceTitle: String { Localized.text("Rename Workspace") }
+    static var renameProjectTitle: String { Localized.text("Rename Project") }
+    static var deleteWorkspaceTitle: String { Localized.text("Delete Workspace") }
+    static var deleteProjectTitle: String { Localized.text("Delete Project") }
+    static var deleteWorkspaceMessage: String { Localized.text("This permanently deletes the workspace, its projects, their tasks and the keys agents use to reach them. It cannot be undone.") }
+    static var deleteProjectMessage: String { Localized.text("This permanently deletes the project, its tasks and the keys agents use to reach it. It cannot be undone.") }
+    static var deleteTaskTitle: String { Localized.text("Delete Task?") }
+    static var delete: String { Localized.text("Delete") }
+    static var nameLabel: String { Localized.text("Name") }
+    static var cancel: String { Localized.text("Cancel") }
+    static var create: String { Localized.text("Create") }
+    static var rename: String { Localized.text("Rename") }
+    static var creating: String { Localized.text("Creating…") }
+    static var renaming: String { Localized.text("Renaming…") }
+    static var deleting: String { Localized.text("Deleting…") }
+    static var renameUnchanged: String { Localized.text("Type a new name to rename.") }
+    static var deleteMismatch: String { Localized.text("Type the name exactly as shown.") }
+    static var newWorkspaceDetail: String { Localized.text("A workspace keeps its own projects and tasks.") }
+    static var newProjectDetail: String { Localized.text("A project groups tasks, and agents connect to it with their own keys.") }
 }

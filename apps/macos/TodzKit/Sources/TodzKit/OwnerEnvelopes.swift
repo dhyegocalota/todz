@@ -53,6 +53,14 @@ struct ConnectedAppsAnswer: Decodable {
     let connectedApps: [ConnectedApp]
 }
 
+struct NarrowedConnectedAppAnswer: Decodable {
+    let connectedApp: ConnectedApp
+}
+
+struct NarrowBody: Encodable {
+    let scopes: [ConnectedScope]
+}
+
 struct SignInMethodAnswer: Decodable {
     let method: SignInMethod
 }

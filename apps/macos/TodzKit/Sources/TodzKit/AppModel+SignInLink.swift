@@ -23,6 +23,10 @@ extension AppModel {
     }
 
     public func requestSignInLink(email: String) async {
+        await requestSignInLink(email: email, verifier: verifierToSend(to: email))
+    }
+
+    private func requestSignInLink(email: String, verifier: String) async {
         guard let turnstileToken = signInChallengeToken else { return }
         signInChallengeToken = nil
         signInError = nil
@@ -32,7 +36,6 @@ extension AppModel {
             isRequestingLink = false
             challengeRound += 1
         }
-        let verifier = verifierToSend(to: email)
         let askedServer = serverURL
         do {
             try await service.requestSignInLink(email: email, challenge: SignInLinkChallenge.challenge(for: verifier), turnstileToken: turnstileToken, linkScheme: linkScheme)
@@ -48,6 +51,28 @@ extension AppModel {
         }
         guard serverURL == askedServer else { return }
         keep(PendingSignInLink(email: email, verifier: verifier, expiresAt: now().addingTimeInterval(SignInLinkTiming.keepDuration)))
+    }
+
+    public func signIn(code: String) async {
+        guard let pendingLink, let turnstileToken = signInChallengeToken, !isSigningIn else { return }
+        signInChallengeToken = nil
+        isSubmittingCode = true
+        defer {
+            isSubmittingCode = false
+            challengeRound += 1
+        }
+        let timeZoneIdentifier = timeZone.identifier
+        let isOpened = await openSession {
+            try await service.signIn(email: pendingLink.email, emailCode: code, linkVerifier: pendingLink.verifier, turnstileToken: turnstileToken, timeZone: timeZoneIdentifier)
+        }
+        guard !isOpened, signInError == .identityRejected else { return }
+        signInError = .codeRejected
+        codeFailureCount += 1
+    }
+
+    public func resendCode() async {
+        guard let pendingLink else { return }
+        await requestSignInLink(email: pendingLink.email, verifier: makeLinkVerifier())
     }
 
     public func redeem(signInLink: SignInLink) async {

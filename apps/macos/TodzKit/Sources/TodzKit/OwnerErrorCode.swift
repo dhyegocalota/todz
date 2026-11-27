@@ -13,4 +13,6 @@ enum OwnerErrorCode: String, Decodable {
     case limitReached = "limit_reached"
     case accountSuspended = "account_suspended"
     case signUpRefused = "sign_up_refused"
+    case codeLocked = "code_locked"
+    case scopeNotNarrower = "scope_not_narrower"
 }

@@ -15,15 +15,37 @@ extension AppModel {
         }
     }
 
-    // NB ADR 0113: a locked session lists only the grants of projects in a visible workspace, and the account-wide ones.
+    // NB ADR 0113: a locked session lists only the grants that cover a visible workspace or the account, and names only visible workspaces.
     public var visibleConnectedApps: [ConnectedApp] {
         guard case let .loaded(apps) = connectedApps else { return [] }
         guard workspaceLock.isLocked else { return apps }
-        let visibleProjectIdentifiers = Set(visibleWorkspaces.flatMap(\.projects).map(\.identifier))
-        return apps.filter { app in
-            guard case let .project(projectIdentifier, _) = app.scope else { return true }
-            return visibleProjectIdentifiers.contains(projectIdentifier)
+        let visibleWorkspaceIdentifiers = Set(visibleWorkspaces.map(\.identifier))
+        return apps.compactMap { app in
+            let visibleScopes = app.scopes.filter { scope in
+                guard let workspaceIdentifier = scope.workspaceIdentifier else { return true }
+                return visibleWorkspaceIdentifiers.contains(workspaceIdentifier)
+            }
+            guard !visibleScopes.isEmpty else { return nil }
+            return ConnectedApp(identifier: app.identifier, clientName: app.clientName, redirectHost: app.redirectHost, scopes: visibleScopes, createdAt: app.createdAt, lastUsedAt: app.lastUsedAt)
         }
+    }
+
+    public var canNarrowConnectedApps: Bool {
+        !workspaceLock.isLocked
+    }
+
+    public func narrowConnectedApp(_ app: ConnectedApp, to scopes: [ConnectedScope]) async {
+        guard canNarrowConnectedApps, !isChangingConnectedApps, !scopes.isEmpty else { return }
+        isChangingConnectedApps = true
+        defer { isChangingConnectedApps = false }
+        connectedAppFailure = nil
+        do {
+            _ = try await request { try await service.narrowConnectedApp(session: $0, connectedAppIdentifier: app.identifier, scopes: scopes) }
+        } catch {
+            connectedAppFailure = .notNarrowed
+            return
+        }
+        await loadConnectedApps()
     }
 
     public func disconnectConnectedApp(_ app: ConnectedApp) async {

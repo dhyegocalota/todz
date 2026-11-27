@@ -9,19 +9,25 @@ private let cacheFolderName = "Cache"
     let model = AppModel(
         defaultURL: AppConfiguration.defaultURL,
         preference: ServerPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
-        connect: { ServerConnection(service: OwnerAPI(baseURL: $0.url, appVersion: AppConfiguration.appVersion), signals: SocketChangeSignals(baseURL: $0.url, appVersion: AppConfiguration.appVersion)) },
-        probe: { await OwnerAPI(baseURL: $0.url, appVersion: AppConfiguration.appVersion, transport: OwnerAPI.probeTransport).probe(typedAddress: $0) },
+        connect: { ServerConnection(service: OwnerAPI(baseURL: $0.url, appVersion: AppConfiguration.appVersion, language: { Localized.language }), signals: SocketChangeSignals(baseURL: $0.url, appVersion: AppConfiguration.appVersion, language: { Localized.language })) },
+        probe: { await OwnerAPI(baseURL: $0.url, appVersion: AppConfiguration.appVersion, language: { Localized.language }, transport: OwnerAPI.probeTransport).probe(typedAddress: $0) },
         appVersion: AppConfiguration.appVersion,
         linkScheme: AppConfiguration.linkScheme,
         vault: FileSessionVault(folder: AppConfiguration.sessionFolder),
         pendingLinks: FilePendingLinkVault(folder: AppConfiguration.sessionFolder),
         store: FileSyncStore(folder: AppConfiguration.sessionFolder.appending(path: cacheFolderName)),
+        breadcrumbs: AppConfiguration.launchBreadcrumbs,
         cacheScheduler: .background,
         workspaceLock: WorkspaceLock(preference: WorkspaceLockPreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain), authenticator: MacOwnerAuthenticator()),
         widgetStore: AppConfiguration.widgetStore,
         reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
         timeZone: .autoupdatingCurrent,
         pause: { try await Task.sleep(for: $0) }
+    )
+    let languageModel = LanguageModel(
+        languagePreference: LanguagePreference(defaults: Localized.groupDefaults),
+        appearancePreference: AppearancePreference(defaults: .standard, domainName: AppConfiguration.defaultsDomain),
+        reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() }
     )
     let windowState = MainWindowState()
     let updater = AppUpdater(bundle: .main)
@@ -97,6 +103,7 @@ private let cacheFolderName = "Cache"
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        languageModel.applyAppearance()
         PerfProbe.shared?.start(model: model)
         decideLaunchSurfaceStart(notification)
         workspaceShortcuts.start()

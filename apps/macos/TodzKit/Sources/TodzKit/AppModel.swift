@@ -13,6 +13,8 @@ import Observation
     public internal(set) var pendingLink: PendingSignInLink?
     public internal(set) var signInChallengeToken: String?
     public internal(set) var challengeRound = 0
+    public internal(set) var isSubmittingCode = false
+    public internal(set) var codeFailureCount = 0
     public internal(set) var workspaces: [Workspace] = [] {
         didSet { storedTaskViews = nil }
     }
@@ -120,6 +122,7 @@ import Observation
     @ObservationIgnored let vault: any SessionVault
     @ObservationIgnored let pendingLinks: any PendingLinkVault
     @ObservationIgnored let store: any SyncStore
+    @ObservationIgnored let breadcrumbs: LaunchBreadcrumbs
     @ObservationIgnored let cacheWriter: ProjectCacheWriter
     @ObservationIgnored var taskViewsBuildCount = 0
     @ObservationIgnored private var storedTaskViews: (day: CalendarDate, isLocked: Bool, views: TaskViews)?
@@ -143,6 +146,7 @@ import Observation
         vault: any SessionVault,
         pendingLinks: any PendingLinkVault,
         store: any SyncStore,
+        breadcrumbs: LaunchBreadcrumbs,
         cacheScheduler: CacheScheduler = .immediate,
         workspaceLock: WorkspaceLock,
         widgetStore: any WidgetStore,
@@ -168,6 +172,7 @@ import Observation
         self.vault = vault
         self.pendingLinks = pendingLinks
         self.store = store
+        self.breadcrumbs = breadcrumbs
         self.cacheWriter = ProjectCacheWriter(store: store, scheduler: cacheScheduler)
         self.workspaceLock = workspaceLock
         self.widgetStore = widgetStore
@@ -194,9 +199,8 @@ import Observation
         return selection.workspaces(in: workspaces)
     }
 
-    // NB ADR 0122: with the lock switch on, the one current workspace is all that any surface can show, locked or not.
     public var shownWorkspaces: [Workspace] {
-        workspaceLock.shown(selectedWorkspaces, current: activeWorkspaceIdentifier)
+        selectedWorkspaces
     }
 
     public var taggedWorkspaceName: [String: String] {
@@ -445,7 +449,10 @@ import Observation
             return
         }
         let isAnotherOwnersCache = ownerIdentifier != nil && ownerIdentifier != owner.identifier
-        if isAnotherOwnersCache { try forgetCache() }
+        if isAnotherOwnersCache {
+            breadcrumbs.record(.ownerMismatchAtLaunch)
+            try forgetCache()
+        }
         isOwnerConfirmed = true
         ownerConfirmationFailures = 0
         ownerIdentifier = owner.identifier

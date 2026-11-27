@@ -15,6 +15,10 @@ public enum WorkspaceSelection: Codable, Equatable, Sendable {
         return .chosen(identifiers.intersection(workspaces.map(\.identifier)))
     }
 
+    func pinned(to workspaces: [Workspace]) -> WorkspaceSelection {
+        .chosen(Set(self.workspaces(in: workspaces).map(\.identifier)))
+    }
+
     public func toggling(identifier: String, in workspaces: [Workspace]) -> WorkspaceSelection {
         let shownIdentifiers = Set(self.workspaces(in: workspaces).map(\.identifier))
         let toggled = shownIdentifiers.symmetricDifference([identifier])

@@ -64,6 +64,11 @@ struct StatusFailure: Sendable {
         return issuedSession
     }
 
+    func signIn(email: String, emailCode: String, linkVerifier: String, turnstileToken: String, timeZone: String) async throws -> IssuedSession {
+        try await record(.signInWithCode(email: email, emailCode: emailCode, linkVerifier: linkVerifier, turnstileToken: turnstileToken, timeZone: timeZone))
+        return issuedSession
+    }
+
     func signOut(session: String) async throws {
         try await record(.signOut(session: session))
     }
@@ -220,6 +225,15 @@ struct StatusFailure: Sendable {
         try await record(.disconnectConnectedApp(session: session, connectedAppIdentifier: connectedAppIdentifier))
         guard connectedApps.contains(where: { $0.identifier == connectedAppIdentifier }) else { throw OwnerAPIError.notFound }
         connectedApps.removeAll { $0.identifier == connectedAppIdentifier }
+    }
+
+    func narrowConnectedApp(session: String, connectedAppIdentifier: String, scopes: [ConnectedScope]) async throws -> ConnectedApp {
+        try await record(.narrowConnectedApp(session: session, connectedAppIdentifier: connectedAppIdentifier, scopes: scopes))
+        guard let index = connectedApps.firstIndex(where: { $0.identifier == connectedAppIdentifier }) else { throw OwnerAPIError.notFound }
+        let app = connectedApps[index]
+        let narrowed = ConnectedApp(identifier: app.identifier, clientName: app.clientName, redirectHost: app.redirectHost, scopes: scopes, createdAt: app.createdAt, lastUsedAt: app.lastUsedAt)
+        connectedApps[index] = narrowed
+        return narrowed
     }
 
     private func revisedOwner(_ revision: (inout Owner) -> Void) -> Owner {

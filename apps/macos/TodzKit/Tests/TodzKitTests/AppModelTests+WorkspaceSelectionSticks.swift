@@ -20,7 +20,7 @@ private func dueToday(_ count: Int, prefix: String) -> [TaskRecord] {
 }
 
 extension AppModelTests {
-    @MainActor private func selectionHarness(isLockOn: Bool = true) async throws -> AppModelHarness {
+    @MainActor func selectionHarness(isLockOn: Bool = true) async throws -> AppModelHarness {
         let harness = try AppModelHarness(isWorkspaceLockOn: isLockOn)
         let acme = harness.seedWorkspace(name: "acme")
         let secret = harness.seedWorkspace(name: chosenIdentifier)
@@ -32,9 +32,9 @@ extension AppModelTests {
         return harness
     }
 
-    @MainActor private func relaunched(_ harness: AppModelHarness) async throws -> AppModelHarness {
+    @MainActor func relaunched(_ harness: AppModelHarness, isLockOn: Bool = true) async throws -> AppModelHarness {
         let kept = try #require(harness.store.owner)
-        let relaunch = try AppModelHarness(isWorkspaceLockOn: true)
+        let relaunch = try AppModelHarness(isWorkspaceLockOn: isLockOn)
         relaunch.service.workspaces = harness.service.workspaces
         relaunch.service.tasksOfProject = harness.service.tasksOfProject
         relaunch.store.owner = OwnerCache(
@@ -48,9 +48,9 @@ extension AppModelTests {
         return relaunch
     }
 
-    @MainActor private func select(through path: WorkspaceSelectionPath, in harness: AppModelHarness) async {
+    @MainActor func select(through path: WorkspaceSelectionPath, in harness: AppModelHarness) async {
         switch path {
-        case .switcherRow: await harness.model.pickWorkspace(identifier: chosenIdentifier)
+        case .switcherRow: await harness.model.pickWorkspace(identifier: chosenIdentifier, gesture: .click)
         case .switchCommand:
             guard await harness.model.beginWorkspaceSwitch() else { return }
             await harness.model.switchWorkspace(identifier: chosenIdentifier)
@@ -101,19 +101,12 @@ extension AppModelTests {
         try await expectTheChoiceSticks(harness)
     }
 
-    @Test func pickingTheCurrentWorkspaceInTheSwitcherOfALockedSessionNeitherAsksNorMoves() async throws {
+    @Test(arguments: WorkspaceSwitcherGesture.allCases)
+    func pickingTheCurrentWorkspaceInTheSwitcherOfALockedSessionNeitherAsksNorMoves(gesture: WorkspaceSwitcherGesture) async throws {
         let harness = try await selectionHarness()
-        await harness.model.pickWorkspace(identifier: "acme")
+        await harness.model.pickWorkspace(identifier: "acme", gesture: gesture)
         #expect(harness.authenticator.asked.isEmpty)
         #expect(harness.model.selection == .chosen(["acme"]))
         #expect(harness.widgets.snapshot?.workspaceName == "acme")
-    }
-
-    @Test func pickingAnotherWorkspaceInTheSwitcherWithTheSwitchOffStillShowsBoth() async throws {
-        let harness = try await selectionHarness(isLockOn: false)
-        await harness.model.pickWorkspace(identifier: chosenIdentifier)
-        #expect(harness.model.selection == .chosen(["acme", chosenIdentifier]))
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", chosenIdentifier])
-        #expect(harness.authenticator.asked.isEmpty)
     }
 }

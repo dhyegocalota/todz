@@ -37,14 +37,18 @@ struct TodzApp: App {
         let ribbon = appDelegate.ribbon
         let ribbonStrips = appDelegate.ribbonStrips
         let countRoll = appDelegate.countRoll
+        let languageModel = appDelegate.languageModel
         Window(MainWindowCopy.windowTitle, id: MainWindowScene.identifier) {
             RootView()
                 .environment(model)
                 .environment(windowState)
+                .environment(languageModel)
+                .environment(\.locale, languageModel.locale)
+                .id(languageModel.language)
         }
         .defaultSize(width: defaultWidth, height: defaultHeight)
         .windowResizability(.contentMinSize)
-        .commands { AppCommands(model: model, windowState: windowState, updater: appDelegate.updater, shortcuts: appDelegate.workspaceShortcuts) }
+        .commands { AppCommands(model: model, windowState: windowState, updater: appDelegate.updater, shortcuts: appDelegate.workspaceShortcuts, languageModel: languageModel) }
         MenuBarExtra {
             MenuBarPopover()
                 .frame(width: popoverWidth)
@@ -55,6 +59,9 @@ struct TodzApp: App {
                 .environment(morningGlance)
                 .environment(ribbon)
                 .environment(appDelegate.updater)
+                .environment(languageModel)
+                .environment(\.locale, languageModel.locale)
+                .id(languageModel.language)
         } label: {
             MenuBarLabel()
                 .environment(model)
@@ -74,6 +81,9 @@ struct TodzApp: App {
                 .environment(gate)
                 .environment(appDelegate.updater)
                 .environment(appDelegate.workspaceShortcuts)
+                .environment(languageModel)
+                .environment(\.locale, languageModel.locale)
+                .id(languageModel.language)
         }
         .defaultSize(width: settingsWidth, height: settingsHeight)
         .windowResizability(.contentMinSize)
