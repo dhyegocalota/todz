@@ -241,7 +241,6 @@ extension AppModel {
         }
         histories = histories.filter { !projectIdentifiers.contains($0.key.projectIdentifier) }
         unsavedNotes = unsavedNotes.filter { !projectIdentifiers.contains($0.key.projectIdentifier) }
-        forgetKeys()
         selectedTask = nil
         dismissBanner()
     }
@@ -249,7 +248,6 @@ extension AppModel {
     private func forgetActiveWorkspace() {
         guard activeWorkspaceIdentifier != nil else { return }
         stopWatching()
-        forgetKeys()
         board = TaskBoard()
         projectLoads = [:]
         histories = [:]
@@ -259,8 +257,6 @@ extension AppModel {
     }
 
     private func keepSelection(in shown: [Workspace]) {
-        let isKeyScreenForgotten = selectedItem == .connectAgent && keyProjectIdentifier == nil
-        if isKeyScreenForgotten { showInboxKeys() }
         guard case let .project(identifier) = selectedItem else { return }
         let isInWorkspace = shown.contains { workspace in workspace.projects.contains { $0.identifier == identifier } }
         guard !isInWorkspace else { return }

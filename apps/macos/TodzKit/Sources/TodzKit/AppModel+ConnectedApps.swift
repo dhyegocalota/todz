@@ -11,7 +11,7 @@ extension AppModel {
             connectedApps = .loaded(apps.sorted { $0.createdAt > $1.createdAt })
         } catch {
             guard connectedAppVisit == visit, !isListShown else { return }
-            connectedApps = .failed(KeyFailure(error))
+            connectedApps = .failed(ConnectedAppListFailure(error))
         }
     }
 

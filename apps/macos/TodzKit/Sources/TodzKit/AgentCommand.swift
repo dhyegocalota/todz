@@ -1,6 +1,5 @@
 import Foundation
 
-private let keyVariable = "TODZ_API_KEY"
 private let serverPath = "mcp"
 private let cursorBundleIdentifier = "com.todesktop.230313mzl4w4u92"
 private let cursorInstallAddress = "cursor://anysphere.cursor-deeplink/mcp/install?name=\(AgentServer.project.rawValue)&config="
@@ -11,19 +10,15 @@ private func codexConfiguration(server: String, name: String) -> String {
     """
     [mcp_servers.\(name)]
     url = "\(server)"
-    bearer_token_env_var = "\(keyVariable)"
     """
 }
 
-private func cursorJSON(server: String, name: String, key: String) -> String {
+private func cursorJSON(server: String, name: String) -> String {
     """
     {
       "mcpServers": {
         "\(name)": {
-          "url": "\(server)",
-          "headers": {
-            "Authorization": "Bearer \(key)"
-          }
+          "url": "\(server)"
         }
       }
     }
@@ -32,25 +27,24 @@ private func cursorJSON(server: String, name: String, key: String) -> String {
 
 public enum AgentCommand: Equatable, Sendable {
     case claudeCode(line: String)
-    case codex(configuration: String, shellLine: String)
+    case codex(configuration: String, loginLine: String)
     case cursor(json: String)
 
-    // NB ADR 0034: a secret is todz_ plus base64url, so single quotes hold it without escaping.
-    public static func of(client: AgentClient, serverURL: URL, key: String, server: AgentServer = .project) -> AgentCommand {
+    public static func of(client: AgentClient, serverURL: URL) -> AgentCommand {
         let address = serverURL.absoluteString
-        let name = server.rawValue
+        let name = AgentServer.project.rawValue
         switch client {
         case .claudeCode:
-            return .claudeCode(line: "claude mcp add --transport http \(name) '\(address)' --header 'Authorization: Bearer \(key)'")
+            return .claudeCode(line: "claude mcp add --transport http \(name) \(address)")
         case .codex:
-            return .codex(configuration: codexConfiguration(server: address, name: name), shellLine: "export \(keyVariable)='\(key)'")
+            return .codex(configuration: codexConfiguration(server: address, name: name), loginLine: "codex mcp login \(name)")
         case .cursor:
-            return .cursor(json: cursorJSON(server: address, name: name, key: key))
+            return .cursor(json: cursorJSON(server: address, name: name))
         }
     }
 
-    public static func cursorLink(serverURL: URL, secret: String) -> URL {
-        let config = "{\"url\":\"\(serverURL.absoluteString)\",\"headers\":{\"Authorization\":\"Bearer \(secret)\"}}"
+    public static func cursorLink(serverURL: URL) -> URL {
+        let config = "{\"url\":\"\(serverURL.absoluteString)\"}"
         let encodedConfig = Data(config.utf8).base64EncodedString().addingPercentEncoding(withAllowedCharacters: unreservedCharacters)
         guard let encodedConfig, let link = URL(string: cursorInstallAddress + encodedConfig) else { preconditionFailure(linkFailure) }
         return link

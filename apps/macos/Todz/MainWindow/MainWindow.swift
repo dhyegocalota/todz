@@ -27,7 +27,7 @@ struct MainWindow: View {
                     .navigationSplitViewColumnWidth(min: sidebarMinimumWidth, ideal: sidebarIdealWidth, max: sidebarMaximumWidth)
             } detail: {
                 if isOnKeyScreen {
-                    KeyScreen(workspace: workspace)
+                    KeyScreen()
                 }
                 if !isOnKeyScreen {
                     TaskListView(workspace: workspace, item: model.selectedItem, focus: $focus)
