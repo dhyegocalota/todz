@@ -21,6 +21,7 @@ const NAVIGATION_GROUPS = [
     pages: [
       'tour',
       'workspaces',
+      'workspace-privacy',
       'keyboard-shortcuts',
       'updates',
       'privacy',

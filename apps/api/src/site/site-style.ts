@@ -283,6 +283,7 @@ ${CROP_RULES}
 .benefit-well{position:relative;height:140px;border-radius:calc(var(--radius-card) - var(--space-2));background:var(--gradient-wallpaper);overflow:hidden;display:flex;align-items:center;justify-content:center}
 .benefit-well-agents{align-items:flex-start;justify-content:flex-start;padding:var(--space-5) 0 0 var(--space-5)}
 .benefit-shot-agents{width:160%;flex:none;border-radius:var(--radius-shot);box-shadow:var(--shadow-shot)}
+.lock-glyph{position:absolute;right:var(--space-4);bottom:var(--space-4);width:40px;height:40px;filter:drop-shadow(0 8px 16px rgb(27 42 158 / 0.35))}
 .offline-glyph{width:64px;height:64px;filter:drop-shadow(0 12px 24px rgb(27 42 158 / 0.35))}
 .benefit-title{margin-top:var(--space-5);font-size:var(--text-title);line-height:1.3;letter-spacing:-0.01em;font-weight:650}
 .benefit-body{margin-top:var(--space-2);color:var(--color-text-muted)}
@@ -384,7 +385,7 @@ ${CROP_RULES}
 .footer-credit{order:0;flex-basis:auto;text-align:start;margin-right:auto;margin-left:var(--space-4)}
 .footer-links{order:0}}
 @media (min-width: ${WIDE_BREAKPOINT}){
-.benefit-list{grid-template-columns:repeat(2, 1fr);gap:var(--space-5)}
+.benefit-list{grid-template-columns:repeat(3, 1fr);gap:var(--space-5)}
 .day-head{flex-direction:row;justify-content:space-between;align-items:flex-end;gap:var(--space-6)}
 .day-note{max-width:${DAY_NOTE_MEASURE};text-align:right}
 .day-rail{grid-template-columns:repeat(${DAY_STOP_COUNT}, 1fr);gap:var(--space-4)}

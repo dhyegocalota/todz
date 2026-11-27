@@ -142,6 +142,10 @@ export const LANDING_COPY = {
       title: 'Works offline, syncs everywhere',
       body: 'Changes wait while you are offline and land on every Mac when you are back.',
     },
+    lock: {
+      title: 'Other workspaces vanish without a trace',
+      body: 'Turn on Require Touch ID to switch workspaces and the app shows only the one you are in, menu bar and widgets too. Touch ID or your Mac password brings the rest back; sleep, screen lock, quit and idle lock them again. Off by default.',
+    },
   },
   howItWorks: {
     eyebrow: 'How it works',
@@ -168,6 +172,7 @@ export const LANDING_COPY = {
     popover: "The todz menu bar popover: today's tasks and an Add a task field",
     widgetMedium: 'The medium Today widget with three open tasks',
     agentTasks: "A project's tasks in todz, the newest added via Claude Code",
+    workspaceLock: 'The todz sidebar showing only the current workspace and its lists',
   },
 };
 
@@ -177,3 +182,5 @@ export const LANDING_DAY_LINES = [
   ...[day.email, day.glance, day.agent, day.close].map(({ time, title, body }) => `${time} ${title}: ${body}`),
   ...[day.extras.ribbon, day.extras.temperature, day.extras.siri].map(({ label, detail }) => `${label}: ${detail}`),
 ];
+
+export const LANDING_LOCK_LINE = `${LANDING_COPY.benefits.lock.title}: ${LANDING_COPY.benefits.lock.body}`;

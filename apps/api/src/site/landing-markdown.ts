@@ -33,7 +33,7 @@ const LANDING_MARKDOWN = linesOf([
   '',
   benefits.day.note,
   '',
-  ...[benefits.agents, benefits.offline].flatMap(({ title, body }) => [`### ${title}`, '', body, '']),
+  ...[benefits.agents, benefits.offline, benefits.lock].flatMap(({ title, body }) => [`### ${title}`, '', body, '']),
   `## ${howItWorks.title}`,
   '',
   ...[howItWorks.step1, howItWorks.step2, howItWorks.step3].map((step, index) => `${index + 1}. ${step}`),

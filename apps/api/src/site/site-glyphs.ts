@@ -1,6 +1,7 @@
 export enum SiteGlyph {
   Icon = 'todz-icon',
   Offline = 'todz-offline',
+  Lock = 'todz-lock',
 }
 
 export const SITE_GLYPH_SPRITE = `<svg class="glyph-sprite" aria-hidden="true" focusable="false">
@@ -21,6 +22,12 @@ export const SITE_GLYPH_SPRITE = `<svg class="glyph-sprite" aria-hidden="true" f
 <path d="M18 52h29c7.7 0 14-6 14-13.4 0-6.8-5.2-12.4-11.9-13.3C47.6 16.8 40.6 11 32 11c-9.2 0-16.7 6.6-18 15.2C7.8 27.4 3 32.7 3 39c0 7.2 6.7 13 15 13z" fill="url(#brand-fill)"/>
 <path d="M21 34.5 L28.5 42 L43 27.5" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M53 4 C53.5 7 54.6 8.1 57.6 8.6 C54.6 9.1 53.5 10.2 53 13.2 C52.5 10.2 51.4 9.1 48.4 8.6 C51.4 8.1 52.5 7 53 4 Z" fill="#8CF7D0"/>
+</symbol>
+<symbol id="${SiteGlyph.Lock}" viewBox="0 0 64 64">
+<path d="M20 28v-7c0-6.6 5.4-12 12-12s12 5.4 12 12v7" fill="none" stroke="url(#brand-fill)" stroke-width="6" stroke-linecap="round"/>
+<rect x="12" y="26" width="40" height="30" rx="9" fill="url(#brand-fill)"/>
+<circle cx="32" cy="39" r="4" fill="#FFFFFF"/>
+<path d="M32 41v7" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
 </symbol>
 </svg>`;
 

@@ -64,6 +64,7 @@ const DOCS_LINKS = [
   `${DOCS_URL}/connect-an-agent`,
   `${DOCS_URL}/mcp-tools`,
   `${DOCS_URL}/self-host`,
+  `${DOCS_URL}/workspace-privacy`,
   `${DOCS_URL}/privacy`,
 ];
 const ROBOTS_LINES = [

@@ -9,6 +9,7 @@ export enum DocsPageSlug {
   ConnectAnAgent = 'connect-an-agent',
   McpTools = 'mcp-tools',
   SelfHost = 'self-host',
+  WorkspacePrivacy = 'workspace-privacy',
   Privacy = 'privacy',
 }
 
@@ -21,6 +22,7 @@ export const DOCS_PAGES: DocsPage[] = [
   { slug: DocsPageSlug.ConnectAnAgent, title: 'Connect an agent', path: '/connect-an-agent' },
   { slug: DocsPageSlug.McpTools, title: 'MCP tools', path: '/mcp-tools' },
   { slug: DocsPageSlug.SelfHost, title: 'Self-host todz', path: '/self-host' },
+  { slug: DocsPageSlug.WorkspacePrivacy, title: 'Workspace privacy', path: '/workspace-privacy' },
   { slug: DocsPageSlug.Privacy, title: 'Privacy', path: '/privacy' },
 ];
 
