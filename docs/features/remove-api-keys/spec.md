@@ -1,6 +1,6 @@
 # Remove API keys
 
-**Status:** Approved
+**Status:** Shipped 2026-11-27
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-27 by the owner's order in PROMPT.md, asked whether API keys stay next to OAuth: "negativo.. pode remover agora como breaking change. por favor"
 **ADRs:** [0111](../../adr/0111-api-keys-are-removed-and-an-mcp-client-connects-only-through-oauth.md), superseding [0017](../../adr/0017-a-2025-era-client-is-named-by-a-session-in-the-directory.md), [0019](../../adr/0019-mcp-keys-are-prefixed-and-shown-once.md), [0034](../../adr/0034-the-key-screen-shows-a-new-key-once-inside-each-client-s-command.md) and [0101](../../adr/0101-an-owner-key-is-a-separate-off-by-default-scope-for-the-account-and-project-keys-never-gain-account-powers.md), and amending the key parts of [0108](../../adr/0108-a-move-deletes-its-source-only-if-unchanged-and-owner-keys-share-one-budget-and-count-as-writes.md) and [0109](../../adr/0109-mcp-clients-connect-with-oauth-2-1-pkce-and-dynamic-registration-and-a-grant-is-never-more-than-the-equivalent-key.md)
