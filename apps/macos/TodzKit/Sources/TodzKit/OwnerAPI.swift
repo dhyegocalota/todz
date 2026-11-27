@@ -31,12 +31,7 @@ private func taskPath(projectIdentifier: String, number: Int) -> String {
     "\(tasksPath(projectIdentifier))/\(number)"
 }
 
-private let ownerKeysPath = "/owner/keys"
 private let connectedAppsPath = "/owner/connected-apps"
-
-private func keysPath(_ projectIdentifier: String) -> String {
-    "\(projectPath(projectIdentifier))/keys"
-}
 
 private struct HealthBody: Decodable {
     let service: String
@@ -81,12 +76,6 @@ public protocol OwnerService: Sendable {
     func reopenTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [ReopenedTask]
     func readHistory(session: String, projectIdentifier: String, number: Int) async throws -> [HistoryEntry]
     func readChanges(session: String, projectIdentifier: String, cursor: Int) async throws -> ChangePage
-    func listKeys(session: String, projectIdentifier: String) async throws -> [ProjectKey]
-    func issueKey(session: String, projectIdentifier: String) async throws -> IssuedKey
-    func revokeKey(session: String, projectIdentifier: String, keyIdentifier: String) async throws
-    func listOwnerKeys(session: String) async throws -> [ProjectKey]
-    func issueOwnerKey(session: String) async throws -> IssuedKey
-    func revokeOwnerKey(session: String, keyIdentifier: String) async throws
     func listConnectedApps(session: String) async throws -> [ConnectedApp]
     func disconnectConnectedApp(session: String, connectedAppIdentifier: String) async throws
 }
@@ -249,31 +238,6 @@ public struct OwnerAPI: OwnerService {
         let path = "\(projectPath(projectIdentifier))/changes"
         let queryItems = [URLQueryItem(name: cursorParameter, value: String(cursor))]
         return try await answer(ChangePage.self, to: OwnerRequest(method: .get, path: path, session: session, queryItems: queryItems))
-    }
-
-    public func listKeys(session: String, projectIdentifier: String) async throws -> [ProjectKey] {
-        try await answer(KeysAnswer.self, to: OwnerRequest(method: .get, path: keysPath(projectIdentifier), session: session)).keys
-    }
-
-    public func issueKey(session: String, projectIdentifier: String) async throws -> IssuedKey {
-        try await answer(IssuedKey.self, to: OwnerRequest(method: .post, path: keysPath(projectIdentifier), session: session))
-    }
-
-    public func revokeKey(session: String, projectIdentifier: String, keyIdentifier: String) async throws {
-        let path = "\(keysPath(projectIdentifier))/\(keyIdentifier)"
-        _ = try await send(OwnerRequest(method: .delete, path: path, session: session))
-    }
-
-    public func listOwnerKeys(session: String) async throws -> [ProjectKey] {
-        try await answer(KeysAnswer.self, to: OwnerRequest(method: .get, path: ownerKeysPath, session: session)).keys
-    }
-
-    public func issueOwnerKey(session: String) async throws -> IssuedKey {
-        try await answer(IssuedKey.self, to: OwnerRequest(method: .post, path: ownerKeysPath, session: session))
-    }
-
-    public func revokeOwnerKey(session: String, keyIdentifier: String) async throws {
-        _ = try await send(OwnerRequest(method: .delete, path: "\(ownerKeysPath)/\(keyIdentifier)", session: session))
     }
 
     public func listConnectedApps(session: String) async throws -> [ConnectedApp] {

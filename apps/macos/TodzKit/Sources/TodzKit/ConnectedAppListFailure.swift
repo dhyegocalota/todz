@@ -1,4 +1,4 @@
-public enum KeyFailure: Equatable, Sendable {
+public enum ConnectedAppListFailure: Equatable, Sendable {
     case unreachable
     case unexpected
 

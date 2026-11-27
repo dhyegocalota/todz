@@ -139,7 +139,6 @@ extension AppModelTests {
         await harness.model.loadSignInMethod()
         harness.service.failures[.signIn] = .identityRejected
         await harness.model.signIn(identity: "maria")
-        harness.model.issuedKey = harness.service.nextIssuedKey()
         let roundBefore = harness.model.challengeRound
         let result = await harness.model.switchServer(to: try address(otherText))
         #expect(result == .switched)
@@ -150,8 +149,6 @@ extension AppModelTests {
         #expect(harness.model.lastIdentity == nil)
         #expect(harness.model.pendingLink == nil)
         #expect(harness.model.challengeRound == roundBefore + 1)
-        #expect(harness.model.keys == nil)
-        #expect(harness.model.issuedKey == nil)
     }
 
     @Test func aLinkFromTheOldServersMailIsNotRequestedAfterTheSwitch() async throws {
