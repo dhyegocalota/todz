@@ -4,6 +4,14 @@ import { MCP_COPY } from './mcp-copy';
 
 const { ownerFields } = MCP_COPY;
 
+export const TaskProjectShape = { project: z.string().describe(ownerFields.taskProject) };
+
+export const OwnerMoveArgumentsSchema = z.object({
+  id: z.string().describe(MCP_COPY.fields.id),
+  ...TaskProjectShape,
+  destination: z.string().describe(ownerFields.destination),
+});
+
 export const NameArgumentsSchema = z.object({ name: z.string().describe(ownerFields.name) });
 
 export const RenameWorkspaceArgumentsSchema = z.object({

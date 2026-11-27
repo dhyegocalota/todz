@@ -1,5 +1,12 @@
 import { digestCredential } from './credential-digest';
-import { type GrantProjectRecord, type SessionOwnerRecord, findOwnedProject, findSessionOwner, findSessionProject } from './directory';
+import {
+  type GrantProjectRecord,
+  type SessionOwnerRecord,
+  findOwnedGrantProject,
+  findOwnedProject,
+  findSessionOwner,
+  findSessionProject,
+} from './directory';
 import { findCandidateRows, findFirstInboxId } from './day-email/day-email-store';
 import {
   findOwnedWorkspace,
@@ -176,6 +183,22 @@ export async function findOwnedWorkspaceId({
 }): Promise<string | null> {
   if (!resolvedOwners.has(owner)) return null;
   return findOwnedWorkspace({ directory: env.DIRECTORY, ownerId: owner.ownerId, workspaceId });
+}
+
+// NB ADR 0115: an owner grant reaches a project's tasks only when the project's workspace belongs to the grant's owner.
+export async function openOwnedGrantProject({
+  env,
+  owner,
+  projectId,
+}: {
+  env: Env;
+  owner: SessionOwner;
+  projectId: string;
+}): Promise<GrantProject | null> {
+  if (!resolvedOwners.has(owner)) return null;
+  const record = await findOwnedGrantProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId });
+  if (record === null) return null;
+  return grantProjectOf({ env, record });
 }
 
 export async function openOwnedProject({

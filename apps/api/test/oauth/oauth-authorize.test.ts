@@ -163,7 +163,7 @@ describe('the consent screen', () => {
     expect(html).toMatch(new RegExp(`value="${owner.projectId}" checked`));
     expect(html).not.toMatch(/value="owner" checked/);
     expect(html).toContain('Your whole account (owner scope)');
-    expect(html).toContain('It can create, rename and delete every workspace and project.');
+    expect(html).toContain('It can read and change every task, and create, rename and delete every workspace and project.');
     expect(decodedHtml(html)).toContain(
       "A project lets it read and change that project's tasks, and move them to the other projects of its workspace.",
     );

@@ -95,10 +95,11 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with a project-
 });
 
 describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with an owner-scoped token', (era) => {
-  test('sees only the account tools of an owner key', async () => {
+  test('sees the account tools and every task tool but projects', async () => {
     const tokens = await grantedTokens({ owner: await seededOwner(), choiceOf: ownerChoice });
+    const taskTools = Object.values(McpToolName).filter((name) => name !== McpToolName.Projects);
 
-    expect(await toolNames({ era, token: tokens.access_token })).toEqual(Object.values(McpOwnerToolName).sort());
+    expect(await toolNames({ era, token: tokens.access_token })).toEqual([...Object.values(McpOwnerToolName), ...taskTools].sort());
   });
 
   test("lists the owner's workspaces and no stranger's", async () => {

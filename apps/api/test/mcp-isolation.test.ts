@@ -54,7 +54,7 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with the nudge 
   });
 });
 
-describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with the key of project A', (era) => {
+describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with the token of project A', (era) => {
   test('lists nothing and has no next task while B holds tasks (pin)', async () => {
     const { clientA } = await twoProjects(era);
     expect((await listOpen(clientA)).text).toBe('Open tasks: 0 of 0');

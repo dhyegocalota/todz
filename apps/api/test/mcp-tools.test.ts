@@ -76,10 +76,16 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('the %s client', (era) => {
       true,
       true,
     ]);
-    expect(
-      [McpToolName.Add, McpToolName.Update, McpToolName.Done, McpToolName.Reopen].map((name) => annotationsOf[name]?.destructiveHint),
-    ).toEqual([false, false, false, false]);
-    expect([McpToolName.Delete, McpToolName.Move].map((name) => annotationsOf[name]?.destructiveHint)).toEqual([true, true]);
+    expect([McpToolName.Add, McpToolName.Done, McpToolName.Reopen].map((name) => annotationsOf[name]?.destructiveHint)).toEqual([
+      false,
+      false,
+      false,
+    ]);
+    expect([McpToolName.Update, McpToolName.Delete, McpToolName.Move].map((name) => annotationsOf[name]?.destructiveHint)).toEqual([
+      true,
+      true,
+      true,
+    ]);
     const listSchema = tools.find((tool) => tool.name === McpToolName.List)?.inputSchema;
     expect(listSchema?.properties).toMatchObject({ state: { default: TaskState.Open }, limit: { default: LIST_LIMIT_DEFAULT } });
   });

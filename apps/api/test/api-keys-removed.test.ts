@@ -2,7 +2,8 @@ import { OAUTH_ACCESS_TOKEN_PREFIX } from '@todz/types';
 import { env, exports } from 'cloudflare:workers';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { generateCredentialSecret } from '../src/credential-secret';
-import { DOCS_CONNECT_URL } from '../src/site/site-urls';
+import { serveMcp } from '../src/mcp-endpoint';
+import { DOCS_CONNECT_URL, MCP_URL as HOSTED_MCP_URL } from '../src/site/site-urls';
 import { applyMigrationNamed, applyMigrationsThrough } from './migration-directory';
 import { mcpRequest } from './oauth/oauth-client';
 import { ownerCall, signInOwner } from './owner-client';
@@ -14,6 +15,7 @@ const UNAUTHORIZED_STATUS = 401;
 const NOT_FOUND_STATUS = 404;
 const JSON_MEDIA_TYPE = 'application/json';
 const INVALID_TOKEN = 'invalid_token';
+const SELF_HOSTED_ORIGIN = 'https://todz.example.com';
 const INITIALIZE_BODY = { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} };
 const KEY_TABLES = ['project_keys', 'owner_keys', 'mcp_sessions'];
 const OAUTH_TABLES = ['oauth_clients', 'oauth_sessions', 'oauth_grants', 'oauth_codes', 'oauth_tokens'];
@@ -42,6 +44,20 @@ describe.each(FORMER_KEY_PREFIXES)('a former key starting with %s on /mcp', (pre
     const body = await response.json<{ error: string; error_description: string }>();
     expect(body.error).toBe(INVALID_TOKEN);
     expect(body.error_description).toContain(DOCS_CONNECT_URL);
+  });
+});
+
+describe('a former key on a self-hosted server', () => {
+  test('is told to add the MCP address of that server, never the hosted one', async () => {
+    const response = await serveMcp({
+      request: mcpRequest({ token: `${FORMER_KEY_PREFIXES[0]}${generateCredentialSecret()}`, body: INITIALIZE_BODY }),
+      env: { ...env, PUBLIC_ORIGIN: SELF_HOSTED_ORIGIN },
+      now: CLOCK_NOW,
+    });
+
+    const body = await response.json<{ error_description: string }>();
+    expect(body.error_description).toContain(`${SELF_HOSTED_ORIGIN}/mcp`);
+    expect(body.error_description).not.toContain(HOSTED_MCP_URL);
   });
 });
 

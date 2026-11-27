@@ -9,6 +9,8 @@ function isFreeKey(key: string): boolean {
   return !key.startsWith(MOVE_KEY_PREFIX);
 }
 
+export const NoArgumentsSchema = z.object({});
+
 export const AddArgumentsSchema = z.object({
   tasks: z.array(
     z.object({

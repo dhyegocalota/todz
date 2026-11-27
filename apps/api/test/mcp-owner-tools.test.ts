@@ -41,12 +41,14 @@ function workspacesOf(client: Client) {
 }
 
 describe.each([ClientEra.Legacy, ClientEra.Modern])('the owner key, %s client', (era) => {
-  test('lists exactly the nine account tools and none of the project tools', async () => {
+  test('lists the nine account tools with their copy, and the task tools of the project server but projects', async () => {
     const { client } = await connectedOwner(era);
     const { tools } = await client.listTools();
-    expect(tools.map((tool) => tool.name).sort()).toEqual(Object.values(McpOwnerToolName).sort());
-    expect(Object.fromEntries(tools.map((tool) => [tool.name, tool.description]))).toEqual(MCP_COPY.ownerTools);
-    expect(tools.map((tool) => tool.name)).not.toContain(McpToolName.Add);
+    const accountTools = tools.filter((tool) => Object.values<string>(McpOwnerToolName).includes(tool.name));
+    expect(accountTools.map((tool) => tool.name).sort()).toEqual(Object.values(McpOwnerToolName).sort());
+    expect(Object.fromEntries(accountTools.map((tool) => [tool.name, tool.description]))).toEqual(MCP_COPY.ownerTools);
+    expect(tools.map((tool) => tool.name)).toContain(McpToolName.Add);
+    expect(tools.map((tool) => tool.name)).not.toContain(McpToolName.Projects);
   });
 
   test('creates a workspace with its Inbox and lists it', async () => {
@@ -248,9 +250,9 @@ describe('the two scopes never mix', () => {
     ).rejects.toThrow();
   });
 
-  test('an owner token cannot call a task tool', async () => {
+  test('an owner token cannot call the projects tool of a project grant', async () => {
     const { client } = await connectedOwner();
-    await expect(callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'No' }] } })).rejects.toThrow();
+    await expect(callTool({ client, name: McpToolName.Projects, args: {} })).rejects.toThrow();
   });
 
   test.each([

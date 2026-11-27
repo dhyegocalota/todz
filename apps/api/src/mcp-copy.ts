@@ -12,7 +12,7 @@ import {
   TASK_TITLE_MAX_LENGTH,
   TaskState,
 } from '@todz/types';
-import { DOCS_CONNECT_URL, MCP_URL } from './site/site-urls';
+import { DOCS_CONNECT_URL } from './site/site-urls';
 
 const EXAMPLE_TASK_ID = `${TASK_SHORT_ID_PREFIX}12`;
 
@@ -63,8 +63,29 @@ export const MCP_COPY = {
       "Move a task to another project of the same workspace. The task gets a new id there. Find project ids with projects. The owner's Mac shows the move after its next update.",
     [McpToolName.Projects]: 'List the projects of the workspace this connection belongs to, with their ids.',
   } satisfies Record<McpToolName, string>,
-  ownerInstructions:
-    'This todz connection has owner scope and manages the account: its workspaces and projects. Call workspaces to list them with their ids, create_workspace and create_project to add, rename_workspace and rename_project to rename, and delete_workspace and delete_project to remove one for good with its current name as confirm. Tasks are not reachable here: connect with project scope for them.',
+  ownerInstructions: `This todz connection has owner scope and holds the whole account: its workspaces, its projects and every task. Call workspaces to list them with their ids, create_workspace and create_project to add, rename_workspace and rename_project to rename, and delete_workspace and delete_project to remove one for good with its current name as confirm. Every task tool (next, add, list, show, history, update, done, reopen, delete, move) takes the project id it works on, from workspaces; delete needs the task title as confirm, and move takes the destination project in destination. Ids look like ${EXAMPLE_TASK_ID}.`,
+  titles: {
+    [McpToolName.Next]: 'Next task',
+    [McpToolName.Add]: 'Add tasks',
+    [McpToolName.List]: 'List tasks',
+    [McpToolName.Show]: 'Show a task',
+    [McpToolName.History]: 'Task history',
+    [McpToolName.Update]: 'Update a task',
+    [McpToolName.Done]: 'Complete tasks',
+    [McpToolName.Reopen]: 'Reopen tasks',
+    [McpToolName.Delete]: 'Delete a task',
+    [McpToolName.Move]: 'Move a task',
+    [McpToolName.Projects]: 'List projects',
+    [McpOwnerToolName.Workspaces]: 'List workspaces',
+    [McpOwnerToolName.CreateWorkspace]: 'Create a workspace',
+    [McpOwnerToolName.RenameWorkspace]: 'Rename a workspace',
+    [McpOwnerToolName.DeleteWorkspace]: 'Delete a workspace',
+    [McpOwnerToolName.CreateProject]: 'Create a project',
+    [McpOwnerToolName.RenameProject]: 'Rename a project',
+    [McpOwnerToolName.DeleteProject]: 'Delete a project',
+    [McpOwnerToolName.Settings]: 'Show settings',
+    [McpOwnerToolName.UpdateSettings]: 'Update settings',
+  } satisfies Record<McpToolName | McpOwnerToolName, string>,
   ownerTools: {
     [McpOwnerToolName.Workspaces]: 'List the workspaces of this account with their projects and ids.',
     [McpOwnerToolName.CreateWorkspace]: 'Create a workspace. It starts with an Inbox project.',
@@ -85,6 +106,8 @@ export const MCP_COPY = {
     dayEmailMinutes: 'Minutes after midnight, in your time zone, when the day email is sent: 0 to 1439.',
     workspace: 'Id of the workspace, from workspaces.',
     project: 'Id of the project, from workspaces.',
+    taskProject: 'Id of the project the task tool works on, from workspaces.',
+    destination: 'Id of the project to move the task to, from workspaces.',
     name: `Name, up to ${NAME_MAX_LENGTH} characters.`,
     confirmWorkspace: 'The current name of the workspace, typed exactly. Nothing is deleted when it differs.',
     confirmProject: 'The current name of the project, typed exactly. Nothing is deleted when it differs.',
@@ -138,7 +161,9 @@ export const MCP_COPY = {
     [RuleIssue.DestinationGone]: 'The destination project was deleted while the task was being moved: nothing was moved.',
   } satisfies Record<RuleIssue, string>,
   taskIdInvalid: `Not a task id: use one like ${EXAMPLE_TASK_ID}.`,
-  apiKeysRemoved: `API keys were removed on 2026-11-27. Connect with OAuth instead: add ${MCP_URL} to your client and sign in. Steps: ${DOCS_CONNECT_URL}`,
+  apiKeysRemoved: (mcpUrl: string) =>
+    `API keys were removed on 2026-11-27. Connect with OAuth instead: add ${mcpUrl} to your client and sign in. Steps: ${DOCS_CONNECT_URL}`,
+  apiKeysRemovedAtUnknownOrigin: `API keys were removed on 2026-11-27. Connect with OAuth instead: add the MCP address of this server to your client and sign in. Steps: ${DOCS_CONNECT_URL}`,
   clientUnnamed: 'This client sent no name.',
   noOpenTasks: 'No open tasks.',
   nothingToDo: 'There is nothing to do in todz right now: no open tasks.',

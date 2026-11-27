@@ -1,6 +1,10 @@
 type SessionRow = { owner_id: string; suspended_at: number | null };
 type SessionProjectRow = { owner_id: string; project_id: string | null; suspended_at: number | null };
 type ProjectRow = { id: string };
+type OwnedGrantProjectRow = { workspace_id: string; time_zone: string; agent_nudge: number; suspended_at: number | null };
+
+const OWNED_GRANT_PROJECT_QUERY =
+  'SELECT projects.workspace_id, owners.time_zone, owners.agent_nudge, owners.suspended_at FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id JOIN owners ON owners.id = workspaces.owner_id WHERE projects.id = ? AND workspaces.owner_id = ?';
 
 const SESSION_OWNER_QUERY =
   'SELECT sessions.owner_id, owners.suspended_at FROM sessions JOIN owners ON owners.id = sessions.owner_id WHERE sessions.digest = ? AND sessions.expires_at > ?';
@@ -48,6 +52,27 @@ export async function findSessionProject({
   const row = await directory.prepare(SESSION_PROJECT_QUERY).bind(projectId, digest, now).first<SessionProjectRow>();
   if (row === null) return null;
   return { ownerId: row.owner_id, isSuspended: row.suspended_at !== null, ownedProjectId: row.project_id };
+}
+
+export async function findOwnedGrantProject({
+  directory,
+  ownerId,
+  projectId,
+}: {
+  directory: D1Database;
+  ownerId: string;
+  projectId: string;
+}): Promise<GrantProjectRecord | null> {
+  const row = await directory.prepare(OWNED_GRANT_PROJECT_QUERY).bind(projectId, ownerId).first<OwnedGrantProjectRow>();
+  if (row === null) return null;
+  return {
+    projectId,
+    workspaceId: row.workspace_id,
+    timeZone: row.time_zone,
+    agentNudge: row.agent_nudge === 1,
+    ownerId,
+    isSuspended: row.suspended_at !== null,
+  };
 }
 
 export async function findOwnedProject({
