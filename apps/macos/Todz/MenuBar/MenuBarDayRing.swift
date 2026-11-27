@@ -9,9 +9,9 @@ private let quarterTurn = Angle.degrees(-90)
 struct MenuBarDayRing: View {
     let progress: Double
     @Environment(\.accessibilityReduceMotion) private var isReduceMotionOn
+    @State private var isBursting = false
 
     var body: some View {
-        let isClosed = progress >= closedProgress
         ZStack {
             Circle()
                 .stroke(.fill.quaternary, lineWidth: MenuBarMetrics.dayRingLineWidth)
@@ -27,11 +27,16 @@ struct MenuBarDayRing: View {
                 .stroke(Color.white, style: StrokeStyle(lineWidth: checkLineWidth, lineCap: .round, lineJoin: .round))
                 .transaction { if isReduceMotionOn { $0.animation = nil } }
             if !isReduceMotionOn {
-                SparkleBurst(isBursting: isClosed)
+                SparkleBurst(isBursting: isBursting)
             }
         }
         .frame(width: MenuBarMetrics.dayRingDiameter, height: MenuBarMetrics.dayRingDiameter)
         .todzAnimation(.settle, value: progress)
+        .onChange(of: isClosed) { _, isNowClosed in isBursting = isNowClosed }
         .accessibilityHidden(true)
+    }
+
+    private var isClosed: Bool {
+        progress >= closedProgress
     }
 }

@@ -18,7 +18,7 @@ struct AddTaskField<Focus: Hashable>: View {
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
-                Image(systemName: addSymbol)
+                Text(Image(systemName: addSymbol))
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
                 TextField(MainWindowCopy.addPlaceholder, text: $title)
@@ -53,8 +53,7 @@ struct AddTaskField<Focus: Hashable>: View {
 
     private var ring: some View {
         RoundedRectangle(cornerRadius: FormMetrics.panelCornerRadius, style: .continuous)
-            .strokeBorder(Color.accentColor, lineWidth: FormMetrics.focusRingWidth)
-            .opacity(isFocused ? 1 : 0)
+            .strokeBorder(isFocused ? Color.accentColor : Color(nsColor: .separatorColor), lineWidth: isFocused ? FormMetrics.focusRingWidth : FormMetrics.restRingWidth)
             .todzAnimation(.snap, value: isFocused)
     }
 

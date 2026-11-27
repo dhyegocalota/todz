@@ -22,12 +22,12 @@ struct MenuBarMoreMenu: View {
             MenuBarQuitButton()
         } label: {
             Image(systemName: moreSymbol)
-                .overlay(alignment: .topTrailing) { updateDot }
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
         .foregroundStyle(.secondary)
+        .overlay(alignment: .topTrailing) { updateDot }
         .help(MenuBarCopy.more)
         .accessibilityLabel(MenuBarCopy.more)
         .accessibilityValue(accessibilityState)

@@ -17,6 +17,7 @@ struct MenuBarRowMetaLine: View {
             if let overdue = meta.overdue {
                 Label(DueLabel.text(dueDate: overdue, today: model.today, timeZone: model.timeZone), systemImage: overdueSymbol)
                     .foregroundStyle(.red)
+                    .layoutPriority(1)
             }
         }
         .font(.subheadline)
