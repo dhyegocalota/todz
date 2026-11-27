@@ -221,7 +221,7 @@ function workspaceScopeOf(workspaceId: string): { kind: string; workspace_id: st
 }
 
 describe('Connected apps list the scopes of a grant', () => {
-  test('a selection lists the account first, then workspaces by name, then projects by workspace and project name, and the legacy fields say selection', async () => {
+  test('a selection lists the account first, then workspaces by name, then projects by workspace and project name, and the legacy fields name it as one project for the app 0.2.8', async () => {
     const { owner, session, siblingId, otherProjectId, workspaceId, otherWorkspaceId } = await tree();
     await rename({ table: 'projects', id: otherProjectId, name: 'Zebra' });
     await connectedClient({
@@ -231,9 +231,9 @@ describe('Connected apps list the scopes of a grant', () => {
 
     const app = await onlyAppOf(session);
 
-    expect(app.scope).toBe('selection');
-    expect(app.project_id).toBeNull();
-    expect(app.project_name).toBeNull();
+    expect(app.scope).toBe('project');
+    expect(app.project_id).toBe(otherProjectId);
+    expect(app.project_name).toBe('Alpha › Zebra; Beta › Project; Beta › Website');
     expect(app.scopes).toEqual([
       { kind: 'project', project_id: otherProjectId, project_name: 'Zebra', workspace_id: otherWorkspaceId, workspace_name: 'Alpha' },
       { kind: 'project', project_id: owner.projectId, project_name: 'Project', workspace_id: workspaceId, workspace_name: 'Beta' },
@@ -248,7 +248,8 @@ describe('Connected apps list the scopes of a grant', () => {
 
     const app = await onlyAppOf(session);
 
-    expect(app.scope).toBe('selection');
+    expect(app.scope).toBe('project');
+    expect(app.project_name).toBe('Gamma; Alpha › Project');
     expect(app.scopes).toEqual([
       { kind: 'workspace', workspace_id: workspaceId, workspace_name: 'Gamma' },
       { kind: 'project', project_id: otherProjectId, project_name: 'Project', workspace_id: otherWorkspaceId, workspace_name: 'Alpha' },
@@ -267,7 +268,7 @@ describe('Narrowing a connected app', () => {
     expect(response.status).toBe(200);
     const { connected_app: narrowed } = (await response.json()) as { connected_app: ConnectedAppJson };
     expect(narrowed).toEqual(await onlyAppOf(session));
-    expect(narrowed.scope).toBe('selection');
+    expect(narrowed.scope).toBe('project');
     const client = await connectClient({ era: ClientEra.Modern, token: tokens.access_token, serve: serveOAuthMcp });
     const names = (await client.listTools()).tools.map((tool) => tool.name);
     expect(names).not.toContain('create_workspace');

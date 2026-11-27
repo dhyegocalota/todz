@@ -13,6 +13,8 @@ export enum GrantShape {
   Selection = 'selection',
 }
 
+export const WORKSPACE_PROJECT_SEPARATOR = ' › ';
+
 export type WorkspaceScope = { kind: GrantScopeKind.Workspace; workspaceId: string };
 
 export type ProjectScope = { kind: GrantScopeKind.Project; projectId: string };

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { HttpStatus } from './http-status';
 import { recordGrantDeletions } from './oauth/oauth-grant-deletion';
 import { GrantDeletionReason } from './oauth/oauth-grant-deletion-reason';
-import { GrantScopeKind, GrantScopesSchema, grantShapeOf } from './oauth/oauth-grant-scope';
+import { GrantScopeKind, GrantScopesSchema, GrantShape, WORKSPACE_PROJECT_SEPARATOR } from './oauth/oauth-grant-scope';
 import {
   type ConnectedAppRecord,
   type NamedScope,
@@ -21,6 +21,7 @@ import { OwnerRoute, RouteParam } from './owner-routes';
 type ConnectedAppRoute = OwnerRoute.ListConnectedApps | OwnerRoute.NarrowApp | OwnerRoute.DisconnectApp;
 
 const NarrowBodySchema = z.object({ scopes: GrantScopesSchema });
+const LEGACY_SELECTION_SEPARATOR = '; ';
 
 function scopeJson(scope: NamedScope) {
   if (scope.kind === GrantScopeKind.Workspace) {
@@ -38,21 +39,43 @@ function scopeJson(scope: NamedScope) {
   return { kind: scope.kind };
 }
 
-function singleProjectOf(scopes: NamedScope[]): { id: string; name: string } | null {
-  const [only] = scopes;
-  if (scopes.length !== 1 || only?.kind !== GrantScopeKind.Project) return null;
-  return { id: only.projectId, name: only.projectName };
+type LegacyScope = { scope: GrantShape.Owner | GrantShape.Project; projectId: string | null; projectName: string | null };
+
+function targetIdOf(scope: NamedScope): string {
+  if (scope.kind === GrantScopeKind.Workspace) return scope.workspaceId;
+  if (scope.kind === GrantScopeKind.Project) return scope.projectId;
+  throw new Error('the account names no target');
+}
+
+function selectionLabelOf(scope: NamedScope): string {
+  if (scope.kind === GrantScopeKind.Workspace) return scope.workspaceName;
+  if (scope.kind === GrantScopeKind.Project) return `${scope.workspaceName}${WORKSPACE_PROJECT_SEPARATOR}${scope.projectName}`;
+  throw new Error('the account is never part of a selection');
+}
+
+// NB ADR 0126: the app 0.2.8 knows only owner and project, so a selection lists as one project named after its scopes; newer apps read scopes.
+function legacyScopeOf(scopes: NamedScope[]): LegacyScope {
+  const [first] = scopes;
+  if (first === undefined) throw new Error('a listed grant holds at least one scope');
+  if (first.kind === GrantScopeKind.Account) return { scope: GrantShape.Owner, projectId: null, projectName: null };
+  const isSingleProject = scopes.length === 1 && first.kind === GrantScopeKind.Project;
+  if (isSingleProject) return { scope: GrantShape.Project, projectId: first.projectId, projectName: first.projectName };
+  return {
+    scope: GrantShape.Project,
+    projectId: targetIdOf(first),
+    projectName: scopes.map(selectionLabelOf).join(LEGACY_SELECTION_SEPARATOR),
+  };
 }
 
 function connectedAppJson(app: ConnectedAppRecord) {
-  const project = singleProjectOf(app.scopes);
+  const legacy = legacyScopeOf(app.scopes);
   return {
     id: app.id,
     client_name: app.clientName,
     redirect_host: redirectHostOf(app.redirectUri),
-    scope: grantShapeOf(app.scopes.map(grantScopeOfNamed)),
-    project_id: project === null ? null : project.id,
-    project_name: project === null ? null : project.name,
+    scope: legacy.scope,
+    project_id: legacy.projectId,
+    project_name: legacy.projectName,
     scopes: app.scopes.map(scopeJson),
     created_at: app.createdAt,
     last_used_at: app.lastUsedAt,

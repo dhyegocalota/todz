@@ -43,14 +43,13 @@ import {
   CONSENT_WORKSPACE_ID_ATTRIBUTE,
 } from './oauth-consent-script';
 import { OAUTH_COPY_BY_LANGUAGE, type OAuthCopy } from './oauth-copy';
-import { GrantScopeKind } from './oauth-grant-scope';
+import { GrantScopeKind, WORKSPACE_PROJECT_SEPARATOR } from './oauth-grant-scope';
 import type { NamedScope } from './oauth-grant-scope-store';
 import { OAuthDecision, OAuthField, OAuthPath } from './oauth-paths';
 import { isLoopbackRedirectUri, redirectHostOf, redirectOriginOf } from './oauth-redirect-uri';
 import { OAuthScope, wordOfScope } from './oauth-scope';
 
 const TITLE_ID = 'oauth-title';
-const WORKSPACE_PROJECT_SEPARATOR = ' › ';
 const EMAIL_ID = 'oauth-email';
 const CODE_ID = 'oauth-code';
 const HOLDINGS_SEPARATOR = '; ';
