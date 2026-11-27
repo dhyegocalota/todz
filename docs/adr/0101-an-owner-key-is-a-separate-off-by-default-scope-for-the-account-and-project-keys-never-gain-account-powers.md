@@ -1,6 +1,6 @@
 # 0101. An owner key is a separate, off-by-default scope for the account, and project keys never gain account powers
 
-- Status: Accepted
+- Status: Superseded by [0111](0111-api-keys-are-removed-and-an-mcp-client-connects-only-through-oauth.md); was: Accepted
 - Date: 2026-11-26
 - Deciders: Dhyego Calota (owner); Claude (advisor). The loop's call under the owner's standing instruction to decide every call, and the owner's request of 2026-11-26: every action the app takes, an agent takes over MCP.
 - Inspired by: [ADR 0019](0019-mcp-keys-are-prefixed-and-shown-once.md), [ADR 0014](0014-credentials-are-stored-as-sha-256-digests.md), [ADR 0093](0093-deleting-a-workspace-or-project-is-a-hard-delete-behind-a-typed-name-confirmation.md), [ADR 0073](0073-signed-in-writes-have-quotas-and-signed-in-routes-a-rate-limit-per-owner-and-per-key.md)
