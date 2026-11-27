@@ -10,7 +10,8 @@ export const PAGE_THEME_STYLE = `:root[data-theme=light]{color-scheme:light}
 
 export function htmlTagOf({ language, theme }: PageAppearance): string {
   const themeAttribute = theme === Theme.System ? '' : ` data-theme="${theme}"`;
-  return `<html lang="${LANGUAGE_PROFILES[language].htmlLang}"${themeAttribute}>`;
+  const { htmlLang, direction } = LANGUAGE_PROFILES[language];
+  return `<html lang="${htmlLang}" dir="${direction}"${themeAttribute}>`;
 }
 
 export function colorSchemeMetaOf(theme: Theme): string {

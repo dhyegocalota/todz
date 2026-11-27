@@ -50,7 +50,7 @@ function footerLinkNodes(footerLink: FooterLink | undefined): ReactNode[] {
 export function EmailLayout(props: EmailLayoutProps): ReactElement {
   return createElement(
     Html,
-    { lang: LANGUAGE_PROFILES[props.language].htmlLang },
+    { lang: LANGUAGE_PROFILES[props.language].htmlLang, dir: LANGUAGE_PROFILES[props.language].direction },
     createElement(
       Head,
       null,
@@ -62,7 +62,12 @@ export function EmailLayout(props: EmailLayoutProps): ReactElement {
     createElement(Preview, null, props.preview),
     createElement(
       Body,
-      { className: EmailClassName.Page, style: BODY_STYLE },
+      {
+        className: EmailClassName.Page,
+        style: BODY_STYLE,
+        dir: LANGUAGE_PROFILES[props.language].direction,
+        lang: LANGUAGE_PROFILES[props.language].htmlLang,
+      },
       createElement(
         Section,
         { className: EmailClassName.Page, style: PAGE_STYLE, bgcolor: PAGE_COLOR },

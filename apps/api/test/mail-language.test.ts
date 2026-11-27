@@ -16,7 +16,8 @@ const STOP_TOKEN = 'ab'.repeat(32);
 const LANGUAGES = Object.values(Language);
 
 function htmlTagOf(language: Language): string {
-  return `<html dir="ltr" lang="${LANGUAGE_PROFILES[language].htmlLang}">`;
+  const { direction, htmlLang } = LANGUAGE_PROFILES[language];
+  return `<html dir="${direction}" lang="${htmlLang}">`;
 }
 
 const LINK_MAILS: [string, (language: Language) => EmailMessage][] = [

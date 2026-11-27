@@ -413,7 +413,7 @@ describe('POST /language', () => {
 describe('the theme', () => {
   test('renders no data-theme and light dark for the system theme', async () => {
     const html = await (await visit({ path: '/' })).text();
-    expect(html).toContain('<html lang="en">');
+    expect(html).toContain('<html lang="en" dir="ltr">');
     expect(html).toContain('<meta name="color-scheme" content="light dark">');
   });
 
@@ -422,7 +422,7 @@ describe('the theme', () => {
     ['light', 'light'],
   ])('renders data-theme and color-scheme %s for a cookie of %s', async (theme, scheme) => {
     const html = await (await visit({ path: '/', headers: { Cookie: `${THEME_COOKIE}=${theme}` } })).text();
-    expect(html).toContain(`<html lang="en" data-theme="${theme}">`);
+    expect(html).toContain(`<html lang="en" dir="ltr" data-theme="${theme}">`);
     expect(html).toContain(`<meta name="color-scheme" content="${scheme}">`);
     expect(html).not.toContain('<meta name="color-scheme" content="light dark">');
   });
@@ -443,7 +443,7 @@ describe('the theme', () => {
 
   test('ignores a cookie outside the enum', async () => {
     const html = await (await visit({ path: '/', headers: { Cookie: `${THEME_COOKIE}=sepia` } })).text();
-    expect(html).toContain('<html lang="en">');
+    expect(html).toContain('<html lang="en" dir="ltr">');
   });
 
   test('renders it on every language and on the admin card', async () => {
@@ -451,7 +451,7 @@ describe('the theme', () => {
       ['/ja/', '/pt-br/cloud-queue', '/admin'].map((path) => visit({ path, headers: { Cookie: `${THEME_COOKIE}=dark` } })),
     );
     const htmls = await Promise.all(pages.map((page) => page.text()));
-    htmls.forEach((html) => expect(html).toMatch(/<html lang="[^"]+" data-theme="dark">/));
+    htmls.forEach((html) => expect(html).toMatch(/<html lang="[^"]+" dir="(?:ltr|rtl)" data-theme="dark">/));
   });
 
   test('shows the three options and marks the current one', async () => {
@@ -566,7 +566,7 @@ describe('the pages without a public URL', () => {
 
   test.each(PRIVATE_PAGES)('$name takes the theme cookie too', async ({ path, origin }) => {
     const html = await (await visit({ path, origin, headers: { Cookie: `${THEME_COOKIE}=light` } })).text();
-    expect(html).toMatch(/<html lang="[^"]+" data-theme="light">/);
+    expect(html).toMatch(/<html lang="[^"]+" dir="(?:ltr|rtl)" data-theme="light">/);
     expect(html).toContain('<meta name="color-scheme" content="light">');
   });
 
