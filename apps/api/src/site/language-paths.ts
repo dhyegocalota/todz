@@ -1,9 +1,15 @@
 import { LANGUAGE_PROFILES, Language } from '@todz/types';
-import { CLOUD_QUEUE_PATH, LANDING_PATH } from './site-urls';
+import { CLOUD_QUEUE_PATH, CONTENT_ID, DAY_CARD_ID, LANDING_PATH, WAYS_ID } from './site-urls';
 
 export type SitePage = { language: Language; path: string };
 
 export const PUBLIC_PAGE_PATHS = [LANDING_PATH, CLOUD_QUEUE_PATH];
+
+const ANCHORS_OF_PATH = new Map<string, string[]>([[LANDING_PATH, [CONTENT_ID, WAYS_ID, DAY_CARD_ID]]]);
+
+export function isAnchorOfPath({ path, anchor }: { path: string; anchor: string }): boolean {
+  return ANCHORS_OF_PATH.get(path)?.includes(anchor) === true;
+}
 
 const TRAILING_SLASH = '/';
 

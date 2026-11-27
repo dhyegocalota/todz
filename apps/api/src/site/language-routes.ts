@@ -15,10 +15,12 @@ import { isSameOriginRequest } from '../same-origin';
 import { OAuthPath } from '../oauth/oauth-paths';
 import { AdminPath } from './admin-paths';
 import { isCrawlerRequest } from './crawler';
-import { pageOfPathname, publicPathOf } from './language-paths';
+import { isAnchorOfPath, pageOfPathname, publicPathOf } from './language-paths';
 import { SitePath } from './site-paths';
 import { LANDING_PATH } from './site-urls';
 
+const ANCHOR_PREFIX = '#';
+const ANCHOR_PATTERN = /^#[a-z0-9-]{1,64}$/;
 const PLACEHOLDER_ORIGIN = 'https://placeholder.invalid';
 const PATH_START = '/';
 const UNSAFE_RETURN_START = ['//', '/\\'];
@@ -34,13 +36,22 @@ const PRIVATE_RETURN_PATHS = new Set<string>([
   OAuthPath.LinkPage,
 ]);
 
+function anchorSuffixOf({ hash, path }: { hash: string; path: string }): string {
+  const isValidAnchor = ANCHOR_PATTERN.test(hash) && isAnchorOfPath({ path, anchor: hash.slice(ANCHOR_PREFIX.length) });
+  if (!isValidAnchor) return '';
+  return hash;
+}
+
 function returnTargetOf({ returned, language }: { returned: string | null; language: Language | null }): string | null {
   if (returned === null || !returned.startsWith(PATH_START)) return null;
   if (UNSAFE_RETURN_START.some((start) => returned.startsWith(start))) return null;
   const url = new URL(returned, PLACEHOLDER_ORIGIN);
   if (url.origin !== PLACEHOLDER_ORIGIN) return null;
   const page = pageOfPathname({ pathname: url.pathname });
-  if (page !== null) return `${publicPathOf({ language: language === null ? page.language : language, path: page.path })}${url.search}`;
+  if (page !== null) {
+    const pagePath = publicPathOf({ language: language === null ? page.language : language, path: page.path });
+    return `${pagePath}${url.search}${anchorSuffixOf({ hash: url.hash, path: page.path })}`;
+  }
   if (PRIVATE_RETURN_PATHS.has(url.pathname)) return `${url.pathname}${url.search}`;
   return null;
 }

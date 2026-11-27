@@ -5,6 +5,11 @@ export const SWITCH_SCRIPT = `{
   const root = document.documentElement;
   const scheme = document.querySelector('meta[name="color-scheme"]');
   const securePart = location.protocol === 'https:' ? '; Secure' : '';
+  document.querySelectorAll('.language-form').forEach((form) => {
+    form.addEventListener('submit', () => {
+      form.elements['${SitePath.ReturnField}'].value = location.pathname + location.search + location.hash;
+    });
+  });
   document.querySelectorAll('.theme-form').forEach((form) => {
     form.addEventListener('submit', (event) => {
       const button = event.submitter;

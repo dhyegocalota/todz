@@ -10,10 +10,9 @@ import { OPEN_GRAPH_IMAGE, SITE_ICONS, SiteIcon } from './site-icons';
 import { SITE_STYLE } from './site-style';
 import { SWITCH_SCRIPT } from './site-switch-script';
 import { starPillHtml } from './star-pill';
-import { DOCS_INSTALL_PAGE, DOCS_SELF_HOST_PAGE, DiscoveryPath, SITE_URL, docsUrlOf, LANDING_PATH } from './site-urls';
+import { CONTENT_ID, DOCS_INSTALL_PAGE, DOCS_SELF_HOST_PAGE, DiscoveryPath, SITE_URL, docsUrlOf, LANDING_PATH } from './site-urls';
 
-export { LANDING_PATH };
-export const CONTENT_ID = 'content';
+export { CONTENT_ID, LANDING_PATH };
 const LIGHT_THEME_COLOR = '#F2F4FA';
 const OPEN_GRAPH_TYPE = 'website';
 const TWITTER_CARD = 'summary_large_image';

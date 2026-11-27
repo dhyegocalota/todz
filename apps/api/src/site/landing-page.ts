@@ -13,14 +13,12 @@ import { CONTENT_ID, LANDING_PATH, SitePageKind, siteDocumentHtml } from './site
 import { SITE_STYLE, cropClassOf } from './site-style';
 import { STAR_COUNT_SCRIPT } from './star-count-script';
 import { starPillHtml } from './star-pill';
-import { DOCS_INSTALL_PAGE, DOCS_SELF_HOST_PAGE, DOWNLOAD_PATH, DiscoveryPath, docsUrlOf } from './site-urls';
+import { DAY_CARD_ID, DOCS_INSTALL_PAGE, DOCS_SELF_HOST_PAGE, DOWNLOAD_PATH, DiscoveryPath, WAYS_ID, docsUrlOf } from './site-urls';
 import { WEBMCP_SCRIPT } from './webmcp-script';
 
 const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const SRCSET_LIST_SEPARATOR = ', ';
 const WORD_SEPARATOR = ' ';
-const WAYS_ID = 'ways';
-const DAY_CARD_ID = 'proactive-day';
 const LINK_ARROW = '→';
 
 const MARKDOWN_ALTERNATE_LINK = `<${DiscoveryPath.LandingMarkdown}>; rel="alternate"; type="${MARKDOWN_MEDIA_TYPE}"`;

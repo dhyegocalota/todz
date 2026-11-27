@@ -56,6 +56,14 @@ test.describe('the language selector', () => {
       await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     });
 
+    test('keeps the scroll target when it switches language', async ({ page }) => {
+      await page.goto('/ja/#ways');
+      await page.locator('summary.language-summary').click();
+      await page.getByRole('button', { name: LANGUAGE_PROFILES[Language.PortugueseBrazil].nativeName }).click();
+      await expect(page).toHaveURL(/\/pt-br\/#ways$/);
+      await expect(page.locator('#ways')).toBeInViewport();
+    });
+
     test('lists the eight native names', async ({ page }) => {
       await page.goto(LANDING_PATH);
       await page.locator('summary.language-summary').click();
