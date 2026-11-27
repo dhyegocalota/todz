@@ -2,6 +2,7 @@ import { env, exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { HttpStatus } from '../src/http-status';
 import { countingEnv } from './counting-namespace';
+import { seedProjectToken } from './directory-seed';
 import { type OwnerCall, ownerCall, serveOwnerCall, signInOwner } from './owner-client';
 
 const MCP_URL = 'http://localhost:8787/mcp';
@@ -13,10 +14,10 @@ const OWNER_NAME = 'Work';
 const INBOX_NAME = 'Inbox';
 const SECOND_PROJECT_NAME = 'Second';
 
-type Target = { workspaceId: string; projectId: string; inboxId: string; keyId: string };
+type Target = { workspaceId: string; projectId: string; inboxId: string };
 type Attack = { name: string; call: ({ target, token }: { target: Target; token: string }) => OwnerCall };
 type Answer = { status: number; body: string; contentType: string | null };
-type SeededOwner = { token: string; target: Target; keySecret: string };
+type SeededOwner = { token: string; target: Target; accessToken: string };
 
 const ATTACKS: Attack[] = [
   {
@@ -110,16 +111,10 @@ const ATTACKS: Attack[] = [
     name: 'WatchChanges without the upgrade header',
     call: ({ target, token }) => ({ method: 'GET', path: `/owner/projects/${target.projectId}/socket`, token }),
   },
-  { name: 'ListKeys', call: ({ target, token }) => ({ method: 'GET', path: `/owner/projects/${target.projectId}/keys`, token }) },
-  { name: 'IssueKey', call: ({ target, token }) => ({ method: 'POST', path: `/owner/projects/${target.projectId}/keys`, token }) },
-  {
-    name: 'RevokeKey',
-    call: ({ target, token }) => ({ method: 'DELETE', path: `/owner/projects/${target.projectId}/keys/${target.keyId}`, token }),
-  },
 ];
 
 function neverIssuedTarget(): Target {
-  return { workspaceId: crypto.randomUUID(), projectId: crypto.randomUUID(), inboxId: crypto.randomUUID(), keyId: crypto.randomUUID() };
+  return { workspaceId: crypto.randomUUID(), projectId: crypto.randomUUID(), inboxId: crypto.randomUUID() };
 }
 
 async function seededOwner(): Promise<SeededOwner> {
@@ -142,9 +137,8 @@ async function seededOwner(): Promise<SeededOwner> {
     body: { tasks: [{ title: ORIGINAL_TITLE }] },
   });
   expect(tasksResponse.status).toBe(HttpStatus.Created);
-  const keyResponse = await ownerCall({ method: 'POST', path: `/owner/projects/${project.id}/keys`, token });
-  const { key, secret } = await keyResponse.json<{ key: { id: string }; secret: string }>();
-  return { token, target: { workspaceId: workspace.id, projectId: project.id, inboxId: inbox.id, keyId: key.id }, keySecret: secret };
+  const accessToken = await seedProjectToken({ projectId: project.id });
+  return { token, target: { workspaceId: workspace.id, projectId: project.id, inboxId: inbox.id }, accessToken };
 }
 
 async function answerOf(response: Response): Promise<Answer> {
@@ -156,7 +150,7 @@ async function mcpStatusWith(secret: string): Promise<number> {
   return response.status;
 }
 
-describe('another owner attacking a workspace, a project or a key', () => {
+describe('another owner attacking a workspace or a project', () => {
   test.each(ATTACKS)('$name answers exactly what ids that never existed answer and opens no Durable Object', async ({ call }) => {
     const alice = await seededOwner();
     const bob = await signInOwner();
@@ -185,7 +179,7 @@ describe('another owner attacking a workspace, a project or a key', () => {
     expect(new Set(bodies)).toEqual(new Set([NOT_FOUND_BODY]));
   });
 
-  test('leaves the names, the tasks, the keys and the MCP key of the victim untouched', async () => {
+  test('leaves the names, the tasks and the MCP access token of the victim untouched', async () => {
     const alice = await seededOwner();
     const bob = await signInOwner();
     await Promise.all(ATTACKS.map(({ call }) => ownerCall(call({ target: alice.target, token: bob.token }))));
@@ -204,32 +198,7 @@ describe('another owner attacking a workspace, a project or a key', () => {
       { number: 1, title: ORIGINAL_TITLE, state: 'open' },
     ]);
     expect(changes.cursor).toBe(1);
-    const keys = await (
-      await ownerCall({ method: 'GET', path: `/owner/projects/${alice.target.projectId}/keys`, token: alice.token })
-    ).json<{
-      keys: { id: string }[];
-    }>();
-    expect(keys.keys.map(({ id }) => id)).toEqual([alice.target.keyId]);
-    expect(await mcpStatusWith(alice.keySecret)).not.toBe(HttpStatus.Unauthorized);
-  });
-
-  test('revoking the key id of another owner under the attacker own project answers 404 and keeps the key', async () => {
-    const alice = await seededOwner();
-    const bob = await seededOwner();
-    const response = await ownerCall({
-      method: 'DELETE',
-      path: `/owner/projects/${bob.target.projectId}/keys/${alice.target.keyId}`,
-      token: bob.token,
-    });
-    expect(response.status).toBe(HttpStatus.NotFound);
-    expect(await response.text()).toBe(NOT_FOUND_BODY);
-    const keys = await (
-      await ownerCall({ method: 'GET', path: `/owner/projects/${alice.target.projectId}/keys`, token: alice.token })
-    ).json<{
-      keys: { id: string }[];
-    }>();
-    expect(keys.keys.map(({ id }) => id)).toEqual([alice.target.keyId]);
-    expect(await mcpStatusWith(alice.keySecret)).not.toBe(HttpStatus.Unauthorized);
+    expect(await mcpStatusWith(alice.accessToken)).not.toBe(HttpStatus.Unauthorized);
   });
 
   test('lists none of the workspaces of another owner', async () => {
@@ -243,18 +212,18 @@ describe('another owner attacking a workspace, a project or a key', () => {
 });
 
 describe('credentials of the other kind', () => {
-  test('an MCP key as an owner session answers 401 with an empty body', async () => {
+  test('an MCP access token as an owner session answers 401 with an empty body', async () => {
     const alice = await seededOwner();
-    const response = await ownerCall({ method: 'GET', path: '/owner/workspaces', token: alice.keySecret });
+    const response = await ownerCall({ method: 'GET', path: '/owner/workspaces', token: alice.accessToken });
     expect(response.status).toBe(HttpStatus.Unauthorized);
     expect(await response.text()).toBe('');
   });
 
-  test('an owner session as an MCP key answers 401 with an empty body', async () => {
+  test('an owner session as an MCP access token answers 401 and points to the OAuth connect docs', async () => {
     const alice = await seededOwner();
     const response = await exports.default.fetch(MCP_URL, { method: 'POST', headers: { Authorization: `Bearer ${alice.token}` } });
     expect(response.status).toBe(HttpStatus.Unauthorized);
-    expect(await response.text()).toBe('');
+    expect(await response.json()).toMatchObject({ error: 'invalid_token' });
   });
 });
 

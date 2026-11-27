@@ -1,6 +1,6 @@
 import { AgentClient, agentSetupOf } from './agent-setup';
 import { DISCOVERY_COPY, DOCS_PAGES } from './discovery-copy';
-import { KEY_PLACEHOLDER, scriptJson } from './site-constants';
+import { scriptJson } from './site-constants';
 import { DOCS_URL, MCP_URL } from './site-urls';
 import { WEBMCP_COPY, WebMcpToolName } from './webmcp-copy';
 
@@ -58,7 +58,7 @@ const OVERVIEW_TEXT = [
 const SETUP_OF_CLIENT = Object.fromEntries(
   Object.values(AgentClient).map((client) => [
     client,
-    [agentSetupOf({ client, serverUrl: MCP_URL, key: KEY_PLACEHOLDER }), WEBMCP_COPY.keyNote].join(PARAGRAPH_SEPARATOR),
+    [agentSetupOf({ client, serverUrl: MCP_URL }), WEBMCP_COPY.signInNote].join(PARAGRAPH_SEPARATOR),
   ]),
 );
 

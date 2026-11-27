@@ -50,7 +50,6 @@ const STATUS_OF_LIMIT: Record<FairUseLimit, HttpStatus> = {
   [FairUseLimit.Workspaces]: HttpStatus.Conflict,
   [FairUseLimit.Projects]: HttpStatus.Conflict,
   [FairUseLimit.OpenTasks]: HttpStatus.Conflict,
-  [FairUseLimit.LiveKeys]: HttpStatus.Conflict,
   [FairUseLimit.DailyWrites]: HttpStatus.TooManyRequests,
   [FairUseLimit.StoredBytes]: HttpStatus.Conflict,
   [FairUseLimit.DailySignUps]: HttpStatus.TooManyRequests,

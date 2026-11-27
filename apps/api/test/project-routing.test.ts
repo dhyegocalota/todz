@@ -6,70 +6,87 @@ import {
   type SessionOwner,
   findOwnedProjectId,
   findOwnedWorkspaceId,
-  openKeyProject,
+  openOAuthAccess,
   openOwnedProject,
   resolveSessionOwner,
 } from '../src/project-routing';
 import { setOwnerSuspension } from '../src/owner-usage-store';
 import { countingEnv } from './counting-namespace';
-import { seedKey, seedLiveOwner, seedOwner, seedProject, seedSession, seedWorkspace } from './directory-seed';
+import { OAuthScope } from '../src/oauth/oauth-scope';
+import {
+  revokeToken,
+  seedLiveOwner,
+  seedOwner,
+  seedOwnerToken,
+  seedProject,
+  seedProjectToken,
+  seedSession,
+  seedWorkspace,
+} from './directory-seed';
 import { AGENT_ACTOR, CLOCK_NOW, TODAY, draftOf, openTasksFilter, unwrap } from './task-fixtures';
 
 const EMPTY_SECRET = '';
 const BLANK_SECRET = '   ';
 const SAO_PAULO_TIME_ZONE = 'America/Sao_Paulo';
-const KEY_HINT = 'seed';
 
 function newSecret(): string {
   return crypto.randomUUID();
 }
 
-describe('openKeyProject', () => {
-  test('a seeded key opens its project, and a task added through it is read back through the owner', async () => {
+describe('openOAuthAccess', () => {
+  test('a project token opens its project, and a task added through it is read back through the owner', async () => {
     const ownerId = await seedOwner();
     const projectId = await seedProject({ ownerId });
-    const secret = newSecret();
-    await seedKey({ projectId, secret });
-    const keyProject = await openKeyProject({ env, secret });
-    if (keyProject === null) throw new Error('the key should open its project');
+    const secret = await seedProjectToken({ projectId });
+    const access = await openOAuthAccess({ env, secret, now: CLOCK_NOW });
+    if (access === null || access.scope !== OAuthScope.Project) throw new Error('the token should open its project');
     unwrap(
-      await keyProject.project.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [draftOf('Through the key')] }),
+      await access.grantProject.project.addTasks({
+        openTasksMax: PROJECT_OPEN_TASKS_MAX,
+        actor: AGENT_ACTOR,
+        drafts: [draftOf('Through the token')],
+      }),
     );
     const ownerStub = await openOwnedProject({ env, owner: await seedLiveOwner({ ownerId }), projectId });
     if (ownerStub === null) throw new Error('the owner should open the project');
     const listed = unwrap(await ownerStub.listTasks({ today: TODAY, filter: openTasksFilter() }));
-    expect(listed.tasks.map((task) => task.title)).toEqual(['Through the key']);
+    expect(listed.tasks.map((task) => task.title)).toEqual(['Through the token']);
   });
 
-  test('a key names its digest and its owner time zone', async () => {
+  test('an owner token opens the owner and no project', async () => {
+    const ownerId = await seedOwner();
+    const secret = await seedOwnerToken({ ownerId });
+    expect(await openOAuthAccess({ env, secret, now: CLOCK_NOW })).toMatchObject({ scope: OAuthScope.Owner, owner: { ownerId } });
+  });
+
+  test('a token names its owner time zone and agent nudge', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner(SAO_PAULO_TIME_ZONE) });
-    const secret = newSecret();
-    await seedKey({ projectId, secret });
-    expect(await openKeyProject({ env, secret })).toMatchObject({
-      keyDigest: await digestCredential(secret),
-      timeZone: SAO_PAULO_TIME_ZONE,
-      agentNudge: false,
+    const secret = await seedProjectToken({ projectId });
+    expect(await openOAuthAccess({ env, secret, now: CLOCK_NOW })).toMatchObject({
+      grantProject: { timeZone: SAO_PAULO_TIME_ZONE, agentNudge: false },
     });
   });
 
-  test('an unknown secret and a revoked key open nothing', async () => {
+  test('an unknown secret, a revoked token and an expired token open nothing', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
-    const revokedSecret = newSecret();
-    await seedKey({ projectId, secret: revokedSecret, revokedAt: CLOCK_NOW });
-    expect(await openKeyProject({ env, secret: newSecret() })).toBeNull();
-    expect(await openKeyProject({ env, secret: revokedSecret })).toBeNull();
+    const revokedSecret = await seedProjectToken({ projectId });
+    await revokeToken(revokedSecret);
+    const expiredSecret = await seedProjectToken({ projectId, expiresAt: CLOCK_NOW });
+    expect(await openOAuthAccess({ env, secret: newSecret(), now: CLOCK_NOW })).toBeNull();
+    expect(await openOAuthAccess({ env, secret: revokedSecret, now: CLOCK_NOW })).toBeNull();
+    expect(await openOAuthAccess({ env, secret: expiredSecret, now: CLOCK_NOW })).toBeNull();
   });
 
-  test('an empty secret opens nothing even when a key row holds its digest', async () => {
+  test('an empty secret opens nothing even when a token row holds its digest', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
-    await seedKey({ projectId, secret: EMPTY_SECRET });
-    expect(await openKeyProject({ env, secret: EMPTY_SECRET })).toBeNull();
+    await seedProjectToken({ projectId, secret: EMPTY_SECRET });
+    expect(await openOAuthAccess({ env, secret: EMPTY_SECRET, now: CLOCK_NOW })).toBeNull();
   });
 
   test('a refusal addresses no Durable Object', async () => {
     const { countedEnv, addressingCalls } = countingEnv();
-    expect(await openKeyProject({ env: countedEnv, secret: newSecret() })).toBeNull();
-    expect(await openKeyProject({ env: countedEnv, secret: EMPTY_SECRET })).toBeNull();
+    expect(await openOAuthAccess({ env: countedEnv, secret: newSecret(), now: CLOCK_NOW })).toBeNull();
+    expect(await openOAuthAccess({ env: countedEnv, secret: EMPTY_SECRET, now: CLOCK_NOW })).toBeNull();
     expect(addressingCalls).toEqual([]);
   });
 });
@@ -214,25 +231,21 @@ describe('findOwnedWorkspaceId', () => {
 describe('a secret that is not a usable string', () => {
   test('a whitespace-only secret opens nothing even when rows hold its digest', async () => {
     const projectId = await seedProject({ ownerId: await seedOwner() });
-    await seedKey({ projectId, secret: BLANK_SECRET });
+    await seedProjectToken({ projectId, secret: BLANK_SECRET });
     await seedSession({ ownerId: await seedOwner(), secret: BLANK_SECRET, expiresAt: CLOCK_NOW + 1 });
     const { countedEnv, addressingCalls } = countingEnv();
-    expect(await openKeyProject({ env: countedEnv, secret: BLANK_SECRET })).toBeNull();
+    expect(await openOAuthAccess({ env: countedEnv, secret: BLANK_SECRET, now: CLOCK_NOW })).toBeNull();
     expect(await resolveSessionOwner({ env: countedEnv, secret: BLANK_SECRET, now: CLOCK_NOW })).toBeNull();
     expect(addressingCalls).toEqual([]);
   });
 
   test('a secret that is not a string opens nothing even when rows hold the digest of nothing', async () => {
-    const projectId = await seedProject({ ownerId: await seedOwner() });
     const emptyDigest = await digestCredential(EMPTY_SECRET);
-    await env.DIRECTORY.prepare('INSERT OR IGNORE INTO project_keys (digest, id, hint, project_id, created_at) VALUES (?, ?, ?, ?, ?)')
-      .bind(emptyDigest, crypto.randomUUID(), KEY_HINT, projectId, CLOCK_NOW)
-      .run();
     await env.DIRECTORY.prepare('INSERT OR IGNORE INTO sessions (digest, owner_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
       .bind(emptyDigest, await seedOwner(), CLOCK_NOW, CLOCK_NOW + 1)
       .run();
     const missingSecret = undefined as unknown as string;
-    expect(await openKeyProject({ env, secret: missingSecret })).toBeNull();
+    expect(await openOAuthAccess({ env, secret: missingSecret, now: CLOCK_NOW })).toBeNull();
     expect(await resolveSessionOwner({ env, secret: missingSecret, now: CLOCK_NOW })).toBeNull();
   });
 });

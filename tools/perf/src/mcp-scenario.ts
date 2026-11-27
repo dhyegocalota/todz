@@ -9,7 +9,7 @@ export enum McpEra {
   Modern = 'modern',
 }
 
-export type McpAccess = { origin: string; key: string; era: McpEra; fetch: typeof fetch };
+export type McpAccess = { origin: string; token: string; era: McpEra; fetch: typeof fetch };
 
 export type ListedTask = { number: number; title: string };
 
@@ -40,11 +40,11 @@ function methodOf({ input, init }: { input: Parameters<typeof fetch>[0]; init: R
   return DEFAULT_METHOD;
 }
 
-async function connectedClient({ origin, key, era, fetch }: McpAccess): Promise<Client> {
+async function connectedClient({ origin, token, era, fetch }: McpAccess): Promise<Client> {
   const client = new Client({ name: CLIENT_NAME, version: CLIENT_VERSION }, CLIENT_OPTIONS_OF_ERA[era]);
   const transport = new StreamableHTTPClientTransport(new URL(`${origin}/mcp`), {
     fetch,
-    requestInit: { headers: { Authorization: `Bearer ${key}` } },
+    requestInit: { headers: { Authorization: `Bearer ${token}` } },
   });
   await client.connect(transport);
   return client;

@@ -4,7 +4,7 @@ import { DISCOVERY_COPY } from '../src/site/discovery-copy';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { OPEN_GRAPH_IMAGE, SITE_ICONS } from '../src/site/site-icons';
 import { DOCS_URL, DiscoveryPath, MCP_URL } from '../src/site/site-urls';
-import { WebMcpToolName } from '../src/site/webmcp-copy';
+import { WEBMCP_COPY, WebMcpToolName } from '../src/site/webmcp-copy';
 import {
   BOTH_MODEL_CONTEXT_STUB,
   DOCUMENT_MODEL_CONTEXT_STUB,
@@ -15,7 +15,6 @@ import {
 import { ProjectName } from './project-name';
 
 const LANDING_PATH = '/';
-const KEY_PLACEHOLDER = '<key>';
 const DOCS_PAGE = 'quickstart';
 const TOOL_NAMES = Object.values(WebMcpToolName);
 const DOCS_PAGE_ANSWER = '<!doctype html><title>Quickstart</title>';
@@ -86,10 +85,11 @@ test.describe('WebMCP tools', () => {
     expect(answer).toContain(DOCS_URL);
   });
 
-  test('get_mcp_setup answers the Codex block with the key placeholder', async ({ page }) => {
+  test('get_mcp_setup answers the Codex block and says the client signs in with OAuth', async ({ page }) => {
     await page.goto(LANDING_PATH);
     const answer = await callTool({ page, name: WebMcpToolName.Setup, input: { client: AgentClient.Codex } });
-    expect(answer).toContain(agentSetupOf({ client: AgentClient.Codex, serverUrl: MCP_URL, key: KEY_PLACEHOLDER }));
+    expect(answer).toContain(agentSetupOf({ client: AgentClient.Codex, serverUrl: MCP_URL }));
+    expect(answer).toContain(WEBMCP_COPY.signInNote);
   });
 
   test('open_docs navigates to the docs page', async ({ page }) => {

@@ -1,12 +1,14 @@
-import { MILLISECONDS_PER_HOUR, OWNER_KEY_PREFIX, PROJECT_LIVE_KEYS_MAX } from '@todz/types';
+import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_HOUR, OAUTH_ACCESS_TOKEN_PREFIX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { digestCredential } from '../src/credential-digest';
-import { generateCredentialSecret } from '../src/credential-secret';
-import { type IssuedKey, issueProjectKey } from '../src/project-keys';
+import { base64UrlOf, generateCredentialSecret } from '../src/credential-secret';
+import { OAuthTokenKind } from '../src/oauth/oauth-store';
 import { type SessionOwner, resolveSessionOwner } from '../src/project-routing';
 import { CLOCK_NOW } from './task-fixtures';
 
-const SEEDED_KEY_HINT = 'seed';
+const SEEDED_CLIENT_NAME = 'Claude Code';
+const SEEDED_REDIRECT_URI = 'http://127.0.0.1:33418/callback';
+const CLIENT_IDENTIFIER_BYTE_LENGTH = 32;
 
 export async function seedOwner(timeZone = 'UTC'): Promise<string> {
   const ownerId = crypto.randomUUID();
@@ -63,60 +65,75 @@ export async function seedSiblingProject({ projectId, name }: { projectId: strin
   return siblingId;
 }
 
-export async function seedKey({
-  projectId,
-  secret,
-  revokedAt = null,
-}: {
-  projectId: string;
-  secret: string;
-  revokedAt?: number | null;
-}): Promise<void> {
-  const digest = await digestCredential(secret);
-  await env.DIRECTORY.prepare('INSERT INTO project_keys (digest, id, hint, project_id, created_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(digest, crypto.randomUUID(), SEEDED_KEY_HINT, projectId, CLOCK_NOW, revokedAt)
-    .run();
+type SeededToken = { secret?: string; clientName?: string; expiresAt?: number };
+
+export function accessSecret(): string {
+  return `${OAUTH_ACCESS_TOKEN_PREFIX}${generateCredentialSecret()}`;
 }
 
-export async function seedOwnerKey({ ownerId, revokedAt = null }: { ownerId: string; revokedAt?: number | null }): Promise<string> {
-  const secret = `${OWNER_KEY_PREFIX}${generateCredentialSecret()}`;
-  await env.DIRECTORY.prepare('INSERT INTO owner_keys (digest, id, hint, owner_id, created_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(await digestCredential(secret), crypto.randomUUID(), SEEDED_KEY_HINT, ownerId, CLOCK_NOW, revokedAt)
-    .run();
+async function seedGrant({
+  ownerId,
+  projectId,
+  secret = accessSecret(),
+  clientName = SEEDED_CLIENT_NAME,
+  expiresAt = Math.max(CLOCK_NOW, Date.now()) + MILLISECONDS_PER_DAY,
+}: SeededToken & { ownerId: string; projectId: string | null }): Promise<string> {
+  const clientId = base64UrlOf(crypto.getRandomValues(new Uint8Array(CLIENT_IDENTIFIER_BYTE_LENGTH)));
+  const grantId = crypto.randomUUID();
+  await env.DIRECTORY.batch([
+    env.DIRECTORY.prepare('INSERT INTO oauth_clients (id, name, redirect_uris, created_at, active_at) VALUES (?, ?, ?, ?, ?)').bind(
+      clientId,
+      clientName,
+      JSON.stringify([SEEDED_REDIRECT_URI]),
+      CLOCK_NOW,
+      CLOCK_NOW,
+    ),
+    env.DIRECTORY.prepare(
+      'INSERT INTO oauth_grants (id, client_id, owner_id, project_id, redirect_uri, created_at, last_used_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).bind(grantId, clientId, ownerId, projectId, SEEDED_REDIRECT_URI, CLOCK_NOW, CLOCK_NOW),
+    env.DIRECTORY.prepare('INSERT INTO oauth_tokens (digest, grant_id, kind, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').bind(
+      await digestCredential(secret),
+      grantId,
+      OAuthTokenKind.Access,
+      CLOCK_NOW,
+      expiresAt,
+    ),
+  ]);
   return secret;
 }
 
-export function seedRevokedOwnerKey({ ownerId }: { ownerId: string }): Promise<string> {
-  return seedOwnerKey({ ownerId, revokedAt: CLOCK_NOW });
+export async function seedOwnerToken({ ownerId, ...token }: SeededToken & { ownerId: string }): Promise<string> {
+  return seedGrant({ ownerId, projectId: null, ...token });
 }
 
-export async function issuedKeyOf(issuance: Promise<IssuedKey | null>): Promise<IssuedKey> {
-  const issued = await issuance;
-  if (issued === null) throw new Error('the project is at its cap of live keys');
-  return issued;
+export async function seedProjectToken({ projectId, ...token }: SeededToken & { projectId: string }): Promise<string> {
+  const owner = await env.DIRECTORY.prepare(
+    'SELECT workspaces.owner_id FROM projects JOIN workspaces ON workspaces.id = projects.workspace_id WHERE projects.id = ?',
+  )
+    .bind(projectId)
+    .first<{ owner_id: string }>();
+  if (owner === null) throw new Error('the seeded project should exist');
+  return seedGrant({ ownerId: owner.owner_id, projectId, ...token });
 }
 
-export async function seedIssuedKey(timeZone = 'UTC'): Promise<{ projectId: string; key: string }> {
+export async function seedProjectWithToken({ timeZone = 'UTC', clientName }: { timeZone?: string; clientName?: string } = {}): Promise<{
+  projectId: string;
+  token: string;
+}> {
   const projectId = await seedProject({ ownerId: await seedOwner(timeZone) });
-  const { secret } = await issuedKeyOf(
-    issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }),
-  );
-  return { projectId, key: secret };
+  return { projectId, token: await seedProjectToken({ projectId, clientName }) };
 }
 
-export async function seedNudgedKey(): Promise<{ projectId: string; key: string }> {
+export async function seedNudgedProjectWithToken(): Promise<{ projectId: string; token: string }> {
   const ownerId = await seedOwner();
   await enableAgentNudge({ directory: env.DIRECTORY, ownerId });
   const projectId = await seedProject({ ownerId });
-  const { secret } = await issuedKeyOf(
-    issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }),
-  );
-  return { projectId, key: secret };
+  return { projectId, token: await seedProjectToken({ projectId }) };
 }
 
-export async function revokeKey(key: string): Promise<void> {
-  await env.DIRECTORY.prepare('UPDATE project_keys SET revoked_at = ? WHERE digest = ?')
-    .bind(CLOCK_NOW, await digestCredential(key))
+export async function revokeToken(secret: string): Promise<void> {
+  await env.DIRECTORY.prepare('DELETE FROM oauth_grants WHERE id IN (SELECT grant_id FROM oauth_tokens WHERE digest = ?)')
+    .bind(await digestCredential(secret))
     .run();
 }
 

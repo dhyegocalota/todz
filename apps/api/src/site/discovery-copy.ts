@@ -75,8 +75,8 @@ export const DISCOVERY_COPY = {
   source: `todz is open source under the ${REPOSITORY.licenseName} license: ${REPOSITORY.url}`,
   connect: {
     heading: 'Connect an agent',
-    lead: 'The MCP server supports OAuth: add its URL to your client with no key and sign in in the browser. Keys are the fallback for clients without OAuth. To use a key, add the server to Claude Code with this command; the key comes from Connect an Agent in the app: one key per project.',
-    setupsLink: 'Codex and Cursor setups',
+    lead: 'The MCP server signs clients in with OAuth: add its URL to your client and sign in in the browser. There is no key to copy. Add the server to Claude Code with this command, then run /mcp to sign in.',
+    setupsLink: 'The Codex setup',
   },
   tools: { heading: 'MCP tools', parametersHeading: 'MCP tool parameters' },
   selfHost: {
@@ -93,9 +93,9 @@ export const DISCOVERY_COPY = {
   optional: {
     heading: 'Optional',
     fullLink: 'llms-full.txt',
-    fullNote: 'This file with the Codex and Cursor setups and every tool parameter.',
+    fullNote: 'This file with the Codex setup and every tool parameter.',
   },
-  setups: { codex: 'Codex', cursor: 'Cursor' },
+  setups: { codex: 'Codex' },
   card: { description: 'A to-do list that AI agents and its owner share, over MCP.' },
   representativeQueries: ['Add a task to my todz project', 'What is the next task in my todz project?', 'Mark a task as done in todz'],
 };

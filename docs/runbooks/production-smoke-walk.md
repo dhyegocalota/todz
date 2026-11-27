@@ -90,32 +90,32 @@ Once `version-compat` is deployed, every `/owner/*` request without a `Todz-App-
     Expected: the menu bar number rises by two within a second of each add and falls by one on the completion; the interactive Today widget lists the one remaining task and shows no completed one within one reload (the widget refreshes when the app writes its snapshot, so a few seconds). Completing the remaining task from the widget's checkbox empties the widget and the number.
     If it fails: a number that does not move means the Settings toggle "Show pending count in the menu bar" is off; turn it on and repeat. Name in the run log the surface where a task added with no due date landed (Inbox or Today). A widget that stays stale means the App Group snapshot is not written; quit and reopen the app, and remove and add the widget again; record whether it followed.
 
-10. **Add and complete a task through a real MCP client.** The owner's session issues the key in Connect an Agent for the Inbox of `todz-perf`, copies the Claude Code command the app shows once, and runs it in a terminal (the form is `claude mcp add --transport http todz '<server>' --header 'Authorization: Bearer <key>'`, with `<server>` the production MCP address and `<key>` the key). Run the command from `<scratch>/mcp-walk`, a folder outside the repository (make it first): the app's command has no `--scope`, so Claude Code registers it at local scope, keyed to the directory it ran in, and keeps the key in `~/.claude.json`, never in a file of the repository. Every `claude` call of this step and the next starts with `cd <scratch>/mcp-walk &&`, so each runs in that same directory:
+10. **Add and complete a task through a real MCP client.** The owner adds the server from `<scratch>/mcp-walk`, a folder outside the repository (make it first), because Claude Code registers a server at local scope, keyed to the directory it ran in, and keeps its sign-in in `~/.claude.json`, never in a file of the repository. Every `claude` call of this step and the next starts with `cd <scratch>/mcp-walk &&`, so each runs in that same directory:
+
+    ```bash
+    cd <scratch>/mcp-walk && claude mcp add --transport http todz https://api.todz.app/mcp
+    ```
+
+    Then the owner runs `claude` in that folder, types `/mcp`, chooses todz and signs in: the browser opens the consent screen, the owner picks the Inbox of `todz-perf` (project scope) and approves. Then:
 
     ```bash
     cd <scratch>/mcp-walk && claude mcp list
     cd <scratch>/mcp-walk && claude -p --allowedTools "mcp__todz" "Using the todz MCP server, add a task titled smoke-<short> mcp, then list my tasks, then mark that task done, then list again."
     ```
 
-    Expected: `claude mcp list` shows `todz` connected; the run calls the todz tools for add, list and done (the answer names each call); the task is named after the add, open in the first list and absent from the open list after the done; the Release app shows both changes within a second. The key is never printed outside the owner's terminal.
-    If it fails: a `401` means the key was pasted with a space or was already revoked; issue a new one. A server that does not connect, or a `claude mcp list` that does not show `todz`, usually means the command ran in another directory than this one, or points at another server; remove it with `claude mcp remove todz` from the directory it was added in and run the app's command again. A run that reports the tools as denied means `--allowedTools` was dropped; run it as written. Never retry with a key from another workspace.
+    Expected: `claude mcp list` shows `todz` connected; the run calls the todz tools for add, list and done (the answer names each call); the task is named after the add, open in the first list and absent from the open list after the done; the Release app shows both changes within a second. **Settings** › **Connected apps** lists `Claude Code` for the Inbox of `todz-perf`.
+    If it fails: a consent screen that never appears means the sign-in link was opened in another browser than the one that asked; ask again. A server that does not connect, or a `claude mcp list` that does not show `todz`, usually means the command ran in another directory than this one, or points at another server; remove it with `claude mcp remove todz` from the directory it was added in and add it again. A run that reports the tools as denied means `--allowedTools` was dropped; run it as written. Never approve the account (owner) scope for this walk.
 
-11. **Revoke the key and remove the client.** The owner copies the key to the clipboard. The terminal posts to `/mcp` with it, the header fed from standard input so the key is never in an argument, once before the revoke and once after:
-
-    ```bash
-    pbpaste | sed 's/^/Authorization: Bearer /' | curl -sS -o /dev/null -w "%{http_code}\n" -X POST -H "Content-Type: application/json" -H @- --data '{}' https://api.todz.app/mcp
-    ```
-
-    Then the owner revokes the key in the app's key screen, the same call runs again, and the server is removed from the folder of step 10:
+11. **Disconnect the app and remove the client.** The owner disconnects `Claude Code` in **Settings** › **Connected apps** of the Release app, then the terminal asks the server again and removes it from the folder of step 10:
 
     ```bash
-    pbpaste | sed 's/^/Authorization: Bearer /' | curl -sS -o /dev/null -w "%{http_code}\n" -X POST -H "Content-Type: application/json" -H @- --data '{}' https://api.todz.app/mcp
+    cd <scratch>/mcp-walk && claude -p --allowedTools "mcp__todz" "Using the todz MCP server, list my tasks."
     cd <scratch>/mcp-walk && claude mcp remove todz
     cd <scratch>/mcp-walk && claude mcp list
     ```
 
-    Expected: any status but `401` before the revoke (it proves the clipboard holds the live key); `401` after it; `todz` is gone from the list; the key screen no longer lists it. The owner then clears the clipboard.
-    If it fails: a `401` before the revoke means the clipboard holds something else than the key; copy it again, or the key was already revoked. Any status but `401` after the revoke means it did not reach the server; repeat it in the app and ask again before the walk is recorded. A key still listed in the app is the same failure.
+    Expected: the list call after the disconnect cannot reach the todz tools (the client reports that it needs to sign in again); `todz` is gone from the list; **Connected apps** no longer lists `Claude Code`.
+    If it fails: a list call that still answers after the disconnect means the app was not disconnected; repeat it in the app and ask again before the walk is recorded. An app still listed in **Connected apps** is the same failure.
 
 12. **Check the join path is gone.** Post to it and keep only the status:
 
@@ -129,11 +129,11 @@ Once `version-compat` is deployed, every `/owner/*` request without a `Todz-App-
 13. **Removed by the `remove-waitlist` feature.** The digest cron and its mail are gone, so there is nothing to confirm.
     If it fails: nothing to repair, the step is skipped.
 
-14. **Re-check the performance budgets.** First complete every `smoke-<short>` task of the walk, because the harness refuses to start when the project holds more than 20 open tasks. Then, unless the table of [performance.md](performance.md) already holds a production run dated today (record those rows in this walk's log instead of running again, since a production run is allowed once a day), run its steps 9 to 13 with a new `todz-perf` key issued from the owner's session, one run only, and add the rows to the table of that runbook:
+14. **Re-check the performance budgets.** First complete every `smoke-<short>` task of the walk, because the harness refuses to start when the project holds more than 20 open tasks. Then, unless the table of [performance.md](performance.md) already holds a production run dated today (record those rows in this walk's log instead of running again, since a production run is allowed once a day), run its steps 9 to 13 (the run authorizes itself at the consent screen), one run only, and add the rows to the table of that runbook:
 
-    If its step 10 report prints `open tasks left` above 0, run its step 11 cleanup with the `<run>` identifier it printed before its step 13 revokes the key, because the cleanup needs the key.
+    If its step 10 report prints `open tasks left` above 0, run its step 11 cleanup with the `<run>` identifier it printed before its step 13 disconnects the app, because the cleanup authorizes again and needs the consent screen.
 
-    Expected: the numbers of the bounded production load and of the change feed pass the budgets of that runbook, `open tasks left` is 0, and the key is revoked and deleted at its step 13.
+    Expected: the numbers of the bounded production load and of the change feed pass the budgets of that runbook, `open tasks left` is 0, and the app is disconnected at its step 13.
     If it fails: follow the `If it fails` line of the step that failed in that runbook; a budget over its limit is a finding for the owner, never a reason to repeat the load more than once a day.
 
 15. **Check the day email (conditional on `day-email`).** Only when the feature is deployed. The owner turns on Email me my day in the Release app's Settings with a time at the next quarter hour, then, after the mail arrives, replies to it with one line that starts with `smoke-<short>`:
@@ -146,10 +146,10 @@ Once `version-compat` is deployed, every `/owner/*` request without a `Todz-App-
     Expected: the mail arrives at the owner's chosen time and carries `Auto-Submitted: auto-generated` in its original source; the row shows `sent_at` set and `failed_at` empty; the reply adds one task to the first workspace's Inbox and one `day_email_replies` row; the Workers Logs of the mail and the reply show no `rcptTo`, `mailFrom` or address. The forged reply (a message to the same reply address with `From:` the owner's address, sent from elsewhere) is sent only with the owner's explicit OK, and expects no task and a `day_email_reply` log line with `unauthenticated` or `not_owner`. The walk never opens, follows or posts the real stop link in the mail, because confirming it turns the owner's setting off. It only asks for the stop page with an unknown token, a `GET`, which stops nothing: `curl -sS -D - -o /dev/null "https://api.todz.app/day-email/stop?token=smoke-unknown"` expects `HTTP/2 404`, the page for a link that is gone.
     If it fails: a row with `failed_at` set names its `failure`; follow the day email's steps in [deploy-the-api.md](deploy-the-api.md). A `GET` with an unknown token that answers anything but `404` is recorded; the walk never posts to the stop path. A forged reply that adds a task is a security finding: turn the setting off, delete the `reply@` rule as the Rollback section says and tell the owner at once.
 
-16. **Clean up.** Complete by hand, in the app, every open task whose title starts with `smoke-<short>` in `todz-perf`; the performance cleanup never touches them (step 14 ran it already, while its key was still valid). Also complete the task of step 15's reply, whose title starts with `smoke-<short>`, in whatever workspace it landed.
+16. **Clean up.** Complete by hand, in the app, every open task whose title starts with `smoke-<short>` in `todz-perf`; the performance cleanup never touches them (step 14 ran it already, while its authorization was still valid). Also complete the task of step 15's reply, whose title starts with `smoke-<short>`, in whatever workspace it landed.
 
-    Expected: every `smoke-<short>` task is done, in every workspace; no key of the walk is left in the app's key screen or the Keychain.
-    If it fails: a task that does not complete from the app is completed by hand; a key left over is revoked in the app. Never complete a task without the `smoke-<short>` prefix.
+    Expected: every `smoke-<short>` task is done, in every workspace; no entry of the walk is left in **Connected apps**.
+    If it fails: a task that does not complete from the app is completed by hand; an entry left over is disconnected in the app. Never complete a task without the `smoke-<short>` prefix.
 
 17. **Record the run.** Add one row per step above to the run log, with the date, the commit and the actual result, in a pull request on `docs/`.
     Expected: every row names the real answer (status lines, counts, timings), never `ok`, and a skipped conditional step says `not deployed`.

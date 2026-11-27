@@ -18,7 +18,6 @@ const DIRECTORY_TABLES = [
   'day_email_stop_links',
   'day_emails',
   'mail_meter',
-  'mcp_sessions',
   'metrics_daily',
   'oauth_clients',
   'oauth_codes',
@@ -26,10 +25,8 @@ const DIRECTORY_TABLES = [
   'oauth_sessions',
   'oauth_tokens',
   'owner_identities',
-  'owner_keys',
   'owner_usage',
   'owners',
-  'project_keys',
   'projects',
   'sessions',
   'sign_in_links',
@@ -55,10 +52,10 @@ describe('the worker', () => {
     expect(await response.text()).toBe('');
   });
 
-  test('POST /mcp with an unknown bearer key answers 401 with an empty body', async () => {
+  test('POST /mcp with an unknown bearer answers 401 and points to the OAuth connect docs', async () => {
     const response = await exports.default.fetch(`${WORKER_ORIGIN}/mcp`, { method: 'POST', headers: { Authorization: 'Bearer secret' } });
     expect(response.status).toBe(UNAUTHORIZED_STATUS);
-    expect(await response.text()).toBe('');
+    expect(await response.json()).toMatchObject({ error: 'invalid_token' });
   });
 });
 
@@ -86,7 +83,7 @@ describe('the handler routes the paths the static assets never answer (the asset
 });
 
 describe('the directory', () => {
-  test('lists exactly the twenty-six directory tables', async () => {
+  test('lists exactly the twenty-three directory tables', async () => {
     expect(await directoryTables()).toEqual(DIRECTORY_TABLES);
   });
 

@@ -1,5 +1,4 @@
 import { SUPPORTED_PROTOCOL_VERSIONS } from '@modelcontextprotocol/server';
-import { PROJECT_KEY_PREFIX } from '@todz/types';
 import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { MCP_SERVER_VERSION } from '../src/mcp-server';
@@ -59,17 +58,15 @@ describe('the server card', () => {
     expect(FORBIDDEN_KEYS.filter((key) => key in card)).toEqual([]);
   });
 
-  test('has one remote, a secret Authorization header with no value, and the SDK protocol versions', async () => {
+  test('has one remote with no credential header, and the SDK protocol versions', async () => {
     const card = await cardOf(API_CARD_URL);
     expect(card.remotes).toEqual([
       {
         type: 'streamable-http',
         url: MCP_URL,
-        headers: [{ name: 'Authorization', isRequired: true, isSecret: true }],
         supportedProtocolVersions: [...SUPPORTED_PROTOCOL_VERSIONS],
       },
     ]);
-    expect(JSON.stringify(card)).not.toContain(PROJECT_KEY_PREFIX);
   });
 
   test.each(CARD_URLS)('%s answers the card with the public headers, kept by the security wrap', async (url) => {

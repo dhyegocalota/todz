@@ -3,21 +3,17 @@ import { posix } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { frontMatterOf } from './front-matter';
 import { capturedNames, readRepositoryFile, REPOSITORY_URL, repositoryPath } from './repository-files';
-import { swiftCopyValue } from './swift-copy';
 
 const GUIDE = 'apps/docs/self-host.mdx';
 const LEGACY_GUIDE = 'docs/self-host.md';
 const GUIDE_TITLE = 'Self-hosting';
 const DOCS_GUIDE_URL = 'https://docs.todz.app/self-host';
-const KEY_SCREEN_COPY = 'apps/macos/Copy/KeyScreenCopy.swift';
-const KEY_SCREEN_TITLE_NAME = 'title';
 const KEPT_LINK_TARGET_PATTERN = /^(?:https:\/\/|#)/;
 const TITLE_HEADING_PATTERN = /^# /m;
 const CODE_SPAN_PATTERN = /`[^`\n]*`/g;
 const MDX_UNSAFE_PATTERN = /[<{]/;
 const LINE_SEPARATOR = '\n';
 const PRIVATE_REFERENCE_PATTERN = /\bADRs?\b|docs\/(?:product|adr|runbooks)|\brunbook\b|\.test\.ts/i;
-const KEY_SCREEN_LABEL_PATTERN = /\*\*connect an agent\*\*/gi;
 const ROOT_README = 'README.md';
 const ROOT_PACKAGE_FILE = 'package.json';
 const API_PACKAGE_FILE = 'apps/api/package.json';
@@ -25,11 +21,13 @@ const WRANGLER_CONFIGURATION = 'apps/api/wrangler.jsonc';
 const WORKER_ENVIRONMENT = 'apps/api/src/env.ts';
 const APP_PROJECT = 'apps/macos/project.yml';
 const VERIFY_SCRIPT = 'scripts/verify-macos.sh';
-const AGENT_COMMAND = 'apps/macos/TodzKit/Sources/TodzKit/AgentCommand.swift';
 const SENDER_SOURCE = 'apps/api/src/email-sender.ts';
 const BASE_URL_SETTING = 'TODZ_API_BASE_URL';
 const CLAUDE_CODE_PREFIX = 'claude mcp add --transport http';
 const MCP_PATH = '/mcp';
+const SERVER_NAME = 'todz';
+const HTTPS_PREFIX = 'https://';
+const KEY_HEADER = '--header';
 const DEBUG_CONFIGURATION = '-configuration Debug';
 const RELEASE_CONFIGURATION = '-configuration Release';
 const PNPM_BUILT_IN_COMMANDS = ['exec', 'dlx', 'install', 'add'];
@@ -82,8 +80,6 @@ const PRODUCTION_SETTINGS = [
 const SENDER_NAMES = ['SENDER_ADDRESS', 'REPLY_TO_ADDRESS'];
 const NAMESPACE_ID_PATTERN = /"namespace_id": "(\d+)"/g;
 const NAMESPACE_RANGE_PATTERN = /`(\d+)` to `(\d+)`/;
-const AGENT_SERVER = 'apps/macos/TodzKit/Sources/TodzKit/AgentServer.swift';
-const SERVER_NAME_PATTERN = /case project = "([\w-]+)"/;
 const ANCHOR_PATTERN = /#.*$/;
 const NEXT_HEADING_PATTERN = /\n## /;
 const NOT_FOUND = -1;
@@ -133,13 +129,6 @@ describe('the self-host guide', () => {
     const targets = captured(LINK_PATTERN, guide.replace(FENCED_BLOCK_PATTERN, ''));
     expect(targets.filter((target) => !KEPT_LINK_TARGET_PATTERN.test(target))).toEqual([]);
     expect(targets.filter((target) => target.startsWith(REPOSITORY_URL))).toEqual([]);
-  });
-
-  test('names the key screen as the app titles it, and in no other casing', () => {
-    const title = swiftCopyValue({ text: readRepositoryFile(KEY_SCREEN_COPY), name: KEY_SCREEN_TITLE_NAME });
-    const labels = guide.match(KEY_SCREEN_LABEL_PATTERN);
-    expect(guide).toContain(`**${title}**`);
-    expect(labels?.filter((label) => label !== `**${title}**`)).toEqual([]);
   });
 
   test('holds no character MDX parses as markup outside code (pin)', () => {
@@ -234,12 +223,10 @@ describe('the self-host guide', () => {
     expect(updating.indexOf(UPDATE_ORDER_PHRASE)).toBeLessThan(updating.indexOf(GUIDE_SERVER_DEPLOY));
   });
 
-  test('the Claude Code command has the shape the key screen copies', () => {
-    const serverName = SERVER_NAME_PATTERN.exec(readRepositoryFile(AGENT_SERVER))?.[FIRST_CAPTURE];
-    expect(serverName).toBeDefined();
-    expect(readRepositoryFile(AGENT_COMMAND)).toContain(CLAUDE_CODE_PREFIX);
-    expect(guide).toContain(`${CLAUDE_CODE_PREFIX} ${serverName} '`);
-    expect(guide).toContain(`${MCP_PATH}'`);
+  test('the Claude Code command is the OAuth one: the address alone, with no key header', () => {
+    expect(guide).toContain(`${CLAUDE_CODE_PREFIX} ${SERVER_NAME} ${HTTPS_PREFIX}`);
+    expect(guide).toContain(MCP_PATH);
+    expect(guide).not.toContain(KEY_HEADER);
   });
 
   test('every repository path it names exists', () => {

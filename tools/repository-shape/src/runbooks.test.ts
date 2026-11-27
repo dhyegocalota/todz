@@ -21,7 +21,7 @@ const PERFORMANCE_LOG_SHOW =
 const PERFORMANCE_TAIL_PIPELINE = "wrangler tail todz-api --format json | jq -R -c 'fromjson? | {outcome, cpuTime}' > <scratch>/tail.json";
 const PERFORMANCE_TAIL_REMOVAL = 'rm <scratch>/tail.json';
 const PERFORMANCE_TAIL_STEP = 10;
-const PERFORMANCE_REVOKE_STEP = 13;
+const PERFORMANCE_DISCONNECT_STEP = 13;
 const SETUP_HEADING = '## Setup';
 const NEXT_SECTION_PATTERN = /\n## /;
 const NOT_FOUND = -1;
@@ -471,12 +471,12 @@ describe('runbooks', () => {
     expect(lines.filter((line) => !line.includes(PERFORMANCE_LOG_SHOW))).toEqual([]);
   });
 
-  test('the performance runbook keeps only outcome and cpuTime of the production tail on disk, and deletes the file when the key is revoked', () => {
+  test('the performance runbook keeps only outcome and cpuTime of the production tail on disk, and deletes the file when the app is disconnected', () => {
     const steps = stepSections(readRunbook(PERFORMANCE_RUNBOOK).text);
     const tailStep = steps.find((step) => step.number === PERFORMANCE_TAIL_STEP);
-    const revokeStep = steps.find((step) => step.number === PERFORMANCE_REVOKE_STEP);
+    const disconnectStep = steps.find((step) => step.number === PERFORMANCE_DISCONNECT_STEP);
     expect(tailStep?.body).toContain(PERFORMANCE_TAIL_PIPELINE);
     expect(tailStep?.body).not.toMatch(/wrangler tail [^\n|]*> /);
-    expect(revokeStep?.body).toContain(PERFORMANCE_TAIL_REMOVAL);
+    expect(disconnectStep?.body).toContain(PERFORMANCE_TAIL_REMOVAL);
   });
 });

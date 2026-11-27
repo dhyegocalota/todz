@@ -1,11 +1,17 @@
 ---
 title: Connect an agent
-description: Sign Claude Code, Claude.ai or Codex in to todz with OAuth, or give any client a key to one project.
+description: Sign Claude Code, Claude.ai or Codex in to todz with OAuth. API keys were removed.
 ---
 
-The todz MCP server at `https://api.todz.app/mcp` supports MCP OAuth. Add the URL to your client with no key. The first call opens your browser, and you approve the app there. If your client has no OAuth, use a [project key](#with-a-key-instead) instead.
+The todz MCP server at `https://api.todz.app/mcp` signs clients in with MCP OAuth. Add the URL to your client. The first call opens your browser, and you approve the app there. OAuth is the only way to connect.
 
 If you run your own server, use its URL in place of `https://api.todz.app/mcp`.
+
+## Breaking change: API keys were removed
+
+On 2026-11-27 todz removed API keys. Project keys and owner keys stopped working, and the server deleted every stored key. A client that still sends a key gets `401` with a pointer to this page.
+
+To reconnect an agent that used a key, run `claude mcp add --transport http todz https://api.todz.app/mcp` and sign in, as below. Remove the old `Authorization` header, and the `TODZ_API_KEY` variable if you set one. The **Connect an Agent** screen of the Mac app is gone in the same update.
 
 ## Sign in with OAuth
 
@@ -15,13 +21,13 @@ If you run your own server, use its URL in place of `https://api.todz.app/mcp`.
 4. Pick one project. The first one is preselected. Or pick **Your whole account (owner scope)**, which is never preselected and warns "It can create, rename and delete every workspace and project."
 5. Approve, or Deny.
 
-A project grant behaves like a key to that project: the task tools, and the other projects of its workspace for `move` and `projects`. An owner grant behaves like an owner key: the account tools only. The history of a task names the app by the name it registered. See [MCP tools](/mcp-tools).
+A project scope gives the task tools, and the other projects of its workspace for `move` and `projects`. An owner scope gives the account tools only. The history of a task names the app by the name it registered. See [MCP tools](/mcp-tools).
 
-Access tokens last one hour and renew themselves. Refresh tokens last 30 days and rotate on every use; if one is used twice, the app is disconnected. todz stores tokens only as digests. Fair use and the cloud cap apply exactly as they do for keys.
+Access tokens last one hour and renew themselves. Refresh tokens last 30 days and rotate on every use; if one is used twice, the app is disconnected. todz stores tokens only as digests. Fair use and the cloud cap apply to every connected app.
 
-To disconnect an app, open **Settings** › **Connected apps** in the Mac app, next to **Account keys**, in version 0.2.7 or later. The app stops at once.
+To disconnect an app, open **Settings** › **Connected apps** in the Mac app. The app stops at once.
 
-Redirect addresses must be `https` or a loopback address (`127.0.0.1`, `localhost`, `[::1]`). Custom schemes are refused, as the specification requires; a client that needs one should use a project key.
+Redirect addresses must be `https` or a loopback address (`127.0.0.1`, `localhost`, `[::1]`). Custom schemes are refused, as the specification requires.
 
 ### Claude Code
 
@@ -52,57 +58,4 @@ codex mcp login todz
 
 ### Cursor
 
-Cursor signs in to MCP servers with a `cursor://` address, which the MCP specification does not allow and todz refuses. Connect Cursor [with a key](#with-a-key-instead).
-
-## With a key instead
-
-Open **Connect an Agent** in the app's sidebar, pick a project and copy the command of your client: the app creates a key and puts it in the command. A key reaches one project, and you see it once. Project keys and owner keys keep working: they are the fallback for clients without OAuth.
-
-The commands below show `<key>` where the app puts yours. They point at the todz cloud; if you run your own server, the app shows commands with your server instead.
-
-<Warning>
-  The key is a password for that project. Never commit it, and keep your agent's configuration at the user level, not in a file inside a repository such as `.cursor/mcp.json` or a command run with `--scope project`. If a key leaks, open **Connect an Agent** and revoke it there.
-</Warning>
-
-### Claude Code
-
-Run it in your project's folder:
-
-```bash
-claude mcp add --transport http todz 'https://api.todz.app/mcp' --header 'Authorization: Bearer <key>'
-```
-
-### Codex
-
-Add this to your Codex configuration:
-
-```toml
-[mcp_servers.todz]
-url = "https://api.todz.app/mcp"
-bearer_token_env_var = "TODZ_API_KEY"
-```
-
-Then export the key in the shell that starts Codex:
-
-```bash
-export TODZ_API_KEY='<key>'
-```
-
-### Cursor
-
-Add this to your user-level Cursor MCP configuration, `~/.cursor/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "todz": {
-      "url": "https://api.todz.app/mcp",
-      "headers": {
-        "Authorization": "Bearer <key>"
-      }
-    }
-  }
-}
-```
-
-The agent now has the [MCP tools](/mcp-tools).
+Cursor signs in to MCP servers with a `cursor://` address, which the MCP specification does not allow and todz refuses. Cursor cannot connect to todz until it signs in with an `https` or loopback address.

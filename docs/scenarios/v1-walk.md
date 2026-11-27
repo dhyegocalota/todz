@@ -11,13 +11,13 @@ paths:
 
 # v1 walk
 
-The whole of todz v1 in one run: the owner signs in to an empty Mac, names a workspace, creates a project, connects an agent with a key from the app, the agent adds and completes tasks through MCP, and the owner sees every change in the main window, the menu bar and the widget snapshot. Author A is the owner in the macOS app; author B is the agent, an MCP client ([ADR 0037](../adr/0037-the-v1-scenario-walks-the-native-app-with-computer-use-and-the-agent-with-an-mcp-client.md)).
+The whole of todz v1 in one run: the owner signs in to an empty Mac, names a workspace, creates a project, connects an agent through an OAuth grant, the agent adds and completes tasks through MCP, and the owner sees every change in the main window, the menu bar and the widget snapshot. Author A is the owner in the macOS app; author B is the agent, an MCP client ([ADR 0037](../adr/0037-the-v1-scenario-walks-the-native-app-with-computer-use-and-the-agent-with-an-mcp-client.md)).
 
 ## Setup
 
 - Surface: macOS app. A is driven with Orca computer use (ADR 0026); B is an MCP client from `@modelcontextprotocol/client`, written in the scratchpad, with `clientInfo.name` "Claude Code".
 - Save the owner's session file, `~/Library/Containers/dev.todz.Todz/Data/Library/Application Support/session` (its `shasum`), then remove it so the app starts signed out. Keep the copy at mode 600, restore it byte-identical at the end, and delete the copy once the check matches.
-- The key copied in T4 appears in reports, logs and the PR only as its last four characters; the frames that show the full key stay out of the PR.
+- The access token minted in T4 appears in reports, logs and the PR only as its last four characters.
 - Boot: from `apps/api`, `pnpm exec wrangler d1 migrations apply todz-directory --local --persist-to <scratch>` then `pnpm exec wrangler dev --local-upstream localhost:8787 --var SIGN_IN_PROVIDER:fake --var EMAIL_SENDER:console --var PUBLIC_ORIGIN:http://localhost:8787 --port 8787 --persist-to <scratch>`. Port 8787 must be free.
 - Build and launch the app (`pnpm verify all` builds it into `apps/macos/build`), hidden where a step allows.
 - Fictional data only: workspace "Acme", project "Launch", tasks named like "Draft the release notes".
@@ -42,15 +42,15 @@ A adds the project "Launch" from the sidebar.
 
 - Expect: "Launch" is listed under Projects, empty.
 
-### T4 Create a key for the project
+### T4 Grant the agent the project
 
-A opens Connect an Agent, picks "Launch", presses Create a Key and copies the Claude Code command.
+The fake sign-in provider cannot send the mail OAuth sign-in needs, so B stands in for the consent screen, which `apps/api/test/oauth` covers: it reads the owner and the project "Launch" from the directory with `pnpm exec wrangler d1 execute todz-directory --local --persist-to <scratch> --command "SELECT ..."`, then inserts a client named "Claude Code", a grant for "Launch" and the digest of a new `todz-at_` access token, the same three rows `tools/perf/src/local-grant.ts` writes.
 
-- Expect: the command holds a `todz_` secret once, the key is listed by its last four characters, and leaving the screen hides the secret.
+- Expect: A sees "Claude Code" for "Launch" in Settings › Connected apps, and the directory holds the token only as its digest.
 
 ### T5 The agent connects
 
-B connects to `http://localhost:8787/mcp` with the copied key as a bearer token and lists its tools and prompts.
+B connects to `http://localhost:8787/mcp` with the access token as a bearer token and lists its tools and prompts.
 
 - Expect: the tools are `next`, `add`, `list`, `update`, `done` and the prompt `next`; no tool takes a project or workspace argument.
 
@@ -84,17 +84,17 @@ B calls `next` (after T9 only "Draft the release notes" is open today), then `do
 
 - Expect: `next` answers "Draft the release notes", and the app shows it done with the note in its history, via Claude Code; the menu bar item shows the icon only.
 
-### T11 The key reaches one project only
+### T11 The grant reaches one project only
 
 A adds "Buy a domain" to the Inbox; it is the Inbox's `T-1`. B calls `list` once with `state` open and once with `state` done, each with `text` "domain", then `update` on `T-99`, a number above Launch's highest, then `update` on `T-1` with a new title.
 
-- Expect: neither `list` shows the Inbox task; `T-99` answers "not found", the same as an id that never existed; and `T-1` changes Launch's own first task, never the Inbox's, because a short id only ever names a task of the key's project.
+- Expect: neither `list` shows the Inbox task; `T-99` answers "not found", the same as an id that never existed; and `T-1` changes Launch's own first task, never the Inbox's, because a short id only ever names a task of the grant's project.
 
-### T12 Revoke the key
+### T12 Disconnect the app
 
-A revokes the key in Connect an Agent.
+A disconnects "Claude Code" in Settings › Connected apps.
 
-- Expect: B's next call on its existing MCP session is refused with 401, and the app no longer lists the key.
+- Expect: B's next call is refused with 401, and the app no longer lists "Claude Code".
 
 ### T13 Offline and back
 

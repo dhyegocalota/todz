@@ -1,6 +1,6 @@
 import type { Actor, HistoryEntry, Task } from '@todz/core';
 import { ActorKind } from '@todz/types';
-import type { KeyRecord, OwnerRecord, ProjectRecord, WorkspaceRecord } from './owner-records';
+import type { OwnerRecord, ProjectRecord, WorkspaceRecord } from './owner-records';
 
 export function ownerJson(owner: OwnerRecord) {
   return {
@@ -24,10 +24,6 @@ export function workspaceJson({ workspace, projects }: { workspace: WorkspaceRec
     last_activity_at: workspace.lastActivityAt,
     projects: projects.map(projectJson),
   };
-}
-
-export function keyJson(key: KeyRecord) {
-  return { id: key.id, hint: key.hint, created_at: key.createdAt };
 }
 
 export function actorJson(actor: Actor) {

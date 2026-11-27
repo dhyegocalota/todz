@@ -28,6 +28,7 @@ describe('runSoak', () => {
       access: { connection: { origin: dependencies.origin, token: 'session-token', fetch }, hotProjectId: 'inbox-1' },
       durationMs: 51_000,
       dependencies,
+      mintAccessToken: async () => 'todz-at_soak_token',
     });
     const updates = mcp.toolCalls().filter((call) => call.name === 'update');
     expect(result).toEqual({ updates: 51, lists: 51, failures: 0 });

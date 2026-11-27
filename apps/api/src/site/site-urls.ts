@@ -3,6 +3,7 @@ export const MCP_URL = 'https://api.todz.app/mcp';
 export const DOCS_URL = 'https://docs.todz.app';
 export const DOCS_INSTALL_URL = `${DOCS_URL}/install-on-mac`;
 export const DOCS_MCP_URL = `${DOCS_URL}/mcp`;
+export const DOCS_CONNECT_URL = `${DOCS_URL}/connect-an-agent`;
 export const CLOUD_QUEUE_PATH = '/cloud-queue';
 export const CLOUD_QUEUE_TOKEN_FIELD = 'token';
 export const DOWNLOAD_PATH = '/download';

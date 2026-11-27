@@ -8,7 +8,7 @@ import { buildMcpServer } from '../src/mcp-server';
 import { calendarDateInTimeZone } from '../src/owner-today';
 import { ProjectFailureKind } from '../src/project-result';
 import type { ProjectStore } from '../src/project-store';
-import { seedIssuedKey, seedNudgedKey } from './directory-seed';
+import { seedProjectWithToken, seedNudgedProjectWithToken } from './directory-seed';
 import { ClientEra, callTool, connectClient } from './mcp-client';
 import { buildTask, calendarDate } from './task-fixtures';
 
@@ -28,8 +28,8 @@ const TWO_DAYS_AGO = shiftedDay(-2);
 const TOMORROW = shiftedDay(1);
 
 async function connectedWith({ era, isNudged, dueDates }: { era: ClientEra; isNudged: boolean; dueDates: Array<string | null> }) {
-  const { key } = isNudged ? await seedNudgedKey() : await seedIssuedKey();
-  const client = await connectClient({ era, key });
+  const { token } = isNudged ? await seedNudgedProjectWithToken() : await seedProjectWithToken();
+  const client = await connectClient({ era, token });
   const tasks = dueDates.map((dueDate, index) => ({ title: `Task ${index + 1}`, due_date: dueDate }));
   await callTool({ client, name: McpToolName.Add, args: { tasks } });
   return client;

@@ -13,7 +13,6 @@ import {
   PRODUCTION_RATE_MAX,
   PRODUCTION_REQUEST_MAX,
 } from './budgets';
-import { type ExecFile, readKeychainKey } from './keychain-key';
 import { McpEra, addTask, completeTasks, connectMeasuredMcp, listTasks } from './mcp-scenario';
 import { type LoopClock, type LoopSlot, runOpenLoop } from './open-loop';
 import { ORIGIN_OF_TARGET, PerfTarget, RunKind, type RunPlan, scenarioAt, validatedPlan } from './run-plan';
@@ -24,7 +23,7 @@ import type { Sample } from './timed-fetch';
 import { type Scheduler, guardedFetch } from './wire-guard';
 
 export type ProductionDependencies = {
-  execFile: ExecFile;
+  accessToken: () => Promise<string>;
   fetch: typeof fetch;
   now: () => number;
   epochNow: () => number;
@@ -75,13 +74,13 @@ function prefixOf(runIdentifier: string): string {
 
 async function connectedClients({
   dependencies,
-  key,
+  token,
   deadlineMs,
   requestMax,
   record,
 }: {
   dependencies: Omit<ProductionDependencies, 'writeSend'>;
-  key: string;
+  token: string;
   deadlineMs: number;
   requestMax: number;
   record: (sample: Sample) => void;
@@ -96,7 +95,7 @@ async function connectedClients({
   const connect = (scenario: ScenarioKind) =>
     connectMeasuredMcp({
       origin: ORIGIN_OF_TARGET[PerfTarget.Production],
-      key,
+      token,
       era: McpEra.Modern,
       fetch,
       now: dependencies.now,
@@ -184,12 +183,12 @@ async function refuseForeignProject({ client }: { client: Client }): Promise<voi
 }
 
 export async function runProduction(dependencies: ProductionDependencies): Promise<ProductionResult> {
-  const key = await readKeychainKey({ execFile: dependencies.execFile });
+  const token = await dependencies.accessToken();
   const samples: Sample[] = [];
   const stop = new AbortController();
   const clients = await connectedClients({
     dependencies: { ...dependencies, interruption: AbortSignal.any([dependencies.interruption, stop.signal]) },
-    key,
+    token,
     deadlineMs: PRODUCTION_DURATION_MAX_MS,
     requestMax: PRODUCTION_REQUEST_MAX,
     record: (sample) => {
@@ -233,11 +232,11 @@ export async function runProduction(dependencies: ProductionDependencies): Promi
 }
 
 export async function cleanupProduction(dependencies: Omit<ProductionDependencies, 'writeSend'>): Promise<CleanupResult> {
-  const key = await readKeychainKey({ execFile: dependencies.execFile });
+  const token = await dependencies.accessToken();
   const samples: Sample[] = [];
   const clients = await connectedClients({
     dependencies,
-    key,
+    token,
     deadlineMs: CLEANUP_DURATION_MAX_MS,
     requestMax: CLEANUP_REQUEST_MAX,
     record: (sample) => samples.push(sample),

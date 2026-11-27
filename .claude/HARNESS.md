@@ -43,7 +43,7 @@ Classify the change so the depth of the spec matches the risk:
 |---|---|---|
 | 🟢 small | copy, one-file fix, a flag | problem, change, test list |
 | 🟡 medium | new endpoint, new MCP tool, schema change | + data flow, failure modes |
-| 🔴 structural | workspace isolation, API keys, sync, billing, deploy | + ADR, alternatives, rollback, spike if an assumption is unproven |
+| 🔴 structural | workspace isolation, OAuth grants, sync, billing, deploy | + ADR, alternatives, rollback, spike if an assumption is unproven |
 
 A spike's code is never committed: it runs in a scratch worktree, and its answer lands in the feature folder and the ADR. When in doubt, take the heavier tier. Hidden complexity discovered mid-task upgrades the tier: stop, say so, step up.
 
@@ -100,12 +100,12 @@ Both plans are reviewed by a sub-agent before building (`reviewer` role, lens: "
 
 ## 6. Review
 
-- A `reviewer` sub-agent, with a fresh context, reviews the diff before the PR opens: conventions (`AGENTS.md`), correctness, security (API keys and OAuth tokens, workspace isolation, MCP tool authorization, sync conflicts and data loss, query binding, secrets and task contents in logs), performance budgets from the ADRs, and tests. It also tries to **refute** the tester: pick the three claims most likely to be wrong and attack them.
+- A `reviewer` sub-agent, with a fresh context, reviews the diff before the PR opens: conventions (`AGENTS.md`), correctness, security (OAuth tokens, workspace isolation, MCP tool authorization, sync conflicts and data loss, query binding, secrets and task contents in logs), performance budgets from the ADRs, and tests. It also tries to **refute** the tester: pick the three claims most likely to be wrong and attack them.
 - Output: numbered findings `CRITICAL | IMPORTANT | MINOR`, each with file:line, the rule, the production consequence and a minimal fix; then the **blast radius** (surfaces touched, who notices first, how to roll back, whether rollback loses data) and `Merge sensitivity: LOW | MEDIUM | HIGH` with a one-line reason; closing with `Ship-ready? YES | NO | WITH RESERVATIONS`.
 - A commit that claims to be formatting only is re-diffed with whitespace and quotes normalised (`git diff -w`, then Prettier on both sides) before "no behaviour change" is trusted.
 - Red-first claims are spot-checked in a throwaway worktree: check out the red commit, run the named test, compare the failure with the text the test plan records.
 - Findings are delivered in chat and fixed before the PR. The reviewer never posts to GitHub.
-- A `security-reviewer` sub-agent, fresh and read-only, then attacks the same diff with the repository's threat model (API keys and OAuth tokens, workspace (tenant) isolation, MCP tool authorization, sync conflicts and data loss, secrets and task contents in logs, supply chain) and answers `Security verdict: CLEAR | FINDINGS | NOT APPLICABLE` ([ADR 0002](../docs/adr/0002-mechanical-security-gates-and-a-security-reviewer.md)). It runs on every diff except one in the docs lane (section 1); a `CRITICAL` or `IMPORTANT` finding goes back to Build.
+- A `security-reviewer` sub-agent, fresh and read-only, then attacks the same diff with the repository's threat model (OAuth tokens, workspace (tenant) isolation, MCP tool authorization, sync conflicts and data loss, secrets and task contents in logs, supply chain) and answers `Security verdict: CLEAR | FINDINGS | NOT APPLICABLE` ([ADR 0002](../docs/adr/0002-mechanical-security-gates-and-a-security-reviewer.md)). It runs on every diff except one in the docs lane (section 1); a `CRITICAL` or `IMPORTANT` finding goes back to Build.
 
 ## 7. Ship
 
@@ -130,7 +130,7 @@ Both plans are reviewed by a sub-agent before building (`reviewer` role, lens: "
 
 The PR body links the feature folder, the ADRs it depends on and the learnings it produced.
 
-**Sensitive PRs.** A PR is sensitive when its tier is 🟡 or 🔴, or when the diff touches API keys or OAuth tokens, workspace isolation, MCP tool authorization, sync, billing, schema or migrations, deploy files, data deletion or secrets handling. The reviewer decides: `Merge sensitivity: LOW | MEDIUM | HIGH`, and MEDIUM or HIGH means sensitive. Every PR body carries the verdict with its reason. A sensitive PR also carries a **Blast radius** section (what can break and for whom, who notices first, how to roll back, whether rollback loses data) and ends with a **Human checklist**: the checks a person runs by hand before merging, one box each, concrete enough to execute without the agent (open X as Y, expect Z; run the rollback once; confirm the migration on a copy of production data). The agent writes the checklist, never ticks it, and never lowers the reviewer's verdict.
+**Sensitive PRs.** A PR is sensitive when its tier is 🟡 or 🔴, or when the diff touches OAuth tokens, workspace isolation, MCP tool authorization, sync, billing, schema or migrations, deploy files, data deletion or secrets handling. The reviewer decides: `Merge sensitivity: LOW | MEDIUM | HIGH`, and MEDIUM or HIGH means sensitive. Every PR body carries the verdict with its reason. A sensitive PR also carries a **Blast radius** section (what can break and for whom, who notices first, how to roll back, whether rollback loses data) and ends with a **Human checklist**: the checks a person runs by hand before merging, one box each, concrete enough to execute without the agent (open X as Y, expect Z; run the rollback once; confirm the migration on a copy of production data). The agent writes the checklist, never ticks it, and never lowers the reviewer's verdict.
 
 ## 8. Learn
 
@@ -173,7 +173,7 @@ Role bodies live in `.agents/roles/<role>.md`, one source. Claude Code reads the
 | `developer` | writes | disjoint paths named in the plan, unit tests, tester briefing | runs the test plan, claims it works |
 | `tester` | fresh | executes `test-plan.md`, Playwright MCP walks, evidence, edge-case hunting | fixes product code |
 | `reviewer` | fresh, read-only | conventions, security, refutation, verdict | posts to GitHub |
-| `security-reviewer` | fresh, read-only | attacks the diff: API keys and OAuth tokens, workspace isolation, MCP tool authorization, sync, secrets, supply chain | posts to GitHub, fixes code |
+| `security-reviewer` | fresh, read-only | attacks the diff: OAuth tokens, workspace isolation, MCP tool authorization, sync, secrets, supply chain | posts to GitHub, fixes code |
 | `recorder` | writes media only | screenshots, video, ffmpeg, media upload, PR embeds | touches code |
 
 Routing: bulk reading and sweeps → cheapest model; implementing a decided design → mid model; architecture, security review, "is this right" → strongest model. Small tasks that fit in three tool calls run inline.

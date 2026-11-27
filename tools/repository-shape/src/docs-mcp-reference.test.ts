@@ -25,8 +25,8 @@ const PLACEMENT_SCHEMA_NAME = 'Placement';
 const SCHEMA_END_MARKERS = ['});', '\n]);'];
 const SCHEMA_TOOLS = ['add', 'list', 'show', 'history', 'update', 'done', 'reopen', 'delete', 'move'];
 const ARGUMENTLESS_TOOLS = ['next', 'projects', 'workspaces', 'settings'];
-const PROJECT_SCOPE_LINE = '**Scope:** project key.';
-const OWNER_SCOPE_LINE = '**Scope:** owner key.';
+const PROJECT_SCOPE_LINE = '**Scope:** project scope.';
+const OWNER_SCOPE_LINE = '**Scope:** owner scope.';
 const OWNER_SCHEMA_OF_TOOL: Record<string, string> = {
   create_workspace: 'Name',
   rename_workspace: 'RenameWorkspace',
@@ -124,13 +124,13 @@ describe('the MCP tools reference', () => {
     expect(section?.body.split(LINE_SEPARATOR)).toContain(description);
   });
 
-  test.each(toolMembers.map(({ value }) => value))('the %s section names the project key as its scope', (tool) => {
+  test.each(toolMembers.map(({ value }) => value))('the %s section names the project scope', (tool) => {
     const section = sections().find(({ heading }) => heading === tool);
     expect(section?.body.split(LINE_SEPARATOR)).toContain(PROJECT_SCOPE_LINE);
     expect(section?.body.split(LINE_SEPARATOR)).not.toContain(OWNER_SCOPE_LINE);
   });
 
-  test.each(ownerToolMembers.map(({ value }) => value))('the %s section names the owner key as its scope', (tool) => {
+  test.each(ownerToolMembers.map(({ value }) => value))('the %s section names the owner scope', (tool) => {
     const section = sections().find(({ heading }) => heading === tool);
     expect(section?.body.split(LINE_SEPARATOR)).toContain(OWNER_SCOPE_LINE);
     expect(section?.body.split(LINE_SEPARATOR)).not.toContain(PROJECT_SCOPE_LINE);

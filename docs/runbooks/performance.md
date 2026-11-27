@@ -81,17 +81,12 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
    Expected: repeat the second command into `landing-2.json` and `landing-3.json`; the median LCP is under 2.5 s, CLS under 0.1 and Total Blocking Time under 200 ms (the lab stand-in for INP). The procedure is the one of ADR 0060.
    If it fails: a miss caused by the Worker's files is fixed in `apps/api/src/site` red-first; a miss caused by the machine or by Lighthouse is recorded with its number and not fixed.
 
-9. **Check the production prerequisite.** The owner creates a workspace named `todz-perf`, issues an MCP key for its Inbox in the app and stores it in the Keychain, where `-T /usr/bin/security` lets `security` read it without an approval dialog:
+9. **Check the production prerequisite.** The owner creates a workspace named `todz-perf` in the app. The production run needs no stored secret: it signs itself in with OAuth when it starts, so the owner stays at the Mac for steps 10 and 11.
 
-   ```bash
-   security add-generic-password -U -s todz-perf-key -a todz -T /usr/bin/security -w
-   security find-generic-password -s todz-perf-key
-   ```
+   Expected: **Settings** › **Connected apps** lists no `todz-perf` yet, and the workspace `todz-perf` has an Inbox. The run opens the browser at the todz consent screen, the owner signs in with the email link in the same browser, picks the Inbox of `todz-perf` and approves; the harness keeps the access token in memory and never writes it to an argument, a variable or a file.
+   If it fails: a run that prints `the authorization was not approved in 5 minutes` found nobody at the consent screen; run it again. `the authorization was refused` names the error the consent screen sent back, and a redirect error means the loopback receiver could not bind; free the port and run it again.
 
-   Expected: the first prompts for the key and stores it; the second exits 0 and prints the item's attributes without its password. The harness reads the key itself, never from an argument, a variable or a file.
-   If it fails: a missing item stops the production run before any request with `the todz-perf-key Keychain item is missing`; ask the owner to create it. A run that says the same with the item present means an approval dialog waited past 5 seconds: recreate the item with `-T /usr/bin/security`.
-
-10. **Run the bounded production load.** Off-peak, at most one run a day, with the Free-plan line below in mind. In one terminal, write the window of the Worker's own log; in another, run the load, which sends only `POST https://api.todz.app/mcp` at 50 a second for at most 120 seconds, adds for the first 100 seconds, and writes each answered `add`'s number and send time to the file:
+10. **Run the bounded production load.** Off-peak, at most one run a day, with the Free-plan line below in mind. In one terminal, write the window of the Worker's own log; in another, run the load, which first authorizes in the browser (see step 9) and then sends only `POST https://api.todz.app/mcp` at 50 a second for at most 120 seconds, adds for the first 100 seconds, and writes each answered `add`'s number and send time to the file:
 
     ```bash
     scripts/todz-cloudflare.sh pnpm --filter @todz/api exec wrangler tail todz-api --format json | jq -R -c 'fromjson? | {outcome, cpuTime}' > <scratch>/tail.json
@@ -99,7 +94,7 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
     pnpm perf tail <scratch>/tail.json
     ```
 
-    Expected: the error output prints `run: <id>` before the first request, then the report: one row per scenario (`list`, `add`, `done`), `dropped`, `failed requests` and `open tasks left: 0`; `tail` prints the count per outcome and `cpuTime p50` and `p99`. The tail reaches the disk only as `outcome` and `cpuTime` per event, because `jq` drops the rest (URLs, headers, logs) before the file is written. The harness refuses a rate over 50, a duration over 120 seconds, any scenario but MCP, any path but `POST /mcp`, any redirect, a retry after a 401, more than 50 in flight, more than 6,010 requests and anything after 120 seconds; it refuses to start when the project holds more than 20 open tasks that are not `todz-perf` tasks; it stops sending after the first 401 or 10 failures in a row; and Ctrl-C stops it, runs the cleanup of its own run and exits 1. Its tasks are titled `todz-perf <run> #<slot>`. One run sends at most 6,000 requests (50 a second for 120 seconds, cleanup inside), reads about 6,000 directory rows (one key lookup each; the 2026-07-28 era writes none) and writes about 12,000 project-store rows (about 1,000 adds and 1,000 completions, each a task row, a history row and the counters), well under the daily caps of the Free plan, which is why one run a day, off-peak, is the rule.
+    Expected: the error output prints `run: <id>` before the first request, then the report: one row per scenario (`list`, `add`, `done`), `dropped`, `failed requests` and `open tasks left: 0`; `tail` prints the count per outcome and `cpuTime p50` and `p99`. The tail reaches the disk only as `outcome` and `cpuTime` per event, because `jq` drops the rest (URLs, headers, logs) before the file is written. The harness refuses a rate over 50, a duration over 120 seconds, any scenario but MCP, any path but `POST /mcp`, any redirect, a retry after a 401, more than 50 in flight, more than 6,010 requests and anything after 120 seconds; it refuses to start when the project holds more than 20 open tasks that are not `todz-perf` tasks; it stops sending after the first 401 or 10 failures in a row; and Ctrl-C stops it, runs the cleanup of its own run and exits 1. Its tasks are titled `todz-perf <run> #<slot>`. One run sends at most 6,000 requests (50 a second for 120 seconds, cleanup inside), reads about 6,000 directory rows (one access token lookup each) and writes about 12,000 project-store rows (about 1,000 adds and 1,000 completions, each a task row, a history row and the counters), well under the daily caps of the Free plan, which is why one run a day, off-peak, is the rule.
     If it fails: a 5xx or an `exceededCpu` outcome in `tail` is a server finding (the Free plan allows 10 ms of CPU a request), never a harness bug; the run ends by itself within 120 seconds and nothing needs rolling back. A run that stopped on a 401 or on 10 failures in a row leaves `open tasks left: null`; run step 11 with the `run:` identifier it printed. A 429, a 3xx or a refused request counts as a failure on its row.
 
 11. **Check that nothing is left open.** The report's `open tasks left` is the count of a final list filtered by the run's own prefix. When it is not 0:
@@ -108,7 +103,7 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
     pnpm perf production --cleanup <run>
     ```
 
-    Expected: `open tasks left: 0`; the cleanup lists by the run's prefix and completes only those tasks, at most 50 a second for at most 60 seconds, and never a task without the prefix.
+    Expected: the browser opens the consent screen again, because the cleanup authorizes on its own; then `open tasks left: 0`; the cleanup lists by the run's prefix and completes only those tasks, at most 50 a second for at most 60 seconds, and never a task without the prefix.
     If it fails: a count that stays above 0 with no task of the run left means a task of the owner's whose title contains the prefix; leave it, say so in the table.
 
 12. **Measure the change feed in production.** With the owner present, the Release app open on `todz-perf` in the background, during step 10, launched with the probe:
@@ -121,15 +116,14 @@ Every command runs from the repository root. The harness is `pnpm perf <command>
     Expected: `change feed: p95 <n> ms over <n> tasks PASS`, under 1,000 ms, from each send time to the app's `task-arrived` line for the same task number.
     If it fails: no joined task means the app showed another project; open the `todz-perf` Inbox and run step 10 again the next day.
 
-13. **Revoke the key.** The owner revokes the key in the app's key screen and deletes the Keychain item:
+13. **Disconnect the app.** The owner disconnects `todz-perf` in **Settings** › **Connected apps** and the saved tail window is deleted:
 
     ```bash
-    security delete-generic-password -s todz-perf-key
     rm <scratch>/tail.json
     ```
 
-    Expected: the command prints the deleted item's attributes; `security find-generic-password -s todz-perf-key` exits 44; the saved tail window is gone.
-    If it fails: a missing item is already deleted; revoke the key in the app first and check it no longer opens `/mcp`.
+    Expected: `todz-perf` is gone from **Connected apps**, and the saved tail window is gone. The access token lasts one hour on its own.
+    If it fails: a `todz-perf` entry that stays is disconnected again; check that its token no longer opens `/mcp`.
 
 14. **Record the numbers.** One row per scenario of every run in the table below: the date, the short commit, where it ran (`local`, `app` or `production`), the scenario, the load, the hot project's done count at the start of the run, p50, p95, p99, the 5xx count and the verdict. A candidate the decision rule did not select goes in the second table with its number.
     If it fails: a row without its done count cannot be compared with a later run on a larger project; rerun, never guess it.

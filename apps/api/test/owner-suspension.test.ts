@@ -34,7 +34,6 @@ describe('a suspended owner', () => {
       () => ownerCall({ method: 'POST', path: `/owner/workspaces/${workspace.id}/projects`, token, body: { name: 'Side' } }),
       () => ownerCall({ method: 'PATCH', path: `/owner/projects/${inboxId}`, token, body: { name: 'Nope' } }),
       () => ownerCall({ method: 'POST', path: `/owner/projects/${inboxId}/tasks`, token, body: { tasks: [{ title: 'Blocked' }] } }),
-      () => ownerCall({ method: 'POST', path: `/owner/projects/${inboxId}/keys`, token }),
       () => ownerCall({ method: 'PATCH', path: '/owner', token, body: { time_zone: 'UTC' } }),
     ];
     const responses = await Promise.all(writes.map((write) => write()));

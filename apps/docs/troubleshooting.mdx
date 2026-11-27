@@ -9,7 +9,7 @@ Open the link from the email on the same Mac that asked for it. A link opened on
 
 ## My agent cannot sign in with OAuth
 
-Open the sign-in link from the mail in the same browser where you entered your email. If the client reports a redirect error, or needs a custom address scheme, todz refuses it: use a project key instead, see [Connect an agent](/connect-an-agent#with-a-key-instead).
+Open the sign-in link from the mail in the same browser where you entered your email. If the client reports a redirect error, or needs a custom address scheme, todz refuses it, so that client cannot connect yet, see [Connect an agent](/connect-an-agent).
 
 If the browser says "This link can't be used to connect an app" every time, the client is reusing a registration the server no longer knows. Clear the client's saved sign-in and connect again: in Claude Code, run `/mcp`, pick todz, then **Clear authentication**.
 

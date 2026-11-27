@@ -24,13 +24,15 @@ type Harness = {
 
 function harness({
   now = () => 0,
-  execFile = async () => ({ stdout: 'todz_perf_secret\n' }),
+  execFile = async () => ({ stdout: '' }),
+  accessToken = async () => 'todz-at_perf_secret',
   files = {},
   mcp = fakeMcpServer(),
   onRequest = () => undefined,
 }: {
   now?: () => number;
   execFile?: ExecFile;
+  accessToken?: () => Promise<string>;
   files?: Record<string, string>;
   mcp?: FakeMcpServer;
   onRequest?: (context: { logs: Logs; interrupt: () => Promise<number>; input: Parameters<typeof fetch>[0] }) => void;
@@ -57,6 +59,7 @@ function harness({
     clock: yieldingClock,
     schedule: () => undefined,
     execFile,
+    accessToken,
     readFile: async (path) => {
       const text = files[path];
       if (text === undefined) throw new Error(`no file ${path}`);
@@ -177,13 +180,13 @@ describe('runCli seed', () => {
 });
 
 describe('runCli production', () => {
-  test('a missing Keychain item exits 1 before any request and names the item', async () => {
-    const execFile: ExecFile = async () => {
-      throw new Error('not found');
+  test('a refused authorization exits 1 before any request and names the reason', async () => {
+    const accessToken = async (): Promise<string> => {
+      throw new Error('the authorization was refused: access_denied');
     };
-    const { dependencies, err, requests } = harness({ execFile });
+    const { dependencies, err, requests } = harness({ accessToken });
     expect(await runCli({ argv: ['production'], dependencies })).toBe(1);
-    expect(err.join('\n')).toContain('the todz-perf-key Keychain item is missing');
+    expect(err.join('\n')).toContain('the authorization was refused: access_denied');
     expect(requests()).toBe(0);
   });
 
