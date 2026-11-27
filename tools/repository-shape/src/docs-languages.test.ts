@@ -14,7 +14,7 @@ import {
 } from './docs-languages';
 import { bodyOf, frontMatterOf } from './front-matter';
 
-const EXPECTED_LANGUAGES = ['en', 'pt-BR', 'es', 'de', 'fr', 'ja', 'ko', 'zh'];
+const EXPECTED_LANGUAGES = ['en', 'pt-BR', 'es', 'de', 'fr', 'ja', 'ko', 'zh', 'ar', 'hi'];
 const GROUP_COUNT = 5;
 const SHARED_GROUP_NAMES: Record<TranslatedLanguage, string[]> = {
   [DocsLanguage.PortugueseBrazil]: [],
@@ -24,6 +24,8 @@ const SHARED_GROUP_NAMES: Record<TranslatedLanguage, string[]> = {
   [DocsLanguage.Japanese]: [],
   [DocsLanguage.Korean]: [],
   [DocsLanguage.Chinese]: [],
+  [DocsLanguage.Arabic]: [],
+  [DocsLanguage.Hindi]: [],
 };
 const FENCED_BLOCK_PATTERN = /```[\s\S]*?```/g;
 const INLINE_CODE_PATTERN = /`[^`\n]+`/g;
@@ -77,12 +79,12 @@ function isAsset(path: string): boolean {
 }
 
 describe('docs.json languages', () => {
-  test('publishes exactly the eight languages, English first, in place of a flat navigation', () => {
+  test('publishes exactly the ten languages, English first, in place of a flat navigation', () => {
     expect(languageEntries().map((entry) => entry.language)).toEqual(EXPECTED_LANGUAGES);
     expect(docsConfiguration().navigation.groups).toBeUndefined();
   });
 
-  test('the enum holds the same eight codes', () => {
+  test('the enum holds the same ten codes', () => {
     expect(Object.values(DocsLanguage)).toEqual(EXPECTED_LANGUAGES);
   });
 

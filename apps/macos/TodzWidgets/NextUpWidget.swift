@@ -8,6 +8,7 @@ struct NextUpWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: TodayTimelineProvider()) { entry in
             NextUpView(entry: entry)
+                .languageDirection()
                 .containerBackground(.background, for: .widget)
         }
         .configurationDisplayName(WidgetCopy.nextUpName)

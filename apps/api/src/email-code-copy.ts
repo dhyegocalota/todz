@@ -6,6 +6,8 @@ import { EMAIL_CODE_COPY_FRENCH } from './email-code-copy-french';
 import { EMAIL_CODE_COPY_JAPANESE } from './email-code-copy-japanese';
 import { EMAIL_CODE_COPY_KOREAN } from './email-code-copy-korean';
 import { EMAIL_CODE_COPY_CHINESE } from './email-code-copy-chinese';
+import { EMAIL_CODE_COPY_HINDI } from './email-code-copy-hindi';
+import { EMAIL_CODE_COPY_ARABIC } from './email-code-copy-arabic';
 
 export const EMAIL_CODE_SECONDS_SLOT = '{seconds}';
 
@@ -32,4 +34,6 @@ export const EMAIL_CODE_COPY_BY_LANGUAGE: Record<Language, EmailCodeCopy> = {
   [Language.Japanese]: EMAIL_CODE_COPY_JAPANESE,
   [Language.Korean]: EMAIL_CODE_COPY_KOREAN,
   [Language.Chinese]: EMAIL_CODE_COPY_CHINESE,
+  [Language.Hindi]: EMAIL_CODE_COPY_HINDI,
+  [Language.Arabic]: EMAIL_CODE_COPY_ARABIC,
 };

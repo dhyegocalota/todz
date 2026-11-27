@@ -6,6 +6,8 @@ import { OAUTH_SIGN_IN_EMAIL_COPY_FRENCH } from './oauth-sign-in-email-copy-fren
 import { OAUTH_SIGN_IN_EMAIL_COPY_JAPANESE } from './oauth-sign-in-email-copy-japanese';
 import { OAUTH_SIGN_IN_EMAIL_COPY_KOREAN } from './oauth-sign-in-email-copy-korean';
 import { OAUTH_SIGN_IN_EMAIL_COPY_CHINESE } from './oauth-sign-in-email-copy-chinese';
+import { OAUTH_SIGN_IN_EMAIL_COPY_ARABIC } from './oauth-sign-in-email-copy-arabic';
+import { OAUTH_SIGN_IN_EMAIL_COPY_HINDI } from './oauth-sign-in-email-copy-hindi';
 export const OAUTH_SIGN_IN_EMAIL_COPY = {
   subject: 'Approve an app for todz',
   preview: 'Your link to approve an app for todz. It works once.',
@@ -29,4 +31,6 @@ export const OAUTH_SIGN_IN_EMAIL_COPY_BY_LANGUAGE: Record<Language, OAuthSignInE
   [Language.Japanese]: OAUTH_SIGN_IN_EMAIL_COPY_JAPANESE,
   [Language.Korean]: OAUTH_SIGN_IN_EMAIL_COPY_KOREAN,
   [Language.Chinese]: OAUTH_SIGN_IN_EMAIL_COPY_CHINESE,
+  [Language.Arabic]: OAUTH_SIGN_IN_EMAIL_COPY_ARABIC,
+  [Language.Hindi]: OAUTH_SIGN_IN_EMAIL_COPY_HINDI,
 };

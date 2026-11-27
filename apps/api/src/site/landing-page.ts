@@ -120,7 +120,7 @@ function heroHtml({ stars, language, theme }: { stars: number | null; language: 
   const copy = LANDING_COPY_BY_LANGUAGE[language];
   return `<section class="hero page-width" aria-labelledby="hero-title">
 <div class="hero-copy">
-<p class="eyebrow-pill glass rise"><span class="eyebrow-dot" aria-hidden="true"></span>${escapedHtml(copy.hero.eyebrow)}</p>
+<p class="eyebrow-pill glass rise"><span class="eyebrow-dot" aria-hidden="true"></span><bdi>${escapedHtml(copy.hero.eyebrow)}</bdi></p>
 <h1 id="hero-title" class="hero-title rise delay-1">${escapedHtml(copy.hero.title)}</h1>
 <p class="hero-lead rise delay-2">${escapedHtml(copy.hero.lead)}</p>
 ${freeLineHtml({ language })}

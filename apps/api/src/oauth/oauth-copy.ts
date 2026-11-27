@@ -6,6 +6,8 @@ import { OAUTH_COPY_FRENCH } from './oauth-copy-french';
 import { OAUTH_COPY_JAPANESE } from './oauth-copy-japanese';
 import { OAUTH_COPY_KOREAN } from './oauth-copy-korean';
 import { OAUTH_COPY_CHINESE } from './oauth-copy-chinese';
+import { OAUTH_COPY_ARABIC } from './oauth-copy-arabic';
+import { OAUTH_COPY_HINDI } from './oauth-copy-hindi';
 export const OAUTH_COPY = {
   meta: {
     description: 'Connect an app to your todz account.',
@@ -101,4 +103,6 @@ export const OAUTH_COPY_BY_LANGUAGE: Record<Language, OAuthCopy> = {
   [Language.Japanese]: OAUTH_COPY_JAPANESE,
   [Language.Korean]: OAUTH_COPY_KOREAN,
   [Language.Chinese]: OAUTH_COPY_CHINESE,
+  [Language.Arabic]: OAUTH_COPY_ARABIC,
+  [Language.Hindi]: OAUTH_COPY_HINDI,
 };

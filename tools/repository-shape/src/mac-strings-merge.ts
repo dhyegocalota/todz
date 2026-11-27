@@ -1,7 +1,11 @@
 export const SOURCE_LANGUAGE = 'en';
-export const TRANSLATED_LANGUAGES = ['pt-BR', 'es', 'de', 'fr', 'ja', 'ko', 'zh'];
-const SINGLE_FORM_LANGUAGES = ['ja', 'ko', 'zh'];
-const SINGLE_FORM = ['other'];
+export const TRANSLATED_LANGUAGES = ['pt-BR', 'es', 'de', 'fr', 'ja', 'ko', 'zh', 'ar', 'hi'];
+const PLURAL_FORMS: Record<string, string[]> = {
+  ja: ['other'],
+  ko: ['other'],
+  zh: ['other'],
+  ar: ['zero', 'one', 'two', 'few', 'many', 'other'],
+};
 const TWO_FORMS = ['one', 'other'];
 const TRANSLATED_STATE = 'translated';
 
@@ -38,7 +42,7 @@ function localization({
   if (!isPlural && typeof value !== 'string') throw new Error(`${language} gives ${key} plural forms but the key has none`);
   if (typeof value === 'string' && isPlural) throw new Error(`${language} gives ${key} one value but the key is plural`);
   if (typeof value === 'string') return unit(value);
-  const required = SINGLE_FORM_LANGUAGES.includes(language) ? SINGLE_FORM : TWO_FORMS;
+  const required = PLURAL_FORMS[language] || TWO_FORMS;
   const given = Object.keys(value).sort();
   if (given.join() !== [...required].sort().join())
     throw new Error(`${language} gives ${key} the forms ${given.join()} instead of ${required.join()}`);

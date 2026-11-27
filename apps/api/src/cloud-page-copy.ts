@@ -6,6 +6,8 @@ import { CLOUD_PAGE_COPY_FRENCH } from './cloud-page-copy-french';
 import { CLOUD_PAGE_COPY_JAPANESE } from './cloud-page-copy-japanese';
 import { CLOUD_PAGE_COPY_KOREAN } from './cloud-page-copy-korean';
 import { CLOUD_PAGE_COPY_CHINESE } from './cloud-page-copy-chinese';
+import { CLOUD_PAGE_COPY_ARABIC } from './cloud-page-copy-arabic';
+import { CLOUD_PAGE_COPY_HINDI } from './cloud-page-copy-hindi';
 export const CLOUD_PAGE_COPY = {
   fullMail: {
     subject: 'todz cloud is full right now',
@@ -42,4 +44,6 @@ export const CLOUD_PAGE_COPY_BY_LANGUAGE: Record<Language, CloudPageCopy> = {
   [Language.Japanese]: CLOUD_PAGE_COPY_JAPANESE,
   [Language.Korean]: CLOUD_PAGE_COPY_KOREAN,
   [Language.Chinese]: CLOUD_PAGE_COPY_CHINESE,
+  [Language.Arabic]: CLOUD_PAGE_COPY_ARABIC,
+  [Language.Hindi]: CLOUD_PAGE_COPY_HINDI,
 };

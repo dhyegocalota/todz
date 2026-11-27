@@ -6,6 +6,8 @@ import { ADMIN_SIGN_IN_EMAIL_COPY_FRENCH } from './admin-sign-in-email-copy-fren
 import { ADMIN_SIGN_IN_EMAIL_COPY_JAPANESE } from './admin-sign-in-email-copy-japanese';
 import { ADMIN_SIGN_IN_EMAIL_COPY_KOREAN } from './admin-sign-in-email-copy-korean';
 import { ADMIN_SIGN_IN_EMAIL_COPY_CHINESE } from './admin-sign-in-email-copy-chinese';
+import { ADMIN_SIGN_IN_EMAIL_COPY_ARABIC } from './admin-sign-in-email-copy-arabic';
+import { ADMIN_SIGN_IN_EMAIL_COPY_HINDI } from './admin-sign-in-email-copy-hindi';
 import { ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES } from '../../src/site/admin-paths';
 
 export const ADMIN_SIGN_IN_EMAIL_COPY = {
@@ -30,4 +32,6 @@ export const ADMIN_SIGN_IN_EMAIL_COPY_BY_LANGUAGE: Record<Language, AdminSignInE
   [Language.Japanese]: ADMIN_SIGN_IN_EMAIL_COPY_JAPANESE,
   [Language.Korean]: ADMIN_SIGN_IN_EMAIL_COPY_KOREAN,
   [Language.Chinese]: ADMIN_SIGN_IN_EMAIL_COPY_CHINESE,
+  [Language.Arabic]: ADMIN_SIGN_IN_EMAIL_COPY_ARABIC,
+  [Language.Hindi]: ADMIN_SIGN_IN_EMAIL_COPY_HINDI,
 };

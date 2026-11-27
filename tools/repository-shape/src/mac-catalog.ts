@@ -1,10 +1,14 @@
 import { readRepositoryFile } from './repository-files';
 
 export const SOURCE_LANGUAGE = 'en';
-export const LANGUAGES = ['en', 'pt-BR', 'es', 'de', 'fr', 'ja', 'ko', 'zh'];
+export const LANGUAGES = ['en', 'pt-BR', 'es', 'de', 'fr', 'ja', 'ko', 'zh', 'ar', 'hi'];
 const TRANSLATED_STATE = 'translated';
-const SINGLE_FORM_LANGUAGES = ['ja', 'ko', 'zh'];
-const SINGLE_FORM = ['other'];
+const PLURAL_FORMS: Record<string, string[]> = {
+  ja: ['other'],
+  ko: ['other'],
+  zh: ['other'],
+  ar: ['zero', 'one', 'two', 'few', 'many', 'other'],
+};
 const TWO_FORMS = ['one', 'other'];
 
 type StringUnit = { state: string; value: string };
@@ -29,7 +33,7 @@ function isTranslated(unit: StringUnit | undefined): boolean {
 }
 
 function formsFor(language: string): string[] {
-  return SINGLE_FORM_LANGUAGES.includes(language) ? SINGLE_FORM : TWO_FORMS;
+  return PLURAL_FORMS[language] || TWO_FORMS;
 }
 
 function isLanguageTranslated({ catalog, key, language }: { catalog: Catalog; key: string; language: string }): boolean {

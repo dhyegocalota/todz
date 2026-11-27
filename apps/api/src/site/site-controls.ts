@@ -2,6 +2,7 @@ import { LANGUAGE_PROFILES, Language } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
 import { type PagePreferences, Theme } from '../page-preferences';
 import { LANDING_COPY_BY_LANGUAGE } from './landing-copy';
+import { flagHtml } from './site-flags';
 import { SitePath } from './site-paths';
 
 const SHORT_CODE_SEPARATOR = '-';
@@ -27,7 +28,7 @@ function returnInputHtml(preferences: PagePreferences): string {
 function languageButtonHtml({ language, preferences }: { language: Language; preferences: PagePreferences }): string {
   const { nativeName, htmlLang } = LANGUAGE_PROFILES[language];
   const current = language === preferences.language ? ' aria-current="true"' : '';
-  return `<button class="language-option" type="submit" name="${SitePath.LanguageField}" value="${language}" lang="${htmlLang}"${current}>${escapedHtml(nativeName)}</button>`;
+  return `<button class="language-option" type="submit" name="${SitePath.LanguageField}" value="${language}" lang="${htmlLang}"${current}>${flagHtml(language)}${escapedHtml(nativeName)}</button>`;
 }
 
 export function languageMenuHtml(preferences: PagePreferences): string {
@@ -37,7 +38,7 @@ export function languageMenuHtml(preferences: PagePreferences): string {
     .map((language) => languageButtonHtml({ language, preferences }))
     .join('\n');
   return `<details class="language-menu">
-<summary class="language-summary" aria-label="${escapedHtml(`${languageLabel}: ${shortCode}`)}" aria-expanded="false"><span class="language-code">${shortCode}</span></summary>
+<summary class="language-summary" aria-label="${escapedHtml(`${languageLabel}: ${shortCode}`)}" aria-expanded="false">${flagHtml(preferences.language)}<span class="language-code">${shortCode}</span></summary>
 <form class="language-form" method="post" action="${SitePath.Language}">
 ${returnInputHtml(preferences)}
 ${buttons}

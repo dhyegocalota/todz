@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { LANGUAGE_PROFILES, Language } from './language';
+import { TextDirection } from './text-direction';
 
-const EXPECTED_CODES = ['en', 'pt-BR', 'es', 'de', 'fr', 'ja', 'ko', 'zh'];
+const EXPECTED_CODES = ['en', 'pt-BR', 'es', 'de', 'fr', 'ja', 'ko', 'zh', 'ar', 'hi'];
 
 describe('Language', () => {
   test('names the eight codes of the v1.2 decision', () => {
@@ -13,12 +14,47 @@ describe('Language', () => {
   });
 
   test.each([
-    [Language.English, { nativeName: 'English', pathPrefix: '', htmlLang: 'en', docsFolder: '', openGraphLocale: 'en_US' }],
+    [
+      Language.English,
+      { nativeName: 'English', pathPrefix: '', htmlLang: 'en', docsFolder: '', openGraphLocale: 'en_US', direction: TextDirection.Ltr },
+    ],
     [
       Language.PortugueseBrazil,
-      { nativeName: 'Português (Brasil)', pathPrefix: '/pt-br', htmlLang: 'pt-BR', docsFolder: 'pt-br', openGraphLocale: 'pt_BR' },
+      {
+        nativeName: 'Português (Brasil)',
+        pathPrefix: '/pt-br',
+        htmlLang: 'pt-BR',
+        docsFolder: 'pt-br',
+        openGraphLocale: 'pt_BR',
+        direction: TextDirection.Ltr,
+      },
     ],
-    [Language.Chinese, { nativeName: '简体中文', pathPrefix: '/zh', htmlLang: 'zh-CN', docsFolder: 'zh', openGraphLocale: 'zh_CN' }],
+    [
+      Language.Chinese,
+      {
+        nativeName: '简体中文',
+        pathPrefix: '/zh',
+        htmlLang: 'zh-CN',
+        docsFolder: 'zh',
+        openGraphLocale: 'zh_CN',
+        direction: TextDirection.Ltr,
+      },
+    ],
+    [
+      Language.Arabic,
+      {
+        nativeName: 'العربية',
+        pathPrefix: '/ar',
+        htmlLang: 'ar',
+        docsFolder: 'ar',
+        openGraphLocale: 'ar_AR',
+        direction: TextDirection.Rtl,
+      },
+    ],
+    [
+      Language.Hindi,
+      { nativeName: 'हिन्दी', pathPrefix: '/hi', htmlLang: 'hi', docsFolder: 'hi', openGraphLocale: 'hi_IN', direction: TextDirection.Ltr },
+    ],
   ])('%s keeps its profile', (language, profile) => {
     expect(LANGUAGE_PROFILES[language]).toEqual(profile);
   });
@@ -28,6 +64,11 @@ describe('Language', () => {
     expect(new Set(profiles.map(({ nativeName }) => nativeName)).size).toBe(profiles.length);
     expect(new Set(profiles.map(({ pathPrefix }) => pathPrefix)).size).toBe(profiles.length);
     expect(new Set(profiles.map(({ openGraphLocale }) => openGraphLocale)).size).toBe(profiles.length);
+  });
+
+  test('writes right to left for Arabic alone', () => {
+    const rightToLeft = Object.entries(LANGUAGE_PROFILES).filter(([, { direction }]) => direction === TextDirection.Rtl);
+    expect(rightToLeft.map(([language]) => language)).toEqual([Language.Arabic]);
   });
 
   test('prefixes every language but English with a lowercase slash path', () => {
