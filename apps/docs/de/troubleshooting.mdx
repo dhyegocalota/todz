@@ -1,0 +1,30 @@
+---
+title: Fehlerbehebung
+description: Der Anmeldelink, Gatekeeper, ein älterer Server und Updates, die sich nicht installieren lassen.
+---
+
+## Der Anmeldelink tut nichts oder sagt, die Anmeldung sei fehlgeschlagen
+
+Öffne den Link aus der E-Mail auf demselben Mac, der ihn angefordert hat. Ein Link, der auf einem anderen Mac oder nach der Anforderung eines neueren geöffnet wird, wird abgelehnt mit „Anmeldung mit diesem Link nicht möglich. Warte eine Minute und öffne ihn dann erneut aus der E-Mail.“ Fordere mit **Link senden** einen neuen an und öffne die neueste Mail.
+
+## Mein Agent kann sich nicht mit OAuth anmelden
+
+Öffne den Anmeldelink aus der Mail im selben Browser, in dem du deine E-Mail-Adresse eingegeben hast. Meldet der Client einen Redirect-Fehler oder braucht er ein eigenes Adressschema, lehnt todz das ab, sodass sich dieser Client noch nicht verbinden kann, siehe [Agent verbinden](/de/connect-an-agent).
+
+Sagt der Browser jedes Mal „Dieser Link kann nicht verwendet werden, um eine App zu verbinden“, verwendet der Client eine Registrierung weiter, die der Server nicht mehr kennt. Lösche die gespeicherte Anmeldung des Clients und verbinde dich erneut: Führe in Claude Code `/mcp` aus, wähle todz und dann **Clear authentication**.
+
+## Zu viele Versuche
+
+„Zu viele Versuche. Warte eine Minute und versuche es dann erneut.“ bedeutet, dass der Server die Link-Anfragen begrenzt hat. Warte eine Minute und drücke dann einmal auf **Link senden**.
+
+## macOS öffnet die App nicht
+
+todz ist nicht notarisiert, deshalb weigert sich macOS beim ersten Mal. Öffne todz einmal und schließe die Warnung, gehe dann zu **Systemeinstellungen** › **Datenschutz & Sicherheit**, klicke auf **Trotzdem öffnen** und bestätige mit deinem Passwort oder Touch ID. Siehe [Auf dem Mac installieren](/de/install-on-mac#1-herunterladen-und-starten).
+
+## Server älter
+
+**Server älter** in der App bedeutet „Dieser Server ist älter, als diese App erwartet. Wer ihn betreibt, kann ihn aktualisieren.“ Deploye auf deinem eigenen Server die aktuelle Version; siehe [Selbst hosten](/de/self-host).
+
+## Ein Update lässt sich nicht installieren
+
+Sagt Sparkle, todz könne nicht von dem Ort aus aktualisiert werden, in den es geladen wurde, ziehe `Todz.app` in „Programme“, öffne es von dort und suche erneut. Siehe [Updates](/de/updates).

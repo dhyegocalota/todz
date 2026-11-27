@@ -1,0 +1,41 @@
+---
+title: Confidentialité des espaces de travail
+description: Masquez vos autres espaces de travail derrière Touch ID ou le mot de passe de votre Mac, et voyez où ils restent hors de vue.
+---
+
+La confidentialité des espaces de travail garde vos autres espaces de travail hors de vue sur votre Mac. Tant qu’elle est activée, todz n’affiche que l’espace de travail dans lequel vous êtes et dessine exactement ce que dessine un compte à un seul espace de travail : aucun espace réservé, nombre, icône de cadenas ni nom d’un autre espace de travail. Touch ID ou le mot de passe de votre Mac les ramène.
+
+## L’activer
+
+Ouvrez todz › Réglages › Confidentialité et mises à jour et activez **Exiger Touch ID pour changer d’espace de travail**. C’est désactivé par défaut, et l’activer ne demande rien. **Redemander après** fixe la durée d’une session déverrouillée : 1, 5, 15 ou 60 minutes.
+
+## Où les autres espaces de travail restent masqués
+
+Tant que la session est verrouillée, ils sont absents de :
+
+- La barre latérale, le sélecteur d’espace de travail et le menu des espaces de travail.
+- Le compteur, le ruban et le panneau de la barre des menus.
+- Les widgets. Leurs données en cache sont purgées au verrouillage de la session, si bien qu’un widget ne dessine jamais un espace de travail masqué.
+- Siri et Raccourcis.
+- Les liens `todz://`, qui répondent comme pour un projet qui n’existe pas.
+- Les Réglages et leurs **Apps connectées**.
+- Le coup d’œil du matin, la clôture de la journée et les raccourcis globaux des espaces de travail.
+
+## Les ramener
+
+Choisissez **Changer d’espace de travail…** (⌘K, aussi dans le menu **…** du panneau de la barre des menus). todz demande Touch ID ou le mot de passe de votre Mac, puis vous changez comme d’habitude. Créer ou supprimer un espace de travail, désactiver le réglage et changer la durée demandent la même chose.
+
+## Quand il se verrouille de nouveau
+
+- Quand le Mac se met en veille ou que l’écran se verrouille, et quand l’économiseur d’écran démarre.
+- Quand vous quittez todz : chaque lancement commence verrouillé.
+- Après la durée que vous choisissez sous **Redemander après**.
+- Quand vous choisissez **Verrouiller maintenant**, qui n’apparaît que lorsque la session est déverrouillée.
+
+## Ce qu’il ne protège pas
+
+<Warning>
+  La confidentialité des espaces de travail est un écran de confidentialité sur votre Mac, pas du chiffrement. Quiconque connaît le mot de passe de votre Mac peut la déverrouiller, et elle ne change rien au serveur : un agent connecté avec OAuth atteint toujours son projet.
+</Warning>
+
+Voir [Espaces de travail](/fr/workspaces) pour changer, en afficher plusieurs à la fois, renommer et supprimer.

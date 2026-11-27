@@ -1,0 +1,41 @@
+---
+title: Confidentialité
+description: Ce que todz compte exactement, ce qu’il ne stocke jamais, et comment le désactiver.
+---
+
+todz compte son utilisation sous forme de totaux quotidiens. Il ne stocke jamais de journal de ce que quelqu’un a fait, et il ne lit jamais vos tâches pour cela.
+
+## Ce qui est compté
+
+Chaque compte est un seul nombre pour un seul jour, avec au plus une courte étiquette.
+
+| Compte | D’où il vient | Étiquette |
+| --- | --- | --- |
+| Propriétaires, espaces de travail, projets | Les propres enregistrements du serveur, une fois par nuit | aucune |
+| Tâches ajoutées, tâches terminées | Un décompte de chaque projet, une fois par nuit | aucune |
+| Écritures des agents | Un décompte de ce que les agents ont modifié, une fois par nuit | le nom de l’agent tiré d’une liste fixe (Claude Code, Codex, Cursor, Gemini, Windsurf, Zed, VS Code), tout autre en `other` |
+| E-mails du jour envoyés | Les propres enregistrements du serveur, une fois par nuit | aucune |
+| Recherches de mises à jour | L’app Mac qui cherche des mises à jour | la version de l’app et la version majeure de macOS, comme `0.2.1\|15` |
+| Rapports d’utilisation partagés | L’app Mac, seulement si vous activez **Partager l’utilisation anonyme** | la version de l’app et la version majeure de macOS |
+| Événements d’utilisation partagés | Le même rapport | l’un de `popover_opened`, `day_closed`, `morning_glance`, `shortcut_used`, `multi_workspace` |
+
+## Ce qui n’est jamais stocké
+
+- Aucun titre de tâche, aucune note, aucun nom de projet, aucun nom d’espace de travail ni aucune adresse e-mail.
+- Aucune adresse IP et aucun user agent. Le user agent d’une recherche de mises à jour est lu pour les deux numéros de version, puis abandonné.
+- Aucun journal d’événements et aucun horodatage d’un événement isolé. Seulement un jour et un total.
+- Le code aléatoire que l’app Mac envoie avec un rapport change tous les 30 jours, ne sert qu’à freiner les abus et n’est jamais stocké.
+
+Les totaux sont conservés 13 mois, puis supprimés par le serveur.
+
+## Partager l’utilisation anonyme
+
+L’app Mac le demande une seule fois. C’est désactivé tant que vous n’avez pas dit oui, et vous pouvez le changer à tout moment dans les Réglages. Quand c’est activé, l’app tient sur votre Mac un décompte des cinq événements ci-dessus et envoie un petit rapport par jour : des décomptes, la version de l’app, la version majeure de macOS et le code aléatoire. Un rapport pèse moins de 1 Ko, et le serveur refuse tout ce qui dépasse 2 Ko.
+
+## Auto-hébergement
+
+Un serveur que vous faites tourner ne compte rien. Le réglage `TELEMETRY` est désactivé sauf s’il vaut exactement `on`, et le guide d’auto-hébergement vous le fait retirer. Une app Mac connectée à votre serveur envoie son rapport à votre serveur, qui le refuse.
+
+## Où les chiffres sont lus
+
+Seul le propriétaire du service hébergé les lit, sur une page d’administration connectée avec un export CSV. Le code est ouvert : voir `apps/api/src/telemetry` dans le dépôt.

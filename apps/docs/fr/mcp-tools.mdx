@@ -1,0 +1,244 @@
+---
+title: Outils MCP
+description: Les outils et le prompt qu’un agent reçoit du serveur MCP de todz, et la portée dont chacun a besoin.
+---
+
+Un client MCP se connecte au serveur todz uniquement avec OAuth : ajoutez l’URL à votre client et connectez-vous, comme le montre [Connecter un agent](/fr/connect-an-agent). L’autorisation que vous approuvez détermine l’ensemble d’outils : une portée projet donne les outils de tâches d’un projet, et une portée propriétaire donne les outils du compte et les mêmes outils de tâches pour chaque projet du compte. Chaque outil ci-dessous nomme la portée dont il a besoin.
+
+- Une **portée projet** contient la liste de tâches d’un projet : celui que vous avez choisi sur l’écran de consentement. Elle peut aussi lister et déplacer des tâches dans l’espace de travail de ce projet. Elle ne crée, ne renomme et ne supprime jamais un espace de travail ni un projet. Les identifiants de tâche ressemblent à `T-12`.
+- Une **portée propriétaire** contient tout le compte : ses espaces de travail, ses projets et chaque tâche, si bien qu’une seule connexion expose tout ce que l’app sait faire. Elle n’est jamais présélectionnée sur l’écran de consentement, et vous la déconnectez dans **Réglages** › **Apps connectées**. Elle n’atteint aucun autre compte.
+
+Avec une portée propriétaire, chaque outil de tâches prend un argument `project` obligatoire : l’identifiant du projet sur lequel il travaille, fourni par `workspaces`. Il n’y a pas de projet par défaut. Un projet d’un autre compte répond exactement comme un projet qui n’existe pas. Une portée projet n’a pas d’argument `project`, sauf que `move` y prend la destination.
+
+Chaque suppression demande un argument `confirm` contenant le nom actuel (le titre actuel d’une tâche) ; quand il diffère, rien n’est supprimé.
+
+## next
+
+**Portée :** portée projet et portée propriétaire.
+
+La seule tâche ouverte sur laquelle travailler maintenant dans ce projet, avec ses notes.
+
+| Argument  | Type   | Description                                                      |
+| --------- | ------ | ---------------------------------------------------------------- |
+| `project` | texte  | Portée propriétaire seulement : identifiant du projet sur lequel l’outil de tâches travaille, fourni par workspaces. |
+
+## add
+
+**Portée :** portée projet et portée propriétaire.
+
+Ajoute une ou plusieurs tâches. Donnez à chacune une idempotency_key pour rendre une nouvelle tentative sûre.
+
+| Argument          | Type           | Description                                                                  |
+| ----------------- | -------------- | ---------------------------------------------------------------------------- |
+| `project`         | texte          | Portée propriétaire seulement : identifiant du projet sur lequel l’outil de tâches travaille, fourni par workspaces. |
+| `tasks`           | liste          | Les tâches à ajouter, un objet chacune.                                      |
+| `title`           | texte          | Titre court.                                                                 |
+| `notes`           | texte ou null  | Notes en Markdown.                                                           |
+| `due_date`        | texte ou null  | Date du calendrier, AAAA-MM-JJ.                                              |
+| `idempotency_key` | texte ou null  | Toute chaîne propre à cette tâche ; la répéter renvoie la tâche déjà ajoutée. |
+
+## list
+
+**Portée :** portée projet et portée propriétaire.
+
+Liste les tâches par état, fenêtre d’échéance et texte, dans l’ordre manuel (terminées : les plus récentes d’abord).
+
+| Argument  | Type            | Description                                                                            |
+| --------- | --------------- | -------------------------------------------------------------------------------------- |
+| `project` | texte           | Portée propriétaire seulement : identifiant du projet sur lequel l’outil de tâches travaille, fourni par workspaces. |
+| `state`   | texte           | `open` ou `done`. `open` par défaut.                                                   |
+| `due`     | liste de textes | Fenêtres d’échéance à inclure : `overdue`, `today`, `upcoming` ou `undated`. Vide signifie toutes. |
+| `text`    | texte ou null   | Texte à chercher dans les titres et les notes.                                         |
+| `limit`   | entier          | Combien de tâches afficher.                                                            |
+
+## show
+
+**Portée :** portée projet et portée propriétaire.
+
+Affiche une tâche avec son état, sa date d’échéance et ses notes.
+
+| Argument  | Type   | Description                                                                  |
+| --------- | ------ | ---------------------------------------------------------------------------- |
+| `project` | texte  | Portée propriétaire seulement : identifiant du projet sur lequel l’outil de tâches travaille, fourni par workspaces. |
+| `id`      | texte  | Identifiant de la tâche, comme `T-12`.                                       |
+
+## history
+
+**Portée :** portée projet et portée propriétaire.
+
+Affiche ce qui est arrivé à une tâche, de la plus ancienne à la plus récente : qui a fait quoi et quand.
+
+| Argument  | Type   | Description                                                                  |
+| --------- | ------ | ---------------------------------------------------------------------------- |
+| `project` | texte  | Portée propriétaire seulement : identifiant du projet sur lequel l’outil de tâches travaille, fourni par workspaces. |
+| `id`      | texte  | Identifiant de la tâche, comme `T-12`.                                       |
+
+## update
+
+**Portée :** portée projet et portée propriétaire.
+
+Change le titre, les notes, la date d’échéance ou la place dans l’ordre d’une tâche. null efface les notes ou la date d’échéance.
+
+| Argument    | Type           | Description                                                                |
+| ----------- | -------------- | -------------------------------------------------------------------------- |
+| `project`   | texte          | Portée propriétaire seulement : identifiant du projet sur lequel l’outil de tâches travaille, fourni par workspaces. |
+| `id`        | texte          | Identifiant de la tâche, comme `T-12`.                                     |
+| `title`     | texte          | Titre court.                                                               |
+| `notes`     | texte ou null  | Notes en Markdown.                                                         |
+| `due_date`  | texte ou null  | Date du calendrier, AAAA-MM-JJ.                                            |
+| `placement` | objet          | Où déplacer la tâche : `first`, `last`, ou `before` ou `after` une ancre.  |
+| `kind`      | texte          | Dans `placement` : `first`, `last`, `before` ou `after`.                   |
+| `anchor`    | texte          | Dans `placement`, avec `before` et `after` : l’identifiant de l’autre tâche. |
+
+## done
+
+**Portée :** portée projet et portée propriétaire.
+
+Termine une ou plusieurs tâches, avec une note facultative de ce qui a été fait.
+
+| Argument  | Type            | Description                                                                  |
+| --------- | --------------- | ---------------------------------------------------------------------------- |
+| `project` | texte           | Portée propriétaire seulement : identifiant du projet sur lequel l’outil de tâches travaille, fourni par workspaces. |
+| `ids`     | liste de textes | Identifiants de tâches, comme `T-12`.                                        |
+| `note`    | texte ou null   | Ce qui a été fait.                                                           |
+
+## reopen
+
+**Portée :** portée projet et portée propriétaire.
+
+Rouvre une ou plusieurs tâches terminées.
+
+| Argument  | Type            | Description                                                                  |
+| --------- | --------------- | ---------------------------------------------------------------------------- |
+| `project` | texte           | Portée propriétaire seulement : identifiant du projet sur lequel l’outil de tâches travaille, fourni par workspaces. |
+| `ids`     | liste de textes | Identifiants de tâches, comme `T-12`.                                        |
+
+## delete
+
+**Portée :** portée projet et portée propriétaire.
+
+Supprime définitivement une tâche. Donnez son titre actuel comme confirm ; rien n’est supprimé quand il diffère. Une tâche que vous voulez garder ailleurs a besoin de move. Le Mac du propriétaire affiche la suppression après sa prochaine mise à jour.
+
+| Argument  | Type   | Description                                                                       |
+| --------- | ------ | --------------------------------------------------------------------------------- |
+| `project` | texte  | Portée propriétaire seulement : identifiant du projet sur lequel l’outil de tâches travaille, fourni par workspaces. |
+| `id`      | texte  | Identifiant de la tâche, comme `T-12`.                                            |
+| `confirm` | texte  | Le titre actuel de la tâche, saisi exactement. Rien n’est supprimé quand il diffère. |
+
+## move
+
+**Portée :** portée projet et portée propriétaire.
+
+Déplace une tâche vers un autre projet du même espace de travail. La tâche y reçoit un nouvel identifiant. Trouvez les identifiants de projets avec projects. Le Mac du propriétaire affiche le déplacement après sa prochaine mise à jour.
+
+| Argument      | Type   | Description                                                                                         |
+| ------------- | ------ | --------------------------------------------------------------------------------------------------- |
+| `id`          | texte  | Identifiant de la tâche, comme `T-12`.                                                              |
+| `project`     | texte  | Portée projet : identifiant du projet vers lequel déplacer la tâche, fourni par l’outil projects. Portée propriétaire : identifiant du projet où se trouve la tâche, fourni par workspaces. |
+| `destination` | texte  | Portée propriétaire seulement : identifiant du projet vers lequel déplacer la tâche, fourni par workspaces. |
+
+## projects
+
+**Portée :** portée projet.
+
+Liste les projets de l’espace de travail auquel cette connexion appartient, avec leurs identifiants.
+
+Il ne prend aucun argument.
+
+## workspaces
+
+**Portée :** portée propriétaire.
+
+Liste les espaces de travail de ce compte avec leurs projets et leurs identifiants.
+
+Il ne prend aucun argument.
+
+## create_workspace
+
+**Portée :** portée propriétaire.
+
+Crée un espace de travail. Il commence avec un projet Boîte de réception.
+
+| Argument | Type   | Description                         |
+| -------- | ------ | ----------------------------------- |
+| `name`   | texte  | Nom, jusqu’à 80 caractères.         |
+
+## rename_workspace
+
+**Portée :** portée propriétaire.
+
+Renomme un espace de travail.
+
+| Argument    | Type   | Description                         |
+| ----------- | ------ | ----------------------------------- |
+| `workspace` | texte  | Identifiant de l’espace de travail, fourni par workspaces. |
+| `name`      | texte  | Nom, jusqu’à 80 caractères.         |
+
+## delete_workspace
+
+**Portée :** portée propriétaire.
+
+Supprime définitivement un espace de travail avec tous ses projets et toutes ses tâches. Donnez son nom actuel comme confirm ; rien n’est supprimé quand il diffère.
+
+| Argument    | Type   | Description                                                                          |
+| ----------- | ------ | ------------------------------------------------------------------------------------ |
+| `workspace` | texte  | Identifiant de l’espace de travail, fourni par workspaces.                           |
+| `confirm`   | texte  | Le nom actuel de l’espace de travail, saisi exactement. Rien n’est supprimé quand il diffère. |
+
+## create_project
+
+**Portée :** portée propriétaire.
+
+Crée un projet dans un espace de travail.
+
+| Argument    | Type   | Description                         |
+| ----------- | ------ | ----------------------------------- |
+| `workspace` | texte  | Identifiant de l’espace de travail, fourni par workspaces. |
+| `name`      | texte  | Nom, jusqu’à 80 caractères.         |
+
+## rename_project
+
+**Portée :** portée propriétaire.
+
+Renomme un projet. La Boîte de réception ne peut pas être renommée.
+
+| Argument  | Type   | Description                         |
+| --------- | ------ | ----------------------------------- |
+| `project` | texte  | Identifiant du projet, fourni par workspaces. |
+| `name`    | texte  | Nom, jusqu’à 80 caractères.         |
+
+## delete_project
+
+**Portée :** portée propriétaire.
+
+Supprime définitivement un projet avec ses tâches. Donnez son nom actuel comme confirm ; rien n’est supprimé quand il diffère. La Boîte de réception ne peut pas être supprimée.
+
+| Argument  | Type   | Description                                                                         |
+| --------- | ------ | ----------------------------------------------------------------------------------- |
+| `project` | texte  | Identifiant du projet, fourni par workspaces.                                       |
+| `confirm` | texte  | Le nom actuel du projet, saisi exactement. Rien n’est supprimé quand il diffère.    |
+
+## settings
+
+**Portée :** portée propriétaire.
+
+Affiche les réglages du compte : fuseau horaire, rappel de l’agent et e-mail du jour.
+
+Il ne prend aucun argument.
+
+## update_settings
+
+**Portée :** portée propriétaire.
+
+Change les réglages du compte. Ne donnez que ce qui change.
+
+| Argument            | Type            | Description                                                                              |
+| ------------------- | --------------- | ---------------------------------------------------------------------------------------- |
+| `time_zone`         | texte           | Nom du fuseau horaire, comme America/Sao_Paulo.                                          |
+| `agent_nudge`       | vrai ou faux    | Si next ajoute une ligne sur les tâches dues aujourd’hui.                                |
+| `day_email`         | vrai ou faux    | Si l’e-mail du jour est envoyé.                                                          |
+| `day_email_minutes` | entier          | Minutes après minuit, dans votre fuseau horaire, où l’e-mail du jour est envoyé : de 0 à 1439. |
+
+## Prompts
+
+Le serveur propose un seul prompt, `next` : Commencer à travailler sur la prochaine tâche de ce projet.
