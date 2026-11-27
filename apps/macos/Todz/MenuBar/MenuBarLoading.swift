@@ -8,12 +8,12 @@ struct MenuBarLoading: View {
         VStack {
             if let banner = model.banner {
                 FailureView(banner: banner)
+                    .padding()
             }
             if model.banner == nil {
-                ProgressView(MainWindowCopy.loading)
+                MenuBarSkeleton()
             }
         }
         .frame(maxWidth: .infinity)
-        .padding()
     }
 }

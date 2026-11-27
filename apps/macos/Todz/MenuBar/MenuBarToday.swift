@@ -2,8 +2,6 @@ import SwiftUI
 import TodzKit
 
 private let maximumPopoverHeight: CGFloat = 520
-private let newTaskKey: KeyEquivalent = "n"
-private let dayCloseSection = "day-close"
 private let dayClosedLinger: Duration = .seconds(2)
 
 struct MenuBarToday: View {
@@ -13,51 +11,83 @@ struct MenuBarToday: View {
     @Environment(MainWindowState.self) private var windowState
     @Environment(MenuBarPanel.self) private var panel
     @Environment(DayCloseCoordinator.self) private var dayClose
+    @Environment(AppUpdater.self) private var appUpdater: AppUpdater?
     @State private var pinnedTopHeight: CGFloat = .zero
-    @State private var footHeight: CGFloat = .zero
 
     var body: some View {
-        let isClosingDay = dayClose.isClosingDay
-        let listState = TaskListState.of(workspace: workspace, item: .today, model: model, lingers: windowState.lingers)
-        let state = isClosingDay ? dayCloseState(listState) : listState
-        let isDayClosed = isClosingDay && model.isDayClosed(lingers: windowState.lingers)
+        let state = TaskListState.of(workspace: workspace, item: .today, model: model, lingers: windowState.lingers)
+        let day = day(of: state)
+        let notice = MenuBarNotice(hasBanner: model.banner != nil && !state.isFailed, isOffline: model.syncStatus != .online, hasUpdateNote: appUpdater?.updatedToVersion != nil)
         let destination = model.addTaskDestination(for: .today)
+        let isClosingDay = dayClose.isClosingDay
+        let isLoaded = day.screen != .loading && day.screen != .failed
+        let showsComposer = destination != nil && isLoaded
         VStack(alignment: .leading, spacing: .zero) {
             VStack(alignment: .leading, spacing: .zero) {
-                MenuBarHeader(workspace: workspace)
-                if let banner = model.banner, !state.isFailed {
-                    ErrorBanner(banner: banner)
-                }
-                if let destination, !state.isFailed {
-                    AddTaskField(destination: destination, selection: .keepSelection, focus: focus, focusedValue: .addField, onEscape: closeWhenEmpty)
-                        .frame(maxHeight: addFieldMaximumHeight)
+                MenuBarHeader(workspace: workspace, day: day, notice: notice)
+                strip(notice)
+                if let destination, showsComposer {
+                    AddTaskField(
+                        destination: destination,
+                        selection: .keepSelection,
+                        focus: focus,
+                        focusedValue: .composer,
+                        onEscape: closeWhenEmpty,
+                        onNavigate: { navigate(direction: $0, day: day, hasComposer: true) }
+                    )
+                    .frame(maxHeight: composerMaximumHeight)
                         .clipped()
                         .disabled(isClosingDay)
                         .accessibilityHidden(isClosingDay)
                 }
-                if case .rows = state, !isDayClosed, let openCount = model.todayHeadingCount {
-                    MenuBarTodayHeading(title: isClosingDay ? MenuBarCopy.closeTheDay : MainWindowCopy.today, openCount: openCount)
-                }
             }
             .onGeometryChange(for: CGFloat.self, of: \.size.height) { pinnedTopHeight = $0 }
-            MenuBarTodayBody(state: state, isDayClosed: isDayClosed, maximumHeight: maximumPopoverHeight - pinnedTopHeight - footHeight)
-            MenuBarFoot(doneCount: doneCount(state: state))
-                .onGeometryChange(for: CGFloat.self, of: \.size.height) { footHeight = $0 }
+            MenuBarTodayBody(
+                state: state,
+                day: day,
+                focus: focus,
+                navigate: { navigate(direction: $0, day: day, hasComposer: showsComposer && !isClosingDay) },
+                maximumHeight: maximumPopoverHeight - pinnedTopHeight
+            )
         }
         .background {
-            Button(MainWindowCopy.newTask) { focus.wrappedValue = .addField }
-                .keyboardShortcut(newTaskKey)
+            Button(MainWindowCopy.newTask) { focus.wrappedValue = .composer }
+                .keyboardShortcut(MenuBarShortcut.newTask)
                 .disabled(isClosingDay)
+                .hidden()
+            Button(MenuBarCopy.upNextHelp) { completeUpNext(day.upNext) }
+                .keyboardShortcut(MenuBarShortcut.completeUpNext, modifiers: .command)
+                .disabled(isClosingDay || day.upNext == nil)
                 .hidden()
         }
         .contentShape(Rectangle())
         .simultaneousGesture(TapGesture().onEnded { engage() })
         .onExitCommand(perform: escapeAction)
         .onChange(of: isClosingDay, initial: true) { _, isClosingDay in announceOpening(isClosingDay: isClosingDay) }
-        .task(id: isDayClosed) { await closeAfterTheDayClosed(isDayClosed: isDayClosed) }
+        .onChange(of: day.screen) { _, screen in announceAllDone(screen: screen) }
+        .task(id: day.screen == .dayClosed) { await closeAfterTheDayClosed(isDayClosed: day.screen == .dayClosed) }
     }
 
-    private var addFieldMaximumHeight: CGFloat? {
+    @ViewBuilder private func strip(_ notice: MenuBarNotice) -> some View {
+        switch notice.strip {
+        case .banner:
+            if let banner = model.banner {
+                ErrorBanner(banner: banner)
+            }
+        case .offline:
+            SyncStatusItem(announcesChanges: false)
+                .buttonStyle(.borderless)
+                .padding(.horizontal)
+                .padding(.vertical, FormMetrics.fieldVerticalPadding)
+                .background(.fill.quaternary, in: Capsule())
+                .padding(.horizontal)
+                .padding(.bottom, FormMetrics.fieldVerticalPadding)
+        case .none:
+            EmptyView()
+        }
+    }
+
+    private var composerMaximumHeight: CGFloat? {
         guard dayClose.isClosingDay else { return nil }
         return .zero
     }
@@ -67,17 +97,26 @@ struct MenuBarToday: View {
         return closePanel
     }
 
-    private func dayCloseState(_ state: TaskListState) -> TaskListState {
-        guard case .rows = state, let tasks = model.dayCloseTasks(lingers: windowState.lingers), let taskViews = model.taskViews else { return state }
-        let section = TaskSection(
-            identifier: dayCloseSection,
-            title: nil,
-            count: nil,
-            tasks: tasks,
-            pendingTasks: taskViews.pendingTasks(for: .today),
-            hasManualOrder: false
+    private func day(of state: TaskListState) -> MenuBarDay {
+        MenuBarDay(
+            open: state.todaySections.prefix(1).flatMap(\.tasks),
+            doneToday: state.todaySections.dropFirst().flatMap(\.tasks),
+            pendingCount: state.todaySections.flatMap(\.pendingTasks).count,
+            isClosingDay: dayClose.isClosingDay,
+            load: state.menuBarLoad
         )
-        return .rows([section])
+    }
+
+    private func navigate(direction: MenuBarDirection, day: MenuBarDay, hasComposer: Bool) {
+        let rows = ([day.upNext].compactMap(\.self) + day.queue).map { TaskKey(projectIdentifier: $0.project.identifier, number: $0.task.number) }
+        let hasDoneToday = !dayClose.isClosingDay && !day.doneToday.isEmpty
+        let targets = MenuBarNavigation.targets(hasComposer: hasComposer, rows: rows, hasDoneToday: hasDoneToday)
+        focus.wrappedValue = MenuBarNavigation.next(from: focus.wrappedValue, direction: direction, in: targets)
+    }
+
+    private func completeUpNext(_ task: BoardTask?) {
+        guard let task else { return }
+        windowState.toggleDone(task: task.key, item: .today, model: model)
     }
 
     private func closeWhenEmpty(_ escape: AddTaskFieldEscape) {
@@ -98,6 +137,11 @@ struct MenuBarToday: View {
         AccessibilityNotification.Announcement(AccessibilityCopy.dayCloseOpened(count: openCount)).post()
     }
 
+    private func announceAllDone(screen: MenuBarScreen) {
+        guard screen == .allDone else { return }
+        AccessibilityNotification.Announcement(MenuBarCopy.allDoneTitle).post()
+    }
+
     private func closeAfterTheDayClosed(isDayClosed: Bool) async {
         guard isDayClosed else { return }
         AccessibilityNotification.Announcement(MenuBarCopy.dayClosedTitle).post()
@@ -108,9 +152,19 @@ struct MenuBarToday: View {
         }
         panel.closeReturningToTheApplicationBefore()
     }
+}
 
-    private func doneCount(state: TaskListState) -> Int {
-        guard case .rows = state, let taskViews = model.taskViews else { return .zero }
-        return taskViews.today.doneToday.count
+private extension TaskListState {
+    var todaySections: [TaskSection] {
+        guard case let .rows(sections) = self else { return [] }
+        return sections
+    }
+
+    var menuBarLoad: MenuBarLoad {
+        switch self {
+        case .loading: .loading
+        case .failed: .failed
+        case .empty, .rows: .loaded
+        }
     }
 }

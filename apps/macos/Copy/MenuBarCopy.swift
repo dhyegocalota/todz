@@ -16,6 +16,22 @@ enum MenuBarCopy {
     static let doneHelp = "Mark as done (D)"
     static let tomorrowHelp = "Move to tomorrow (T)"
     static let noDateHelp = "Removes the due date. The task stays open. (N)"
+    static let upNext = "Up next"
+    static let allDoneTitle = "All done"
+    static let more = "More"
+    static let openWindowHelp = "Open todz (⌘O)"
+    static let upNextHelp = "Mark the next task done (⌘↩)"
+    static let updateAvailable = "Update available"
+    static let newTaskKeycap = "⌘N"
+    static let placeholderTitles = ["Send the homepage copy to Sam", "Renew the design tool licence", "Book the launch photo shoot"]
+
+    static func progress(done: Int, total: Int) -> String {
+        "\(done) of \(total) done"
+    }
+
+    static func todayProgress(left: Int, done: Int, total: Int) -> String {
+        "Today, \(Self.left(count: left)), \(progress(done: done, total: total))"
+    }
 
     static func left(count: Int) -> String {
         InflectedCopy.text("\(count) left")
