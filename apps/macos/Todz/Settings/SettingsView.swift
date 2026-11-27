@@ -29,6 +29,7 @@ struct SettingsView: View {
             SettingsWorkspaceRows()
             SettingsWorkspaceShortcuts()
             SettingsOwnerKeys()
+            SettingsConnectedApps()
             serverSection
             Section {
                 OpenSourceLink()

@@ -32,6 +32,7 @@ private func taskPath(projectIdentifier: String, number: Int) -> String {
 }
 
 private let ownerKeysPath = "/owner/keys"
+private let connectedAppsPath = "/owner/connected-apps"
 
 private func keysPath(_ projectIdentifier: String) -> String {
     "\(projectPath(projectIdentifier))/keys"
@@ -86,6 +87,8 @@ public protocol OwnerService: Sendable {
     func listOwnerKeys(session: String) async throws -> [ProjectKey]
     func issueOwnerKey(session: String) async throws -> IssuedKey
     func revokeOwnerKey(session: String, keyIdentifier: String) async throws
+    func listConnectedApps(session: String) async throws -> [ConnectedApp]
+    func disconnectConnectedApp(session: String, connectedAppIdentifier: String) async throws
 }
 
 public struct OwnerAPI: OwnerService {
@@ -271,6 +274,14 @@ public struct OwnerAPI: OwnerService {
 
     public func revokeOwnerKey(session: String, keyIdentifier: String) async throws {
         _ = try await send(OwnerRequest(method: .delete, path: "\(ownerKeysPath)/\(keyIdentifier)", session: session))
+    }
+
+    public func listConnectedApps(session: String) async throws -> [ConnectedApp] {
+        try await answer(ConnectedAppsAnswer.self, to: OwnerRequest(method: .get, path: connectedAppsPath, session: session)).connectedApps
+    }
+
+    public func disconnectConnectedApp(session: String, connectedAppIdentifier: String) async throws {
+        _ = try await send(OwnerRequest(method: .delete, path: "\(connectedAppsPath)/\(connectedAppIdentifier)", session: session))
     }
 
     private func answer<Answer: Decodable>(_ type: Answer.Type, to request: OwnerRequest) async throws -> Answer {

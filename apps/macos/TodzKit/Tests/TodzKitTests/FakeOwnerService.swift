@@ -35,6 +35,7 @@ struct StatusFailure: Sendable {
     var history: [HistoryEntry] = []
     var keysOfProject: [String: [ProjectKey]] = [:]
     var ownerKeys: [ProjectKey] = []
+    var connectedApps: [ConnectedApp] = []
     private(set) var issuedKeyCount = 0
     var clock = fixedInstant
     private var suspendedRoutes: Set<FakeRoute> = []
@@ -243,6 +244,17 @@ struct StatusFailure: Sendable {
         try await record(.revokeOwnerKey(session: session, keyIdentifier: keyIdentifier))
         guard ownerKeys.contains(where: { $0.identifier == keyIdentifier }) else { throw OwnerAPIError.notFound }
         ownerKeys.removeAll { $0.identifier == keyIdentifier }
+    }
+
+    func listConnectedApps(session: String) async throws -> [ConnectedApp] {
+        try await record(.listConnectedApps(session: session))
+        return connectedApps
+    }
+
+    func disconnectConnectedApp(session: String, connectedAppIdentifier: String) async throws {
+        try await record(.disconnectConnectedApp(session: session, connectedAppIdentifier: connectedAppIdentifier))
+        guard connectedApps.contains(where: { $0.identifier == connectedAppIdentifier }) else { throw OwnerAPIError.notFound }
+        connectedApps.removeAll { $0.identifier == connectedAppIdentifier }
     }
 
     func nextIssuedKey() -> IssuedKey {

@@ -59,6 +59,9 @@ import Observation
     public internal(set) var issuedOwnerKey: IssuedKey?
     public internal(set) var isChangingOwnerKeys = false
     public internal(set) var ownerKeyFailure: OwnerKeyFailure?
+    public internal(set) var connectedApps: ConnectedAppList?
+    public internal(set) var isChangingConnectedApps = false
+    public internal(set) var connectedAppFailure: ConnectedAppFailure?
     var retry: (@MainActor () async -> Void)?
     var retryTarget: WriteTarget?
     var outbox = Outbox() {
@@ -117,6 +120,7 @@ import Observation
     @ObservationIgnored var keyScreenIdentifier: UUID?
     @ObservationIgnored var keyIssueAnswerCount = 0
     @ObservationIgnored var ownerKeyVisit = UUID()
+    @ObservationIgnored var connectedAppVisit = UUID()
     @ObservationIgnored var revokedKeyIdentifiers: Set<String> = []
     @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored var serverSignOut: Task<Void, Never>?
@@ -431,6 +435,7 @@ import Observation
         selection = nil
         forgetKeys()
         forgetOwnerKeys()
+        forgetConnectedApps()
         selectedItem = .inbox
         selectedTask = nil
         board = TaskBoard()
