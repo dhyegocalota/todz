@@ -17588,43 +17588,43 @@
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Show Alongside"
+            "value": "Mostrar junto"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Show Alongside"
+            "value": "Mostrar también"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Show Alongside"
+            "value": "Zusätzlich anzeigen"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Show Alongside"
+            "value": "Afficher aussi"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Show Alongside"
+            "value": "並べて表示"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Show Alongside"
+            "value": "함께 보기"
           }
         },
         "zh": {
           "stringUnit": {
             "state": "translated",
-            "value": "Show Alongside"
+            "value": "同时显示"
           }
         }
       }
