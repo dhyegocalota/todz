@@ -50,6 +50,16 @@
 
 Codex and every MCP tool: [docs.todz.app](https://docs.todz.app/connect-an-agent). More of the app: [a tour](https://docs.todz.app/tour).
 
+## Where it's going
+
+todz is the to-do list you and your agents share: you decide what matters, your agents pick it up, do it and check it off. Next:
+
+- **Close the loop with git.** A merged pull request checks off its task, with the link.
+- **One project per repository.** Agents find the right list from the folder they work in.
+- **A `todz` CLI** for the terminal and Linux.
+
+Further out, todz becomes a **control center for your agents**: one inbox where every agent reports what it is doing, asks for a decision and takes the next task, steered from your menu bar and your phone.
+
 ## Contributing
 
 Built by people and coding agents under one process: [HARNESS.md](.claude/HARNESS.md), [AGENTS.md](AGENTS.md).
