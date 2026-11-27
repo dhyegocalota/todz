@@ -43,7 +43,7 @@ type FakeElement = { hidden: boolean; textContent: string; dataset: Record<strin
 const NOTICE_CARDS = [
   { notice: AdminNotice.None, title: 'Sign in to the admin', hasForm: true },
   { notice: AdminNotice.TryAgain, title: 'Sign in to the admin', hasForm: true },
-  { notice: AdminNotice.CheckInbox, title: 'Check your inbox', hasForm: false },
+  { notice: AdminNotice.CheckInbox, title: 'Check your inbox', hasForm: true },
   { notice: AdminNotice.Closed, title: 'The admin is closed right now.', hasForm: false },
   { notice: AdminNotice.Forbidden, title: 'Request refused', hasForm: false },
 ];
@@ -260,7 +260,7 @@ describe('the sign-in page', () => {
     const main = decoded(mainOf(html));
     expect(main).toContain('If that address can sign in, a link is on its way. It works once, for 15 minutes, in this browser.');
     expect(main).toMatch(new RegExp(`<a [^>]*href="${AdminPath.Panel}"[^>]*>Back to sign in</a>`));
-    expect(main).toMatch(/<h1 [^>]*data-answer[^>]*tabindex="-1"/);
+    expect(main).not.toMatch(/<h1 [^>]*data-answer/);
     expect(widgetsOf(html)).toEqual([]);
   });
 

@@ -1,6 +1,7 @@
 import { Language } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { CLOUD_PAGE_COPY_BY_LANGUAGE } from '../src/cloud-page-copy';
+import { EMAIL_CODE_COPY_BY_LANGUAGE } from '../src/email-code-copy';
 import { DAY_EMAIL_STOP_COPY_BY_LANGUAGE } from '../src/day-email/day-email-stop-copy';
 import { DAY_MAIL_COPY_BY_LANGUAGE } from '../src/emails/day-mail-copy';
 import { OAUTH_COPY_BY_LANGUAGE } from '../src/oauth/oauth-copy';
@@ -119,6 +120,7 @@ const COPY_MODULES: CopyModule[] = [
     untranslatable: untranslatableOf({ everywhere: ['signIn.emailPlaceholder'] }),
   },
   { name: 'sign-in page', byLanguage: SIGN_IN_PAGE_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
+  { name: 'email code', byLanguage: EMAIL_CODE_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
   {
     name: 'cloud page',
     byLanguage: CLOUD_PAGE_COPY_BY_LANGUAGE,

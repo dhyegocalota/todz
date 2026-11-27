@@ -15,6 +15,8 @@ export const STATUS_OF_NOTICE: Record<AdminNotice, HttpStatus> = {
   [AdminNotice.TryAgain]: HttpStatus.TooManyRequests,
   [AdminNotice.Closed]: HttpStatus.Unavailable,
   [AdminNotice.Forbidden]: HttpStatus.Forbidden,
+  [AdminNotice.WrongCode]: HttpStatus.Unauthorized,
+  [AdminNotice.CodeLocked]: HttpStatus.TooManyRequests,
 };
 
 function adminAnswerWith({ answer, cookies = [] }: { answer: Response; cookies?: string[] }): Response {
@@ -33,13 +35,15 @@ export async function adminCardAnswerOf({
   notice,
   siteKey,
   cookies,
+  address,
 }: {
   request: Request;
   notice: AdminNotice;
   siteKey: string | null;
   cookies?: string[];
+  address?: string;
 }): Promise<Response> {
-  const page = await serveAdminSignInPage({ request, notice, siteKey });
+  const page = await serveAdminSignInPage({ request, notice, siteKey, address });
   return adminPageAnswerOf({ page, status: STATUS_OF_NOTICE[notice], cookies });
 }
 

@@ -13,6 +13,8 @@ import { TEST_SITE_KEY } from './page-script';
 
 const SITE_ORIGIN = 'https://todz.app';
 const API_ORIGIN = 'https://api.todz.app';
+const ADDRESS = 'maria@example.com';
+const SITE_KEY = '1x00000000000000000000AA';
 const LANGUAGE_COOKIE = 'todz_language';
 const THEME_COOKIE = 'todz_theme';
 const STOP_PATH = `/day-email/stop?token=${'a'.repeat(64)}`;
@@ -42,7 +44,12 @@ const PAGES: { name: string; url: string; pageOf: PageOf }[] = [
     url: `${API_ORIGIN}/oauth/authorize`,
     pageOf: (request) => approvedPageOf({ request, clientName: 'Agent' }),
   },
-  { name: 'the OAuth inbox page', url: `${API_ORIGIN}/oauth/sign-in-links`, pageOf: (request) => inboxPageOf({ request, cookies: [] }) },
+  {
+    name: 'the OAuth inbox page',
+    url: `${API_ORIGIN}/oauth/sign-in-links`,
+    pageOf: (request) =>
+      inboxPageOf({ request, cookies: [], address: ADDRESS, params: new URLSearchParams(), siteKey: SITE_KEY, state: null }),
+  },
   {
     name: 'the app sign-in page',
     url: `${API_ORIGIN}/sign-in`,

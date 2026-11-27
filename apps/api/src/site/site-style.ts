@@ -1,3 +1,4 @@
+import { EMAIL_CODE_STYLE } from './email-code-style';
 import { LANDING_SHOTS, type LandingShot, type ShotFile } from './landing-shots';
 
 const NARROW_BREAKPOINT = '40rem';
@@ -131,7 +132,7 @@ const ADMIN_STYLE = `.admin-card{display:flex;flex-direction:column;align-items:
 .badge-failed .badge-dot{background:none;box-shadow:inset 0 0 0 2px CanvasText}}`;
 
 const DARK_TOKENS = `--color-page:#070812;--color-surface:#171A2E;--color-text:#F2F4FF;--color-text-muted:#A9B0D6;--color-hairline:rgb(242 244 255 / 0.08);
---color-accent:#7C95FF;--color-link:#8CF7D0;--color-focus:#8CF7D0;--color-chip:rgb(47 91 255 / 0.16);
+--color-accent:#7C95FF;--color-link:#8CF7D0;--color-focus:#8CF7D0;--color-error:#FF8DA1;--color-chip:rgb(47 91 255 / 0.16);
 --gradient-wallpaper:radial-gradient(70rem 40rem at 10% 115%, rgb(47 91 255 / 0.55), transparent 60%), radial-gradient(50rem 34rem at 95% -10%, rgb(140 247 208 / 0.16), transparent 55%), linear-gradient(160deg, #141A46, #0E1020);
 --gradient-aurora:radial-gradient(60rem 30rem at 50% -8rem, rgb(47 91 255 / 0.28), transparent 70%);
 --glass-fill:rgb(23 26 46 / 0.55);--glass-sheen:linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0));
@@ -142,7 +143,7 @@ const DARK_TOKENS = `--color-page:#070812;--color-surface:#171A2E;--color-text:#
 
 export const SITE_STYLE = `:root{color-scheme:light dark;
 --color-page:#F2F4FA;--color-surface:#FFFFFF;--color-text:#161A33;--color-text-muted:#5B6285;--color-hairline:rgb(22 26 51 / 0.08);
---color-accent:#2F5BFF;--color-link:#2F5BFF;--color-focus:#2F5BFF;--color-mint:#8CF7D0;--color-on-action:#FFFFFF;
+--color-accent:#2F5BFF;--color-link:#2F5BFF;--color-focus:#2F5BFF;--color-error:#C6284D;--color-mint:#8CF7D0;--color-on-action:#FFFFFF;
 --color-terminal:#0E1020;--color-terminal-text:#E6E9F7;--color-terminal-muted:#9AA3C7;--color-terminal-prompt:#8CF7D0;
 --color-chip:rgb(47 91 255 / 0.08);
 --gradient-action:linear-gradient(135deg, #2F5BFF, #1B2A9E);
@@ -464,4 +465,5 @@ html{scroll-behavior:auto}
 .way-point::before,.way-badge-free::before{background:CanvasText;color:Canvas;box-shadow:none}
 .join-button,.download-button{background:ButtonFace;color:ButtonText;border:1px solid ButtonText;box-shadow:none}
 .eyebrow-dot,.notice-dot{background:CanvasText;box-shadow:none}}
-${ADMIN_STYLE}`;
+${ADMIN_STYLE}
+${EMAIL_CODE_STYLE}`;

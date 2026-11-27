@@ -1,3 +1,4 @@
+import { EMAIL_CODE_COPY_BY_LANGUAGE, type EmailCodeCopy } from '../email-code-copy';
 import { escapedHtml } from '../escaped-html';
 import type { PagePreferences } from '../page-preferences';
 import { TurnstileAction } from '../turnstile';
@@ -6,13 +7,14 @@ import { ADMIN_COPY_BY_LANGUAGE, type AdminCopy } from './admin-copy';
 import { AdminNotice } from './admin-notice';
 import { AdminField, AdminPath } from './admin-paths';
 import { adminPreferencesOf } from './admin-preferences';
+import { CodeState, EMAIL_CODE_SCRIPT, codeFormHtml, resendFormHtml } from './email-code-input';
+import { JOIN_BUTTON_CLASS, JOIN_FORM_CLASS } from './join-form-classes';
 import { SiteGlyph, glyphHtml } from './site-glyphs';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
 import { CONTENT_ID, SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE } from './site-style';
 
-export const JOIN_FORM_CLASS = 'join-form';
-export const JOIN_BUTTON_CLASS = 'join-button';
+export { JOIN_BUTTON_CLASS, JOIN_FORM_CLASS };
 const ARIA_DISABLED = 'aria-disabled';
 export const ANSWER_ATTRIBUTE = 'data-answer';
 export const RETURN_ATTRIBUTE = 'data-return';
@@ -22,14 +24,15 @@ export const WIDGET_CLASS = 'cf-turnstile';
 export const TOKEN_CALLBACK = 'adminTokenReady';
 const TITLE_ID = 'admin-title';
 const EMAIL_ID = 'admin-email';
+const CODE_ID = 'admin-code';
 
 type Challenge = { widget: string; scriptTag: string };
 
 type Card = { documentTitle: string; content: string };
 
-type CardParameters = { copy: AdminCopy; challenge: Challenge };
+type CardParameters = { copy: AdminCopy; codeCopy: EmailCodeCopy; challenge: Challenge; address: string | null };
 
-type SignInPage = { hasForm: boolean; cardOf: (parameters: CardParameters) => Card };
+type SignInPage = { hasForm: boolean; hasCode: boolean; cardOf: (parameters: CardParameters) => Card };
 
 const NO_CHALLENGE: Challenge = { widget: '', scriptTag: '' };
 
@@ -85,6 +88,21 @@ const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   connectsToSelf: false,
   declaresManifest: false,
 });
+const CODE_SCRIPTS = [PAGE_SCRIPT, EMAIL_CODE_SCRIPT];
+const CODE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
+  style: SITE_STYLE,
+  scripts: CODE_SCRIPTS,
+  widgetOrigin: null,
+  connectsToSelf: false,
+  declaresManifest: false,
+});
+const CODE_CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
+  style: SITE_STYLE,
+  scripts: CODE_SCRIPTS,
+  widgetOrigin: TURNSTILE_ORIGIN,
+  connectsToSelf: false,
+  declaresManifest: false,
+});
 export function adminCardMainHtml(content: string): string {
   return `<main id="${CONTENT_ID}">
 <section class="admin-card glass rise">
@@ -115,7 +133,7 @@ export function noticeHtml(text: string | null): string {
   return `<p class="join-notice" role="status" tabindex="-1" ${ANSWER_ATTRIBUTE}><span class="notice-dot" aria-hidden="true"></span>${escapedHtml(text)}</p>\n`;
 }
 
-function signInCardOf({ copy, notice, challenge }: CardParameters & { notice: string | null }): Card {
+function signInCardOf({ copy, notice, challenge }: Pick<CardParameters, 'copy' | 'challenge'> & { notice: string | null }): Card {
   return {
     documentTitle: copy.meta.signInTitle,
     content: `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(copy.signIn.title)}</h1>
@@ -123,7 +141,7 @@ function signInCardOf({ copy, notice, challenge }: CardParameters & { notice: st
 <form class="${JOIN_FORM_CLASS} admin-form" method="post" action="${AdminPath.SignInLinks}">
 <div class="join-capsule">
 <label class="visually-hidden" for="${EMAIL_ID}">${escapedHtml(copy.signIn.emailLabel)}</label>
-<input id="${EMAIL_ID}" class="join-input" name="${AdminField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(copy.signIn.emailPlaceholder)}" required>
+<input id="${EMAIL_ID}" class="join-input" name="${AdminField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(copy.signIn.emailPlaceholder)}" required autofocus>
 <button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(copy.signIn.submitting)}">${escapedHtml(copy.signIn.submit)}</button>
 </div>
 ${challenge.widget}${noticeHtml(notice)}</form>
@@ -131,12 +149,18 @@ ${challenge.scriptTag}`,
   };
 }
 
-function inboxCardOf({ copy }: CardParameters): Card {
+function codeCardOf({ copy, codeCopy, challenge, address, state }: CardParameters & { state: CodeState | null }): Card {
+  const addressFields = address === null ? [] : [{ name: AdminField.Email, value: address }];
+  const hasResend = address !== null && challenge.widget !== '';
+  const resend = hasResend
+    ? `${resendFormHtml({ copy: codeCopy, action: AdminPath.SignInLinks, fields: addressFields, widget: challenge.widget })}\n`
+    : '';
   return {
     documentTitle: copy.meta.inboxTitle,
-    content: `${answerTitleHtml(copy.inbox.title)}
+    content: `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(copy.inbox.title)}</h1>
 <p class="admin-body">${escapedHtml(copy.inbox.body)}</p>
-${backLinkHtml(copy)}`,
+${codeFormHtml({ copy: codeCopy, action: AdminPath.CodeSessions, fields: addressFields, inputId: CODE_ID, state })}
+${resend}${challenge.scriptTag}${backLinkHtml(copy)}`,
   };
 }
 
@@ -153,33 +177,64 @@ ${backLinkHtml(copy)}`,
   };
 }
 
-function cardDocumentHtml({ card, copy, preferences }: { card: Card; copy: AdminCopy; preferences: PagePreferences }): string {
+function cardDocumentHtml({
+  card,
+  copy,
+  preferences,
+  scripts,
+}: {
+  card: Card;
+  copy: AdminCopy;
+  preferences: PagePreferences;
+  scripts: string[];
+}): string {
   return siteDocumentHtml({
     hasControls: true,
     kind: SitePageKind.Private,
     title: card.documentTitle,
     description: copy.meta.description,
     main: adminCardMainHtml(card.content),
-    scripts: [PAGE_SCRIPT],
+    scripts,
     preferences,
   });
 }
 
 const SIGN_IN_PAGES: Record<AdminNotice, SignInPage> = {
-  [AdminNotice.None]: { hasForm: true, cardOf: ({ copy, challenge }) => signInCardOf({ copy, notice: null, challenge }) },
+  [AdminNotice.None]: {
+    hasForm: true,
+    hasCode: false,
+    cardOf: ({ copy, challenge }) => signInCardOf({ copy, notice: null, challenge }),
+  },
   [AdminNotice.TryAgain]: {
     hasForm: true,
+    hasCode: false,
     cardOf: ({ copy, challenge }) => signInCardOf({ copy, notice: copy.refusal.tooMany, challenge }),
   },
-  [AdminNotice.CheckInbox]: { hasForm: false, cardOf: inboxCardOf },
-  [AdminNotice.Closed]: { hasForm: false, cardOf: closedCardOf },
-  [AdminNotice.Forbidden]: { hasForm: false, cardOf: forbiddenCardOf },
+  [AdminNotice.CheckInbox]: { hasForm: true, hasCode: true, cardOf: (parameters) => codeCardOf({ ...parameters, state: null }) },
+  [AdminNotice.WrongCode]: { hasForm: true, hasCode: true, cardOf: (parameters) => codeCardOf({ ...parameters, state: CodeState.Wrong }) },
+  [AdminNotice.CodeLocked]: {
+    hasForm: true,
+    hasCode: true,
+    cardOf: (parameters) => codeCardOf({ ...parameters, state: CodeState.Locked }),
+  },
+  [AdminNotice.Closed]: { hasForm: false, hasCode: false, cardOf: closedCardOf },
+  [AdminNotice.Forbidden]: { hasForm: false, hasCode: false, cardOf: forbiddenCardOf },
 };
+
+type PagePolicy = { scripts: string[]; policy: string };
+
+function pagePolicyOf({ page, hasWidget }: { page: SignInPage; hasWidget: boolean }): PagePolicy {
+  if (page.hasCode && hasWidget) return { scripts: CODE_SCRIPTS, policy: CODE_CHALLENGE_CONTENT_SECURITY_POLICY };
+  if (page.hasCode) return { scripts: CODE_SCRIPTS, policy: CODE_CONTENT_SECURITY_POLICY };
+  if (hasWidget) return { scripts: [PAGE_SCRIPT], policy: CHALLENGE_CONTENT_SECURITY_POLICY };
+  return { scripts: [PAGE_SCRIPT], policy: CONTENT_SECURITY_POLICY };
+}
 
 export async function serveAdminSignInPage({
   request,
   notice,
   siteKey,
+  address,
 }: {
   request: Request;
   notice: AdminNotice;
@@ -189,14 +244,10 @@ export async function serveAdminSignInPage({
   const page = SIGN_IN_PAGES[notice];
   const preferences = adminPreferencesOf({ request });
   const copy = ADMIN_COPY_BY_LANGUAGE[preferences.language];
+  const codeCopy = EMAIL_CODE_COPY_BY_LANGUAGE[preferences.language];
   const usableSiteKey = page.hasForm ? usableSiteKeyOf(siteKey) : null;
-  if (usableSiteKey === null) {
-    const card = page.cardOf({ copy, challenge: NO_CHALLENGE });
-    return adminPageResponse({ html: cardDocumentHtml({ card, copy, preferences }), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
-  }
-  const card = page.cardOf({ copy, challenge: challengeOf(usableSiteKey) });
-  return adminPageResponse({
-    html: cardDocumentHtml({ card, copy, preferences }),
-    contentSecurityPolicy: CHALLENGE_CONTENT_SECURITY_POLICY,
-  });
+  const challenge = usableSiteKey === null ? NO_CHALLENGE : challengeOf(usableSiteKey);
+  const { scripts, policy } = pagePolicyOf({ page, hasWidget: usableSiteKey !== null });
+  const card = page.cardOf({ copy, codeCopy, challenge, address: address === undefined ? null : address });
+  return adminPageResponse({ html: cardDocumentHtml({ card, copy, preferences, scripts }), contentSecurityPolicy: policy });
 }

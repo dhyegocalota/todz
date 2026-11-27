@@ -1,6 +1,7 @@
 import { EMAIL_CODE_MISSES_PER_REQUEST_MAX } from '@todz/types';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { env } from 'cloudflare:workers';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Env } from '../src/env';
 import { serveAdminCodeSession } from '../src/site/admin-code-sign-in';
 import { serveAdminSession, serveAdminSignInLink } from '../src/site/admin-sign-in';
@@ -140,6 +141,14 @@ async function spentLink({ challenge, token }: { challenge: string; token: strin
     executionContext: createExecutionContext(),
   });
 }
+
+beforeEach(async () => {
+  await env.DIRECTORY.batch([
+    env.DIRECTORY.prepare('DELETE FROM admin_sign_in_links'),
+    env.DIRECTORY.prepare('DELETE FROM admin_sessions'),
+    env.DIRECTORY.prepare('DELETE FROM sign_in_code_misses'),
+  ]);
+});
 
 afterEach(() => {
   vi.restoreAllMocks();

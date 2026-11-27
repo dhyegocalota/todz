@@ -70,3 +70,31 @@ export async function adminGlobalRefusal({ request, env }: { request: Request; e
   if (isLocalSiteHost({ env, request })) return null;
   return refusalOfLimit({ env, limit: AdminLimit.Global, key: AdminPath.SignInLinks });
 }
+
+export function isAdminCodeUnguarded({ request, env }: { request: Request; env: Env }): boolean {
+  return isSiteUnguarded({ request, env, limiters: [env.ADMIN_LIMITER, env.SIGN_IN_CODE_LIMITER] });
+}
+
+const CODE_NOTICE_OF_REFUSAL: Record<LimitRefusal, AdminNotice.CodeLocked | AdminNotice.Closed> = {
+  [LimitRefusal.TryAgain]: AdminNotice.CodeLocked,
+  [LimitRefusal.Unavailable]: AdminNotice.Closed,
+};
+
+// NB ADR 0127: the admin code attempts count against the same per-client code limiter as the app's, and fail closed on a public host without it.
+export async function adminCodeRefusal({
+  request,
+  env,
+}: {
+  request: Request;
+  env: Env;
+}): Promise<AdminNotice.CodeLocked | AdminNotice.Closed | null> {
+  if (isLocalSiteHost({ env, request })) return null;
+  const clientAddress = request.headers.get(HttpHeader.ClientAddress);
+  if (clientAddress === null) return AdminNotice.Closed;
+  const refusal = await limitRefusal({
+    limiter: env.SIGN_IN_CODE_LIMITER,
+    key: `${AdminPath.CodeSessions}:${clientRateKey({ address: clientAddress })}`,
+  });
+  if (refusal === null) return null;
+  return CODE_NOTICE_OF_REFUSAL[refusal];
+}

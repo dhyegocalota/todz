@@ -26,6 +26,7 @@ import { canonicalTimeZone } from './time-zone';
 import { TurnstileAction } from './turnstile';
 
 const LINK_VERIFIER_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+const UNSCRIPTED_TIME_ZONE = 'UTC';
 
 const SignInBodySchema = z.object({
   identity_token: z.string().optional(),
@@ -60,7 +61,7 @@ async function retimedOwner({
 }: {
   directory: D1Database;
   ownerId: string;
-  timeZone: string;
+  timeZone: string | null;
   supportedLanguage: Language | null;
   now: number;
 }): Promise<IdentityOwner> {
@@ -88,7 +89,7 @@ async function identityOwner({
   now,
   cap,
 }: OwnerIdentity & {
-  timeZone: string;
+  timeZone: string | null;
   supportedLanguage: Language | null;
   newOwnerLanguage: Language;
   now: number;
@@ -97,13 +98,14 @@ async function identityOwner({
   const knownOwnerId = await findIdentityOwner({ directory, provider: kind, subject });
   if (knownOwnerId !== null) return retimedOwner({ directory, ownerId: knownOwnerId, timeZone, supportedLanguage, now });
   const ownerId = crypto.randomUUID();
+  const newOwnerTimeZone = timeZone === null ? UNSCRIPTED_TIME_ZONE : timeZone;
   try {
     const isInserted = await insertOwnerWithIdentity({
       directory,
       ownerId,
       provider: kind,
       subject,
-      timeZone,
+      timeZone: newOwnerTimeZone,
       language: newOwnerLanguage,
       now,
       cap,
@@ -112,7 +114,7 @@ async function identityOwner({
     return {
       owner: {
         id: ownerId,
-        timeZone,
+        timeZone: newOwnerTimeZone,
         agentNudge: AGENT_NUDGE_BY_DEFAULT,
         dayEmail: DAY_EMAIL_BY_DEFAULT,
         dayEmailMinutes: DAY_EMAIL_MINUTES_DEFAULT,
@@ -189,7 +191,7 @@ export async function admittedOwner({
   env: Env;
   kind: SignInProviderKind;
   subject: string;
-  timeZone: string;
+  timeZone: string | null;
   now: number;
   executionContext: ExecutionContext;
 }): Promise<OwnerRecord | Response> {

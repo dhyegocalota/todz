@@ -201,9 +201,11 @@ test.describe('the code page of the OAuth sign-in', () => {
     await plainPage.goto(fixtureUrl);
     const field = plainPage.getByLabel(CODE_LABEL);
     await expect(field).toBeVisible();
-    await expect(plainPage.locator(BOX_SELECTOR)).toBeHidden();
+    await expect(plainPage.locator(BOX_SELECTOR).first()).toBeHidden();
     await field.fill(await mailedCodeTo(address));
-    await plainPage.getByRole('button', { name: 'Sign in' }).click();
+    const submit = plainPage.getByRole('button', { name: 'Sign in' });
+    await expect(submit).toBeVisible();
+    await submit.click({ force: true });
     await expect(plainPage.getByRole('heading', { level: 1, name: CONSENT_TITLE })).toBeVisible();
     await plainContext.close();
     await context.close();

@@ -13,6 +13,8 @@ import { TEST_SITE_KEY } from './page-script';
 
 const SITE_ORIGIN = 'https://todz.app';
 const API_ORIGIN = 'https://api.todz.app';
+const ADDRESS = 'maria@example.com';
+const SITE_KEY = '1x00000000000000000000AA';
 const SETTINGS: Partial<Env> = { PUBLIC_ORIGIN: API_ORIGIN, SITE_ORIGIN, SIGN_IN_PROVIDER: 'fake' };
 const RETURN_PATTERN = /<input type="hidden" name="return" value="([^"]*)">/g;
 const SEE_OTHER_STATUS = 303;
@@ -124,7 +126,14 @@ const PAGES: RenderedPage[] = [
     origin: API_ORIGIN,
     hasControls: false,
     html: async () =>
-      inboxPageOf({ request: requestOf({ origin: API_ORIGIN, path: '/oauth/sign-in-links', method: 'POST' }), cookies: [] }).text(),
+      inboxPageOf({
+        request: requestOf({ origin: API_ORIGIN, path: '/oauth/sign-in-links', method: 'POST' }),
+        cookies: [],
+        address: ADDRESS,
+        params: new URLSearchParams(),
+        siteKey: SITE_KEY,
+        state: null,
+      }).text(),
   },
 ];
 

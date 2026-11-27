@@ -184,6 +184,7 @@ test.describe('the admin walk', () => {
     await expect.poll(() => messagesTo(ADMIN_ADDRESS).length, { timeout: LINK_POLL_TIMEOUT_MS }).toBe(3);
     await adminPage.keyboard.type(WRONG_CODE);
     await expect(adminPage.getByText(WRONG_NOTICE)).toBeVisible();
+    await expect(adminPage.getByLabel(CODE_LABEL)).toBeFocused();
     await adminPage.keyboard.type(mailedCodeTo(ADMIN_ADDRESS));
     await expect(adminPage).toHaveURL(new RegExp(`${AdminPath.Metrics}$`));
     await expect(adminPage.getByRole('heading', { level: 1, name: METRICS_TITLE })).toBeVisible();

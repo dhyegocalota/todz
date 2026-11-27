@@ -1,4 +1,5 @@
 import type { WorkspaceListing } from '../directory-workspaces';
+import { EMAIL_CODE_COPY_BY_LANGUAGE } from '../email-code-copy';
 import { escapedHtml } from '../escaped-html';
 import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
@@ -19,6 +20,7 @@ import {
   noticeHtml,
 } from '../site/admin-page';
 import { adminPageResponse, siteContentSecurityPolicy, withFormOrigin } from '../site/site-headers';
+import { CodeState, EMAIL_CODE_SCRIPT, codeFormHtml, resendFormHtml } from '../site/email-code-input';
 import { SitePageKind, siteDocumentHtml } from '../site/site-shell';
 import { SITE_STYLE } from '../site/site-style';
 import type { AuthorizationRequest } from './oauth-authorization-request';
@@ -30,6 +32,8 @@ import { OAuthScope } from './oauth-scope';
 const TITLE_ID = 'oauth-title';
 const WORKSPACE_PROJECT_SEPARATOR = ' › ';
 const EMAIL_ID = 'oauth-email';
+const CODE_ID = 'oauth-code';
+const CODE_SCRIPTS = [PAGE_SCRIPT, EMAIL_CODE_SCRIPT];
 
 export enum OAuthNotice {
   None = 'none',
@@ -88,6 +92,19 @@ const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   declaresManifest: false,
 });
 
+const CODE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
+  style: SITE_STYLE,
+  scripts: CODE_SCRIPTS,
+  widgetOrigin: TURNSTILE_ORIGIN,
+  connectsToSelf: false,
+  declaresManifest: false,
+});
+
+const STATUS_OF_CODE_STATE: Record<CodeState, HttpStatus> = {
+  [CodeState.Wrong]: HttpStatus.Unauthorized,
+  [CodeState.Locked]: HttpStatus.TooManyRequests,
+};
+
 type OAuthPage = { copy: OAuthCopy; preferences: PagePreferences };
 
 export function oauthPreferencesOf({ request, returnPath }: { request: Request; returnPath?: string }): PagePreferences {
@@ -110,18 +127,20 @@ function documentOf({
   content,
   page,
   hasControls,
+  scripts = [PAGE_SCRIPT],
 }: {
   title: string;
   content: string;
   page: OAuthPage;
   hasControls: boolean;
+  scripts?: string[];
 }): string {
   return siteDocumentHtml({
     kind: SitePageKind.Private,
     title,
     description: page.copy.meta.description,
     main: adminCardMainHtml(content),
-    scripts: [PAGE_SCRIPT],
+    scripts,
     preferences: page.preferences,
     hasControls,
   });
@@ -184,7 +203,7 @@ export function signInPageOf({
 ${hiddenInputHtml({ name: OAuthField.Request, value: params.toString() })}
 <div class="join-capsule">
 <label class="visually-hidden" for="${EMAIL_ID}">${escapedHtml(copy.signIn.emailLabel)}</label>
-<input id="${EMAIL_ID}" class="join-input" name="${OAuthField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(copy.signIn.emailPlaceholder)}" required>
+<input id="${EMAIL_ID}" class="join-input" name="${OAuthField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(copy.signIn.emailPlaceholder)}" required autofocus>
 <button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(copy.signIn.submitting)}">${escapedHtml(copy.signIn.submit)}</button>
 </div>
 ${widgetHtml(siteKey)}
@@ -221,14 +240,37 @@ export function approvedPageOf({ request, clientName }: { request: Request; clie
   });
 }
 
-export function inboxPageOf({ request, cookies }: { request: Request; cookies: string[] }): Response {
+export function inboxPageOf({
+  request,
+  cookies,
+  address,
+  params,
+  siteKey,
+  state,
+}: {
+  request: Request;
+  cookies: string[];
+  address: string;
+  params: URLSearchParams;
+  siteKey: string;
+  state: CodeState | null;
+}): Response {
   const page = oauthPageOf({ request });
   const { copy } = page;
-  const content = `${answerTitleHtml(copy.inbox.title)}
-<p class="admin-body">${escapedHtml(copy.inbox.body)}</p>`;
+  const codeCopy = EMAIL_CODE_COPY_BY_LANGUAGE[page.preferences.language];
+  const fields = [
+    { name: OAuthField.Email, value: address },
+    { name: OAuthField.Request, value: params.toString() },
+  ];
+  const content = `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(copy.inbox.title)}</h1>
+<p class="admin-body">${escapedHtml(copy.inbox.body)}</p>
+${codeFormHtml({ copy: codeCopy, action: OAuthPath.CodeSessions, fields, inputId: CODE_ID, state })}
+${resendFormHtml({ copy: codeCopy, action: OAuthPath.SignInLinks, fields, widget: `${widgetHtml(siteKey)}\n` })}
+${TURNSTILE_SCRIPT_TAG}`;
   return oauthPageAnswerOf({
-    html: documentOf({ title: copy.meta.inboxTitle, content, page, hasControls: false }),
-    status: HttpStatus.Ok,
+    html: documentOf({ title: copy.meta.inboxTitle, content, page, hasControls: false, scripts: CODE_SCRIPTS }),
+    status: state === null ? HttpStatus.Ok : STATUS_OF_CODE_STATE[state],
+    policy: CODE_CONTENT_SECURITY_POLICY,
     cookies,
   });
 }
