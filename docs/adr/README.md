@@ -127,3 +127,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0110](0110-the-workspace-lock-hides-every-workspace-but-the-current-one-until-touch-id-or-the-mac-password-unlocks-a-session.md) | The workspace lock hides every workspace but the current one until Touch ID or the Mac password unlocks a session | Accepted | 2026-11-26 |
 | [0111](0111-api-keys-are-removed-and-an-mcp-client-connects-only-through-oauth.md) | API keys are removed and an MCP client connects only through OAuth | Accepted | 2026-11-27 |
 | [0112](0112-the-menu-bar-popover-leads-with-an-up-next-card-and-says-less.md) | The menu bar popover leads with an Up next card and says less | Accepted | 2026-11-27 |
+| [0114](0114-one-motion-system-maps-each-moment-to-a-token-and-reduce-motion-turns-it-into-a-crossfade-or-an-instant-change.md) | One motion system maps each moment to a token, and Reduce Motion turns it into a crossfade or an instant change | Accepted | 2026-11-27 |

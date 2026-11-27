@@ -1,4 +1,5 @@
 import SwiftUI
+import TodzKit
 
 struct WidgetHeader: View {
     let title: String
@@ -18,7 +19,7 @@ struct WidgetHeader: View {
                 Text(MenuBarCopy.left(count: openCount))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .contentTransition(.numericText())
+                    .todzCountTransition()
                     .invalidatableContent()
             }
         }

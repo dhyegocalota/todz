@@ -9,18 +9,21 @@ struct MenuBarTodayBody: View {
     let maximumHeight: CGFloat
 
     var body: some View {
-        switch day.screen {
-        case .loading:
-            MenuBarSkeleton()
-        case .failed:
-            failure
-        case .dayClosed:
-            centeredLines(title: MenuBarCopy.dayClosedTitle, detail: MenuBarCopy.dayClosedBody)
-        case .empty:
-            centeredLines(title: MainWindowCopy.todayEmptyTitle, detail: MainWindowCopy.todayEmptyBody)
-        case .closingDay, .allDone, .active:
-            MenuBarTodayRows(day: day, pendingTasks: pendingTasks, focus: focus, navigate: navigate, maximumHeight: maximumHeight)
+        Group {
+            switch day.screen {
+            case .loading:
+                MenuBarSkeleton()
+            case .failed:
+                failure
+            case .dayClosed:
+                centeredLines(title: MenuBarCopy.dayClosedTitle, detail: MenuBarCopy.dayClosedBody)
+            case .empty:
+                centeredLines(title: MainWindowCopy.todayEmptyTitle, detail: MainWindowCopy.todayEmptyBody)
+            case .closingDay, .allDone, .active:
+                MenuBarTodayRows(day: day, pendingTasks: pendingTasks, focus: focus, navigate: navigate, maximumHeight: maximumHeight)
+            }
         }
+        .todzMotion(.skeletonToRows, value: day.screen)
     }
 
     @ViewBuilder private var failure: some View {

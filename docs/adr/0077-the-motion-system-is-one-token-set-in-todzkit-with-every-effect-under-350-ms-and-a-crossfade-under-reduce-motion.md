@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-11-26
 - Deciders: Claude (the build loop's call, pending the owner); Dhyego Calota (owner) asked for the cinematic moment with the brand, "quero finalizar ainda hoje nas próximas horas … workspace select … e aquele 'tchã' cinematográfico de motion e animation … não faça verificações demais", 2026-11-26
+- Amended by: [0114](0114-one-motion-system-maps-each-moment-to-a-token-and-reduce-motion-turns-it-into-a-crossfade-or-an-instant-change.md) (decision 3: under Reduce Motion a moment is a crossfade or an instant change, and the `press` token joins the set)
 - Inspired by: [ADR 0031](0031-the-menu-bar-extra-is-a-swiftui-window-over-the-app-s-one-model.md) (the menu bar extra is a SwiftUI window), [ADR 0071](0071-the-menu-bar-ribbon-unfolds-what-is-next-beside-the-glyph-for-a-few-seconds-as-template-frames-behind-a-setting-off-by-default.md) (a motion budget counted in seconds, held in TodzKit so tests can read it)
 
 ## Context

@@ -25,7 +25,7 @@ const BUTTON_PIECES = [
   '.accessibilityHint(MainWindowCopy.newProjectHelp(workspaceName: workspace.name))',
   '.disabled(!model.isReady)',
   '.contentShape(.rect)',
-  '.todzAnimation(.snap, value: isHovering)',
+  '.todzMotion(.hover, value: isHovering)',
 ];
 
 function appSwiftSources(): string[] {

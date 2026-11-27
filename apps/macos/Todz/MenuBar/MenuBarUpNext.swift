@@ -17,6 +17,6 @@ struct MenuBarUpNext: View {
                 .transition(.opacity)
         }
         .padding(.bottom)
-        .todzAnimation(.settle, value: task.key)
+        .todzMotion(.upNextSwap, value: task.key)
     }
 }

@@ -22,7 +22,7 @@ struct WorkspaceChordRow: View {
                 }
             }
         }
-        .todzAnimation(.snap, value: isRecording)
+        .todzMotion(.focus, value: isRecording)
         .onDisappear(perform: stopRecording)
     }
 

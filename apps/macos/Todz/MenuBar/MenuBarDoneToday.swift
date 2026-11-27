@@ -20,7 +20,7 @@ struct MenuBarDoneToday: View {
                 }
             }
         }
-        .todzAnimation(.settle, value: isExpanded)
+        .todzMotion(.disclosure, value: isExpanded)
     }
 
     private var disclosure: some View {
@@ -60,6 +60,6 @@ struct MenuBarDoneToday: View {
         RoundedRectangle(cornerRadius: FormMetrics.fieldCornerRadius, style: .continuous)
             .strokeBorder(Color.accentColor, lineWidth: FormMetrics.focusRingWidth)
             .opacity(focus.wrappedValue == .doneToday ? 1 : 0)
-            .todzAnimation(.snap, value: focus.wrappedValue)
+            .todzMotion(.focus, value: focus.wrappedValue)
     }
 }
