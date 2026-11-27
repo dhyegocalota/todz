@@ -2,21 +2,21 @@ import type { DayEmailCopy, DayEmailEmptyCopy } from './day-email-copy';
 import { EmailSlot } from '../../src/emails/email-slot';
 
 const SHARED_COPY = {
-  replyHint: `Reply from the address you sign in with, in one line, to add it to Today in the Inbox of ${EmailSlot.Workspace}.`,
-  footer: `Sent at ${EmailSlot.Time} because Email me my day is on in todz Settings, where it starts on.`,
-  stopLabel: 'Stop these emails',
+  replyHint: `サインインに使っているアドレスから1行で返信すると、${EmailSlot.Workspace}のインボックスの今日にタスクとして追加されます。`,
+  footer: `todzの設定で1日の予定をメールで受け取るがオンになっているため、${EmailSlot.Time}に送信しました（初期設定でオンです）。`,
+  stopLabel: 'このメールを停止',
 };
 
 export const DAY_EMAIL_COPY_JAPANESE: DayEmailCopy = {
   ...SHARED_COPY,
-  subject: `Your day: ${EmailSlot.Count} due`,
-  preview: `${EmailSlot.Count} due today in todz. Reply to add a task.`,
-  heading: `${EmailSlot.Count} due today`,
+  subject: `今日の予定：期限${EmailSlot.Count}件`,
+  preview: `todzで今日が期限のタスクは${EmailSlot.Count}件です。返信するとタスクを追加できます。`,
+  heading: `今日が期限のタスクは${EmailSlot.Count}件`,
 };
 
 export const DAY_EMAIL_EMPTY_COPY_JAPANESE: DayEmailEmptyCopy = {
   ...SHARED_COPY,
-  subject: 'Your day: nothing due',
-  preview: 'Nothing due today in todz. Reply to add a task.',
-  heading: 'Nothing due today',
+  subject: '今日の予定：期限なし',
+  preview: 'todzで今日が期限のタスクはありません。返信するとタスクを追加できます。',
+  heading: '今日が期限のタスクはありません',
 };

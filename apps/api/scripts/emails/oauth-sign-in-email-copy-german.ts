@@ -1,11 +1,12 @@
 import type { OAuthSignInEmailCopy } from './oauth-sign-in-email-copy';
 export const OAUTH_SIGN_IN_EMAIL_COPY_GERMAN: OAuthSignInEmailCopy = {
-  subject: 'Approve an app for todz',
-  preview: 'Your link to approve an app for todz. It works once.',
-  heading: 'Approve an app for todz',
-  intro: 'An app asked to connect to your todz account. Use the button in the browser where you started to choose what it may reach.',
-  action: 'Continue in the browser',
-  fallback: 'Opens in the wrong browser? Paste this link into the one where you asked:',
+  subject: 'Eine App für todz genehmigen',
+  preview: 'Dein Link, um eine App für todz zu genehmigen. Er funktioniert einmal.',
+  heading: 'Eine App für todz genehmigen',
+  intro:
+    'Eine App möchte sich mit deinem todz-Konto verbinden. Nutze den Button in dem Browser, in dem du begonnen hast, um zu wählen, worauf sie zugreifen darf.',
+  action: 'Im Browser fortfahren',
+  fallback: 'Öffnet es sich im falschen Browser? Füge diesen Link in den Browser ein, in dem du ihn angefordert hast:',
   footer:
-    "This link works once, expires soon and opens only in the browser where you asked for it. If you didn't ask, ignore this email: nothing is connected.",
+    'Dieser Link funktioniert einmal, läuft bald ab und öffnet sich nur in dem Browser, in dem du ihn angefordert hast. Hast du ihn nicht angefordert, ignoriere diese E-Mail: Es ist nichts verbunden.',
 };

@@ -1,12 +1,12 @@
 import type { SignInPageCopy } from './sign-in-page-copy';
 export const SIGN_IN_PAGE_COPY_GERMAN: SignInPageCopy = {
-  title: 'Sign in to todz',
-  challengeTitle: 'Check this browser',
-  checking: 'Checking this browser…',
-  checkFailed: "Couldn't check this browser. Reload the page.",
-  unavailable: 'Sign-in is unavailable right now. Try again later.',
-  opening: 'Opening todz on your Mac…',
-  openButton: 'Open todz',
-  notOpened: 'Nothing happened? Open this link on the Mac that asked for it, with todz installed.',
-  missingToken: 'This link is incomplete. Send a new one from todz.',
+  title: 'Bei todz anmelden',
+  challengeTitle: 'Diesen Browser prüfen',
+  checking: 'Dieser Browser wird geprüft…',
+  checkFailed: 'Dieser Browser konnte nicht geprüft werden. Lade die Seite neu.',
+  unavailable: 'Die Anmeldung ist gerade nicht verfügbar. Versuche es später erneut.',
+  opening: 'todz wird auf deinem Mac geöffnet…',
+  openButton: 'todz öffnen',
+  notOpened: 'Nichts passiert? Öffne diesen Link auf dem Mac, der ihn angefordert hat, mit installiertem todz.',
+  missingToken: 'Dieser Link ist unvollständig. Sende einen neuen aus todz.',
 };

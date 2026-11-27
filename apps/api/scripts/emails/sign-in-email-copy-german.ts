@@ -1,10 +1,10 @@
 import type { SignInEmailCopy } from './sign-in-email-copy';
 export const SIGN_IN_EMAIL_COPY_GERMAN: SignInEmailCopy = {
-  subject: 'Your todz sign-in link',
-  preview: 'Your link to sign in to todz',
-  heading: 'Sign in to todz',
-  intro: 'Tap the button to open todz on the Mac that asked for it. The link works once and expires soon.',
-  action: 'Sign in to todz',
-  fallback: 'Button not working? Paste this link into your browser:',
-  footer: "If you didn't ask for this, ignore this email.",
+  subject: 'Dein todz-Anmeldelink',
+  preview: 'Dein Link zur Anmeldung bei todz',
+  heading: 'Bei todz anmelden',
+  intro: 'Tippe auf den Button, um todz auf dem Mac zu öffnen, der ihn angefordert hat. Der Link funktioniert einmal und läuft bald ab.',
+  action: 'Bei todz anmelden',
+  fallback: 'Der Button funktioniert nicht? Füge diesen Link in deinen Browser ein:',
+  footer: 'Hast du das nicht angefordert, ignoriere diese E-Mail.',
 };

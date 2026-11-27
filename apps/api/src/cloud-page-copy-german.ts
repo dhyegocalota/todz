@@ -1,25 +1,25 @@
 import type { CloudPageCopy } from './cloud-page-copy';
 export const CLOUD_PAGE_COPY_GERMAN: CloudPageCopy = {
   fullMail: {
-    subject: 'todz cloud is full right now',
+    subject: 'todz cloud ist gerade voll',
     textOf: ({ queueUrl, selfHostUrl }: { queueUrl: string; selfHostUrl: string }): string =>
-      `todz cloud is full right now: free todz cloud spots are extremely limited. Confirm your address to get in line, and you'll get in when a spot opens: ${queueUrl}\n\nOr run your own server, which is always open: ${selfHostUrl}`,
+      `todz cloud ist gerade voll: Die kostenlosen Plätze in todz cloud sind extrem begrenzt. Bestätige deine Adresse, um dich in die Warteschlange einzureihen, dann kommst du rein, sobald ein Platz frei wird: ${queueUrl}\n\nOder betreibe deinen eigenen Server, der immer offen steht: ${selfHostUrl}`,
   },
   queuePage: {
-    title: 'Get in line for todz cloud',
-    lead: 'Free todz cloud spots are extremely limited. Confirm below and we will write when one opens.',
-    joinAs: 'Join the line as',
-    invalidTitle: 'This link is no longer valid',
+    title: 'In die Warteschlange für todz cloud',
+    lead: 'Die kostenlosen Plätze in todz cloud sind extrem begrenzt. Bestätige unten, dann schreiben wir dir, sobald einer frei wird.',
+    joinAs: 'Der Warteschlange beitreten als',
+    invalidTitle: 'Dieser Link ist nicht mehr gültig',
     invalidBody:
-      'The link in the mail we sent when todz cloud was full works for a week. Ask for a new sign-in link in the app to get a new one.',
-    submit: 'Get in line',
-    submitting: 'Sending…',
-    queuedTitle: "You're on the list",
-    queuedBody: "We'll email you when a spot opens.",
-    tryAgain: "Couldn't add you right now. Try again in a minute.",
-    closed: 'The line is closed right now.',
-    forbidden: "That request didn't come from this site.",
-    selfHost: 'Or run your own server, which is always open:',
-    selfHostLink: 'self-host guide',
+      'Der Link in der Mail, die wir gesendet haben, als todz cloud voll war, gilt eine Woche. Fordere in der App einen neuen Anmeldelink an, um einen neuen zu bekommen.',
+    submit: 'In die Warteschlange',
+    submitting: 'Wird gesendet…',
+    queuedTitle: 'Du stehst auf der Liste',
+    queuedBody: 'Wir schreiben dir, sobald ein Platz frei wird.',
+    tryAgain: 'Du konntest gerade nicht hinzugefügt werden. Versuche es in einer Minute erneut.',
+    closed: 'Die Warteschlange ist gerade geschlossen.',
+    forbidden: 'Diese Anfrage kam nicht von dieser Website.',
+    selfHost: 'Oder betreibe deinen eigenen Server, der immer offen steht:',
+    selfHostLink: 'Self-Host-Anleitung',
   },
 };

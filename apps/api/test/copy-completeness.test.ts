@@ -13,7 +13,7 @@ import { OAUTH_SIGN_IN_EMAIL_COPY_BY_LANGUAGE } from '../scripts/emails/oauth-si
 import { SIGN_IN_EMAIL_COPY_BY_LANGUAGE } from '../scripts/emails/sign-in-email-copy';
 import { WELCOME_EMAIL_COPY_BY_LANGUAGE } from '../scripts/emails/welcome-email-copy';
 
-type CopyModule = { name: string; byLanguage: Record<Language, unknown>; untranslatable: string[] };
+type CopyModule = { name: string; byLanguage: Record<Language, unknown>; untranslatable: Record<Language, string[]> };
 
 const OWNER_FIRST_NAME = ['Dhy', 'ego'].join('');
 const OWNER_FULL_NAME = `${OWNER_FIRST_NAME} Calota`;
@@ -26,53 +26,90 @@ const SAMPLE_ARGUMENTS: unknown[] = [
   { selfHostUrl: SAMPLE_URL },
   3,
 ];
+function untranslatableOf({
+  everywhere = [],
+  perLanguage = {},
+}: {
+  everywhere?: string[];
+  perLanguage?: Partial<Record<Language, string[]>>;
+}): Record<Language, string[]> {
+  return Object.fromEntries(
+    Object.values(Language).map((language) => [
+      language,
+      [
+        ...everywhere,
+        ...Object.entries(perLanguage)
+          .filter(([own]) => own === language)
+          .flatMap(([, paths]) => paths),
+      ],
+    ]),
+  ) as Record<Language, string[]>;
+}
+
 const OTHER_LANGUAGES = Object.values(Language).filter((language) => language !== Language.English);
 
 const COPY_MODULES: CopyModule[] = [
   {
     name: 'landing',
     byLanguage: LANDING_COPY_BY_LANGUAGE,
-    untranslatable: [
-      'meta.siteName',
-      'shell.wordmark',
-      'shell.creditPrefix',
-      'shell.creditName',
-      'shell.footerGithub',
-      'ways.cloud.title',
-      'ways.selfHost.terminal.command',
-      'ways.selfHost.terminal.ready',
-      'stage.menuCount',
-      'signature.name',
-      'terminal.shellPrompt',
-      'terminal.command',
-      'terminal.askPrompt',
-      'terminal.toolCall',
-      'terminal.toolResult',
-      'benefits.day.email.time',
-      'benefits.day.glance.time',
-      'benefits.day.agent.time',
-      'benefits.day.agent.toolCall',
-      'benefits.day.agent.toolResult',
-      'benefits.day.close.time',
-      'benefits.day.extras.siri.label',
-    ],
+    untranslatable: untranslatableOf({
+      perLanguage: {
+        [Language.German]: ['shell.themeSystem'],
+        [Language.French]: ['ways.selfHost.badge'],
+      },
+      everywhere: [
+        'meta.siteName',
+        'shell.wordmark',
+        'shell.creditPrefix',
+        'shell.creditName',
+        'shell.footerGithub',
+        'ways.cloud.title',
+        'ways.selfHost.terminal.command',
+        'ways.selfHost.terminal.ready',
+        'ways.selfHost.terminal.next',
+        'stage.menuCount',
+        'signature.name',
+        'terminal.shellPrompt',
+        'terminal.command',
+        'terminal.askPrompt',
+        'terminal.toolCall',
+        'terminal.toolResult',
+        'benefits.day.email.time',
+        'benefits.day.glance.time',
+        'benefits.day.agent.time',
+        'benefits.day.agent.toolCall',
+        'benefits.day.agent.toolResult',
+        'benefits.day.close.time',
+        'benefits.day.extras.siri.label',
+      ],
+    }),
   },
   {
     name: 'admin',
     byLanguage: ADMIN_COPY_BY_LANGUAGE,
-    untranslatable: ['shell.navLabel', 'signIn.emailPlaceholder', 'usage.mebibyteUnit'],
+    untranslatable: untranslatableOf({
+      everywhere: ['shell.navLabel', 'signIn.emailPlaceholder', 'usage.mebibyteUnit'],
+      perLanguage: {
+        [Language.PortugueseBrazil]: ['metrics.labelOf.workspaces_total'],
+        [Language.French]: ['cloudQueue.columns.action', 'usage.columns.action'],
+      },
+    }),
   },
-  { name: 'oauth', byLanguage: OAUTH_COPY_BY_LANGUAGE, untranslatable: ['signIn.emailPlaceholder'] },
-  { name: 'sign-in page', byLanguage: SIGN_IN_PAGE_COPY_BY_LANGUAGE, untranslatable: [] },
-  { name: 'cloud page', byLanguage: CLOUD_PAGE_COPY_BY_LANGUAGE, untranslatable: [] },
-  { name: 'day-email stop page', byLanguage: DAY_EMAIL_STOP_COPY_BY_LANGUAGE, untranslatable: [] },
-  { name: 'day mail', byLanguage: DAY_MAIL_COPY_BY_LANGUAGE, untranslatable: ['lineSeparator', 'workspaceSeparator'] },
-  { name: 'sign-in email', byLanguage: SIGN_IN_EMAIL_COPY_BY_LANGUAGE, untranslatable: [] },
-  { name: 'welcome email', byLanguage: WELCOME_EMAIL_COPY_BY_LANGUAGE, untranslatable: [] },
-  { name: 'admin sign-in email', byLanguage: ADMIN_SIGN_IN_EMAIL_COPY_BY_LANGUAGE, untranslatable: [] },
-  { name: 'OAuth sign-in email', byLanguage: OAUTH_SIGN_IN_EMAIL_COPY_BY_LANGUAGE, untranslatable: [] },
-  { name: 'day email', byLanguage: DAY_EMAIL_COPY_BY_LANGUAGE, untranslatable: [] },
-  { name: 'empty day email', byLanguage: DAY_EMAIL_EMPTY_COPY_BY_LANGUAGE, untranslatable: [] },
+  { name: 'oauth', byLanguage: OAUTH_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({ everywhere: ['signIn.emailPlaceholder'] }) },
+  { name: 'sign-in page', byLanguage: SIGN_IN_PAGE_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
+  { name: 'cloud page', byLanguage: CLOUD_PAGE_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
+  { name: 'day-email stop page', byLanguage: DAY_EMAIL_STOP_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
+  {
+    name: 'day mail',
+    byLanguage: DAY_MAIL_COPY_BY_LANGUAGE,
+    untranslatable: untranslatableOf({ everywhere: ['lineSeparator', 'workspaceSeparator'] }),
+  },
+  { name: 'sign-in email', byLanguage: SIGN_IN_EMAIL_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
+  { name: 'welcome email', byLanguage: WELCOME_EMAIL_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
+  { name: 'admin sign-in email', byLanguage: ADMIN_SIGN_IN_EMAIL_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
+  { name: 'OAuth sign-in email', byLanguage: OAUTH_SIGN_IN_EMAIL_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
+  { name: 'day email', byLanguage: DAY_EMAIL_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
+  { name: 'empty day email', byLanguage: DAY_EMAIL_EMPTY_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
 ];
 
 type Leaf = { path: string; value: string };
@@ -108,7 +145,7 @@ function leavesOf({ value, path }: { value: unknown; path: string }): Leaf[] {
   return Object.entries(value).flatMap(([key, child]) => leavesOf({ value: child, path: path === '' ? key : `${path}.${key}` }));
 }
 
-describe.each(COPY_MODULES)('the $name copy', ({ byLanguage, untranslatable }) => {
+describe.each(COPY_MODULES)('the $name copy', ({ byLanguage, untranslatable: untranslatableByLanguage }) => {
   const english = leavesOf({ value: byLanguage[Language.English], path: '' });
 
   test.each(OTHER_LANGUAGES)('%s has the shape of the English copy', (language) => {
@@ -134,7 +171,7 @@ describe.each(COPY_MODULES)('the $name copy', ({ byLanguage, untranslatable }) =
     const unchanged = translated
       .filter(({ path, value }) => english.some((leaf) => leaf.path === path && leaf.value === value))
       .map(({ path }) => path)
-      .filter((path) => !untranslatable.includes(path));
+      .filter((path) => !untranslatableByLanguage[language].includes(path));
     expect(unchanged).toEqual([]);
   });
 

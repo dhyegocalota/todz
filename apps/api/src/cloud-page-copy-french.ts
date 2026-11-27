@@ -3,7 +3,7 @@ export const CLOUD_PAGE_COPY_FRENCH: CloudPageCopy = {
   fullMail: {
     subject: 'todz cloud est complet pour le moment',
     textOf: ({ queueUrl, selfHostUrl }: { queueUrl: string; selfHostUrl: string }): string =>
-      `todz cloud est complet pour le moment : les places gratuites sur todz cloud sont extrêmement limitées. Confirmez votre adresse pour entrer dans la file d’attente, et vous entrerez quand une place se libérera : ${queueUrl}\n\nOu faites tourner votre propre serveur, toujours ouvert : ${selfHostUrl}`,
+      `todz cloud est complet pour le moment : les places gratuites sur todz cloud sont extrêmement limitées. Confirmez votre adresse pour entrer dans la file d’attente, et vous entrerez quand une place se libérera : ${queueUrl}\n\nOu faites tourner votre propre serveur, toujours ouvert : ${selfHostUrl}`,
   },
   queuePage: {
     title: 'Entrer dans la file d’attente de todz cloud',
@@ -19,7 +19,7 @@ export const CLOUD_PAGE_COPY_FRENCH: CloudPageCopy = {
     tryAgain: 'Impossible de vous ajouter pour le moment. Réessayez dans une minute.',
     closed: 'La file d’attente est fermée pour le moment.',
     forbidden: 'Cette requête ne vient pas de ce site.',
-    selfHost: 'Ou faites tourner votre propre serveur, toujours ouvert :',
+    selfHost: 'Ou faites tourner votre propre serveur, toujours ouvert :',
     selfHostLink: 'guide d’auto-hébergement',
   },
 };

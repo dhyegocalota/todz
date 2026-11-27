@@ -2,11 +2,11 @@ import type { WelcomeEmailCopy } from './welcome-email-copy';
 import { EmailSlot } from '../../src/emails/email-slot';
 
 export const WELCOME_EMAIL_COPY_SPANISH: WelcomeEmailCopy = {
-  subject: 'Welcome to todz',
-  preview: 'Your todz account is ready',
-  heading: "You're in. Welcome to todz.",
-  intro: `Your todz account for ${EmailSlot.Email} is ready. todz is one to-do list that you and your AI agents share.`,
-  start: 'Connect an agent through MCP and ask it to add your first task, or add one yourself from the menu bar.',
-  signoff: 'Happy shipping.',
-  footer: `You got this email because ${EmailSlot.Email} signed in to todz.`,
+  subject: 'Te damos la bienvenida a todz',
+  preview: 'Tu cuenta de todz está lista',
+  heading: 'Ya estás dentro. Te damos la bienvenida a todz.',
+  intro: `Tu cuenta de todz para ${EmailSlot.Email} está lista. todz es una lista de tareas que compartes con tus agentes de IA.`,
+  start: 'Conecta un agente mediante MCP y pídele que añada tu primera tarea, o añade una tú mismo desde la barra de menús.',
+  signoff: 'Feliz entrega.',
+  footer: `Recibiste este correo porque ${EmailSlot.Email} inició sesión en todz.`,
 };

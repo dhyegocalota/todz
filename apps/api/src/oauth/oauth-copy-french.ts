@@ -26,13 +26,15 @@ export const OAUTH_COPY_FRENCH: OAuthCopy = {
     body: 'Si cette adresse peut se connecter, un lien est en route. Il fonctionne une seule fois, dans ce navigateur, et vous ramène ici.',
   },
   consent: {
-    titleOf: (clientName: string) => `Connecter ${clientName} à todz ?`,
+    titleOf: (clientName: string) => `Connecter ${clientName} à todz ?`,
     redirectOf: (host: string) => `Après votre réponse, todz vous renvoie vers ${host}.`,
     loopbackRedirectOf: (host: string) => `Après votre réponse, todz vous renvoie vers ${host}, une app sur cet ordinateur.`,
-    legend: 'À quoi peut-elle accéder ?',
-    projectHint: 'Un projet lui permet de lire et de modifier les tâches de ce projet, et de les déplacer vers les autres projets de son espace de travail.',
+    legend: 'À quoi peut-elle accéder ?',
+    projectHint:
+      'Un projet lui permet de lire et de modifier les tâches de ce projet, et de les déplacer vers les autres projets de son espace de travail.',
     ownerLabel: 'Tout votre compte (portée propriétaire)',
-    ownerWarning: 'Il peut lire et modifier toutes les tâches, et créer, renommer et supprimer tous les espaces de travail et tous les projets.',
+    ownerWarning:
+      'Il peut lire et modifier toutes les tâches, et créer, renommer et supprimer tous les espaces de travail et tous les projets.',
     noProjects: 'Vous n’avez pas encore de projet. Créez-en un dans l’app todz, puis revenez.',
     approve: 'Approuver',
     approving: 'Approbation…',
@@ -51,7 +53,7 @@ export const OAUTH_COPY_FRENCH: OAuthCopy = {
   refusal: {
     invalidTitle: 'Ce lien ne peut pas être utilisé pour connecter une app',
     invalidBody:
-      'Recommencez depuis l’app que vous connectez. Si vous atterrissez toujours ici, effacez d’abord sa connexion enregistrée (dans Claude Code : /mcp, puis Clear authentication).',
+      'Recommencez depuis l’app que vous connectez. Si vous atterrissez toujours ici, effacez d’abord sa connexion enregistrée (dans Claude Code : /mcp, puis Clear authentication).',
     choiceTitle: 'Ce choix n’est pas disponible',
     choiceBody: 'Recommencez depuis l’app que vous connectez et choisissez l’une des options affichées.',
     forbiddenTitle: 'Requête refusée',
@@ -64,7 +66,7 @@ export const OAUTH_COPY_FRENCH: OAuthCopy = {
     failedAction: 'Obtenir un nouveau lien',
     cloudFullTitle: 'todz cloud est complet pour le moment',
     cloudFullBodyOf: ({ selfHostUrl }: { selfHostUrl: string }) =>
-      `todz cloud est complet pour le moment. Laissez votre e-mail et vous entrerez quand une place se libérera, ou faites tourner votre propre serveur : ${selfHostUrl}`,
+      `todz cloud est complet pour le moment. Laissez votre e-mail et vous entrerez quand une place se libérera, ou faites tourner votre propre serveur : ${selfHostUrl}`,
     noScriptTitle: 'Terminer la connexion',
     noScript: 'Cette page a besoin de JavaScript pour terminer votre connexion. Activez-le, puis rouvrez le lien.',
   },

@@ -83,7 +83,7 @@ export const LANDING_COPY_KOREAN: LandingCopy = {
     contributing: '기여하기',
   },
   signature: {
-    line: '개발자가 개발자와 AI 만지작러를 위해 만들었어요.',
+    line: '개발자가 개발자와 AI를 즐겨 만지는 사람들을 위해 만들었어요.',
     name: AUTHOR.name,
   },
   stage: {

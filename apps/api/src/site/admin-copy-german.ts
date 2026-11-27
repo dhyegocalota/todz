@@ -30,7 +30,7 @@ export const ADMIN_COPY_GERMAN: AdminCopy = {
   },
   refusal: {
     tooMany: 'Ein Link konnte gerade nicht gesendet werden. Versuche es in einer Minute erneut.',
-    closed: 'The admin is closed right now.',
+    closed: 'Der Admin ist gerade geschlossen.',
     crossOriginTitle: 'Anfrage abgelehnt',
     crossOriginBody: 'Diese Anfrage kam nicht von dieser Website.',
   },
@@ -85,7 +85,7 @@ export const ADMIN_COPY_GERMAN: AdminCopy = {
     link: 'Nutzung',
     back: 'Metriken',
     writesHeading: 'Meiste Aufgaben-Schreibzugriffe, letzte 7 Tage',
-    bytesHeading: 'Meister gespeicherter Text geschrieben, letzte 7 Tage',
+    bytesHeading: 'Meiste geschriebene Textmenge, letzte 7 Tage',
     columns: { account: 'Konto', writes: 'Schreibzugriffe', bytes: 'Geschriebener Text', state: 'Status', action: 'Aktion' },
     noAddress: 'Keine Adresse',
     active: 'Aktiv',

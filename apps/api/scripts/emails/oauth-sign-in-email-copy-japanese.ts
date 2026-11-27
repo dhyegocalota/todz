@@ -1,11 +1,11 @@
 import type { OAuthSignInEmailCopy } from './oauth-sign-in-email-copy';
 export const OAUTH_SIGN_IN_EMAIL_COPY_JAPANESE: OAuthSignInEmailCopy = {
-  subject: 'Approve an app for todz',
-  preview: 'Your link to approve an app for todz. It works once.',
-  heading: 'Approve an app for todz',
-  intro: 'An app asked to connect to your todz account. Use the button in the browser where you started to choose what it may reach.',
-  action: 'Continue in the browser',
-  fallback: 'Opens in the wrong browser? Paste this link into the one where you asked:',
+  subject: 'todzへのアプリを承認',
+  preview: 'todzへのアプリを承認するためのリンクです。1回だけ使えます。',
+  heading: 'todzへのアプリを承認',
+  intro: 'アプリがtodzアカウントへの接続をリクエストしました。開始したブラウザでボタンを使い、どこまで使えるようにするかを選んでください。',
+  action: 'ブラウザで続ける',
+  fallback: '別のブラウザで開きますか？リクエストしたブラウザに、次のリンクを貼り付けてください：',
   footer:
-    "This link works once, expires soon and opens only in the browser where you asked for it. If you didn't ask, ignore this email: nothing is connected.",
+    'このリンクは1回だけ使え、まもなく期限が切れ、リクエストしたブラウザでしか開けません。心当たりがない場合は、このメールを無視してください。何も接続されません。',
 };

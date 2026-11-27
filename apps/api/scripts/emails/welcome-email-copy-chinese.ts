@@ -2,11 +2,11 @@ import type { WelcomeEmailCopy } from './welcome-email-copy';
 import { EmailSlot } from '../../src/emails/email-slot';
 
 export const WELCOME_EMAIL_COPY_CHINESE: WelcomeEmailCopy = {
-  subject: 'Welcome to todz',
-  preview: 'Your todz account is ready',
-  heading: "You're in. Welcome to todz.",
-  intro: `Your todz account for ${EmailSlot.Email} is ready. todz is one to-do list that you and your AI agents share.`,
-  start: 'Connect an agent through MCP and ask it to add your first task, or add one yourself from the menu bar.',
-  signoff: 'Happy shipping.',
-  footer: `You got this email because ${EmailSlot.Email} signed in to todz.`,
+  subject: '欢迎使用 todz',
+  preview: '你的 todz 账户已就绪',
+  heading: '你已加入。欢迎使用 todz。',
+  intro: `${EmailSlot.Email} 的 todz 账户已就绪。todz 是你和你的 AI 智能体共用的一份待办清单。`,
+  start: '通过 MCP 连接一个智能体，让它添加你的第一个任务，或者自己从菜单栏添加一个。',
+  signoff: '祝你交付顺利。',
+  footer: `你收到这封邮件，是因为 ${EmailSlot.Email} 登录了 todz。`,
 };

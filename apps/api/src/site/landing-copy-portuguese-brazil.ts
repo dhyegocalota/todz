@@ -15,13 +15,14 @@ export const LANDING_COPY_PORTUGUESE_BRAZIL: LandingCopy = {
   meta: {
     siteName: 'todz',
     title: 'todz: suas tarefas, compartilhadas com seus agentes',
-    description: 'Uma lista de tarefas nativa para Mac que o Claude Code, o Codex e o Cursor usam por MCP. Barra de menus, widgets, sincronização offline.',
+    description:
+      'Uma lista de tarefas nativa para Mac que o Claude Code, o Codex e o Cursor usam por MCP. Barra de menus, widgets, sincronização offline.',
   },
   shell: {
     skipLink: 'Pular para o conteúdo',
     homeLabel: 'Página inicial do todz',
     wordmark: 'todz',
-    navLabel: 'Site',
+    navLabel: 'Navegação',
     selfHostLink: 'Guia de auto-hospedagem',
     selfHostLinkShort: 'Auto-hospedagem',
     installLink: 'Instalar no Mac',
@@ -173,7 +174,8 @@ export const LANDING_COPY_PORTUGUESE_BRAZIL: LandingCopy = {
     title: 'Leve o todz para o seu Mac.',
   },
   alt: {
-    window: 'A janela principal do todz: as tarefas de um projeto, uma delas adicionada via Claude Code, com as notas e o histórico no inspetor',
+    window:
+      'A janela principal do todz: as tarefas de um projeto, uma delas adicionada via Claude Code, com as notas e o histórico no inspetor',
     windowDark: 'A janela principal do todz no modo escuro: três tarefas adicionadas via Claude Code',
     popover: 'O popover da barra de menus do todz: as tarefas de hoje e um campo Adicionar uma tarefa',
     widgetMedium: 'O widget médio Hoje com três tarefas abertas',

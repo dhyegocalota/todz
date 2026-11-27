@@ -2,11 +2,11 @@ import type { WelcomeEmailCopy } from './welcome-email-copy';
 import { EmailSlot } from '../../src/emails/email-slot';
 
 export const WELCOME_EMAIL_COPY_KOREAN: WelcomeEmailCopy = {
-  subject: 'Welcome to todz',
-  preview: 'Your todz account is ready',
-  heading: "You're in. Welcome to todz.",
-  intro: `Your todz account for ${EmailSlot.Email} is ready. todz is one to-do list that you and your AI agents share.`,
-  start: 'Connect an agent through MCP and ask it to add your first task, or add one yourself from the menu bar.',
-  signoff: 'Happy shipping.',
-  footer: `You got this email because ${EmailSlot.Email} signed in to todz.`,
+  subject: 'todz에 오신 것을 환영해요',
+  preview: 'todz 계정이 준비됐어요',
+  heading: '가입 완료. todz에 오신 것을 환영해요.',
+  intro: `${EmailSlot.Email}의 todz 계정이 준비됐어요. todz는 나와 AI 에이전트가 함께 쓰는 하나의 할 일 목록이에요.`,
+  start: 'MCP로 에이전트를 연결해서 첫 작업을 추가해 달라고 부탁하거나, 메뉴 막대에서 직접 추가해 보세요.',
+  signoff: '즐거운 출시 되세요.',
+  footer: `${EmailSlot.Email}(으)로 todz에 로그인해서 이 메일을 받았어요.`,
 };

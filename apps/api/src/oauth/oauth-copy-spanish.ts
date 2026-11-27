@@ -30,7 +30,8 @@ export const OAUTH_COPY_SPANISH: OAuthCopy = {
     redirectOf: (host: string) => `Cuando respondas, todz te devuelve a ${host}.`,
     loopbackRedirectOf: (host: string) => `Cuando respondas, todz te devuelve a ${host}, una app de este ordenador.`,
     legend: '¿A qué puede acceder?',
-    projectHint: 'Un proyecto le permite leer y cambiar las tareas de ese proyecto, y moverlas a los otros proyectos de su espacio de trabajo.',
+    projectHint:
+      'Un proyecto le permite leer y cambiar las tareas de ese proyecto, y moverlas a los otros proyectos de su espacio de trabajo.',
     ownerLabel: 'Toda tu cuenta (ámbito de propietario)',
     ownerWarning: 'Puede leer y cambiar todas las tareas, y crear, renombrar y eliminar todos los espacios de trabajo y proyectos.',
     noProjects: 'Todavía no tienes proyectos. Crea uno en la app de todz y vuelve.',

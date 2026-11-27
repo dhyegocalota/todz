@@ -30,7 +30,8 @@ export const OAUTH_COPY_JAPANESE: OAuthCopy = {
     redirectOf: (host: string) => `回答すると、todzは${host}に戻します。`,
     loopbackRedirectOf: (host: string) => `回答すると、todzは${host}（このコンピュータ上のアプリ）に戻します。`,
     legend: 'どこまで使えるようにしますか？',
-    projectHint: 'プロジェクトを選ぶと、そのプロジェクトのタスクの読み取りと変更ができ、同じワークスペースのほかのプロジェクトへの移動もできます。',
+    projectHint:
+      'プロジェクトを選ぶと、そのプロジェクトのタスクの読み取りと変更ができ、同じワークスペースのほかのプロジェクトへの移動もできます。',
     ownerLabel: 'アカウント全体（オーナースコープ）',
     ownerWarning: 'すべてのタスクの読み取りと変更、およびすべてのワークスペースとプロジェクトの作成、名前変更、削除ができます。',
     noProjects: 'プロジェクトがまだありません。todzアプリで作成してから、戻ってきてください。',
@@ -55,7 +56,8 @@ export const OAUTH_COPY_JAPANESE: OAuthCopy = {
     choiceTitle: 'その選択は利用できません',
     choiceBody: '接続しようとしているアプリから最初からやり直し、表示された選択肢から1つを選んでください。',
     forbiddenTitle: 'リクエストが拒否されました',
-    forbiddenBody: 'そのリクエストは、このページから送信されたものではありません。接続しようとしているアプリから、最初からやり直してください。',
+    forbiddenBody:
+      'そのリクエストは、このページから送信されたものではありません。接続しようとしているアプリから、最初からやり直してください。',
   },
   link: {
     working: 'サインインしています…',

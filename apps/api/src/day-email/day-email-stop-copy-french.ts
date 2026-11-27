@@ -1,7 +1,7 @@
 import type { DayEmailStopCopy } from './day-email-stop-copy';
 export const DAY_EMAIL_STOP_COPY_FRENCH: DayEmailStopCopy = {
   confirm: {
-    heading: 'Arrêter votre e-mail du jour ?',
+    heading: 'Arrêter votre e-mail du jour ?',
     sentence: 'todz cessera d’envoyer votre journée à cette adresse.',
     button: 'Arrêter mon e-mail du jour',
   },
