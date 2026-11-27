@@ -33,7 +33,7 @@ struct MenuBarToday: View {
                         focus: focus,
                         focusedValue: .composer,
                         onEscape: closeWhenEmpty,
-                        onNavigate: { navigate($0, day: day, hasComposer: true) }
+                        onNavigate: { navigate(direction: $0, day: day, hasComposer: true) }
                     )
                     .frame(maxHeight: composerMaximumHeight)
                         .clipped()
@@ -46,7 +46,7 @@ struct MenuBarToday: View {
                 state: state,
                 day: day,
                 focus: focus,
-                navigate: { navigate($0, day: day, hasComposer: showsComposer && !isClosingDay) },
+                navigate: { navigate(direction: $0, day: day, hasComposer: showsComposer && !isClosingDay) },
                 maximumHeight: maximumPopoverHeight - pinnedTopHeight
             )
         }
@@ -106,7 +106,7 @@ struct MenuBarToday: View {
         )
     }
 
-    private func navigate(_ direction: MenuBarDirection, day: MenuBarDay, hasComposer: Bool) {
+    private func navigate(direction: MenuBarDirection, day: MenuBarDay, hasComposer: Bool) {
         let rows = ([day.upNext].compactMap(\.self) + day.queue).map { TaskKey(projectIdentifier: $0.project.identifier, number: $0.task.number) }
         let hasDoneToday = !dayClose.isClosingDay && !day.doneToday.isEmpty
         let targets = MenuBarNavigation.targets(hasComposer: hasComposer, rows: rows, hasDoneToday: hasDoneToday)
