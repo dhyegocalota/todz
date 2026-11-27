@@ -12,6 +12,7 @@ struct WidgetCheckbox: View {
         Button(intent: ToggleTaskIntent(key: key, state: task.isDone ? .open : .done)) {
             Image(systemName: task.isDone ? doneSymbol : openSymbol)
                 .foregroundStyle(task.isDone ? Color.accentColor : Color.secondary)
+                .todzSymbolTransition()
         }
         .buttonStyle(.plain)
         .invalidatableContent()

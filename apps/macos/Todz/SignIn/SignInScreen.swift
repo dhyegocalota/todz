@@ -48,7 +48,7 @@ struct SignInScreen: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .todzAnimation(.settle, value: stage)
+            .todzMotion(.stageChange, value: stage)
             ServerDisclosure(isExpanded: $isServerFormOpen)
                 .frame(width: columnWidth)
         }

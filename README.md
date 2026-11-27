@@ -31,7 +31,7 @@
 
 | | |
 | --- | --- |
-| <img src="docs/screenshots/mac-app-shell/03-today-two-projects.png" width="400" alt="Today across two projects"><br>**Today**, across every project. | <img src="docs/screenshots/menu-bar-count/01-count.png" width="90" alt="The menu bar icon with the count of what is left"> <img src="docs/screenshots/menu-bar/01-today-popover.png" width="300" alt="The menu bar popover with today's tasks"><br>**The menu bar** counts what is left; add a task without leaving your work. |
+| <img src="docs/screenshots/mac-app-shell/03-today-two-projects.png" width="400" alt="Today across two projects"><br>**Today**, across every project. | <img src="docs/screenshots/menu-bar-count/01-count.png" width="90" alt="The menu bar icon with the count of what is left"> <img src="docs/screenshots/menubar-redesign/01-today-light.png" width="300" alt="The menu bar popover: the day ring and the count, an Up next card and the queue"><br>**The menu bar** counts what is left and leads with what is next; add a task without leaving your work. |
 | <img src="docs/screenshots/widgets/03-medium-today.png" width="400" alt="A medium widget listing today's tasks"><br>**Widgets** on your desktop; tick a task right there. | <img src="docs/screenshots/connect-an-agent/01-connect-an-agent.png" width="400" alt="Connect an Agent: the command to paste, and the apps already connected"><br>**Connect an Agent**: one `claude mcp add`, then sign in. |
 
 ## Install
