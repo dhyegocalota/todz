@@ -1,34 +1,34 @@
 enum HistoryCopy {
-    static let ownerAdded = "You added it"
-    static let ownerMoved = "You moved it"
-    static let ownerCompleted = "You completed it"
-    static let ownerReopened = "You reopened it"
-    static let fieldTitle = "the title"
-    static let fieldNotes = "the notes"
-    static let fieldDueDate = "the due date"
-    static let fieldOrder = "the order"
+    static var ownerAdded: String { Localized.text("You added it") }
+    static var ownerMoved: String { Localized.text("You moved it") }
+    static var ownerCompleted: String { Localized.text("You completed it") }
+    static var ownerReopened: String { Localized.text("You reopened it") }
+    static var fieldTitle: String { Localized.text("the title") }
+    static var fieldNotes: String { Localized.text("the notes") }
+    static var fieldDueDate: String { Localized.text("the due date") }
+    static var fieldOrder: String { Localized.text("the order") }
 
     static func agentAdded(client: String) -> String {
-        "Added via \(client)"
+        Localized.text("Added via \(client)")
     }
 
     static func ownerChanged(fields: String) -> String {
-        "You changed \(fields)"
+        Localized.text("You changed \(fields)")
     }
 
     static func agentChanged(fields: String, client: String) -> String {
-        "Changed \(fields) via \(client)"
+        Localized.text("Changed \(fields) via \(client)")
     }
 
     static func agentMoved(client: String) -> String {
-        "Moved via \(client)"
+        Localized.text("Moved via \(client)")
     }
 
     static func agentCompleted(client: String) -> String {
-        "Completed via \(client)"
+        Localized.text("Completed via \(client)")
     }
 
     static func agentReopened(client: String) -> String {
-        "Reopened via \(client)"
+        Localized.text("Reopened via \(client)")
     }
 }

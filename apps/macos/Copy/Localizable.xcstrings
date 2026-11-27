@@ -1,0 +1,5264 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@"
+          }
+        }
+      }
+    },
+    "%@ by you": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ by you"
+          }
+        }
+      }
+    },
+    "%@ via %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ via %@"
+          }
+        }
+      }
+    },
+    "%@ · %@ · Last used %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@ · Last used %@"
+          }
+        }
+      }
+    },
+    "%@ · next: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · next: %@"
+          }
+        }
+      }
+    },
+    "%@. Next: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@. Next: %@"
+          }
+        }
+      }
+    },
+    "%lld changes weren't saved.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld change wasn't saved."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld changes weren't saved."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld done today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld done today"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld done today"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld left": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld left today in %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left today in %@."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left today in %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld left today in %@. The first %@: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left today in %@. The first %@: %@."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left today in %@. The first %@: %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld left today in %@: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left today in %@: %@."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left today in %@: %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld of %lld done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld done"
+          }
+        }
+      }
+    },
+    "%lld open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld open"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld open"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld projects": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld project"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld projects"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "**%lld of %lld** done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**%lld of %lld** done"
+          }
+        }
+      }
+    },
+    "+%lld more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "+%lld more"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "+%lld more"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "1 hour": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 hour"
+          }
+        }
+      }
+    },
+    "1 minute": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 minute"
+          }
+        }
+      }
+    },
+    "15 minutes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 minutes"
+          }
+        }
+      }
+    },
+    "5 minutes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 minutes"
+          }
+        }
+      }
+    },
+    "A project groups tasks, and agents connect to it with their own keys.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A project groups tasks, and agents connect to it with their own keys."
+          }
+        }
+      }
+    },
+    "A task needs a title.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A task needs a title."
+          }
+        }
+      }
+    },
+    "A workspace holds one company's projects. It starts with an Inbox.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A workspace holds one company's projects. It starts with an Inbox."
+          }
+        }
+      }
+    },
+    "A workspace keeps its own projects and tasks.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A workspace keeps its own projects and tasks."
+          }
+        }
+      }
+    },
+    "Active %lld days ago": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Active %lld day ago"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Active %lld days ago"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Active %lld hours ago": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Active %lld hour ago"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Active %lld hours ago"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Active %lld minutes ago": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Active %lld minute ago"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Active %lld minutes ago"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Active just now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active just now"
+          }
+        }
+      }
+    },
+    "Active yesterday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active yesterday"
+          }
+        }
+      }
+    },
+    "Add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        }
+      }
+    },
+    "Add a Task": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a Task"
+          }
+        }
+      }
+    },
+    "Add a name.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a name."
+          }
+        }
+      }
+    },
+    "Add a task": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a task"
+          }
+        }
+      }
+    },
+    "Add a task with ⌘N.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a task with ⌘N."
+          }
+        }
+      }
+    },
+    "Add notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add notes"
+          }
+        }
+      }
+    },
+    "Add the server's name after https://.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add the server's name after https://."
+          }
+        }
+      }
+    },
+    "Add the todz filter to a Focus.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add the todz filter to a Focus."
+          }
+        }
+      }
+    },
+    "Add to Cursor": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to Cursor"
+          }
+        }
+      }
+    },
+    "Add to ~/.codex/config.toml": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to ~/.codex/config.toml"
+          }
+        }
+      }
+    },
+    "Add todz to any MCP client with one command. The client opens your browser, where you sign in and pick a project.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add todz to any MCP client with one command. The client opens your browser, where you sign in and pick a project."
+          }
+        }
+      }
+    },
+    "Added": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added"
+          }
+        }
+      }
+    },
+    "Added via %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added via %@"
+          }
+        }
+      }
+    },
+    "Added “%@” to Today in %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added “%@” to Today in %@."
+          }
+        }
+      }
+    },
+    "Added “%@” to the Inbox in %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added “%@” to the Inbox in %@."
+          }
+        }
+      }
+    },
+    "Adds a project to %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adds a project to %@"
+          }
+        }
+      }
+    },
+    "Adds a task to the Inbox of the active workspace of todz, due today unless Due Today is off.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adds a task to the Inbox of the active workspace of todz, due today unless Due Today is off."
+          }
+        }
+      }
+    },
+    "Adds one or many tasks.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adds one or many tasks."
+          }
+        }
+      }
+    },
+    "All Workspaces": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All Workspaces"
+          }
+        }
+      }
+    },
+    "All done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All done"
+          }
+        }
+      }
+    },
+    "All done for today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All done for today"
+          }
+        }
+      }
+    },
+    "Also asks again when the Mac sleeps or the screen locks.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Also asks again when the Mac sleeps or the screen locks."
+          }
+        }
+      }
+    },
+    "Another workspace shortcut already uses those keys.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another workspace shortcut already uses those keys."
+          }
+        }
+      }
+    },
+    "App %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App %@"
+          }
+        }
+      }
+    },
+    "Appearance": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        }
+      }
+    },
+    "Apps you approved in the browser to use todz over MCP. Disconnecting one signs it out right away.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apps you approved in the browser to use todz over MCP. Disconnecting one signs it out right away."
+          }
+        }
+      }
+    },
+    "Ask again after": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask again after"
+          }
+        }
+      }
+    },
+    "Ask for Touch ID or your Mac password before switching workspaces.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask for Touch ID or your Mac password before switching workspaces."
+          }
+        }
+      }
+    },
+    "At the close of the day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At the close of the day"
+          }
+        }
+      }
+    },
+    "At this time each day, todz mails Today to your sign-in address. Reply to add a task.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At this time each day, todz mails Today to your sign-in address. Reply to add a task."
+          }
+        }
+      }
+    },
+    "At this time each day, todz opens on what's left of Today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At this time each day, todz opens on what's left of Today."
+          }
+        }
+      }
+    },
+    "Book the launch photo shoot": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Book the launch photo shoot"
+          }
+        }
+      }
+    },
+    "Cache the weekly digest in the background": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cache the weekly digest in the background"
+          }
+        }
+      }
+    },
+    "Can't reach todz": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't reach todz"
+          }
+        }
+      }
+    },
+    "Can't reach todz. You can change this when it's back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't reach todz. You can change this when it's back."
+          }
+        }
+      }
+    },
+    "Can't reach todz. Your changes are kept on this Mac and sent when it's back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't reach todz. Your changes are kept on this Mac and sent when it's back."
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Change the server todz signs in to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change the server todz signs in to."
+          }
+        }
+      }
+    },
+    "Changed %@ via %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changed %@ via %@"
+          }
+        }
+      }
+    },
+    "Changes a task's title, notes, due date or order.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes a task's title, notes, due date or order."
+          }
+        }
+      }
+    },
+    "Changes can't be kept on this Mac. They're sent while todz is open.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes can't be kept on this Mac. They're sent while todz is open."
+          }
+        }
+      }
+    },
+    "Changes waiting on this Mac couldn't be read and were lost.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes waiting on this Mac couldn't be read and were lost."
+          }
+        }
+      }
+    },
+    "Check Off a Task": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check Off a Task"
+          }
+        }
+      }
+    },
+    "Check for Updates…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for Updates…"
+          }
+        }
+      }
+    },
+    "Check your connection, then try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your connection, then try again."
+          }
+        }
+      }
+    },
+    "Check your inbox": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your inbox"
+          }
+        }
+      }
+    },
+    "Checking…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        }
+      }
+    },
+    "Choose a workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a workspace"
+          }
+        }
+      }
+    },
+    "Choose a workspace in todz first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a workspace in todz first."
+          }
+        }
+      }
+    },
+    "Choose a workspace to see what's due today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a workspace to see what's due today."
+          }
+        }
+      }
+    },
+    "Choose the language of todz on this Mac. System follows your Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the language of todz on this Mac. System follows your Mac."
+          }
+        }
+      }
+    },
+    "Claude Code command": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code command"
+          }
+        }
+      }
+    },
+    "Clear": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
+    "Close the day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close the day"
+          }
+        }
+      }
+    },
+    "Close the day already opens todz at that time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close the day already opens todz at that time."
+          }
+        }
+      }
+    },
+    "Close the day, %lld left": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Close the day, %lld left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Close the day, %lld left"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Codex configuration": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex configuration"
+          }
+        }
+      }
+    },
+    "Codex login command": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex login command"
+          }
+        }
+      }
+    },
+    "Collapsed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapsed"
+          }
+        }
+      }
+    },
+    "Compatible": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compatible"
+          }
+        }
+      }
+    },
+    "Complete a Task": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete a Task"
+          }
+        }
+      }
+    },
+    "Complete the check first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete the check first."
+          }
+        }
+      }
+    },
+    "Completed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completed"
+          }
+        }
+      }
+    },
+    "Completed tasks show up here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completed tasks show up here."
+          }
+        }
+      }
+    },
+    "Completed via %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completed via %@"
+          }
+        }
+      }
+    },
+    "Completes an open task of the active workspace of todz.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completes an open task of the active workspace of todz."
+          }
+        }
+      }
+    },
+    "Completes tasks, with a note of what was done.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completes tasks, with a note of what was done."
+          }
+        }
+      }
+    },
+    "Connect an Agent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect an Agent"
+          }
+        }
+      }
+    },
+    "Connected apps": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected apps"
+          }
+        }
+      }
+    },
+    "Copied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        }
+      }
+    },
+    "Copy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy"
+          }
+        }
+      }
+    },
+    "Copy %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy %@"
+          }
+        }
+      }
+    },
+    "Couldn't confirm it's you. Nothing changed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't confirm it's you. Nothing changed."
+          }
+        }
+      }
+    },
+    "Couldn't load the connected apps.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't load the connected apps."
+          }
+        }
+      }
+    },
+    "Couldn't load the history.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't load the history."
+          }
+        }
+      }
+    },
+    "Couldn't sign in with that link. Wait a minute, then open it from the email again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't sign in with that link. Wait a minute, then open it from the email again."
+          }
+        }
+      }
+    },
+    "Create": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create"
+          }
+        }
+      }
+    },
+    "Create Workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create Workspace"
+          }
+        }
+      }
+    },
+    "Creating…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creating…"
+          }
+        }
+      }
+    },
+    "Cursor JSON": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cursor JSON"
+          }
+        }
+      }
+    },
+    "Cursor didn't open. Copy the JSON below instead.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cursor didn't open. Copy the JSON below instead."
+          }
+        }
+      }
+    },
+    "Dark": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
+          }
+        }
+      }
+    },
+    "Day closed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day closed"
+          }
+        }
+      }
+    },
+    "Day temperature": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day temperature"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "Delete Project": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Project"
+          }
+        }
+      }
+    },
+    "Delete Project…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Project…"
+          }
+        }
+      }
+    },
+    "Delete Workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Workspace"
+          }
+        }
+      }
+    },
+    "Delete Workspace…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Workspace…"
+          }
+        }
+      }
+    },
+    "Deleting…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting…"
+          }
+        }
+      }
+    },
+    "Development sign-in. Sign in with Apple comes later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Development sign-in. Sign in with Apple comes later."
+          }
+        }
+      }
+    },
+    "Dims the menu bar count through the afternoon and tints overdue widget rows.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dims the menu bar count through the afternoon and tints overdue widget rows."
+          }
+        }
+      }
+    },
+    "Disconnect": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnect"
+          }
+        }
+      }
+    },
+    "Disconnect %@?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnect %@?"
+          }
+        }
+      }
+    },
+    "Dismiss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dismiss"
+          }
+        }
+      }
+    },
+    "Done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "Done Today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done Today"
+          }
+        }
+      }
+    },
+    "Done: “%@”.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done: “%@”."
+          }
+        }
+      }
+    },
+    "Download": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download"
+          }
+        }
+      }
+    },
+    "Download todz": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download todz"
+          }
+        }
+      }
+    },
+    "Downloads new versions in the background and installs them when you quit or reopen todz.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloads new versions in the background and installs them when you quit or reopen todz."
+          }
+        }
+      }
+    },
+    "Draft the launch post": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft the launch post"
+          }
+        }
+      }
+    },
+    "Due": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due"
+          }
+        }
+      }
+    },
+    "Due Today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due Today"
+          }
+        }
+      }
+    },
+    "Due today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due today"
+          }
+        }
+      }
+    },
+    "Due tomorrow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due tomorrow"
+          }
+        }
+      }
+    },
+    "Email": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email"
+          }
+        }
+      }
+    },
+    "Email address": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email address"
+          }
+        }
+      }
+    },
+    "Email me my day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email me my day"
+          }
+        }
+      }
+    },
+    "Enter a server address.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a server address."
+          }
+        }
+      }
+    },
+    "Enter a valid email address.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a valid email address."
+          }
+        }
+      }
+    },
+    "Enter an address like https://todz.example.com.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter an address like https://todz.example.com."
+          }
+        }
+      }
+    },
+    "Enter an identity to sign in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter an identity to sign in."
+          }
+        }
+      }
+    },
+    "Enter your email address to continue.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter your email address to continue."
+          }
+        }
+      }
+    },
+    "Every hour": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every hour"
+          }
+        }
+      }
+    },
+    "Expanded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expanded"
+          }
+        }
+      }
+    },
+    "Fix the flaky sign-in test": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fix the flaky sign-in test"
+          }
+        }
+      }
+    },
+    "Free todz cloud spots are extremely limited. You can always [run your own server](%@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free todz cloud spots are extremely limited. You can always [run your own server](%@)."
+          }
+        }
+      }
+    },
+    "General": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "General"
+          }
+        }
+      }
+    },
+    "Getting ready…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting ready…"
+          }
+        }
+      }
+    },
+    "Hide Inspector": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide Inspector"
+          }
+        }
+      }
+    },
+    "History": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        }
+      }
+    },
+    "History shows when todz is back online.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History shows when todz is back online."
+          }
+        }
+      }
+    },
+    "Hold two of ⌃, ⌥ or ⌘ with the key.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold two of ⌃, ⌥ or ⌘ with the key."
+          }
+        }
+      }
+    },
+    "Hold what todz shows on this Mac in a Focus that has the todz filter.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold what todz shows on this Mac in a Focus that has the todz filter."
+          }
+        }
+      }
+    },
+    "How much of today is done.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How much of today is done."
+          }
+        }
+      }
+    },
+    "Identity": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Identity"
+          }
+        }
+      }
+    },
+    "In use by another app": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In use by another app"
+          }
+        }
+      }
+    },
+    "Inbox": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inbox"
+          }
+        }
+      }
+    },
+    "Inbox is empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inbox is empty"
+          }
+        }
+      }
+    },
+    "It loses access at once. You can connect it again from the app.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It loses access at once. You can connect it again from the app."
+          }
+        }
+      }
+    },
+    "It syncs when todz is back online.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It syncs when todz is back online."
+          }
+        }
+      }
+    },
+    "Keep todz in the menu bar when closed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep todz in the menu bar when closed"
+          }
+        }
+      }
+    },
+    "Keep todz quiet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep todz quiet"
+          }
+        }
+      }
+    },
+    "Language": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
+          }
+        }
+      }
+    },
+    "Last one: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last one: %@"
+          }
+        }
+      }
+    },
+    "Let agents mention today's tasks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let agents mention today's tasks"
+          }
+        }
+      }
+    },
+    "Light": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        }
+      }
+    },
+    "Light, dark or the Mac's setting. Widgets follow the desktop.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light, dark or the Mac's setting. Widgets follow the desktop."
+          }
+        }
+      }
+    },
+    "Lists tasks by state, due date and text.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lists tasks by state, due date and text."
+          }
+        }
+      }
+    },
+    "Loading…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading…"
+          }
+        }
+      }
+    },
+    "Lock Now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lock Now"
+          }
+        }
+      }
+    },
+    "Mark %@ as done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark %@ as done"
+          }
+        }
+      }
+    },
+    "Mark %@ as not done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark %@ as not done"
+          }
+        }
+      }
+    },
+    "Mark as Done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark as Done"
+          }
+        }
+      }
+    },
+    "Mark as Not Done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark as Not Done"
+          }
+        }
+      }
+    },
+    "Mark as done (D)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark as done (D)"
+          }
+        }
+      }
+    },
+    "Mark the next task done (⌘↩)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark the next task done (⌘↩)"
+          }
+        }
+      }
+    },
+    "Menu bar ribbon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu bar ribbon"
+          }
+        }
+      }
+    },
+    "More": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More"
+          }
+        }
+      }
+    },
+    "More than one open task matches “%@”: %@. Say more of the title.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More than one open task matches “%@”: %@. Say more of the title."
+          }
+        }
+      }
+    },
+    "Morning glance": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morning glance"
+          }
+        }
+      }
+    },
+    "Move %@ to tomorrow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move %@ to tomorrow"
+          }
+        }
+      }
+    },
+    "Move Down": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Down"
+          }
+        }
+      }
+    },
+    "Move Up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Up"
+          }
+        }
+      }
+    },
+    "Move to tomorrow (T)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to tomorrow (T)"
+          }
+        }
+      }
+    },
+    "Move todz to Applications": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move todz to Applications"
+          }
+        }
+      }
+    },
+    "Move todz to Applications so it can update itself": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move todz to Applications so it can update itself"
+          }
+        }
+      }
+    },
+    "Moved via %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moved via %@"
+          }
+        }
+      }
+    },
+    "Name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "Name your first workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name your first workspace"
+          }
+        }
+      }
+    },
+    "Name your first workspace in todz first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name your first workspace in todz first."
+          }
+        }
+      }
+    },
+    "Name your first workspace to see what's due today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name your first workspace to see what's due today."
+          }
+        }
+      }
+    },
+    "Names can be up to %@ characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Names can be up to %@ characters."
+          }
+        }
+      }
+    },
+    "New Project": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Project"
+          }
+        }
+      }
+    },
+    "New Project…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Project…"
+          }
+        }
+      }
+    },
+    "New Task": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Task"
+          }
+        }
+      }
+    },
+    "New Workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Workspace"
+          }
+        }
+      }
+    },
+    "New Workspace…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Workspace…"
+          }
+        }
+      }
+    },
+    "Next Up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next Up"
+          }
+        }
+      }
+    },
+    "Next Workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next Workspace"
+          }
+        }
+      }
+    },
+    "Next up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next up"
+          }
+        }
+      }
+    },
+    "No connected apps yet. Add todz to Claude Code, Claude.ai or Codex with its address and approve it in the browser.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connected apps yet. Add todz to Claude Code, Claude.ai or Codex with its address and approve it in the browser."
+          }
+        }
+      }
+    },
+    "No date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No date"
+          }
+        }
+      }
+    },
+    "No due date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No due date"
+          }
+        }
+      }
+    },
+    "No open task in %@ matches “%@”.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No open task in %@ matches “%@”."
+          }
+        }
+      }
+    },
+    "No open tasks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No open tasks"
+          }
+        }
+      }
+    },
+    "No task selected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No task selected"
+          }
+        }
+      }
+    },
+    "No todz server answered at that address.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No todz server answered at that address."
+          }
+        }
+      }
+    },
+    "None": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None"
+          }
+        }
+      }
+    },
+    "Not Now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Now"
+          }
+        }
+      }
+    },
+    "Not now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        }
+      }
+    },
+    "Not saved yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not saved yet"
+          }
+        }
+      }
+    },
+    "Not saved yet. It gets its number once todz has it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not saved yet. It gets its number once todz has it."
+          }
+        }
+      }
+    },
+    "Notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        }
+      }
+    },
+    "Notes can be up to %@ characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes can be up to %@ characters."
+          }
+        }
+      }
+    },
+    "Nothing done yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing done yet"
+          }
+        }
+      }
+    },
+    "Nothing due today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing due today"
+          }
+        }
+      }
+    },
+    "Nothing left for today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing left for today."
+          }
+        }
+      }
+    },
+    "Nothing left today in %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing left today in %@."
+          }
+        }
+      }
+    },
+    "Nothing moves unless you choose Move todz to Applications.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing moves unless you choose Move todz to Applications."
+          }
+        }
+      }
+    },
+    "Nothing upcoming": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing upcoming"
+          }
+        }
+      }
+    },
+    "Now and then, shows what's next beside the menu bar icon for a few seconds.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now and then, shows what's next beside the menu bar icon for a few seconds."
+          }
+        }
+      }
+    },
+    "Number": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Number"
+          }
+        }
+      }
+    },
+    "Offline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline"
+          }
+        }
+      }
+    },
+    "Offline · %lld changes waiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Offline · %lld change waiting"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Offline · %lld changes waiting"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "On the first wake or unlock of each day, todz shows Today for a few seconds.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On the first wake or unlock of each day, todz shows Today for a few seconds."
+          }
+        }
+      }
+    },
+    "Once a day, todz can send counts of the features you use, with a random code that changes every 30 days. Never tasks, names or addresses. You can change this in Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once a day, todz can send counts of the features you use, with a random code that changes every 30 days. Never tasks, names or addresses. You can change this in Settings."
+          }
+        }
+      }
+    },
+    "Once a day, todz sends counts of features used, with a random code that changes every 30 days. Never tasks, names or addresses.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once a day, todz sends counts of features used, with a random code that changes every 30 days. Never tasks, names or addresses."
+          }
+        }
+      }
+    },
+    "Only the numbered workspaces have a global shortcut.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the numbered workspaces have a global shortcut."
+          }
+        }
+      }
+    },
+    "Open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        }
+      }
+    },
+    "Open Focus Settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Focus Settings"
+          }
+        }
+      }
+    },
+    "Open Today in todz": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Today in todz"
+          }
+        }
+      }
+    },
+    "Open source on GitHub": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open source on GitHub"
+          }
+        }
+      }
+    },
+    "Open the link on the Mac that asked for it, or send a new one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the link on the Mac that asked for it, or send a new one."
+          }
+        }
+      }
+    },
+    "Open todz": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open todz"
+          }
+        }
+      }
+    },
+    "Open todz (⌘O)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open todz (⌘O)"
+          }
+        }
+      }
+    },
+    "Open todz to see what's due today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open todz to see what's due today."
+          }
+        }
+      }
+    },
+    "Opens Today in the todz window.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens Today in the todz window."
+          }
+        }
+      }
+    },
+    "Or add to mcp.json": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Or add to mcp.json"
+          }
+        }
+      }
+    },
+    "Overdue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overdue"
+          }
+        }
+      }
+    },
+    "Overdue · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overdue · %@"
+          }
+        }
+      }
+    },
+    "Personal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal"
+          }
+        }
+      }
+    },
+    "Pick the workspace to open on this Mac. You can switch later from the Workspace menu.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick the workspace to open on this Mac. You can switch later from the Workspace menu."
+          }
+        }
+      }
+    },
+    "Press the new keys": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press the new keys"
+          }
+        }
+      }
+    },
+    "Press the new shortcut, or Esc to keep the old one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press the new shortcut, or Esc to keep the old one."
+          }
+        }
+      }
+    },
+    "Previous Workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous Workspace"
+          }
+        }
+      }
+    },
+    "Privacy & updates": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy & updates"
+          }
+        }
+      }
+    },
+    "Proactive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proactive"
+          }
+        }
+      }
+    },
+    "Project": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Project"
+          }
+        }
+      }
+    },
+    "Project: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Project: %@"
+          }
+        }
+      }
+    },
+    "Projects": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projects"
+          }
+        }
+      }
+    },
+    "Quiet now, until this Focus ends.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quiet now, until this Focus ends."
+          }
+        }
+      }
+    },
+    "Quiet todz": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quiet todz"
+          }
+        }
+      }
+    },
+    "Quit the other todz first. Nothing was moved.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit the other todz first. Nothing was moved."
+          }
+        }
+      }
+    },
+    "Quit todz": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit todz"
+          }
+        }
+      }
+    },
+    "Read the guide to connecting an agent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the guide to connecting an agent"
+          }
+        }
+      }
+    },
+    "Record": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record"
+          }
+        }
+      }
+    },
+    "Record the build-in-public video": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record the build-in-public video"
+          }
+        }
+      }
+    },
+    "Refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        }
+      }
+    },
+    "Refreshing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refreshing"
+          }
+        }
+      }
+    },
+    "Remove the due date from %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove the due date from %@"
+          }
+        }
+      }
+    },
+    "Remove the name and password before @.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove the name and password before @."
+          }
+        }
+      }
+    },
+    "Remove the part from # on.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove the part from # on."
+          }
+        }
+      }
+    },
+    "Remove the part from ? on.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove the part from ? on."
+          }
+        }
+      }
+    },
+    "Removes the due date. The task stays open. (N)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removes the due date. The task stays open. (N)"
+          }
+        }
+      }
+    },
+    "Rename": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        }
+      }
+    },
+    "Rename Project": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename Project"
+          }
+        }
+      }
+    },
+    "Rename Workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename Workspace"
+          }
+        }
+      }
+    },
+    "Rename Workspace…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename Workspace…"
+          }
+        }
+      }
+    },
+    "Rename…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename…"
+          }
+        }
+      }
+    },
+    "Renaming…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renaming…"
+          }
+        }
+      }
+    },
+    "Renew Apple Developer membership": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renew Apple Developer membership"
+          }
+        }
+      }
+    },
+    "Renew the design tool licence": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renew the design tool licence"
+          }
+        }
+      }
+    },
+    "Reopened via %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reopened via %@"
+          }
+        }
+      }
+    },
+    "Require Touch ID to switch workspaces": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Require Touch ID to switch workspaces"
+          }
+        }
+      }
+    },
+    "Respect Focus": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respect Focus"
+          }
+        }
+      }
+    },
+    "Returns the one task to do now, with its notes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Returns the one task to do now, with its notes."
+          }
+        }
+      }
+    },
+    "Review the sync conflict PR": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review the sync conflict PR"
+          }
+        }
+      }
+    },
+    "Run it in your project's folder, then run `/mcp` and choose todz to sign in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run it in your project's folder, then run `/mcp` and choose todz to sign in."
+          }
+        }
+      }
+    },
+    "Security check": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Security check"
+          }
+        }
+      }
+    },
+    "Select a task to see its details.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select a task to see its details."
+          }
+        }
+      }
+    },
+    "Send Again": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send Again"
+          }
+        }
+      }
+    },
+    "Send Link": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send Link"
+          }
+        }
+      }
+    },
+    "Send the homepage copy to Sam": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send the homepage copy to Sam"
+          }
+        }
+      }
+    },
+    "Sending…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sending…"
+          }
+        }
+      }
+    },
+    "Server": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server"
+          }
+        }
+      }
+    },
+    "Server %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server %@"
+          }
+        }
+      }
+    },
+    "Server URL": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server URL"
+          }
+        }
+      }
+    },
+    "Server address": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server address"
+          }
+        }
+      }
+    },
+    "Server build %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server build %@"
+          }
+        }
+      }
+    },
+    "Server needs an update": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server needs an update"
+          }
+        }
+      }
+    },
+    "Server older": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server older"
+          }
+        }
+      }
+    },
+    "Server: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server: %@"
+          }
+        }
+      }
+    },
+    "Set a password for this Mac to turn this on.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set a password for this Mac to turn this on."
+          }
+        }
+      }
+    },
+    "Share": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share"
+          }
+        }
+      }
+    },
+    "Share anonymous usage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share anonymous usage"
+          }
+        }
+      }
+    },
+    "Share anonymous usage?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share anonymous usage?"
+          }
+        }
+      }
+    },
+    "Show Inspector": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Inspector"
+          }
+        }
+      }
+    },
+    "Show pending count in the menu bar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show pending count in the menu bar"
+          }
+        }
+      }
+    },
+    "Shows as usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows as usual"
+          }
+        }
+      }
+    },
+    "Shows it in the todz window.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows it in the todz window."
+          }
+        }
+      }
+    },
+    "Sign In": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign In"
+          }
+        }
+      }
+    },
+    "Sign Out": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign Out"
+          }
+        }
+      }
+    },
+    "Sign in to change this.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to change this."
+          }
+        }
+      }
+    },
+    "Sign in to see what's due today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to see what's due today."
+          }
+        }
+      }
+    },
+    "Sign in to todz first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to todz first."
+          }
+        }
+      }
+    },
+    "Sign out and lose %lld changes?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Sign out and lose %lld change?"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Sign out and lose %lld changes?"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Sign-in isn't available on this server.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in isn't available on this server."
+          }
+        }
+      }
+    },
+    "Sign-in was still in progress, so todz stayed on %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in was still in progress, so todz stayed on %@."
+          }
+        }
+      }
+    },
+    "Signing in…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signing in…"
+          }
+        }
+      }
+    },
+    "Some projects didn't load.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some projects didn't load."
+          }
+        }
+      }
+    },
+    "Something went wrong": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong"
+          }
+        }
+      }
+    },
+    "Star todz on GitHub": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Star todz on GitHub"
+          }
+        }
+      }
+    },
+    "Start the address with https://.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start the address with https://."
+          }
+        }
+      }
+    },
+    "Stays quiet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stays quiet"
+          }
+        }
+      }
+    },
+    "Switch Server": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch Server"
+          }
+        }
+      }
+    },
+    "Switch With Control": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch With Control"
+          }
+        }
+      }
+    },
+    "Switch Workspace…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch Workspace…"
+          }
+        }
+      }
+    },
+    "Switch from any app": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch from any app"
+          }
+        }
+      }
+    },
+    "Switch to %@ and lose %lld changes?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Switch to %@ and lose %lld change?"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Switch to %@ and lose %lld changes?"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Switch to %@?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to %@?"
+          }
+        }
+      }
+    },
+    "Switched to %@. Sign in from the todz window.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switched to %@. Sign in from the todz window."
+          }
+        }
+      }
+    },
+    "Switching…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switching…"
+          }
+        }
+      }
+    },
+    "Switch…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch…"
+          }
+        }
+      }
+    },
+    "System": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        }
+      }
+    },
+    "Task": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Task"
+          }
+        }
+      }
+    },
+    "Tasks due today or earlier show up here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tasks due today or earlier show up here."
+          }
+        }
+      }
+    },
+    "Tasks with a future due date show up here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tasks with a future due date show up here."
+          }
+        }
+      }
+    },
+    "Tells what is left today in the active workspace of todz.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tells what is left today in the active workspace of todz."
+          }
+        }
+      }
+    },
+    "That date isn't valid.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That date isn't valid."
+          }
+        }
+      }
+    },
+    "That identity wasn't accepted.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That identity wasn't accepted."
+          }
+        }
+      }
+    },
+    "That is a workspace key inside todz.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That is a workspace key inside todz."
+          }
+        }
+      }
+    },
+    "That link has expired or was already used. Send a new one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That link has expired or was already used. Send a new one."
+          }
+        }
+      }
+    },
+    "That server answers as %@. Enter that address instead.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That server answers as %@. Enter that address instead."
+          }
+        }
+      }
+    },
+    "That task is no longer in this workspace.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That task is no longer in this workspace."
+          }
+        }
+      }
+    },
+    "The Inbox can't be renamed or deleted.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Inbox can't be renamed or deleted."
+          }
+        }
+      }
+    },
+    "The address has no path. Enter the server's root address.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The address has no path. Enter the server's root address."
+          }
+        }
+      }
+    },
+    "The app wasn't disconnected. It still has access.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app wasn't disconnected. It still has access."
+          }
+        }
+      }
+    },
+    "The link works for %lld minutes, on this Mac only.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The link works for %lld minute, on this Mac only."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The link works for %lld minutes, on this Mac only."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "The next task due today, ready to check off.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The next task due today, ready to check off."
+          }
+        }
+      }
+    },
+    "The server in use. Change it in Settings › Server.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server in use. Change it in Settings › Server."
+          }
+        }
+      }
+    },
+    "The server is older than todz %@ expects. It needs an update.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server is older than todz %@ expects. It needs an update."
+          }
+        }
+      }
+    },
+    "Then sign in": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Then sign in"
+          }
+        }
+      }
+    },
+    "They haven't reached %@ yet. Switching erases them from this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They haven't reached %@ yet. Switching erases them from this Mac."
+          }
+        }
+      }
+    },
+    "They haven't reached %@ yet. Switching signs you out and erases them from this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They haven't reached %@ yet. Switching signs you out and erases them from this Mac."
+          }
+        }
+      }
+    },
+    "They haven't reached todz yet. Signing out erases them from this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They haven't reached todz yet. Signing out erases them from this Mac."
+          }
+        }
+      }
+    },
+    "This Mac's copy could not be erased, so todz stayed on %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Mac's copy could not be erased, so todz stayed on %@."
+          }
+        }
+      }
+    },
+    "This Mac's time zone wasn't accepted.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Mac's time zone wasn't accepted."
+          }
+        }
+      }
+    },
+    "This permanently deletes the project, its tasks and the keys agents use to reach it. It cannot be undone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This permanently deletes the project, its tasks and the keys agents use to reach it. It cannot be undone."
+          }
+        }
+      }
+    },
+    "This permanently deletes the workspace, its projects, their tasks and the keys agents use to reach them. It cannot be undone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This permanently deletes the workspace, its projects, their tasks and the keys agents use to reach them. It cannot be undone."
+          }
+        }
+      }
+    },
+    "This project is no longer available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This project is no longer available."
+          }
+        }
+      }
+    },
+    "This server is older than this app expects. Whoever runs it can update it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This server is older than this app expects. Whoever runs it can update it."
+          }
+        }
+      }
+    },
+    "This server needs a newer todz.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This server needs a newer todz."
+          }
+        }
+      }
+    },
+    "This server needs todz %@ or later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This server needs todz %@ or later."
+          }
+        }
+      }
+    },
+    "This task is no longer available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This task is no longer available."
+          }
+        }
+      }
+    },
+    "This workspace is no longer available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This workspace is no longer available."
+          }
+        }
+      }
+    },
+    "Time to close the day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time to close the day"
+          }
+        }
+      }
+    },
+    "Time to email my day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time to email my day"
+          }
+        }
+      }
+    },
+    "Title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
+          }
+        }
+      }
+    },
+    "Titles can be up to %@ characters.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titles can be up to %@ characters."
+          }
+        }
+      }
+    },
+    "Today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        }
+      }
+    },
+    "Today in %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today in %@"
+          }
+        }
+      }
+    },
+    "Today's Progress": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's Progress"
+          }
+        }
+      }
+    },
+    "Today's open tasks in the active workspace. Hidden when none are left.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's open tasks in the active workspace. Hidden when none are left."
+          }
+        }
+      }
+    },
+    "Today's tasks, ready to check off.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's tasks, ready to check off."
+          }
+        }
+      }
+    },
+    "Today, %@, %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today, %@, %@"
+          }
+        }
+      }
+    },
+    "Today, %lld left": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Today, %lld left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Today, %lld left"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Tomorrow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow"
+          }
+        }
+      }
+    },
+    "Too many tries. Wait a minute, then try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many tries. Wait a minute, then try again."
+          }
+        }
+      }
+    },
+    "Tools": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tools"
+          }
+        }
+      }
+    },
+    "Try Again": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try Again"
+          }
+        }
+      }
+    },
+    "Type \"%@\" to confirm.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type \"%@\" to confirm."
+          }
+        }
+      }
+    },
+    "Type a new name to rename.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type a new name to rename."
+          }
+        }
+      }
+    },
+    "Type the name exactly as shown.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type the name exactly as shown."
+          }
+        }
+      }
+    },
+    "Up next": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up next"
+          }
+        }
+      }
+    },
+    "Upcoming": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upcoming"
+          }
+        }
+      }
+    },
+    "Update available": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update available"
+          }
+        }
+      }
+    },
+    "Update todz automatically": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update todz automatically"
+          }
+        }
+      }
+    },
+    "Update todz to keep syncing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update todz to keep syncing"
+          }
+        }
+      }
+    },
+    "Update todz to sign in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update todz to sign in."
+          }
+        }
+      }
+    },
+    "Updated to %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updated to %@"
+          }
+        }
+      }
+    },
+    "Use a Different Email": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use a Different Email"
+          }
+        }
+      }
+    },
+    "Use https://. Plain http:// works only for localhost.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use https://. Plain http:// works only for localhost."
+          }
+        }
+      }
+    },
+    "Use todz cloud": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use todz cloud"
+          }
+        }
+      }
+    },
+    "Use up to %lld letters, digits, dots, dashes or underscores.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Use up to %lld letters, digits, dots, dashes or underscores."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Use up to %lld letters, digits, dots, dashes or underscores."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Wait until sign-in or the switch finishes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wait until sign-in or the switch finishes."
+          }
+        }
+      }
+    },
+    "We sent a sign-in link to": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We sent a sign-in link to"
+          }
+        }
+      }
+    },
+    "We'll email you a link. No password needed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We'll email you a link. No password needed."
+          }
+        }
+      }
+    },
+    "Welcome to todz": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to todz"
+          }
+        }
+      }
+    },
+    "What's Left Today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's Left Today"
+          }
+        }
+      }
+    },
+    "What's the task?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's the task?"
+          }
+        }
+      }
+    },
+    "When an agent adds or completes a task": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When an agent adds or completes a task"
+          }
+        }
+      }
+    },
+    "When an agent asks what's next, it hears what's due today in its project.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When an agent asks what's next, it hears what's due today in its project."
+          }
+        }
+      }
+    },
+    "When the ribbon shows": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When the ribbon shows"
+          }
+        }
+      }
+    },
+    "Where your tasks are kept. Switching signs you out and erases this Mac's copy.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where your tasks are kept. Switching signs you out and erases this Mac's copy."
+          }
+        }
+      }
+    },
+    "Which task?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which task?"
+          }
+        }
+      }
+    },
+    "With no window open, todz leaves the Dock and ⌘Tab. The menu bar, widgets and Siri keep working.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With no window open, todz leaves the Dock and ⌘Tab. The menu bar, widgets and Siri keep working."
+          }
+        }
+      }
+    },
+    "Works while another app is in front, on %@%lld–%lld. todz can't see other apps' shortcuts; %@ avoids the common ones. Turn it off to leave these keys to other apps.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Works while another app is in front, on %@%lld–%lld. todz can't see other apps' shortcuts; %@ avoids the common ones. Turn it off to leave these keys to other apps."
+          }
+        }
+      }
+    },
+    "Workspace actions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace actions"
+          }
+        }
+      }
+    },
+    "Workspace name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace name"
+          }
+        }
+      }
+    },
+    "Workspace shortcuts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace shortcuts"
+          }
+        }
+      }
+    },
+    "Workspace, %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace, %@"
+          }
+        }
+      }
+    },
+    "Workspaces": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspaces"
+          }
+        }
+      }
+    },
+    "Write tests for OAuth token refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write tests for OAuth token refresh"
+          }
+        }
+      }
+    },
+    "Yesterday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday"
+          }
+        }
+      }
+    },
+    "You added it": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You added it"
+          }
+        }
+      }
+    },
+    "You can send another in %lld seconds.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You can send another in %lld second."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You can send another in %lld seconds."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "You changed %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You changed %@"
+          }
+        }
+      }
+    },
+    "You completed it": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You completed it"
+          }
+        }
+      }
+    },
+    "You moved it": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You moved it"
+          }
+        }
+      }
+    },
+    "You reopened it": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You reopened it"
+          }
+        }
+      }
+    },
+    "You'll be signed out, and this Mac's copy of your tasks is erased. Your tasks stay on %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You'll be signed out, and this Mac's copy of your tasks is erased. Your tasks stay on %@."
+          }
+        }
+      }
+    },
+    "You're already signed in.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're already signed in."
+          }
+        }
+      }
+    },
+    "You're signed in, but todz couldn't save your session for next time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're signed in, but todz couldn't save your session for next time."
+          }
+        }
+      }
+    },
+    "Your change wasn't saved.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your change wasn't saved."
+          }
+        }
+      }
+    },
+    "Your changes wait here and are sent when the limit lifts.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your changes wait here and are sent when the limit lifts."
+          }
+        }
+      }
+    },
+    "Your changes wait here until then.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your changes wait here until then."
+          }
+        }
+      }
+    },
+    "Your saved session couldn't be read. Sign in again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your saved session couldn't be read. Sign in again."
+          }
+        }
+      }
+    },
+    "Your session has ended. Sign in again to send %lld waiting changes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Your session has ended. Sign in again to send %lld waiting change."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Your session has ended. Sign in again to send %lld waiting changes."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Your session has ended. Sign in again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your session has ended. Sign in again."
+          }
+        }
+      }
+    },
+    "Your tasks, shared with your agents.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your tasks, shared with your agents."
+          }
+        }
+      }
+    },
+    "Your whole account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your whole account"
+          }
+        }
+      }
+    },
+    "change this setting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "change this setting"
+          }
+        }
+      }
+    },
+    "completed via %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "completed via %@"
+          }
+        }
+      }
+    },
+    "create a workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "create a workspace"
+          }
+        }
+      }
+    },
+    "delete a workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "delete a workspace"
+          }
+        }
+      }
+    },
+    "launch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "launch"
+          }
+        }
+      }
+    },
+    "mac app": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mac app"
+          }
+        }
+      }
+    },
+    "switch workspaces": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "switch workspaces"
+          }
+        }
+      }
+    },
+    "the due date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the due date"
+          }
+        }
+      }
+    },
+    "the notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the notes"
+          }
+        }
+      }
+    },
+    "the order": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the order"
+          }
+        }
+      }
+    },
+    "the title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the title"
+          }
+        }
+      }
+    },
+    "todz %@ and server %@ work together.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz %@ and server %@ work together."
+          }
+        }
+      }
+    },
+    "todz %@ is too old for this server. %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz %@ is too old for this server. %@."
+          }
+        }
+      }
+    },
+    "todz %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz %@."
+          }
+        }
+      }
+    },
+    "todz already uses this server.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz already uses this server."
+          }
+        }
+      }
+    },
+    "todz could not be moved to Applications and could not remove its temporary copy there. Nothing else was changed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz could not be moved to Applications and could not remove its temporary copy there. Nothing else was changed."
+          }
+        }
+      }
+    },
+    "todz could not be moved to Applications. Nothing was changed, and it keeps running from here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz could not be moved to Applications. Nothing was changed, and it keeps running from here."
+          }
+        }
+      }
+    },
+    "todz could not register this shortcut.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz could not register this shortcut."
+          }
+        }
+      }
+    },
+    "todz couldn't erase this Mac's copy of your tasks, so you're still signed in. Try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz couldn't erase this Mac's copy of your tasks, so you're still signed in. Try again."
+          }
+        }
+      }
+    },
+    "todz couldn't finish that. Try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz couldn't finish that. Try again."
+          }
+        }
+      }
+    },
+    "todz couldn't save this change.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz couldn't save this change."
+          }
+        }
+      }
+    },
+    "todz is already in Applications.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz is already in Applications."
+          }
+        }
+      }
+    },
+    "todz is offline, so this is the last synced list.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz is offline, so this is the last synced list."
+          }
+        }
+      }
+    },
+    "todz is still loading Today. Try again in a moment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz is still loading Today. Try again in a moment."
+          }
+        }
+      }
+    },
+    "todz now shows what it has saved.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz now shows what it has saved."
+          }
+        }
+      }
+    },
+    "todz was moved to Applications but could not open there. Open it from Applications.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz was moved to Applications but could not open there. Open it from Applications."
+          }
+        }
+      }
+    },
+    "todz, %lld left today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "todz, %lld left today"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "todz, %lld left today"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "todz, last one today: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "todz, last one today: %@"
+          }
+        }
+      }
+    },
+    "via %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "via %@"
+          }
+        }
+      }
+    },
+    "“%@” is already done.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” is already done."
+          }
+        }
+      }
+    },
+    "⌃1–⌃9 can clash with Mission Control's Switch to Desktop keys. If both are on, the system wins.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌃1–⌃9 can clash with Mission Control's Switch to Desktop keys. If both are on, the system wins."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

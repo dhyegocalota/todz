@@ -3,7 +3,7 @@ import TodzKit
 extension HistoryEntry {
     var sentence: String {
         let isMoveOnly = fields == [.order]
-        let fieldNames = fields.map(\.copy).formatted(.list(type: .and))
+        let fieldNames = fields.map(\.copy).formatted(.list(type: .and).locale(Localized.locale))
         switch action {
         case .created:
             return actor.line(owner: HistoryCopy.ownerAdded) { HistoryCopy.agentAdded(client: $0) }

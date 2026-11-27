@@ -1,6 +1,6 @@
 private let systemStorageValue = "system"
 
-public enum LanguageChoice: Equatable, Sendable {
+public enum LanguageChoice: Hashable, Sendable {
     case system
     case language(AppLanguage)
 

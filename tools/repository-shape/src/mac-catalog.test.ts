@@ -44,7 +44,8 @@ function isLanguageTranslated({ key, language }: { key: string; language: string
 
 function isPluralInEnglishOnlyWhenPluralEverywhere(key: string): boolean {
   const isEnglishPlural = pluralOf(localizationOf({ key, language: SOURCE_LANGUAGE })) !== undefined;
-  return LANGUAGES.every((language) => (pluralOf(localizationOf({ key, language })) !== undefined) === isEnglishPlural);
+  const presentLanguages = LANGUAGES.filter((language) => localizationOf({ key, language }));
+  return presentLanguages.every((language) => (pluralOf(localizationOf({ key, language })) !== undefined) === isEnglishPlural);
 }
 
 function keysUsedInSwift(): string[] {
@@ -58,7 +59,9 @@ describe('the Mac String Catalog', () => {
   });
 
   test('has every key in all eight languages with state translated', () => {
-    const missing = entries.flatMap(([key]) => LANGUAGES.filter((language) => !isLanguageTranslated({ key, language })).map((language) => `${language}: ${key}`));
+    const missing = entries.flatMap(([key]) =>
+      LANGUAGES.filter((language) => !isLanguageTranslated({ key, language })).map((language) => `${language}: ${key}`),
+    );
     expect(missing).toEqual([]);
   });
 

@@ -10,8 +10,10 @@ struct AppCommands: Commands {
     let windowState: MainWindowState
     let updater: AppUpdater?
     let shortcuts: WorkspaceShortcutController
+    let languageModel: LanguageModel
 
     var body: some Commands {
+        let _ = languageModel.language
         SidebarCommands()
         CommandGroup(after: .appInfo) {
             if let updater {

@@ -19,7 +19,11 @@ const INTENT_SOURCE = [
 
 describe('localizedKeys', () => {
   test('reads every literal a copy module resolves through Localized', () => {
-    expect(localizedKeys(COPY_SOURCE)).toEqual(['Connect an Agent', '\\(count) left in \\(TaskLimits.titleMaxLength.formatted())', 'Run `/mcp` and \\"choose\\" todz']);
+    expect(localizedKeys(COPY_SOURCE)).toEqual([
+      'Connect an Agent',
+      '\\(count) left in \\(TaskLimits.titleMaxLength.formatted())',
+      'Run `/mcp` and \\"choose\\" todz',
+    ]);
   });
 
   test('reads the literals an App Intent hands to the system', () => {

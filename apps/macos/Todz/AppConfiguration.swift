@@ -37,6 +37,10 @@ enum AppConfiguration {
         }
     }
 
+    static var launchBreadcrumbs: LaunchBreadcrumbs {
+        LaunchBreadcrumbs(folder: SharedFolder.of(bundle: .main).flatMap(SharedFolder.created), now: Date.init, maxByteCount: LaunchBreadcrumbs.standardMaxByteCount)
+    }
+
     static var widgetStore: any WidgetStore {
         guard let sharedFolder = SharedFolder.of(bundle: .main), let folder = SharedFolder.created(sharedFolder) else { return UnavailableWidgetStore() }
         return FileWidgetStore(folder: folder)
