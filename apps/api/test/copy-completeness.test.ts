@@ -91,6 +91,7 @@ const COPY_MODULES: CopyModule[] = [
       everywhere: ['shell.navLabel', 'signIn.emailPlaceholder', 'usage.mebibyteUnit'],
       perLanguage: {
         [Language.PortugueseBrazil]: ['metrics.labelOf.workspaces_total'],
+        [Language.German]: ['metrics.labelOf.workspaces_total'],
         [Language.French]: ['cloudQueue.columns.action', 'usage.columns.action'],
       },
     }),
