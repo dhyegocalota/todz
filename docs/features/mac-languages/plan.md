@@ -1,13 +1,13 @@
 # Mac languages plan
 
-- [ ] Docs: spec, plan, test plan, the features row, ADR 0120 and ADR 0121.
-- [ ] Red: the catalog completeness, the language resolver and preference, the Appearance mapping, the `Accept-Language` header, the breadcrumb lines, the Swift list mirroring `libs/types`.
-- [ ] Green: `AppLanguage`, `LanguageChoice`, `LanguagePreference`, `LanguageBundle`, `AppearanceChoice`, the header on every request.
-- [ ] Green: `Localizable.xcstrings` in English and every copy module resolving through `Localized`.
-- [ ] Green: Settings › General Language and Appearance rows; the views follow the choice at once.
-- [ ] Green: the erase-at-launch breadcrumb.
-- [ ] Fragments for the seven other languages and the merge script (phase 2 merges the translations).
-- [ ] Gates: `swift test`, the app build, `pnpm --filter @todz/repository-shape test`, `pnpm typecheck`.
+- [x] Docs: spec, plan, test plan, the features row, ADR 0120 and ADR 0121.
+- [x] Red: the catalog completeness, the language resolver and preference, the Appearance mapping, the `Accept-Language` header, the breadcrumb lines, the Swift list mirroring `libs/types`.
+- [x] Green: `AppLanguage`, `LanguageChoice`, `LanguagePreference`, `LanguageBundle`, `AppearanceChoice`, the header on every request.
+- [x] Green: `Localizable.xcstrings` in English and every copy module resolving through `Localized`.
+- [x] Green: Settings › General Language and Appearance rows; the views follow the choice at once.
+- [x] Green: the erase-at-launch breadcrumb.
+- [x] Fragments for the seven other languages and the merge script (phase 2 merges the translations).
+- [x] Gates: `swift test`, the app build, `pnpm --filter @todz/repository-shape test`, `pnpm typecheck`.
 
 ## File map
 
