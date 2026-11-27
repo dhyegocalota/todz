@@ -12,6 +12,15 @@ extension AppModel {
         return !selected.isEmpty && selected.allSatisfy { visibleWorkspaces.contains($0) }
     }
 
+    // NB ADR 0122: a locked session shows one workspace, so a selection beyond it asks the Mac owner first.
+    func isShowableAfterAsking(_ selection: WorkspaceSelection) async -> Bool {
+        guard !isShowable(selection) else { return true }
+        let isSelectingKnownWorkspaces = !selection.workspaces(in: workspaces).isEmpty
+        guard workspaceLock.isLocked, isSelectingKnownWorkspaces else { return false }
+        guard await isAuthorized(.switchWorkspaces) else { return false }
+        return isShowable(selection)
+    }
+
     public func isLocked(workspaceIdentifier: String) -> Bool {
         workspaceLock.isLocked(workspaceIdentifier: workspaceIdentifier, current: activeWorkspaceIdentifier)
     }

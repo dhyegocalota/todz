@@ -97,9 +97,11 @@ extension AppModelTests {
         await harness.model.launch()
         #expect(harness.model.phase == .choosing)
         #expect(harness.model.visibleWorkspaces.isEmpty)
+        harness.authenticator.isOwnerAuthenticated = false
         await harness.model.chooseWorkspace(identifier: "acme")
         #expect(harness.model.phase == .choosing)
-        #expect(harness.authenticator.asked.isEmpty)
+        #expect(harness.authenticator.asked == [.switchWorkspaces])
+        harness.authenticator.isOwnerAuthenticated = true
         #expect(await harness.model.beginWorkspaceSwitch())
         #expect(harness.model.visibleWorkspaces.map(\.identifier) == ["acme", "secret"])
         await harness.model.chooseWorkspace(identifier: "acme")
@@ -194,12 +196,12 @@ extension AppModelTests {
         #expect(harness.model.taskViews == nil)
         #expect(harness.model.visibleWorkspaces.isEmpty)
         #expect(pulledProjects(harness).isEmpty)
+        harness.authenticator.isOwnerAuthenticated = false
         await harness.model.chooseWorkspace(identifier: "secret")
         #expect(harness.model.phase == .choosing)
-        harness.authenticator.isOwnerAuthenticated = false
         #expect(!(await harness.model.beginWorkspaceSwitch()))
         #expect(harness.model.visibleWorkspaces.isEmpty)
-        #expect(harness.authenticator.asked == [.switchWorkspaces])
+        #expect(harness.authenticator.asked == [.switchWorkspaces, .switchWorkspaces])
     }
 
     @Test func aRelockRewritesTheSharedSnapshotFromTheCurrentWorkspaceAndReloadsTheWidgets() async throws {
@@ -454,15 +456,16 @@ extension AppModelTests {
         #expect(harness.authenticator.asked == [.switchWorkspaces])
     }
 
-    @Test func aChordBeyondTheVisibleWorkspacesDoesNothingAndAsksNothing() async throws {
+    @Test func aChordBeyondTheVisibleWorkspacesAsksAndDoesNothingWhenRefused() async throws {
         let harness = try await lockedHarness()
+        harness.authenticator.isOwnerAuthenticated = false
         await harness.model.switchWorkspace(number: 2)
         await harness.model.switchWorkspace(action: .next)
         await harness.model.switchWorkspace(action: .previous)
         await harness.model.switchWorkspace(identifier: "secret")
         await harness.model.selectWorkspaces(.all)
         await harness.model.toggleWorkspace(identifier: "secret")
-        #expect(harness.authenticator.asked.isEmpty)
+        #expect(Set(harness.authenticator.asked) == [.switchWorkspaces])
         #expect(harness.model.activeWorkspace?.identifier == "acme")
         #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
     }
