@@ -34,7 +34,7 @@ extension AppModel {
     }
 
     // NB ADR 0122: with the lock switch on, a switcher row switches to its workspace alone instead of joining the shown set.
-    public func pickWorkspace(identifier: String) async {
+    public func pickWorkspace(identifier: String, gesture: WorkspaceSwitcherGesture) async {
         guard workspaceLock.isEnabled else { return await toggleWorkspace(identifier: identifier) }
         await switchWorkspace(identifier: identifier)
     }

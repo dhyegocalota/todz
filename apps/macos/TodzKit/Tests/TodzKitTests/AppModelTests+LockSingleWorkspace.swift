@@ -30,18 +30,20 @@ extension AppModelTests {
         #expect(harness.model.workspaceLock.isLocked)
     }
 
-    @Test func togglingAnotherWorkspaceWhileLockedIsRefusedWithoutAsking() async throws {
+    @Test func togglingAnotherWorkspaceWhileLockedAsksAndShowsBothOnceConfirmed() async throws {
         let harness = try await singleWorkspaceHarness()
         await harness.model.toggleWorkspace(identifier: "secret")
-        #expect(harness.authenticator.asked.isEmpty)
-        expectUntouched(harness)
+        #expect(harness.authenticator.asked == [.switchWorkspaces])
+        #expect(harness.model.selection == .chosen(["acme", "secret"]))
+        #expect(harness.model.activeWorkspace?.identifier == "acme")
     }
 
-    @Test func allWorkspacesAndSeveralWhileLockedAreRefusedWithoutAsking() async throws {
+    @Test func allWorkspacesAndSeveralWhileLockedAskAndLeaveTheSingleSelectionWhenRefused() async throws {
         let harness = try await singleWorkspaceHarness()
+        refusing(harness)
         await harness.model.selectWorkspaces(.all)
         await harness.model.selectWorkspaces(.chosen(["acme", "secret"]))
-        #expect(harness.authenticator.asked.isEmpty)
+        #expect(harness.authenticator.asked == [.switchWorkspaces, .switchWorkspaces])
         expectUntouched(harness)
     }
 

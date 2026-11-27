@@ -86,7 +86,7 @@ struct WorkspaceSwitcher: View {
         Binding {
             model.shownWorkspaces.contains { $0.identifier == candidate.identifier }
         } set: { _ in
-            Task { await model.pickWorkspace(identifier: candidate.identifier) }
+            Task { await model.pickWorkspace(identifier: candidate.identifier, gesture: .click) }
         }
     }
 }
