@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { parsedJson } from '../parsed-json';
+import { type GrantScope, scopesJsonOf, scopesOfJson } from './oauth-grant-scope';
+import { GRANT_SCOPES_JSON, PROJECT_WORKSPACE_ID, SCOPE_ROWS_OF_JSON } from './oauth-grant-scope-store';
 import {
   OAUTH_IDLE_CLIENT_LIFETIME_MS,
   OAUTH_LIVE_ACCESS_TOKENS_PER_GRANT_MAX,
@@ -17,7 +19,7 @@ export type OAuthClientRecord = { id: string; name: string; redirectUris: string
 export type OAuthCodeRecord = {
   clientId: string;
   ownerId: string;
-  projectId: string | null;
+  scopes: GrantScope[];
   redirectUri: string;
   codeChallenge: string;
   expiresAt: number;
@@ -32,25 +34,15 @@ export type AccessGrantRecord = {
   isSuspended: boolean;
   timeZone: string;
   agentNudge: boolean;
-  projectId: string | null;
-  workspaceId: string | null;
-};
-
-export type ConnectedAppRecord = {
-  id: string;
-  clientName: string;
-  redirectUri: string;
-  projectId: string | null;
-  projectName: string | null;
-  createdAt: number;
-  lastUsedAt: number;
+  scopes: GrantScope[];
+  projectWorkspaceId: string | null;
 };
 
 type ClientRow = { id: string; name: string; redirect_uris: string };
 type CodeRow = {
   client_id: string;
   owner_id: string;
-  project_id: string | null;
+  scopes: string | null;
   redirect_uri: string;
   code_challenge: string;
   expires_at: number;
@@ -62,17 +54,8 @@ type AccessGrantRow = {
   suspended_at: number | null;
   time_zone: string;
   agent_nudge: number;
-  project_id: string | null;
-  workspace_id: string | null;
-};
-type ConnectedAppRow = {
-  id: string;
-  client_name: string;
-  redirect_uri: string;
-  project_id: string | null;
-  project_name: string | null;
-  created_at: number;
-  last_used_at: number;
+  scopes: string;
+  project_workspace_id: string | null;
 };
 
 const RedirectUrisSchema = z.array(z.string());
@@ -80,14 +63,12 @@ const RedirectUrisSchema = z.array(z.string());
 const CLIENT_HAS_GRANT = 'EXISTS (SELECT 1 FROM oauth_grants WHERE oauth_grants.client_id = oauth_clients.id)';
 const CLIENT_IS_LIVE = `(${CLIENT_HAS_GRANT} OR (active_at > created_at AND active_at > ?) OR created_at > ?)`;
 const ACTIVE_CLIENT_QUERY = `SELECT id, name, redirect_uris FROM oauth_clients WHERE id = ? AND ${CLIENT_IS_LIVE}`;
-const ACCESS_GRANT_QUERY = `SELECT oauth_grants.id AS grant_id, oauth_clients.name AS client_name, owners.id AS owner_id, owners.suspended_at, owners.time_zone, owners.agent_nudge, oauth_grants.project_id, projects.workspace_id
+const ACCESS_GRANT_QUERY = `SELECT oauth_grants.id AS grant_id, oauth_clients.name AS client_name, owners.id AS owner_id, owners.suspended_at, owners.time_zone, owners.agent_nudge, ${GRANT_SCOPES_JSON} AS scopes, ${PROJECT_WORKSPACE_ID} AS project_workspace_id
 FROM oauth_tokens
 JOIN oauth_grants ON oauth_grants.id = oauth_tokens.grant_id
 JOIN oauth_clients ON oauth_clients.id = oauth_grants.client_id
 JOIN owners ON owners.id = oauth_grants.owner_id
-LEFT JOIN projects ON projects.id = oauth_grants.project_id
-LEFT JOIN workspaces ON workspaces.id = projects.workspace_id
-WHERE oauth_tokens.digest = ? AND oauth_tokens.kind = ? AND oauth_tokens.expires_at > ? AND (oauth_grants.project_id IS NULL OR workspaces.owner_id = oauth_grants.owner_id)`;
+WHERE oauth_tokens.digest = ? AND oauth_tokens.kind = ? AND oauth_tokens.expires_at > ?`;
 const CLIENT_GRANTS = 'SELECT id FROM oauth_grants WHERE client_id = ?';
 const GRANT_EXISTS = 'EXISTS (SELECT 1 FROM oauth_grants WHERE id = ?)';
 const IS_SUPERSEDED =
@@ -199,9 +180,9 @@ export async function insertCode({
 }): Promise<void> {
   await directory
     .prepare(
-      'INSERT INTO oauth_codes (digest, client_id, owner_id, project_id, redirect_uri, code_challenge, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO oauth_codes (digest, client_id, owner_id, scopes, redirect_uri, code_challenge, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     )
-    .bind(digest, code.clientId, code.ownerId, code.projectId, code.redirectUri, code.codeChallenge, code.expiresAt)
+    .bind(digest, code.clientId, code.ownerId, scopesJsonOf(code.scopes), code.redirectUri, code.codeChallenge, code.expiresAt)
     .run();
 }
 
@@ -235,15 +216,16 @@ export async function spendCode({
 }): Promise<OAuthCodeRecord | null> {
   const row = await directory
     .prepare(
-      'UPDATE oauth_codes SET consumed_at = ? WHERE digest = ? AND consumed_at IS NULL RETURNING client_id, owner_id, project_id, redirect_uri, code_challenge, expires_at',
+      'UPDATE oauth_codes SET consumed_at = ? WHERE digest = ? AND consumed_at IS NULL RETURNING client_id, owner_id, scopes, redirect_uri, code_challenge, expires_at',
     )
     .bind(now, digest)
     .first<CodeRow>();
   if (row === null) return null;
+  if (row.scopes === null) throw new Error('a stored code has no scopes');
   return {
     clientId: row.client_id,
     ownerId: row.owner_id,
-    projectId: row.project_id,
+    scopes: scopesOfJson(row.scopes),
     redirectUri: row.redirect_uri,
     codeChallenge: row.code_challenge,
     expiresAt: row.expires_at,
@@ -336,9 +318,12 @@ export async function insertGrant({
   const results = await directory.batch([
     directory
       .prepare(
-        'INSERT INTO oauth_grants (id, client_id, owner_id, project_id, redirect_uri, created_at, last_used_at) SELECT ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM oauth_codes WHERE digest = ? AND replayed_at IS NOT NULL)',
+        'INSERT INTO oauth_grants (id, client_id, owner_id, redirect_uri, created_at, last_used_at) SELECT ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM oauth_codes WHERE digest = ? AND replayed_at IS NOT NULL)',
       )
-      .bind(grantId, code.clientId, code.ownerId, code.projectId, code.redirectUri, now, now, codeDigest),
+      .bind(grantId, code.clientId, code.ownerId, code.redirectUri, now, now, codeDigest),
+    directory
+      .prepare(`INSERT INTO oauth_grant_scopes (grant_id, kind, workspace_id, project_id) ${SCOPE_ROWS_OF_JSON} WHERE ${GRANT_EXISTS}`)
+      .bind(grantId, scopesJsonOf(code.scopes), grantId),
     directory.prepare(`UPDATE oauth_codes SET grant_id = ? WHERE digest = ? AND ${GRANT_EXISTS}`).bind(grantId, codeDigest, grantId),
     ...tokens.map((token) => tokenInsertion({ directory, grantId, token, now, parentDigest: null })),
     clientActivity({ directory, grantId, now }),
@@ -394,7 +379,7 @@ export async function revokeGrantOfSupersededRefreshToken({
   return results.map((row) => row.client_id);
 }
 
-export type RotatedGrant = { projectId: string | null };
+export type RotatedGrant = { scopes: GrantScope[] };
 
 export type Rotation = { grant: RotatedGrant | null; cappedClientIds: string[] };
 
@@ -427,12 +412,12 @@ export async function rotateTokens({
     ...tokens.map((token) => tokenInsertion({ directory, grantId, token, now, parentDigest })),
     directory.prepare('UPDATE oauth_grants SET last_used_at = ? WHERE id = ?').bind(now, grantId),
     clientActivity({ directory, grantId, now }),
-    directory.prepare('SELECT project_id FROM oauth_grants WHERE id = ?').bind(grantId),
+    directory.prepare(`SELECT ${GRANT_SCOPES_JSON} AS scopes FROM oauth_grants WHERE id = ?`).bind(grantId),
   ]);
   const cappedClientIds = deletedClientIdsOf(results[CAP_STATEMENT_INDEX]);
-  const grant = onlyResultOf<{ project_id: string | null }>(results.at(-1));
+  const grant = onlyResultOf<{ scopes: string }>(results.at(-1));
   if (grant === null) return { grant: null, cappedClientIds };
-  return { grant: { projectId: grant.project_id }, cappedClientIds };
+  return { grant: { scopes: scopesOfJson(grant.scopes) }, cappedClientIds };
 }
 
 export async function findAccessGrant({
@@ -453,8 +438,8 @@ export async function findAccessGrant({
     isSuspended: row.suspended_at !== null,
     timeZone: row.time_zone,
     agentNudge: row.agent_nudge === 1,
-    projectId: row.project_id,
-    workspaceId: row.workspace_id,
+    scopes: scopesOfJson(row.scopes),
+    projectWorkspaceId: row.project_workspace_id,
   };
 }
 
@@ -476,24 +461,6 @@ export async function revokeGrantOfToken({
   return results.map((row) => row.client_id);
 }
 
-export async function listConnectedApps({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<ConnectedAppRecord[]> {
-  const { results } = await directory
-    .prepare(
-      'SELECT oauth_grants.id, oauth_clients.name AS client_name, oauth_grants.redirect_uri, oauth_grants.project_id, projects.name AS project_name, oauth_grants.created_at, oauth_grants.last_used_at FROM oauth_grants JOIN oauth_clients ON oauth_clients.id = oauth_grants.client_id LEFT JOIN projects ON projects.id = oauth_grants.project_id WHERE oauth_grants.owner_id = ? ORDER BY oauth_grants.created_at DESC, oauth_grants.rowid DESC',
-    )
-    .bind(ownerId)
-    .all<ConnectedAppRow>();
-  return results.map((row) => ({
-    id: row.id,
-    clientName: row.client_name,
-    redirectUri: row.redirect_uri,
-    projectId: row.project_id,
-    projectName: row.project_name,
-    createdAt: row.created_at,
-    lastUsedAt: row.last_used_at,
-  }));
-}
-
 export async function deleteConnectedApp({
   directory,
   ownerId,
@@ -506,25 +473,6 @@ export async function deleteConnectedApp({
   const { results } = await directory
     .prepare(`DELETE FROM oauth_grants WHERE id = ? AND owner_id = ? ${RETURNING_CLIENT}`)
     .bind(grantId, ownerId)
-    .all<ClientIdRow>();
-  return results.map((row) => row.client_id);
-}
-
-export async function clientIdsOfProjectGrants({ directory, projectId }: { directory: D1Database; projectId: string }): Promise<string[]> {
-  const { results } = await directory.prepare('SELECT client_id FROM oauth_grants WHERE project_id = ?').bind(projectId).all<ClientIdRow>();
-  return results.map((row) => row.client_id);
-}
-
-export async function clientIdsOfWorkspaceGrants({
-  directory,
-  workspaceId,
-}: {
-  directory: D1Database;
-  workspaceId: string;
-}): Promise<string[]> {
-  const { results } = await directory
-    .prepare('SELECT client_id FROM oauth_grants WHERE project_id IN (SELECT id FROM projects WHERE workspace_id = ?)')
-    .bind(workspaceId)
     .all<ClientIdRow>();
   return results.map((row) => row.client_id);
 }

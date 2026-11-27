@@ -14,7 +14,7 @@ import type { WorkspaceListing } from './directory-workspaces';
 import type { Env } from './env';
 import { recordGrantDeletions } from './oauth/oauth-grant-deletion';
 import { GrantDeletionReason } from './oauth/oauth-grant-deletion-reason';
-import { clientIdsOfProjectGrants, clientIdsOfWorkspaceGrants } from './oauth/oauth-store';
+import { clientIdsOfProjectGrants, clientIdsOfWorkspaceGrants } from './oauth/oauth-grant-scope-store';
 import { ActionFailureKind, type ActionResult, failed } from './owner-action-result';
 import type { ProjectRecord } from './owner-records';
 import { ProjectFailureKind, resultOf } from './project-result';

@@ -1,5 +1,4 @@
 import { digestCredential } from '../credential-digest';
-import { findOwnedProject } from '../directory';
 import { enumValueOf } from '../enum-value';
 import { HttpStatus } from '../http-status';
 import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
@@ -7,6 +6,8 @@ import type { OAuthContext } from './oauth-context';
 import { OAUTH_NO_STORE_HEADERS, OAuthError, oauthErrorResponse } from './oauth-errors';
 import { recordGrantDeletions } from './oauth-grant-deletion';
 import { GrantDeletionReason } from './oauth-grant-deletion-reason';
+import { isSelectionScope } from './oauth-grant-scope';
+import { ownedSelectionOf } from './oauth-grant-selection';
 import { OAuthGrantType, mcpResourceOf } from './oauth-metadata';
 import { OAUTH_GRANTS_PER_OWNER_MAX, OAuthParameter } from './oauth-paths';
 import { isVerifierOfChallenge } from './oauth-pkce';
@@ -47,9 +48,11 @@ async function codeRefusalOf({ spent, form, client, context }: TokenRequest & { 
   if (isForeignResource({ form, issuer: context.issuer })) return OAuthError.InvalidTarget;
   const isVerified = await isVerifierOfChallenge({ verifier, challenge: spent.codeChallenge });
   if (!isVerified) return OAuthError.InvalidGrant;
-  if (spent.projectId === null) return null;
-  const projectId = await findOwnedProject({ directory: context.env.DIRECTORY, ownerId: spent.ownerId, projectId: spent.projectId });
-  if (projectId === null) return OAuthError.InvalidGrant;
+  const selection = spent.scopes.filter(isSelectionScope);
+  const isAccount = selection.length < spent.scopes.length;
+  if (isAccount) return null;
+  const owned = await ownedSelectionOf({ directory: context.env.DIRECTORY, ownerId: spent.ownerId, scopes: selection });
+  if (owned === null) return OAuthError.InvalidGrant;
   return null;
 }
 
@@ -80,7 +83,7 @@ async function exchangeCode(tokenRequest: TokenRequest): Promise<Response> {
   });
   await recordGrantDeletions({ env, reason: GrantDeletionReason.Eviction, clientIds: evictedClientIds, now });
   if (!isGranted) return oauthErrorResponse(OAuthError.InvalidGrant);
-  return tokenAnswerOf({ tokens, scope: grantedScopeOf(spent.projectId) });
+  return tokenAnswerOf({ tokens, scope: grantedScopeOf(spent.scopes) });
 }
 
 async function refresh({ context, form, client }: TokenRequest): Promise<Response> {
@@ -105,7 +108,7 @@ async function refresh({ context, form, client }: TokenRequest): Promise<Respons
   });
   await recordGrantDeletions({ env, reason: GrantDeletionReason.Cap, clientIds: cappedClientIds, now });
   if (grant === null) return oauthErrorResponse(OAuthError.InvalidGrant);
-  return tokenAnswerOf({ tokens, scope: grantedScopeOf(grant.projectId) });
+  return tokenAnswerOf({ tokens, scope: grantedScopeOf(grant.scopes) });
 }
 
 const HANDLER_OF_GRANT_TYPE: Record<OAuthGrantType, (tokenRequest: TokenRequest) => Promise<Response>> = {

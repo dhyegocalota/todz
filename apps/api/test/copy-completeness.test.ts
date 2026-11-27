@@ -26,6 +26,7 @@ const OWNER_FIRST_NAME = ['Dhy', 'ego'].join('');
 const OWNER_FULL_NAME = `${OWNER_FIRST_NAME} Calota`;
 const SAMPLE_NAME = 'Claude Code';
 const SAMPLE_HOST = 'example.com';
+const SAMPLE_HOLDINGS = 'Workspace › Project';
 const SAMPLE_URL = 'https://docs.todz.app/self-host';
 const SAMPLE_QUEUE_URL = 'https://todz.app/cloud-queue?token=x';
 const BROKEN_TEXT_PATTERNS = ['undefined', '[object Object]', 'NaN', 'null'];
@@ -116,8 +117,12 @@ const COPY_MODULES: CopyModule[] = [
       'return.actionOf': SAMPLE_NAME,
       'approved.bodyOf': SAMPLE_NAME,
       'link.cloudFullBodyOf': { selfHostUrl: SAMPLE_URL },
+      'consent.holdsOf': { clientName: SAMPLE_NAME, held: SAMPLE_HOLDINGS },
     },
-    untranslatable: untranslatableOf({ everywhere: ['signIn.emailPlaceholder'] }),
+    untranslatable: untranslatableOf({
+      everywhere: ['signIn.emailPlaceholder'],
+      perLanguage: { [Language.PortugueseBrazil]: ['consent.summaryWorkspaceOne', 'consent.summaryWorkspaceMany'] },
+    }),
   },
   { name: 'sign-in page', byLanguage: SIGN_IN_PAGE_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },
   { name: 'email code', byLanguage: EMAIL_CODE_COPY_BY_LANGUAGE, untranslatable: untranslatableOf({}) },

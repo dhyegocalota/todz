@@ -1,23 +1,59 @@
+import { z } from 'zod';
 import { HttpStatus } from './http-status';
 import { recordGrantDeletions } from './oauth/oauth-grant-deletion';
 import { GrantDeletionReason } from './oauth/oauth-grant-deletion-reason';
+import { GrantScopeKind, GrantScopesSchema, grantShapeOf } from './oauth/oauth-grant-scope';
+import {
+  type ConnectedAppRecord,
+  type NamedScope,
+  findConnectedApp,
+  grantScopeOfNamed,
+  listConnectedApps,
+  replaceGrantScopes,
+} from './oauth/oauth-grant-scope-store';
+import { narrowedScopesOf } from './oauth/oauth-grant-selection';
 import { redirectHostOf } from './oauth/oauth-redirect-uri';
-import { scopeKindOf } from './oauth/oauth-scope';
-import { type ConnectedAppRecord, deleteConnectedApp, listConnectedApps } from './oauth/oauth-store';
+import { deleteConnectedApp } from './oauth/oauth-store';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
-import { type SessionContext, type SessionHandler, routeParam } from './owner-request';
+import { type SessionContext, type SessionHandler, parsedBody, routeParam } from './owner-request';
 import { OwnerRoute, RouteParam } from './owner-routes';
 
-type ConnectedAppRoute = OwnerRoute.ListConnectedApps | OwnerRoute.DisconnectApp;
+type ConnectedAppRoute = OwnerRoute.ListConnectedApps | OwnerRoute.NarrowApp | OwnerRoute.DisconnectApp;
+
+const NarrowBodySchema = z.object({ scopes: GrantScopesSchema });
+
+function scopeJson(scope: NamedScope) {
+  if (scope.kind === GrantScopeKind.Workspace) {
+    return { kind: scope.kind, workspace_id: scope.workspaceId, workspace_name: scope.workspaceName };
+  }
+  if (scope.kind === GrantScopeKind.Project) {
+    return {
+      kind: scope.kind,
+      project_id: scope.projectId,
+      project_name: scope.projectName,
+      workspace_id: scope.workspaceId,
+      workspace_name: scope.workspaceName,
+    };
+  }
+  return { kind: scope.kind };
+}
+
+function singleProjectOf(scopes: NamedScope[]): { id: string; name: string } | null {
+  const [only] = scopes;
+  if (scopes.length !== 1 || only?.kind !== GrantScopeKind.Project) return null;
+  return { id: only.projectId, name: only.projectName };
+}
 
 function connectedAppJson(app: ConnectedAppRecord) {
+  const project = singleProjectOf(app.scopes);
   return {
     id: app.id,
     client_name: app.clientName,
     redirect_host: redirectHostOf(app.redirectUri),
-    scope: scopeKindOf(app.projectId),
-    project_id: app.projectId,
-    project_name: app.projectName,
+    scope: grantShapeOf(app.scopes.map(grantScopeOfNamed)),
+    project_id: project === null ? null : project.id,
+    project_name: project === null ? null : project.name,
+    scopes: app.scopes.map(scopeJson),
     created_at: app.createdAt,
     last_used_at: app.lastUsedAt,
   };
@@ -26,6 +62,27 @@ function connectedAppJson(app: ConnectedAppRecord) {
 async function listApps({ env, owner }: SessionContext): Promise<Response> {
   const apps = await listConnectedApps({ directory: env.DIRECTORY, ownerId: owner.ownerId });
   return Response.json({ connected_apps: apps.map(connectedAppJson) });
+}
+
+// NB ADR 0126: narrowing replaces a grant's scopes by a smaller set of the owner's own, and answers the app as the list shows it.
+async function narrowApp(context: SessionContext): Promise<Response> {
+  const { env, owner } = context;
+  const body = await parsedBody({ request: context.request, schema: NarrowBodySchema });
+  if (body === null) return errorResponse(OwnerErrorCode.InvalidRequest);
+  const grantId = routeParam({ context, name: RouteParam.ConnectedAppId });
+  const app = await findConnectedApp({ directory: env.DIRECTORY, ownerId: owner.ownerId, grantId });
+  if (app === null) return errorResponse(OwnerErrorCode.NotFound);
+  const scopes = await narrowedScopesOf({
+    directory: env.DIRECTORY,
+    ownerId: owner.ownerId,
+    held: app.scopes.map(grantScopeOfNamed),
+    requested: body.scopes,
+  });
+  if (scopes === null) return errorResponse(OwnerErrorCode.ScopeNotNarrower);
+  await replaceGrantScopes({ directory: env.DIRECTORY, ownerId: owner.ownerId, grantId, scopes });
+  const narrowed = await findConnectedApp({ directory: env.DIRECTORY, ownerId: owner.ownerId, grantId });
+  if (narrowed === null) return errorResponse(OwnerErrorCode.NotFound);
+  return Response.json({ connected_app: connectedAppJson(narrowed) });
 }
 
 // NB ADR 0109: disconnecting deletes the grant and, through the cascade, every token of it; another owner's id answers like an absent one.
@@ -40,5 +97,6 @@ async function disconnectApp(context: SessionContext): Promise<Response> {
 
 export const CONNECTED_APP_HANDLERS: Record<ConnectedAppRoute, SessionHandler> = {
   [OwnerRoute.ListConnectedApps]: listApps,
+  [OwnerRoute.NarrowApp]: narrowApp,
   [OwnerRoute.DisconnectApp]: disconnectApp,
 };

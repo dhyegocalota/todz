@@ -26,6 +26,7 @@ const MEDIA_FOLDER = '.pr-media';
 const CALLBACK_PAGE = '<!doctype html><title>Back in the client</title><p>Back in the client</p>';
 const WORKSPACE_NAME = 'Launch';
 const OTHER_WORKSPACE_NAME = 'Research';
+const THIRD_WORKSPACE_NAME = 'Archive';
 const OWNER_BOX = 'input[name="choice"][value="owner"]';
 const PROJECT_BOXES = 'input[name="choice"][value^="project:"]';
 const WORKSPACE_BOXES = 'input[name="choice"][value^="workspace:"]';
@@ -393,6 +394,7 @@ test('the consent tree expands, selects everything and keeps a live summary', as
   const owner = await connect({ connection, choose: chooseOwner });
   await createWorkspace({ request, token: owner.tokens.access_token });
   await createWorkspace({ request, token: owner.tokens.access_token, name: OTHER_WORKSPACE_NAME });
+  await createWorkspace({ request, token: owner.tokens.access_token, name: THIRD_WORKSPACE_NAME });
   const clientId = await registerClient({ request, redirectUri: loopback.redirectUri });
   const { page } = connection;
   await signIn({
@@ -437,6 +439,7 @@ test('a two-project selection is approved, granted and enforced end to end', asy
   };
   const owner = await connect({ connection, choose: chooseOwner });
   await createWorkspace({ request, token: owner.tokens.access_token });
+  await createWorkspace({ request, token: owner.tokens.access_token, name: OTHER_WORKSPACE_NAME });
 
   const selection = await connect({ connection, choose: chooseTwoProjects });
 

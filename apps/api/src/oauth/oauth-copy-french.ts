@@ -30,8 +30,6 @@ export const OAUTH_COPY_FRENCH: OAuthCopy = {
     redirectOf: (host: string) => `Après votre réponse, todz vous renvoie vers ${host}.`,
     loopbackRedirectOf: (host: string) => `Après votre réponse, todz vous renvoie vers ${host}, une app sur cet ordinateur.`,
     legend: 'À quoi peut-elle accéder ?',
-    projectHint:
-      'Un projet lui permet de lire et de modifier les tâches de ce projet, et de les déplacer vers les autres projets de son espace de travail.',
     ownerLabel: 'Tout votre compte (portée propriétaire)',
     ownerWarning:
       'Il peut lire et modifier toutes les tâches, et créer, renommer et supprimer tous les espaces de travail et tous les projets.',
@@ -39,6 +37,20 @@ export const OAUTH_COPY_FRENCH: OAuthCopy = {
     approve: 'Approuver',
     approving: 'Approbation…',
     deny: 'Refuser',
+    selectionHint:
+      'Cochez des espaces de travail entiers ou seulement certains de leurs projets. Elle lit et modifie leurs tâches, et les déplace entre les projets d’un même espace de travail.',
+    selectAll: 'Tout sélectionner',
+    workspaceIncludes: 'Inclut tous ses projets, maintenant et plus tard',
+    showProjects: 'Afficher les projets',
+    hideProjects: 'Masquer les projets',
+    summaryNone: 'Rien de sélectionné pour l’instant',
+    summaryWorkspaceOne: '{{count}} espace de travail',
+    summaryWorkspaceMany: '{{count}} espaces de travail',
+    summaryProjectOne: '{{count}} projet',
+    summaryProjectMany: '{{count}} projets',
+    summaryBoth: '{{workspaces}} et {{projects}}',
+    accountName: 'Tout votre compte',
+    holdsOf: ({ clientName, held }: { clientName: string; held: string }) => `${clientName} a déjà accès à : ${held}`,
   },
   return: {
     titleOf: (clientName: string) => `Retour vers ${clientName}`,

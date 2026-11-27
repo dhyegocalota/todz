@@ -255,7 +255,7 @@ describe('the consent screen', () => {
     const html = decodedHtml(await consentPage({ browser, params }));
 
     expect(choiceLabelOf({ html, choice: projectChoiceOf(owner.projectId) })).toBe('Thrifty Traveler › Inbox');
-    expect(choiceLabelOf({ html, choice: otherProjectId })).toBe('Personal › Inbox');
+    expect(choiceLabelOf({ html, choice: projectChoiceOf(otherProjectId) })).toBe('Personal › Inbox');
   });
 
   test('a hostile workspace name is escaped inside its choice label', async () => {

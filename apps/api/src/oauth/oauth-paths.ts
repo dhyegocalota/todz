@@ -49,6 +49,7 @@ export enum OAuthField {
 }
 
 export const OAUTH_DECISION_FIELDS: string[] = [OAuthField.FormToken, OAuthField.Decision, OAuthField.Choice];
+export const OAUTH_SINGLE_DECISION_FIELDS: string[] = [OAuthField.FormToken, OAuthField.Decision];
 
 export enum OAuthDecision {
   Approve = 'approve',

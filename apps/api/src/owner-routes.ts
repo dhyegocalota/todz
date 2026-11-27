@@ -30,6 +30,7 @@ export enum OwnerRoute {
   ReadChanges = 'read_changes',
   WatchChanges = 'watch_changes',
   ListConnectedApps = 'list_connected_apps',
+  NarrowApp = 'narrow_app',
   DisconnectApp = 'disconnect_app',
 }
 
@@ -70,6 +71,7 @@ export const OWNER_ROUTES: Record<OwnerRoute, OwnerRouteDefinition> = {
   [OwnerRoute.ReadChanges]: definition({ method: HttpMethod.Get, pathname: `${PROJECT_PATH}/changes` }),
   [OwnerRoute.WatchChanges]: definition({ method: HttpMethod.Get, pathname: `${PROJECT_PATH}/socket` }),
   [OwnerRoute.ListConnectedApps]: definition({ method: HttpMethod.Get, pathname: CONNECTED_APPS_PATH }),
+  [OwnerRoute.NarrowApp]: definition({ method: HttpMethod.Patch, pathname: `${CONNECTED_APPS_PATH}/:${RouteParam.ConnectedAppId}` }),
   [OwnerRoute.DisconnectApp]: definition({ method: HttpMethod.Delete, pathname: `${CONNECTED_APPS_PATH}/:${RouteParam.ConnectedAppId}` }),
 };
 

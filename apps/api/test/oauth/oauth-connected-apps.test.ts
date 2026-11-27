@@ -160,6 +160,10 @@ describe('Connected apps', () => {
   });
 });
 
+function serveOAuthMcp(request: Request): Promise<Response> {
+  return serveMcp({ request, env: oauthEnv(), now: CLOCK_NOW });
+}
+
 type ScopeJson = {
   kind: string;
   workspace_id?: string;
@@ -264,7 +268,7 @@ describe('Narrowing a connected app', () => {
     const { connected_app: narrowed } = (await response.json()) as { connected_app: ConnectedAppJson };
     expect(narrowed).toEqual(await onlyAppOf(session));
     expect(narrowed.scope).toBe('selection');
-    const client = await connectClient({ era: ClientEra.Modern, token: tokens.access_token });
+    const client = await connectClient({ era: ClientEra.Modern, token: tokens.access_token, serve: serveOAuthMcp });
     const names = (await client.listTools()).tools.map((tool) => tool.name);
     expect(names).not.toContain('create_workspace');
     expect(names).toContain('workspaces');
@@ -275,7 +279,7 @@ describe('Narrowing a connected app', () => {
     const { tokens } = await connectedClient({ choiceOf: () => 'owner', email: owner.email });
     const { id } = await onlyAppOf(session);
     await narrow({ session, id, body: { scopes: [projectScopeOf(otherProjectId), projectScopeOf(owner.projectId)] } });
-    const client = await connectClient({ era: ClientEra.Modern, token: tokens.access_token });
+    const client = await connectClient({ era: ClientEra.Modern, token: tokens.access_token, serve: serveOAuthMcp });
     const outside = await seedProject({ ownerId: owner.ownerId });
 
     const refused = await callTool({ client, name: 'list', args: { project: outside } });
