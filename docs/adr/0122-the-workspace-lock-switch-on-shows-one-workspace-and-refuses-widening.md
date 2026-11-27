@@ -1,6 +1,6 @@
 # 0122. The workspace lock switch on shows one workspace and refuses widening
 
-- Status: Accepted (the loop's call)
+- Status: Accepted (the loop's call); amended by [0128](0128-a-click-switches-adding-is-explicit-and-a-locked-session-keeps-the-set-it-locked-with.md): several workspaces are allowed again with the switch on, and a lock keeps the selected set
 - Date: 2026-11-27
 - Deciders: Claude (the build loop's call, under the owner's report on 2026-11-27: "quando eu lock workspaces, ainda posso ter múltiplos selecionados e selecionar múltiplos")
 - Inspired by: [0110](0110-the-workspace-lock-hides-every-workspace-but-the-current-one-until-touch-id-or-the-mac-password-unlocks-a-session.md), [0113](0113-a-locked-session-looks-like-a-one-workspace-account-with-no-placeholder-count-or-lock-chrome-and-one-neutral-way-back-in.md)

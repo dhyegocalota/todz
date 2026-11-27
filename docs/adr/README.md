@@ -137,3 +137,4 @@ A `Proposed` ADR moves to `Accepted` by editing its status line and date. Any ot
 | [0122](0122-the-workspace-lock-switch-on-shows-one-workspace-and-refuses-widening.md) | The workspace lock switch on shows one workspace and refuses widening | Accepted | 2026-11-27 |
 | [0123](0123-a-refresh-token-retried-within-the-leeway-gets-a-fresh-pair-and-the-cap-holds-a-refresh-every-five-minutes.md) | A refresh token retried within the leeway gets a fresh pair, and the cap holds a refresh every five minutes | Accepted | 2026-11-27 |
 | [0124](0124-setup-starts-from-a-one-line-prompt-and-an-agent-readable-runbook-behind-it.md) | Setup starts from a one-line prompt and an agent-readable runbook behind it | Accepted | 2026-11-27 |
+| [0128](0128-a-click-switches-adding-is-explicit-and-a-locked-session-keeps-the-set-it-locked-with.md) | A click switches, adding is explicit, and a locked session keeps the set it locked with | Accepted | 2026-11-27 |

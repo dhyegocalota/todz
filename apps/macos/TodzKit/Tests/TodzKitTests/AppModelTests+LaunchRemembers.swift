@@ -42,10 +42,10 @@ extension AppModelTests {
         #expect(harness.model.activeWorkspace == nil)
     }
 
-    @Test func aLockedLaunchOpensTheRememberedWorkspaceCollapsed() async throws {
+    @Test func aLockedLaunchOpensTheRememberedSetPinned() async throws {
         let harness = try await cachedLaunch(isLockOn: true, selection: .all)
         #expect(harness.model.phase == .ready)
-        #expect(harness.model.selection == .chosen(["side"]))
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["side"])
+        #expect(harness.model.selection == .chosen(["acme", "side", "third"]))
+        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "side", "third"])
     }
 }

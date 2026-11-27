@@ -33,9 +33,9 @@ extension AppModel {
         await selectWorkspaces(selection.toggling(identifier: identifier, in: workspaces))
     }
 
-    // NB ADR 0122: with the lock switch on, a switcher row switches to its workspace alone instead of joining the shown set.
+    // NB ADR 0128: a plain click shows its workspace alone; command-click and Show Alongside add it to the view or take it out.
     public func pickWorkspace(identifier: String, gesture: WorkspaceSwitcherGesture) async {
-        guard workspaceLock.isEnabled else { return await toggleWorkspace(identifier: identifier) }
+        guard gesture == .click else { return await toggleWorkspace(identifier: identifier) }
         await switchWorkspace(identifier: identifier)
     }
 
@@ -214,7 +214,7 @@ extension AppModel {
     private var selectionToShow: WorkspaceSelection? {
         let isCurrentGone = activeWorkspaceIdentifier.map { current in !workspaces.contains { $0.identifier == current } } == true
         if workspaceLock.isLocked, isCurrentGone { return nil }
-        if let selection, !selection.workspaces(in: workspaces).isEmpty { return collapsedToOneWorkspace(selection.limited(to: workspaces)) }
+        if let selection, !selection.workspaces(in: workspaces).isEmpty { return pinnedWhileLocked(selection.limited(to: workspaces)) }
         guard workspaces.count == 1, let sole = workspaces.first else { return nil }
         return .chosen([sole.identifier])
     }

@@ -19,6 +19,7 @@ enum MainWindowCopy {
     static let yesterday = "Yesterday"
     static let newWorkspace = "New Workspace…"
     static let allWorkspaces = "All Workspaces"
+    static let showAlongside = "Show Alongside"
     static let newProject = "New Project…"
     static let newProjectButton = "New Project"
     static let renameProject = "Rename…"

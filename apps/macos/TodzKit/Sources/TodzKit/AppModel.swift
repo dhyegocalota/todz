@@ -194,9 +194,8 @@ import Observation
         return selection.workspaces(in: workspaces)
     }
 
-    // NB ADR 0122: with the lock switch on, the one current workspace is all that any surface can show, locked or not.
     public var shownWorkspaces: [Workspace] {
-        workspaceLock.shown(selectedWorkspaces, current: activeWorkspaceIdentifier)
+        selectedWorkspaces
     }
 
     public var taggedWorkspaceName: [String: String] {
