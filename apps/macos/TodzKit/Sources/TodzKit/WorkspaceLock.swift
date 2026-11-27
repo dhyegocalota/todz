@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-// NB ADR 0110: with the switch on, a session starts locked, shows only the current workspace and asks the Mac owner before any other.
+// NB ADR 0128: with the switch on, a session starts locked, shows only the workspaces it kept and asks the Mac owner before any other.
 @MainActor @Observable public final class WorkspaceLock {
     public private(set) var isEnabled: Bool
     public private(set) var isUnlocked = false
@@ -102,23 +102,13 @@ import Observation
         return relock(because: .idle)
     }
 
-    public func isLocked(workspaceIdentifier: String, current: String?) -> Bool {
-        isLocked && workspaceIdentifier != current
+    public func isLocked(workspaceIdentifier: String, kept: Set<String>) -> Bool {
+        isLocked && !kept.contains(workspaceIdentifier)
     }
 
-    public func visible(_ workspaces: [Workspace], current: String?) -> [Workspace] {
+    public func visible(_ workspaces: [Workspace], kept: Set<String>) -> [Workspace] {
         guard isLocked else { return workspaces }
-        return only(current, in: workspaces)
-    }
-
-    public func shown(_ workspaces: [Workspace], current: String?) -> [Workspace] {
-        guard isEnabled else { return workspaces }
-        return only(current, in: workspaces)
-    }
-
-    private func only(_ current: String?, in workspaces: [Workspace]) -> [Workspace] {
-        guard let shown = workspaces.first(where: { $0.identifier == current }) else { return [] }
-        return [shown]
+        return workspaces.filter { kept.contains($0.identifier) }
     }
 
     private func unlock() {

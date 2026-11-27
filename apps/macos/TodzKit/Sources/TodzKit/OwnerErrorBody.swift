@@ -15,8 +15,8 @@ struct OwnerErrorBody: Decodable {
     let minimumAppVersion: String?
     let message: String?
 
-    static func failure(status: Int, body: Data) -> OwnerAPIError {
-        let codedFailure = (try? OwnerCoding.decoder().decode(OwnerErrorBody.self, from: body))?.failure(status: status)
+    static func failure(status: Int, body: Data, retryAfterSeconds: Int? = nil) -> OwnerAPIError {
+        let codedFailure = (try? OwnerCoding.decoder().decode(OwnerErrorBody.self, from: body))?.failure(status: status, retryAfterSeconds: retryAfterSeconds)
         if let codedFailure { return codedFailure }
         let statusFailure = ResponseStatus(rawValue: status).flatMap { errorOfStatus[$0] }
         if let statusFailure { return statusFailure }
@@ -29,7 +29,7 @@ struct OwnerErrorBody: Decodable {
         return .fairUsePaused(message: message)
     }
 
-    private func failure(status: Int) -> OwnerAPIError? {
+    private func failure(status: Int, retryAfterSeconds: Int?) -> OwnerAPIError? {
         switch error {
         case .invalidRequest: .invalidRequest
         case .identityRejected: .identityRejected
@@ -45,6 +45,8 @@ struct OwnerErrorBody: Decodable {
         case .limitReached: limitFailure(status: status)
         case .accountSuspended: message.map { .fairUsePaused(message: $0) }
         case .signUpRefused: message.map { .fairUseRefused(message: $0) }
+        case .codeLocked: .codeLocked(retryAfterSeconds: retryAfterSeconds)
+        case .scopeNotNarrower: .scopeNotNarrower
         }
     }
 }

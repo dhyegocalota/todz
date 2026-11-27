@@ -105,7 +105,7 @@ struct SignInScreen: View {
             AddressSlot(email: $email, isServerFormOpen: isServerFormOpen, send: sendLink)
         case .awaitingLink:
             if let pendingLink = model.pendingLink {
-                InboxSlot(pendingLink: pendingLink, linkSentAt: linkSentAt, send: sendLink)
+                InboxSlot(pendingLink: pendingLink, linkSentAt: linkSentAt, isServerFormOpen: isServerFormOpen, resend: resendCode)
             }
         case .redeeming:
             ProgressView(SignInCopy.signingIn)
@@ -117,6 +117,11 @@ struct SignInScreen: View {
         let waitingChangeCount = model.waitingChangeCount
         guard waitingChangeCount > 0 else { return notice?.copy }
         return SignInCopy.sessionEndedWaiting(count: waitingChangeCount)
+    }
+
+    private func resendCode() async {
+        await model.resendCode()
+        linkSentAt = .now
     }
 
     private func sendLink(to address: String) async {

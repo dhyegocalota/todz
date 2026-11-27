@@ -5,7 +5,7 @@ import { swiftCopyValue } from './swift-copy';
 const SETTINGS_COPY = 'apps/macos/Copy/SettingsCopy.swift';
 const FOCUS_WORD = 'Focus';
 const FOCUS_NAME_PATTERN = /^(?:respectFocus|openFocusSettings|focusQuietNow)/;
-const COPY_NAME_PATTERN = /static let (\w+) = "/g;
+const COPY_NAME_PATTERN = /static var (\w+): String \{ Localized\.text\(/g;
 const RESPECT_FOCUS_DETAIL = 'Hold what todz shows on this Mac in a Focus that has the todz filter.';
 const DAY_TEMPERATURE_DETAIL = 'Dims the menu bar count through the afternoon and tints overdue widget rows.';
 

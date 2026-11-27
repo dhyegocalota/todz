@@ -4,6 +4,8 @@ extension SignInError {
     var copy: String {
         switch self {
         case .identityRejected: SignInCopy.identityRejected
+        case .codeRejected: SignInCopy.codeRejected
+        case let .codeLocked(retryAfterSeconds): SignInCopy.codeLocked(retryAfterSeconds: retryAfterSeconds)
         case .signInUnavailable: SignInCopy.signInUnavailable
         case .signInRefused: SignInCopy.signInRefused
         case .invalidAddress: SignInCopy.emailFormat
@@ -21,7 +23,7 @@ extension SignInError {
     var canTryAgain: Bool {
         switch self {
         case .unreachable, .unexpected: true
-        case .identityRejected, .signInUnavailable, .signInRefused, .invalidAddress, .linkRejected, .linkNotRequested, .linkRefused,
+        case .identityRejected, .codeRejected, .codeLocked, .signInUnavailable, .signInRefused, .invalidAddress, .linkRejected, .linkNotRequested, .linkRefused,
             .timeZoneInvalid, .appTooOld, .fairUseRefused:
             false
         }

@@ -11,11 +11,11 @@ func liveAddress() throws -> URL {
 }
 
 func liveAPI() throws -> OwnerAPI {
-    OwnerAPI(baseURL: try liveAddress(), appVersion: OwnerFixtures.appVersion)
+    OwnerAPI(baseURL: try liveAddress(), appVersion: OwnerFixtures.appVersion, language: OwnerFixtures.language)
 }
 
 func liveSignals() throws -> SocketChangeSignals {
-    SocketChangeSignals(baseURL: try liveAddress(), appVersion: OwnerFixtures.appVersion)
+    SocketChangeSignals(baseURL: try liveAddress(), appVersion: OwnerFixtures.appVersion, language: OwnerFixtures.language)
 }
 
 private func signedInInbox(api: OwnerAPI) async throws -> (session: String, inbox: Project) {

@@ -1,4 +1,4 @@
 enum OpenSourceCopy {
-    static let starOnGitHub = "Star todz on GitHub"
-    static let openSource = "Open source on GitHub"
+    static var starOnGitHub: String { Localized.text("Star todz on GitHub") }
+    static var openSource: String { Localized.text("Open source on GitHub") }
 }

@@ -46,6 +46,7 @@ struct SettingsView: View {
 
     private var generalSection: some View {
         Section {
+            SettingsLanguageRows()
             SettingsRow(title: SettingsCopy.showPendingCount, detail: SettingsCopy.showPendingCountDetail) {
                 Toggle(SettingsCopy.showPendingCount, isOn: $isCountEnabled)
                     .toggleStyle(.switch)

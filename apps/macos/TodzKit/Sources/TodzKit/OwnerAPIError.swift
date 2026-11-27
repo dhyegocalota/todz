@@ -14,6 +14,8 @@ public enum OwnerAPIError: Error, Equatable, Sendable {
     case fairUseRefused(message: String)
     case fairUsePaused(message: String)
     case limitReached
+    case codeLocked(retryAfterSeconds: Int?)
+    case scopeNotNarrower
     case unreachable
     case unexpected(status: Int)
 }

@@ -1,14 +1,14 @@
 enum WidgetSampleCopy {
-    static let workspace = "Personal"
-    static let firstTitle = "Write tests for OAuth token refresh"
-    static let secondTitle = "Review the sync conflict PR"
-    static let thirdTitle = "Renew Apple Developer membership"
-    static let fourthTitle = "Cache the weekly digest in the background"
-    static let fifthTitle = "Draft the launch post"
-    static let firstDoneTitle = "Record the build-in-public video"
-    static let secondDoneTitle = "Fix the flaky sign-in test"
+    static var workspace: String { Localized.text("Personal") }
+    static var firstTitle: String { Localized.text("Write tests for OAuth token refresh") }
+    static var secondTitle: String { Localized.text("Review the sync conflict PR") }
+    static var thirdTitle: String { Localized.text("Renew Apple Developer membership") }
+    static var fourthTitle: String { Localized.text("Cache the weekly digest in the background") }
+    static var fifthTitle: String { Localized.text("Draft the launch post") }
+    static var firstDoneTitle: String { Localized.text("Record the build-in-public video") }
+    static var secondDoneTitle: String { Localized.text("Fix the flaky sign-in test") }
     static let apiTag = "api"
     static let syncTag = "sync"
-    static let macAppTag = "mac app"
-    static let launchTag = "launch"
+    static var macAppTag: String { Localized.text("mac app") }
+    static var launchTag: String { Localized.text("launch") }
 }

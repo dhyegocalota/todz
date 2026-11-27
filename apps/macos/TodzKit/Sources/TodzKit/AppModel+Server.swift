@@ -47,6 +47,7 @@ extension AppModel {
     func eraseDataOfAnotherServer() {
         let isUnreadableServer = preference.hasUnreadableValue
         guard isUnreadableServer || isStoredSessionOfAnotherServer() else { return }
+        breadcrumbs.record(isUnreadableServer ? .unreadableServer : .sessionOfAnotherServer)
         do {
             try vault.erase()
             try eraseCache()

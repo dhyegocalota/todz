@@ -1,19 +1,19 @@
 enum TaskRowCopy {
-    static let dueToday = "Today"
-    static let dueTomorrow = "Tomorrow"
-    static let pending = "Not saved yet"
-    static let pendingHelp = "Not saved yet. It gets its number once todz has it."
+    static var dueToday: String { Localized.text("Today") }
+    static var dueTomorrow: String { Localized.text("Tomorrow") }
+    static var pending: String { Localized.text("Not saved yet") }
+    static var pendingHelp: String { Localized.text("Not saved yet. It gets its number once todz has it.") }
 
     static func overdue(date: String) -> String {
-        "Overdue · \(date)"
+        Localized.text("Overdue · \(date)")
     }
 
     static func via(client: String) -> String {
-        "via \(client)"
+        Localized.text("via \(client)")
     }
 
     static func completedVia(client: String) -> String {
-        "completed via \(client)"
+        Localized.text("completed via \(client)")
     }
 
     static func shortId(number: Int) -> String {

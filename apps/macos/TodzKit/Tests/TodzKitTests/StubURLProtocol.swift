@@ -3,6 +3,7 @@ import os
 
 enum StubAnswer: Sendable {
     case response(status: Int, body: String)
+    case responseWithHeaders(status: Int, body: String, headers: [String: String])
     case failure(URLError)
 }
 
@@ -18,6 +19,7 @@ struct RecordedRequest: Sendable {
     let authorization: String?
     let contentType: String?
     let appVersion: String?
+    let acceptLanguage: String?
     let body: Data
 }
 
@@ -63,6 +65,7 @@ final class StubURLProtocol: URLProtocol {
             authorization: request.value(forHTTPHeaderField: "Authorization"),
             contentType: request.value(forHTTPHeaderField: "Content-Type"),
             appVersion: request.value(forHTTPHeaderField: "Todz-App-Version"),
+            acceptLanguage: request.value(forHTTPHeaderField: "Accept-Language"),
             body: bodyOf(request)
         )
         let answer = Self.state.withLock { state in
@@ -77,12 +80,14 @@ final class StubURLProtocol: URLProtocol {
         case let .failure(failure):
             client?.urlProtocol(self, didFailWithError: failure)
         case let .response(status, body):
-            respond(url: url, status: status, body: body)
+            respond(url: url, status: status, body: body, headers: [:])
+        case let .responseWithHeaders(status, body, headers):
+            respond(url: url, status: status, body: body, headers: headers)
         }
     }
 
-    private func respond(url: URL, status: Int, body: String) {
-        guard let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil) else { return }
+    private func respond(url: URL, status: Int, body: String, headers: [String: String]) {
+        guard let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: headers) else { return }
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Data(body.utf8))
         client?.urlProtocolDidFinishLoading(self)

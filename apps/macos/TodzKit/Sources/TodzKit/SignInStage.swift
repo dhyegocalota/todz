@@ -8,7 +8,7 @@ public enum SignInStage: Equatable, Sendable {
     case redeeming
 
     @MainActor public init(model: AppModel) {
-        let isRedeeming = model.isSigningIn && model.signInMethod != .identity
+        let isRedeeming = model.isSigningIn && !model.isSubmittingCode && model.signInMethod != .identity
         guard !isRedeeming else {
             self = .redeeming
             return

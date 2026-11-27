@@ -56,10 +56,12 @@ private final class SocketWatch: NSObject, URLSessionWebSocketDelegate, Sendable
 public struct SocketChangeSignals: ChangeSignals {
     private let baseURL: URL
     private let appVersion: String
+    private let language: @Sendable () -> AppLanguage
 
-    public init(baseURL: URL, appVersion: String) {
+    public init(baseURL: URL, appVersion: String, language: @escaping @Sendable () -> AppLanguage) {
         self.baseURL = baseURL
         self.appVersion = appVersion
+        self.language = language
     }
 
     public func watch(session: String, projectIdentifier: String) -> AsyncThrowingStream<ChangeSignalEvent, any Error> {
@@ -86,6 +88,6 @@ public struct SocketChangeSignals: ChangeSignals {
         guard let socketScheme = components.scheme.flatMap({ socketSchemeOfScheme[$0] }) else { throw OwnerAPIError.unreachable }
         components.scheme = socketScheme
         guard let socketBaseURL = components.url else { throw OwnerAPIError.unreachable }
-        return try OwnerRequest(method: .get, path: socketPath(projectIdentifier), session: session).transportRequest(baseURL: socketBaseURL, appVersion: appVersion)
+        return try OwnerRequest(method: .get, path: socketPath(projectIdentifier), session: session).transportRequest(baseURL: socketBaseURL, appVersion: appVersion, language: language())
     }
 }

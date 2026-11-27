@@ -60,6 +60,7 @@ final class HarnessClock {
     let servers: FakeServers
     let defaultURL: ServerAddress
     let preference: ServerPreference
+    let breadcrumbFolder: URL
     let model: AppModel
 
     init(
@@ -95,6 +96,9 @@ final class HarnessClock {
             store.outbox = Data("outbox".utf8)
             pendingLinks.link = PendingSignInLink(email: "maria@example.com", verifier: "verifier-0", expiresAt: fixedInstant.addingTimeInterval(harnessPendingLifetime))
         }
+        let breadcrumbFolder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: breadcrumbFolder, withIntermediateDirectories: true)
+        self.breadcrumbFolder = breadcrumbFolder
         self.defaultURL = defaultURL
         self.preference = preference
         self.servers = servers
@@ -108,6 +112,7 @@ final class HarnessClock {
             vault: vault,
             pendingLinks: pendingLinks,
             store: store,
+            breadcrumbs: LaunchBreadcrumbs(folder: breadcrumbFolder, now: { clock.now }, maxByteCount: LaunchBreadcrumbs.standardMaxByteCount),
             cacheScheduler: cacheScheduler,
             workspaceLock: WorkspaceLock(preference: lockPreference, authenticator: authenticator, now: { clock.now }),
             widgetStore: widgets,
@@ -123,6 +128,12 @@ final class HarnessClock {
     func askForLink(email: String) async {
         model.acceptChallenge(token: harnessChallengeToken)
         await model.requestSignInLink(email: email)
+    }
+
+    var breadcrumbLines: [String] {
+        let file = breadcrumbFolder.appending(path: "launch-breadcrumbs.log")
+        guard let text = try? String(contentsOf: file, encoding: .utf8) else { return [] }
+        return text.split(separator: "\n").map(String.init)
     }
 
     var ownerIdentifier: String {

@@ -1,6 +1,11 @@
 extension AppModel {
+    // NB ADR 0128: a locked session keeps the set that was selected when it locked, and nothing outside it exists for any surface.
     public var visibleWorkspaces: [Workspace] {
-        workspaceLock.visible(workspaces, current: activeWorkspaceIdentifier)
+        workspaceLock.visible(workspaces, kept: keptWorkspaceIdentifiers)
+    }
+
+    var keptWorkspaceIdentifiers: Set<String> {
+        Set(selectedWorkspaces.map(\.identifier))
     }
 
     public func beginWorkspaceSwitch() async -> Bool {
@@ -9,23 +14,18 @@ extension AppModel {
 
     func isShowable(_ selection: WorkspaceSelection) -> Bool {
         let selected = selection.workspaces(in: workspaces)
-        return !selected.isEmpty && selected.allSatisfy { visibleWorkspaces.contains($0) }
+        let isOpenEndedWhileLocked = selection == .all && workspaceLock.isLocked
+        return !selected.isEmpty && !isOpenEndedWhileLocked && selected.allSatisfy { visibleWorkspaces.contains($0) }
     }
 
-    // NB ADR 0122: with the switch on one workspace is selected, locked or not; another one is chosen alone and asks the Mac owner while locked.
+    // NB ADR 0128: a locked session asks the Mac owner before showing any workspace outside its kept set; an unlocked one shows several.
     func isShowableAfterAsking(_ selection: WorkspaceSelection) async -> Bool {
-        guard !isWideningToSeveralWorkspaces(selection) else { return false }
         guard !isShowable(selection) else { return true }
         let isSelectingKnownWorkspaces = !selection.workspaces(in: workspaces).isEmpty
         let isAskingFromALockedSession = workspaceLock.isLocked && isSelectingKnownWorkspaces
         guard isAskingFromALockedSession else { return false }
         guard await isAuthorized(.switchWorkspaces) else { return false }
         return isShowable(selection)
-    }
-
-    private func isWideningToSeveralWorkspaces(_ selection: WorkspaceSelection) -> Bool {
-        guard workspaceLock.isEnabled else { return false }
-        return selection == .all || selection.workspaces(in: workspaces).count > 1
     }
 
     public func hiddenWorkspaceAction(for chord: KeyChord) -> WorkspaceAction? {
@@ -37,7 +37,7 @@ extension AppModel {
     }
 
     public func isLocked(workspaceIdentifier: String) -> Bool {
-        workspaceLock.isLocked(workspaceIdentifier: workspaceIdentifier, current: activeWorkspaceIdentifier)
+        workspaceLock.isLocked(workspaceIdentifier: workspaceIdentifier, kept: keptWorkspaceIdentifiers)
     }
 
     func isInLockedWorkspace(projectIdentifier: String) -> Bool {
@@ -54,11 +54,9 @@ extension AppModel {
         await workspaceLock.authorize(action)
     }
 
-    func collapsedToOneWorkspace(_ selection: WorkspaceSelection) -> WorkspaceSelection? {
-        guard workspaceLock.isEnabled else { return selection }
-        let selected = selection.workspaces(in: workspaces)
-        guard let shown = workspaceLock.shown(selected, current: activeWorkspaceIdentifier).first else { return nil }
-        return .chosen([shown.identifier])
+    func pinnedWhileLocked(_ selection: WorkspaceSelection) -> WorkspaceSelection {
+        guard workspaceLock.isLocked else { return selection }
+        return selection.pinned(to: workspaces)
     }
 
     public func prepareWidgetsForTermination() {
@@ -69,7 +67,7 @@ extension AppModel {
 
     public func turnWorkspaceLockOn() async {
         workspaceLock.turnOn()
-        await lockToCurrentWorkspace()
+        await lockToSelectedWorkspaces()
     }
 
     public func turnWorkspaceLockOff() async -> Bool {
@@ -82,22 +80,23 @@ extension AppModel {
 
     public func noteWorkspaceLockInput() {
         guard workspaceLock.noteInput() else { return }
-        workspaceRelock = Task { await lockToCurrentWorkspace() }
+        workspaceRelock = Task { await lockToSelectedWorkspaces() }
     }
 
     public func relockWorkspaces(because trigger: RelockTrigger) async {
         guard workspaceLock.relock(because: trigger) else { return }
-        await lockToCurrentWorkspace()
+        await lockToSelectedWorkspaces()
     }
 
     public func relockWorkspacesIfIdle() async {
         guard workspaceLock.relockIfIdle() else { return }
-        await lockToCurrentWorkspace()
+        await lockToSelectedWorkspaces()
     }
 
-    // NB ADR 0110: a relock releases every other workspace from memory and the cache and rewrites the shared snapshot from the current one alone.
-    func lockToCurrentWorkspace() async {
-        if phase == .ready, let current = activeWorkspaceIdentifier { await selectWorkspaces(.chosen([current])) }
+    // NB ADR 0128: a relock keeps the selected set, pins All to the workspaces it held, erases every other workspace from the cache and rewrites the shared snapshot.
+    func lockToSelectedWorkspaces() async {
+        selection = selection.map(pinnedWhileLocked)
+        keepOwner()
         forgetLockedWorkspaces()
         publishedWidgetSnapshot = nil
         publishWidgets()
