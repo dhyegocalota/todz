@@ -53,7 +53,7 @@ struct MenuBarPopover: View {
 
     private func focusAddField() {
         guard !dayClose.isClosingDay else { return }
-        Task { focus = .addField }
+        Task { focus = .composer }
     }
 
     private func clearFocus(isClosingDay: Bool) {

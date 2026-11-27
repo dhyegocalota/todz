@@ -54,6 +54,7 @@ struct TodzApp: App {
                 .environment(dayClose)
                 .environment(morningGlance)
                 .environment(ribbon)
+                .environment(appDelegate.updater)
         } label: {
             MenuBarLabel()
                 .environment(model)
