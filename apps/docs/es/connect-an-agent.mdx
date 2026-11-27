@@ -18,10 +18,10 @@ Para reconectar un agente que usaba una clave, ejecuta `claude mcp add --transpo
 1. Introduce tu correo de todz y supera la verificación.
 2. Abre el enlace de inicio de sesión del correo **en el mismo navegador**.
 3. Lee la pantalla de consentimiento: nombra la app y a dónde te devuelve.
-4. Elige un proyecto. El primero viene preseleccionado. O elige **Toda tu cuenta (ámbito de propietario)**, que nunca viene preseleccionado y advierte: "Puede leer y cambiar todas las tareas, y crear, renombrar y eliminar todos los espacios de trabajo y proyectos."
+4. Marca a qué puede acceder la app: espacios de trabajo enteros, o solo algunos de sus proyectos, de cualquier espacio de trabajo. No viene nada preseleccionado, y una línea nombra lo que esa misma app ya tiene. O marca **Toda tu cuenta (ámbito de propietario)**, que advierte: "Puede leer y cambiar todas las tareas, y crear, renombrar y eliminar todos los espacios de trabajo y proyectos."
 5. Aprueba o deniega.
 
-Un ámbito de proyecto da las herramientas de tareas, y los otros proyectos de su espacio de trabajo para `move` y `projects`. Un ámbito de propietario da las herramientas de la cuenta y las mismas herramientas de tareas para cada proyecto de la cuenta, cada una con el id `project` tomado de `workspaces`. El historial de una tarea nombra la app con el nombre con el que se registró. Consulta [Herramientas MCP](/es/mcp-tools).
+Un proyecto da las herramientas de tareas, y los otros proyectos de su espacio de trabajo para `move` y `projects`. Varios proyectos o espacios de trabajo dan solo las herramientas de tareas, cada una con el id `project` tomado de `workspaces`, que lista solo lo que marcaste: un espacio de trabajo marcado cubre todos sus proyectos, también los nuevos, y un proyecto fuera de la selección responde como no encontrado. Un ámbito de propietario da las herramientas de la cuenta y las mismas herramientas de tareas para cada proyecto de la cuenta. El historial de una tarea nombra la app con el nombre con el que se registró. En **Ajustes** › **Apps conectadas** puedes reducir a qué accede una app, o revocarla. Consulta [Herramientas MCP](/es/mcp-tools).
 
 Los tokens de acceso duran una hora y se renuevan solos. Los tokens de actualización duran 30 días y rotan en cada uso; un reintento recibe un par nuevo hasta que se usa el token nuevo, y uno ya usado que vuelva después de eso desconecta la app. todz guarda los tokens solo como resúmenes (digests). El uso razonable y el límite de la nube se aplican a cada app conectada.
 

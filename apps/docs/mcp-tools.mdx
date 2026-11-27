@@ -7,8 +7,9 @@ An MCP client connects to the todz server with OAuth only: add the URL to your c
 
 - A **project scope** holds the to-do list of one project: the project you picked on the consent screen. It can also list and move tasks inside the workspace of that project. It never creates, renames or deletes a workspace or a project. Task ids look like `T-12`.
 - An **owner scope** holds the whole account: its workspaces, its projects and every task, so one connection exposes everything the app can do. It is never preselected on the consent screen, and you disconnect it in **Settings** › **Connected apps**. It reaches no other account.
+- A **selection** holds the workspaces and projects you ticked, and every project of a ticked workspace, new ones included. It gets the task tools and the workspaces tool, which lists only what it covers, and none of the tools that create, rename or delete a workspace or a project, or change settings. You can narrow a selection in **Settings** › **Connected apps**.
 
-On an owner scope every task tool takes a required `project` argument: the id of the project it works on, from `workspaces`. There is no default project. A project of another account answers exactly like a project that does not exist. A project scope has no `project` argument, except that `move` takes the destination there.
+On an owner scope and on a selection every task tool takes a required `project` argument: the id of the project it works on, from `workspaces`. There is no default project. A project of another account, or outside a selection, answers exactly like a project that does not exist, and a move needs both projects inside the selection and in one workspace. A project scope has no `project` argument, except that `move` takes the destination there.
 
 Every delete asks for a `confirm` argument holding the current name (a task's current title); when it differs, nothing is deleted.
 

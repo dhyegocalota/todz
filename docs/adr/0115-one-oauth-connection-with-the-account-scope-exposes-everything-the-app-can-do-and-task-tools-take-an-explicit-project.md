@@ -2,6 +2,7 @@
 
 - Status: Accepted (the loop's call)
 - Date: 2026-11-27
+- Amended by: [0126](0126-a-grant-holds-a-set-of-scopes-chosen-on-a-consent-tree-and-narrowed-in-settings.md) (a grant holds a set of scopes, and a selection is served by the owner server without the owner tools)
 - Deciders: Claude (the build loop's call, under the owner's order on 2026-11-27 after his connector showed only nine tools: "só tem essas tools?")
 - Inspired by: [0109](0109-mcp-clients-connect-with-oauth-2-1-pkce-and-dynamic-registration-and-a-grant-is-never-more-than-the-equivalent-key.md), [0111](0111-api-keys-are-removed-and-an-mcp-client-connects-only-through-oauth.md)
 

@@ -7,8 +7,9 @@ Ein MCP-Client verbindet sich nur per OAuth mit dem todz-Server: Füge die URL i
 
 - Ein **Projekt-Scope** umfasst die To-do-Liste eines Projekts: das Projekt, das du auf dem Zustimmungsbildschirm gewählt hast. Er kann außerdem Aufgaben im Workspace dieses Projekts auflisten und verschieben. Er legt nie einen Workspace oder ein Projekt an, benennt keines um und löscht keines. Aufgaben-IDs sehen aus wie `T-12`.
 - Ein **Owner-Scope** umfasst das ganze Konto: seine Workspaces, seine Projekte und jede Aufgabe, sodass eine Verbindung alles offenlegt, was die App kann. Er ist auf dem Zustimmungsbildschirm nie vorausgewählt, und du trennst ihn unter **Einstellungen** › **Verbundene Apps**. Er erreicht kein anderes Konto.
+- Eine **Auswahl** umfasst die Workspaces und Projekte, die du angehakt hast, und jedes Projekt eines angehakten Workspace, auch neue. Sie bekommt die Aufgaben-Tools und das Tool für Workspaces, das nur auflistet, was sie abdeckt, und keines der Tools, die einen Workspace oder ein Projekt anlegen, umbenennen oder löschen oder Einstellungen ändern. Du kannst eine Auswahl unter **Einstellungen** › **Verbundene Apps** einschränken.
 
-Bei einem Owner-Scope nimmt jedes Aufgaben-Tool ein erforderliches Argument `project`: die ID des Projekts, an dem es arbeitet, aus `workspaces`. Es gibt kein Standardprojekt. Ein Projekt eines anderen Kontos wird genauso beantwortet wie ein Projekt, das es nicht gibt. Ein Projekt-Scope hat kein Argument `project`, außer dass `move` dort das Ziel nimmt.
+Bei einem Owner-Scope und bei einer Auswahl nimmt jedes Aufgaben-Tool ein erforderliches Argument `project`: die ID des Projekts, an dem es arbeitet, aus `workspaces`. Es gibt kein Standardprojekt. Ein Projekt eines anderen Kontos oder außerhalb einer Auswahl wird genauso beantwortet wie ein Projekt, das es nicht gibt, und ein Verschieben braucht beide Projekte innerhalb der Auswahl und in einem Workspace. Ein Projekt-Scope hat kein Argument `project`, außer dass `move` dort das Ziel nimmt.
 
 Jedes Löschen verlangt ein Argument `confirm` mit dem aktuellen Namen (bei einer Aufgabe dem aktuellen Titel); weicht er ab, wird nichts gelöscht.
 
