@@ -1,0 +1,159 @@
+---
+title: الاستضافة الذاتية
+sidebarTitle: إعداد الخادم
+---
+
+شغّل خادم todz الخاص بك على Cloudflare ووجّه تطبيق macOS ووكلاءك إليه. الخادم Worker واحد مع قاعدة بيانات D1 وDurable Object واحد لكل مشروع.
+
+الصق هذا في وكيل البرمجة الخاص بك. يتولى الإعداد كله ولا يتوقف إلا ليطلب منك تسجيل دخول أو دفعة أو سرًّا.
+
+```text
+Self-host todz: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/self-host-with-an-agent.md end to end on my Cloudflare account, and stop only to ask me for logins, payments and secrets.
+```
+
+<Accordion title="افعلها يدويًا">
+
+## ما تحتاج إليه
+
+- حساب Cloudflare على **Workers Paid** (ربط البريد يحتاج إليه) ونطاق في ذلك الحساب. فيما يلي، `example.com` يرمز إليه و`api.example.com` إلى الخادم.
+- <bdi>Node وpnpm</bdi>، بالإصدارات المذكورة في `.nvmrc` و`package.json`، وجهاز Mac عليه <bdi>Xcode وXcodeGen</bdi> للتطبيق.
+- <bdi>Wrangler</bdi> مسجَّل الدخول إلى حسابك: `pnpm --filter @todz/api exec wrangler login`.
+
+## 1. اعمل fork وثبّت وتحقق
+
+اعمل fork للمستودع، ثم، قبل إعادة تسمية أي شيء:
+
+```bash
+pnpm install
+pnpm verify all
+```
+
+تحتاج البوابة أيضًا إلى <bdi>gitleaks</bdi>؛ ويسمّي فاحصها (<bdi>doctor</bdi>) أي شيء ناقص. شغّلها الآن، لأن بعض الاختبارات تثبّت أسماء todz الإنتاجية نفسها، مثل فحوص مصدر API ومرسِل البريد. بعد الخطوة 2 تفشل هذه التثبيتات إلى أن تحدّثها إلى أسمائك.
+
+## 2. أعد التسمية
+
+عدّل `apps/api/wrangler.jsonc`:
+
+- `account_id`: معرّف حسابك.
+- `routes`: استبدل `api.todz.app` و`todz.app` و`www.todz.app` بـ `api.example.com` و`example.com` و`www.example.com`، مع إبقاء `custom_domain` على `true`.
+- `vars.PUBLIC_ORIGIN`: `https://api.example.com`.
+- `vars.SITE_ORIGIN`: `https://example.com`، حيث تُقدَّم صفحة الهبوط وهذا الدليل.
+- `send_email[0].allowed_sender_addresses`: مرسِلك، مثل `noreply@example.com`.
+- `vars.TELEMETRY`: احذف هذا السطر. يرث الـ fork القيمة `on` من هذا الملف، فحذفه هو ما يوقف القياس عن بُعد؛ وهو معطّل ما لم تكن القيمة `on` تمامًا (راجع صفحة الخصوصية).
+- `vars.CLOUD_ACCOUNTS_MAX`: احذف هذا السطر. يرث الـ fork حد حسابات todz cloud من هذا الملف؛ وبدونه يقبل خادمك كل حساب (راجع صفحة الاستخدام العادل).
+- `ratelimits`: أبقِ الارتباطات التسعة عشر، ثلاثة لكل من تسجيل الدخول والإدارة، وواحدًا للردود على بريد اليوم، وواحدًا لرابط إيقافه، وواحدًا للمالكين المسجَّلين الدخول، وواحدًا لعملاء <bdi>MCP</bdi>، وثلاثة لتقرير الاستخدام، واثنين لفحص التحديث، وواحدًا للقراءات عند بلوغ السعة، وثلاثة لـ OAuth (مساراته، وتسجيل العميل لكل عميل وفي المجموع)؛ وغيّر كل `namespace_id` إذا كان حسابك يستخدم `8601` إلى `8619` بالفعل.
+
+أبقِ الباقي كما هو. وبخاصة، يبقى `vars.SIGN_IN_PROVIDER` على `email`، ويبقى `vars.EMAIL_SENDER` على `cloudflare`، ويبقى `workers_dev` و`preview_urls` على `false`. لا تمرّر `--var` إلى `wrangler deploy` أبدًا، ولا تضبط المتغيرات في لوحة التحكم أبدًا: مزوّد وهمي، أو مرسِل يكتفي بتسجيل الرابط، يفتح تسجيل الدخول لأي شخص.
+
+في `apps/api/src/email-sender.ts`، اضبط `SENDER_ADDRESS` و`REPLY_TO_ADDRESS` على عنوانيك أنت.
+
+## 3. أنشئ قاعدة البيانات وطبّق الترحيلات
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 create todz-directory
+```
+
+ضع المعرّف المطبوع في `d1_databases[0].database_id`، ثم:
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+```
+
+## 4. انشر
+
+```bash
+pnpm --filter @todz/api server:deploy
+```
+
+انشر من نسخة git مستنسخة: يسمّي السكربت البناء باسم الـ commit الذي يقرؤه بـ `git log`. عندما ينجح النشر، ينتهي السكربت بـ `todz server ready: https://api.example.com · server 2026.11.25+3f9c2ab · accepts app 0.2.4 or later  →  paste it in todz › Settings › Server`: هذا هو الرابط الذي تستخدمه الخطوة 7، مع إصدار الخادم نفسه وأقدم إصدار تطبيق يقبله. تنشئ Cloudflare سجلات DNS والشهادات لـ `api.example.com` و`example.com` و`www.example.com`؛ ولا يجوز أن يكون لأي من الثلاثة سجل A أو AAAA أو CNAME مسبقًا. تحقق من أربعة أشياء:
+- `curl -sS -H "Todz-App-Version: 0.2.4" https://api.example.com/owner/sign-in-method` يجيب بـ `{"method":"link"}`، والطلب نفسه دون الترويسة يجيب بـ `{"error":"app_too_old","minimum_app_version":"0.2.4"}`؛
+- `curl -sS https://api.example.com/health` يجيب بـ `{"service":"todz","origin":"https://api.example.com","version":"2026.11.25+3f9c2ab","minimum_app_version":"0.2.4"}`، و`version` فيه هو الذي طبعه سطر <bdi>ready</bdi>؛
+- عنوان `todz-api.<subdomain>.workers.dev` الخاص بالحساب لا يجيب؛
+- إلى أن تُنجَز الخطوة 6، يجيب إرسال الرابط بـ 503 `sign_in_unavailable`، وهي الحالة الآمنة.
+
+## 5. إرسال البريد
+
+فعّل الإرسال لنطاقك وأضف السجلات التي تسردها Cloudflare. معرّف المنطقة (<bdi>zone id</bdi>) في صفحة Overview للنطاق في لوحة التحكم.
+
+```bash
+pnpm --filter @todz/api exec wrangler email sending enable example.com --zone-id <your zone id>
+pnpm --filter @todz/api exec wrangler email sending dns get example.com --zone-id <your zone id>
+```
+
+## 6. Turnstile
+
+يبقى تسجيل الدخول والإدارة مغلقين (`sign_in_unavailable` و"لوحة الإدارة مغلقة حاليًا.") إلى أن يُعدّ Turnstile. في لوحة تحكم <bdi>Cloudflare</bdi>، أنشئ ودجت Turnstile لـ `example.com` في وضع Managed. ضع مفتاح الموقع الخاص به في `vars.TURNSTILE_SITE_KEY` في `apps/api/wrangler.jsonc`، وانشر مرة أخرى بـ `pnpm --filter @todz/api server:deploy`، وخزّن سرّه:
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
+```
+
+يطلب Wrangler القيمة، وهذا يُبقيها خارج سجل الصدفة (<bdi>shell history</bdi>). لا تمرّرها عبر أنبوب أبدًا، ولا تصدّرها أبدًا، ولا تكتبها في `wrangler.jsonc` أبدًا.
+
+الإدارة على `https://example.com/admin`، حيث تقرأ مقاييس خادمك، لا تسجّل دخول إلا العنوان الذي تخزّنه بالطريقة نفسها؛ وتبقى مغلقة إلى أن تفعل:
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
+```
+
+الحسابات الجديدة محدودة لكل شبكة في اليوم (راجع [الاستخدام العادل](https://docs.todz.app/ar/fair-use))، ويربط الحد كل عنوان بسر. أنشئه مرة واحدة وخزّنه بالطريقة نفسها؛ وإلى أن تفعل، لا تستطيع الحسابات الجديدة التسجيل وتظل القائمة قادرة على الدخول:
+
+```bash
+openssl rand -hex 32 | pnpm --filter @todz/api exec wrangler secret put SIGN_UP_KEY_SECRET
+```
+
+## 7. بناء تطبيق macOS وربطه بخادمك
+
+في `apps/macos/project.yml`:
+- في كلا الهدفين، استبدل `DEVELOPMENT_TEAM` بمعرّف فريقك أنت (<bdi>Xcode → Settings → Accounts</bdi>؛ ويصلح Personal Team المجاني)؛
+- استبدل `bundleIdPrefix` وقيمتي `TODZ_APP_BUNDLE_IDENTIFIER` و`TODZ_WIDGETS_BUNDLE_IDENTIFIER` و`TODZ_APP_GROUP` بمعرّفات من عندك.
+
+ثم ابنِ:
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+يفتح تطبيق Release الخاص بك روابط تسجيل الدخول على `todz`، ولا يحتاج الخادم إلى أي إعداد لذلك، لأن التطبيق يذكر مخططه حين يطلب رابطًا.
+
+ثم افتح todz › الإعدادات › الخادم والصق الرابط الذي طبعه النشر. يتحقق التطبيق منه، ويسجّل الخروج من الخادم الذي كان عليه، ويبدأ نظيفًا على خادمك. سجّل الدخول ببريدك الإلكتروني.
+
+## 8. وجّه عميل MCP إلى خادمك
+
+العملاء الذين يتحدثون MCP OAuth يتصلون بالعنوان وحده، وتوافق عليهم في المتصفح:
+
+```bash
+claude mcp add --transport http todz https://api.example.com/mcp
+```
+
+خادمك هو خادم التفويض OAuth الخاص به: المُصدِر هو `PUBLIC_ORIGIN`، فبياناته الوصفية على `https://api.example.com/.well-known/oauth-authorization-server`، ورسائل تسجيل الدخول تأتي من مرسِلك. لا يحتاج شيء آخر إلى إعداد، لكن تسجيل دخول OAuth يحتاج إلى الخطوتين 5 و6، مثل تسجيل دخول التطبيق.
+
+OAuth هو الطريقة الوحيدة لاتصال العميل، على خادمك كما على todz cloud. العميل الذي يرسل أي بيانات اعتماد أخرى يتلقى 401 يشير إلى صفحة الاتصال في الوثائق.
+
+## التحديث
+
+اسحب من المصدر الأصلي (<bdi>upstream</bdi>). حدّث الخادم أولًا، ثم التطبيق: التطبيق الأحدث من خادمه لا يستطيع فحص عنوان الخادم. شغّل:
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+pnpm --filter @todz/api server:deploy
+```
+
+ثم ابنِ التطبيق مرة أخرى كما في الخطوة 7؛ فهو يحتفظ بالخادم الذي لصقته.
+
+على خادم فيه مالكون بالفعل، المالك الذي لم يلمس قط **أرسل لي يومي بالبريد** لا يصله إلا بعد أن تفعّل ذلك الافتراضي له يدويًا، وهو آمن متى لم يعد أي مالك كهذا سيتلقى بريدًا؛ والمالكون الجدد يحصلون عليه فورًا.
+
+الترحيلات تتقدم إلى الأمام فقط. لا تتراجع أبدًا إلى إصدار سابق لحارس تسجيل الدخول، سواء بـ `wrangler rollback` أو بصفحة Deployments في لوحة التحكم. لإغلاق تسجيل الدخول، احذف السر:
+
+```bash
+pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
+```
+
+## تحديثات التطبيق
+
+- التطبيق الرسمي من todz.app يحدّث نفسه من appcast الموقّع على <bdi>todz.app</bdi>، حتى عندما يشير إلى خادمك: الخادم الذي تختاره وتحديثات التطبيق مستقلان. راجع [التثبيت على Mac › التحديثات](https://docs.todz.app/ar/install-on-mac#4-التحديثات).
+- التطبيق الذي بنيته بنفسك، كما في الخطوة 7، لا يثبّت تحديثًا بنفسه أبدًا؛ وقد يعرض التطبيق الرسمي، الذي يستبدل نسختك. للإبقاء على نسختك، ابنها مرة أخرى كما سبق، أو ثبّت التطبيق الرسمي والصق خادمك تحت **الخادم**.
+- أبقِ خادمك محدَّثًا. عندما يحتاج تطبيق جديد إلى خادم أحدث، يقول التطبيق إن الخادم أقدم؛ حدّث الخادم أولًا.
+
+</Accordion>

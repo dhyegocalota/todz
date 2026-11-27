@@ -44,6 +44,7 @@ struct TodzApp: App {
                 .environment(windowState)
                 .environment(languageModel)
                 .environment(\.locale, languageModel.locale)
+                .languageDirection()
                 .id(languageModel.language)
         }
         .defaultSize(width: defaultWidth, height: defaultHeight)
@@ -61,6 +62,7 @@ struct TodzApp: App {
                 .environment(appDelegate.updater)
                 .environment(languageModel)
                 .environment(\.locale, languageModel.locale)
+                .languageDirection()
                 .id(languageModel.language)
         } label: {
             MenuBarLabel()
@@ -83,6 +85,7 @@ struct TodzApp: App {
                 .environment(appDelegate.workspaceShortcuts)
                 .environment(languageModel)
                 .environment(\.locale, languageModel.locale)
+                .languageDirection()
                 .id(languageModel.language)
         }
         .defaultSize(width: settingsWidth, height: settingsHeight)

@@ -231,6 +231,54 @@
           { "group": "自托管", "pages": ["zh/self-host"] },
           { "group": "合理使用", "pages": ["zh/fair-use"] }
         ]
+      },
+      {
+        "language": "ar",
+        "groups": [
+          { "group": "البدء", "pages": ["ar/index", "ar/quickstart", "ar/install-on-mac", "ar/connect-an-agent"] },
+          {
+            "group": "الأدلة",
+            "pages": [
+              "ar/tour",
+              "ar/workspaces",
+              "ar/workspace-privacy",
+              "ar/keyboard-shortcuts",
+              "ar/updates",
+              "ar/privacy",
+              "ar/troubleshooting",
+              "ar/uninstall",
+              "ar/use-these-docs-from-your-agent",
+              "ar/open-source"
+            ]
+          },
+          { "group": "المرجع", "pages": ["ar/mcp-tools", "ar/releases"] },
+          { "group": "الاستضافة الذاتية", "pages": ["ar/self-host"] },
+          { "group": "الاستخدام العادل", "pages": ["ar/fair-use"] }
+        ]
+      },
+      {
+        "language": "hi",
+        "groups": [
+          { "group": "शुरू करें", "pages": ["hi/index", "hi/quickstart", "hi/install-on-mac", "hi/connect-an-agent"] },
+          {
+            "group": "गाइड",
+            "pages": [
+              "hi/tour",
+              "hi/workspaces",
+              "hi/workspace-privacy",
+              "hi/keyboard-shortcuts",
+              "hi/updates",
+              "hi/privacy",
+              "hi/troubleshooting",
+              "hi/uninstall",
+              "hi/use-these-docs-from-your-agent",
+              "hi/open-source"
+            ]
+          },
+          { "group": "संदर्भ", "pages": ["hi/mcp-tools", "hi/releases"] },
+          { "group": "सेल्फ-होस्ट", "pages": ["hi/self-host"] },
+          { "group": "उचित उपयोग", "pages": ["hi/fair-use"] }
+        ]
       }
     ]
   }

@@ -1,0 +1,72 @@
+import type { OAuthCopy } from './oauth-copy';
+export const OAUTH_COPY_HINDI: OAuthCopy = {
+  meta: {
+    description: 'अपने todz खाते से कोई ऐप कनेक्ट करें।',
+    signInTitle: 'ऐप कनेक्ट करें · todz',
+    inboxTitle: 'अपना इनबॉक्स देखें · todz',
+    consentTitle: 'ऐप को मंज़ूरी दें · todz',
+    refusedTitle: 'कनेक्ट नहीं हो सकता · todz',
+    linkTitle: 'साइन इन हो रहा है · todz',
+    returnTitle: 'ऐप पर वापसी · todz',
+    approvedTitle: 'पहले ही मंज़ूर · todz',
+  },
+  signIn: {
+    titleOf: (clientName: string) => `${clientName} कनेक्ट करने के लिए साइन इन करें`,
+    lead: 'अपने todz खाते का पता डालें। आपको एक लिंक मेल किया जाता है, जो इसी ब्राउज़र में खुलता है।',
+    emailLabel: 'ईमेल पता',
+    emailPlaceholder: 'you@example.com',
+    submit: 'मुझे लिंक ईमेल करें',
+    submitting: 'भेजा जा रहा है…',
+    invalidAddress: 'मान्य ईमेल पता डालें।',
+    tooMany: 'अभी लिंक नहीं भेजा जा सका। एक मिनट में दोबारा कोशिश करें।',
+    unavailable: 'इस सर्वर पर ऐप कनेक्ट करने के लिए साइन इन उपलब्ध नहीं है।',
+  },
+  inbox: {
+    title: 'अपना इनबॉक्स देखें',
+    body: 'अगर वह पता साइन इन कर सकता है, तो लिंक रास्ते में है। यह एक बार, इसी ब्राउज़र में चलता है और आपको यहीं वापस लाता है।',
+  },
+  consent: {
+    titleOf: (clientName: string) => `${clientName} को todz से कनेक्ट करें?`,
+    redirectOf: (host: string) => `आपके जवाब के बाद todz आपको ${host} पर वापस भेजता है।`,
+    loopbackRedirectOf: (host: string) => `आपके जवाब के बाद todz आपको ${host} पर वापस भेजता है, जो इस कंप्यूटर का एक ऐप है।`,
+    legend: 'वह क्या-क्या देख सकता है?',
+    projectHint:
+      'प्रोजेक्ट उसे उस प्रोजेक्ट के टास्क पढ़ने और बदलने देता है, और उन्हें उसी वर्कस्पेस के दूसरे प्रोजेक्ट में ले जाने देता है।',
+    ownerLabel: 'आपका पूरा खाता (मालिक स्कोप)',
+    ownerWarning: 'यह हर टास्क पढ़ और बदल सकता है, और हर वर्कस्पेस और प्रोजेक्ट बना सकता है, उसका नाम बदल सकता है और उसे हटा सकता है।',
+    noProjects: 'आपके पास अभी कोई प्रोजेक्ट नहीं है। todz ऐप में एक बनाएँ, फिर लौटें।',
+    approve: 'मंज़ूर करें',
+    approving: 'मंज़ूर किया जा रहा है…',
+    deny: 'अस्वीकार करें',
+  },
+  return: {
+    titleOf: (clientName: string) => `आपको ${clientName} पर वापस ले जाया जा रहा है`,
+    body: 'अगर वह अपने आप नहीं खुलता, तो लिंक का इस्तेमाल करें।',
+    actionOf: (clientName: string) => `${clientName} पर लौटें`,
+  },
+  approved: {
+    title: 'पहले ही मंज़ूर',
+    bodyOf: (clientName: string) =>
+      `यह अनुरोध पहले ही मंज़ूर हो चुका है। कनेक्ट करना पूरा करने के लिए ${clientName} पर लौटें। अगर वह फिर भी पूछे, तो ${clientName} से दोबारा शुरू करें।`,
+  },
+  refusal: {
+    invalidTitle: 'इस लिंक से कोई ऐप कनेक्ट नहीं किया जा सकता',
+    invalidBody:
+      'जिस ऐप को आप कनेक्ट कर रहे हैं, उसी से दोबारा शुरू करें। अगर वह बार-बार यहीं पहुँचता है, तो पहले उसका सहेजा हुआ साइन-इन साफ़ करें (Claude Code में: /mcp, फिर Clear authentication)।',
+    choiceTitle: 'वह विकल्प उपलब्ध नहीं है',
+    choiceBody: 'जिस ऐप को आप कनेक्ट कर रहे हैं, उसी से दोबारा शुरू करें और दिखाए गए विकल्पों में से एक चुनें।',
+    forbiddenTitle: 'अनुरोध अस्वीकार किया गया',
+    forbiddenBody: 'वह अनुरोध इस पेज से नहीं आया। जिस ऐप को आप कनेक्ट कर रहे हैं, उसी से दोबारा शुरू करें।',
+  },
+  link: {
+    working: 'आपको साइन इन किया जा रहा है…',
+    failedTitle: 'इस लिंक का इस्तेमाल नहीं हो सकता।',
+    failedBody: 'इसी ब्राउज़र से नया माँगें।',
+    failedAction: 'नया लिंक पाएँ',
+    cloudFullTitle: 'todz cloud अभी भरा हुआ है',
+    cloudFullBodyOf: ({ selfHostUrl }: { selfHostUrl: string }) =>
+      `todz cloud अभी भरा हुआ है। अपना ईमेल छोड़ें और जगह खुलते ही आपको प्रवेश मिल जाएगा, या अपना सर्वर चलाएँ: ${selfHostUrl}`,
+    noScriptTitle: 'साइन इन पूरा करें',
+    noScript: 'साइन इन पूरा करने के लिए इस पेज को JavaScript चाहिए। उसे चालू करें, फिर लिंक दोबारा खोलें।',
+  },
+};

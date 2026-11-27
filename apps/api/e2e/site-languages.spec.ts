@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { LANGUAGE_PROFILES, Language } from '@todz/types';
 import { PreferenceCookie, Theme } from '../src/page-preferences';
+import { ProjectName } from './project-name';
 
 const LANDING_PATH = '/';
 const CLOUD_QUEUE_PATH = '/cloud-queue';
@@ -16,6 +17,11 @@ const OTHER_LANGUAGES = Object.values(Language).filter((language) => language !=
 function baseUrlOf(baseURL: string | undefined): string {
   if (baseURL === undefined) throw new Error('the project has a base URL');
   return baseURL;
+}
+
+function required<Value>(value: Value | null): Value {
+  if (value === null) throw new Error('the element has a box');
+  return value;
 }
 
 function attributeOf(value: string | undefined): string {
@@ -88,14 +94,14 @@ test.describe('the theme', () => {
       test(`already carries data-theme and color-scheme ${theme} for its cookie`, async ({ request }) => {
         const response = await request.get(LANDING_PATH, { headers: { Cookie: `${PreferenceCookie.Theme}=${theme}` } });
         const html = await response.text();
-        expect(html).toContain(`<html lang="en" data-theme="${theme}">`);
+        expect(html).toContain(`<html lang="en" dir="ltr" data-theme="${theme}">`);
         expect(html).toContain(`<meta name="color-scheme" content="${theme}">`);
       });
     }
 
     test('carries neither for the system theme', async ({ request }) => {
       const html = await (await request.get(LANDING_PATH)).text();
-      expect(html).toContain('<html lang="en">');
+      expect(html).toContain('<html lang="en" dir="ltr">');
       expect(html).toContain('<meta name="color-scheme" content="light dark">');
     });
   });
@@ -309,5 +315,71 @@ test.describe('the controls live in the footer', () => {
     await page.locator('summary.language-summary').click();
     expect(await overflows()).toBe(false);
     await expect(page.locator('.language-form')).toBeInViewport();
+  });
+});
+
+test.describe('Arabic and Hindi', () => {
+  test('/ar/ is right to left and mirrors the header and the footer controls', async ({ page }) => {
+    await page.goto('/ar/');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    const viewportWidth = page.viewportSize()?.width;
+    if (viewportWidth === undefined) throw new Error('the project has a viewport');
+    const brand = required(await page.locator('.site-header .brand').boundingBox());
+    expect(brand.x + brand.width / 2).toBeGreaterThan(viewportWidth / 2);
+    await page.goto('/');
+    const englishBrand = required(await page.locator('.site-header .brand').boundingBox());
+    expect(englishBrand.x + englishBrand.width / 2).toBeLessThan(viewportWidth / 2);
+  });
+
+  test('/ar/ puts the footer controls on the right of the footer', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === ProjectName.Mobile, 'the footer controls are centred on a phone');
+    await page.goto('/ar/');
+    const viewportWidth = page.viewportSize()?.width;
+    if (viewportWidth === undefined) throw new Error('the project has a viewport');
+    const controls = required(await page.locator('.site-footer .footer-controls').boundingBox());
+    expect(controls.x + controls.width / 2).toBeGreaterThan(viewportWidth / 2);
+  });
+
+  test('/ar/ keeps its terminal blocks and commands left to right', async ({ page }) => {
+    await page.goto('/ar/');
+    const directions = await page
+      .locator('.terminal-body')
+      .evaluateAll((blocks) => blocks.map((block) => getComputedStyle(block).direction));
+    expect(directions.length).toBeGreaterThan(0);
+    directions.forEach((direction) => expect(direction).toBe('ltr'));
+    await expect(page.locator('.terminal-command').first()).toContainText('claude mcp add');
+  });
+
+  test('/ar/ and /hi/ never scroll sideways, and the language menu opens in view', async ({ page }) => {
+    for (const path of ['/ar/', '/hi/']) {
+      await page.goto(path);
+      await page.locator('summary.language-summary').click();
+      await expect(page.locator('.language-form')).toBeInViewport();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+    }
+  });
+
+  test('the menu shows a flag on the trigger and on each of the ten options', async ({ page }) => {
+    await page.goto('/ar/');
+    await expect(page.locator('.language-summary .flag')).toHaveCount(1);
+    await page.locator('summary.language-summary').click();
+    await expect(page.locator('.language-option .flag')).toHaveCount(Object.values(Language).length);
+    await expect(page.locator('.language-option .flag').first()).toBeVisible();
+  });
+
+  test('/hi/ renders left to right with its own prefix and switcher entry', async ({ page }) => {
+    await page.goto('/hi/');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'hi');
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+    await expect(page.locator('.language-option[aria-current=true]')).toHaveText(LANGUAGE_PROFILES[Language.Hindi].nativeName);
+  });
+
+  test('the hreflang set holds ten languages and x-default', async ({ request }) => {
+    const html = await (await request.get('/ar/')).text();
+    const alternates = [...html.matchAll(ALTERNATE_PATTERN)];
+    expect(alternates).toHaveLength(Object.values(Language).length + 1);
+    expect(html).toContain('hreflang="ar" href="https://todz.app/ar/"');
+    expect(html).toContain('hreflang="hi" href="https://todz.app/hi/"');
   });
 });

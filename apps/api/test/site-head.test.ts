@@ -27,7 +27,7 @@ const NAV_PATTERN = /<nav[\s>]/g;
 const MAIN_PATTERN = /<main[\s>]/g;
 const FOOTER_PATTERN = /<footer[\s>]/g;
 const SOCIAL_PATTERN = /^(og|twitter):/;
-const LANGUAGE_PATTERN = /<html lang="en">/;
+const LANGUAGE_PATTERN = /<html lang="en" dir="ltr">/;
 const STRUCTURED_DATA_PATTERN = /type="application\/ld\+json"/;
 const PUBLIC_HEADERS = ['Content-Type', 'Cache-Control', 'Content-Security-Policy'];
 

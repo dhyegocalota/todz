@@ -28,6 +28,10 @@ describe('languageOfAcceptLanguage', () => {
     ['ja,en;q=0.5', Language.Japanese],
     ['ko-KR', Language.Korean],
     ['zh-CN', Language.Chinese],
+    ['ar-SA,ar;q=0.9', Language.Arabic],
+    ['ar', Language.Arabic],
+    ['hi-IN', Language.Hindi],
+    ['hi,en;q=0.5', Language.Hindi],
     ['zh', Language.Chinese],
     ['zh-Hans-CN', Language.Chinese],
     ['en-US,en;q=0.9', Language.English],
@@ -100,6 +104,8 @@ describe('language paths', () => {
     ['/ja/', Language.Japanese, '/'],
     ['/ko/cloud-queue', Language.Korean, '/cloud-queue'],
     ['/zh/', Language.Chinese, '/'],
+    ['/ar/', Language.Arabic, '/'],
+    ['/hi/cloud-queue', Language.Hindi, '/cloud-queue'],
   ])('reads %s as %s page %s', (pathname, language, path) => {
     expect(pageOfPathname({ pathname: pathname })).toEqual({ language, path });
   });

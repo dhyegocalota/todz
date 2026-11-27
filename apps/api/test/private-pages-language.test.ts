@@ -76,7 +76,7 @@ describe('the language of a private page', () => {
 
   test.each(PAGES)('$name takes the theme cookie', async ({ url, pageOf }) => {
     const html = await (await pageOf(requestOf({ url, headers: { Cookie: `${THEME_COOKIE}=dark` } }))).text();
-    expect(html).toMatch(/<html lang="[^"]+" data-theme="dark">/);
+    expect(html).toMatch(/<html lang="[^"]+" dir="(?:ltr|rtl)" data-theme="dark">/);
     expect(html).toContain('<meta name="color-scheme" content="dark">');
   });
 

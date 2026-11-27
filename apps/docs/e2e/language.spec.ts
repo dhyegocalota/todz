@@ -12,6 +12,8 @@ enum DocsLanguage {
   Japanese = 'ja',
   Korean = 'ko',
   Chinese = 'zh',
+  Arabic = 'ar',
+  Hindi = 'hi',
 }
 
 const DOCS_DIRECTORY = resolve(import.meta.dirname, '..');
@@ -33,6 +35,8 @@ const FOLDER_OF: Record<DocsLanguage, string> = {
   [DocsLanguage.Japanese]: 'ja',
   [DocsLanguage.Korean]: 'ko',
   [DocsLanguage.Chinese]: 'zh',
+  [DocsLanguage.Arabic]: 'ar',
+  [DocsLanguage.Hindi]: 'hi',
 };
 const NATIVE_NAMES: Record<DocsLanguage, string> = {
   [DocsLanguage.English]: 'English',
@@ -43,9 +47,16 @@ const NATIVE_NAMES: Record<DocsLanguage, string> = {
   [DocsLanguage.Japanese]: '日本語',
   [DocsLanguage.Korean]: '한국어',
   [DocsLanguage.Chinese]: '简体中文',
+  [DocsLanguage.Arabic]: 'العربية',
+  [DocsLanguage.Hindi]: 'Hindi',
 };
-const TITLE_LANGUAGES = [DocsLanguage.PortugueseBrazil, DocsLanguage.Japanese];
+const TITLE_LANGUAGES = [DocsLanguage.PortugueseBrazil, DocsLanguage.Japanese, DocsLanguage.Arabic, DocsLanguage.Hindi];
 const BROWSER_LOCALES = ['pt-BR', 'ja-JP', 'de-DE'];
+const CONTENT_LOCATOR = '#content';
+const CODE_BLOCK_LOCATOR = 'pre';
+const CODE_PAGE = 'connect-an-agent';
+const RIGHT_TO_LEFT = 'rtl';
+const LEFT_TO_RIGHT = 'ltr';
 
 function titleOf({ language, page }: { language: DocsLanguage; page: string }): string {
   const folder = FOLDER_OF[language];
@@ -55,10 +66,17 @@ function titleOf({ language, page }: { language: DocsLanguage; page: string }): 
   return title;
 }
 
-function pathOf({ language }: { language: DocsLanguage }): string {
+function pathOf({ language, page = QUICKSTART_PAGE }: { language: DocsLanguage; page?: string }): string {
   const folder = FOLDER_OF[language];
-  if (!folder) return `/${QUICKSTART_PAGE}`;
-  return `/${folder}/${QUICKSTART_PAGE}`;
+  if (!folder) return `/${page}`;
+  return `/${folder}/${page}`;
+}
+
+async function directionOf({ page, selector }: { page: Page; selector: string }): Promise<string> {
+  return page
+    .locator(selector)
+    .first()
+    .evaluate((element) => getComputedStyle(element).direction);
 }
 
 async function waitForSwitcherHydration({ page }: { page: Page }): Promise<void> {
@@ -76,7 +94,7 @@ test.describe('the language switcher', () => {
     test.skip(testInfo.project.name !== DocsViewport.Desktop);
   });
 
-  test('lists the eight languages by their native names', async ({ page }) => {
+  test('lists the ten languages by their native names', async ({ page }) => {
     await page.goto(HOME_PATH);
     await waitForSwitcherHydration({ page });
     await page.locator(SWITCHER_LOCATOR).click();
@@ -117,4 +135,19 @@ test.describe('a browser locale', () => {
       });
     });
   }
+});
+
+test.describe('right-to-left Arabic', () => {
+  test('lays the page out right to left and keeps its code blocks left to right', async ({ page }) => {
+    await page.goto(pathOf({ language: DocsLanguage.Arabic, page: CODE_PAGE }));
+    await expect(page.locator(CODE_BLOCK_LOCATOR).first()).toBeVisible();
+    expect(await directionOf({ page, selector: CONTENT_LOCATOR })).toBe(RIGHT_TO_LEFT);
+    expect(await directionOf({ page, selector: CODE_BLOCK_LOCATOR })).toBe(LEFT_TO_RIGHT);
+  });
+
+  test('leaves English left to right', async ({ page }) => {
+    await page.goto(pathOf({ language: DocsLanguage.English, page: CODE_PAGE }));
+    await expect(page.locator(CODE_BLOCK_LOCATOR).first()).toBeVisible();
+    expect(await directionOf({ page, selector: CONTENT_LOCATOR })).toBe(LEFT_TO_RIGHT);
+  });
 });

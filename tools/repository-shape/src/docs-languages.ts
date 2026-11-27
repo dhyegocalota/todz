@@ -9,6 +9,8 @@ export enum DocsLanguage {
   Japanese = 'ja',
   Korean = 'ko',
   Chinese = 'zh',
+  Arabic = 'ar',
+  Hindi = 'hi',
 }
 
 export const DOCS_FOLDER_OF: Record<DocsLanguage, string> = {
@@ -20,6 +22,8 @@ export const DOCS_FOLDER_OF: Record<DocsLanguage, string> = {
   [DocsLanguage.Japanese]: 'ja',
   [DocsLanguage.Korean]: 'ko',
   [DocsLanguage.Chinese]: 'zh',
+  [DocsLanguage.Arabic]: 'ar',
+  [DocsLanguage.Hindi]: 'hi',
 };
 
 export const DOCS_DIRECTORY = 'apps/docs';

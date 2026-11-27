@@ -9,6 +9,7 @@ struct TodayRingWidget: Widget {
         StaticConfiguration(kind: kind, provider: TodayTimelineProvider()) { entry in
             TodayRing(content: entry.content(of: .small))
                 .widgetURL(WidgetLink.today.url(scheme: AppLinkScheme.required(bundle: .main)))
+                .languageDirection()
                 .containerBackground(.background, for: .widget)
         }
         .configurationDisplayName(WidgetCopy.ringName)

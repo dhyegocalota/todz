@@ -15,7 +15,7 @@ private let storageKey = "language"
         #expect(LanguagePreference.storageKey == storageKey)
     }
 
-    @Test func theChoicesAreTheSystemThenTheEightLanguages() {
+    @Test func theChoicesAreTheSystemThenTheTenLanguages() {
         #expect(LanguageChoice.all == [.system] + AppLanguage.allCases.map(LanguageChoice.language))
     }
 
@@ -42,7 +42,7 @@ private let storageKey = "language"
         #expect(try preference.effective(preferred: ["it-IT"]) == .english)
     }
 
-    @Test func aStoredValueOutsideTheEightIsRefused() throws {
+    @Test func aStoredValueOutsideTheTenIsRefused() throws {
         let domain = try EmptyDomain()
         domain.defaults.set("tlh", forKey: storageKey)
         let preference = LanguagePreference(defaults: domain.defaults)

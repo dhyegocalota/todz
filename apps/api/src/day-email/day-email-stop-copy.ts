@@ -6,6 +6,8 @@ import { DAY_EMAIL_STOP_COPY_FRENCH } from './day-email-stop-copy-french';
 import { DAY_EMAIL_STOP_COPY_JAPANESE } from './day-email-stop-copy-japanese';
 import { DAY_EMAIL_STOP_COPY_KOREAN } from './day-email-stop-copy-korean';
 import { DAY_EMAIL_STOP_COPY_CHINESE } from './day-email-stop-copy-chinese';
+import { DAY_EMAIL_STOP_COPY_ARABIC } from './day-email-stop-copy-arabic';
+import { DAY_EMAIL_STOP_COPY_HINDI } from './day-email-stop-copy-hindi';
 export const DAY_EMAIL_STOP_COPY = {
   confirm: {
     heading: 'Stop your day email?',
@@ -37,4 +39,6 @@ export const DAY_EMAIL_STOP_COPY_BY_LANGUAGE: Record<Language, DayEmailStopCopy>
   [Language.Japanese]: DAY_EMAIL_STOP_COPY_JAPANESE,
   [Language.Korean]: DAY_EMAIL_STOP_COPY_KOREAN,
   [Language.Chinese]: DAY_EMAIL_STOP_COPY_CHINESE,
+  [Language.Arabic]: DAY_EMAIL_STOP_COPY_ARABIC,
+  [Language.Hindi]: DAY_EMAIL_STOP_COPY_HINDI,
 };
