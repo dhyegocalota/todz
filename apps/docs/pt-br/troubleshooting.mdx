@@ -1,0 +1,30 @@
+---
+title: Solução de problemas
+description: O link de acesso, o Gatekeeper, um servidor mais antigo e atualizações que não instalam.
+---
+
+## O link de acesso não faz nada, ou diz que não conseguiu te conectar
+
+Abra o link do e-mail no mesmo Mac que o pediu. Um link aberto em outro Mac, ou depois de você pedir um mais novo, é recusado com "Não foi possível entrar com esse link. Aguarde um minuto e abra-o de novo pelo e-mail." Peça um novo com **Enviar link** e abra o e-mail mais recente.
+
+## Meu agente não consegue entrar com OAuth
+
+Abra o link de acesso do e-mail no mesmo navegador em que você digitou o seu e-mail. Se o cliente relatar um erro de redirecionamento, ou precisar de um esquema de endereço personalizado, o todz o recusa, então esse cliente ainda não consegue se conectar; veja [Conectar um agente](/pt-br/connect-an-agent).
+
+Se o navegador disser "Este link não pode ser usado para conectar um app" toda vez, o cliente está reutilizando um registro que o servidor não conhece mais. Limpe o login salvo do cliente e conecte de novo: no Claude Code, rode `/mcp`, escolha todz e depois **Clear authentication**.
+
+## Muitas tentativas
+
+"Muitas tentativas. Aguarde um minuto e tente de novo." significa que o servidor limitou os pedidos de link. Aguarde um minuto e pressione **Enviar link** uma única vez.
+
+## O macOS não abre o app
+
+O todz não é notarizado, então o macOS o recusa na primeira vez. Abra o todz uma vez e dispense o aviso; depois vá em **Ajustes do Sistema** › **Privacidade e Segurança**, clique em **Abrir Mesmo Assim** e confirme com a sua senha ou o Touch ID. Veja [Instalar no Mac](/pt-br/install-on-mac#1-baixe-e-abra-o-app).
+
+## Servidor desatualizado
+
+**Servidor desatualizado** no app significa "Este servidor é mais antigo do que este app espera. Quem o administra pode atualizá-lo." No seu próprio servidor, publique a versão atual; veja [Auto-hospedagem](/pt-br/self-host).
+
+## Uma atualização não instala
+
+Se o Sparkle disser que o todz não pode ser atualizado a partir do local onde foi baixado, arraste o `Todz.app` para Aplicativos, abra-o de lá e verifique de novo. Veja [Atualizações](/pt-br/updates).

@@ -36,26 +36,202 @@
     ]
   },
   "navigation": {
-    "groups": [
-      { "group": "Get started", "pages": ["index", "quickstart", "install-on-mac", "connect-an-agent"] },
+    "languages": [
       {
-        "group": "Guides",
-        "pages": [
-          "tour",
-          "workspaces",
-          "workspace-privacy",
-          "keyboard-shortcuts",
-          "updates",
-          "privacy",
-          "troubleshooting",
-          "uninstall",
-          "use-these-docs-from-your-agent",
-          "open-source"
+        "language": "en",
+        "groups": [
+          { "group": "Get started", "pages": ["index", "quickstart", "install-on-mac", "connect-an-agent"] },
+          {
+            "group": "Guides",
+            "pages": [
+              "tour",
+              "workspaces",
+              "workspace-privacy",
+              "keyboard-shortcuts",
+              "updates",
+              "privacy",
+              "troubleshooting",
+              "uninstall",
+              "use-these-docs-from-your-agent",
+              "open-source"
+            ]
+          },
+          { "group": "Reference", "pages": ["mcp-tools", "releases"] },
+          { "group": "Self-host", "pages": ["self-host"] },
+          { "group": "Fair use", "pages": ["fair-use"] }
         ]
       },
-      { "group": "Reference", "pages": ["mcp-tools", "releases"] },
-      { "group": "Self-host", "pages": ["self-host"] },
-      { "group": "Fair use", "pages": ["fair-use"] }
+      {
+        "language": "pt-BR",
+        "groups": [
+          {
+            "group": "Primeiros passos",
+            "pages": ["pt-br/index", "pt-br/quickstart", "pt-br/install-on-mac", "pt-br/connect-an-agent"]
+          },
+          {
+            "group": "Guias",
+            "pages": [
+              "pt-br/tour",
+              "pt-br/workspaces",
+              "pt-br/workspace-privacy",
+              "pt-br/keyboard-shortcuts",
+              "pt-br/updates",
+              "pt-br/privacy",
+              "pt-br/troubleshooting",
+              "pt-br/uninstall",
+              "pt-br/use-these-docs-from-your-agent",
+              "pt-br/open-source"
+            ]
+          },
+          { "group": "Referência", "pages": ["pt-br/mcp-tools", "pt-br/releases"] },
+          { "group": "Hospedagem própria", "pages": ["pt-br/self-host"] },
+          { "group": "Uso justo", "pages": ["pt-br/fair-use"] }
+        ]
+      },
+      {
+        "language": "es",
+        "groups": [
+          { "group": "Primeros pasos", "pages": ["es/index", "es/quickstart", "es/install-on-mac", "es/connect-an-agent"] },
+          {
+            "group": "Guías",
+            "pages": [
+              "es/tour",
+              "es/workspaces",
+              "es/workspace-privacy",
+              "es/keyboard-shortcuts",
+              "es/updates",
+              "es/privacy",
+              "es/troubleshooting",
+              "es/uninstall",
+              "es/use-these-docs-from-your-agent",
+              "es/open-source"
+            ]
+          },
+          { "group": "Referencia", "pages": ["es/mcp-tools", "es/releases"] },
+          { "group": "Autoalojamiento", "pages": ["es/self-host"] },
+          { "group": "Uso justo", "pages": ["es/fair-use"] }
+        ]
+      },
+      {
+        "language": "de",
+        "groups": [
+          { "group": "Erste Schritte", "pages": ["de/index", "de/quickstart", "de/install-on-mac", "de/connect-an-agent"] },
+          {
+            "group": "Anleitungen",
+            "pages": [
+              "de/tour",
+              "de/workspaces",
+              "de/workspace-privacy",
+              "de/keyboard-shortcuts",
+              "de/updates",
+              "de/privacy",
+              "de/troubleshooting",
+              "de/uninstall",
+              "de/use-these-docs-from-your-agent",
+              "de/open-source"
+            ]
+          },
+          { "group": "Referenz", "pages": ["de/mcp-tools", "de/releases"] },
+          { "group": "Selbst hosten", "pages": ["de/self-host"] },
+          { "group": "Faire Nutzung", "pages": ["de/fair-use"] }
+        ]
+      },
+      {
+        "language": "fr",
+        "groups": [
+          { "group": "Premiers pas", "pages": ["fr/index", "fr/quickstart", "fr/install-on-mac", "fr/connect-an-agent"] },
+          {
+            "group": "Guides",
+            "pages": [
+              "fr/tour",
+              "fr/workspaces",
+              "fr/workspace-privacy",
+              "fr/keyboard-shortcuts",
+              "fr/updates",
+              "fr/privacy",
+              "fr/troubleshooting",
+              "fr/uninstall",
+              "fr/use-these-docs-from-your-agent",
+              "fr/open-source"
+            ]
+          },
+          { "group": "Référence", "pages": ["fr/mcp-tools", "fr/releases"] },
+          { "group": "Auto-hébergement", "pages": ["fr/self-host"] },
+          { "group": "Usage équitable", "pages": ["fr/fair-use"] }
+        ]
+      },
+      {
+        "language": "ja",
+        "groups": [
+          { "group": "はじめに", "pages": ["ja/index", "ja/quickstart", "ja/install-on-mac", "ja/connect-an-agent"] },
+          {
+            "group": "ガイド",
+            "pages": [
+              "ja/tour",
+              "ja/workspaces",
+              "ja/workspace-privacy",
+              "ja/keyboard-shortcuts",
+              "ja/updates",
+              "ja/privacy",
+              "ja/troubleshooting",
+              "ja/uninstall",
+              "ja/use-these-docs-from-your-agent",
+              "ja/open-source"
+            ]
+          },
+          { "group": "リファレンス", "pages": ["ja/mcp-tools", "ja/releases"] },
+          { "group": "セルフホスト", "pages": ["ja/self-host"] },
+          { "group": "フェアユース", "pages": ["ja/fair-use"] }
+        ]
+      },
+      {
+        "language": "ko",
+        "groups": [
+          { "group": "시작하기", "pages": ["ko/index", "ko/quickstart", "ko/install-on-mac", "ko/connect-an-agent"] },
+          {
+            "group": "가이드",
+            "pages": [
+              "ko/tour",
+              "ko/workspaces",
+              "ko/workspace-privacy",
+              "ko/keyboard-shortcuts",
+              "ko/updates",
+              "ko/privacy",
+              "ko/troubleshooting",
+              "ko/uninstall",
+              "ko/use-these-docs-from-your-agent",
+              "ko/open-source"
+            ]
+          },
+          { "group": "레퍼런스", "pages": ["ko/mcp-tools", "ko/releases"] },
+          { "group": "셀프 호스팅", "pages": ["ko/self-host"] },
+          { "group": "공정 사용", "pages": ["ko/fair-use"] }
+        ]
+      },
+      {
+        "language": "zh",
+        "groups": [
+          { "group": "快速入门", "pages": ["zh/index", "zh/quickstart", "zh/install-on-mac", "zh/connect-an-agent"] },
+          {
+            "group": "指南",
+            "pages": [
+              "zh/tour",
+              "zh/workspaces",
+              "zh/workspace-privacy",
+              "zh/keyboard-shortcuts",
+              "zh/updates",
+              "zh/privacy",
+              "zh/troubleshooting",
+              "zh/uninstall",
+              "zh/use-these-docs-from-your-agent",
+              "zh/open-source"
+            ]
+          },
+          { "group": "参考", "pages": ["zh/mcp-tools", "zh/releases"] },
+          { "group": "自托管", "pages": ["zh/self-host"] },
+          { "group": "合理使用", "pages": ["zh/fair-use"] }
+        ]
+      }
     ]
   }
 }

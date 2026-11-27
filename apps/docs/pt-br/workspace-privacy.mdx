@@ -1,0 +1,41 @@
+---
+title: Privacidade do workspace
+description: Esconda seus outros workspaces atrás do Touch ID ou da senha do Mac e veja onde eles ficam fora de vista.
+---
+
+A privacidade do workspace mantém seus outros workspaces fora de vista no seu Mac. Enquanto está ativada, o todz mostra apenas o workspace em que você está e desenha exatamente o que uma conta com um único workspace desenha: nenhum marcador, contagem, ícone de cadeado ou nome de outro workspace. O Touch ID ou a senha do seu Mac trazem os outros de volta.
+
+## Ative
+
+Abra todz › Ajustes › Privacidade e atualizações e ative **Exigir Touch ID para trocar de workspace**. Vem desativada por padrão, e ativá-la não pede nada. **Pedir de novo após** define quanto dura uma sessão desbloqueada: 1, 5, 15 ou 60 minutos.
+
+## Onde os outros workspaces ficam escondidos
+
+Enquanto a sessão está bloqueada, eles não aparecem em:
+
+- A barra lateral, o seletor de workspace e o menu de workspaces.
+- A contagem, a faixa e o popover da barra de menus.
+- Os widgets. Os dados em cache deles são apagados quando a sessão bloqueia, então um widget nunca desenha um workspace escondido.
+- A Siri e os Atalhos.
+- Os links `todz://`, que respondem como se o projeto não existisse.
+- Os Ajustes e os **Apps conectados** deles.
+- O resumo da manhã, o fechamento do dia e os atalhos globais de workspace.
+
+## Traga-os de volta
+
+Escolha **Trocar de workspace…** (⌘K, também no menu **…** do popover da barra de menus). O todz pede o Touch ID ou a senha do seu Mac, e depois você troca como de costume. Criar ou excluir um workspace, desativar o ajuste e mudar o tempo pedem do mesmo jeito.
+
+## Quando bloqueia de novo
+
+- Quando o Mac entra em repouso ou a tela bloqueia, e quando a proteção de tela começa.
+- Quando você fecha o todz: toda abertura começa bloqueada.
+- Depois do tempo que você escolheu em **Pedir de novo após**.
+- Quando você escolhe **Bloquear agora**, que só aparece com a sessão desbloqueada.
+
+## O que ela não protege
+
+<Warning>
+  A privacidade do workspace é uma tela de privacidade no seu Mac, não criptografia. Quem souber a senha do seu Mac consegue desbloqueá-la, e ela não muda o servidor: um agente conectado com OAuth continua alcançando o projeto dele.
+</Warning>
+
+Veja [Workspaces](/pt-br/workspaces) para trocar, mostrar vários de uma vez, renomear e excluir.

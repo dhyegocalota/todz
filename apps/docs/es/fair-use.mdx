@@ -1,0 +1,52 @@
+---
+title: Uso razonable
+---
+
+todz es gratuito. Para que una sola cuenta no pueda tumbar el servicio ni disparar su factura por encima del plan, cada cuenta tiene los límites de abajo. Son generosos: una lista de tareas personal no se acerca a ellos.
+
+## Los límites
+
+| Límite | Valor por defecto | Qué ocurre al superarlo |
+|---|---|---|
+| Espacios de trabajo por cuenta | 20 | Se rechaza crear un espacio de trabajo |
+| Proyectos por espacio de trabajo | 100 | Se rechaza crear un proyecto |
+| Tareas abiertas por proyecto | 5.000 | Se rechaza añadir o reabrir tareas; completar una libera un hueco |
+| Título | 500 caracteres | Se rechaza la tarea |
+| Notas | 20.000 caracteres | Se rechaza la tarea |
+| Cambios de tareas por día | 1.000 (día UTC) | Cuenta añadir, editar, completar y reabrir tareas, incluida una tarea añadida al responder al correo del día, y nada más (crear un espacio de trabajo o un proyecto no cuenta). Los cambios se rechazan hasta la medianoche UTC; la lectura sigue funcionando |
+| Texto de tareas almacenado | 50 MB | Se rechazan las escrituras; la lectura sigue funcionando. El recuento es un límite superior: suma cada título, nota y edición tal como se escribió y no baja cuando editas o eliminas, así que el operador puede reiniciarlo para una cuenta |
+| Cuentas nuevas por red y día | 5 | Se rechaza el registro hasta el día siguiente |
+
+Un rechazo te dice lo que pasó. El servidor responde con un código y una frase clara; para un agente, la herramienta responde con la misma frase.
+
+## Direcciones de correo desechables
+
+No se pueden abrir cuentas nuevas con la dirección de un servicio de correo desechable. Las cuentas existentes no se ven afectadas.
+
+## Suspensión
+
+Si se abusa de una cuenta, el operador puede suspenderla. Una cuenta suspendida todavía puede leer sus tareas y cerrar sesión. No puede cambiar nada, y sus agentes dejan de responder hasta que se restaure la cuenta. No se elimina nada.
+
+## Capacidad de todz cloud
+
+Los cupos gratuitos de todz cloud son extremadamente limitados. todz cloud funciona con un presupuesto mensual fijo, así que admite como máximo 50 cuentas activas. El autoalojamiento siempre está abierto: [ejecuta tu propio servidor](/es/self-host) sin límite de cuentas. Una cuenta está activa cuando inició sesión, se vio con la sesión iniciada o escribió una tarea en los últimos 90 días; una cuenta que permanece inactiva 90 días libera su cupo y, si la nube está llena cuando vuelve, espera un cupo como una dirección nueva.
+
+- Las cuentas ya admitidas nunca se rechazan por el límite.
+- Cuando la nube está llena, pedir un enlace de inicio de sesión se ve igual para cualquier dirección: la respuesta siempre es que un enlace va en camino. Una dirección que no puede iniciar sesión recibe un correo que dice "todz cloud está lleno en este momento", con un enlace personal a la lista de espera en todz.app/cloud-queue, que funciona durante una semana y donde confirma su dirección para ser invitada cuando se abra un cupo, y un enlace para [autoalojarlo](/es/self-host).
+- Cuando el uso del mes se acerca a las cuotas incluidas en el plan, se avisa por correo al operador. Pasado el 95 %, a las cuentas que más escriben este mes se les rechazan nuevas escrituras con "todz cloud está al límite de capacidad este mes" (HTTP 429, con un `Retry-After` de los segundos hasta el uno del mes siguiente, UTC), y las lecturas de todos se reducen a unas pocas por minuto. Tus tareas no se eliminan, y el resto de las cuentas sigue escribiendo como siempre.
+- Cada correo que envía todz cloud cuenta para su cupo mensual de correos, así que una dirección no recibe más de 10 correos al día.
+
+Los servidores autoalojados no tienen límite de cuentas salvo que definan `CLOUD_ACCOUNTS_MAX` con un número entero positivo.
+
+## Servidores autoalojados
+
+Los recuentos son variables del Worker. Omite una para mantener su valor por defecto; defínela con un número entero positivo para cambiarlo:
+
+- `FAIR_USE_WORKSPACES_MAX`
+- `FAIR_USE_PROJECTS_PER_WORKSPACE_MAX`
+- `FAIR_USE_OPEN_TASKS_PER_PROJECT_MAX`
+- `FAIR_USE_WRITES_PER_DAY_MAX`
+- `FAIR_USE_STORED_BYTES_MAX` (en bytes)
+- `FAIR_USE_SIGN_UPS_PER_CLIENT_DAY_MAX`
+
+El límite de cuentas nuevas también necesita el secreto `SIGN_UP_KEY_SECRET` (consulta [Configuración del servidor](/es/self-host#6-turnstile)); sin él, las cuentas nuevas no pueden registrarse. Un valor que no sea un número entero positivo detiene el servidor con un error que nombra la variable. Los tamaños de título y notas son fijos, porque la app y las herramientas de los agentes los indican.

@@ -1,0 +1,61 @@
+---
+title: 连接智能体
+description: 用 OAuth 让 Claude Code、Claude.ai 或 Codex 登录 todz。API 密钥已移除。
+---
+
+位于 `https://api.todz.app/mcp` 的 todz MCP 服务器通过 MCP OAuth 让客户端登录。把这个 URL 添加到你的客户端，第一次调用时会打开浏览器，你在那里批准该应用。OAuth 是唯一的连接方式。
+
+如果你运行自己的服务器，请用它的 URL 代替 `https://api.todz.app/mcp`。
+
+## 重大变更：API 密钥已移除
+
+2026-11-27，todz 移除了 API 密钥。项目密钥和所有者密钥不再有效，服务器已删除所有已存储的密钥。仍然发送密钥的客户端会收到 `401`，并附带指向本页的提示。
+
+要重新连接曾使用密钥的智能体，请运行 `claude mcp add --transport http todz https://api.todz.app/mcp` 并按下文登录。请删除旧的 `Authorization` 标头，以及你设置过的 `TODZ_API_KEY` 变量。Mac App 的**连接智能体**界面也在同一次更新中移除了。
+
+## 用 OAuth 登录
+
+1. 输入你的 todz 邮箱并通过验证。
+2. **在同一个浏览器中**打开邮件里的登录链接。
+3. 阅读授权界面：它会写明应用的名称，以及登录后会把你送回哪里。
+4. 选择一个项目，第一个项目已预先选中。或者选择**你的整个账户（所有者范围）**，它从不预先选中，并会警告“它可以读取和修改每个任务，并创建、重命名和删除每个工作区和项目。”
+5. 批准，或拒绝。
+
+项目范围提供任务工具，并提供其所在工作区的其他项目，用于 `move` 和 `projects`。所有者范围提供账户工具，以及针对账户中每个项目的同一组任务工具，每个工具都从 `workspaces` 取得 `project` id。任务的历史记录会写明应用注册时使用的名称。参见 [MCP 工具](/zh/mcp-tools)。
+
+访问令牌的有效期为一小时，会自动续期。刷新令牌的有效期为 30 天，每次使用都会轮换；如果某个刷新令牌被使用了两次，该应用就会被断开连接。todz 只以摘要的形式存储令牌。合理使用规则和云端上限适用于每一个已连接的应用。
+
+要断开某个应用，请在 Mac App 中打开**设置** › **已连接的应用**。该应用会立即停止工作。
+
+重定向地址必须是 `https` 或回环地址（`127.0.0.1`、`localhost`、`[::1]`）。按照规范的要求，自定义协议会被拒绝。
+
+### Claude Code
+
+```bash
+claude mcp add --transport http todz https://api.todz.app/mcp
+```
+
+然后在 Claude Code 中运行 `/mcp`，选择 todz 登录。Claude Code 会打开浏览器。
+
+### Claude.ai 和 Claude Desktop
+
+打开**设置** › **连接器** › **添加自定义连接器**，把 `https://api.todz.app/mcp` 填为 URL，然后按**连接**。
+
+### Codex
+
+把下面的内容添加到 `~/.codex/config.toml`：
+
+```toml
+[mcp_servers.todz]
+url = "https://api.todz.app/mcp"
+```
+
+然后登录：
+
+```bash
+codex mcp login todz
+```
+
+### Cursor
+
+Cursor 用 `cursor://` 地址登录 MCP 服务器，而 MCP 规范不允许这种地址，todz 也会拒绝。在 Cursor 改用 `https` 或回环地址登录之前，它无法连接到 todz。

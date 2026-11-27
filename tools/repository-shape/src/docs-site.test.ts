@@ -14,6 +14,7 @@ const WRANGLER_CONFIGURATION = 'apps/api/wrangler.jsonc';
 const BRAND_ICON = 'docs/brand/todz-icon.svg';
 const FAVICON = 'apps/docs/favicon.svg';
 const PAGE_EXTENSION = '.mdx';
+const ENGLISH_LANGUAGE = 'en';
 const NAVIGATION_GROUPS = [
   { group: 'Get started', pages: ['index', 'quickstart', 'install-on-mac', 'connect-an-agent'] },
   {
@@ -90,7 +91,7 @@ type DocsConfiguration = {
   navbar?: { links?: { label: string; href: string }[] };
   footer?: { links?: { header: string; items: { label: string; href: string }[] }[] };
   errors?: { '404'?: { redirect?: boolean; title?: string; description?: string } };
-  navigation?: { groups?: { group: string; pages: string[] }[] };
+  navigation?: { languages?: { language: string; groups: { group: string; pages: string[] }[] }[] };
 };
 
 const configuration = JSON.parse(readRepositoryFile(DOCS_CONFIGURATION)) as DocsConfiguration;
@@ -117,9 +118,9 @@ function pageName(path: string): string {
 }
 
 function navigationPages(): string[] {
-  const groups = configuration.navigation?.groups;
-  expect(groups).toBeDefined();
-  return groups!.flatMap((group) => group.pages);
+  const languages = configuration.navigation?.languages;
+  expect(languages).toBeDefined();
+  return languages!.flatMap((entry) => entry.groups.flatMap((group) => group.pages));
 }
 
 function isMissingFile(path: string | undefined): boolean {
@@ -190,7 +191,7 @@ describe('docs.json', () => {
   });
 
   test('lists the pages in their groups, in order', () => {
-    expect(configuration.navigation?.groups).toEqual(NAVIGATION_GROUPS);
+    expect(configuration.navigation?.languages?.find((entry) => entry.language === ENGLISH_LANGUAGE)?.groups).toEqual(NAVIGATION_GROUPS);
   });
 });
 

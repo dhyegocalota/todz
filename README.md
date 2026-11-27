@@ -36,7 +36,18 @@
 
 ## Install
 
-**[Download for Mac — Free](https://todz.app/download)** · or [run your own server](https://docs.todz.app/self-host).
+**[Download for Mac — Free](https://todz.app/download)** · or [run your own server](https://docs.todz.app/self-host). To self-host, paste this into your coding agent and approve the logins it asks for:
+
+```text
+Self-host todz: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/self-host-with-an-agent.md end to end on my Cloudflare account, and stop only to ask me for logins, payments and secrets.
+```
+
+<details>
+<summary>Do it by hand</summary>
+
+Follow the [self-host guide](https://docs.todz.app/self-host) step by step.
+
+</details>
 
 ## Connect an agent
 
@@ -61,6 +72,24 @@ todz is the to-do list you and your agents share: you decide what matters, your 
 Further out, todz becomes a **control center for your agents**: one inbox where every agent reports what it is doing, asks for a decision and takes the next task, steered from your menu bar and your phone.
 
 ## Contributing
+
+To get ready to contribute, paste this into your coding agent:
+
+```text
+Set up todz for development: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/set-up-for-development.md until pnpm verify is green, and stop only to ask me for logins.
+```
+
+<details>
+<summary>Do it by hand</summary>
+
+```bash
+git clone https://github.com/dhyegocalota/todz.git && cd todz
+bash .agents/hooks/doctor.sh
+pnpm install --frozen-lockfile
+pnpm verify all
+```
+
+</details>
 
 Built by people and coding agents under one process: [HARNESS.md](.claude/HARNESS.md), [AGENTS.md](AGENTS.md).
 

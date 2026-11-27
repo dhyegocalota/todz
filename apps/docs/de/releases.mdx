@@ -1,0 +1,70 @@
+---
+title: Releases
+description: Was jede Version der Mac-App gebracht hat.
+---
+
+Jedes Release ist ein GitHub-Tag mit dem Namen `mac-v<version>` unter [github.com/dhyegocalota/todz/tags](https://github.com/dhyegocalota/todz/tags). Die App liest [todz.app/download/appcast.xml](https://todz.app/download/appcast.xml), um sich selbst zu aktualisieren.
+
+## 0.2.8
+
+**Breaking: API-Schlüssel wurden entfernt.**
+
+- Projektschlüssel und Owner-Schlüssel funktionieren nicht mehr, und der Server hat jeden gespeicherten Schlüssel gelöscht. Jeder MCP-Client verbindet sich nur per OAuth.
+- Ein Client, der noch einen Schlüssel sendet, bekommt ein 401, das auf [Agent verbinden](/de/connect-an-agent) verweist. Um dich wieder zu verbinden, führe `claude mcp add --transport http todz https://api.todz.app/mcp` aus und melde dich an.
+- Der Bildschirm **Agent verbinden** der Mac-App zeigt jetzt nur noch die OAuth-Befehle, ohne Schlüssel, sowie **Verbundene Apps**, wo du eine App trennst.
+
+Was sonst neu ist:
+
+- Das Popover der Menüleiste ist neu gestaltet: ein Tagesring mit Zähler, eine Karte **Als Nächstes**, ein gläsernes Eingabefeld, eine ruhige Warteschlange und **Heute erledigt** eingeklappt. Ein Menü **Mehr** enthält **Beenden**, **Nach Updates suchen…**, **Auf GitHub mit Stern markieren** und **Workspace wechseln…**. ⌘O öffnet todz, die Leertaste erledigt, und ⌘↩ erledigt **Als Nächstes**. Siehe [Tastaturkurzbefehle](/de/keyboard-shortcuts).
+- Eine gesperrte Workspace-Sitzung sieht aus wie ein Konto mit einem Workspace. **Workspace wechseln…** (⌘K) fragt bei gesperrter Sitzung nach Touch ID, und die Option in den Einstellungen lautet **Touch ID zum Wechseln des Workspace verlangen**. Siehe [Workspaces](/de/workspaces).
+- Ein einheitliches Bewegungssystem. Unter **Bewegung reduzieren** wird jede Animation zu einer Überblendung oder einem sofortigen Wechsel.
+- Eine OAuth-Verbindung mit dem Konto-Scope legt jedes Tool offen, auch die Aufgaben-Tools, und jedes Aufgaben-Tool nimmt ein ausdrückliches Projekt. Siehe [MCP-Tools](/de/mcp-tools).
+
+## 0.2.7
+
+- Eine Workspace-Sperre in den Einstellungen, standardmäßig aus: Touch ID oder das Mac-Passwort vor dem Wechsel des Workspace. Siehe [Workspaces](/de/workspaces).
+- Der Zähler der Menüleiste rollt, neue Zeilen federn herein, und der Titel der Seitenleiste fliegt in die Symbolleiste.
+- Die Einstellungen listen die mit deinem Konto verbundenen Apps auf und lassen dich eine trennen.
+
+## 0.2.6
+
+- todz bietet an, sich selbst in **Programme** zu verschieben, nur auf deinen Klick und nur wenn kein todz läuft. Es ersetzt nie ein installiertes todz.
+
+## 0.2.5
+
+- Formulare teilen sich ein Aussehen: das Namensblatt, der erste Workspace, die Bestätigung per eingetipptem Namen, das Serverfeld und die Anmeldung in einem Glaspanel.
+- Eine Zeile zur Aufnahme eines Kurzbefehls zeigt, dass sie zuhört, und **Agent verbinden** hat abgerundete Blöcke und ein zerstörerisches **Widerrufen**.
+
+## 0.2.4
+
+- Die App verwirft Aufgaben, die ein Agent gelöscht oder weggeschoben hat.
+- Die Einstellungen zeigen die Fair-Use-Meldungen des Servers und verwalten deine Kontoschlüssel. Siehe [Fair Use](/de/fair-use).
+- Ist die Cloud voll oder ein Tageslimit erreicht, hält die App deine Änderungen in der Warteschlange und pausiert das Senden, bis sie sich synchronisieren lassen.
+
+## 0.2.3
+
+- Einen Workspace im Menü **Workspace** umbenennen und löschen sowie ein Projekt löschen.
+- Ein Workspace zeigt seine letzte Aktivität.
+- Globale Workspace-Kurzbefehle sind aus, bis du sie einschaltest, und werden nur registriert, wenn sie frei sind.
+- **Neues Projekt** bleibt unter der Liste der Seitenleiste angeheftet.
+
+## 0.2.2
+
+- Workspace-Kurzbefehle: ⌃1 … ⌃9, ⌃⌘[ und ⌃⌘], neu belegbar, aus jeder App. Siehe [Workspaces](/de/workspaces).
+- Mehrere Workspaces gleichzeitig oder **Alle Workspaces**, nach Workspace markiert.
+- **todz auf GitHub mit Stern markieren** im Popover und im todz-Menü sowie **Open Source auf GitHub** in den Einstellungen.
+- Ein Hintergrund für das Disk-Image.
+- **Anonyme Nutzungsdaten teilen**, aus, bis du Ja sagst. Siehe [Datenschutz](/de/privacy).
+
+## 0.2.1
+
+Keine Änderung an der App. Es ist das erste Update, das über Sparkle ausgeliefert wird, um zu prüfen, dass sich eine Installation von 0.2.0 selbst aktualisiert.
+
+## 0.2.0
+
+Der erste öffentliche Download.
+
+- Die App aktualisiert sich über Sparkle selbst. Siehe [Updates](/de/updates).
+- Eine Workspace-Auswahl für Konten mit mehreren Workspaces.
+- Bewegung: Das Häkchen zeichnet sich mit einem Minz-Funken, das Popover blüht auf, und der Morgenüberblick und der Tagesabschluss gleiten herein.
+- Das Band der Menüleiste, der Tagesabschluss, der Morgenüberblick und die Tagesmail.
