@@ -58,6 +58,7 @@ private let cacheFolderName = "Cache"
         onUsed: { [usageSharing] in usageSharing.record(.shortcutUsed, at: Date()) }
     )
     private lazy var dayCloseScheduler = DayCloseScheduler(coordinator: dayClose)
+    private lazy var menuBarItemNotice = MenuBarItemNotice(gate: gate)
     private lazy var workspaceLockMonitor = WorkspaceLockMonitor(model: model)
     private(set) lazy var dayTemperatureClock = DayTemperatureClock(
         now: Date.init,
@@ -147,6 +148,7 @@ private let cacheFolderName = "Cache"
         startRibbon()
         dayCloseScheduler.start()
         morningGlanceTrigger.start()
+        menuBarItemNotice.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -171,6 +173,7 @@ private let cacheFolderName = "Cache"
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         windowState.isMainWindowRequested = true
+        menuBarItemNotice.recheck()
         return true
     }
 

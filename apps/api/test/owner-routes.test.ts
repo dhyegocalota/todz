@@ -22,6 +22,7 @@ describe('matchOwnerRoute', () => {
     ['PATCH', `/owner/projects/${PROJECT}`, OwnerRoute.RenameProject, { projectId: PROJECT }],
     ['POST', `/owner/projects/${PROJECT}/tasks`, OwnerRoute.AddTasks, { projectId: PROJECT }],
     ['PATCH', `/owner/projects/${PROJECT}/tasks/12`, OwnerRoute.UpdateTask, { projectId: PROJECT, number: '12' }],
+    ['DELETE', `/owner/projects/${PROJECT}/tasks/12`, OwnerRoute.DeleteTask, { projectId: PROJECT, number: '12' }],
     ['POST', `/owner/projects/${PROJECT}/tasks/complete`, OwnerRoute.CompleteTasks, { projectId: PROJECT }],
     ['POST', `/owner/projects/${PROJECT}/tasks/reopen`, OwnerRoute.ReopenTasks, { projectId: PROJECT }],
     ['GET', `/owner/projects/${PROJECT}/tasks/12/history`, OwnerRoute.ReadHistory, { projectId: PROJECT, number: '12' }],

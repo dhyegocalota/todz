@@ -32,6 +32,7 @@ enum MainWindowCopy {
     static let moveDown = "Move Down"
     static let markDone = "Mark as Done"
     static let markNotDone = "Mark as Not Done"
+    static let deleteTask = "Delete Task…"
     static let showInspector = "Show Inspector"
     static let hideInspector = "Hide Inspector"
     static let taskMenu = "Task"
