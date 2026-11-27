@@ -1,3 +1,4 @@
+import { required } from './required';
 import { Language } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { serveLandingPage } from '../src/site/landing-page';
@@ -16,8 +17,7 @@ const RENDERED_CREDIT: Partial<Record<Language, string>> = {
 
 async function creditTextOf(language: Language): Promise<string> {
   const html = await serveLandingPage({ stars: null, preferences: { language, theme: Theme.System, returnPath: '/' } }).text();
-  const [, credit] = html.match(FOOTER_CREDIT_PATTERN) ?? [];
-  if (credit === undefined) throw new Error('the footer carries a credit');
+  const credit = required({ value: html.match(FOOTER_CREDIT_PATTERN)?.[1], description: 'the footer credit' });
   return credit.replace(TAG_PATTERN, '');
 }
 

@@ -1,6 +1,6 @@
 import { DAYS_PER_YEAR, HOURS_PER_DAY, Language, MINUTES_PER_HOUR, SECONDS_PER_MINUTE } from '@todz/types';
 import { HttpHeader } from './http-header';
-import { HttpMethod } from './http-method';
+import { READ_METHODS } from './http-method';
 import { enumValueOf } from './enum-value';
 import { languageOfAcceptLanguage, languageOfValue } from './language-negotiation';
 import { cookieHeaderOf, cookieValueOf } from './request-cookie';
@@ -23,7 +23,6 @@ const EXPIRED_MAX_AGE_SECONDS = 0;
 const SECURE_PROTOCOL = 'https:';
 const COOKIE_ATTRIBUTES = 'Path=/; SameSite=Lax';
 const SECURE_ATTRIBUTE = '; Secure';
-const QUERY_METHODS = [HttpMethod.Get, HttpMethod.Head];
 
 export function languageOfCookie({ request }: { request: Request }): Language | null {
   return languageOfValue({ value: cookieValueOf({ request, name: PreferenceCookie.Language }) });
@@ -48,7 +47,7 @@ export function themeOfRequest({ request }: { request: Request }): Theme {
 
 export function returnPathOf({ request }: { request: Request }): string {
   const { pathname, search } = new URL(request.url);
-  if (QUERY_METHODS.includes(request.method as HttpMethod)) return `${pathname}${search}`;
+  if (READ_METHODS.includes(request.method)) return `${pathname}${search}`;
   return pathname;
 }
 

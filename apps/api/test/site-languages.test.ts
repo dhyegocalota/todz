@@ -1,3 +1,4 @@
+import { required } from './required';
 import { LANGUAGE_PROFILES, Language } from '@todz/types';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { describe, expect, test } from 'vitest';
@@ -128,6 +129,13 @@ describe('the first visit to the landing', () => {
       expect(vary).toContain('Cookie');
       expect(vary).toContain('Accept-Language');
     });
+  });
+
+  test('answers Vary with Cookie and Accept-Language on the English cloud queue page too', async () => {
+    const response = await visit({ path: '/cloud-queue' });
+    expect(response.status).not.toBe(NOT_FOUND_STATUS);
+    expect(response.headers.get('Vary')).toContain('Cookie');
+    expect(response.headers.get('Vary')).toContain('Accept-Language');
   });
 
   test('serves English and sets nothing when Accept-Language prefers English', async () => {
@@ -268,21 +276,31 @@ describe('the head of a public page', () => {
   test.each(Object.values(Language))('%s names its language in the JSON-LD', async (language) => {
     const { pathPrefix, htmlLang } = LANGUAGE_PROFILES[language];
     const html = await (await visit({ path: `${pathPrefix}/` })).text();
-    const [, json] = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/) ?? [];
-    expect(JSON.parse(json ?? '')['@graph'].find((node: { '@type': string }) => node['@type'] === 'WebSite').inLanguage).toBe(htmlLang);
+    const json = required({
+      value: html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1],
+      description: 'the JSON-LD',
+    });
+    expect(JSON.parse(json)['@graph'].find((node: { '@type': string }) => node['@type'] === 'WebSite').inLanguage).toBe(htmlLang);
   });
 });
 
 describe('the sitemap', () => {
   test('lists the landing of every language with eight alternates and x-default', async () => {
     const xml = await (await visit({ path: '/sitemap.xml' })).text();
-    const urls = elementsOf({ html: xml, pattern: /<url>([\s\S]*?)<\/url>/g }).map(([, block]) => block ?? '');
+    const urls = elementsOf({ html: xml, pattern: /<url>([\s\S]*?)<\/url>/g }).map(([, block]) =>
+      required({ value: block, description: 'a sitemap entry' }),
+    );
     expect(urls).toHaveLength(Object.values(Language).length);
     expect(xml).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"');
     Object.values(LANGUAGE_PROFILES).forEach(({ pathPrefix }) => {
       const block = urls.find((candidate) => candidate.includes(`<loc>${SITE_ORIGIN}${pathPrefix}/</loc>`));
       expect(block).toBeDefined();
-      expect(elementsOf({ html: block ?? '', pattern: /<xhtml:link rel="alternate" hreflang="[^"]+" href="[^"]+"\/>/g })).toHaveLength(9);
+      expect(
+        elementsOf({
+          html: required({ value: block, description: 'its sitemap entry' }),
+          pattern: /<xhtml:link rel="alternate" hreflang="[^"]+" href="[^"]+"\/>/g,
+        }),
+      ).toHaveLength(9);
       expect(block).toContain(`<xhtml:link rel="alternate" hreflang="x-default" href="${SITE_ORIGIN}/"/>`);
     });
   });
@@ -414,6 +432,15 @@ describe('the theme', () => {
     expect(elementsOf({ html, pattern: /<meta name="theme-color"[^>]*>/g })).toHaveLength(1);
   });
 
+  test.each([
+    ['system', '<source data-theme-source media="(prefers-color-scheme: dark)" '],
+    ['light', '<source data-theme-source media="not all" '],
+    ['dark', '<source data-theme-source srcset='],
+  ])('renders the dark hero source for the %s theme', async (theme, expected) => {
+    const html = await (await visit({ path: '/', headers: { Cookie: `${THEME_COOKIE}=${theme}` } })).text();
+    expect(html).toContain(expected);
+  });
+
   test('ignores a cookie outside the enum', async () => {
     const html = await (await visit({ path: '/', headers: { Cookie: `${THEME_COOKIE}=sepia` } })).text();
     expect(html).toContain('<html lang="en">');
@@ -473,20 +500,22 @@ describe('the theme', () => {
 describe('the content security policy', () => {
   test.each(['/', '/ja/', '/cloud-queue', '/admin'])('%s keeps hashes only: no unsafe-inline, no unsafe-eval', async (path) => {
     const response = await visit({ path });
-    const policy = response.headers.get('Content-Security-Policy') ?? '';
+    const policy = required({ value: response.headers.get('Content-Security-Policy'), description: 'the policy' });
     expect(policy).not.toContain('unsafe-inline');
     expect(policy).not.toContain('unsafe-eval');
-    const scriptSources = (policy.match(/script-src ([^;]+)/)?.[1] ?? '').split(' ').filter((source) => source !== '');
+    const scriptSources = required({ value: policy.match(/script-src ([^;]+)/)?.[1], description: 'the script sources' })
+      .split(' ')
+      .filter((source) => source !== '');
     scriptSources.forEach((source) => expect(source).toMatch(SCRIPT_HASH_PATTERN));
     expect(policy).toMatch(/style-src 'sha256-/);
   });
 
   test('hashes every inline script of a page', async () => {
     const response = await visit({ path: '/ja/', headers: { Cookie: `${THEME_COOKIE}=dark` } });
-    const policy = response.headers.get('Content-Security-Policy') ?? '';
+    const policy = required({ value: response.headers.get('Content-Security-Policy'), description: 'the policy' });
     const html = await response.text();
-    const scripts = elementsOf({ html, pattern: /<script(?: type="application\/ld\+json")?>([\s\S]*?)<\/script>/g }).map(
-      ([, source]) => source ?? '',
+    const scripts = elementsOf({ html, pattern: /<script(?: type="application\/ld\+json")?>([\s\S]*?)<\/script>/g }).map(([, source]) =>
+      required({ value: source, description: 'a script source' }),
     );
     expect(scripts.length).toBeGreaterThan(0);
     for (const script of scripts) {
@@ -523,10 +552,16 @@ describe('the pages without a public URL', () => {
     expect(response.headers.getSetCookie().filter((cookie) => cookie.startsWith(LANGUAGE_COOKIE))).toEqual([]);
   });
 
-  test('the page of the API host posts the selector to its own host', async () => {
-    const html = await (await visit({ path: OAUTH_LINK_PATH, origin: API_ORIGIN })).text();
-    expect(html).toContain('action="/language"');
-    expect(html).toContain(`<input type="hidden" name="return" value="${OAUTH_LINK_PATH}">`);
+  test('the magic-link pages carry no selector or theme control, because their token is spent', async () => {
+    const pages = await Promise.all([
+      visit({ path: OAUTH_LINK_PATH, origin: API_ORIGIN }),
+      visit({ path: '/admin/sign-in', origin: SITE_ORIGIN }),
+    ]);
+    for (const page of pages) {
+      const html = await page.text();
+      expect(html).not.toContain('action="/language"');
+      expect(html).not.toContain('action="/theme"');
+    }
   });
 
   test.each(PRIVATE_PAGES)('$name takes the theme cookie too', async ({ path, origin }) => {

@@ -2,6 +2,7 @@ import { AUTHOR, Language } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
 import { HttpHeader } from '../http-header';
 import { LANDING_COPY_BY_LANGUAGE } from './landing-copy';
+import { WINDOW_SOURCE_MEDIA } from './site-constants';
 import { MARKDOWN_MEDIA_TYPE } from './landing-markdown';
 import { LANDING_SHOTS, LandingShot } from './landing-shots';
 import { MENU_BAR_GLYPH, SIGNATURE_SWASH, SiteGlyph, glyphHtml } from './site-glyphs';
@@ -16,9 +17,9 @@ import { starPillHtml } from './star-pill';
 import { DAY_CARD_ID, DOCS_INSTALL_PAGE, DOCS_SELF_HOST_PAGE, DOWNLOAD_PATH, DiscoveryPath, WAYS_ID, docsUrlOf } from './site-urls';
 import { WEBMCP_SCRIPT } from './webmcp-script';
 
-const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
 const SRCSET_LIST_SEPARATOR = ', ';
 const WORD_SEPARATOR = ' ';
+const THEME_SOURCE_ATTRIBUTE = 'data-theme-source';
 const LINK_ARROW = '→';
 
 const MARKDOWN_ALTERNATE_LINK = `<${DiscoveryPath.LandingMarkdown}>; rel="alternate"; type="${MARKDOWN_MEDIA_TYPE}"`;
@@ -52,10 +53,10 @@ function shotImage({ shot, alt }: { shot: LandingShot; alt: string }): string {
 }
 
 function darkSourceHtml(theme: Theme): string {
-  if (theme === Theme.Light) return '';
   const { width, height } = LANDING_SHOTS[LandingShot.WindowDark];
-  const media = theme === Theme.System ? ` media="${DARK_SCHEME_MEDIA}"` : '';
-  return `<source${media} ${webpSourceAttributes(LandingShot.WindowDark)} width="${width}" height="${height}">`;
+  const mediaValue = WINDOW_SOURCE_MEDIA[theme];
+  const media = mediaValue === '' ? '' : ` media="${mediaValue}"`;
+  return `<source ${THEME_SOURCE_ATTRIBUTE}${media} ${webpSourceAttributes(LandingShot.WindowDark)} width="${width}" height="${height}">`;
 }
 
 function windowPicture({ language, theme }: { language: Language; theme: Theme }): string {
@@ -261,6 +262,7 @@ function landingHtml({ stars, preferences }: { stars: number | null; preferences
   const { language, theme } = preferences;
   const copy = LANDING_COPY_BY_LANGUAGE[language];
   return siteDocumentHtml({
+    hasControls: true,
     kind: SitePageKind.Public,
     path: LANDING_PATH,
     structuredData: LANDING_STRUCTURED_DATA_BY_LANGUAGE[language],

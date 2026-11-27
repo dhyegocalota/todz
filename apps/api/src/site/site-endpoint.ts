@@ -1,7 +1,7 @@
 import { Language, REPOSITORY } from '@todz/types';
 import type { Env } from '../env';
 import { HttpHeader } from '../http-header';
-import { HttpMethod } from '../http-method';
+import { HttpMethod, READ_METHODS } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { pagePreferencesOf } from '../page-preferences';
 import { noRouteResponse } from '../owner-errors';
@@ -10,7 +10,7 @@ import { APPCAST_PATH, serveAppcast } from './appcast';
 import { discoveryResponse } from './discovery-response';
 import { LANDING_MARKDOWN_FILE, MARKDOWN_MEDIA_TYPE } from './landing-markdown';
 import { serveLandingPage } from './landing-page';
-import { negotiatedRedirectOf, serveLanguage, serveTheme } from './language-routes';
+import { NEGOTIATION_VARY, negotiatedRedirectOf, serveLanguage, serveTheme } from './language-routes';
 import { publicPathOf, slashedPathOf } from './language-paths';
 import { repositoryStarsOf } from './repository-stars';
 import { SELF_HOST_PATH, redirectToDocs } from './self-host-redirect';
@@ -23,8 +23,6 @@ import { CLOUD_QUEUE_PATH, LANDING_PATH } from './site-urls';
 export type SiteContext = { request: Request; env: Env; executionContext: ExecutionContext };
 
 export type SiteRoute = (context: SiteContext) => Promise<Response> | Response;
-
-const READ_METHODS = [HttpMethod.Get, HttpMethod.Head];
 
 function routeKey({ method, pathname }: { method: string; pathname: string }): string {
   return `${method} ${pathname}`;
@@ -59,7 +57,10 @@ async function serveEnglishLanding(context: SiteContext): Promise<Response> {
 async function serveEnglishCloudQueuePage(context: SiteContext): Promise<Response> {
   const redirect = negotiatedRedirectOf({ request: context.request });
   if (redirect !== null) return redirect;
-  return serveCloudQueuePage({ ...context, language: Language.English });
+  const response = await serveCloudQueuePage({ ...context, language: Language.English });
+  const varied = new Response(response.body, response);
+  varied.headers.append(HttpHeader.Vary, NEGOTIATION_VARY);
+  return varied;
 }
 
 function publicRoutesOf(language: Language): [string, SiteRoute][] {
@@ -103,7 +104,7 @@ const ROUTE_OF_REQUEST: Record<string, SiteRoute> = {
 };
 
 function slashRedirectOf({ method, url }: { method: string; url: URL }): Response | null {
-  if (!READ_METHODS.includes(method as HttpMethod)) return null;
+  if (!READ_METHODS.includes(method)) return null;
   const slashedPath = slashedPathOf({ pathname: url.pathname });
   if (slashedPath === null) return null;
   return new Response(null, { status: HttpStatus.MovedPermanently, headers: { [HttpHeader.Location]: `${slashedPath}${url.search}` } });

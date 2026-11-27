@@ -23,7 +23,6 @@ describe('findSessionOwner', () => {
     expect(await findSessionOwner({ directory: env.DIRECTORY, digest: await digestCredential(secret), now: CLOCK_NOW })).toEqual({
       ownerId,
       isSuspended: false,
-      language: Language.English,
     });
   });
 

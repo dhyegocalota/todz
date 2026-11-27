@@ -6,7 +6,7 @@ import {
   REPLY_DAILY_MAX,
 } from '@todz/types';
 import type { Language } from '@todz/types';
-import { ownerLanguageOf } from '../directory-owners';
+import { languageOfValue } from '../language-negotiation';
 import { SignInProviderKind } from '../sign-in-provider';
 
 export enum DayEmailFailure {
@@ -142,7 +142,9 @@ const LIVE_STOP_LINK_OWNER = 'SELECT owner_id FROM day_email_stop_links WHERE di
 const LIVE_STOP_LINK_LANGUAGE =
   'SELECT owners.language FROM day_email_stop_links JOIN owners ON owners.id = day_email_stop_links.owner_id WHERE day_email_stop_links.digest = ?1 AND day_email_stop_links.expires_at > ?2';
 
-export async function stopLinkLanguage({
+export type StopLinkOwner = { language: Language | null };
+
+export async function stopLinkOwner({
   directory,
   digest,
   now,
@@ -150,10 +152,10 @@ export async function stopLinkLanguage({
   directory: D1Database;
   digest: string;
   now: number;
-}): Promise<Language | null> {
+}): Promise<StopLinkOwner | null> {
   const row = await directory.prepare(LIVE_STOP_LINK_LANGUAGE).bind(digest, now).first<{ language: string }>();
   if (row === null) return null;
-  return ownerLanguageOf(row.language);
+  return { language: languageOfValue({ value: row.language }) };
 }
 
 export async function stopDayEmail({ directory, digest, now }: { directory: D1Database; digest: string; now: number }): Promise<boolean> {

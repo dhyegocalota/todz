@@ -3,7 +3,7 @@ import { Theme } from './page-preferences';
 
 export type PageAppearance = { language: Language; theme: Theme };
 
-const SYSTEM_COLOR_SCHEME = 'light dark';
+export const SYSTEM_COLOR_SCHEME = 'light dark';
 
 export const PAGE_THEME_STYLE = `:root[data-theme=light]{color-scheme:light}
 :root[data-theme=dark]{color-scheme:dark}`;

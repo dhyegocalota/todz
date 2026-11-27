@@ -155,6 +155,7 @@ ${backLinkHtml(copy)}`,
 
 function cardDocumentHtml({ card, copy, preferences }: { card: Card; copy: AdminCopy; preferences: PagePreferences }): string {
   return siteDocumentHtml({
+    hasControls: true,
     kind: SitePageKind.Private,
     title: card.documentTitle,
     description: copy.meta.description,

@@ -13,6 +13,16 @@ const PAGE_BACKGROUND: Record<Theme.Light | Theme.Dark, string> = { [Theme.Light
 const ALTERNATE_PATTERN = /<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g;
 const OTHER_LANGUAGES = Object.values(Language).filter((language) => language !== Language.English);
 
+function baseUrlOf(baseURL: string | undefined): string {
+  if (baseURL === undefined) throw new Error('the project has a base URL');
+  return baseURL;
+}
+
+function attributeOf(value: string | undefined): string {
+  if (value === undefined) throw new Error('the link carries the attribute');
+  return value;
+}
+
 function urlPatternOf(path: string): RegExp {
   return new RegExp(`${path.replace('/', '\\/')}$`);
 }
@@ -99,7 +109,7 @@ test.describe('the theme', () => {
     ] as const) {
       test(`paints ${theme} against a ${operatingSystemScheme} system with no script at all`, async ({ browser, baseURL }) => {
         const context = await browser.newContext({ javaScriptEnabled: false, colorScheme: operatingSystemScheme });
-        await context.addCookies([{ name: PreferenceCookie.Theme, value: theme, url: baseURL ?? '' }]);
+        await context.addCookies([{ name: PreferenceCookie.Theme, value: theme, url: baseUrlOf(baseURL) }]);
         const page = await context.newPage();
         await page.goto(LANDING_PATH);
         await expect(page.locator('html')).toHaveCSS('color-scheme', theme);
@@ -116,7 +126,7 @@ test.describe('the theme', () => {
     ] as const) {
       test(`${theme} wins over a ${operatingSystemScheme} system on the first paint`, async ({ browser, baseURL }) => {
         const context = await browser.newContext({ colorScheme: operatingSystemScheme });
-        await context.addCookies([{ name: PreferenceCookie.Theme, value: theme, url: baseURL ?? '' }]);
+        await context.addCookies([{ name: PreferenceCookie.Theme, value: theme, url: baseUrlOf(baseURL) }]);
         const page = await context.newPage();
         await page.addInitScript(() => {
           document.addEventListener('DOMContentLoaded', () => {
@@ -166,9 +176,18 @@ test.describe('the theme', () => {
       await expect(page.locator('html')).toHaveAttribute('data-theme', Theme.Dark);
       await expect(page.locator('meta[name=color-scheme]')).toHaveAttribute('content', Theme.Dark);
       expect(await page.evaluate(() => (window as unknown as { stillHere?: boolean }).stillHere)).toBe(true);
+      await expect(page.locator('meta[name=theme-color]')).toHaveCount(1);
+      await expect(page.locator('meta[name=theme-color]')).toHaveAttribute('content', DARK_PAGE_COLOR);
+      await expect(page.locator('[data-theme-source]')).toHaveAttribute('media', '');
+      await page.locator('.theme-option[value=light]').click();
+      await expect(page.locator('meta[name=theme-color]')).toHaveAttribute('content', LIGHT_PAGE_COLOR);
+      await expect(page.locator('[data-theme-source]')).toHaveAttribute('media', 'not all');
+      await page.locator('.theme-option[value=dark]').click();
       await page.reload();
       await expect(page.locator('html')).toHaveAttribute('data-theme', Theme.Dark);
       await page.locator('.theme-option[value=system]').click();
+      await expect(page.locator('meta[name=theme-color]')).toHaveCount(2);
+      await expect(page.locator('[data-theme-source]')).toHaveAttribute('media', '(prefers-color-scheme: dark)');
       await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.+/);
       await page.reload();
       await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.+/);
@@ -179,7 +198,10 @@ test.describe('the theme', () => {
 test.describe('hreflang', () => {
   test('the alternates of the landing resolve to pages in their own language', async ({ page, request, baseURL }) => {
     const html = await (await request.get(LANDING_PATH)).text();
-    const alternates = [...html.matchAll(ALTERNATE_PATTERN)].map(([, hreflang, href]) => ({ hreflang: hreflang ?? '', href: href ?? '' }));
+    const alternates = [...html.matchAll(ALTERNATE_PATTERN)].map(([, hreflang, href]) => ({
+      hreflang: attributeOf(hreflang),
+      href: attributeOf(href),
+    }));
     expect(alternates).toHaveLength(Object.values(Language).length + 1);
     for (const { hreflang, href } of alternates) {
       const isDefault = hreflang === 'x-default';

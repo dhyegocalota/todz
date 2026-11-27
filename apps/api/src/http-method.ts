@@ -5,3 +5,5 @@ export enum HttpMethod {
   Patch = 'PATCH',
   Delete = 'DELETE',
 }
+
+export const READ_METHODS: string[] = [HttpMethod.Get, HttpMethod.Head];

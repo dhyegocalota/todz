@@ -17,6 +17,7 @@ export const HEALTH_SERVICE_NAME = 'todz';
 export const MINIMUM_APP_VERSION = '0.2.4';
 export const API_VERSION_HEADER = 'Todz-Api-Version';
 export const APP_VERSION_HEADER = 'Todz-App-Version';
+export const LANGUAGE_REPORTING_APP_VERSION = '0.2.9';
 export const LIST_LIMIT_DEFAULT = 20;
 export const SIGN_IN_RATE_LIMIT_MAX = 10;
 export const SIGN_IN_RATE_LIMIT_PERIOD_SECONDS = SECONDS_PER_MINUTE;

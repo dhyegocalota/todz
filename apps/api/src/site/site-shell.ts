@@ -5,7 +5,8 @@ import { LANDING_COPY_BY_LANGUAGE } from './landing-copy';
 import { languageMenuHtml, themeFormHtml } from './site-controls';
 import { publicPathOf } from './language-paths';
 import { SITE_GLYPH_SPRITE, SiteGlyph, glyphHtml } from './site-glyphs';
-import { DARK_THEME_COLOR } from './site-constants';
+import { THEME_COLOR_METAS } from './site-constants';
+import { colorSchemeMetaOf, htmlTagOf } from '../standalone-page';
 import { OPEN_GRAPH_IMAGE, SITE_ICONS, SiteIcon } from './site-icons';
 import { SITE_STYLE } from './site-style';
 import { SWITCH_SCRIPT } from './site-switch-script';
@@ -13,18 +14,23 @@ import { starPillHtml } from './star-pill';
 import { CONTENT_ID, DOCS_INSTALL_PAGE, DOCS_SELF_HOST_PAGE, DiscoveryPath, SITE_URL, docsUrlOf, LANDING_PATH } from './site-urls';
 
 export { CONTENT_ID, LANDING_PATH };
-const LIGHT_THEME_COLOR = '#F2F4FA';
 const OPEN_GRAPH_TYPE = 'website';
 const TWITTER_CARD = 'summary_large_image';
 const X_DEFAULT_HREFLANG = 'x-default';
-const SYSTEM_COLOR_SCHEME = 'light dark';
 
 export enum SitePageKind {
   Public = 'public',
   Private = 'private',
 }
 
-type SiteDocumentContent = { title: string; description: string; main: string; scripts: string[]; preferences: PagePreferences };
+type SiteDocumentContent = {
+  title: string;
+  description: string;
+  main: string;
+  scripts: string[];
+  preferences: PagePreferences;
+  hasControls: boolean;
+};
 
 export type SiteDocument =
   | (SiteDocumentContent & { kind: SitePageKind.Public; path: string; structuredData: string; stars: number | null })
@@ -39,7 +45,12 @@ function brandHtml(language: Language): string {
   return `<a class="brand" href="${homePathOf(language)}" aria-label="${escapedHtml(shell.homeLabel)}">${glyphHtml({ glyph: SiteGlyph.Icon, className: 'brand-icon' })}<span class="wordmark">${escapedHtml(shell.wordmark)}</span></a>`;
 }
 
-function headerHtml(preferences: PagePreferences): string {
+function controlsHtml({ preferences, hasControls }: { preferences: PagePreferences; hasControls: boolean }): string {
+  if (!hasControls) return '';
+  return `${languageMenuHtml(preferences)}\n${themeFormHtml(preferences)}\n`;
+}
+
+function headerHtml({ preferences, hasControls }: { preferences: PagePreferences; hasControls: boolean }): string {
   const { language } = preferences;
   const { shell } = LANDING_COPY_BY_LANGUAGE[language];
   return `<header class="site-header">
@@ -48,9 +59,7 @@ ${brandHtml(language)}
 <nav class="site-nav" aria-label="${escapedHtml(shell.navLabel)}">
 <a class="nav-link" href="${docsUrlOf({ language, page: DOCS_SELF_HOST_PAGE })}"><span class="label-long">${escapedHtml(shell.selfHostLink)}</span><span class="label-short">${escapedHtml(shell.selfHostLinkShort)}</span></a>
 <a class="nav-link" href="${docsUrlOf({ language, page: DOCS_INSTALL_PAGE })}"><span class="label-long">${escapedHtml(shell.installLink)}</span><span class="label-short">${escapedHtml(shell.installLinkShort)}</span></a>
-${languageMenuHtml(preferences)}
-${themeFormHtml(preferences)}
-</nav>
+${controlsHtml({ preferences, hasControls })}</nav>
 </div>
 </header>`;
 }
@@ -158,35 +167,26 @@ function pageHeadHtml(document: SiteDocument): string {
   return `${alternateLinksHtml(document.alternatePath)}\n`;
 }
 
-function themeAttributeOf(theme: Theme): string {
-  if (theme === Theme.System) return '';
-  return ` data-theme="${theme}"`;
-}
-
-function colorSchemeOf(theme: Theme): string {
-  if (theme === Theme.System) return SYSTEM_COLOR_SCHEME;
-  return theme;
-}
-
 function themeColorHtml(theme: Theme): string {
-  const lightColor = `<meta name="theme-color" content="${LIGHT_THEME_COLOR}" media="(prefers-color-scheme: light)">`;
-  const darkColor = `<meta name="theme-color" content="${DARK_THEME_COLOR}" media="(prefers-color-scheme: dark)">`;
-  if (theme === Theme.Light) return `<meta name="theme-color" content="${LIGHT_THEME_COLOR}">`;
-  if (theme === Theme.Dark) return `<meta name="theme-color" content="${DARK_THEME_COLOR}">`;
-  return `${lightColor}\n${darkColor}`;
+  return THEME_COLOR_METAS[theme]
+    .map(({ content, media }) => {
+      const mediaAttribute = media === '' ? '' : ` media="${media}"`;
+      return `<meta name="theme-color" content="${content}"${mediaAttribute}>`;
+    })
+    .join('\n');
 }
 
 export function siteDocumentHtml(document: SiteDocument): string {
-  const { title, description, main, scripts, preferences } = document;
+  const { title, description, main, scripts, preferences, hasControls } = document;
   const { language, theme } = preferences;
   return `<!doctype html>
-<html lang="${LANGUAGE_PROFILES[language].htmlLang}"${themeAttributeOf(theme)}>
+${htmlTagOf(preferences)}
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapedHtml(title)}</title>
 <meta name="description" content="${escapedHtml(description)}">
-<meta name="color-scheme" content="${colorSchemeOf(theme)}">
+${colorSchemeMetaOf(theme)}
 ${themeColorHtml(theme)}
 ${iconLinksHtml()}
 ${pageHeadHtml(document)}<style>${SITE_STYLE}</style>
@@ -194,7 +194,7 @@ ${pageHeadHtml(document)}<style>${SITE_STYLE}</style>
 <body>
 ${SITE_GLYPH_SPRITE}
 <a class="skip-link" href="#${CONTENT_ID}">${escapedHtml(LANDING_COPY_BY_LANGUAGE[language].shell.skipLink)}</a>
-${headerHtml(preferences)}
+${headerHtml({ preferences, hasControls })}
 ${main}
 ${footerHtml(document)}${scriptsHtml(scripts)}
 </body>

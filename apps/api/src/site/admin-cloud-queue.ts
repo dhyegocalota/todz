@@ -64,6 +64,7 @@ function queueHtml({ waiting, notices, request }: { waiting: QueuedAddress[]; no
   const copy = ADMIN_COPY_BY_LANGUAGE[preferences.language];
   const { cloudQueue, panel } = copy;
   return siteDocumentHtml({
+    hasControls: true,
     kind: SitePageKind.Private,
     title: cloudQueue.title,
     description: copy.meta.description,

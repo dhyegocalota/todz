@@ -1,4 +1,5 @@
 import type { Language } from '@todz/types';
+import { languageOfValue } from './language-negotiation';
 import { digestCredential } from './credential-digest';
 import {
   type GrantProjectRecord,
@@ -9,7 +10,6 @@ import {
   findSessionProject,
 } from './directory';
 import { findCandidateRows, findFirstInboxId } from './day-email/day-email-store';
-import { ownerLanguageOf } from './directory-owners';
 import {
   findOwnedWorkspace,
   findWorkspaceProject,
@@ -46,7 +46,6 @@ export type GrantProject = {
 type CheckedProject = { projectId: string; ownedProjectId: string | null };
 
 const resolvedOwners = new WeakSet<SessionOwner>();
-const storedLanguages = new WeakMap<SessionOwner, Language>();
 const checkedProjects = new WeakMap<SessionOwner, CheckedProject>();
 
 function isBlankSecret(secret: unknown): boolean {
@@ -135,18 +134,6 @@ export async function openOAuthAccess({ env, secret, now }: { env: Env; secret: 
   };
 }
 
-function sessionOwnerOf(record: SessionOwnerRecord): SessionOwner {
-  const owner = resolvedOwnerOf(record);
-  storedLanguages.set(owner, record.language);
-  return owner;
-}
-
-export function storedLanguageOf({ owner }: { owner: SessionOwner }): Language {
-  const language = storedLanguages.get(owner);
-  if (language === undefined) throw new Error('a session owner carries the language it was stored with');
-  return language;
-}
-
 export async function resolveSessionOwner({
   env,
   secret,
@@ -163,11 +150,11 @@ export async function resolveSessionOwner({
   if (projectId === undefined) {
     const sessionOwner = await findSessionOwner({ directory: env.DIRECTORY, digest, now });
     if (sessionOwner === null) return null;
-    return sessionOwnerOf(sessionOwner);
+    return resolvedOwnerOf(sessionOwner);
   }
   const sessionProject = await findSessionProject({ directory: env.DIRECTORY, digest, projectId, now });
   if (sessionProject === null) return null;
-  const owner = sessionOwnerOf(sessionProject);
+  const owner = resolvedOwnerOf(sessionProject);
   checkedProjects.set(owner, { projectId, ownedProjectId: sessionProject.ownedProjectId });
   return owner;
 }
@@ -249,7 +236,7 @@ export type ScheduledProject = { record: ProjectRecord; project: DurableObjectSt
 
 export type ScheduledWorkspace = { workspace: WorkspaceRecord; projects: ScheduledProject[] };
 
-export type DayEmailCandidate = { owner: ScheduledOwner; timeZone: string; minutes: number; address: string; language: Language };
+export type DayEmailCandidate = { owner: ScheduledOwner; timeZone: string; minutes: number; address: string; language: Language | null };
 
 const scheduledOwners = new WeakSet<ScheduledOwner>();
 
@@ -267,7 +254,7 @@ export async function listDayEmailCandidates({ env, now }: { env: Env; now: numb
     timeZone: row.time_zone,
     minutes: row.day_email_minutes,
     address: row.address,
-    language: ownerLanguageOf(row.language),
+    language: languageOfValue({ value: row.language }),
   }));
 }
 

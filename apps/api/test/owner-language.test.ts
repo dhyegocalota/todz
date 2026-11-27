@@ -1,4 +1,4 @@
-import { LANGUAGE_PROFILES, Language } from '@todz/types';
+import { LANGUAGE_PROFILES, Language, MINIMUM_APP_VERSION } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { findOwner } from '../src/directory-owners';
@@ -25,6 +25,9 @@ const SIGN_IN_TOKEN = TURNSTILE_TOKEN_OF_ACTION[TurnstileAction.SignIn];
 const SIGNUPS_PER_CLIENT = '1000';
 const UPDATE_LANGUAGE_PATTERN = /^UPDATE owners SET.*language/s;
 const CORRUPT_LANGUAGE = 'xx';
+const APP_VERSION_HEADER = 'Todz-App-Version';
+const LANGUAGE_REPORTING_VERSION = '0.2.9';
+const OLDER_VERSION = '0.2.8';
 const UNSUPPORTED_RANGE = 'tlh-KX, xx;q=0.5';
 
 type LanguageRow = { language: string };
@@ -36,15 +39,23 @@ async function storedLanguageOf(ownerId: string): Promise<string> {
   return row.language;
 }
 
+function languageHeadersOf({ acceptLanguage, appVersion }: { acceptLanguage?: string; appVersion?: string }): Record<string, string> {
+  const languageHeaders: Record<string, string> = acceptLanguage === undefined ? {} : { [ACCEPT_LANGUAGE]: acceptLanguage };
+  if (appVersion === undefined) return languageHeaders;
+  return { ...languageHeaders, [APP_VERSION_HEADER]: appVersion };
+}
+
 async function signInWith({
   identityToken = crypto.randomUUID(),
   acceptLanguage,
+  appVersion = LANGUAGE_REPORTING_VERSION,
 }: {
   identityToken?: string;
   acceptLanguage?: string;
+  appVersion?: string;
 }): Promise<SignedIn> {
   const call = signInCall({ identityToken, timeZone: 'UTC' });
-  const headers: Record<string, string> = acceptLanguage === undefined ? {} : { [ACCEPT_LANGUAGE]: acceptLanguage };
+  const headers = languageHeadersOf({ acceptLanguage, appVersion });
   const response = await serveOwnerCall({ call: { ...call, headers }, now: CLOCK_NOW });
   const answer = await response.json<{ session_token: string; owner: { id: string } }>();
   return { ownerId: answer.owner.id, token: answer.session_token };
@@ -53,19 +64,29 @@ async function signInWith({
 async function readOwnerWith({
   token,
   acceptLanguage,
+  appVersion = LANGUAGE_REPORTING_VERSION,
   workerEnv,
 }: {
   token: string;
   acceptLanguage?: string;
+  appVersion?: string;
   workerEnv?: ReturnType<typeof recordingEnv>['workerEnv'];
 }): Promise<Response> {
-  const headers: Record<string, string> = acceptLanguage === undefined ? {} : { [ACCEPT_LANGUAGE]: acceptLanguage };
+  const headers = languageHeadersOf({ acceptLanguage, appVersion });
   return serveOwnerCall({ call: { method: 'GET', path: '/owner', token, headers }, now: CLOCK_NOW, workerEnv });
 }
 
-async function languageUpdatesOf({ token, acceptLanguage }: { token: string; acceptLanguage?: string }): Promise<number> {
+async function languageUpdatesOf({
+  token,
+  acceptLanguage,
+  appVersion,
+}: {
+  token: string;
+  acceptLanguage?: string;
+  appVersion?: string;
+}): Promise<number> {
   const { workerEnv, statements } = recordingEnv();
-  const response = await readOwnerWith({ token, acceptLanguage, workerEnv });
+  const response = await readOwnerWith({ token, acceptLanguage, appVersion, workerEnv });
   expect(response.status).toBe(200);
   return statements.filter((statement) => UPDATE_LANGUAGE_PATTERN.test(statement)).length;
 }
@@ -102,6 +123,13 @@ describe('the language of a known owner at sign-in', () => {
     await signInWith({ identityToken, acceptLanguage });
     expect(await storedLanguageOf(first.ownerId)).toBe(Language.Korean);
   });
+
+  test.each([OLDER_VERSION, MINIMUM_APP_VERSION])('stays when an app of version %s signs in with English', async (appVersion) => {
+    const identityToken = crypto.randomUUID();
+    const first = await signInWith({ identityToken, acceptLanguage: 'ko' });
+    await signInWith({ identityToken, acceptLanguage: 'en', appVersion });
+    expect(await storedLanguageOf(first.ownerId)).toBe(Language.Korean);
+  });
 });
 
 describe('the language of an authenticated owner request', () => {
@@ -109,8 +137,34 @@ describe('the language of an authenticated owner request', () => {
     const owner = await signInWith({ acceptLanguage: 'pt-BR' });
     expect(await languageUpdatesOf({ token: owner.token, acceptLanguage: 'de' })).toBe(1);
     expect(await storedLanguageOf(owner.ownerId)).toBe(Language.German);
-    expect(await languageUpdatesOf({ token: owner.token, acceptLanguage: 'de-AT,de;q=0.9' })).toBe(0);
+    expect(await languageUpdatesOf({ token: owner.token, acceptLanguage: 'de-AT,de;q=0.9' })).toBeLessThanOrEqual(1);
     expect(await storedLanguageOf(owner.ownerId)).toBe(Language.German);
+  });
+
+  test.each([OLDER_VERSION, MINIMUM_APP_VERSION])('an app of version %s never overwrites it', async (appVersion) => {
+    const owner = await signInWith({ acceptLanguage: 'ko' });
+    expect(await languageUpdatesOf({ token: owner.token, acceptLanguage: 'en', appVersion })).toBe(0);
+    expect(await storedLanguageOf(owner.ownerId)).toBe(Language.Korean);
+  });
+
+  test('a request with no app version never overwrites it', async () => {
+    const owner = await signInWith({ acceptLanguage: 'ko' });
+    const { workerEnv, statements } = recordingEnv();
+    const response = await serveOwnerCall({
+      call: { method: 'GET', path: '/owner', token: owner.token, headers: { [ACCEPT_LANGUAGE]: 'en' } },
+      now: CLOCK_NOW,
+      workerEnv,
+    });
+    expect(response.status).toBe(200);
+    expect(statements.filter((statement) => UPDATE_LANGUAGE_PATTERN.test(statement))).toEqual([]);
+    expect(await storedLanguageOf(owner.ownerId)).toBe(Language.Korean);
+  });
+
+  test('version 0.2.9 and a later one update it', async () => {
+    const owner = await signInWith({ acceptLanguage: 'ko' });
+    await readOwnerWith({ token: owner.token, acceptLanguage: 'fr', appVersion: '0.2.9' });
+    await readOwnerWith({ token: owner.token, acceptLanguage: 'ja', appVersion: '0.3.0' });
+    expect(await storedLanguageOf(owner.ownerId)).toBe(Language.Japanese);
   });
 
   test.each([
@@ -124,10 +178,18 @@ describe('the language of an authenticated owner request', () => {
 });
 
 describe('a stored language outside the enum', () => {
-  test('is refused when the owner is read', async () => {
+  test('never fails a request or a read of the owner', async () => {
     const owner = await signInWith({ acceptLanguage: 'en' });
     await env.DIRECTORY.prepare('UPDATE owners SET language = ? WHERE id = ?').bind(CORRUPT_LANGUAGE, owner.ownerId).run();
-    await expect(findOwner({ directory: env.DIRECTORY, ownerId: owner.ownerId })).rejects.toThrow(CORRUPT_LANGUAGE);
+    expect((await readOwnerWith({ token: owner.token })).status).toBe(200);
+    expect(await findOwner({ directory: env.DIRECTORY, ownerId: owner.ownerId })).not.toBeNull();
+  });
+
+  test('is repaired by a language-reporting app', async () => {
+    const owner = await signInWith({ acceptLanguage: 'en' });
+    await env.DIRECTORY.prepare('UPDATE owners SET language = ? WHERE id = ?').bind(CORRUPT_LANGUAGE, owner.ownerId).run();
+    await readOwnerWith({ token: owner.token, acceptLanguage: 'de' });
+    expect(await storedLanguageOf(owner.ownerId)).toBe(Language.German);
   });
 });
 
@@ -174,6 +236,21 @@ describe('the day mail', () => {
     await env.DIRECTORY.prepare('UPDATE owners SET language = ? WHERE id = ?').bind(Language.German, owner.ownerId).run();
     const candidates = await listDayEmailCandidates({ env, now: Date.now() });
     expect(candidates.find((candidate) => candidate.owner.ownerId === owner.ownerId)?.language).toBe(Language.German);
+  });
+
+  test('skips the owner of an unsupported stored value, logs the reason without the address, and mails the others', async () => {
+    const broken = await seedDayOwner();
+    const healthy = await seedDayOwner();
+    await env.DIRECTORY.prepare('UPDATE owners SET language = ? WHERE id = ?').bind(CORRUPT_LANGUAGE, broken.ownerId).run();
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const recording = recordingBinding();
+    await tick({ recording });
+    const logged = log.mock.calls.map(([line]) => String(line)).join('\n');
+    expect(logged).toContain('day_email_language_unsupported');
+    expect(logged).not.toContain(broken.address);
+    expect(recording.sent.filter(({ to }) => to === broken.address)).toEqual([]);
+    expect(mailTo({ recording, address: healthy.address }).html).toContain('lang="en"');
+    log.mockRestore();
   });
 
   test('is sent in the stored language of the owner', async () => {

@@ -111,6 +111,7 @@ function metricsHtml({ series, request }: { series: MetricSeries[]; request: Req
   const tiles = series.map((tile) => tileHtml({ series: tile, copy })).join('\n');
   const listing = series.length === 0 ? emptyHtml(copy) : `<dl class="stat-list">\n${tiles}\n</dl>`;
   return siteDocumentHtml({
+    hasControls: true,
     kind: SitePageKind.Private,
     title: copy.meta.metricsTitle,
     description: copy.meta.description,

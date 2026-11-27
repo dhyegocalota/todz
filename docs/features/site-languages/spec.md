@@ -16,15 +16,15 @@ The website, its private pages and the mails exist in English only, and they fol
 - One URL per language for the public pages: `/`, `/pt-br/`, `/es/`, `/de/`, `/fr/`, `/ja/`, `/ko/`, `/zh/`, and the same prefixes for `/cloud-queue`. The path decides the language of a prefixed page and never redirects; `/pt-br` answers 301 to `/pt-br/`.
 - A first visit to `/` or `/cloud-queue` with no cookie is redirected by `Accept-Language` (q-values honoured, `q=0` refused, `zh-Hant`, `zh-TW`, `zh-HK` and `zh-MO` are not Simplified) and sets the cookie; a cookie naming another language redirects; a crawler is never redirected.
 - Every public page carries `hreflang` for the eight languages and `x-default` to the English URL, its own canonical, `og:locale` and its alternates, a localized JSON-LD, and the sitemap lists every language URL with alternates.
-- A header selector with each language's native name, a no-JS `POST /language` that is same-origin only and answers 303 to the twin page (an unknown `return` goes to the language home, never off the host), and the same selector on the admin, OAuth, sign-in, cloud queue and day-email stop pages, which take the cookie, then `Accept-Language`, then English.
-- A System, Light and Dark theme cookie rendered by the server (`data-theme` and `color-scheme`), a no-JS `POST /theme` and a segmented control next to the selector on every page with the site shell.
-- Every mail is generated per language and sent in the language of the app's `Accept-Language`, of the page that asked, or of `owners.language` (migration `0019_owner_language.sql`).
+- A header selector with each language's native name, a no-JS `POST /language` that is same-origin only and answers 303 to the twin page (an unknown `return` goes to the language home, never off the host), the same selector on the admin sign-in card, the OAuth sign-in and consent pages and the cloud queue page, and none on a page that answers a POST or carries a token (the sign-in, challenge, day-email stop, magic-link and OAuth return, approved, inbox and refusal pages). Every private page takes the cookie, then `Accept-Language`, then English; the stop page takes the owner's stored language first.
+- A System, Light and Dark theme cookie rendered by the server (`data-theme` and `color-scheme`), a no-JS `POST /theme` and a segmented control next to the selector on every page that shows the selector.
+- Every mail is generated per language and sent in the language of the app's `Accept-Language`, of the page that asked, or of `owners.language` (migration `0019_owner_language.sql`), which only an app at version 0.2.9 or later, the first to send its real language, may change.
 - Copy per module in `*-copy-<language>.ts` files assembled into `Record<Language, …>`, with completeness tests on every module.
 
 ## Non-goals
 
 - The docs in eight languages and the Mac app's string catalog (sibling lanes, ADR 0119 to 0121).
-- Translating `llms.txt`, the MCP tools, the fair-use API messages and the admin-only mails.
+- Translating `llms.txt`, the MCP tools and their output (the mock agent replies of the landing included), the fair-use API messages, and the cloud capacity warning, fallback and digest mails and the queue invite, which are for the admin or carry no stored language. The admin sign-in mail is translated.
 
 ## Design
 

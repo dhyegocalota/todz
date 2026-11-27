@@ -69,6 +69,7 @@ function usageHtml({
   const copy = ADMIN_COPY_BY_LANGUAGE[preferences.language];
   const { usage, panel } = copy;
   return siteDocumentHtml({
+    hasControls: true,
     kind: SitePageKind.Private,
     title: usage.title,
     description: copy.meta.description,

@@ -104,6 +104,7 @@ ${bodyHtml}${selfHostHtml(language)}
 function documentHtml({ content, preferences }: { content: string; preferences: PagePreferences }): string {
   const { queuePage } = CLOUD_PAGE_COPY_BY_LANGUAGE[preferences.language];
   return siteDocumentHtml({
+    hasControls: true,
     kind: SitePageKind.Private,
     title: queuePage.title,
     description: queuePage.lead,

@@ -5,7 +5,7 @@ import { enumValueOf } from './enum-value';
 import type { OwnerRecord } from './owner-records';
 import { SignInProviderKind } from './sign-in-provider';
 
-const OWNER_COLUMNS = 'id, time_zone, agent_nudge, day_email, day_email_minutes, language';
+const OWNER_COLUMNS = 'id, time_zone, agent_nudge, day_email, day_email_minutes';
 
 const INSERT_OWNER = 'INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at, language) VALUES (?1, ?2, ?3, ?4, ?5, ?6)';
 const INSERT_OWNER_WITHIN_CAP = `INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at, language)
@@ -23,10 +23,10 @@ const UPDATE_OWNER_STATEMENT = `UPDATE owners SET time_zone = COALESCE(?1, time_
   agent_nudge_chosen_at = CASE WHEN ?2 IS NULL THEN agent_nudge_chosen_at ELSE ?5 END,
   day_email_chosen_at = CASE WHEN ?3 IS NULL THEN day_email_chosen_at ELSE ?5 END
 WHERE id = ?6 RETURNING ${OWNER_COLUMNS}`;
-const UPDATE_OWNER_LANGUAGE_STATEMENT = 'UPDATE owners SET language = ?1 WHERE id = ?2';
+const UPDATE_OWNER_LANGUAGE_STATEMENT = 'UPDATE owners SET language = ?1 WHERE id = ?2 AND language <> ?1';
 
 type IdentityRow = { owner_id: string };
-type OwnerRow = { id: string; time_zone: string; agent_nudge: number; day_email: number; day_email_minutes: number; language: string };
+type OwnerRow = { id: string; time_zone: string; agent_nudge: number; day_email: number; day_email_minutes: number };
 
 export async function findIdentityOwner({
   directory,
@@ -84,12 +84,6 @@ function flagOf(flag: boolean | null): number | null {
   return Number(flag);
 }
 
-export function ownerLanguageOf(stored: string): Language {
-  const language = enumValueOf({ enumeration: Language, candidate: stored });
-  if (language === null) throw new Error(`a stored owner language is not supported: ${stored}`);
-  return language;
-}
-
 function ownerRecordOf(row: OwnerRow): OwnerRecord {
   return {
     id: row.id,
@@ -97,7 +91,6 @@ function ownerRecordOf(row: OwnerRow): OwnerRecord {
     agentNudge: row.agent_nudge === 1,
     dayEmail: row.day_email === 1,
     dayEmailMinutes: row.day_email_minutes,
-    language: ownerLanguageOf(row.language),
   };
 }
 

@@ -9,6 +9,7 @@ import type { Env } from './env';
 import { HttpHeader } from './http-header';
 import { HttpStatus } from './http-status';
 import { languageOfAcceptLanguage, supportedLanguageOfAcceptLanguage } from './language-negotiation';
+import { isLanguageReportingApp } from './owner-language';
 import { OwnerErrorCode, cloudFullResponse, errorResponse } from './owner-errors';
 import { ownerJson } from './owner-json';
 import type { OwnerRecord } from './owner-records';
@@ -112,7 +113,6 @@ async function identityOwner({
         agentNudge: AGENT_NUDGE_BY_DEFAULT,
         dayEmail: DAY_EMAIL_BY_DEFAULT,
         dayEmailMinutes: DAY_EMAIL_MINUTES_DEFAULT,
-        language: newOwnerLanguage,
       },
       isNewOwner: true,
     };
@@ -204,7 +204,7 @@ export async function admittedOwner({
     kind,
     subject,
     timeZone,
-    supportedLanguage: supportedLanguageOfAcceptLanguage({ acceptLanguage }),
+    supportedLanguage: isLanguageReportingApp({ request }) ? supportedLanguageOfAcceptLanguage({ acceptLanguage }) : null,
     newOwnerLanguage: languageOfAcceptLanguage({ acceptLanguage }),
     now,
     cap,
@@ -213,6 +213,8 @@ export async function admittedOwner({
   const { owner, isNewOwner } = identity;
   const isWelcomedOwner = isNewOwner && kind === SignInProviderKind.Email;
   if (isWelcomedOwner)
-    executionContext.waitUntil(sendWelcome({ request, env, address: subject, language: owner.language }).catch(() => undefined));
+    executionContext.waitUntil(
+      sendWelcome({ request, env, address: subject, language: languageOfAcceptLanguage({ acceptLanguage }) }).catch(() => undefined),
+    );
   return owner;
 }

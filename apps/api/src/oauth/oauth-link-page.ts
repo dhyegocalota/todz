@@ -79,6 +79,7 @@ const LINK_PAGES = new Map<Language, LinkPage>(await Promise.all(Object.values(L
 
 function linkPageHtml({ request, script, copy }: { request: Request; script: string; copy: OAuthCopy }): string {
   return siteDocumentHtml({
+    hasControls: false,
     kind: SitePageKind.Private,
     title: copy.meta.linkTitle,
     description: copy.meta.description,

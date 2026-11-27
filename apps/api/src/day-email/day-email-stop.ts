@@ -7,7 +7,7 @@ import { HttpMethod } from '../http-method';
 import { HttpStatus } from '../http-status';
 import { LimitRefusal, limitRefusal } from '../limit-refusal';
 import { isLocalHost } from '../local-origin';
-import { stopDayEmail, stopLinkLanguage } from './day-email-store';
+import { stopDayEmail, stopLinkOwner } from './day-email-store';
 import { StopPageKind, stopPageResponse } from './day-email-stop-page';
 import { DAY_EMAIL_STOP_PATH, DAY_EMAIL_STOP_TOKEN_PARAMETER } from './day-email-stop-url';
 
@@ -54,15 +54,16 @@ async function limitedResponse({ request, env }: StopContext): Promise<Response 
 }
 
 async function confirmPage({ request, env, digest, now }: TokenContext): Promise<Response> {
-  const ownerLanguage = await stopLinkLanguage({ directory: env.DIRECTORY, digest, now });
-  if (ownerLanguage === null) return goneResponse(request);
-  return stopPageResponse({ request, kind: StopPageKind.Confirm, status: HttpStatus.Ok, ownerLanguage });
+  const stopOwner = await stopLinkOwner({ directory: env.DIRECTORY, digest, now });
+  if (stopOwner === null) return goneResponse(request);
+  return stopPageResponse({ request, kind: StopPageKind.Confirm, status: HttpStatus.Ok, ownerLanguage: stopOwner.language });
 }
 
 async function stopMail({ request, env, digest, now }: TokenContext): Promise<Response> {
-  const ownerLanguage = await stopLinkLanguage({ directory: env.DIRECTORY, digest, now });
+  const stopOwner = await stopLinkOwner({ directory: env.DIRECTORY, digest, now });
   if (!(await stopDayEmail({ directory: env.DIRECTORY, digest, now }))) return goneResponse(request);
-  return stopPageResponse({ request, kind: StopPageKind.Done, status: HttpStatus.Ok, ownerLanguage });
+  if (stopOwner === null) return goneResponse(request);
+  return stopPageResponse({ request, kind: StopPageKind.Done, status: HttpStatus.Ok, ownerLanguage: stopOwner.language });
 }
 
 const HANDLER_OF_METHOD: Record<string, TokenHandler> = {

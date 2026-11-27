@@ -105,7 +105,17 @@ function authorizePathOf(params: URLSearchParams): string {
   return `${OAuthPath.Authorize}?${params.toString()}`;
 }
 
-function documentOf({ title, content, page }: { title: string; content: string; page: OAuthPage }): string {
+function documentOf({
+  title,
+  content,
+  page,
+  hasControls,
+}: {
+  title: string;
+  content: string;
+  page: OAuthPage;
+  hasControls: boolean;
+}): string {
   return siteDocumentHtml({
     kind: SitePageKind.Private,
     title,
@@ -113,6 +123,7 @@ function documentOf({ title, content, page }: { title: string; content: string; 
     main: adminCardMainHtml(content),
     scripts: [PAGE_SCRIPT],
     preferences: page.preferences,
+    hasControls,
   });
 }
 
@@ -142,7 +153,7 @@ export function refusalPageOf({ request, refusal }: { request: Request; refusal:
   const { title, body, status } = cardOfRefusal({ refusal, copy: page.copy });
   const bodyHtml = body === null ? '' : `\n<p class="admin-body">${escapedHtml(body)}</p>`;
   return oauthPageAnswerOf({
-    html: documentOf({ title: page.copy.meta.refusedTitle, content: `${answerTitleHtml(title)}${bodyHtml}`, page }),
+    html: documentOf({ title: page.copy.meta.refusedTitle, content: `${answerTitleHtml(title)}${bodyHtml}`, page, hasControls: false }),
     status,
   });
 }
@@ -180,7 +191,7 @@ ${widgetHtml(siteKey)}
 ${noticeHtml(textOfNotice({ notice, copy }))}</form>
 ${TURNSTILE_SCRIPT_TAG}`;
   return oauthPageAnswerOf({
-    html: documentOf({ title: copy.meta.signInTitle, content, page }),
+    html: documentOf({ title: copy.meta.signInTitle, content, page, hasControls: true }),
     status: STATUS_OF_NOTICE[notice],
     policy: CHALLENGE_CONTENT_SECURITY_POLICY,
   });
@@ -193,7 +204,10 @@ export function returnPageOf({ request, clientName, location }: { request: Reque
   const content = `${answerTitleHtml(copy.return.titleOf(clientName))}
 <p class="admin-body">${escapedHtml(copy.return.body)}</p>
 <a class="admin-link" href="${escapedHtml(location)}" ${RETURN_ATTRIBUTE}>${escapedHtml(copy.return.actionOf(clientName))}</a>`;
-  return oauthPageAnswerOf({ html: documentOf({ title: copy.meta.returnTitle, content, page }), status: HttpStatus.Ok });
+  return oauthPageAnswerOf({
+    html: documentOf({ title: copy.meta.returnTitle, content, page, hasControls: false }),
+    status: HttpStatus.Ok,
+  });
 }
 
 export function approvedPageOf({ request, clientName }: { request: Request; clientName: string }): Response {
@@ -201,7 +215,10 @@ export function approvedPageOf({ request, clientName }: { request: Request; clie
   const { copy } = page;
   const content = `${answerTitleHtml(copy.approved.title)}
 <p class="admin-body">${escapedHtml(copy.approved.bodyOf(clientName))}</p>`;
-  return oauthPageAnswerOf({ html: documentOf({ title: copy.meta.approvedTitle, content, page }), status: HttpStatus.Ok });
+  return oauthPageAnswerOf({
+    html: documentOf({ title: copy.meta.approvedTitle, content, page, hasControls: false }),
+    status: HttpStatus.Ok,
+  });
 }
 
 export function inboxPageOf({ request, cookies }: { request: Request; cookies: string[] }): Response {
@@ -209,7 +226,11 @@ export function inboxPageOf({ request, cookies }: { request: Request; cookies: s
   const { copy } = page;
   const content = `${answerTitleHtml(copy.inbox.title)}
 <p class="admin-body">${escapedHtml(copy.inbox.body)}</p>`;
-  return oauthPageAnswerOf({ html: documentOf({ title: copy.meta.inboxTitle, content, page }), status: HttpStatus.Ok, cookies });
+  return oauthPageAnswerOf({
+    html: documentOf({ title: copy.meta.inboxTitle, content, page, hasControls: false }),
+    status: HttpStatus.Ok,
+    cookies,
+  });
 }
 
 function projectChoiceHtml({ id, name, isChecked }: { id: string; name: string; isChecked: boolean }): string {
@@ -292,7 +313,7 @@ ${ownerChoice}
 </div>
 </form>`;
   return oauthPageAnswerOf({
-    html: documentOf({ title: copy.meta.consentTitle, content, page }),
+    html: documentOf({ title: copy.meta.consentTitle, content, page, hasControls: true }),
     status: HttpStatus.Ok,
     policy: withFormOrigin({ policy: CONTENT_SECURITY_POLICY, origin: redirectOriginOf(redirectUri) }),
   });
