@@ -137,25 +137,13 @@
         }
       }
     },
-    "%lld left today in %@. The first %@: %@.": {
+    "%lld left today in %@. The first %lld: %@.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld left today in %@. The first %@: %@."
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld left today in %@. The first %@: %@."
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld left today in %@. The first %lld: %@."
           }
         }
       }
@@ -894,6 +882,17 @@
         }
       }
     },
+    "Change this setting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change this setting"
+          }
+        }
+      }
+    },
     "Changed several details via %@": {
       "extractionState": "manual",
       "localizations": {
@@ -1379,6 +1378,17 @@
         }
       }
     },
+    "Create a workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a workspace"
+          }
+        }
+      }
+    },
     "Creating…": {
       "extractionState": "manual",
       "localizations": {
@@ -1496,6 +1506,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete Workspace…"
+          }
+        }
+      }
+    },
+    "Delete a workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete a workspace"
           }
         }
       }
@@ -2013,6 +2034,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Last one: %@"
+          }
+        }
+      }
+    },
+    "Leave out the path. Enter the server's root address.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave out the path. Enter the server's root address."
           }
         }
       }
@@ -3769,6 +3801,17 @@
         }
       }
     },
+    "Switch workspaces": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch workspaces"
+          }
+        }
+      }
+    },
     "Switched to %@. Sign in from the todz window.": {
       "extractionState": "manual",
       "localizations": {
@@ -3930,17 +3973,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "The Inbox can't be renamed or deleted."
-          }
-        }
-      }
-    },
-    "The address has no path. Enter the server's root address.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The address has no path. Enter the server's root address."
           }
         }
       }
@@ -4973,17 +5005,6 @@
         }
       }
     },
-    "change this setting": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "change this setting"
-          }
-        }
-      }
-    },
     "completed via %@": {
       "extractionState": "manual",
       "localizations": {
@@ -4991,28 +5012,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "completed via %@"
-          }
-        }
-      }
-    },
-    "create a workspace": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "create a workspace"
-          }
-        }
-      }
-    },
-    "delete a workspace": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "delete a workspace"
           }
         }
       }
@@ -5035,17 +5034,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "mac app"
-          }
-        }
-      }
-    },
-    "switch workspaces": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "switch workspaces"
           }
         }
       }

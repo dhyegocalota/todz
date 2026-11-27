@@ -32,7 +32,7 @@ enum ErrorCopy {
     static var serverSchemeMissing: String { Localized.text("Start the address with https://.") }
     static var serverInsecureRemoteHost: String { Localized.text("Use https://. Plain http:// works only for localhost.") }
     static var serverHostMissing: String { Localized.text("Add the server's name after https://.") }
-    static var serverAddressHasPath: String { Localized.text("The address has no path. Enter the server's root address.") }
+    static var serverAddressHasPath: String { Localized.text("Leave out the path. Enter the server's root address.") }
     static var serverAddressHasQuery: String { Localized.text("Remove the part from ? on.") }
     static var serverAddressHasFragment: String { Localized.text("Remove the part from # on.") }
     static var serverAddressHasCredentials: String { Localized.text("Remove the name and password before @.") }

@@ -27,7 +27,7 @@ enum ShortcutsCopy {
 
     static func leftWithFirstTitles(count: Int, workspaceName: String, titles: [String]) -> String {
         let spokenTitles = titles.formatted(.list(type: .and).locale(Localized.locale))
-        return Localized.text("\(count) left today in \(workspaceName). The first \(spokenTitleLimitInWords): \(spokenTitles).")
+        return Localized.text("\(count) left today in \(workspaceName). The first \(ShortcutLimits.spokenTitleLimit): \(spokenTitles).")
     }
 
     static func spoken(for today: ShortcutToday) -> String {
@@ -72,16 +72,6 @@ enum ShortcutsCopy {
 
     private static func withOfflineNotice(_ sentence: String, isOffline: Bool) -> String {
         isOffline ? Localized.text("\(sentence) \(offline)") : sentence
-    }
-
-    private static var spokenTitleLimitInWords: String {
-        let formatter = NumberFormatter()
-        formatter.locale = Localized.locale
-        formatter.numberStyle = .spellOut
-        guard let words = formatter.string(from: NSNumber(value: ShortcutLimits.spokenTitleLimit)) else {
-            preconditionFailure("a whole number always spells out")
-        }
-        return words
     }
 
     private static func spokenSentence(for today: ShortcutToday) -> String {

@@ -14,9 +14,9 @@ const NEUTRAL_SETTINGS_COPY: Record<string, string> = {
   lockUnavailable: 'Set a password for this Mac to turn this on.',
 };
 const NEUTRAL_REASON_COPY: Record<string, string> = {
-  reasonSwitch: 'switch workspaces',
-  reasonTurnOff: 'change this setting',
-  reasonTimeout: 'change this setting',
+  reasonSwitch: 'Switch workspaces',
+  reasonTurnOff: 'Change this setting',
+  reasonTimeout: 'Change this setting',
 };
 
 describe('a locked session reveals nothing', () => {
