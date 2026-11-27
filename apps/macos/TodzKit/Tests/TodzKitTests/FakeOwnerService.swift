@@ -168,6 +168,14 @@ struct StatusFailure: Sendable {
         }
     }
 
+    func deleteTask(session: String, projectIdentifier: String, number: Int, title: String) async throws {
+        try await record(.deleteTask(session: session, projectIdentifier: projectIdentifier, number: number, title: title))
+        let tasks = tasksOfProject[projectIdentifier, default: []]
+        guard let task = tasks.first(where: { $0.number == number }) else { throw OwnerAPIError.taskNotFound(number: number) }
+        guard task.title == title else { throw OwnerAPIError.ruleViolated(issue: .confirmationMismatch, index: nil) }
+        tasksOfProject[projectIdentifier] = tasks.filter { $0.number != number }
+    }
+
     func completeTasks(session: String, projectIdentifier: String, numbers: [Int]) async throws -> [CompletedTask] {
         try await record(.completeTasks(session: session, projectIdentifier: projectIdentifier, numbers: numbers))
         return try numbers.map { number in

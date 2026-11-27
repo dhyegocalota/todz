@@ -6,6 +6,7 @@ public enum AppBanner: Equatable, Sendable {
     case sessionNotSaved
     case inboxIsFixed
     case taskGone
+    case taskChangedBeforeDelete
     case projectGone
     case workspaceGone
     case changesRefused(count: Int)

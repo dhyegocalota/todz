@@ -43,7 +43,7 @@ export const APP_ACTIONS: AppAction[] = [
   projectAction({ action: 'Edit a task title, notes or due date, clear them, and reorder', ownerRoute: 'update_task', tool: 'update' }),
   projectAction({ action: 'Complete tasks', ownerRoute: 'complete_tasks', tool: 'done' }),
   projectAction({ action: 'Reopen a done task', ownerRoute: 'reopen_tasks', tool: 'reopen' }),
-  projectAction({ action: 'Delete a task', ownerRoute: null, tool: 'delete' }),
+  projectAction({ action: 'Delete a task', ownerRoute: 'delete_task', tool: 'delete' }),
   projectAction({ action: 'Move a task to another project of the workspace', ownerRoute: null, tool: 'move' }),
   projectAction({ action: 'See the projects of a workspace', ownerRoute: null, tool: 'projects' }),
   ownerAction({ action: 'List workspaces and their projects', ownerRoute: 'list_workspaces', tool: 'workspaces' }),

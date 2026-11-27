@@ -23,6 +23,11 @@ enum MenuBarCopy {
     static let upNextHelp = "Mark the next task done (⌘↩)"
     static let updateAvailable = "Update available"
     static let newTaskKeycap = "⌘N"
+    static let hiddenItemTitle = "macOS is keeping todz off the menu bar"
+    static let hiddenItemDetail = "Turn on todz under Allow in the Menu Bar, in System Settings › Menu Bar, to see today's count and open the popover."
+    static let hiddenItemOpenSettings = "Open Menu Bar Settings"
+    static let hiddenItemNotNow = "Not Now"
+    static let hiddenItemSuppression = "Don't show this again"
     static let placeholderTitles = ["Send the homepage copy to Sam", "Renew the design tool licence", "Book the launch photo shoot"]
 
     static func progress(done: Int, total: Int) -> String {
