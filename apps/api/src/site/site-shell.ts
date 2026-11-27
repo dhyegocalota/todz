@@ -47,10 +47,10 @@ function brandHtml(language: Language): string {
 
 function controlsHtml({ preferences, hasControls }: { preferences: PagePreferences; hasControls: boolean }): string {
   if (!hasControls) return '';
-  return `${languageMenuHtml(preferences)}\n${themeFormHtml(preferences)}\n`;
+  return `<div class="footer-controls">\n${languageMenuHtml(preferences)}\n${themeFormHtml(preferences)}\n</div>\n`;
 }
 
-function headerHtml({ preferences, hasControls }: { preferences: PagePreferences; hasControls: boolean }): string {
+function headerHtml(preferences: PagePreferences): string {
   const { language } = preferences;
   const { shell } = LANDING_COPY_BY_LANGUAGE[language];
   return `<header class="site-header">
@@ -59,7 +59,7 @@ ${brandHtml(language)}
 <nav class="site-nav" aria-label="${escapedHtml(shell.navLabel)}">
 <a class="nav-link" href="${docsUrlOf({ language, page: DOCS_SELF_HOST_PAGE })}"><span class="label-long">${escapedHtml(shell.selfHostLink)}</span><span class="label-short">${escapedHtml(shell.selfHostLinkShort)}</span></a>
 <a class="nav-link" href="${docsUrlOf({ language, page: DOCS_INSTALL_PAGE })}"><span class="label-long">${escapedHtml(shell.installLink)}</span><span class="label-short">${escapedHtml(shell.installLinkShort)}</span></a>
-${controlsHtml({ preferences, hasControls })}</nav>
+</nav>
 </div>
 </header>`;
 }
@@ -82,7 +82,7 @@ function sourceLinksHtml({ document, language }: { document: SiteDocument; langu
 `;
 }
 
-function footerHtml(document: SiteDocument): string {
+function footerHtml({ document, hasControls }: { document: SiteDocument; hasControls: boolean }): string {
   const { language } = document.preferences;
   const { shell } = LANDING_COPY_BY_LANGUAGE[language];
   return `<footer class="site-footer">
@@ -93,7 +93,7 @@ ${starPillFooterHtml({ document, language })}<div class="footer-links">
 ${sourceLinksHtml({ document, language })}<a class="footer-link" href="${docsUrlOf({ language, page: DOCS_SELF_HOST_PAGE })}">${escapedHtml(shell.footerSelfHost)}</a>
 <a class="footer-link" href="${docsUrlOf({ language, page: DOCS_INSTALL_PAGE })}">${escapedHtml(shell.footerInstall)}</a>
 </div>
-</div>
+${controlsHtml({ preferences: document.preferences, hasControls })}</div>
 </footer>`;
 }
 
@@ -194,9 +194,9 @@ ${pageHeadHtml(document)}<style>${SITE_STYLE}</style>
 <body>
 ${SITE_GLYPH_SPRITE}
 <a class="skip-link" href="#${CONTENT_ID}">${escapedHtml(LANDING_COPY_BY_LANGUAGE[language].shell.skipLink)}</a>
-${headerHtml({ preferences, hasControls })}
+${headerHtml(preferences)}
 ${main}
-${footerHtml(document)}${scriptsHtml(scripts)}
+${footerHtml({ document, hasControls })}${scriptsHtml(scripts)}
 </body>
 </html>
 `;

@@ -28,7 +28,7 @@ const HEADER_INSTALL_LINK = `.site-header .nav-link[href="${DOCS_INSTALL_URL}"]`
 const FOOTER_INSTALL_LINK = `.site-footer .footer-link[href="${DOCS_INSTALL_URL}"]`;
 const MAXIMUM_DARK_CHANNEL = 40;
 const SUBPIXEL_TOLERANCE = 0.5;
-const MAXIMUM_PHONE_FOOTER_HEIGHT = 190;
+const MAXIMUM_PHONE_FOOTER_HEIGHT = 250;
 const MAXIMUM_BLANK_WIDGET_BAND = 48;
 const BLANK_PIXEL_FLOOR = 200;
 const WIDGET_SIDE_MARGIN = 100;
@@ -37,10 +37,6 @@ const KEYBOARD_ORDER = [
   '.site-header .brand',
   HEADER_GUIDE_LINK,
   HEADER_INSTALL_LINK,
-  '.language-summary',
-  '.theme-option[value=system]',
-  '.theme-option[value=light]',
-  '.theme-option[value=dark]',
   '.hero-free-link',
   '.hero .download-button',
 ];
