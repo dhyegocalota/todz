@@ -1,0 +1,70 @@
+---
+title: Espacios de trabajo
+description: Cambia entre espacios de trabajo, muestra varios a la vez, reasigna las teclas, renombra y elimina.
+---
+
+Un espacio de trabajo contiene los proyectos de una empresa y empieza con un Inbox. Cada espacio de trabajo está aislado de los demás.
+
+## Cambiar
+
+Elige un espacio de trabajo en el menú de espacios de trabajo de la ventana, o usa las teclas mientras todz está en primer plano:
+
+| Teclas | Acción |
+| --- | --- |
+| ⌃1 … ⌃9 | Ir al espacio de trabajo 1 … 9, en el orden del menú de espacios de trabajo |
+| ⌃⌘[ | **Espacio de trabajo anterior**, volviendo al último tras el primero |
+| ⌃⌘] | **Espacio de trabajo siguiente**, volviendo al primero tras el último |
+
+Un espacio de trabajo pasado el noveno no tiene tecla propia; llega a él con **Espacio de trabajo anterior** y **Espacio de trabajo siguiente**. Las mismas teclas están en el submenú **Cambiar con Control** del menú de espacios de trabajo. Las teclas ⌘1 … ⌘9 de la lista se mantienen como están.
+
+## Cambiar desde cualquier app
+
+**Cambiar desde cualquier app** está desactivado por defecto, así que las teclas de arriba se quedan con las apps que usas. Actívalo en **Atajos de espacios de trabajo** dentro de todz › Ajustes, y los espacios de trabajo 1 … 9 cambian desde cualquier app con ⌃⌥⌘1 … ⌃⌥⌘9. No necesitan ningún permiso adicional.
+
+- Pulsa **Grabar** en la fila de un espacio de trabajo y luego las teclas nuevas; Escape cancela (**Cancelar**).
+- Mantén dos de ⌃, ⌥ o ⌘ junto con la tecla, o todz la rechaza. Se rechazan las teclas que ya usa otro espacio de trabajo o una de las teclas internas de la app de arriba.
+- Una fila que nunca cambiaste sigue los valores por defecto.
+- todz no puede ver los atajos de otras apps. Registra cada tecla de forma exclusiva: si otra app ya tiene esa tecla de forma exclusiva, la fila muestra **En uso por otra app** y todz no la registra. Si otra app usa la misma tecla de manera ordinaria, ambas pueden responder, así que elige teclas que otras apps no usen; el valor por defecto ⌃⌥⌘ evita las más comunes.
+- Espacio de trabajo anterior y Espacio de trabajo siguiente, y las teclas internas de la app de arriba, no se pueden cambiar en esta versión; reasignarlas volverá en una versión posterior.
+
+<Note>
+  Las teclas internas ⌃1–⌃9 pueden chocar con las teclas Cambiar al escritorio de Mission Control mientras todz está en primer plano. Si ambas están activadas, gana el sistema; desactívalas en Ajustes del Sistema.
+</Note>
+
+## Mostrar varios espacios de trabajo
+
+El menú de espacios de trabajo lista tus espacios de trabajo como interruptores, con **Todos los espacios de trabajo** primero. Elige varios, o todos; todz recuerda la elección en este Mac.
+
+- **Todos los espacios de trabajo** incluye un espacio de trabajo que crees más adelante. Un conjunto que elegiste a mano nunca crece por sí solo.
+- Desactivar el último espacio de trabajo elegido no cambia nada.
+- Un espacio de trabajo que desaparece sale de la selección.
+- Una tecla de espacio de trabajo o el selector del primer inicio selecciona exactamente un espacio de trabajo.
+
+Con dos o más visibles, Hoy, Próximas, Inbox y Hecha son una sola lista ordenada a través de ellos. El recuento de la barra de menús, el popover, los widgets, el cierre del día, el vistazo de la mañana y la cinta muestran la misma unión.
+
+Cada fila lleva la etiqueta de su espacio de trabajo antes que la de su proyecto, como en `Acme · Launch`. Con un solo espacio de trabajo visible no se etiqueta nada. Un widget dibuja la misma etiqueta, y marcar una tarea en un widget la completa en su propio espacio de trabajo.
+
+## Dónde va una tarea nueva
+
+En la unión, una tarea que añades sin nombrar un proyecto (desde la barra de menús, un atajo o el cierre del día) va al Inbox del espacio de trabajo principal: el que se mostraba antes si todavía se muestra, y si no, el primero de la lista. Un proyecto nuevo y las claves de **Conectar un agente** también van al espacio de trabajo principal. Cambiar una tarea siempre escribe en el proyecto al que pertenece.
+
+## Pedir Touch ID para cambiar de espacio de trabajo
+
+todz › Ajustes › Privacidad y actualizaciones tiene **Pedir Touch ID para cambiar de espacio de trabajo**, desactivado por defecto. Mientras está activado, todz muestra solo el espacio de trabajo en el que estás, y **Cambiar de espacio de trabajo…** (⌘K) pide Touch ID o la contraseña de tu Mac. Consulta [Privacidad de espacios de trabajo](/es/workspace-privacy) para saber dónde permanecen ocultos los otros espacios de trabajo, cuándo vuelve a bloquearse y qué no protege.
+
+## Eliminar y renombrar
+
+Para renombrar un espacio de trabajo, elige **Renombrar espacio de trabajo…** en el menú de espacios de trabajo, o usa todz › Ajustes › Espacios de trabajo. El nombre sigue las reglas de uno nuevo: de 1 a 80 caracteres, sin caracteres de control, sin espacios en los extremos.
+
+Para eliminar un espacio de trabajo, elige **Eliminar espacio de trabajo…** en el menú de espacios de trabajo, o usa todz › Ajustes › Espacios de trabajo. Escribe el nombre del espacio de trabajo para confirmar.
+
+- Sus proyectos y sus datos se eliminan al instante y no se pueden restaurar.
+- Cualquier agente conectado a sus proyectos deja de funcionar de inmediato.
+- El Inbox se elimina con él.
+- Eliminar el último espacio de trabajo te deja sin ninguno; todz se ofrece a crear uno.
+
+Para eliminar un proyecto, haz clic con el botón derecho sobre él en la barra lateral y elige **Eliminar proyecto…**, y luego escribe su nombre. El Inbox no se puede eliminar. Los agentes conectados al proyecto dejan de funcionar al instante.
+
+<Note>
+  Cada Mac descarta los datos eliminados la próxima vez que sabe algo del servidor.
+</Note>

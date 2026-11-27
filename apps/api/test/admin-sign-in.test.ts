@@ -1,4 +1,5 @@
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
+import { Language } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
@@ -59,6 +60,7 @@ const CHALLENGE_COOKIE_PATTERN = /^__Host-todz_admin_challenge=[A-Za-z0-9_-]{43}
 const SESSION_COOKIE_PATTERN = /^__Host-todz_admin=[A-Za-z0-9_-]{43}; Path=\/; Secure; HttpOnly; SameSite=Lax; Max-Age=43200$/;
 const CLEARED_CHALLENGE_COOKIE = '__Host-todz_admin_challenge=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0';
 const HEXADECIMAL_DIGEST_PATTERN = /^[0-9a-f]{64}$/;
+const ADMIN_URL = 'https://todz.app/admin';
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const CONSOLE_METHODS = ['log', 'error', 'warn', 'info', 'debug'] as const;
 const LINKS_PER_WINDOW_MAX = 5;
@@ -259,7 +261,7 @@ async function askedLink(): Promise<AskedLink> {
 }
 
 function cardOf({ notice, siteKey = SITE_KEY }: { notice: AdminNotice; siteKey?: string | null }): Promise<string> {
-  return serveAdminSignInPage({ notice, siteKey }).then((page) => page.text());
+  return serveAdminSignInPage({ request: new Request(ADMIN_URL), notice, siteKey }).then((page) => page.text());
 }
 
 function failingDirectory(): D1Database {
@@ -359,7 +361,7 @@ describe('a link request as the admin on a public site host', () => {
     const run = await askForLink();
     const token = tokenOfSent(run.sent);
     const link = `${SITE_ORIGIN}${AdminPath.LinkPage}#token=${token}`;
-    expect(run.sent[0]).toMatchObject(adminSignInMail({ to: ADMIN_ADDRESS, link, origin: SITE_ORIGIN }));
+    expect(run.sent[0]).toMatchObject(adminSignInMail({ to: ADMIN_ADDRESS, link, origin: SITE_ORIGIN, language: Language.English }));
     expect(run.html).not.toContain(token);
     expect(run.cookies.join()).not.toContain(token);
   });

@@ -1,6 +1,29 @@
+import { Theme } from '../page-preferences';
 import { FORMATTER_LOCALE, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_SECOND, REPOSITORY } from '@todz/types';
 
 export const DARK_THEME_COLOR = '#070812';
+export const LIGHT_THEME_COLOR = '#F2F4FA';
+const LIGHT_SCHEME_MEDIA = '(prefers-color-scheme: light)';
+const DARK_SCHEME_MEDIA = '(prefers-color-scheme: dark)';
+const NEVER_MATCHING_MEDIA = 'not all';
+const ALWAYS_MATCHING_MEDIA = '';
+
+export type ThemeColorMeta = { content: string; media: string };
+
+export const THEME_COLOR_METAS: Record<Theme, ThemeColorMeta[]> = {
+  [Theme.System]: [
+    { content: LIGHT_THEME_COLOR, media: LIGHT_SCHEME_MEDIA },
+    { content: DARK_THEME_COLOR, media: DARK_SCHEME_MEDIA },
+  ],
+  [Theme.Light]: [{ content: LIGHT_THEME_COLOR, media: ALWAYS_MATCHING_MEDIA }],
+  [Theme.Dark]: [{ content: DARK_THEME_COLOR, media: ALWAYS_MATCHING_MEDIA }],
+};
+
+export const WINDOW_SOURCE_MEDIA: Record<Theme, string> = {
+  [Theme.System]: DARK_SCHEME_MEDIA,
+  [Theme.Light]: NEVER_MATCHING_MEDIA,
+  [Theme.Dark]: ALWAYS_MATCHING_MEDIA,
+};
 export const REPOSITORY_API_ORIGIN = 'https://api.github.com';
 export const REPOSITORY_API_URL = `${REPOSITORY_API_ORIGIN}/repos/${REPOSITORY.path}`;
 export const REPOSITORY_API_ACCEPT = 'application/vnd.github+json';

@@ -1,0 +1,71 @@
+import type { OAuthCopy } from './oauth-copy';
+export const OAUTH_COPY_PORTUGUESE_BRAZIL: OAuthCopy = {
+  meta: {
+    description: 'Conecte um app à sua conta do todz.',
+    signInTitle: 'Conectar um app · todz',
+    inboxTitle: 'Veja sua caixa de entrada · todz',
+    consentTitle: 'Aprovar um app · todz',
+    refusedTitle: 'Não foi possível conectar · todz',
+    linkTitle: 'Entrando · todz',
+    returnTitle: 'Voltando ao app · todz',
+    approvedTitle: 'Já aprovado · todz',
+  },
+  signIn: {
+    titleOf: (clientName: string) => `Entre para conectar ${clientName}`,
+    lead: 'Informe o endereço da sua conta do todz. Um link é enviado por e-mail e abre neste navegador.',
+    emailLabel: 'Endereço de e-mail',
+    emailPlaceholder: 'voce@example.com',
+    submit: 'Receber um link por e-mail',
+    submitting: 'Enviando…',
+    invalidAddress: 'Informe um endereço de e-mail válido.',
+    tooMany: 'Não foi possível enviar um link agora. Tente de novo em um minuto.',
+    unavailable: 'Entrar para conectar apps não está disponível neste servidor.',
+  },
+  inbox: {
+    title: 'Veja sua caixa de entrada',
+    body: 'Se esse endereço puder entrar, um link está a caminho. Ele vale uma vez, neste navegador, e traz você de volta para cá.',
+  },
+  consent: {
+    titleOf: (clientName: string) => `Conectar ${clientName} ao todz?`,
+    redirectOf: (host: string) => `Depois da sua resposta, o todz leva você de volta a ${host}.`,
+    loopbackRedirectOf: (host: string) => `Depois da sua resposta, o todz leva você de volta a ${host}, um app neste computador.`,
+    legend: 'A que ele pode ter acesso?',
+    projectHint: 'Um projeto permite que ele leia e altere as tarefas desse projeto e as mova para os outros projetos do workspace dele.',
+    ownerLabel: 'Sua conta inteira (escopo de proprietário)',
+    ownerWarning: 'Ele pode ler e alterar todas as tarefas, e criar, renomear e excluir todos os workspaces e projetos.',
+    noProjects: 'Você ainda não tem projetos. Crie um no app do todz e volte aqui.',
+    approve: 'Aprovar',
+    approving: 'Aprovando…',
+    deny: 'Negar',
+  },
+  return: {
+    titleOf: (clientName: string) => `Levando você de volta a ${clientName}`,
+    body: 'Se ele não abrir sozinho, use o link.',
+    actionOf: (clientName: string) => `Voltar a ${clientName}`,
+  },
+  approved: {
+    title: 'Já aprovado',
+    bodyOf: (clientName: string) =>
+      `Este pedido já foi aprovado. Volte a ${clientName} para terminar de conectar. Se ele ainda pedir, comece de novo por ${clientName}.`,
+  },
+  refusal: {
+    invalidTitle: 'Este link não pode ser usado para conectar um app',
+    invalidBody:
+      'Comece de novo pelo app que você está conectando. Se você continuar caindo aqui, limpe antes o login salvo dele (no Claude Code: /mcp, depois Clear authentication).',
+    choiceTitle: 'Essa escolha não está disponível',
+    choiceBody: 'Comece de novo pelo app que você está conectando e escolha uma das opções mostradas.',
+    forbiddenTitle: 'Pedido recusado',
+    forbiddenBody: 'Esse pedido não veio desta página. Comece de novo pelo app que você está conectando.',
+  },
+  link: {
+    working: 'Entrando…',
+    failedTitle: 'Este link não pode ser usado.',
+    failedBody: 'Peça um novo a partir deste navegador.',
+    failedAction: 'Receber um novo link',
+    cloudFullTitle: 'O todz cloud está cheio agora',
+    cloudFullBodyOf: ({ selfHostUrl }: { selfHostUrl: string }) =>
+      `O todz cloud está cheio agora. Deixe seu e-mail e você entra quando abrir uma vaga, ou rode o seu próprio servidor: ${selfHostUrl}`,
+    noScriptTitle: 'Conclua a entrada',
+    noScript: 'Esta página precisa de JavaScript para concluir a sua entrada. Ative-o e abra o link de novo.',
+  },
+};

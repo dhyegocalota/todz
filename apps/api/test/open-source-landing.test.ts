@@ -5,6 +5,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import worker from '../src/index';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { serveLandingPage } from '../src/site/landing-page';
+import { ENGLISH_PREFERENCES } from './english-preferences';
 import { SITE_STYLE } from '../src/site/site-style';
 import { workerEnvWith } from './owner-client';
 import { inlineSources } from './page-script';
@@ -25,7 +26,7 @@ const COUNT_UP_MAXIMUM_MS = 600;
 const MINT = '#8CF7D0';
 
 async function landing(stars: number | null): Promise<{ html: string; policy: string | null }> {
-  const response = serveLandingPage({ stars });
+  const response = serveLandingPage({ stars, preferences: ENGLISH_PREFERENCES });
   return { html: await response.text(), policy: response.headers.get('Content-Security-Policy') };
 }
 

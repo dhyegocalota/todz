@@ -1,0 +1,14 @@
+---
+title: エージェントからこのドキュメントを使う
+description: MCPまたはプレーンテキストのファイルで、エージェントにこのドキュメントを渡します。
+---
+
+このドキュメントには専用のMCPサーバがあります。Claude Codeでは次のようにします。
+
+```bash
+claude mcp add --transport http todz-docs https://docs.todz.app/mcp
+```
+
+プレーンテキストを読むエージェントには、[todz.app/llms.txt](https://todz.app/llms.txt)がページの一覧を、[todz.app/llms-full.txt](https://todz.app/llms-full.txt)がその全文を提供します。
+
+エージェントにタスクを扱わせたい場合は、[エージェントを接続する](/ja/connect-an-agent)をご覧ください。

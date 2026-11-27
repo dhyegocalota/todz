@@ -49,6 +49,14 @@ export function onlyInlineSource({ html, pattern }: { html: string; pattern: Reg
   return source;
 }
 
+export function pageInlineSource({ html, pattern }: { html: string; pattern: RegExp }): string {
+  const [source, shellSource, ...others] = inlineSources({ html, pattern });
+  if (source === undefined || shellSource === undefined || others.length > 0) {
+    throw new Error('the page has its own inline element and the shell one');
+  }
+  return source;
+}
+
 function onlyRender(renders: WidgetRender[]): WidgetRender {
   const [render, ...others] = renders;
   if (render === undefined || others.length > 0) throw new Error('the page rendered exactly one widget');

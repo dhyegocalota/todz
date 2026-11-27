@@ -39,6 +39,7 @@ export async function updateSettings({
     agentNudge: absentAsNull(input.agentNudge),
     dayEmail: absentAsNull(input.dayEmail),
     dayEmailMinutes: absentAsNull(input.dayEmailMinutes),
+    language: null,
     now,
   });
   if (ownerRecord === null) throw new Error('a live credential names an owner with no row');

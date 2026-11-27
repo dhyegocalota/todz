@@ -9,8 +9,9 @@ import { escapedHtml } from '../escaped-html';
 import { HttpStatus } from '../http-status';
 import { siteKeyOf } from '../turnstile-page';
 import { adminCardAnswerOf, adminClosedAnswerOf, adminPageAnswerOf } from './admin-answer';
-import { ADMIN_COPY } from './admin-copy';
+import { ADMIN_COPY_BY_LANGUAGE, type AdminCopy } from './admin-copy';
 import { AdminNotice } from './admin-notice';
+import { adminPreferencesOf } from './admin-preferences';
 import { ADMIN_NOTICE_PARAMETER, AdminField, AdminPath, CloudQueueAdminNotice } from './admin-paths';
 import { adminEmailOf, hasAdminSession } from './admin-session';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
@@ -26,22 +27,22 @@ const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   declaresManifest: false,
 });
 
-function rowHtml(queued: QueuedAddress): string {
-  const { cloudQueue } = ADMIN_COPY;
+function rowHtml({ queued, copy }: { queued: QueuedAddress; copy: AdminCopy }): string {
+  const { cloudQueue } = copy;
   const address = escapedHtml(queued.email);
   const joined = new Date(queued.createdAt).toISOString();
   return `<tr><td>${address}</td><td>${escapedHtml(joined)}</td><td><form method="post" action="${AdminPath.CloudAdmissions}"><input type="hidden" name="${AdminField.Email}" value="${address}"><button class="nav-link nav-button" type="submit">${escapedHtml(cloudQueue.admit)}</button></form></td></tr>`;
 }
 
-function tableHtml(waiting: QueuedAddress[]): string {
-  const { cloudQueue } = ADMIN_COPY;
+function tableHtml({ waiting, copy }: { waiting: QueuedAddress[]; copy: AdminCopy }): string {
+  const { cloudQueue } = copy;
   if (waiting.length === 0) return `<p class="empty-body">${escapedHtml(cloudQueue.empty)}</p>`;
   const { columns } = cloudQueue;
-  return `<div class="usage-scroll"><table class="usage-table"><thead><tr><th>${escapedHtml(columns.address)}</th><th>${escapedHtml(columns.joined)}</th><th>${escapedHtml(columns.action)}</th></tr></thead><tbody>${waiting.map(rowHtml).join('')}</tbody></table></div>`;
+  return `<div class="usage-scroll"><table class="usage-table"><thead><tr><th>${escapedHtml(columns.address)}</th><th>${escapedHtml(columns.joined)}</th><th>${escapedHtml(columns.action)}</th></tr></thead><tbody>${waiting.map((queued) => rowHtml({ queued, copy })).join('')}</tbody></table></div>`;
 }
 
-function admitNextHtml(): string {
-  const { cloudQueue } = ADMIN_COPY;
+function admitNextHtml(copy: AdminCopy): string {
+  const { cloudQueue } = copy;
   return `<form method="post" action="${AdminPath.CloudAdmissions}"><label>${escapedHtml(cloudQueue.admitNextLabel)} <input type="number" name="${AdminField.Count}" min="1" max="${CLOUD_QUEUE_ADMIN_ROWS_MAX}" value="1"></label> <button class="nav-link nav-button" type="submit">${escapedHtml(cloudQueue.admitNext)}</button></form>`;
 }
 
@@ -58,40 +59,45 @@ function noticeHtml(notice: string | null): string {
   return `<p class="empty-body">${escapedHtml(notice)}</p>`;
 }
 
-function queueHtml({ waiting, notices }: { waiting: QueuedAddress[]; notices: (string | null)[] }): string {
-  const { cloudQueue, panel } = ADMIN_COPY;
+function queueHtml({ waiting, notices, request }: { waiting: QueuedAddress[]; notices: (string | null)[]; request: Request }): string {
+  const preferences = adminPreferencesOf({ request });
+  const copy = ADMIN_COPY_BY_LANGUAGE[preferences.language];
+  const { cloudQueue, panel } = copy;
   return siteDocumentHtml({
+    hasControls: true,
     kind: SitePageKind.Private,
     title: cloudQueue.title,
-    description: ADMIN_COPY.meta.description,
+    description: copy.meta.description,
     main: `<main id="${CONTENT_ID}">
 <div class="admin-panel rise">
 <div class="panel-head">
 <h1 class="panel-title">${escapedHtml(cloudQueue.title)}</h1>
-<nav class="panel-actions" aria-label="${escapedHtml(ADMIN_COPY.shell.navLabel)}">
+<nav class="panel-actions" aria-label="${escapedHtml(copy.shell.navLabel)}">
 <a class="admin-action" href="${AdminPath.Panel}">${escapedHtml(cloudQueue.back)}</a>
 <form method="post" action="${AdminPath.SignOut}"><button class="nav-link nav-button" type="submit">${escapedHtml(panel.signOut)}</button></form>
 </nav>
 </div>
 ${notices.map(noticeHtml).join('')}
-${admitNextHtml()}
-${tableHtml(waiting)}
+${admitNextHtml(copy)}
+${tableHtml({ waiting, copy })}
 </div>
 </main>`,
     scripts: [],
+    preferences,
   });
 }
 
 export async function serveAdminCloudQueue({ request, env }: SiteContext): Promise<Response> {
-  if (adminEmailOf(env) === null) return adminClosedAnswerOf({ env });
+  if (adminEmailOf(env) === null) return adminClosedAnswerOf({ request, env });
   const isSignedIn = await hasAdminSession({ request, env, now: Date.now() }).catch(() => null);
-  if (isSignedIn === null) return adminClosedAnswerOf({ env });
-  if (!isSignedIn) return adminCardAnswerOf({ notice: AdminNotice.None, siteKey: siteKeyOf(env) });
+  if (isSignedIn === null) return adminClosedAnswerOf({ request, env });
+  if (!isSignedIn) return adminCardAnswerOf({ request, notice: AdminNotice.None, siteKey: siteKeyOf(env) });
   const waiting = await waitingAddresses({ directory: env.DIRECTORY, limit: CLOUD_QUEUE_ADMIN_ROWS_MAX }).catch(() => null);
-  if (waiting === null) return adminClosedAnswerOf({ env });
+  if (waiting === null) return adminClosedAnswerOf({ request, env });
   const guardNotice = await guardNoticeOf({ env, now: Date.now() }).catch(() => null);
   const isNoRoom = new URL(request.url).searchParams.get(ADMIN_NOTICE_PARAMETER) === CloudQueueAdminNotice.NoRoom;
-  const notices = [guardNotice, isNoRoom ? ADMIN_COPY.cloudQueue.noRoom : null];
-  const page = adminPageResponse({ html: queueHtml({ waiting, notices }), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+  const copy = ADMIN_COPY_BY_LANGUAGE[adminPreferencesOf({ request }).language];
+  const notices = [guardNotice, isNoRoom ? copy.cloudQueue.noRoom : null];
+  const page = adminPageResponse({ html: queueHtml({ waiting, notices, request }), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
   return adminPageAnswerOf({ page, status: HttpStatus.Ok });
 }

@@ -1,3 +1,4 @@
+import { Language } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { EmailTemplateName, generatedEmailsOf } from '../../scripts/emails/generated-emails';
 import { EmailSlot } from '../../src/emails/email-slot';
@@ -15,7 +16,7 @@ const ESCAPED_APOSTROPHE = '&#x27;';
 
 async function oauthEmail(): Promise<GeneratedEmail> {
   const emails = await generatedEmailsOf();
-  return emails[EmailTemplateName.OAuthSignIn];
+  return emails[EmailTemplateName.OAuthSignIn][Language.English];
 }
 
 function htmlOf(text: string): string {

@@ -46,7 +46,8 @@ async function answerOfOutcome({
   outcome: AuthorizationOutcome;
   answerValid: ValidRequestAnswer;
 }): Promise<Response> {
-  if (outcome.kind === AuthorizationOutcomeKind.Unredirectable) return refusalPageOf(OAuthRefusal.Invalid);
+  if (outcome.kind === AuthorizationOutcomeKind.Unredirectable)
+    return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Invalid });
   if (outcome.kind === AuthorizationOutcomeKind.Refused) {
     return refusalRedirectOf({ redirectUri: outcome.redirectUri, state: outcome.state, error: outcome.error, issuer: context.issuer });
   }
@@ -55,11 +56,16 @@ async function answerOfOutcome({
 
 async function consentOrSignIn(context: OAuthContext, request: AuthorizationRequest): Promise<Response> {
   const guard = linkGuardOf(context);
-  if (guard === null) return refusalPageOf(OAuthRefusal.Unavailable);
+  if (guard === null) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Unavailable });
   const session = await oauthSessionOf(context);
-  if (session === null) return signInAgainOf({ request, siteKey: guard.siteKey });
+  if (session === null) return signInAgainOf({ httpRequest: context.request, request, siteKey: guard.siteKey });
   const listings = await listOwnerWorkspaces({ directory: context.env.DIRECTORY, ownerId: session.ownerId });
-  return consentPageOf({ request, listings, formToken: await formTokenOf({ session, request }) });
+  return consentPageOf({
+    request: context.request,
+    authorization: request,
+    listings,
+    formToken: await formTokenOf({ session, request }),
+  });
 }
 
 // NB ADR 0109: authorize answers the email form without a browser session and the consent screen with one.
@@ -97,7 +103,7 @@ async function chosenScopeOf({ request, session, choice, context }: Decided): Pr
 async function approve(decided: Decided): Promise<Response> {
   const { context, request, session } = decided;
   const chosenScope = await chosenScopeOf(decided);
-  if (chosenScope === null) return refusalPageOf(OAuthRefusal.Choice);
+  if (chosenScope === null) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Choice });
   const { projectId } = chosenScope;
   const code = generateCredentialSecret();
   await insertCode({
@@ -115,6 +121,7 @@ async function approve(decided: Decided): Promise<Response> {
   return endedSessionAnswerOf({
     decided,
     answer: returnPageOf({
+      request: context.request,
       clientName: request.client.name,
       location: redirectLocationOf({
         redirectUri: request.redirectUri,
@@ -133,6 +140,7 @@ async function deny(decided: Decided): Promise<Response> {
   return endedSessionAnswerOf({
     decided,
     answer: returnPageOf({
+      request: context.request,
       clientName: request.client.name,
       location: refusalLocationOf({
         redirectUri: request.redirectUri,
@@ -157,8 +165,22 @@ const ANSWER_OF_DECISION: Record<OAuthDecision, (decided: Decided) => Promise<Re
   [OAuthDecision.Deny]: deny,
 };
 
-function signInAgainOf({ request, siteKey }: { request: AuthorizationRequest; siteKey: string }): Response {
-  return signInPageOf({ clientName: request.client.name, params: request.params, notice: OAuthNotice.None, siteKey });
+function signInAgainOf({
+  httpRequest,
+  request,
+  siteKey,
+}: {
+  httpRequest: Request;
+  request: AuthorizationRequest;
+  siteKey: string;
+}): Response {
+  return signInPageOf({
+    request: httpRequest,
+    clientName: request.client.name,
+    params: request.params,
+    notice: OAuthNotice.None,
+    siteKey,
+  });
 }
 
 // NB ADR 0116: a decision posted again after its session ended is told it was approved when its request already got a code, never asked to sign in.
@@ -177,24 +199,25 @@ async function approvedOrSignInAgainOf({
     redirectUri: request.redirectUri,
     codeChallenge: request.codeChallenge,
   });
-  if (isApprovedAlready) return approvedPageOf(request.client.name);
-  return signInAgainOf({ request, siteKey });
+  if (isApprovedAlready) return approvedPageOf({ request: context.request, clientName: request.client.name });
+  return signInAgainOf({ httpRequest: context.request, request, siteKey });
 }
 
 function decide(form: DecisionForm): ValidRequestAnswer {
   return async (context, request) => {
     const guard = linkGuardOf(context);
-    if (guard === null) return refusalPageOf(OAuthRefusal.Unavailable);
-    if (!isSameOriginRequest({ request: context.request, origin: context.issuer })) return refusalPageOf(OAuthRefusal.Forbidden);
+    if (guard === null) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Unavailable });
+    if (!isSameOriginRequest({ request: context.request, origin: context.issuer }))
+      return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Forbidden });
     const session = await oauthSessionOf(context);
     if (session === null) return approvedOrSignInAgainOf({ context, request, siteKey: guard.siteKey });
-    if (form.formToken === null) return refusalPageOf(OAuthRefusal.Forbidden);
+    if (form.formToken === null) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Forbidden });
     const expected = await formTokenOf({ session, request });
     const isFormTokenValid = await isSameSignature({ secret: session.secret, left: expected, right: form.formToken });
-    if (!isFormTokenValid) return refusalPageOf(OAuthRefusal.Forbidden);
-    if (form.decision === null) return refusalPageOf(OAuthRefusal.Invalid);
+    if (!isFormTokenValid) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Forbidden });
+    if (form.decision === null) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Invalid });
     const decision = enumValueOf({ enumeration: OAuthDecision, candidate: form.decision });
-    if (decision === null) return refusalPageOf(OAuthRefusal.Invalid);
+    if (decision === null) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Invalid });
     return ANSWER_OF_DECISION[decision]({ context, request, session, choice: form.choice });
   };
 }
@@ -203,7 +226,7 @@ function decide(form: DecisionForm): ValidRequestAnswer {
 export async function serveDecision(context: OAuthContext): Promise<Response> {
   const { request, env, now, issuer } = context;
   const form = await decisionFormOf(request);
-  if (form === null) return refusalPageOf(OAuthRefusal.Invalid);
+  if (form === null) return refusalPageOf({ request, refusal: OAuthRefusal.Invalid });
   const outcome = await authorizationOutcomeOf({ params: form.params, env, issuer, now });
   return answerOfOutcome({ context, outcome, answerValid: decide(form) });
 }

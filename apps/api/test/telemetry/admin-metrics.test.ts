@@ -95,8 +95,8 @@ describe('the metrics page', () => {
     await seedTaskDays();
     const response = await served({ route: serveAdminMetrics, path: AdminPath.Metrics });
     const html = await response.text();
-    expect(html).not.toContain('<script');
-    expect(response.headers.get('Content-Security-Policy')).not.toContain('script-src');
+    expect(html.match(/<script/g)).toHaveLength(1);
+    expect(response.headers.get('Content-Security-Policy')?.match(/'sha256-/g)).toHaveLength(2);
     expect(response.headers.get('Content-Security-Policy')).toContain("default-src 'none'");
     expect(response.headers.get('Cache-Control')).toBe('no-store');
   });

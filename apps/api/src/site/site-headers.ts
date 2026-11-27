@@ -2,6 +2,7 @@ import { HttpHeader, NO_REFERRER, NO_SNIFF, STRICT_TRANSPORT_SECURITY } from '..
 import { HttpStatus } from '../http-status';
 import { sourceHash } from '../turnstile-page';
 import { ADMIN_RESPONSE_HEADERS } from './admin-paths';
+import { SWITCH_SCRIPT } from './site-switch-script';
 
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
 // NB ADR 0060: no-transform stops Cloudflare injecting its analytics beacon, which the policy would refuse.
@@ -26,8 +27,8 @@ export async function siteContentSecurityPolicy({
   const widgetOrigins = widgetOrigin === null ? [] : [widgetOrigin];
   const connectDirectives = connectsToSelf ? [CONNECT_SELF] : [];
   const manifestDirectives = declaresManifest ? [MANIFEST_SELF] : [];
-  const scriptHashes = await Promise.all(scripts.map(sourceHash));
-  const scriptDirectives = scripts.length === 0 ? [] : [['script-src', ...scriptHashes, ...widgetOrigins].join(' ')];
+  const scriptHashes = await Promise.all([...scripts, SWITCH_SCRIPT].map(sourceHash));
+  const scriptDirectives = [['script-src', ...scriptHashes, ...widgetOrigins].join(' ')];
   return [
     "default-src 'none'",
     ...scriptDirectives,

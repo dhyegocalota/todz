@@ -1,4 +1,5 @@
-import { SIGN_IN_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
+import { type Language, SIGN_IN_RATE_LIMIT_PERIOD_SECONDS } from '@todz/types';
+import { pagePreferencesOf } from '../page-preferences';
 import { z } from 'zod';
 import { cloudQueueAddressOf, queueSecretOf } from '../cloud-queue-token';
 import { joinQueue, QueueJoin } from '../cloud-queue-join';
@@ -94,20 +95,27 @@ function formOf({ token, address }: { token: string | null; address: string | nu
   return { token, maskedAddress: maskedAddressOf(address) };
 }
 
-export async function serveCloudQueuePage({ request, env }: SiteContext): Promise<Response> {
+export async function serveCloudQueuePage({ request, env, language }: SiteContext & { language: Language }): Promise<Response> {
   const siteKey = siteKeyOf(env);
-  if (!isGuarded({ env })) return cloudQueuePageResponse({ notice: CloudQueueNotice.Closed, siteKey, form: null });
+  const preferences = pagePreferencesOf({ request, language });
+  if (!isGuarded({ env })) return cloudQueuePageResponse({ notice: CloudQueueNotice.Closed, siteKey, form: null, preferences });
   const keySecret = queueSecretOf(env);
   const token = new URL(request.url).searchParams.get(CLOUD_QUEUE_TOKEN_FIELD);
-  if (keySecret === null || token === null) return cloudQueuePageResponse({ notice: CloudQueueNotice.Invalid, siteKey, form: null });
+  if (keySecret === null || token === null)
+    return cloudQueuePageResponse({ notice: CloudQueueNotice.Invalid, siteKey, form: null, preferences });
   const address = await cloudQueueAddressOf({ secret: keySecret, token, now: Date.now() });
-  if (address === null) return cloudQueuePageResponse({ notice: CloudQueueNotice.Invalid, siteKey, form: null });
-  return cloudQueuePageResponse({ notice: CloudQueueNotice.None, siteKey, form: formOf({ token, address }) });
+  if (address === null) return cloudQueuePageResponse({ notice: CloudQueueNotice.Invalid, siteKey, form: null, preferences });
+  return cloudQueuePageResponse({ notice: CloudQueueNotice.None, siteKey, form: formOf({ token, address }), preferences });
 }
 
-export async function serveCloudQueueJoin({ request, env }: SiteContext): Promise<Response> {
+export async function serveCloudQueueJoin({ request, env, language }: SiteContext & { language: Language }): Promise<Response> {
   const answer = await queueAnswerOf({ request, env });
-  const response = cloudQueuePageResponse({ notice: answer.notice, siteKey: siteKeyOf(env), form: formOf(answer) });
+  const response = cloudQueuePageResponse({
+    notice: answer.notice,
+    siteKey: siteKeyOf(env),
+    form: formOf(answer),
+    preferences: pagePreferencesOf({ request, language }),
+  });
   if (response.status === HttpStatus.TooManyRequests)
     response.headers.set(HttpHeader.RetryAfter, String(SIGN_IN_RATE_LIMIT_PERIOD_SECONDS));
   return response;

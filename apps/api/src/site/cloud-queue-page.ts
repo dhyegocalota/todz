@@ -1,6 +1,8 @@
-import { CLOUD_COPY } from '../cloud-copy';
+import { Language } from '@todz/types';
+import { CLOUD_PAGE_COPY_BY_LANGUAGE } from '../cloud-page-copy';
 import { escapedHtml } from '../escaped-html';
 import { HttpStatus } from '../http-status';
+import type { PagePreferences } from '../page-preferences';
 import { TurnstileAction } from '../turnstile';
 import { TURNSTILE_ORIGIN, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
 import {
@@ -15,11 +17,11 @@ import {
   answerTitleHtml,
   noticeHtml,
 } from './admin-page';
+import { publicPathOf } from './language-paths';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
-import { LANDING_PATH, SitePageKind, siteDocumentHtml } from './site-shell';
+import { SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE } from './site-style';
-import { DOCS_SELF_HOST_URL } from './self-host-redirect';
-import { CLOUD_QUEUE_PATH, CLOUD_QUEUE_TOKEN_FIELD } from './site-urls';
+import { CLOUD_QUEUE_PATH, CLOUD_QUEUE_TOKEN_FIELD, DOCS_SELF_HOST_PAGE, LANDING_PATH, docsUrlOf } from './site-urls';
 
 export enum CloudQueueNotice {
   None = 'none',
@@ -61,17 +63,27 @@ export function maskedAddressOf(address: string): string {
   return `${name?.slice(0, 1)}…@${domain}`;
 }
 
-function selfHostHtml(): string {
-  const { selfHost, selfHostLink } = CLOUD_COPY.queuePage;
-  return `<p class="admin-body">${escapedHtml(selfHost)} <a class="admin-link" href="${DOCS_SELF_HOST_URL}">${escapedHtml(selfHostLink)}</a></p>`;
+function selfHostHtml(language: Language): string {
+  const { selfHost, selfHostLink } = CLOUD_PAGE_COPY_BY_LANGUAGE[language].queuePage;
+  return `<p class="admin-body">${escapedHtml(selfHost)} <a class="admin-link" href="${docsUrlOf({ language, page: DOCS_SELF_HOST_PAGE })}">${escapedHtml(selfHostLink)}</a></p>`;
 }
 
-function formHtml({ notice, siteKey, form }: { notice: string | null; siteKey: string; form: CloudQueueForm }): string {
-  const copy = CLOUD_COPY.queuePage;
+function formHtml({
+  notice,
+  siteKey,
+  form,
+  language,
+}: {
+  notice: string | null;
+  siteKey: string;
+  form: CloudQueueForm;
+  language: Language;
+}): string {
+  const copy = CLOUD_PAGE_COPY_BY_LANGUAGE[language].queuePage;
   const widget = `<div class="${WIDGET_CLASS}" data-sitekey="${siteKey}" data-action="${TurnstileAction.CloudQueue}" data-appearance="${WIDGET_APPEARANCE}" data-theme="${WIDGET_THEME}" data-callback="${TOKEN_CALLBACK}"></div>\n`;
   return `<h1 class="admin-title">${escapedHtml(copy.title)}</h1>
 <p class="admin-body">${escapedHtml(copy.lead)}</p>
-<form class="${JOIN_FORM_CLASS} admin-form" method="post" action="${CLOUD_QUEUE_PATH}">
+<form class="${JOIN_FORM_CLASS} admin-form" method="post" action="${publicPathOf({ language, path: CLOUD_QUEUE_PATH })}">
 <input type="hidden" name="${CLOUD_QUEUE_TOKEN_FIELD}" value="${escapedHtml(form.token)}">
 <div class="join-capsule">
 <p class="admin-body">${escapedHtml(copy.joinAs)} ${escapedHtml(form.maskedAddress)}</p>
@@ -79,70 +91,99 @@ function formHtml({ notice, siteKey, form }: { notice: string | null; siteKey: s
 </div>
 ${widget}${noticeHtml(notice)}</form>
 ${TURNSTILE_SCRIPT_TAG}
-${selfHostHtml()}`;
+${selfHostHtml(language)}`;
 }
 
-function answerHtml({ title, body }: { title: string; body: string | null }): string {
+function answerHtml({ title, body, language }: { title: string; body: string | null; language: Language }): string {
   const bodyHtml = body === null ? '' : `<p class="admin-body">${escapedHtml(body)}</p>\n`;
   return `${answerTitleHtml(title)}
-${bodyHtml}${selfHostHtml()}
-<a class="admin-link" href="${LANDING_PATH}">todz</a>`;
+${bodyHtml}${selfHostHtml(language)}
+<a class="admin-link" href="${publicPathOf({ language, path: LANDING_PATH })}">todz</a>`;
 }
 
-function documentHtml(content: string): string {
+function documentHtml({ content, preferences }: { content: string; preferences: PagePreferences }): string {
+  const { queuePage } = CLOUD_PAGE_COPY_BY_LANGUAGE[preferences.language];
   return siteDocumentHtml({
+    hasControls: true,
     kind: SitePageKind.Private,
-    title: CLOUD_COPY.queuePage.title,
-    description: CLOUD_COPY.queuePage.lead,
+    title: queuePage.title,
+    description: queuePage.lead,
     main: adminCardMainHtml(content),
     scripts: [PAGE_SCRIPT],
+    preferences,
+    alternatePath: CLOUD_QUEUE_PATH,
   });
 }
 
 type Answer = { title: string; body: string | null };
 
-const INVALID_ANSWER: Answer = { title: CLOUD_COPY.queuePage.invalidTitle, body: CLOUD_COPY.queuePage.invalidBody };
+function invalidAnswerOf(language: Language): Answer {
+  const { invalidTitle, invalidBody } = CLOUD_PAGE_COPY_BY_LANGUAGE[language].queuePage;
+  return { title: invalidTitle, body: invalidBody };
+}
 
-const ANSWER_OF_NOTICE: Record<CloudQueueNotice, Answer | null> = {
-  [CloudQueueNotice.None]: null,
-  [CloudQueueNotice.TryAgain]: null,
-  [CloudQueueNotice.Queued]: { title: CLOUD_COPY.queuePage.queuedTitle, body: CLOUD_COPY.queuePage.queuedBody },
-  [CloudQueueNotice.Closed]: { title: CLOUD_COPY.queuePage.closed, body: null },
-  [CloudQueueNotice.Forbidden]: { title: CLOUD_COPY.queuePage.forbidden, body: null },
-  [CloudQueueNotice.Invalid]: INVALID_ANSWER,
-};
+function answerOfNotice({ notice, language }: { notice: CloudQueueNotice; language: Language }): Answer | null {
+  const { queuePage } = CLOUD_PAGE_COPY_BY_LANGUAGE[language];
+  const answers: Record<CloudQueueNotice, Answer | null> = {
+    [CloudQueueNotice.None]: null,
+    [CloudQueueNotice.TryAgain]: null,
+    [CloudQueueNotice.Queued]: { title: queuePage.queuedTitle, body: queuePage.queuedBody },
+    [CloudQueueNotice.Closed]: { title: queuePage.closed, body: null },
+    [CloudQueueNotice.Forbidden]: { title: queuePage.forbidden, body: null },
+    [CloudQueueNotice.Invalid]: invalidAnswerOf(language),
+  };
+  return answers[notice];
+}
 
 export function cloudQueuePageResponse({
   notice,
   siteKey,
   form,
+  preferences,
 }: {
   notice: CloudQueueNotice;
   siteKey: string | null;
   form: CloudQueueForm | null;
+  preferences: PagePreferences;
 }): Response {
   const usableSiteKey = usableSiteKeyOf(siteKey);
-  const page = pageOf({ notice, usableSiteKey, form });
+  const page = pageOf({ notice, usableSiteKey, form, language: preferences.language });
   const response = adminPageResponse({
-    html: documentHtml(page.content),
+    html: documentHtml({ content: page.content, preferences }),
     contentSecurityPolicy: page.hasChallenge ? CHALLENGE_CONTENT_SECURITY_POLICY : CONTENT_SECURITY_POLICY,
   });
   return new Response(response.body, { status: page.status, headers: response.headers });
 }
 
-function pageOf({ notice, usableSiteKey, form }: { notice: CloudQueueNotice; usableSiteKey: string | null; form: CloudQueueForm | null }): {
+function pageOf({
+  notice,
+  usableSiteKey,
+  form,
+  language,
+}: {
+  notice: CloudQueueNotice;
+  usableSiteKey: string | null;
+  form: CloudQueueForm | null;
+  language: Language;
+}): {
   content: string;
   hasChallenge: boolean;
   status: HttpStatus;
 } {
-  const answer = ANSWER_OF_NOTICE[notice];
-  if (answer !== null) return { content: answerHtml(answer), hasChallenge: false, status: STATUS_OF_CLOUD_QUEUE_NOTICE[notice] };
-  if (usableSiteKey === null || form === null) {
-    return { content: answerHtml(INVALID_ANSWER), hasChallenge: false, status: STATUS_OF_CLOUD_QUEUE_NOTICE[CloudQueueNotice.Invalid] };
+  const answer = answerOfNotice({ notice, language });
+  if (answer !== null) {
+    return { content: answerHtml({ ...answer, language }), hasChallenge: false, status: STATUS_OF_CLOUD_QUEUE_NOTICE[notice] };
   }
-  const formNotice = notice === CloudQueueNotice.TryAgain ? CLOUD_COPY.queuePage.tryAgain : null;
+  if (usableSiteKey === null || form === null) {
+    return {
+      content: answerHtml({ ...invalidAnswerOf(language), language }),
+      hasChallenge: false,
+      status: STATUS_OF_CLOUD_QUEUE_NOTICE[CloudQueueNotice.Invalid],
+    };
+  }
+  const formNotice = notice === CloudQueueNotice.TryAgain ? CLOUD_PAGE_COPY_BY_LANGUAGE[language].queuePage.tryAgain : null;
   return {
-    content: formHtml({ notice: formNotice, siteKey: usableSiteKey, form }),
+    content: formHtml({ notice: formNotice, siteKey: usableSiteKey, form, language }),
     hasChallenge: true,
     status: STATUS_OF_CLOUD_QUEUE_NOTICE[notice],
   };

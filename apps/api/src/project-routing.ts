@@ -1,3 +1,5 @@
+import type { Language } from '@todz/types';
+import { languageOfValue } from './language-negotiation';
 import { digestCredential } from './credential-digest';
 import {
   type GrantProjectRecord,
@@ -54,7 +56,7 @@ function openProject({ env, projectId }: { env: Env; projectId: string }): Durab
   return env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(projectId));
 }
 
-function resolvedOwnerOf({ ownerId, isSuspended }: SessionOwnerRecord): SessionOwner {
+function resolvedOwnerOf({ ownerId, isSuspended }: { ownerId: string; isSuspended: boolean }): SessionOwner {
   const owner = Object.freeze({ ownerId, isSuspended }) as SessionOwner;
   resolvedOwners.add(owner);
   return owner;
@@ -234,7 +236,7 @@ export type ScheduledProject = { record: ProjectRecord; project: DurableObjectSt
 
 export type ScheduledWorkspace = { workspace: WorkspaceRecord; projects: ScheduledProject[] };
 
-export type DayEmailCandidate = { owner: ScheduledOwner; timeZone: string; minutes: number; address: string };
+export type DayEmailCandidate = { owner: ScheduledOwner; timeZone: string; minutes: number; address: string; language: Language | null };
 
 const scheduledOwners = new WeakSet<ScheduledOwner>();
 
@@ -252,6 +254,7 @@ export async function listDayEmailCandidates({ env, now }: { env: Env; now: numb
     timeZone: row.time_zone,
     minutes: row.day_email_minutes,
     address: row.address,
+    language: languageOfValue({ value: row.language }),
   }));
 }
 

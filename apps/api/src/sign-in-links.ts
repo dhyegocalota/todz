@@ -1,4 +1,4 @@
-import { MILLISECONDS_PER_MINUTE } from '@todz/types';
+import { type Language, MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { z } from 'zod';
 import { isCloudFullFor } from './cloud-admission';
 import { sendCloudFullMail } from './cloud-mail';
@@ -12,7 +12,9 @@ import { signInMail } from './emails/sign-in-mail';
 import { type EmailMessage, type EmailSender, emailSenderOf } from './email-sender';
 import { enumValueOf } from './enum-value';
 import type { Env } from './env';
+import { languageOfAcceptLanguage } from './language-negotiation';
 import { isLocalOrigin } from './local-origin';
+import { HttpHeader } from './http-header';
 import { HttpStatus } from './http-status';
 import { OwnerErrorCode, errorResponse } from './owner-errors';
 import { type OwnerContext, parsedPublicBody } from './owner-request';
@@ -75,14 +77,21 @@ export async function requestSignInLink({ request, env, now }: OwnerContext): Pr
   if (globalRefusal !== null) return globalRefusal;
   const addressRefusal = await addressLimitRefusal({ request, env, address });
   if (addressRefusal !== null) return addressRefusal;
+  const language = languageOfAcceptLanguage({ acceptLanguage: request.headers.get(HttpHeader.AcceptLanguage) });
   const mailing = await mailSignInLink({
     env,
     sender,
     address,
     challenge: body.link_challenge,
     now,
+    language,
     mailOf: (token) =>
-      signInMail({ to: address, link: `${publicOrigin}${SIGN_IN_PAGE_PATH}#token=${token}&app=${appLinkScheme}`, origin: publicOrigin }),
+      signInMail({
+        to: address,
+        link: `${publicOrigin}${SIGN_IN_PAGE_PATH}#token=${token}&app=${appLinkScheme}`,
+        origin: publicOrigin,
+        language,
+      }),
   });
   return ANSWER_OF_MAILING[mailing]();
 }
@@ -106,6 +115,7 @@ export async function mailSignInLink({
   address,
   challenge,
   now,
+  language,
   mailOf,
 }: {
   env: Env;
@@ -113,6 +123,7 @@ export async function mailSignInLink({
   address: string;
   challenge: string;
   now: number;
+  language: Language;
   mailOf: (token: string) => EmailMessage;
 }): Promise<LinkMailing> {
   if (isOwnDomainAddress(address)) return LinkMailing.Sent;
@@ -134,7 +145,7 @@ export async function mailSignInLink({
   if (!isWithinLimit) return LinkMailing.Refused;
   const isCloudFull = await isCloudFullFor({ env, address, now });
   try {
-    if (isCloudFull) await sendCloudFullMail({ env, to: address, now });
+    if (isCloudFull) await sendCloudFullMail({ env, to: address, now, language });
     if (!isCloudFull) await sender.send(mailOf(token));
   } catch {
     await deleteSignInLink({ directory: env.DIRECTORY, digest });

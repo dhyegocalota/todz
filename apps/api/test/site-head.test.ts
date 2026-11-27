@@ -7,6 +7,7 @@ import { LANDING_COPY } from '../src/site/landing-copy';
 import { OPEN_GRAPH_IMAGE, SITE_ICONS, SiteIcon } from '../src/site/site-icons';
 import { DiscoveryPath, SITE_URL } from '../src/site/site-urls';
 
+const ADMIN_PAGE_URL = 'https://todz.app/admin';
 const OK_STATUS = 200;
 const LOCAL_SITE_ORIGIN = 'http://localhost:8788';
 const SITE_NAME = 'todz';
@@ -164,8 +165,11 @@ describe('HEAD /', () => {
 
 describe('the head of the private pages', () => {
   const PRIVATE_PAGES: [string, () => Promise<Response>][] = [
-    ['the admin sign-in page', () => serveAdminSignInPage({ notice: AdminNotice.None, siteKey: null })],
-    ['the admin link page', serveAdminLinkPage],
+    [
+      'the admin sign-in page',
+      () => serveAdminSignInPage({ request: new Request(ADMIN_PAGE_URL), notice: AdminNotice.None, siteKey: null }),
+    ],
+    ['the admin link page', () => serveAdminLinkPage({ request: new Request(ADMIN_PAGE_URL) })],
   ];
 
   test.each(PRIVATE_PAGES)('%s holds the favicon links and nothing that makes it public', async (_name, page) => {

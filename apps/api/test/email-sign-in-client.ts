@@ -169,6 +169,7 @@ export function requestLink({
   origin = PUBLIC_ORIGIN,
   turnstileToken = TURNSTILE_DUMMY_TOKEN,
   appLinkScheme = RELEASE_LINK_SCHEME,
+  headers = {},
 }: {
   email?: unknown;
   challenge?: unknown;
@@ -177,10 +178,11 @@ export function requestLink({
   origin?: string;
   turnstileToken?: unknown;
   appLinkScheme?: unknown;
+  headers?: Record<string, string>;
 } = {}): Promise<Response> {
   const body = { email, link_challenge: challenge, turnstile_token: turnstileToken, app_link_scheme: appLinkScheme };
   return serveOwnerCall({
-    call: { method: 'POST', path: LINKS_PATH, body, headers: CLIENT_HEADERS, origin },
+    call: { method: 'POST', path: LINKS_PATH, body, headers: { ...CLIENT_HEADERS, ...headers }, origin },
     now,
     workerEnv,
   });
@@ -207,6 +209,7 @@ export function redeemLink({
   workerEnv = emailEnv(),
   executionContext,
   turnstileToken = TURNSTILE_DUMMY_TOKEN,
+  headers = {},
 }: {
   token: string;
   verifier?: string;
@@ -215,13 +218,14 @@ export function redeemLink({
   workerEnv?: Env;
   executionContext?: ExecutionContext;
   turnstileToken?: unknown;
+  headers?: Record<string, string>;
 }): Promise<Response> {
   return serveOwnerCall({
     call: {
       method: 'POST',
       path: SESSIONS_PATH,
       body: { identity_token: token, link_verifier: verifier, time_zone: timeZone, turnstile_token: turnstileToken },
-      headers: CLIENT_HEADERS,
+      headers: { ...CLIENT_HEADERS, ...headers },
     },
     now,
     workerEnv,

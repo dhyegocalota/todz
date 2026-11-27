@@ -1,0 +1,159 @@
+---
+title: Auto-hébergement
+sidebarTitle: Configuration du serveur
+---
+
+Faites tourner votre propre serveur todz sur Cloudflare et pointez l’app macOS et vos agents vers lui. Le serveur est un seul Worker avec une base D1 et un Durable Object par projet.
+
+Collez ceci dans votre agent de code. Il fait toute la configuration et ne s’arrête que pour vous demander une connexion, un paiement ou un secret.
+
+```text
+Self-host todz: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/self-host-with-an-agent.md end to end on my Cloudflare account, and stop only to ask me for logins, payments and secrets.
+```
+
+<Accordion title="Le faire à la main">
+
+## Ce qu’il vous faut
+
+- Un compte Cloudflare avec **Workers Paid** (le binding e-mail en a besoin) et un domaine dans ce compte. Ci-dessous, `example.com` le désigne et `api.example.com` désigne le serveur.
+- Node et pnpm, dans les versions de `.nvmrc` et `package.json`, et un Mac avec Xcode et XcodeGen pour l’app.
+- Wrangler connecté à votre compte : `pnpm --filter @todz/api exec wrangler login`.
+
+## 1. Forker, installer et vérifier
+
+Forkez le dépôt, puis, avant de renommer quoi que ce soit :
+
+```bash
+pnpm install
+pnpm verify all
+```
+
+La porte d’entrée a aussi besoin de gitleaks ; son doctor nomme tout ce qui manque. Lancez-la maintenant, car certains tests figent les noms de production propres à todz, par exemple les vérifications de la source de l’API et de l’expéditeur d’e-mails. Après l’étape 2, ces vérifications échouent tant que vous ne les avez pas mises à jour avec vos noms.
+
+## 2. Renommer
+
+Modifiez `apps/api/wrangler.jsonc` :
+
+- `account_id` : l’identifiant de votre compte.
+- `routes` : remplacez `api.todz.app`, `todz.app` et `www.todz.app` par `api.example.com`, `example.com` et `www.example.com`, en gardant `custom_domain` à `true`.
+- `vars.PUBLIC_ORIGIN` : `https://api.example.com`.
+- `vars.SITE_ORIGIN` : `https://example.com`, où sont servies la page d’accueil et ce guide.
+- `send_email[0].allowed_sender_addresses` : votre expéditeur, par exemple `noreply@example.com`.
+- `vars.TELEMETRY` : supprimez cette ligne. Un fork hérite de `on` depuis ce fichier, donc la retirer est ce qui désactive la télémétrie ; elle est désactivée sauf si la valeur est exactement `on` (voir la page Confidentialité).
+- `vars.CLOUD_ACCOUNTS_MAX` : supprimez cette ligne. Un fork hérite du plafond de comptes de todz cloud depuis ce fichier ; sans elle, votre serveur admet tous les comptes (voir la page Utilisation raisonnable).
+- `ratelimits` : gardez les dix-neuf bindings, trois chacun pour la connexion et l’admin, un pour les réponses à l’e-mail du jour, un pour son lien d’arrêt, un pour les propriétaires connectés, un pour les clients MCP, trois pour le rapport d’utilisation, deux pour la recherche de mises à jour, un pour les lectures à pleine capacité et trois pour OAuth (ses routes, et l’enregistrement des clients par client et au total) ; changez chaque `namespace_id` si votre compte utilise déjà `8601` à `8619`.
+
+Gardez le reste tel quel. En particulier, `vars.SIGN_IN_PROVIDER` reste `email`, `vars.EMAIL_SENDER` reste `cloudflare`, et `workers_dev` et `preview_urls` restent `false`. Ne passez jamais `--var` à `wrangler deploy`, et ne définissez jamais de variables dans le tableau de bord : un faux fournisseur, ou un expéditeur qui ne fait que journaliser le lien, ouvre la connexion à n’importe qui.
+
+Dans `apps/api/src/email-sender.ts`, définissez `SENDER_ADDRESS` et `REPLY_TO_ADDRESS` avec vos propres adresses.
+
+## 3. Créer la base de données et appliquer les migrations
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 create todz-directory
+```
+
+Mettez l’identifiant affiché dans `d1_databases[0].database_id`, puis :
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+```
+
+## 4. Déployer
+
+```bash
+pnpm --filter @todz/api server:deploy
+```
+
+Déployez depuis un clone git : le script nomme la version d’après le commit qu’il lit avec `git log`. Quand le déploiement réussit, le script se termine par `todz server ready: https://api.example.com · server 2026.11.25+3f9c2ab · accepts app 0.2.4 or later  →  paste it in todz › Settings › Server` : c’est l’URL que l’étape 7 utilise, avec la version propre du serveur et la plus ancienne version d’app qu’il accepte. Cloudflare crée les enregistrements DNS et les certificats pour `api.example.com`, `example.com` et `www.example.com` ; aucun des trois ne doit déjà avoir un enregistrement A, AAAA ou CNAME. Vérifiez quatre choses :
+- `curl -sS -H "Todz-App-Version: 0.2.4" https://api.example.com/owner/sign-in-method` répond `{"method":"link"}`, et la même requête sans l’en-tête répond `{"error":"app_too_old","minimum_app_version":"0.2.4"}` ;
+- `curl -sS https://api.example.com/health` répond `{"service":"todz","origin":"https://api.example.com","version":"2026.11.25+3f9c2ab","minimum_app_version":"0.2.4"}`, et son `version` est celui qu’a affiché la ligne ready ;
+- l’adresse `todz-api.<subdomain>.workers.dev` du compte ne répond pas ;
+- tant que l’étape 6 n’est pas terminée, l’envoi d’un lien répond 503 `sign_in_unavailable`, ce qui est l’état sûr.
+
+## 5. Envoi d’e-mails
+
+Activez l’envoi pour votre domaine et ajoutez les enregistrements que Cloudflare liste. L’identifiant de zone se trouve sur la page Vue d’ensemble du domaine dans le tableau de bord.
+
+```bash
+pnpm --filter @todz/api exec wrangler email sending enable example.com --zone-id <your zone id>
+pnpm --filter @todz/api exec wrangler email sending dns get example.com --zone-id <your zone id>
+```
+
+## 6. Turnstile
+
+La connexion et l’admin restent fermées (`sign_in_unavailable` et « L’admin est fermée pour le moment. ») tant que Turnstile n’est pas configuré. Dans le tableau de bord Cloudflare, créez un widget Turnstile pour `example.com` en mode Managed. Mettez sa clé de site dans `vars.TURNSTILE_SITE_KEY` dans `apps/api/wrangler.jsonc`, déployez de nouveau avec `pnpm --filter @todz/api server:deploy`, et stockez son secret :
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
+```
+
+Wrangler demande la valeur, ce qui la garde hors de l’historique de votre shell. Ne la passez jamais par un tube, ne l’exportez jamais, et ne l’écrivez jamais dans `wrangler.jsonc`.
+
+L’admin à l’adresse `https://example.com/admin`, où vous lisez les métriques de votre serveur, ne connecte que l’adresse que vous stockez de la même manière ; tant que vous ne le faites pas, elle reste fermée :
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
+```
+
+Les nouveaux comptes sont plafonnés par réseau et par jour (voir [Utilisation raisonnable](https://docs.todz.app/fr/fair-use)), et le plafond identifie chaque adresse avec un secret. Générez-le une fois et stockez-le de la même manière ; tant que vous ne le faites pas, les nouveaux comptes ne peuvent pas s’inscrire et les comptes existants le peuvent encore :
+
+```bash
+openssl rand -hex 32 | pnpm --filter @todz/api exec wrangler secret put SIGN_UP_KEY_SECRET
+```
+
+## 7. Compiler todz pour macOS et le pointer vers votre serveur
+
+Dans `apps/macos/project.yml` :
+- dans les deux cibles, remplacez `DEVELOPMENT_TEAM` par l’identifiant de votre propre équipe (Xcode → Réglages → Comptes ; l’équipe personnelle gratuite convient) ;
+- remplacez `bundleIdPrefix`, les valeurs `TODZ_APP_BUNDLE_IDENTIFIER` et `TODZ_WIDGETS_BUNDLE_IDENTIFIER` et `TODZ_APP_GROUP` par des identifiants à vous.
+
+Compilez ensuite :
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+Votre app Release ouvre les liens de connexion sur `todz`, et le serveur n’a besoin d’aucun réglage pour cela, car l’app nomme son schéma quand elle demande un lien.
+
+Ouvrez ensuite todz › Réglages › Serveur et collez l’URL qu’a affichée le déploiement. L’app la vérifie, se déconnecte du serveur sur lequel elle était et repart de zéro sur le vôtre. Connectez-vous avec votre e-mail.
+
+## 8. Pointer un client MCP vers votre serveur
+
+Les clients qui parlent MCP OAuth se connectent avec la seule adresse, et vous les approuvez dans le navigateur :
+
+```bash
+claude mcp add --transport http todz https://api.example.com/mcp
+```
+
+Votre serveur est son propre serveur d’autorisation OAuth : l’émetteur est `PUBLIC_ORIGIN`, si bien que ses métadonnées se trouvent à `https://api.example.com/.well-known/oauth-authorization-server` et que les e-mails de connexion viennent de votre expéditeur. Rien d’autre n’est à configurer, mais la connexion OAuth a besoin des étapes 5 et 6, comme celle de l’app.
+
+OAuth est la seule façon de connecter un client, sur votre serveur comme sur todz cloud. Un client qui envoie tout autre identifiant reçoit un 401 qui renvoie vers la page de connexion des docs.
+
+## Mise à jour
+
+Récupérez les changements du dépôt amont. Mettez à jour le serveur d’abord, puis l’app : une app plus récente que son serveur ne peut pas vérifier l’adresse du serveur. Lancez :
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+pnpm --filter @todz/api server:deploy
+```
+
+Compilez ensuite l’app de nouveau comme à l’étape 7 ; elle garde le serveur que vous avez collé.
+
+Sur un serveur qui a déjà des propriétaires, un propriétaire qui n’a jamais touché à M’envoyer ma journée par e-mail ne le reçoit qu’après que vous avez activé cette valeur par défaut pour lui à la main, ce qui est sans risque une fois qu’aucun propriétaire de ce type ne recevrait d’e-mail ; les nouveaux propriétaires le reçoivent aussitôt.
+
+Les migrations n’avancent que dans un sens. Ne revenez jamais à une version antérieure à la protection de connexion, que ce soit avec `wrangler rollback` ou la page Deployments du tableau de bord. Pour fermer la connexion, supprimez le secret :
+
+```bash
+pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
+```
+
+## Mises à jour de l’app
+
+- L’app officielle de todz.app se met à jour depuis l’appcast signé de todz.app, même quand elle pointe vers votre serveur : le serveur que vous choisissez et les mises à jour de l’app sont indépendants. Voir [Installer sur Mac › Nouvelles versions](https://docs.todz.app/fr/install-on-mac#4-nouvelles-versions).
+- Une app que vous avez compilée vous-même, comme à l’étape 7, n’installe jamais une mise à jour toute seule ; elle peut proposer l’app officielle, qui remplace votre version. Pour garder votre propre version, compilez-la de nouveau comme ci-dessus, ou installez l’app officielle et collez votre serveur sous **Serveur**.
+- Gardez votre serveur à jour. Quand une nouvelle app a besoin d’un serveur plus récent, l’app dit que le serveur est plus ancien ; mettez à jour le serveur d’abord.
+
+</Accordion>

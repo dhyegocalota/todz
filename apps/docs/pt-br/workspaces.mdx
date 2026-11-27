@@ -1,0 +1,70 @@
+---
+title: Workspaces
+description: Troque de workspace, mostre vários de uma vez, reatribua as teclas, renomeie e exclua.
+---
+
+Um workspace guarda os projetos de uma empresa e começa com uma Caixa de entrada. Cada workspace é isolado dos outros.
+
+## Trocar
+
+Escolha um workspace no menu de workspaces da janela, ou use as teclas com o todz em primeiro plano:
+
+| Teclas | Ação |
+| --- | --- |
+| ⌃1 … ⌃9 | Ir para o workspace 1 … 9, na ordem do menu de workspaces |
+| ⌃⌘[ | **Workspace anterior**, voltando ao último depois do primeiro |
+| ⌃⌘] | **Próximo workspace**, voltando ao primeiro depois do último |
+
+Um workspace além do nono não tem uma tecla própria; chegue a ele com **Workspace anterior** e **Próximo workspace**. As mesmas teclas estão no submenu **Trocar com Control** do menu de workspaces. As teclas ⌘1 … ⌘9 da lista continuam como estão.
+
+## Trocar de qualquer app
+
+**Alternar de qualquer app** vem desativado por padrão, então as teclas acima ficam com os apps que você usa. Ative em **Atalhos de workspace** em todz › Ajustes, e os workspaces 1 … 9 trocam de qualquer app com ⌃⌥⌘1 … ⌃⌥⌘9. Isso não exige nenhuma permissão extra.
+
+- Pressione **Gravar** na linha de um workspace e depois as novas teclas; o Escape cancela (**Cancelar**).
+- Segure duas entre ⌃, ⌥ ou ⌘ junto com a tecla, ou o todz recusa. Teclas que outro workspace ou uma das teclas internas acima já usam são recusadas.
+- Uma linha que você nunca mudou segue os padrões.
+- O todz não enxerga os atalhos de outros apps. Ele registra cada tecla com exclusividade: se outro app já tem essa tecla com exclusividade, a linha mostra **Em uso por outro app** e o todz não a registra. Se outro app usa a mesma tecla de forma comum, os dois podem responder, então escolha teclas que outros apps não usem; o padrão ⌃⌥⌘ evita as mais comuns.
+- Workspace anterior, Próximo workspace e as teclas internas acima não podem ser mudados nesta versão; reatribuí-los volta em uma versão futura.
+
+<Note>
+  As teclas internas ⌃1–⌃9 podem conflitar com as teclas de Mudar para a Mesa do Mission Control enquanto o todz está em primeiro plano. Se as duas estiverem ativas, o sistema vence; desative essas nos Ajustes do Sistema.
+</Note>
+
+## Mostrar vários workspaces
+
+O menu de workspaces lista seus workspaces como interruptores, com **Todos os workspaces** em primeiro. Escolha vários, ou todos; o todz lembra a escolha neste Mac.
+
+- **Todos os workspaces** inclui um workspace que você criar depois. Um conjunto que você escolheu à mão nunca cresce sozinho.
+- Desativar o último workspace escolhido não muda nada.
+- Um workspace que desaparece sai da seleção.
+- Uma tecla de workspace ou o seletor da primeira abertura seleciona exatamente um workspace.
+
+Com dois ou mais à mostra, Hoje, Em breve, Caixa de entrada e Concluídas viram uma só lista ordenada entre eles. A contagem da barra de menus, o popover, os widgets, o fechamento do dia, o resumo da manhã e a faixa mostram a mesma união.
+
+Cada linha é marcada com o workspace antes do projeto, como em `Acme · Launch`. Com um só workspace à mostra, nada é marcado. Um widget desenha a mesma marca, e marcar uma tarefa em um widget a conclui no workspace dela.
+
+## Para onde vai uma tarefa nova
+
+Na união, uma tarefa que você adiciona sem nomear um projeto (pela barra de menus, por um atalho ou pelo fechamento do dia) vai para a Caixa de entrada do workspace principal: o que estava à mostra antes, quando ainda está, ou então o primeiro da lista. Um projeto novo e as chaves de **Conectar um agente** também vão para o workspace principal. Alterar uma tarefa sempre escreve no projeto a que ela pertence.
+
+## Exigir Touch ID para trocar de workspace
+
+todz › Ajustes › Privacidade e atualizações tem **Exigir Touch ID para trocar de workspace**, desativado por padrão. Enquanto está ativado, o todz mostra apenas o workspace em que você está, e **Trocar de workspace…** (⌘K) pede o Touch ID ou a senha do seu Mac. Veja [Privacidade do workspace](/pt-br/workspace-privacy) para saber onde os outros workspaces ficam escondidos, quando ele bloqueia de novo e o que ele não protege.
+
+## Excluir e renomear
+
+Para renomear um workspace, escolha **Renomear workspace…** no menu de workspaces, ou use todz › Ajustes › Workspaces. O nome segue as regras de um novo: de 1 a 80 caracteres, sem caracteres de controle, sem espaços nas pontas.
+
+Para excluir um workspace, escolha **Excluir workspace…** no menu de workspaces, ou use todz › Ajustes › Workspaces. Digite o nome do workspace para confirmar.
+
+- Os projetos dele e os dados deles são removidos na hora e não podem ser restaurados.
+- Qualquer agente conectado aos projetos dele para de funcionar imediatamente.
+- A Caixa de entrada é excluída junto.
+- Excluir o último workspace deixa você sem nenhum; o todz oferece criar um.
+
+Para excluir um projeto, clique com o botão direito nele na barra lateral e escolha **Excluir projeto…**; depois digite o nome dele. A Caixa de entrada não pode ser excluída. Os agentes conectados ao projeto param de funcionar na hora.
+
+<Note>
+  Cada Mac descarta os dados excluídos na próxima vez que falar com o servidor.
+</Note>

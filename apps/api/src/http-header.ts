@@ -19,6 +19,7 @@ export enum HttpHeader {
   ReferrerPolicy = 'Referrer-Policy',
   ServerTiming = 'Server-Timing',
   Accept = 'Accept',
+  AcceptLanguage = 'Accept-Language',
   Vary = 'Vary',
   Link = 'Link',
   SessionDigest = 'Todz-Session-Digest',

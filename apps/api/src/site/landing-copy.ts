@@ -1,3 +1,11 @@
+import { Language } from '@todz/types';
+import { LANDING_COPY_PORTUGUESE_BRAZIL } from './landing-copy-portuguese-brazil';
+import { LANDING_COPY_SPANISH } from './landing-copy-spanish';
+import { LANDING_COPY_GERMAN } from './landing-copy-german';
+import { LANDING_COPY_FRENCH } from './landing-copy-french';
+import { LANDING_COPY_JAPANESE } from './landing-copy-japanese';
+import { LANDING_COPY_KOREAN } from './landing-copy-korean';
+import { LANDING_COPY_CHINESE } from './landing-copy-chinese';
 import { formatShortId } from '@todz/core';
 import { AUTHOR, COMPANY } from '@todz/types';
 import { MCP_COPY, McpToolName } from '../mcp-copy';
@@ -29,6 +37,11 @@ export const LANDING_COPY = {
     footerSelfHost: 'Self-host guide',
     footerInstall: 'Install on Mac',
     footerGithub: 'GitHub',
+    languageLabel: 'Language',
+    themeLabel: 'Theme',
+    themeSystem: 'System',
+    themeLight: 'Light',
+    themeDark: 'Dark',
     creditPrefix: '© todz ·',
     creditLead: 'todz is a product of',
     creditName: COMPANY.tradeName,
@@ -176,11 +189,15 @@ export const LANDING_COPY = {
   },
 };
 
-const { day } = LANDING_COPY.benefits;
+export type LandingCopy = typeof LANDING_COPY;
 
-export const LANDING_DAY_LINES = [
-  ...[day.email, day.glance, day.agent, day.close].map(({ time, title, body }) => `${time} ${title}: ${body}`),
-  ...[day.extras.ribbon, day.extras.temperature, day.extras.siri].map(({ label, detail }) => `${label}: ${detail}`),
-];
-
-export const LANDING_LOCK_LINE = `${LANDING_COPY.benefits.lock.title}: ${LANDING_COPY.benefits.lock.body}`;
+export const LANDING_COPY_BY_LANGUAGE: Record<Language, LandingCopy> = {
+  [Language.English]: LANDING_COPY,
+  [Language.PortugueseBrazil]: LANDING_COPY_PORTUGUESE_BRAZIL,
+  [Language.Spanish]: LANDING_COPY_SPANISH,
+  [Language.German]: LANDING_COPY_GERMAN,
+  [Language.French]: LANDING_COPY_FRENCH,
+  [Language.Japanese]: LANDING_COPY_JAPANESE,
+  [Language.Korean]: LANDING_COPY_KOREAN,
+  [Language.Chinese]: LANDING_COPY_CHINESE,
+};

@@ -1,0 +1,61 @@
+---
+title: Agent verbinden
+description: Melde Claude Code, Claude.ai oder Codex per OAuth bei todz an. API-Schlüssel wurden entfernt.
+---
+
+Der todz-MCP-Server unter `https://api.todz.app/mcp` meldet Clients per MCP-OAuth an. Füge die URL in deinem Client hinzu. Der erste Aufruf öffnet deinen Browser, und dort genehmigst du die App. OAuth ist der einzige Weg, sich zu verbinden.
+
+Wenn du einen eigenen Server betreibst, nimm dessen URL statt `https://api.todz.app/mcp`.
+
+## Breaking Change: API-Schlüssel wurden entfernt
+
+Am 27.11.2026 hat todz die API-Schlüssel entfernt. Projektschlüssel und Owner-Schlüssel funktionieren nicht mehr, und der Server hat jeden gespeicherten Schlüssel gelöscht. Ein Client, der noch einen Schlüssel sendet, bekommt `401` mit einem Verweis auf diese Seite.
+
+Um einen Agenten wieder zu verbinden, der einen Schlüssel benutzt hat, führe `claude mcp add --transport http todz https://api.todz.app/mcp` aus und melde dich an, wie unten beschrieben. Entferne den alten `Authorization`-Header und die Variable `TODZ_API_KEY`, falls du eine gesetzt hast. Der Bildschirm **Agent verbinden** der Mac-App ist mit demselben Update verschwunden.
+
+## Mit OAuth anmelden
+
+1. Gib deine todz-E-Mail-Adresse ein und bestehe die Prüfung.
+2. Öffne den Anmeldelink aus der Mail **im selben Browser**.
+3. Lies den Zustimmungsbildschirm: Er nennt die App und wohin sie dich zurückleitet.
+4. Wähle ein Projekt. Das erste ist vorausgewählt. Oder wähle **Dein ganzes Konto (Owner-Scope)**, das nie vorausgewählt ist und warnt: „Er kann jede Aufgabe lesen und ändern sowie jeden Workspace und jedes Projekt anlegen, umbenennen und löschen.“
+5. Genehmige oder lehne ab.
+
+Ein Projekt-Scope gibt dir die Aufgaben-Tools sowie die anderen Projekte seines Workspace für `move` und `projects`. Ein Owner-Scope gibt dir die Konto-Tools und dieselben Aufgaben-Tools für jedes Projekt des Kontos, jeweils mit der `project`-ID aus `workspaces`. Der Verlauf einer Aufgabe nennt die App unter dem Namen, den sie registriert hat. Siehe [MCP-Tools](/de/mcp-tools).
+
+Access-Tokens gelten eine Stunde und erneuern sich selbst. Refresh-Tokens gelten 30 Tage und rotieren bei jeder Verwendung; eine einzige Wiederholung innerhalb von 5 Sekunden erhält ein neues Paar, und ein bereits verbrauchtes, das später erneut benutzt wird, trennt die App. todz speichert Tokens nur als Digests. Fair Use und das Limit der Cloud gelten für jede verbundene App.
+
+Um eine App zu trennen, öffne in der Mac-App **Einstellungen** › **Verbundene Apps**. Die App stoppt sofort.
+
+Redirect-Adressen müssen `https` oder eine Loopback-Adresse sein (`127.0.0.1`, `localhost`, `[::1]`). Eigene Schemata werden abgelehnt, wie es die Spezifikation verlangt.
+
+### Claude Code
+
+```bash
+claude mcp add --transport http todz https://api.todz.app/mcp
+```
+
+Führe dann in Claude Code `/mcp` aus und wähle todz, um dich anzumelden. Claude Code öffnet den Browser.
+
+### Claude.ai und Claude Desktop
+
+Öffne **Einstellungen** › **Konnektoren** › **Eigenen Konnektor hinzufügen**, trage `https://api.todz.app/mcp` als URL ein und drücke **Verbinden**.
+
+### Codex
+
+Füge das in `~/.codex/config.toml` ein:
+
+```toml
+[mcp_servers.todz]
+url = "https://api.todz.app/mcp"
+```
+
+Melde dich dann an:
+
+```bash
+codex mcp login todz
+```
+
+### Cursor
+
+Cursor meldet sich bei MCP-Servern mit einer `cursor://`-Adresse an, die die MCP-Spezifikation nicht erlaubt und die todz ablehnt. Cursor kann sich nicht mit todz verbinden, bis es sich mit einer `https`- oder Loopback-Adresse anmeldet.

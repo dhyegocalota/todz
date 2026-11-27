@@ -1,0 +1,159 @@
+---
+title: 셀프 호스팅
+sidebarTitle: 서버 설정
+---
+
+Cloudflare에서 나만의 todz 서버를 운영하고, macOS 앱과 에이전트가 그 서버를 바라보게 해요. 서버는 D1 데이터베이스 하나와 프로젝트마다 Durable Object 하나가 딸린 Worker 하나예요.
+
+이것을 코딩 에이전트에 붙여넣어 주세요. 설정은 에이전트가 모두 진행하고, 로그인, 결제, 시크릿이 필요할 때만 멈춰서 물어봐요.
+
+```text
+Self-host todz: follow https://raw.githubusercontent.com/dhyegocalota/todz/main/docs/runbooks/self-host-with-an-agent.md end to end on my Cloudflare account, and stop only to ask me for logins, payments and secrets.
+```
+
+<Accordion title="직접 하기">
+
+## 필요한 것
+
+- **Workers Paid** 요금제의 Cloudflare 계정(이메일 바인딩에 필요해요)과 그 계정에 있는 도메인. 아래에서 `example.com`은 그 도메인을, `api.example.com`은 서버를 가리켜요.
+- `.nvmrc`와 `package.json`에 적힌 버전의 Node와 pnpm, 그리고 앱을 위한 Xcode와 XcodeGen이 설치된 Mac.
+- 내 계정으로 로그인한 Wrangler: `pnpm --filter @todz/api exec wrangler login`.
+
+## 1. 포크, 설치, 확인
+
+저장소를 포크한 다음, 이름을 바꾸기 전에 먼저 이렇게 해요.
+
+```bash
+pnpm install
+pnpm verify all
+```
+
+게이트에는 gitleaks도 필요해요. 빠진 것이 있으면 doctor가 알려 줘요. 일부 테스트는 API 소스와 이메일 발신자 검사처럼 todz 자체의 프로덕션 이름을 고정해 두기 때문에 지금 실행해 보세요. 2단계 이후에는 그 고정값을 내 이름으로 바꾸기 전까지 해당 테스트가 실패해요.
+
+## 2. 이름 바꾸기
+
+`apps/api/wrangler.jsonc`를 수정해요.
+
+- `account_id`: 내 계정의 id.
+- `routes`: `api.todz.app`, `todz.app`, `www.todz.app`을 `api.example.com`, `example.com`, `www.example.com`으로 바꾸고 `custom_domain`은 `true`로 유지해요.
+- `vars.PUBLIC_ORIGIN`: `https://api.example.com`.
+- `vars.SITE_ORIGIN`: `https://example.com`. 랜딩 페이지와 이 가이드가 제공되는 곳이에요.
+- `send_email[0].allowed_sender_addresses`: 내 발신자. 예를 들면 `noreply@example.com`.
+- `vars.TELEMETRY`: 이 줄을 지워요. 포크는 이 파일에서 `on`을 물려받으므로 이 줄을 지워야 텔레메트리가 꺼져요. 값이 정확히 `on`이 아니면 꺼져 있어요(개인정보 보호 페이지를 참고하세요).
+- `vars.CLOUD_ACCOUNTS_MAX`: 이 줄을 지워요. 포크는 이 파일에서 todz cloud의 계정 상한을 물려받아요. 이 줄이 없으면 서버는 모든 계정을 받아들여요(공정 사용 페이지를 참고하세요).
+- `ratelimits`: 열아홉 개의 바인딩을 그대로 두세요. 로그인과 관리자에 각각 세 개, 하루 메일 답장에 하나, 그 중지 링크에 하나, 로그인한 소유자에 하나, MCP 클라이언트에 하나, 사용 보고서에 세 개, 업데이트 확인에 두 개, 수용량 초과 시 읽기에 하나, OAuth에 세 개(경로, 그리고 클라이언트별과 전체 클라이언트 등록)예요. 계정에서 이미 `8601`부터 `8619`까지를 쓰고 있다면 각 `namespace_id`를 바꾸세요.
+
+나머지는 그대로 두세요. 특히 `vars.SIGN_IN_PROVIDER`는 `email`로, `vars.EMAIL_SENDER`는 `cloudflare`로, `workers_dev`와 `preview_urls`는 `false`로 유지해요. `wrangler deploy`에 `--var`를 절대 넘기지 말고 대시보드에서 변수를 설정하지도 마세요. 가짜 제공자나 링크만 로그로 남기는 발신자는 누구에게나 로그인을 열어 줘요.
+
+`apps/api/src/email-sender.ts`에서 `SENDER_ADDRESS`와 `REPLY_TO_ADDRESS`를 내 주소로 설정하세요.
+
+## 3. 데이터베이스를 만들고 마이그레이션 적용하기
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 create todz-directory
+```
+
+출력된 id를 `d1_databases[0].database_id`에 넣은 다음 이렇게 해요.
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+```
+
+## 4. 배포
+
+```bash
+pnpm --filter @todz/api server:deploy
+```
+
+git 클론에서 배포하세요. 스크립트는 `git log`로 읽은 커밋의 이름을 따서 빌드 이름을 정해요. 배포에 성공하면 스크립트는 `todz server ready: https://api.example.com · server 2026.11.25+3f9c2ab · accepts app 0.2.4 or later  →  paste it in todz › Settings › Server`로 끝나요. 7단계에서 쓰는 URL이 바로 이것이고, 서버 자체의 버전과 서버가 받아들이는 가장 오래된 앱 버전이 함께 나와요. Cloudflare가 `api.example.com`, `example.com`, `www.example.com`의 DNS 레코드와 인증서를 만들어 줘요. 세 도메인 모두 이미 A, AAAA, CNAME 레코드가 있으면 안 돼요. 네 가지를 확인하세요.
+- `curl -sS -H "Todz-App-Version: 0.2.4" https://api.example.com/owner/sign-in-method`는 `{"method":"link"}`로 답하고, 헤더 없이 같은 요청을 보내면 `{"error":"app_too_old","minimum_app_version":"0.2.4"}`로 답해요.
+- `curl -sS https://api.example.com/health`는 `{"service":"todz","origin":"https://api.example.com","version":"2026.11.25+3f9c2ab","minimum_app_version":"0.2.4"}`로 답하고, 그 `version`은 ready 줄에 출력된 것과 같아요.
+- 계정의 `todz-api.<subdomain>.workers.dev` 주소는 응답하지 않아요.
+- 6단계를 마치기 전까지 링크를 보내면 503 `sign_in_unavailable`로 답해요. 이것이 안전한 상태예요.
+
+## 5. 이메일 발송
+
+내 도메인의 발송을 활성화하고 Cloudflare가 알려 주는 레코드를 추가해요. 영역 id는 대시보드에서 도메인의 개요 페이지에 있어요.
+
+```bash
+pnpm --filter @todz/api exec wrangler email sending enable example.com --zone-id <your zone id>
+pnpm --filter @todz/api exec wrangler email sending dns get example.com --zone-id <your zone id>
+```
+
+## 6. Turnstile
+
+Turnstile을 설정하기 전까지 로그인과 관리자는 닫혀 있어요(`sign_in_unavailable`와 "The admin is closed right now."). Cloudflare 대시보드에서 `example.com`용 Turnstile 위젯을 Managed 모드로 만드세요. 사이트 키를 `apps/api/wrangler.jsonc`의 `vars.TURNSTILE_SITE_KEY`에 넣고 `pnpm --filter @todz/api server:deploy`로 다시 배포한 다음, 시크릿을 저장해요.
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
+```
+
+Wrangler가 값을 물어보므로 셸 기록에 남지 않아요. 파이프로 넘기거나 export하거나 `wrangler.jsonc`에 적지 마세요.
+
+서버의 지표를 읽는 `https://example.com/admin`의 관리자는 같은 방식으로 저장한 주소만 로그인시켜요. 저장하기 전까지는 닫혀 있어요.
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
+```
+
+새 계정은 하루 네트워크당 수가 제한되고([공정 사용](https://docs.todz.app/ko/fair-use) 참고), 이 상한은 시크릿으로 각 주소를 키로 묶어요. 한 번 생성해서 같은 방식으로 저장하세요. 저장하기 전까지는 새 계정이 가입할 수 없고, 기존 계정은 그대로 로그인할 수 있어요.
+
+```bash
+openssl rand -hex 32 | pnpm --filter @todz/api exec wrangler secret put SIGN_UP_KEY_SECRET
+```
+
+## 7. macOS 앱 빌드하고 서버에 연결하기
+
+`apps/macos/project.yml`에서 이렇게 해요.
+- 두 타겟 모두에서 `DEVELOPMENT_TEAM`을 내 팀의 id로 바꿔요(Xcode → 설정 → 계정. 무료 Personal Team도 괜찮아요).
+- `bundleIdPrefix`, `TODZ_APP_BUNDLE_IDENTIFIER`와 `TODZ_WIDGETS_BUNDLE_IDENTIFIER` 값, `TODZ_APP_GROUP`을 내 식별자로 바꿔요.
+
+그런 다음 빌드해요.
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+Release 앱은 `todz`에서 로그인 링크를 열어요. 앱이 링크를 요청할 때 스킴 이름을 알려 주기 때문에 서버에는 따로 설정할 것이 없어요.
+
+그런 다음 todz › 설정 › 서버를 열고 배포가 출력한 URL을 붙여 넣으세요. 앱이 그 URL을 확인하고, 쓰던 서버에서 로그아웃한 뒤 내 서버에서 깨끗한 상태로 시작해요. 이메일로 로그인하세요.
+
+## 8. MCP 클라이언트를 내 서버에 연결하기
+
+MCP OAuth를 쓰는 클라이언트는 주소만으로 연결되고, 브라우저에서 승인해요.
+
+```bash
+claude mcp add --transport http todz https://api.example.com/mcp
+```
+
+내 서버는 자체 OAuth 인가 서버예요. 발급자는 `PUBLIC_ORIGIN`이라서 메타데이터는 `https://api.example.com/.well-known/oauth-authorization-server`에 있고, 로그인 메일은 내 발신자에서 가요. 따로 설정할 것은 없지만 OAuth 로그인에는 앱과 마찬가지로 5단계와 6단계가 필요해요.
+
+todz cloud와 마찬가지로 내 서버에서도 OAuth가 클라이언트가 연결하는 유일한 방법이에요. 다른 자격 증명을 보내는 클라이언트는 문서의 연결 페이지를 안내하는 401을 받아요.
+
+## 업데이트하기
+
+업스트림에서 pull하세요. 서버를 먼저 업데이트한 다음 앱을 업데이트해요. 서버보다 새로운 앱은 서버의 주소를 확인할 수 없어요. 이렇게 실행해요.
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+pnpm --filter @todz/api server:deploy
+```
+
+그런 다음 7단계처럼 앱을 다시 빌드하세요. 붙여 넣은 서버는 그대로 유지돼요.
+
+이미 소유자가 있는 서버에서, 내 하루를 이메일로 받기를 한 번도 건드리지 않은 소유자는 그 기본값을 직접 켜 줘야만 메일을 받아요. 그런 소유자에게 메일이 가도 괜찮을 때에만 켜세요. 새 소유자는 바로 받아요.
+
+마이그레이션은 앞으로만 나아가요. 로그인 가드 이전 버전으로는 절대 롤백하지 마세요. `wrangler rollback`이든 대시보드의 Deployments 페이지든 마찬가지예요. 로그인을 닫으려면 시크릿을 삭제하세요.
+
+```bash
+pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
+```
+
+## 앱 업데이트
+
+- todz.app의 공식 앱은 내 서버를 가리키더라도 todz.app의 서명된 appcast에서 스스로 업데이트해요. 선택한 서버와 앱 업데이트는 서로 독립적이에요. [Mac에 설치 › 업데이트](https://docs.todz.app/ko/install-on-mac#4-업데이트)를 참고하세요.
+- 7단계처럼 직접 빌드한 앱은 스스로 업데이트를 설치하지 않아요. 공식 앱을 제안할 수 있고, 그것을 설치하면 내 빌드가 대체돼요. 내 빌드를 유지하려면 위처럼 다시 빌드하거나, 공식 앱을 설치하고 **서버**에 내 서버를 붙여 넣으세요.
+- 서버를 최신으로 유지하세요. 새 앱에 더 새로운 서버가 필요하면 앱이 서버가 오래됐다고 알려 줘요. 서버를 먼저 업데이트하세요.
+
+</Accordion>

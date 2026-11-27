@@ -1,3 +1,4 @@
+import { Language } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { type DayMailTask, dayMail } from '../../src/emails/day-mail';
 
@@ -38,6 +39,7 @@ function mailOf({
     workspaceName: INBOX_WORKSPACE,
     hasSeveralWorkspaces,
     minutes,
+    language: Language.English,
   });
 }
 

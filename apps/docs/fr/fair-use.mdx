@@ -1,0 +1,52 @@
+---
+title: Utilisation raisonnable
+---
+
+todz est gratuit. Pour qu’un seul compte ne puisse pas mettre le service à terre ni faire dépasser la facture du forfait, chaque compte a les limites ci-dessous. Elles sont généreuses : une liste de tâches personnelle n’en approche pas.
+
+## Les limites
+
+| Limite | Par défaut | Ce qui se passe au-delà |
+|---|---|---|
+| Espaces de travail par compte | 20 | La création d’un espace de travail est refusée |
+| Projets par espace de travail | 100 | La création d’un projet est refusée |
+| Tâches ouvertes par projet | 5 000 | L’ajout ou la réouverture de tâches est refusé ; terminer une tâche libère une place |
+| Titre | 500 caractères | La tâche est refusée |
+| Notes | 20 000 caractères | La tâche est refusée |
+| Modifications de tâches par jour | 1 000 (jour UTC) | Compte l’ajout, la modification, l’achèvement et la réouverture de tâches, y compris une tâche ajoutée en répondant à l’e-mail du jour, et rien d’autre (créer un espace de travail ou un projet ne compte pas). Les modifications sont refusées jusqu’à minuit UTC ; la lecture continue de fonctionner |
+| Texte de tâches stocké | 50 Mo | Les écritures sont refusées ; la lecture continue de fonctionner. Le compte est une borne supérieure : il additionne chaque titre, note et modification telle qu’écrite et ne baisse pas quand vous modifiez ou supprimez, si bien que l’opérateur peut le réinitialiser pour un compte |
+| Nouveaux comptes par réseau et par jour | 5 | L’inscription est refusée jusqu’au lendemain |
+
+Un refus vous dit ce qui s’est passé. Le serveur répond avec un code et une phrase simple ; pour un agent, l’outil répond avec la même phrase.
+
+## Adresses e-mail jetables
+
+Il n’est pas possible d’ouvrir de nouveaux comptes avec l’adresse d’un service de messagerie jetable. Les comptes existants ne sont pas concernés.
+
+## Suspension
+
+Si un compte est utilisé de façon abusive, l’opérateur peut le suspendre. Un compte suspendu peut toujours lire ses tâches et se déconnecter. Il ne peut rien modifier, et ses agents cessent de répondre jusqu’à ce que le compte soit rétabli. Rien n’est supprimé.
+
+## Places sur todz cloud
+
+Les places gratuites sur todz cloud sont extrêmement limitées. todz cloud fonctionne avec un budget mensuel fixe, il n’admet donc au plus que 50 comptes actifs. L’auto-hébergement reste toujours ouvert : [faites tourner votre propre serveur](/fr/self-host) sans limite de comptes. Un compte est actif s’il s’est connecté, a été vu connecté ou a écrit une tâche au cours des 90 derniers jours ; un compte qui reste inactif pendant 90 jours libère sa place et, si le cloud est complet à son retour, attend une place comme une nouvelle adresse.
+
+- Les comptes déjà admis ne sont jamais refusés à cause de la limite.
+- Quand le cloud est complet, la demande d’un lien de connexion a le même aspect pour toutes les adresses : la réponse est toujours qu’un lien est en route. Une adresse qui ne peut pas se connecter reçoit un message qui dit « todz cloud est complet pour le moment », avec un lien personnel vers la file d’attente sur todz.app/cloud-queue, valable une semaine, où elle confirme son adresse pour être invitée quand une place se libère, et un lien pour [s’auto-héberger](/fr/self-host).
+- Quand l’utilisation du mois approche des quotas inclus dans le forfait, l’opérateur reçoit un e-mail. Au-delà de 95 %, les comptes qui écrivent le plus ce mois-ci voient leurs nouvelles écritures refusées avec « todz cloud est à pleine capacité ce mois-ci » (HTTP 429, avec un `Retry-After` du nombre de secondes jusqu’au premier du mois prochain, UTC), et les lectures de tout le monde ralentissent à quelques-unes par minute. Vos tâches ne sont pas supprimées, et les autres comptes continuent d’écrire comme d’habitude.
+- Chaque e-mail envoyé par todz cloud compte dans son quota mensuel d’e-mails, si bien qu’une adresse ne reçoit pas plus de 10 e-mails par jour.
+
+Les serveurs auto-hébergés n’ont pas de limite de comptes, sauf s’ils définissent `CLOUD_ACCOUNTS_MAX` avec un entier positif.
+
+## Serveurs auto-hébergés
+
+Les valeurs sont des variables du Worker. Omettez-en une pour garder sa valeur par défaut ; définissez-la avec un entier positif pour la changer :
+
+- `FAIR_USE_WORKSPACES_MAX`
+- `FAIR_USE_PROJECTS_PER_WORKSPACE_MAX`
+- `FAIR_USE_OPEN_TASKS_PER_PROJECT_MAX`
+- `FAIR_USE_WRITES_PER_DAY_MAX`
+- `FAIR_USE_STORED_BYTES_MAX` (en octets)
+- `FAIR_USE_SIGN_UPS_PER_CLIENT_DAY_MAX`
+
+Le plafond des nouveaux comptes demande aussi le secret `SIGN_UP_KEY_SECRET` (voir [Configuration du serveur](/fr/self-host#6-turnstile)) ; sans lui, les nouveaux comptes ne peuvent pas s’inscrire. Une valeur qui n’est pas un entier positif arrête le serveur avec une erreur qui nomme la variable. Les tailles des titres et des notes sont fixes, car l’app et les outils d’agent les annoncent.

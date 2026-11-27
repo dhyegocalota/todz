@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import { escapedHtml } from '../src/escaped-html';
-import { LANDING_COPY, LANDING_LOCK_LINE } from '../src/site/landing-copy';
+import { LANDING_COPY } from '../src/site/landing-copy';
+import { LANDING_LOCK_LINE } from '../src/site/landing-lines';
 import { LANDING_MARKDOWN_FILE } from '../src/site/landing-markdown';
 import { serveLandingPage } from '../src/site/landing-page';
+import { ENGLISH_PREFERENCES } from './english-preferences';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { DISCOVERY_FILES } from '../src/site/site-discovery';
 import { DiscoveryPath } from '../src/site/site-urls';
@@ -24,7 +26,7 @@ function wordCountOf(text: string): number {
 }
 
 async function lockCardOf(): Promise<string> {
-  const html = await serveLandingPage({ stars: null }).text();
+  const html = await serveLandingPage({ stars: null, preferences: ENGLISH_PREFERENCES }).text();
   const card = html.match(CARD_PATTERN)?.find((candidate) => candidate.includes(escapedHtml(lock.title)));
   if (card === undefined) throw new Error('the landing has a workspace lock card');
   return card;
@@ -60,7 +62,7 @@ describe('the benefit cards', () => {
 
 describe('the workspace lock card', () => {
   test('is the third plain benefit card, after the agents and offline cards, with the headline and body', async () => {
-    const html = await serveLandingPage({ stars: null }).text();
+    const html = await serveLandingPage({ stars: null, preferences: ENGLISH_PREFERENCES }).text();
     const card = await lockCardOf();
     expect(card).toContain(`<h3 class="benefit-title">${escapedHtml(lock.title)}</h3>`);
     expect(card).toContain(`<p class="benefit-body">${escapedHtml(lock.body)}</p>`);
@@ -89,7 +91,7 @@ describe('the workspace lock beside the other features', () => {
   });
 
   test('is in the structured data feature list', async () => {
-    const html = await serveLandingPage({ stars: null }).text();
+    const html = await serveLandingPage({ stars: null, preferences: ENGLISH_PREFERENCES }).text();
     const structuredData = STRUCTURED_DATA_PATTERN.exec(html)?.[FIRST_CAPTURE];
     if (structuredData === undefined) throw new Error('the landing carries structured data');
     const graph: { '@graph': { featureList?: string[] }[] } = JSON.parse(structuredData);

@@ -10,7 +10,7 @@ extension AppModel {
     }
 
     private var readyWidgetSnapshot: WidgetSnapshotState {
-        let shown = widgetWorkspaces
+        let shown = shownWorkspaces
         guard isTodayKnown(in: shown), let views = taskViews else { return .absent }
         return .ready(WidgetSnapshot.of(views: views, workspaces: shown, day: today, timeZone: timeZone, showsDayTemperature: showsDayTemperature))
     }

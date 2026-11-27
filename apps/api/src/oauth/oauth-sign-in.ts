@@ -10,6 +10,7 @@ import { HttpStatus } from '../http-status';
 import { OwnerErrorCode, errorResponse } from '../owner-errors';
 import { parsedPublicBody } from '../owner-request';
 import { OwnerRoute } from '../owner-routes';
+import { languageOfRequest } from '../page-preferences';
 import { admittedOwner } from '../owner-sign-in';
 import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import { isSameOriginRequest } from '../same-origin';
@@ -113,47 +114,52 @@ async function refusalOfAsk({
 export async function serveOAuthSignInLink(context: OAuthContext): Promise<Response> {
   const { request, env, now, issuer } = context;
   const guard = linkGuardOf(context);
-  if (guard === null) return refusalPageOf(OAuthRefusal.Unavailable);
-  if (!isSameOriginRequest({ request, origin: issuer })) return refusalPageOf(OAuthRefusal.Forbidden);
+  if (guard === null) return refusalPageOf({ request, refusal: OAuthRefusal.Unavailable });
+  if (!isSameOriginRequest({ request, origin: issuer })) return refusalPageOf({ request, refusal: OAuthRefusal.Forbidden });
   const form = await linkFormOf(request);
-  if (form === null) return refusalPageOf(OAuthRefusal.Invalid);
+  if (form === null) return refusalPageOf({ request, refusal: OAuthRefusal.Invalid });
   const authorization = await validRequestOf({ context, form });
-  if (authorization === null) return refusalPageOf(OAuthRefusal.Invalid);
+  if (authorization === null) return refusalPageOf({ request, refusal: OAuthRefusal.Invalid });
   const params = authorization.params;
   const clientName = authorization.client.name;
   const address = normalizedAddress(form[OAuthField.Email]);
-  if (address === null) return signInPageOf({ clientName, params, notice: OAuthNotice.InvalidAddress, siteKey: guard.siteKey });
+  if (address === null) return signInPageOf({ request, clientName, params, notice: OAuthNotice.InvalidAddress, siteKey: guard.siteKey });
   const askRefusal = await refusalOfAsk({ context, address, turnstileToken: form[TURNSTILE_RESPONSE_FIELD] });
-  if (askRefusal !== null) return answerOfRefusal({ refusal: askRefusal, clientName, params, siteKey: guard.siteKey });
+  if (askRefusal !== null) return answerOfRefusal({ request, refusal: askRefusal, clientName, params, siteKey: guard.siteKey });
   const challenge = generateCredentialSecret();
   const linkOf = (token: string) =>
     `${issuer}${OAuthPath.LinkPage}#${OAuthField.Token}=${token}&${OAuthField.Request}=${encodeURIComponent(params.toString())}`;
+  const language = languageOfRequest({ request });
   const mailing = await mailSignInLink({
     env,
     sender: guard.sender,
     address,
     challenge: await digestCredential(challenge),
     now,
-    mailOf: (token) => oauthSignInMail({ to: address, link: linkOf(token), origin: issuer }),
+    language,
+    mailOf: (token) => oauthSignInMail({ to: address, link: linkOf(token), origin: issuer, language }),
   });
-  if (mailing === LinkMailing.Unavailable) return refusalPageOf(OAuthRefusal.Unavailable);
-  if (mailing === LinkMailing.Refused) return signInPageOf({ clientName, params, notice: OAuthNotice.TryAgain, siteKey: guard.siteKey });
-  return inboxPageOf([oauthCookieHeaderOf({ cookie: OAuthCookie.Challenge, value: challenge })]);
+  if (mailing === LinkMailing.Unavailable) return refusalPageOf({ request, refusal: OAuthRefusal.Unavailable });
+  if (mailing === LinkMailing.Refused)
+    return signInPageOf({ request, clientName, params, notice: OAuthNotice.TryAgain, siteKey: guard.siteKey });
+  return inboxPageOf({ request, cookies: [oauthCookieHeaderOf({ cookie: OAuthCookie.Challenge, value: challenge })] });
 }
 
 function answerOfRefusal({
+  request,
   refusal,
   clientName,
   params,
   siteKey,
 }: {
+  request: Request;
   refusal: Response;
   clientName: string;
   params: URLSearchParams;
   siteKey: string;
 }): Response {
-  if (!RETRYABLE_STATUSES.includes(refusal.status)) return refusalPageOf(OAuthRefusal.Unavailable);
-  return signInPageOf({ clientName, params, notice: OAuthNotice.TryAgain, siteKey });
+  if (!RETRYABLE_STATUSES.includes(refusal.status)) return refusalPageOf({ request, refusal: OAuthRefusal.Unavailable });
+  return signInPageOf({ request, clientName, params, notice: OAuthNotice.TryAgain, siteKey });
 }
 
 async function spentSubjectOf({

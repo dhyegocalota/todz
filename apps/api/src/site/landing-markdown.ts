@@ -1,7 +1,8 @@
 import { REPOSITORY } from '@todz/types';
 import { DISCOVERY_COPY } from './discovery-copy';
 import type { DiscoveryFile } from './discovery-response';
-import { LANDING_COPY, LANDING_DAY_LINES } from './landing-copy';
+import { LANDING_COPY } from './landing-copy';
+import { LANDING_DAY_LINES } from './landing-lines';
 import { fenced, linesOf } from './markdown-lines';
 import { DOCS_INSTALL_URL, DOWNLOAD_URL } from './site-urls';
 

@@ -1,7 +1,8 @@
 import { exports } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { COMPANY, REPOSITORY } from '@todz/types';
-import { LANDING_COPY, LANDING_DAY_LINES, LANDING_LOCK_LINE } from '../src/site/landing-copy';
+import { LANDING_COPY } from '../src/site/landing-copy';
+import { LANDING_DAY_LINES, LANDING_LOCK_LINE } from '../src/site/landing-lines';
 import { OPEN_GRAPH_IMAGE } from '../src/site/site-icons';
 import { SITE_URL } from '../src/site/site-urls';
 
