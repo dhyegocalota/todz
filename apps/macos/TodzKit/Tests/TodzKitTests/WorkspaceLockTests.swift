@@ -63,6 +63,21 @@ private let garden = Workspace(identifier: "garden", name: "Garden", createdAt: 
         #expect(!harness.lock.requiresAuthentication(for: .showWorkspaces(identifiers: ["acme"]), current: "acme"))
     }
 
+    @Test func switchingWorkspacesNeedsAuthenticationWhileLockedWhateverTheCurrentWorkspace() throws {
+        let harness = try LockHarness(isOn: true)
+        #expect(harness.lock.requiresAuthentication(for: .switchWorkspaces, current: "acme"))
+        #expect(harness.lock.requiresAuthentication(for: .switchWorkspaces, current: nil))
+    }
+
+    @Test func switchingWorkspacesNeedsNoAuthenticationWithTheLockOffOrInAnUnlockedSession() async throws {
+        let off = try LockHarness()
+        #expect(!off.lock.requiresAuthentication(for: .switchWorkspaces, current: "acme"))
+        let unlocked = try LockHarness(isOn: true)
+        _ = await unlocked.lock.authorize(.switchWorkspaces, current: "acme")
+        #expect(!unlocked.lock.requiresAuthentication(for: .switchWorkspaces, current: "acme"))
+        #expect(unlocked.authenticator.asked == [.switchWorkspaces])
+    }
+
     @Test func choosingWithNoCurrentWorkspaceNeedsAuthentication() throws {
         let harness = try LockHarness(isOn: true)
         #expect(harness.lock.requiresAuthentication(for: .showWorkspaces(identifiers: ["acme"]), current: nil))

@@ -3,6 +3,14 @@ extension AppModel {
         workspaceLock.presented(workspaces, current: activeWorkspaceIdentifier)
     }
 
+    public var visibleWorkspaces: [Workspace] {
+        []
+    }
+
+    public func beginWorkspaceSwitch() async -> Bool {
+        false
+    }
+
     public func isLocked(workspaceIdentifier: String) -> Bool {
         workspaceLock.isLocked(workspaceIdentifier: workspaceIdentifier, current: activeWorkspaceIdentifier)
     }

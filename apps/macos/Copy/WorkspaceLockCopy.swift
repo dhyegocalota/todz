@@ -22,6 +22,7 @@ enum WorkspaceLockCopy {
     static func reason(for action: WorkspaceLockAction) -> String {
         switch action {
         case .showWorkspaces: reasonSwitch
+        case .switchWorkspaces: reasonSwitch
         case .createWorkspace: reasonCreate
         case .removeWorkspace: reasonRemove
         case .turnOff: reasonTurnOff
