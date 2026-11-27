@@ -1,6 +1,6 @@
 # The menu bar item that macOS hides, and deleting a task from the app
 
-**Status:** Approved
+**Status:** Shipped 2026-11-27
 **Tier:** 🟡
 **Owner approval:** approved 2026-11-27 by the owner's words on 0.2.8 build 2544, "por que meu todz não tá aparecendo no menubar?" and "não dá pra excluir tarefa? wtf!!!"; product scope inherited from [docs/product/README.md](../../product/README.md), approved 2026-11-23
 **ADRs:** none new; the tombstone of [0102](../../adr/0102-deleting-a-task-leaves-a-scrubbed-tombstone-for-sync-and-a-move-adds-to-the-destination-before-it-deletes-the-source.md) and the ribbon widths of [0071](../../adr/0071-the-menu-bar-ribbon-unfolds-what-is-next-beside-the-glyph-for-a-few-seconds-as-template-frames-behind-a-setting-off-by-default.md) keep their shape
@@ -34,7 +34,7 @@ No path deletes a task from the Mac app. This is not a regression: delete never 
 
 - When macOS keeps todz off the menu bar, todz tells the owner once per launch, with a button that opens System Settings › Menu Bar and a "Don't show this again" choice. It never tells a launch for an intent (ADR 0066), and never when the item is on the bar.
 - The owner deletes a task from the window: the row's context menu has **Delete Task…**, the Task menu has **Delete Task…**, and ⌘⌫ on the focused list asks too. The popover's rows have the same context menu item, and ⌘⌫ on a focused row asks too.
-- Every path asks once, "Delete “<title>”?", with Delete and Cancel. Cancel is the default.
+- Every path asks once, "Delete Task?", naming the task in the message, with Delete and Cancel. Cancel is the default.
 - A delete calls a new owner route, `DELETE /owner/projects/:projectId/tasks/:number`. The task leaves the board, the selection, the cache and the widgets. A task already gone counts as deleted. A locked workspace refuses, as it does for a project.
 - The delete leaves the ADR 0102 tombstone, so every other Mac learns it through `deleted_numbers`.
 
@@ -58,7 +58,7 @@ The menu bar notice: when the proactive surfaces start, and again when the app b
 
 - Owner API: `DELETE /owner/projects/:projectId/tasks/:number`, route `delete_task`. It answers 204 when deleted, 404 `not_found` for a project that is not the owner's, 404 `task_not_found` for a missing or deleted task, and 422 `confirmation_mismatch` when an agent renames the task between the read and the delete. It costs one write of the fair-use quota.
 - TodzKit: `OwnerService.deleteTask(session:projectIdentifier:number:)`, `AppModel.delete(task:)`, `WriteTarget.taskRemoval(TaskKey)`, `MenuBarItemPlacement`.
-- App: `MainWindowState.taskDeletion`, `TaskDeletionDialog`, `MenuBarItemNotice`.
+- App: `MainWindowState.deletingTask`, `TaskDeletionDialog`, `MenuBarItemNotice`.
 
 ### Failure handling
 
