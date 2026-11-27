@@ -208,6 +208,18 @@ describe('the consent screen', () => {
     expect(choiceLabelOf({ html, choice: otherProjectId })).toBe('Personal › Inbox');
   });
 
+  test('a hostile workspace name is escaped inside its choice label', async () => {
+    const owner = await seededOwner();
+    await nameProjectAndWorkspace({ projectId: owner.projectId, projectName: 'Inbox', workspaceName: '<img src=x onerror=alert(1)>' });
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+
+    const html = await consentPage({ browser, params });
+
+    expect(choiceLabelOf({ html, choice: owner.projectId })).toBe('&lt;img src=x onerror=alert(1)&gt; › Inbox');
+    expect(html).not.toContain('<img src=x');
+  });
+
   test('an unknown decision is refused, never answered with an error', async () => {
     const owner = await seededOwner();
     const params = await freshRequest();

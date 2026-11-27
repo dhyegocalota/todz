@@ -10,6 +10,7 @@
 - [x] A spent refresh token presented by another client within the leeway answers `invalid_grant` and the grant stays.
 - [x] A grant holding 1,440 spent refresh tokens, a half-hourly client over 30 days, still refreshes.
 - [x] Two workspaces each holding an Inbox render the choices `Thrifty Traveler › Inbox` and `Personal › Inbox` on the consent screen.
+- [x] A workspace named `<img src=x onerror=alert(1)>` renders the choice `&lt;img src=x onerror=alert(1)&gt; › Inbox`.
 - [x] A grant reaching 10,000 refresh tokens is revoked.
 - [x] A spent token presented after the leeway, and a stolen token rotated twice, still delete the grant.
 
