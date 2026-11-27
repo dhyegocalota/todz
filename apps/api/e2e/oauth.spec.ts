@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { type Server, createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import path from 'node:path';
-import { type APIRequestContext, type Browser, type BrowserContext, type Locator, type Page, expect, test } from '@playwright/test';
+import { type APIRequestContext, type Browser, type BrowserContext, type Page, type Route, expect, test } from '@playwright/test';
 import { PERSIST_FOLDER_VARIABLE } from './persist-folder';
 import { OAUTH_ORIGIN, OAUTH_SERVER_LOG_FILE_NAME } from './site-environment';
 import { JAVASCRIPT_CONTENT_TYPE, TURNSTILE_SCRIPT_URL, TURNSTILE_STUB } from './turnstile-stub';
@@ -14,6 +14,7 @@ const CALLBACK_PATH = '/callback';
 const LANDING_PATH = '/connected';
 const FOUND_STATUS = 302;
 const MCP_URL = `${OAUTH_ORIGIN}/mcp`;
+const DECISION_URL = `${OAUTH_ORIGIN}/oauth/authorize`;
 const CLIENT_NAME = 'Claude Code';
 const CLIENT_STATE = 'e2e-state';
 const VERIFIER_BYTE_LENGTH = 32;
@@ -37,14 +38,9 @@ type BouncingConnection = { connection: Connection; close: () => Promise<void> }
 type Approval = { code: string; consentFields: ConsentField[] };
 
 enum Press {
-  Click = 'click',
-  DoubleClick = 'double-click',
+  Once = 'once',
+  Twice = 'twice',
 }
-
-const PRESS_OF_KIND: Record<Press, (button: Locator) => Promise<void>> = {
-  [Press.Click]: (button) => button.click(),
-  [Press.DoubleClick]: (button) => button.dblclick(),
-};
 
 function serverLogPath(): string {
   const persistFolder = process.env[PERSIST_FOLDER_VARIABLE];
@@ -156,8 +152,24 @@ async function approvedCode({
   if (choice !== null) await page.locator(`input[name="choice"][value="${choice}"]`).check();
   await snapshot({ page, name: choice === null ? 'consent-project' : 'consent-owner' });
   const consentFields = await consentFieldsOf(page);
-  await PRESS_OF_KIND[press](page.getByRole('button', { name: 'Approve' }));
+  const heldDecisions: Route[] = [];
+  await page.route(DECISION_URL, (route) => {
+    heldDecisions.push(route);
+  });
+  const approve = page.getByRole('button', { name: 'Approve' });
+  await approve.scrollIntoViewIfNeeded();
+  const box = await approve.boundingBox();
+  if (box === null) throw new Error('Approve should be on screen');
+  const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await page.mouse.click(center.x, center.y);
+  await expect.poll(() => heldDecisions.length).toBe(1);
+  if (press === Press.Twice) await page.mouse.click(center.x, center.y);
+  const [firstDecision] = heldDecisions;
+  if (firstDecision === undefined) throw new Error('Approve should post the decision');
+  await firstDecision.continue();
   await page.waitForURL(`${landingUri}?**`);
+  await page.unroute(DECISION_URL);
+  expect(heldDecisions).toHaveLength(1);
   await expect(page.getByText('Back in the client')).toBeVisible();
   const redirected = new URL(page.url()).searchParams;
   expect(redirected.get('state')).toBe(CLIENT_STATE);
@@ -198,7 +210,7 @@ async function exchange({
 async function connect({
   connection,
   choice,
-  press = Press.Click,
+  press = Press.Once,
 }: {
   connection: Connection;
   choice: string | null;
@@ -219,7 +231,8 @@ function consentFieldsOf(page: Page): Promise<ConsentField[]> {
 }
 
 async function replayConsent({ page, fields }: { page: Page; fields: ConsentField[] }): Promise<void> {
-  await page.goto(`${OAUTH_ORIGIN}/oauth/authorize`);
+  const replayed: ConsentField[] = [...fields, ['decision', 'approve']];
+  await page.goto(DECISION_URL);
   await page.evaluate(
     ({ action, replayed }) => {
       const form = document.createElement('form');
@@ -235,7 +248,7 @@ async function replayConsent({ page, fields }: { page: Page; fields: ConsentFiel
       document.body.append(form);
       form.submit();
     },
-    { action: `${OAUTH_ORIGIN}/oauth/authorize`, replayed: [...fields, ['decision', 'approve']] },
+    { action: DECISION_URL, replayed },
   );
 }
 
@@ -346,15 +359,15 @@ test('approving lands on the client even when its redirect URI redirects again t
   await close();
 });
 
-test('a double click on Approve lands on the client once, and a replayed approval says it was already approved', async ({
+test('Approve pressed again while the first approval is on its way posts once, and a replayed approval says it was already approved', async ({
   browser,
   request,
 }) => {
   const { connection, close } = await bouncingConnection({ browser, request });
 
-  const owner = await connect({ connection, choice: OWNER_CHOICE, press: Press.DoubleClick });
+  const owner = await connect({ connection, choice: OWNER_CHOICE, press: Press.Twice });
   await createWorkspace({ request, token: owner.tokens.access_token });
-  const project = await connect({ connection, choice: null, press: Press.DoubleClick });
+  const project = await connect({ connection, choice: null, press: Press.Twice });
   expect(project.tokens.scope).toMatch(/^project:/);
   await replayConsent({ page: connection.page, fields: project.consentFields });
 

@@ -486,7 +486,7 @@ describe('the consent form is bound to its session, its request and its origin',
     const html = await replayed.text();
     expect(html).toContain('Already approved');
     expect(html).not.toContain('action="/oauth/sign-in-links"');
-    expect(html).not.toContain('data-return');
+    expect(html).not.toMatch(/code=/);
   });
 
   test('a cross-site post of an approved request is refused, never told it was approved', async () => {

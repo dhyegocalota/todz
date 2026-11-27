@@ -37,6 +37,8 @@ type RedirectableRequest = { client: OAuthClientRecord; redirectUri: string; sta
 
 type ValidatedParts = { codeChallenge: string; offeredScopes: OfferedScopes };
 
+type Refusal = { redirectUri: string; state: string | null; error: OAuthError; issuer: string };
+
 const UNREDIRECTABLE: AuthorizationOutcome = { kind: AuthorizationOutcomeKind.Unredirectable };
 
 const AUTHORIZATION_PARAMETERS: string[] = [
@@ -139,7 +141,7 @@ export function requestTextOf(request: AuthorizationRequest): string {
   return JSON.stringify([client.id, redirectUri, codeChallenge, state, scope, resource]);
 }
 
-export function redirectAnswerOf({
+export function redirectLocationOf({
   redirectUri,
   issuer,
   values,
@@ -147,27 +149,17 @@ export function redirectAnswerOf({
   redirectUri: string;
   issuer: string;
   values: [OAuthParameter, string | null][];
-}): Response {
+}): string {
   const location = new URL(redirectUri);
   values
     .filter((entry): entry is [OAuthParameter, string] => entry[1] !== null)
     .forEach(([name, value]) => location.searchParams.set(name, value));
   location.searchParams.set(OAuthParameter.Issuer, issuer);
-  return new Response(null, { status: HttpStatus.SeeOther, headers: { [HttpHeader.Location]: location.href } });
+  return location.href;
 }
 
-export function refusalRedirectOf({
-  redirectUri,
-  state,
-  error,
-  issuer,
-}: {
-  redirectUri: string;
-  state: string | null;
-  error: OAuthError;
-  issuer: string;
-}): Response {
-  return redirectAnswerOf({
+export function refusalLocationOf({ redirectUri, state, error, issuer }: Refusal): string {
+  return redirectLocationOf({
     redirectUri,
     issuer,
     values: [
@@ -175,4 +167,8 @@ export function refusalRedirectOf({
       [OAuthParameter.State, state],
     ],
   });
+}
+
+export function refusalRedirectOf(refusal: Refusal): Response {
+  return new Response(null, { status: HttpStatus.SeeOther, headers: { [HttpHeader.Location]: refusalLocationOf(refusal) } });
 }

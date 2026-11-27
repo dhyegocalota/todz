@@ -1,0 +1,8 @@
+# 0116. An OAuth decision answers a page that returns to the client, and a replayed approval is told so
+
+- Status: Accepted (the loop's call)
+- Date: 2026-11-27
+- Deciders: Claude (the build loop's call, under the owner's report on 2026-11-27 that Approve kept loading and a second press showed the email form)
+- Inspired by: [0109](0109-mcp-clients-connect-with-oauth-2-1-pkce-and-dynamic-registration-and-a-grant-is-never-more-than-the-equivalent-key.md), [the learning](../learnings/2026-11-27-form-action-blocks-a-client-callback-that-redirects-again.md)
+
+The loop's call: Chrome applies the consent page's `form-action` to every redirect after the form post, so a 303 to the redirect URI works only while the client's callback answers without a redirect of its own; one hop to another origin (an app hand-off, a second host) is blocked silently and the page stays on a busy Approve. Approve and Deny therefore answer a `200` page, `no-store` and `no-referrer`, that leaves for the redirect URI by `location.replace` from the page script, with a visible "Return to <client>" link, a navigation `form-action` does not govern; the code travels only in that page's body, never in a todz URL. A 303 to a same-origin page was the alternative, and it needs the code in a todz URL or a second one-time handle. The consent form takes the page script's busy button, so a second press posts nothing. A decision posted again after its session ended answers "Already approved" when a code was already issued for that client, redirect URI and code challenge (until the nightly cleanup deletes it), and the email form otherwise; it never issues a second code without a session. This amends ADR 0109 §6, where Deny redirected.

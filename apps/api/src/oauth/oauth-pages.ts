@@ -8,6 +8,7 @@ import {
   JOIN_BUTTON_CLASS,
   JOIN_FORM_CLASS,
   PAGE_SCRIPT,
+  RETURN_ATTRIBUTE,
   TOKEN_CALLBACK,
   WIDGET_APPEARANCE,
   WIDGET_CLASS,
@@ -158,6 +159,20 @@ ${TURNSTILE_SCRIPT_TAG}`;
   });
 }
 
+// NB ADR 0116: a decision answers a page that leaves for the client by a plain navigation, since form-action would block any later redirect of the client's own.
+export function returnPageOf({ clientName, location }: { clientName: string; location: string }): Response {
+  const content = `${answerTitleHtml(OAUTH_COPY.return.titleOf(clientName))}
+<p class="admin-body">${escapedHtml(OAUTH_COPY.return.body)}</p>
+<a class="admin-link" href="${escapedHtml(location)}" ${RETURN_ATTRIBUTE}>${escapedHtml(OAUTH_COPY.return.actionOf(clientName))}</a>`;
+  return oauthPageAnswerOf({ html: documentOf({ title: OAUTH_COPY.meta.returnTitle, content }), status: HttpStatus.Ok });
+}
+
+export function approvedPageOf(clientName: string): Response {
+  const content = `${answerTitleHtml(OAUTH_COPY.approved.title)}
+<p class="admin-body">${escapedHtml(OAUTH_COPY.approved.bodyOf(clientName))}</p>`;
+  return oauthPageAnswerOf({ html: documentOf({ title: OAUTH_COPY.meta.approvedTitle, content }), status: HttpStatus.Ok });
+}
+
 export function inboxPageOf(cookies: string[]): Response {
   const content = `${answerTitleHtml(OAUTH_COPY.inbox.title)}
 <p class="admin-body">${escapedHtml(OAUTH_COPY.inbox.body)}</p>`;
@@ -221,7 +236,7 @@ export function consentPageOf({
     .join('\n');
   const content = `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(OAUTH_COPY.consent.titleOf(client.name))}</h1>
 <p class="admin-body">${escapedHtml(redirectLineOf(redirectUri))}</p>
-<form class="consent-form" method="post" action="${OAuthPath.Authorize}">
+<form class="${JOIN_FORM_CLASS} consent-form" method="post" action="${OAuthPath.Authorize}">
 ${hiddenInputs}
 <fieldset class="consent-choices">
 <legend class="consent-legend">${escapedHtml(OAUTH_COPY.consent.legend)}</legend>
@@ -230,7 +245,7 @@ ${ownerChoice}
 </fieldset>
 <div class="consent-actions">
 <button class="admin-action" type="submit" name="${OAuthField.Decision}" value="${OAuthDecision.Deny}" formnovalidate>${escapedHtml(OAUTH_COPY.consent.deny)}</button>
-<button class="${JOIN_BUTTON_CLASS}" type="submit" name="${OAuthField.Decision}" value="${OAuthDecision.Approve}">${escapedHtml(OAUTH_COPY.consent.approve)}</button>
+<button class="${JOIN_BUTTON_CLASS}" type="submit" name="${OAuthField.Decision}" value="${OAuthDecision.Approve}" data-submitting="${escapedHtml(OAUTH_COPY.consent.approving)}">${escapedHtml(OAUTH_COPY.consent.approve)}</button>
 </div>
 </form>`;
   return oauthPageAnswerOf({

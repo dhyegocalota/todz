@@ -13,6 +13,7 @@ export const JOIN_FORM_CLASS = 'join-form';
 export const JOIN_BUTTON_CLASS = 'join-button';
 const ARIA_DISABLED = 'aria-disabled';
 export const ANSWER_ATTRIBUTE = 'data-answer';
+export const RETURN_ATTRIBUTE = 'data-return';
 export const WIDGET_APPEARANCE = 'interaction-only';
 export const WIDGET_THEME = 'auto';
 export const WIDGET_CLASS = 'cf-turnstile';
@@ -46,7 +47,7 @@ export const PAGE_SCRIPT = `{
     form.addEventListener('submit', (event) => {
       if (button.getAttribute('${ARIA_DISABLED}') === 'true') return event.preventDefault();
       button.setAttribute('${ARIA_DISABLED}', 'true');
-      button.textContent = button.dataset.submitting;
+      if (event.submitter === button) button.textContent = button.dataset.submitting;
       if (!hasWidget || hasToken(form)) return;
       event.preventDefault();
       waitingForToken.add(form);
@@ -58,6 +59,8 @@ export const PAGE_SCRIPT = `{
       button.textContent = label;
     });
   });
+  const returnLink = document.querySelector('[${RETURN_ATTRIBUTE}]');
+  if (returnLink !== null) location.replace(returnLink.href);
   addEventListener('load', () => requestAnimationFrame(() => {
     const answer = document.querySelector('[${ANSWER_ATTRIBUTE}]');
     if (answer !== null) answer.focus({ preventScroll: true });
