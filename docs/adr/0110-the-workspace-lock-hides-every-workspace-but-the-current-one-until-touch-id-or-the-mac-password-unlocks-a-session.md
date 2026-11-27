@@ -1,0 +1,17 @@
+# 0110. The workspace lock hides every workspace but the current one until Touch ID or the Mac password unlocks a session
+
+- Status: Accepted
+- Date: 2026-11-26
+- Deciders: Dhyego Calota (owner); Claude (advisor, the loop's call under "MCP over OAuth and workspace lock")
+- Inspired by: the owner's order, "uma feature flag desativada por padrão que deixe bem difícil fazer switch/selecionar diferentes workspaces… porque não quero outras pessoas bisbilhotando outros workspaces de jeito nenhum"; follows [0080](0080-the-workspace-picker-selects-several-workspaces-or-all-and-every-surface-shows-their-union-tagged-by-workspace.md), [0079](0079-workspaces-switch-by-chord-with-carbon-hot-keys-and-a-stored-rebindable-binding-table.md) and [0091](0091-global-workspace-hot-keys-are-off-by-default-and-take-control-option-command-digits-and-yield-to-a-chord-another-app-holds.md)
+
+## Decision
+
+A Settings switch, off by default and stored per Mac, turns the lock on without asking anything. While it is on and the session is locked, `shownWorkspaces` is the one current workspace (the primary one on screen; a launch starts from the remembered one), so every surface that derives from it shows nothing else: the main window, the menu bar count and popover, the widget snapshot, App Intents, the morning glance, the day close and the ribbon. Every other workspace is a `PresentedWorkspace.locked(identifier:)` that carries no name, colour, count or project, drawn as "Locked workspace" in the switcher, the Workspace menu, Settings and the picker. Authenticating with LocalAuthentication `.deviceOwnerAuthentication` (Touch ID, else the Mac password) behind a `DeviceOwnerAuthenticator` protocol unlocks the session, and then the person switches normally. Authentication is asked for showing any workspace other than the current one (picker, menu, shortcuts, global hot keys, choosing at launch), creating or deleting a workspace, turning the switch off and changing the idle timeout; turning it on never asks. The session lives in memory only, so every launch is locked. It relocks on system sleep, screen lock, screensaver start and after the idle timeout (1, 5 (default), 15 or 60 minutes) with no input delivered to todz, a source chosen because todz sees its own events through a local monitor and the check is a pure comparison of two dates; a relock collapses the selection to the workspace on screen, which releases the other workspaces' boards and watches from memory, then rewrites the shared-container widget snapshot from that single workspace and reloads every timeline. A widget request, a `todz://` task link or an intent that names a locked workspace is refused with "Unlock todz to use that workspace" and never returns its data.
+
+## Consequences
+
+- This is a privacy lock for people at this Mac, not an access control: the server is unchanged, and an agent holding a key still reaches its project.
+- The shared container holds only the snapshot and the request files, so locking leaves no other workspace's name or task there; the widget extension never reads what the app never writes.
+- The app's own cache folder keeps every workspace's data as before; it sits in the app's private container and no surface reads it while locked.
+- Relocking never signs out and never loses a waiting change: the outbox is untouched.

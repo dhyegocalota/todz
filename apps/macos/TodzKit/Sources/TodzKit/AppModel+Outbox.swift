@@ -1,6 +1,7 @@
 extension AppModel {
     func enqueue(_ change: PendingChange) {
         guard let session else { return }
+        guard !isInLockedWorkspace(projectIdentifier: change.projectIdentifier) else { return refuseAsLocked() }
         outbox = outbox.appending(change, isHeadSent: headInFlightSession == session)
         keepOutbox()
         guard !isSendingPaused else { return }
