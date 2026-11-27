@@ -111,7 +111,7 @@ import Observation
         return only(current, in: workspaces)
     }
 
-    public func visibleToWidgets(_ workspaces: [Workspace], current: String?) -> [Workspace] {
+    public func shown(_ workspaces: [Workspace], current: String?) -> [Workspace] {
         guard isEnabled else { return workspaces }
         return only(current, in: workspaces)
     }

@@ -63,6 +63,6 @@ struct WorkspaceMenuItems: View {
     }
 
     private var canStep: Bool {
-        model.isReady && model.visibleWorkspaces.count > 1
+        model.isReady && (model.visibleWorkspaces.count > 1 || model.workspaceLock.isLocked)
     }
 }

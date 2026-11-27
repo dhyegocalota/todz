@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Superseded in part by [0113](0113-a-locked-session-looks-like-a-one-workspace-account-with-no-placeholder-count-or-lock-chrome-and-one-neutral-way-back-in.md): the "Locked workspace" placeholder, the lock glyph and the "Unlock todz to use that workspace" refusal
+- Amended by [0122](0122-the-workspace-lock-switch-on-shows-one-workspace-and-refuses-widening.md): with the switch on, one workspace is selected even in an unlocked session
 - Date: 2026-11-26
 - Deciders: Dhyego Calota (owner); Claude (advisor, the loop's call under "MCP over OAuth and workspace lock")
 - Inspired by: the owner's order, "uma feature flag desativada por padrão que deixe bem difícil fazer switch/selecionar diferentes workspaces… porque não quero outras pessoas bisbilhotando outros workspaces de jeito nenhum"; follows [0080](0080-the-workspace-picker-selects-several-workspaces-or-all-and-every-surface-shows-their-union-tagged-by-workspace.md), [0079](0079-workspaces-switch-by-chord-with-carbon-hot-keys-and-a-stored-rebindable-binding-table.md) and [0091](0091-global-workspace-hot-keys-are-off-by-default-and-take-control-option-command-digits-and-yield-to-a-chord-another-app-holds.md)

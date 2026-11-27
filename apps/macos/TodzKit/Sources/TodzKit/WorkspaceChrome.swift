@@ -14,11 +14,11 @@ public struct WorkspaceChrome: Equatable, Sendable {
     public let showsAllWorkspaces: Bool
     public let rows: [WorkspaceChromeRow]
 
-    public init(visible: [Workspace], selection: WorkspaceSelection?, isMainWindow: Bool) {
+    public init(visible: [Workspace], selection: WorkspaceSelection?, isMainWindow: Bool, isSingleSelection: Bool) {
         let hasSeveral = visible.count > 1
         let checked = selection?.workspaces(in: visible)
         switcher = isMainWindow || hasSeveral ? .menu : .plainName
-        showsAllWorkspaces = hasSeveral
+        showsAllWorkspaces = hasSeveral && !isSingleSelection
         rows = visible.map { WorkspaceChromeRow(workspace: $0, isChecked: checked?.contains($0) == true) }
     }
 }
