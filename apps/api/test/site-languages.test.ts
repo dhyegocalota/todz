@@ -318,7 +318,10 @@ describe('the selector', () => {
       );
       expect(html).toMatch(button);
     });
-    const current = elementsOf({ html, pattern: /<button[^>]*name="language"[^>]*aria-current="true"[^>]*>(?:<svg[\s\S]*?<\/svg>)?([^<]*)<\/button>/g });
+    const current = elementsOf({
+      html,
+      pattern: /<button[^>]*name="language"[^>]*aria-current="true"[^>]*>(?:<svg[\s\S]*?<\/svg>)?([^<]*)<\/button>/g,
+    });
     expect(current.map(([, name]) => name)).toEqual([LANGUAGE_PROFILES[language].nativeName]);
   });
 

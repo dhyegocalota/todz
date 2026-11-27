@@ -360,6 +360,14 @@ test.describe('Arabic and Hindi', () => {
     }
   });
 
+  test('the menu shows a flag on the trigger and on each of the ten options', async ({ page }) => {
+    await page.goto('/ar/');
+    await expect(page.locator('.language-summary .flag')).toHaveCount(1);
+    await page.locator('summary.language-summary').click();
+    await expect(page.locator('.language-option .flag')).toHaveCount(Object.values(Language).length);
+    await expect(page.locator('.language-option .flag').first()).toBeVisible();
+  });
+
   test('/hi/ renders left to right with its own prefix and switcher entry', async ({ page }) => {
     await page.goto('/hi/');
     await expect(page.locator('html')).toHaveAttribute('lang', 'hi');
