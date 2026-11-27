@@ -105,7 +105,7 @@ describe('the MCP client behind the guard', () => {
   async function clientOver(server: ReturnType<typeof fakeMcpServer>) {
     return connectMeasuredMcp({
       origin: 'https://api.todz.app',
-      key: 'todz_test',
+      token: 'todz-at_test',
       era: McpEra.Modern,
       fetch: guardOver({ fetch: server.fetch }),
       now: () => 0,
@@ -157,7 +157,7 @@ describe('guardedFetch and the request ceiling', () => {
     const handshakeRequests = 2;
     const client = await connectMeasuredMcp({
       origin: 'https://api.todz.app',
-      key: 'todz_test',
+      token: 'todz-at_test',
       era: McpEra.Legacy,
       fetch: guardOver({ fetch: server.fetch, requestMax: handshakeRequests }),
       now: () => 0,

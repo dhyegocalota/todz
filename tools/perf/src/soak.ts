@@ -1,10 +1,10 @@
 import type { LocalRunDependencies } from './local-run';
 import { McpEra, connectMeasuredMcp, listTasks, updateTask } from './mcp-scenario';
 import { runOpenLoop } from './open-loop';
-import { type OwnerConnection, issueKey, listWorkspaces, signInOwner } from './owner-scenario';
+import { type OwnerConnection, listWorkspaces, readOwnerId, signInOwner } from './owner-scenario';
 import { ScenarioKind } from './scenario-kind';
 import { plannedStarts } from './schedule';
-import { workspaceNameOf } from './seed';
+import { type MintAccessToken, workspaceNameOf } from './seed';
 
 export type SoakResult = { updates: number; lists: number; failures: number };
 
@@ -37,15 +37,17 @@ export async function runSoak({
   access,
   durationMs,
   dependencies,
+  mintAccessToken,
 }: {
   access: SoakAccess;
   durationMs: number;
   dependencies: LocalRunDependencies;
+  mintAccessToken: MintAccessToken;
 }): Promise<SoakResult> {
-  const key = await issueKey({ connection: access.connection, projectId: access.hotProjectId });
+  const token = await mintAccessToken({ ownerId: await readOwnerId(access.connection), projectId: access.hotProjectId });
   const client = await connectMeasuredMcp({
     origin: dependencies.origin,
-    key,
+    token,
     era: McpEra.Modern,
     fetch: dependencies.fetch,
     now: dependencies.now,

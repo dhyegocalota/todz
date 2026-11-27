@@ -8,7 +8,6 @@ import {
 import { fieldOf, listOf, numberOf, textOf } from './json-reader';
 import { fakeMcpServer } from './fake-mcp-server';
 import { type FakeTaskServer, fakeTaskServer } from './fake-task-server';
-import type { ExecFile } from './keychain-key';
 import type { LoopClock } from './open-loop';
 import { type ProductionDependencies, type ProductionResult, cleanupProduction, runProduction } from './production-run';
 import { ScenarioKind } from './scenario-kind';
@@ -16,7 +15,7 @@ import type { Scheduler } from './wire-guard';
 
 const RUN = 'abcd1234';
 const PREFIX = `todz-perf ${RUN} #`;
-const KEY = 'todz_production_perf_key';
+const TOKEN = 'todz-at_production_perf_token';
 const PRODUCTION_MCP_URL = 'https://api.todz.app/mcp';
 const FOREIGN_TITLES = ['Buy milk', 'todz-perf other999 #1'];
 const LOST_ADD_TITLE = `${PREFIX}6`;
@@ -29,7 +28,7 @@ const SLOW_REQUEST_MS = 5_000;
 
 const yieldingClock: LoopClock = { now: () => 0, waitUntil: () => new Promise((resolve) => setImmediate(resolve)) };
 
-const keychainWithKey: ExecFile = async () => ({ stdout: `${KEY}\n` });
+const authorizedWithToken = async (): Promise<string> => TOKEN;
 
 function virtualTime(): { clock: LoopClock; schedule: Scheduler; advanceBy: (milliseconds: number) => void; nowMs: () => number } {
   const state = { nowMs: 0, timers: [] as { atMs: number; callback: () => void }[] };
@@ -52,13 +51,13 @@ function virtualTime(): { clock: LoopClock; schedule: Scheduler; advanceBy: (mil
 
 function dependenciesOver({
   fetch,
-  execFile = keychainWithKey,
+  accessToken = authorizedWithToken,
   clock = yieldingClock,
   schedule = () => undefined,
   interruption = new AbortController().signal,
 }: {
   fetch: typeof globalThis.fetch;
-  execFile?: ExecFile;
+  accessToken?: () => Promise<string>;
   clock?: LoopClock;
   schedule?: Scheduler;
   interruption?: AbortSignal;
@@ -66,7 +65,7 @@ function dependenciesOver({
   const sends: string[] = [];
   const epoch = { reading: 1_700_000_000_000 };
   return {
-    execFile,
+    accessToken,
     fetch,
     now: () => 0,
     epochNow: () => epoch.reading++,
@@ -156,34 +155,34 @@ describe('a full production run', () => {
     expect(state.sends.every((line) => line === JSON.stringify(JSON.parse(line)))).toBe(true);
   });
 
-  test('only the three MCP scenarios are measured and the key is nowhere in the result or the sends', () => {
+  test('only the three MCP scenarios are measured and the token is nowhere in the result or the sends', () => {
     expect(new Set(state.result.samples.map((sample) => sample.scenario))).toEqual(
       new Set([ScenarioKind.List, ScenarioKind.Add, ScenarioKind.Done]),
     );
-    expect(JSON.stringify(state.result)).not.toContain(KEY);
-    expect(state.sends.join('\n')).not.toContain(KEY);
+    expect(JSON.stringify(state.result)).not.toContain(TOKEN);
+    expect(state.sends.join('\n')).not.toContain(TOKEN);
   });
 });
 
-describe('a production run without its key', () => {
-  test('a missing Keychain item stops the run before any request', async () => {
+describe('a production run without its token', () => {
+  test('a refused authorization stops the run before any request', async () => {
     const server = fakeMcpServer();
-    const execFile: ExecFile = async () => {
-      throw new Error('not found');
+    const accessToken = async (): Promise<string> => {
+      throw new Error('the authorization was not approved');
     };
-    await expect(runProduction(dependenciesOver({ fetch: server.fetch, execFile }))).rejects.toThrow(
-      'the todz-perf-key Keychain item is missing',
+    await expect(runProduction(dependenciesOver({ fetch: server.fetch, accessToken }))).rejects.toThrow(
+      'the authorization was not approved',
     );
     expect(server.requests).toEqual([]);
   });
 });
 
 describe('a production run the server refuses', () => {
-  test('a 401 before the run starts refuses it after one request, never retried, with the key out of the message', async () => {
+  test('a 401 before the run starts refuses it after one request, never retried, with the token out of the message', async () => {
     const server = fakeMcpServer({ isUnauthorized: true });
     const failure = await runProduction(dependenciesOver({ fetch: server.fetch })).catch((error: Error) => error);
     expect(failure).toBeInstanceOf(Error);
-    expect(String(failure)).not.toContain(KEY);
+    expect(String(failure)).not.toContain(TOKEN);
     expect(server.requests.some((request) => request.method !== 'POST')).toBe(false);
     expect(server.rpcMethods().filter((method) => method === 'tools/call')).toHaveLength(1);
   });
@@ -202,7 +201,7 @@ describe('a production run the server refuses', () => {
     expect(answered.toolCalls).toBe(REQUESTS_BEFORE_REVOCATION + 1);
     expect(result.failures).toBeGreaterThan(0);
     expect(result.openTasksLeft).toBeNull();
-    expect(JSON.stringify(result)).not.toContain(KEY);
+    expect(JSON.stringify(result)).not.toContain(TOKEN);
   });
 
   test('consecutive failures stop the run after the named number of them', async () => {
