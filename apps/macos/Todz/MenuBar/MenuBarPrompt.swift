@@ -9,15 +9,22 @@ struct MenuBarPrompt: View {
         VStack {
             Text(line)
                 .multilineTextAlignment(.center)
-            Button(MenuBarCopy.openWindow) {
-                panel.openMainWindow(openWindow)
-            }
-            .buttonStyle(.borderedProminent)
-            .keyboardShortcut(.defaultAction)
+            Button(MenuBarCopy.openWindow, action: openMainWindow)
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
             MenuBarQuitButton()
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .padding()
+        .background {
+            Button(MenuBarCopy.openWindow, action: openMainWindow)
+                .keyboardShortcut(MenuBarShortcut.openWindow)
+                .hidden()
+        }
+    }
+
+    private func openMainWindow() {
+        panel.openMainWindow(openWindow)
     }
 }
