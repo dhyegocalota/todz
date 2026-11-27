@@ -20,7 +20,7 @@ Unit tests run with Swift Testing in `apps/macos/TodzKit` (`swift test`) against
 - [ ] Showing a workspace other than the current one, creating, deleting, turning off and changing the timeout ask while locked; turning on never asks; showing the current one never asks.
 - [ ] A refused or cancelled prompt changes nothing and pulls nothing; a failed one is flagged until the next try.
 - [ ] Two taps share one prompt; an unlocked session asks no more.
-- [ ] A Mac that cannot authenticate refuses everything but turning the switch off.
+- [ ] A Mac with no password refuses everything but turning the switch off; any other unavailability refuses even that and flags the failure.
 - [ ] The number and step shortcuts, select all, toggle and the picker all ask.
 
 ## Relocks

@@ -113,10 +113,20 @@ private let garden = Workspace(identifier: "garden", name: "Garden", createdAt: 
         #expect(!harness.lock.isConfirmationFailed)
     }
 
-    @Test func aMacThatCannotAuthenticateRefusesEverythingButTurningTheSwitchOff() async throws {
+    @Test func anyOtherUnavailabilityKeepsItLockedEvenForTurningOffAndFlagsTheFailure() async throws {
         let harness = try LockHarness(isOn: true)
-        harness.authenticator.isAvailable = false
-        #expect(!harness.lock.canAuthenticate)
+        harness.authenticator.availability = .unavailable
+        #expect(!(await harness.lock.turnOff(current: "acme")))
+        #expect(harness.lock.isEnabled)
+        #expect(harness.lock.isConfirmationFailed)
+        #expect(!(await harness.lock.authorize(.showWorkspaces(identifiers: ["side"]), current: "acme")))
+        #expect(harness.authenticator.asked.isEmpty)
+    }
+
+    @Test func aMacWithNoPasswordRefusesEverythingButTurningTheSwitchOff() async throws {
+        let harness = try LockHarness(isOn: true)
+        harness.authenticator.availability = .passcodeNotSet
+        #expect(harness.lock.availability == .passcodeNotSet)
         #expect(!(await harness.lock.authorize(.showWorkspaces(identifiers: ["side"]), current: "acme")))
         #expect(!(await harness.lock.set(timeout: .oneHour, current: "acme")))
         #expect(harness.authenticator.asked.isEmpty)

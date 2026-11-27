@@ -27,8 +27,8 @@ import Observation
         isEnabled && !isUnlocked
     }
 
-    public var canAuthenticate: Bool {
-        authenticator.canAuthenticate
+    public var availability: DeviceOwnerAvailability {
+        authenticator.currentAvailability
     }
 
     public func requiresAuthentication(for action: WorkspaceLockAction, current: String?) -> Bool {
@@ -39,8 +39,10 @@ import Observation
 
     public func authorize(_ action: WorkspaceLockAction, current: String?) async -> Bool {
         guard requiresAuthentication(for: action, current: current) else { return true }
-        guard authenticator.canAuthenticate else { return action == .turnOff }
-        isConfirmationFailed = false
+        let isTurningOffWithNoPassword = action == .turnOff && availability == .passcodeNotSet
+        guard !isTurningOffWithNoPassword else { return true }
+        isConfirmationFailed = availability != .available
+        guard availability == .available else { return false }
         let result = await runningAuthentication(for: action).value
         authentication = nil
         isConfirmationFailed = result == .failed

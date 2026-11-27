@@ -4,12 +4,12 @@
     var isOwnerAuthenticated = true
     var isCancelling = false
     var isHolding = false
-    var isAvailable = true
+    var availability = DeviceOwnerAvailability.available
     private(set) var asked: [WorkspaceLockAction] = []
     private var hold: CheckedContinuation<Void, Never>?
 
-    nonisolated var canAuthenticate: Bool {
-        MainActor.assumeIsolated { isAvailable }
+    nonisolated var currentAvailability: DeviceOwnerAvailability {
+        MainActor.assumeIsolated { availability }
     }
 
     func authenticate(for action: WorkspaceLockAction) async -> DeviceOwnerAuthentication {

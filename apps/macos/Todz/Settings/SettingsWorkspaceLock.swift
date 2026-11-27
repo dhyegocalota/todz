@@ -38,7 +38,7 @@ struct SettingsWorkspaceLock: View {
     }
 
     private var unavailableReason: String? {
-        let isUnavailable = !model.workspaceLock.isEnabled && !model.workspaceLock.canAuthenticate
+        let isUnavailable = !model.workspaceLock.isEnabled && model.workspaceLock.availability == .passcodeNotSet
         return isUnavailable ? SettingsCopy.lockUnavailable : nil
     }
 

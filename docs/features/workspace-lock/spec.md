@@ -34,7 +34,7 @@ Anyone at an unlocked Mac can open todz and switch to any workspace. The owner w
 ## Failure handling
 
 - A cancelled prompt changes nothing and says nothing; a failed one says "Couldn't confirm it's you. Nothing changed." in Settings and as an announcement in menus.
-- A Mac with no password cannot authenticate: the switch cannot be turned on, and a lock already on can still be turned off without a prompt.
+- A Mac with no password (`LAError.passcodeNotSet`) cannot authenticate: the switch cannot be turned on, and a lock already on can still be turned off without a prompt. Any other reason the policy cannot be evaluated (biometry lockout, not interactive, unknown) keeps it locked, even for turning off, and shows the failure line.
 - A refused link or intent says "Unlock todz to use that workspace."
 
 ## Open questions → answers

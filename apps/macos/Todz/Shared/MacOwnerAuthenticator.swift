@@ -5,8 +5,11 @@ private let cancellationCodes: Set<LAError.Code> = [.userCancel, .systemCancel, 
 
 // NB ADR 0110: Touch ID, else the Mac password, through the system's own sheet; todz draws no password field.
 struct MacOwnerAuthenticator: DeviceOwnerAuthenticator {
-    var canAuthenticate: Bool {
-        LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
+    var currentAvailability: DeviceOwnerAvailability {
+        var failure: NSError?
+        guard !LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: &failure) else { return .available }
+        guard failure?.code == LAError.passcodeNotSet.rawValue else { return .unavailable }
+        return .passcodeNotSet
     }
 
     func authenticate(for action: WorkspaceLockAction) async -> DeviceOwnerAuthentication {
