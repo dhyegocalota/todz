@@ -19,8 +19,8 @@ struct MenuBarRow: View {
         padded
             .background(isShaded ? AnyShapeStyle(.fill.quaternary) : AnyShapeStyle(Color.clear), in: shape)
             .overlay { shape.strokeBorder(Color.accentColor, lineWidth: FormMetrics.focusRingWidth).opacity(isFocused ? 1 : 0) }
-            .todzAnimation(.snap, value: isFocused)
-            .todzAnimation(.snap, value: isHovered)
+            .todzMotion(.focus, value: isFocused)
+            .todzMotion(.hover, value: isHovered)
             .padding(.horizontal)
             .contentShape(Rectangle())
             .onHover { isHovered = $0 }
