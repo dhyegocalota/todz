@@ -1,6 +1,6 @@
 # 0113. A locked session looks like a one-workspace account, with no placeholder, count or lock chrome, and one neutral way back in
 
-- Status: Accepted
+- Status: Accepted; amended by [0122](0122-one-rule-in-todzkit-decides-the-selection-a-locked-session-shows-and-every-path-that-widens-it-asks-the-mac-owner.md) (shortcuts and selection)
 - Date: 2026-11-27
 - Deciders: Dhyego Calota (owner); Claude (advisor). The loop's call under the owner's standing instruction to decide every call, and the owner's rule of 2026-11-27: while a workspace is locked, nothing may show that other workspaces exist, "pra pessoa de fora que ver não pensar 'hm... ele tem outros projetos secretos'".
 - Inspired by: [0110](0110-the-workspace-lock-hides-every-workspace-but-the-current-one-until-touch-id-or-the-mac-password-unlocks-a-session.md); `docs/features/menubar-redesign/design.md` § 11

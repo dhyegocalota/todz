@@ -6,7 +6,8 @@
 - [x] 2. Red tests per path in `AppModelTests+LockSingleWorkspace`, committed alone.
 - [x] 3. TodzKit: `selectWorkspaces` and `chooseWorkspaces` ask before showing a selection the locked session cannot show; the shortcuts ask before resolving a target beyond the current workspace.
 - [x] 4. Green: `swift test`, the app build, `pnpm --filter @todz/repository-shape test`.
-- [x] 5. Flip the spec and index row to Shipped inside the PR.
+- [x] 5. Fix round: one workspace while the switch is on (ADR 0122), red tests first.
+- [ ] 6. The tester passes `test-plan.md`; then flip the spec and index row to Shipped inside the PR.
 
 ## File ownership
 
