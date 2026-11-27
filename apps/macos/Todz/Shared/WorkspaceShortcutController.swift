@@ -22,16 +22,20 @@ import TodzKit
     func start() {
         registerHotKeys()
         observeEligibility()
-        watchHiddenChords()
     }
 
     func stop() {
         hotKeys.unregister()
+        stopWatchingHiddenChords()
+    }
+
+    private func stopWatchingHiddenChords() {
         hiddenChordMonitor.map(NSEvent.removeMonitor)
         hiddenChordMonitor = nil
     }
 
     private func watchHiddenChords() {
+        guard hiddenChordMonitor == nil else { return }
         hiddenChordMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [model] event in
             guard let chord = KeyChord(event: event) else { return event }
             let hiddenAction = MainActor.assumeIsolated { model.hiddenWorkspaceAction(for: chord) }
@@ -42,6 +46,7 @@ import TodzKit
     }
 
     func registerHotKeys() {
+        watchHiddenChords()
         let isEligible = WorkspaceShortcuts.shouldRegister(phase: model.phase, workspaceCount: model.visibleWorkspaces.count, isGlobalOn: preference.isGlobalOn)
         guard isEligible else {
             hotKeys.unregister()
@@ -53,6 +58,7 @@ import TodzKit
 
     func suspendHotKeys() {
         hotKeys.unregister()
+        stopWatchingHiddenChords()
     }
 
     func shortcut(for action: WorkspaceAction) -> KeyboardShortcut? {

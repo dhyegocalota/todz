@@ -29,10 +29,10 @@ extension AppModel {
     }
 
     public func hiddenWorkspaceAction(for chord: KeyChord) -> WorkspaceAction? {
-        guard workspaceLock.isLocked else { return nil }
+        guard workspaceLock.isLocked, phase == .ready else { return nil }
         return WorkspaceAction.all.first { action in
-            guard case let .number(number) = action else { return false }
-            return action.inAppChord == chord && number > visibleWorkspaces.count
+            guard case let .number(number) = action, number > visibleWorkspaces.count else { return false }
+            return action.inAppChord == chord || action.listChord == chord
         }
     }
 
