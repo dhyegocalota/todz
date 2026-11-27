@@ -1,4 +1,4 @@
-import { EMAIL_CODE_SECONDS_SLOT, type EmailCodeCopy } from './email-code-copy';
+import type { EmailCodeCopy } from './email-code-copy';
 export const EMAIL_CODE_COPY_ARABIC: EmailCodeCopy = {
   label: 'رمز تسجيل الدخول',
   lead: 'أو أدخل الرمز المكوّن من 6 أرقام من الرسالة نفسها.',
@@ -7,6 +7,6 @@ export const EMAIL_CODE_COPY_ARABIC: EmailCodeCopy = {
   wrong: 'لم ينجح هذا الرمز. تحقّق منه وحاول مرة أخرى.',
   locked: 'محاولات كثيرة جدًا. استخدم الرابط في الرسالة أو اطلب رمزًا جديدًا.',
   resend: 'إعادة إرسال الرمز',
-  resendWait: `إعادة إرسال الرمز بعد ${EMAIL_CODE_SECONDS_SLOT} ث`,
+  resendWait: 'إعادة إرسال الرمز بعد {seconds} ث',
   resending: 'جارٍ الإرسال…',
 };
