@@ -51,6 +51,18 @@
             "state": "translated",
             "value": "在 ${applicationName} 中添加任务"
           }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أضف مهمة إلى ${applicationName}"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} में टास्क जोड़ें"
+          }
         }
       }
     },
@@ -103,6 +115,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "在 ${applicationName} 中勾选任务"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أنجز مهمة في ${applicationName}"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} में टास्क पर टिक करें"
           }
         }
       }
@@ -157,6 +181,18 @@
             "state": "translated",
             "value": "在 ${applicationName} 中完成任务"
           }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أكمل مهمة في ${applicationName}"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} में टास्क पूरा करें"
+          }
         }
       }
     },
@@ -209,6 +245,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "在 ${applicationName} 中新建任务"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مهمة جديدة في ${applicationName}"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} में नया टास्क"
           }
         }
       }
@@ -263,6 +311,18 @@
             "state": "translated",
             "value": "我今天在 ${applicationName} 中有什么"
           }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ماذا لدي اليوم في ${applicationName}"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} में आज मेरे पास क्या है"
+          }
         }
       }
     },
@@ -315,6 +375,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "今天在 ${applicationName} 中还剩什么"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ما المتبقي اليوم في ${applicationName}"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} में आज क्या बाकी है"
           }
         }
       }
