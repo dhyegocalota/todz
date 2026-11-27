@@ -3,14 +3,14 @@ import Testing
 @testable import TodzKit
 
 extension AppModelTests {
-    @MainActor private func singleWorkspaceHarness(isLockOn: Bool = true, selection: WorkspaceSelection? = nil) async throws -> AppModelHarness {
+    @MainActor func singleWorkspaceHarness(isLockOn: Bool = true, selection: WorkspaceSelection? = nil, active: String = "acme") async throws -> AppModelHarness {
         let harness = try AppModelHarness(isWorkspaceLockOn: isLockOn)
         let acme = harness.seedWorkspace(name: "acme", projectNames: ["launch"])
         let side = harness.seedWorkspace(name: "secret", projectNames: ["garden"])
         harness.store.owner = OwnerCache(
             ownerIdentifier: harness.ownerIdentifier,
             workspaces: [acme, side],
-            activeWorkspaceIdentifier: acme.identifier,
+            activeWorkspaceIdentifier: active,
             selection: selection
         )
         await harness.signedIn()
@@ -18,7 +18,7 @@ extension AppModelTests {
         return harness
     }
 
-    @MainActor private func refusing(_ harness: AppModelHarness) {
+    @MainActor func refusing(_ harness: AppModelHarness) {
         harness.authenticator.isOwnerAuthenticated = false
         harness.authenticator.isCancelling = true
     }
