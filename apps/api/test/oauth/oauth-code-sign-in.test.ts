@@ -196,7 +196,7 @@ describe('POST /oauth/code-sessions', () => {
     expect(await response.text()).toContain('data-state="wrong"');
   });
 
-  test('keeps the time zone of a known owner when the page sent none, and signs in a new owner with a stated zone', async () => {
+  test('keeps the time zone of a known owner when the page sent none, and never makes up one for a new owner', async () => {
     const ownerId = await seedOwner('America/Sao_Paulo');
     const email = freshAddress();
     await seedEmailIdentity({ ownerId, email });
@@ -206,8 +206,12 @@ describe('POST /oauth/code-sessions', () => {
     const row = await env.DIRECTORY.prepare('SELECT time_zone FROM owners WHERE id = ?').bind(ownerId).first<{ time_zone: string }>();
     expect(row?.time_zone).toBe('America/Sao_Paulo');
     const fresh = await askedCode();
-    const created = await enterCode({ ...fresh, fields: { time_zone: '' } });
-    expect(created.status).toBe(SEE_OTHER_STATUS);
+    const unplaced = await enterCode({ ...fresh, fields: { time_zone: '' } });
+    expect(unplaced.status).not.toBe(SEE_OTHER_STATUS);
+    const created = await env.DIRECTORY.prepare('SELECT count(*) AS owners FROM owner_identities WHERE subject = ?')
+      .bind(fresh.email)
+      .first<{ owners: number }>();
+    expect(created?.owners).toBe(0);
   });
 
   test('a cross-site post is refused', async () => {
