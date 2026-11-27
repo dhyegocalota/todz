@@ -75,6 +75,10 @@ private func day(
         #expect(model.doneCount == 2)
     }
 
+    @Test func theDoneTodayTasksAreKeptForTheDisclosure() {
+        #expect(day(open: [task(1)], doneToday: [task(2, state: .done)]).doneToday == [task(2, state: .done)])
+    }
+
     @Test func progressIsZeroWithNothingAndGrowsToOne() {
         #expect(day().progress == 0)
         #expect(day(open: [task(1)]).progress == 0)
