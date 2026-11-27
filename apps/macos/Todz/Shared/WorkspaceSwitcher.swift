@@ -16,7 +16,7 @@ struct WorkspaceSwitcher: View {
     }
 
     private var chrome: WorkspaceChrome {
-        WorkspaceChrome(visible: model.visibleWorkspaces, selection: model.selection, isMainWindow: isMainWindow)
+        WorkspaceChrome(visible: model.visibleWorkspaces, selection: model.selection, isMainWindow: isMainWindow, isSingleSelection: model.workspaceLock.isEnabled)
     }
 
     @ViewBuilder private var switcher: some View {
@@ -82,11 +82,16 @@ struct WorkspaceSwitcher: View {
         }
     }
 
+    private func choose(_ candidate: Workspace) async {
+        guard model.workspaceLock.isEnabled else { return await model.toggleWorkspace(identifier: candidate.identifier) }
+        await model.switchWorkspace(identifier: candidate.identifier)
+    }
+
     private func isShown(_ candidate: Workspace) -> Binding<Bool> {
         Binding {
             model.shownWorkspaces.contains { $0.identifier == candidate.identifier }
         } set: { _ in
-            Task { await model.toggleWorkspace(identifier: candidate.identifier) }
+            Task { await choose(candidate) }
         }
     }
 }

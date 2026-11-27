@@ -38,6 +38,11 @@ public enum WorkspaceAction: Hashable, Sendable {
         }
     }
 
+    public var listChord: KeyChord? {
+        guard case .number = self, let chord = inAppChord else { return nil }
+        return KeyChord(keyCode: chord.keyCode, key: chord.key, modifiers: WorkspaceShortcuts.listModifiers)
+    }
+
     // NB ADR 0091: global chords are ⌃⌥⌘1…9; previous and next have no global chord.
     public var globalDefaultChord: KeyChord? {
         switch self {

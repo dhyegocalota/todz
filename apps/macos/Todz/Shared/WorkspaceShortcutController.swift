@@ -7,6 +7,7 @@ import TodzKit
     private let model: AppModel
     private let preference: WorkspaceShortcutsPreference
     private let hotKeys: WorkspaceHotKeys
+    private var hiddenChordMonitor: Any?
 
     init(model: AppModel, preference: WorkspaceShortcutsPreference, onUsed: @escaping () -> Void) {
         self.model = model
@@ -25,9 +26,27 @@ import TodzKit
 
     func stop() {
         hotKeys.unregister()
+        stopWatchingHiddenChords()
+    }
+
+    private func stopWatchingHiddenChords() {
+        hiddenChordMonitor.map(NSEvent.removeMonitor)
+        hiddenChordMonitor = nil
+    }
+
+    private func watchHiddenChords() {
+        guard hiddenChordMonitor == nil else { return }
+        hiddenChordMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [model] event in
+            guard let chord = KeyChord(event: event) else { return event }
+            let hiddenAction = MainActor.assumeIsolated { model.hiddenWorkspaceAction(for: chord) }
+            guard let hiddenAction else { return event }
+            Task { @MainActor in await model.switchWorkspace(action: hiddenAction) }
+            return nil
+        }
     }
 
     func registerHotKeys() {
+        watchHiddenChords()
         let isEligible = WorkspaceShortcuts.shouldRegister(phase: model.phase, workspaceCount: model.visibleWorkspaces.count, isGlobalOn: preference.isGlobalOn)
         guard isEligible else {
             hotKeys.unregister()
@@ -39,6 +58,7 @@ import TodzKit
 
     func suspendHotKeys() {
         hotKeys.unregister()
+        stopWatchingHiddenChords()
     }
 
     func shortcut(for action: WorkspaceAction) -> KeyboardShortcut? {
