@@ -3,7 +3,8 @@ import { describe, expect, test } from 'vitest';
 import { HttpStatus } from '../src/http-status';
 import { McpToolName } from '../src/mcp-copy';
 import { ClientEra, callTool, connectClient } from './mcp-client';
-import { type OwnedProject, createOwnedProject, issueMcpKey, ownerCall, projectCall, signInOwner } from './owner-client';
+import { seedProjectToken } from './directory-seed';
+import { type OwnedProject, createOwnedProject, ownerCall, projectCall, signInOwner } from './owner-client';
 
 const OWNER_CLIENT_NAME = null;
 const MISSING_NUMBER = 99;
@@ -335,8 +336,8 @@ describe('GET /owner/projects/:projectId/tasks/:number/history', () => {
 
   test('a task an agent added names the agent and its client', async () => {
     const project = await createOwnedProject();
-    const key = await issueMcpKey({ token: project.token, projectId: project.projectId });
-    const client = await connectClient({ era: ClientEra.Legacy, key });
+    const mcpToken = await seedProjectToken({ projectId: project.projectId });
+    const client = await connectClient({ era: ClientEra.Legacy, token: mcpToken });
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'From the agent' }] } });
     const history = await historyOf({ project, number: 1 });
     expect(history.map((entry) => entry.actor)).toEqual([{ kind: ActorKind.Agent, client_name: AGENT_CLIENT_NAME }]);

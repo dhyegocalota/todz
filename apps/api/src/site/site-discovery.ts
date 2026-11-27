@@ -7,7 +7,7 @@ import { LANDING_COPY, LANDING_DAY_LINES } from './landing-copy';
 import { LANDING_MARKDOWN_FILE } from './landing-markdown';
 import { fenced, linesOf } from './markdown-lines';
 import { DOCS_SELF_HOST_URL } from './self-host-redirect';
-import { DARK_THEME_COLOR, KEY_PLACEHOLDER } from './site-constants';
+import { DARK_THEME_COLOR } from './site-constants';
 import { SITE_ICONS, SiteIcon } from './site-icons';
 import { DOCS_MCP_URL, DOCS_URL, DiscoveryPath, MCP_URL, SERVER_CARD_PATH, SITE_URL } from './site-urls';
 
@@ -38,7 +38,7 @@ const CRAWLERS = [
 ];
 
 function setupOf(client: AgentClient): string {
-  return agentSetupOf({ client, serverUrl: MCP_URL, key: KEY_PLACEHOLDER });
+  return agentSetupOf({ client, serverUrl: MCP_URL });
 }
 
 const ROBOTS_TEXT = linesOf([
@@ -125,14 +125,7 @@ const CONNECT_LINES = [
   '',
 ];
 
-const SETUP_LINES = [
-  `## ${DISCOVERY_COPY.setups.codex}`,
-  '',
-  ...fenced({ language: 'toml', text: setupOf(AgentClient.Codex) }),
-  `## ${DISCOVERY_COPY.setups.cursor}`,
-  '',
-  ...fenced({ language: 'json', text: setupOf(AgentClient.Cursor) }),
-];
+const SETUP_LINES = [`## ${DISCOVERY_COPY.setups.codex}`, '', ...fenced({ language: 'toml', text: setupOf(AgentClient.Codex) })];
 
 const TOOL_LINES = [
   `## ${DISCOVERY_COPY.tools.heading}`,

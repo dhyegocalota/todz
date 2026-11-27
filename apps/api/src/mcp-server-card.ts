@@ -13,7 +13,6 @@ export const SERVER_CARD_MEDIA_TYPE = 'application/mcp-server-card+json';
 const CARD_SCHEMA_URL = 'https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json';
 const CARD_NAME = 'app.todz/todz';
 const REMOTE_TYPE = 'streamable-http';
-const AUTHORIZATION_HEADER = 'Authorization';
 const ICON = SITE_ICONS[SiteIcon.Icon512];
 
 const SERVER_CARD = JSON.stringify({
@@ -28,7 +27,6 @@ const SERVER_CARD = JSON.stringify({
     {
       type: REMOTE_TYPE,
       url: MCP_URL,
-      headers: [{ name: AUTHORIZATION_HEADER, isRequired: true, isSecret: true }],
       supportedProtocolVersions: [...SUPPORTED_PROTOCOL_VERSIONS],
     },
   ],

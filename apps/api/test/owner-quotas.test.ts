@@ -1,10 +1,9 @@
-import { OWNER_WORKSPACES_MAX, PROJECT_LIVE_KEYS_MAX, WORKSPACE_PROJECTS_MAX } from '@todz/types';
+import { OWNER_WORKSPACES_MAX, WORKSPACE_PROJECTS_MAX } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { ownerCall, signInOwner } from './owner-client';
 
 const CREATED_STATUS = 201;
-const NO_CONTENT_STATUS = 204;
 const CONFLICT_STATUS = 409;
 const LIMIT_REACHED = { error: 'limit_reached', message: expect.any(String) };
 const CONCURRENT_EXTRA = 5;
@@ -19,10 +18,6 @@ function createWorkspace(token: string): Promise<Response> {
 
 function createProject({ token, workspaceId }: { token: string; workspaceId: string }): Promise<Response> {
   return ownerCall({ method: 'POST', path: `/owner/workspaces/${workspaceId}/projects`, token, body: { name: 'Side' } });
-}
-
-function issueKey({ token, projectId }: { token: string; projectId: string }): Promise<Response> {
-  return ownerCall({ method: 'POST', path: `/owner/projects/${projectId}/keys`, token });
 }
 
 async function createdWorkspace(token: string): Promise<WorkspaceBody> {
@@ -56,10 +51,6 @@ function workspaceCount(ownerId: string): Promise<number> {
 
 function projectCount(workspaceId: string): Promise<number> {
   return countOf({ statement: 'SELECT count(*) AS total FROM projects WHERE workspace_id = ?', value: workspaceId });
-}
-
-function liveKeyCount(projectId: string): Promise<number> {
-  return countOf({ statement: 'SELECT count(*) AS total FROM project_keys WHERE project_id = ? AND revoked_at IS NULL', value: projectId });
 }
 
 describe('the workspace quota', () => {
@@ -106,40 +97,5 @@ describe('the project quota', () => {
     await inSequence(WORKSPACE_PROJECTS_MAX - INBOX_COUNT, () => createProject({ token, workspaceId: full.id }));
     const open = await createdWorkspace(token);
     expect((await createProject({ token, workspaceId: open.id })).status).toBe(CREATED_STATUS);
-  });
-});
-
-describe('the key quota', () => {
-  test('the next live key over the cap is refused', async () => {
-    const { token } = await signInOwner();
-    const projectId = await inboxOf(await createdWorkspace(token));
-    await inSequence(PROJECT_LIVE_KEYS_MAX, () => issueKey({ token, projectId }));
-    const refused = await issueKey({ token, projectId });
-    expect(refused.status).toBe(CONFLICT_STATUS);
-    expect(await refused.json()).toMatchObject(LIMIT_REACHED);
-    expect(await liveKeyCount(projectId)).toBe(PROJECT_LIVE_KEYS_MAX);
-  });
-
-  test('issuing and revoking past the cap keeps no more rows than the cap', async () => {
-    const { token } = await signInOwner();
-    const projectId = inboxOf(await createdWorkspace(token));
-    await inSequence(PROJECT_LIVE_KEYS_MAX + 1, async () => {
-      const issued = await issueKey({ token, projectId });
-      const { key } = await issued.json<{ key: { id: string } }>();
-      return ownerCall({ method: 'DELETE', path: `/owner/projects/${projectId}/keys/${key.id}`, token });
-    });
-    const rows = await countOf({ statement: 'SELECT count(*) AS total FROM project_keys WHERE project_id = ?', value: projectId });
-    expect(rows).toBeLessThanOrEqual(PROJECT_LIVE_KEYS_MAX);
-  });
-
-  test('a revoked key frees its place', async () => {
-    const { token } = await signInOwner();
-    const projectId = await inboxOf(await createdWorkspace(token));
-    await inSequence(PROJECT_LIVE_KEYS_MAX - 1, () => issueKey({ token, projectId }));
-    const last = await issueKey({ token, projectId });
-    const { key } = await last.json<{ key: { id: string } }>();
-    const revoked = await ownerCall({ method: 'DELETE', path: `/owner/projects/${projectId}/keys/${key.id}`, token });
-    expect(revoked.status).toBe(NO_CONTENT_STATUS);
-    expect((await issueKey({ token, projectId })).status).toBe(CREATED_STATUS);
   });
 });

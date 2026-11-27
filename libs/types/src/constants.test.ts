@@ -47,9 +47,6 @@ import {
   MINIMUM_APP_VERSION,
   OAUTH_ACCESS_TOKEN_PREFIX,
   OAUTH_REFRESH_TOKEN_PREFIX,
-  OWNER_KEY_PREFIX,
-  OWNER_LIVE_KEYS_MAX,
-  PROJECT_KEY_PREFIX,
   REPLY_ADDRESS_LOCAL_PART,
   REPLY_DAILY_MAX,
   REPLY_RATE_LIMIT_MAX,
@@ -145,27 +142,10 @@ describe('version constants', () => {
 });
 
 describe('mcp constants', () => {
-  test('a project key starts with todz_ (pin)', () => {
-    expect(PROJECT_KEY_PREFIX).toBe('todz_');
-  });
-
-  test('an owner key starts with todz-owner_, which no project key can start with (pin)', () => {
-    expect(OWNER_KEY_PREFIX).toBe('todz-owner_');
-    expect(OWNER_KEY_PREFIX.startsWith(PROJECT_KEY_PREFIX)).toBe(false);
-  });
-
-  test('OAuth tokens start with todz-at_ and todz-rt_, which no project key or owner key can start with', () => {
+  test('OAuth tokens start with todz-at_ and todz-rt_ (pin)', () => {
     expect(OAUTH_ACCESS_TOKEN_PREFIX).toBe('todz-at_');
     expect(OAUTH_REFRESH_TOKEN_PREFIX).toBe('todz-rt_');
-    [OAUTH_ACCESS_TOKEN_PREFIX, OAUTH_REFRESH_TOKEN_PREFIX].forEach((prefix) => {
-      expect(prefix.startsWith(PROJECT_KEY_PREFIX)).toBe(false);
-      expect(prefix.startsWith(OWNER_KEY_PREFIX)).toBe(false);
-      expect(OWNER_KEY_PREFIX.startsWith(prefix)).toBe(false);
-    });
-  });
-
-  test('an owner holds at most five live owner keys', () => {
-    expect(OWNER_LIVE_KEYS_MAX).toBe(5);
+    expect(OAUTH_REFRESH_TOKEN_PREFIX.startsWith(OAUTH_ACCESS_TOKEN_PREFIX)).toBe(false);
   });
 
   test('a list shows twenty tasks by default, within the list limit (pin)', () => {
@@ -246,7 +226,6 @@ describe('fair use constants', () => {
       Workspaces: 'workspaces',
       Projects: 'projects',
       OpenTasks: 'open_tasks',
-      LiveKeys: 'live_keys',
       DailyWrites: 'daily_writes',
       StoredBytes: 'stored_bytes',
       DailySignUps: 'daily_sign_ups',

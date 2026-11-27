@@ -12,6 +12,7 @@ import {
   TASK_TITLE_MAX_LENGTH,
   TaskState,
 } from '@todz/types';
+import { DOCS_CONNECT_URL, MCP_URL } from './site/site-urls';
 
 const EXAMPLE_TASK_ID = `${TASK_SHORT_ID_PREFIX}12`;
 
@@ -60,20 +61,20 @@ export const MCP_COPY = {
       "Delete a task for good. Give its current title as confirm; nothing is deleted when it differs. A task you mean to keep somewhere else needs move. The owner's Mac shows the deletion after its next update.",
     [McpToolName.Move]:
       "Move a task to another project of the same workspace. The task gets a new id there. Find project ids with projects. The owner's Mac shows the move after its next update.",
-    [McpToolName.Projects]: 'List the projects of the workspace this key belongs to, with their ids.',
+    [McpToolName.Projects]: 'List the projects of the workspace this connection belongs to, with their ids.',
   } satisfies Record<McpToolName, string>,
   ownerInstructions:
-    'This todz owner key manages the account: its workspaces and projects. Call workspaces to list them with their ids, create_workspace and create_project to add, rename_workspace and rename_project to rename, and delete_workspace and delete_project to remove one for good with its current name as confirm. Tasks are not reachable here: use a project key for them.',
+    'This todz connection has owner scope and manages the account: its workspaces and projects. Call workspaces to list them with their ids, create_workspace and create_project to add, rename_workspace and rename_project to rename, and delete_workspace and delete_project to remove one for good with its current name as confirm. Tasks are not reachable here: connect with project scope for them.',
   ownerTools: {
     [McpOwnerToolName.Workspaces]: 'List the workspaces of this account with their projects and ids.',
     [McpOwnerToolName.CreateWorkspace]: 'Create a workspace. It starts with an Inbox project.',
     [McpOwnerToolName.RenameWorkspace]: 'Rename a workspace.',
     [McpOwnerToolName.DeleteWorkspace]:
-      'Delete a workspace for good with all its projects, tasks and project keys. Give its current name as confirm; nothing is deleted when it differs.',
+      'Delete a workspace for good with all its projects and tasks. Give its current name as confirm; nothing is deleted when it differs.',
     [McpOwnerToolName.CreateProject]: 'Create a project in a workspace.',
     [McpOwnerToolName.RenameProject]: 'Rename a project. The Inbox cannot be renamed.',
     [McpOwnerToolName.DeleteProject]:
-      'Delete a project for good with its tasks and keys. Give its current name as confirm; nothing is deleted when it differs. The Inbox cannot be deleted.',
+      'Delete a project for good with its tasks. Give its current name as confirm; nothing is deleted when it differs. The Inbox cannot be deleted.',
     [McpOwnerToolName.Settings]: 'Show the account settings: time zone, agent nudge and day email.',
     [McpOwnerToolName.UpdateSettings]: 'Change the account settings. Give only what changes.',
   } satisfies Record<McpOwnerToolName, string>,
@@ -137,8 +138,7 @@ export const MCP_COPY = {
     [RuleIssue.DestinationGone]: 'The destination project was deleted while the task was being moved: nothing was moved.',
   } satisfies Record<RuleIssue, string>,
   taskIdInvalid: `Not a task id: use one like ${EXAMPLE_TASK_ID}.`,
-  sessionRequired: 'Bad Request: Mcp-Session-Id header is required',
-  sessionNotFound: 'Session not found',
+  apiKeysRemoved: `API keys were removed on 2026-11-27. Connect with OAuth instead: add ${MCP_URL} to your client and sign in. Steps: ${DOCS_CONNECT_URL}`,
   clientUnnamed: 'This client sent no name.',
   noOpenTasks: 'No open tasks.',
   nothingToDo: 'There is nothing to do in todz right now: no open tasks.',

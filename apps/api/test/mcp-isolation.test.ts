@@ -3,7 +3,7 @@ import { TaskPlacement } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { MCP_COPY, McpToolName } from '../src/mcp-copy';
 import { calendarDateInTimeZone } from '../src/owner-today';
-import { seedIssuedKey, seedNudgedKey } from './directory-seed';
+import { seedProjectWithToken, seedNudgedProjectWithToken } from './directory-seed';
 import { ClientEra, callTool, connectClient } from './mcp-client';
 
 const SECRET_TITLE = 'Secret B';
@@ -12,10 +12,10 @@ const B_TITLES = [SECRET_TITLE, 'B two'];
 type TwoProjects = { clientA: Client; clientB: Client };
 
 async function twoProjects(era: ClientEra): Promise<TwoProjects> {
-  const projectA = await seedIssuedKey();
-  const projectB = await seedIssuedKey();
-  const clientA = await connectClient({ era, key: projectA.key });
-  const clientB = await connectClient({ era, key: projectB.key });
+  const projectA = await seedProjectWithToken();
+  const projectB = await seedProjectWithToken();
+  const clientA = await connectClient({ era, token: projectA.token });
+  const clientB = await connectClient({ era, token: projectB.token });
   await callTool({ client: clientB, name: McpToolName.Add, args: { tasks: B_TITLES.map((title) => ({ title })) } });
   return { clientA, clientB };
 }
@@ -33,10 +33,10 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with the nudge 
 
   test('a task of project B due today never shows in the line of project A', async () => {
     const dueToday = calendarDateInTimeZone({ timeZone: 'UTC', now: Date.now() });
-    const projectA = await seedNudgedKey();
-    const projectB = await seedNudgedKey();
-    const clientA = await connectClient({ era, key: projectA.key });
-    const clientB = await connectClient({ era, key: projectB.key });
+    const projectA = await seedNudgedProjectWithToken();
+    const projectB = await seedNudgedProjectWithToken();
+    const clientA = await connectClient({ era, token: projectA.token });
+    const clientB = await connectClient({ era, token: projectB.token });
     await callTool({ client: clientB, name: McpToolName.Add, args: { tasks: [{ title: SECRET_TITLE, due_date: dueToday }] } });
     expect((await callTool({ client: clientA, name: McpToolName.Next, args: {} })).text).toBe(MCP_COPY.noOpenTasks);
     expect((await callTool({ client: clientB, name: McpToolName.Next, args: {} })).text).toBe(
@@ -46,8 +46,8 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with the nudge 
 
   test('a task titled as an instruction never reaches the line', async () => {
     const dueToday = calendarDateInTimeZone({ timeZone: 'UTC', now: Date.now() });
-    const { key } = await seedNudgedKey();
-    const client = await connectClient({ era, key });
+    const { token } = await seedNudgedProjectWithToken();
+    const client = await connectClient({ era, token });
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: INJECTION_TITLE, due_date: dueToday }] } });
     const [line] = (await callTool({ client, name: McpToolName.Next, args: {} })).text.split('\n');
     expect(line).toBe('Today here: 1 due. Start with T-1?');
@@ -86,10 +86,10 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with the key of
   });
 
   test('an idempotency key B used adds a new task to A, and an anchor of B answers what a number never issued answers', async () => {
-    const projectA = await seedIssuedKey();
-    const projectB = await seedIssuedKey();
-    const clientA = await connectClient({ era, key: projectA.key });
-    const clientB = await connectClient({ era, key: projectB.key });
+    const projectA = await seedProjectWithToken();
+    const projectB = await seedProjectWithToken();
+    const clientA = await connectClient({ era, token: projectA.token });
+    const clientB = await connectClient({ era, token: projectB.token });
     const sharedKey = 'shared-key';
     await callTool({
       client: clientB,
@@ -110,10 +110,10 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with the key of
   });
 
   test("arguments naming B's project or workspace are dropped and the task lands in A", async () => {
-    const projectA = await seedIssuedKey();
-    const projectB = await seedIssuedKey();
-    const clientA = await connectClient({ era, key: projectA.key });
-    const clientB = await connectClient({ era, key: projectB.key });
+    const projectA = await seedProjectWithToken();
+    const projectB = await seedProjectWithToken();
+    const clientA = await connectClient({ era, token: projectA.token });
+    const clientB = await connectClient({ era, token: projectB.token });
     const args = {
       tasks: [{ title: 'Mine', project_id: projectB.projectId }],
       project_id: projectB.projectId,
@@ -127,11 +127,11 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('a %s client with the key of
 describe('two owners at once', () => {
   test('each lists only its own titles (pin)', async () => {
     const owners = await Promise.all(
-      ['First owner task', 'Second owner task'].map(async (title) => ({ title, ...(await seedIssuedKey()) })),
+      ['First owner task', 'Second owner task'].map(async (title) => ({ title, ...(await seedProjectWithToken()) })),
     );
     const lists = await Promise.all(
-      owners.map(async ({ title, key }) => {
-        const client = await connectClient({ era: ClientEra.Modern, key });
+      owners.map(async ({ title, token }) => {
+        const client = await connectClient({ era: ClientEra.Modern, token });
         await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title }] } });
         return (await listOpen(client)).text;
       }),

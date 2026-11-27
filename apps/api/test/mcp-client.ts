@@ -31,13 +31,13 @@ export type ToolAnswer = { text: string; isError: boolean | undefined };
 
 export async function connectClient({
   era,
-  key,
+  token,
   clientName = CLIENT_NAME_OF_ERA[era],
   onResponse = ignoreResponse,
   serve = serveWithWorker,
 }: {
   era: ClientEra;
-  key: string;
+  token: string;
   clientName?: string;
   onResponse?: (response: Response) => void;
   serve?: (request: Request) => Promise<Response>;
@@ -49,7 +49,7 @@ export async function connectClient({
       onResponse(response);
       return response;
     },
-    requestInit: { headers: { Authorization: `Bearer ${key}` } },
+    requestInit: { headers: { Authorization: `Bearer ${token}` } },
   });
   await client.connect(transport);
   onTestFinished(() => client.close());

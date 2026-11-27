@@ -2,7 +2,6 @@ import { formatShortId } from '@todz/core';
 import { AUTHOR, COMPANY } from '@todz/types';
 import { MCP_COPY, McpToolName } from '../mcp-copy';
 import { AgentClient, agentSetupOf } from './agent-setup';
-import { KEY_PLACEHOLDER } from './site-constants';
 import { MCP_URL } from './site-urls';
 
 const EXAMPLE_TASK_NUMBER = 12;
@@ -137,7 +136,7 @@ export const LANDING_COPY = {
     },
     agents: {
       title: 'Agents add tasks over MCP',
-      body: 'Claude Code, Codex and Cursor read, add and finish tasks with one key per project. Every change says who made it.',
+      body: 'Claude Code, Codex and Cursor read, add and finish tasks after one sign-in. Every change says who made it.',
     },
     offline: {
       title: 'Works offline, syncs everywhere',
@@ -147,14 +146,14 @@ export const LANDING_COPY = {
   howItWorks: {
     eyebrow: 'How it works',
     title: 'Connect once. Ask in plain words.',
-    step1: 'Add the server: one command, one key per project.',
+    step1: 'Add the server: one command, then sign in.',
     step2: 'Ask your agent to add, list or finish a task.',
     step3: 'It shows up in your menu bar and widgets.',
   },
   terminal: {
     label: 'Adding todz to Claude Code, then adding a task',
     shellPrompt: '$',
-    command: agentSetupOf({ client: AgentClient.ClaudeCode, serverUrl: MCP_URL, key: KEY_PLACEHOLDER }),
+    command: agentSetupOf({ client: AgentClient.ClaudeCode, serverUrl: MCP_URL }),
     askPrompt: '>',
     ask: 'Add a todz task: review the PR',
     toolCall: `todz - ${McpToolName.Add} (MCP)(tasks: [{"title": "${EXAMPLE_TASK_TITLE}"}])`,

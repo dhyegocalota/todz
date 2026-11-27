@@ -5,7 +5,8 @@ import { McpToolName } from '../src/mcp-copy';
 import { CHANGE_PAGE_SIZE } from '../src/project-store';
 import { countingEnv } from './counting-namespace';
 import { ClientEra, callTool, connectClient } from './mcp-client';
-import { type OwnedProject, createOwnedProject, issueMcpKey, ownerCall, projectCall, serveOwnerCall, signInOwner } from './owner-client';
+import { seedProjectToken } from './directory-seed';
+import { type OwnedProject, createOwnedProject, ownerCall, projectCall, serveOwnerCall, signInOwner } from './owner-client';
 
 const WEBSOCKET_UPGRADE = 'websocket';
 const CHANGED = 'changed';
@@ -33,8 +34,8 @@ async function changesFrom({ project, cursor }: { project: OwnedProject; cursor:
 }
 
 async function addedByAgent({ project, titles }: { project: OwnedProject; titles: string[] }): Promise<void> {
-  const key = await issueMcpKey({ token: project.token, projectId: project.projectId });
-  const client = await connectClient({ era: ClientEra.Legacy, key });
+  const mcpToken = await seedProjectToken({ projectId: project.projectId });
+  const client = await connectClient({ era: ClientEra.Legacy, token: mcpToken });
   await callTool({ client, name: McpToolName.Add, args: { tasks: titles.map((title) => ({ title })) } });
 }
 
@@ -252,8 +253,8 @@ describe('GET /owner/projects/:projectId/socket', () => {
   test('an agent done sends changed', async () => {
     const project = await createOwnedProject();
     await addTasks({ project, titles: ['One'] });
-    const key = await issueMcpKey({ token: project.token, projectId: project.projectId });
-    const client = await connectClient({ era: ClientEra.Legacy, key });
+    const mcpToken = await seedProjectToken({ projectId: project.projectId });
+    const client = await connectClient({ era: ClientEra.Legacy, token: mcpToken });
     const probe = await openSocket(project);
     await callTool({ client, name: McpToolName.Done, args: { ids: ['T-1'] } });
     expect(await settled({ project, probe, count: 1 })).toEqual([CHANGED]);
@@ -272,10 +273,10 @@ describe('GET /owner/projects/:projectId/socket', () => {
 describe('a change socket ends with its session', () => {
   test('signing out closes the sockets that session opened', async () => {
     const project = await createOwnedProject();
-    const key = await issueMcpKey({ token: project.token, projectId: project.projectId });
+    const mcpToken = await seedProjectToken({ projectId: project.projectId });
     const firstEvent = await watchedSocket(project);
     expect((await signOut(project.token)).status).toBe(HttpStatus.NoContent);
-    const client = await connectClient({ era: ClientEra.Legacy, key });
+    const client = await connectClient({ era: ClientEra.Legacy, token: mcpToken });
     await callTool({ client, name: McpToolName.Add, args: { tasks: [{ title: 'After sign-out' }] } });
     expect(await firstEvent()).toBe(CLOSED);
   });

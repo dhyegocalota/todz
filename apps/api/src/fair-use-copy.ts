@@ -12,7 +12,6 @@ const LIMIT_MESSAGE_OF: Record<FairUseLimit, (max: number) => string> = {
   [FairUseLimit.Workspaces]: (max) => `You have reached the limit of ${max} workspaces.`,
   [FairUseLimit.Projects]: (max) => `A workspace holds at most ${max} projects.`,
   [FairUseLimit.OpenTasks]: (max) => `A project holds at most ${max} open tasks. Complete some to add more.`,
-  [FairUseLimit.LiveKeys]: (max) => `A project holds at most ${max} agent keys. Revoke one to issue another.`,
   [FairUseLimit.DailyWrites]: (max) => `You have reached the limit of ${max} task changes today. Changes resume at midnight UTC.`,
   [FairUseLimit.StoredBytes]: (max) => `You have reached the storage limit of ${sizeLabelOf(max)} of task text. Reading still works.`,
   [FairUseLimit.DailySignUps]: () => 'Too many new accounts from this network today. Try again tomorrow.',

@@ -1,14 +1,7 @@
-import type { CallToolResult, Client } from '@modelcontextprotocol/client';
-import {
-  CLIENT_CAPABILITIES_META_KEY,
-  CLIENT_INFO_META_KEY,
-  JSONRPC_VERSION,
-  PROTOCOL_VERSION_META_KEY,
-} from '@modelcontextprotocol/server';
+import type { Client } from '@modelcontextprotocol/client';
 import type { HistoryEntry } from '@todz/core';
 import {
   ActorKind,
-  CLIENT_NAME_MAX_LENGTH,
   DueWindow,
   HistoryAction,
   LIST_LIMIT_DEFAULT,
@@ -19,15 +12,14 @@ import {
   TaskState,
 } from '@todz/types';
 import { runInDurableObject } from 'cloudflare:test';
-import { env, exports } from 'cloudflare:workers';
+import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { McpPromptName, McpToolName, MCP_COPY } from '../src/mcp-copy';
 import { calendarDateInTimeZone } from '../src/owner-today';
 import { SqliteTaskStore } from '../src/sqlite-task-store';
-import { seedIssuedKey } from './directory-seed';
-import { CLIENT_NAME_OF_ERA, ClientEra, MODERN_PROTOCOL_VERSION, callTool, connectClient } from './mcp-client';
+import { seedProjectWithToken } from './directory-seed';
+import { CLIENT_NAME_OF_ERA, ClientEra, callTool, connectClient } from './mcp-client';
 
-const MODERN_MCP_URL = 'http://localhost:8787/mcp';
 const UTC_TIME_ZONE = 'UTC';
 const KIRITIMATI_TIME_ZONE = 'Pacific/Kiritimati';
 const INPUT_VALIDATION_ERROR = 'Input validation error:';
@@ -40,8 +32,8 @@ const SCOPE_NAME_PATTERN = /project|workspace/i;
 type ConnectedProject = { client: Client; projectId: string };
 
 async function connectedProject({ era, timeZone = UTC_TIME_ZONE }: { era: ClientEra; timeZone?: string }): Promise<ConnectedProject> {
-  const { projectId, key } = await seedIssuedKey(timeZone);
-  return { client: await connectClient({ era, key }), projectId };
+  const { projectId, token } = await seedProjectWithToken({ timeZone, clientName: CLIENT_NAME_OF_ERA[era] });
+  return { client: await connectClient({ era, token }), projectId };
 }
 
 function todayIn(timeZone: string): string {
@@ -65,48 +57,6 @@ function listOpen(client: Client) {
 async function historyOf({ projectId, number }: { projectId: string; number: number }): Promise<HistoryEntry[]> {
   const stub = env.PROJECT_STORE.get(env.PROJECT_STORE.idFromName(projectId));
   return runInDurableObject(stub, (_instance, state) => new SqliteTaskStore(state.storage.sql).listHistory(number));
-}
-
-async function modernResult<Result>({
-  key,
-  clientInfo,
-  method,
-  name,
-  args,
-}: {
-  key: string;
-  clientInfo: { name: string; version: string } | null;
-  method: string;
-  name: string;
-  args: Record<string, unknown>;
-}): Promise<Result> {
-  const envelope = { [PROTOCOL_VERSION_META_KEY]: MODERN_PROTOCOL_VERSION, [CLIENT_CAPABILITIES_META_KEY]: {} };
-  const meta = clientInfo === null ? envelope : { ...envelope, [CLIENT_INFO_META_KEY]: clientInfo };
-  const headers = {
-    Authorization: `Bearer ${key}`,
-    'Content-Type': 'application/json',
-    Accept: 'application/json, text/event-stream',
-    'MCP-Protocol-Version': MODERN_PROTOCOL_VERSION,
-    'Mcp-Method': method,
-    'Mcp-Name': name,
-  };
-  const params = { name, arguments: args, _meta: meta };
-  const body = JSON.stringify({ jsonrpc: JSONRPC_VERSION, id: 1, method, params });
-  const response = await exports.default.fetch(new Request(MODERN_MCP_URL, { method: 'POST', headers, body }));
-  const { result } = await response.json<{ result: Result }>();
-  return result;
-}
-
-function modernAdd({
-  key,
-  clientInfo,
-  title,
-}: {
-  key: string;
-  clientInfo: { name: string; version: string } | null;
-  title: string;
-}): Promise<CallToolResult> {
-  return modernResult({ key, clientInfo, method: 'tools/call', name: McpToolName.Add, args: { tasks: [{ title }] } });
 }
 describe.each([ClientEra.Legacy, ClientEra.Modern])('the %s client', (era) => {
   const clientName = CLIENT_NAME_OF_ERA[era];
@@ -405,61 +355,5 @@ describe.each([ClientEra.Legacy, ClientEra.Modern])('the %s client', (era) => {
     const everyTask = 'Open tasks: 2 of 2\nT-1 One\nT-2 Two';
     expect((await callTool({ client, name: McpToolName.List, args: { text: '' } })).text).toBe(everyTask);
     expect((await callTool({ client, name: McpToolName.List, args: { text: '   ' } })).text).toBe(everyTask);
-  });
-});
-
-describe('the modern client', () => {
-  test('named with more characters than a client name allows writes nothing', async () => {
-    const { key } = await seedIssuedKey();
-    const client = await connectClient({ era: ClientEra.Modern, key, clientName: 'a'.repeat(CLIENT_NAME_MAX_LENGTH + 1) });
-    expect(await addTitles({ client, titles: ['X'] })).toEqual({ text: MCP_COPY.ruleIssue[RuleIssue.ClientNameInvalid], isError: true });
-    expect((await listOpen(client)).text).toBe('Open tasks: 0 of 0');
-  });
-
-  test('a request whose envelope names no client writes nothing', async () => {
-    const { key } = await seedIssuedKey();
-    const result = await modernAdd({ key, clientInfo: null, title: 'Nameless' });
-    expect(result).toMatchObject({ content: [{ type: 'text', text: MCP_COPY.clientUnnamed }], isError: true });
-    expect((await listOpen(await connectClient({ era: ClientEra.Modern, key }))).text).toBe('Open tasks: 0 of 0');
-  });
-
-  test('a request whose envelope names no client reads the project, and every write answers the unnamed copy', async () => {
-    const { key } = await seedIssuedKey();
-    const named = await connectClient({ era: ClientEra.Modern, key });
-    await addTitles({ client: named, titles: ['Ship'] });
-    const unnamedTool = (name: McpToolName, args: Record<string, unknown>) =>
-      modernResult<CallToolResult>({ key, clientInfo: null, method: 'tools/call', name, args });
-    expect(await unnamedTool(McpToolName.List, {})).toMatchObject({ content: [{ type: 'text', text: 'Open tasks: 1 of 1\nT-1 Ship' }] });
-    expect((await unnamedTool(McpToolName.List, {})).isError).toBeUndefined();
-    expect(await unnamedTool(McpToolName.Next, {})).toMatchObject({ content: [{ type: 'text', text: 'T-1 Ship' }] });
-    const prompt = await modernResult<{ messages: unknown[] }>({
-      key,
-      clientInfo: null,
-      method: 'prompts/get',
-      name: McpPromptName.Next,
-      args: {},
-    });
-    expect(prompt.messages).toHaveLength(1);
-    const unnamedAnswer = { content: [{ type: 'text', text: MCP_COPY.clientUnnamed }], isError: true };
-    expect(await unnamedTool(McpToolName.Update, { id: 'T-1', title: 'Renamed' })).toMatchObject(unnamedAnswer);
-    expect(await unnamedTool(McpToolName.Done, { ids: ['T-1'] })).toMatchObject(unnamedAnswer);
-    expect((await listOpen(named)).text).toBe('Open tasks: 1 of 1\nT-1 Ship');
-  });
-
-  test('a client name with surrounding spaces is written trimmed', async () => {
-    const { key, projectId } = await seedIssuedKey();
-    const clientName = CLIENT_NAME_OF_ERA[ClientEra.Modern];
-    expect(
-      (await modernAdd({ key, clientInfo: { name: `  ${clientName}  `, version: '1.0.0' }, title: 'Padded' })).isError,
-    ).toBeUndefined();
-    const history = await historyOf({ projectId, number: 1 });
-    expect(history.map(({ actor }) => actor)).toEqual([{ kind: ActorKind.Agent, clientName }]);
-  });
-
-  test.each(['Co\ndex', '   '])('a client named %j writes nothing', async (name) => {
-    const { key } = await seedIssuedKey();
-    const result = await modernAdd({ key, clientInfo: { name, version: '1.0.0' }, title: 'Refused' });
-    expect(result).toMatchObject({ content: [{ type: 'text', text: MCP_COPY.ruleIssue[RuleIssue.ClientNameInvalid] }], isError: true });
-    expect((await listOpen(await connectClient({ era: ClientEra.Modern, key }))).text).toBe('Open tasks: 0 of 0');
   });
 });

@@ -104,13 +104,6 @@ export async function createOwnedProject(): Promise<OwnedProject> {
   return { ...owner, projectId: inbox.id };
 }
 
-export async function issueMcpKey({ token, projectId }: { token: string; projectId: string }): Promise<string> {
-  const response = await ownerCall({ method: 'POST', path: `/owner/projects/${projectId}/keys`, token });
-  if (response.status !== CREATED_STATUS) throw new Error(`issue key answered ${response.status}`);
-  const { secret } = await response.json<{ secret: string }>();
-  return secret;
-}
-
 export function projectCall({
   project,
   method,

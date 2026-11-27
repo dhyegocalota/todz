@@ -1,26 +1,22 @@
 import type { Client } from '@modelcontextprotocol/client';
-import { PROJECT_LIVE_KEYS_MAX, PROJECT_OPEN_TASKS_MAX, RuleIssue, TaskState } from '@todz/types';
+import { PROJECT_OPEN_TASKS_MAX, RuleIssue, TaskState } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { MCP_COPY, McpToolName } from '../src/mcp-copy';
 import { MOVE_KEY_PREFIX } from '../src/move-task';
-import { issueProjectKey } from '../src/project-keys';
-import { issuedKeyOf, seedIssuedKey, seedSiblingProject } from './directory-seed';
+import { seedProjectToken, seedProjectWithToken, seedSiblingProject } from './directory-seed';
 import { ClientEra, callTool, connectClient } from './mcp-client';
 import { AGENT_ACTOR, CLOCK_NOW } from './task-fixtures';
 
 type ConnectedProject = { client: Client; projectId: string };
 
 async function connectedProject(): Promise<ConnectedProject> {
-  const { projectId, key } = await seedIssuedKey();
-  return { client: await connectClient({ era: ClientEra.Modern, key }), projectId };
+  const { projectId, token } = await seedProjectWithToken();
+  return { client: await connectClient({ era: ClientEra.Modern, token }), projectId };
 }
 
 async function clientOfProject(projectId: string): Promise<Client> {
-  const { secret } = await issuedKeyOf(
-    issueProjectKey({ liveKeysMax: PROJECT_LIVE_KEYS_MAX, directory: env.DIRECTORY, projectId, now: CLOCK_NOW }),
-  );
-  return connectClient({ era: ClientEra.Modern, key: secret });
+  return connectClient({ era: ClientEra.Modern, token: await seedProjectToken({ projectId }) });
 }
 
 function addTitled({ client, title }: { client: Client; title: string }) {
@@ -163,7 +159,7 @@ describe('the projects tool', () => {
 
   test('never lists a project of another workspace', async () => {
     const { client } = await connectedProject();
-    const { projectId: foreignId } = await seedIssuedKey();
+    const { projectId: foreignId } = await seedProjectWithToken();
     expect((await callTool({ client, name: McpToolName.Projects, args: {} })).text).not.toContain(foreignId);
   });
 });
@@ -195,7 +191,7 @@ describe('the move tool', () => {
 
   test('a project of another workspace, an unknown project and the same project are refused and the task stays', async () => {
     const { client, projectId } = await connectedProject();
-    const { projectId: foreignId } = await seedIssuedKey();
+    const { projectId: foreignId } = await seedProjectWithToken();
     await addTitled({ client, title: 'Stay' });
     const foreign = await callTool({ client, name: McpToolName.Move, args: { id: 'T-1', project: foreignId } });
     const unknown = await callTool({ client, name: McpToolName.Move, args: { id: 'T-1', project: crypto.randomUUID() } });
