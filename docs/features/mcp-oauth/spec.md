@@ -1,6 +1,6 @@
 # MCP over OAuth
 
-**Status:** Building
+**Status:** Shipped 2026-11-27
 **Tier:** 🔴
 **Owner approval:** approved 2026-11-26, by inheritance from [the product design](../../product/README.md) (approved 2026-11-23) and the owner's order to the loop on 2026-11-27 ~00:30 UTC ("quero MCP por OAuth")
 **ADRs:** [0109](../../adr/0109-mcp-clients-connect-with-oauth-2-1-pkce-and-dynamic-registration-and-a-grant-is-never-more-than-the-equivalent-key.md)
