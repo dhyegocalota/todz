@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'vitest';
-import { catalogKeyShape, localizedKeys } from './swift-localized-keys';
+import { catalogKeyShape, localizedKeys, shortcutPhrases } from './swift-localized-keys';
+
+describe('shortcutPhrases', () => {
+  test('reads each phrase with the application name as a placeholder', () => {
+    const source = 'phrases: ["Left in \\(.applicationName)", "New task in \\(.applicationName)"],\nshortTitle: "x"';
+    expect(shortcutPhrases(source)).toEqual(['Left in ${applicationName}', 'New task in ${applicationName}']);
+  });
+});
 
 const COPY_SOURCE = [
   'enum SampleCopy {',

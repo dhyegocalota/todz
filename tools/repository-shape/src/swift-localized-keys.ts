@@ -54,3 +54,14 @@ function withoutInterpolations(text: string): string {
 export function catalogKeyShape(key: string): string {
   return withoutInterpolations(key).replace(CATALOG_PLACEHOLDER, SHAPE_PLACEHOLDER).replace(/\\"/g, '"');
 }
+
+const PHRASES_ARRAY = /phrases: \[([^\]]*)\]/g;
+const PHRASE_LITERAL = /"((?:[^"\\]|\\.)*)"/g;
+const APPLICATION_NAME_INTERPOLATION = '\\(.applicationName)';
+const APPLICATION_NAME_PLACEHOLDER = '${applicationName}';
+
+export function shortcutPhrases(source: string): string[] {
+  return [...source.matchAll(PHRASES_ARRAY)]
+    .flatMap((array) => [...array[1]!.matchAll(PHRASE_LITERAL)].map((literal) => literal[1]!))
+    .map((phrase) => phrase.replace(APPLICATION_NAME_INTERPOLATION, APPLICATION_NAME_PLACEHOLDER));
+}
