@@ -16,6 +16,7 @@ export enum ColorScheme {
 
 const DOCS_DIRECTORY = resolve(import.meta.dirname, '..', '..');
 const INDEX_PAGE = 'index';
+const ENGLISH_LANGUAGE = 'en';
 const ERROR_CONSOLE_TYPE = 'error';
 const STATUS_CLIENT_ERROR_FROM = 400;
 const TITLE_PATTERN = /^title: (.+)$/m;
@@ -39,7 +40,7 @@ export const WALK_NOISE_ALLOWLIST: { patternOf: (input: { origin: string }) => R
 
 export type DocsPage = { name: string; path: string; title: string };
 
-type DocsConfiguration = { navigation: { groups: { pages: string[] }[] } };
+type DocsConfiguration = { navigation: { languages: { language: string; groups: { pages: string[] }[] }[] } };
 
 function escapedForPattern(text: string): string {
   return text.replace(PATTERN_SPECIAL_CHARACTERS, '\\$&');
@@ -47,7 +48,9 @@ function escapedForPattern(text: string): string {
 
 export function docsPages(): DocsPage[] {
   const configuration = JSON.parse(readFileSync(resolve(DOCS_DIRECTORY, 'docs.json'), 'utf8')) as DocsConfiguration;
-  return configuration.navigation.groups
+  const englishEntry = configuration.navigation.languages.find((entry) => entry.language === ENGLISH_LANGUAGE);
+  if (englishEntry === undefined) throw new Error('docs.json has no English entry');
+  return englishEntry.groups
     .flatMap((group) => group.pages)
     .map((name) => {
       const title = TITLE_PATTERN.exec(readFileSync(resolve(DOCS_DIRECTORY, `${name}.mdx`), 'utf8'))?.[FIRST_CAPTURE];

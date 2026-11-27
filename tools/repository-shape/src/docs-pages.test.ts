@@ -45,7 +45,8 @@ function appLabel({ file, name }: { file: string; name: string }): string {
 function pageNames(): string[] {
   return repositoryFiles(DOCS_DIRECTORY)
     .filter((path) => path.endsWith(PAGE_EXTENSION))
-    .map((path) => path.slice(DOCS_DIRECTORY.length + 1, -PAGE_EXTENSION.length));
+    .map((path) => path.slice(DOCS_DIRECTORY.length + 1, -PAGE_EXTENSION.length))
+    .filter((name) => !name.includes('/'));
 }
 
 function headingSlug(heading: string): string {
