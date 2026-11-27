@@ -73,6 +73,7 @@ async function deliverDay({ scheduledTime, env, dueOwner, sender, publicOrigin }
           workspaceName: inboxWorkspace.name,
           hasSeveralWorkspaces: workspaces.length > 1,
           minutes: candidate.minutes,
+          language: candidate.language,
         }),
       );
     },

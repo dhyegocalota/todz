@@ -1,14 +1,15 @@
-import { AGENT_NUDGE_BY_DEFAULT, DAY_EMAIL_BY_DEFAULT } from '@todz/types';
+import { AGENT_NUDGE_BY_DEFAULT, DAY_EMAIL_BY_DEFAULT, Language } from '@todz/types';
 import type { CloudCap } from './cloud-admission';
 import { activeOwnerSql, outstandingAdmissionSql } from './cloud-queue-store';
+import { enumValueOf } from './enum-value';
 import type { OwnerRecord } from './owner-records';
 import { SignInProviderKind } from './sign-in-provider';
 
-const OWNER_COLUMNS = 'id, time_zone, agent_nudge, day_email, day_email_minutes';
+const OWNER_COLUMNS = 'id, time_zone, agent_nudge, day_email, day_email_minutes, language';
 
-const INSERT_OWNER = 'INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at) VALUES (?1, ?2, ?3, ?4, ?5)';
-const INSERT_OWNER_WITHIN_CAP = `INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at)
-SELECT ?1, ?2, ?3, ?4, ?5
+const INSERT_OWNER = 'INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at, language) VALUES (?1, ?2, ?3, ?4, ?5, ?6)';
+const INSERT_OWNER_WITHIN_CAP = `INSERT INTO owners (id, time_zone, agent_nudge, day_email, created_at, language)
+SELECT ?1, ?2, ?3, ?4, ?5, ?11
 WHERE (SELECT COUNT(*) FROM owners WHERE ${activeOwnerSql({ sinceMilliseconds: '?6', sinceDay: '?7' })})
   + (SELECT COUNT(*) FROM cloud_queue WHERE ${outstandingAdmissionSql({ sinceMilliseconds: '?6', sinceDay: '?7', admissionSince: '?9', provider: '?10' })}) < ?8`;
 const INSERT_IDENTITY_OF_OWNER = `INSERT INTO owner_identities (provider, subject, owner_id, created_at)
@@ -18,12 +19,14 @@ const UPDATE_OWNER_STATEMENT = `UPDATE owners SET time_zone = COALESCE(?1, time_
   agent_nudge = COALESCE(?2, agent_nudge),
   day_email = COALESCE(?3, day_email),
   day_email_minutes = COALESCE(?4, day_email_minutes),
+  language = COALESCE(?7, language),
   agent_nudge_chosen_at = CASE WHEN ?2 IS NULL THEN agent_nudge_chosen_at ELSE ?5 END,
   day_email_chosen_at = CASE WHEN ?3 IS NULL THEN day_email_chosen_at ELSE ?5 END
 WHERE id = ?6 RETURNING ${OWNER_COLUMNS}`;
+const UPDATE_OWNER_LANGUAGE_STATEMENT = 'UPDATE owners SET language = ?1 WHERE id = ?2';
 
 type IdentityRow = { owner_id: string };
-type OwnerRow = { id: string; time_zone: string; agent_nudge: number; day_email: number; day_email_minutes: number };
+type OwnerRow = { id: string; time_zone: string; agent_nudge: number; day_email: number; day_email_minutes: number; language: string };
 
 export async function findIdentityOwner({
   directory,
@@ -48,6 +51,7 @@ export async function insertOwnerWithIdentity({
   provider,
   subject,
   timeZone,
+  language,
   now,
   cap,
 }: {
@@ -56,6 +60,7 @@ export async function insertOwnerWithIdentity({
   provider: string;
   subject: string;
   timeZone: string;
+  language: Language;
   now: number;
   cap: CloudCap | null;
 }): Promise<boolean> {
@@ -64,8 +69,8 @@ export async function insertOwnerWithIdentity({
   const insertOwner = isCapped
     ? directory
         .prepare(INSERT_OWNER_WITHIN_CAP)
-        .bind(...ownerValues, cap.sinceMilliseconds, cap.sinceDay, cap.accountsMax, cap.admissionSince, SignInProviderKind.Email)
-    : directory.prepare(INSERT_OWNER).bind(...ownerValues);
+        .bind(...ownerValues, cap.sinceMilliseconds, cap.sinceDay, cap.accountsMax, cap.admissionSince, SignInProviderKind.Email, language)
+    : directory.prepare(INSERT_OWNER).bind(...ownerValues, language);
   const [insertedOwner] = await directory.batch([
     insertOwner,
     directory.prepare(INSERT_IDENTITY_OF_OWNER).bind(provider, subject, ownerId, now),
@@ -79,6 +84,12 @@ function flagOf(flag: boolean | null): number | null {
   return Number(flag);
 }
 
+export function ownerLanguageOf(stored: string): Language {
+  const language = enumValueOf({ enumeration: Language, candidate: stored });
+  if (language === null) throw new Error(`a stored owner language is not supported: ${stored}`);
+  return language;
+}
+
 function ownerRecordOf(row: OwnerRow): OwnerRecord {
   return {
     id: row.id,
@@ -86,6 +97,7 @@ function ownerRecordOf(row: OwnerRow): OwnerRecord {
     agentNudge: row.agent_nudge === 1,
     dayEmail: row.day_email === 1,
     dayEmailMinutes: row.day_email_minutes,
+    language: ownerLanguageOf(row.language),
   };
 }
 
@@ -96,6 +108,7 @@ export async function storeOwnerChanges({
   agentNudge,
   dayEmail,
   dayEmailMinutes,
+  language,
   now,
 }: {
   directory: D1Database;
@@ -104,11 +117,12 @@ export async function storeOwnerChanges({
   agentNudge: boolean | null;
   dayEmail: boolean | null;
   dayEmailMinutes: number | null;
+  language: Language | null;
   now: number;
 }): Promise<OwnerRecord | null> {
   const update = directory
     .prepare(UPDATE_OWNER_STATEMENT)
-    .bind(timeZone, flagOf(agentNudge), flagOf(dayEmail), dayEmailMinutes, now, ownerId);
+    .bind(timeZone, flagOf(agentNudge), flagOf(dayEmail), dayEmailMinutes, now, ownerId, language);
   const deleteReplyAddresses = directory.prepare('DELETE FROM day_email_reply_addresses WHERE owner_id = ?').bind(ownerId);
   const deleteStopLinks = directory.prepare('DELETE FROM day_email_stop_links WHERE owner_id = ?').bind(ownerId);
   const statements = dayEmail === false ? [update, deleteReplyAddresses, deleteStopLinks] : [update];
@@ -117,6 +131,18 @@ export async function storeOwnerChanges({
   const [row] = updated.results;
   if (row === undefined) return null;
   return ownerRecordOf(row);
+}
+
+export async function storeOwnerLanguage({
+  directory,
+  ownerId,
+  language,
+}: {
+  directory: D1Database;
+  ownerId: string;
+  language: Language;
+}): Promise<void> {
+  await directory.prepare(UPDATE_OWNER_LANGUAGE_STATEMENT).bind(language, ownerId).run();
 }
 
 export async function findOwner({ directory, ownerId }: { directory: D1Database; ownerId: string }): Promise<OwnerRecord | null> {

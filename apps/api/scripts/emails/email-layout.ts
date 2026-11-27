@@ -1,4 +1,5 @@
 import { Body, Column, Container, Head, Hr, Html, Img, Link, Preview, Row, Section, Text } from 'react-email';
+import { LANGUAGE_PROFILES, type Language } from '@todz/types';
 import { createElement, type PropsWithChildren, type ReactElement, type ReactNode } from 'react';
 import { EMAIL_BRAND_NAME } from './email-layout-copy';
 import {
@@ -25,7 +26,13 @@ import {
 
 type FooterLink = { href: string; label: string };
 
-export type EmailLayoutProps = PropsWithChildren<{ title: string; preview: string; footer: string; footerLink?: FooterLink }>;
+export type EmailLayoutProps = PropsWithChildren<{
+  language: Language;
+  title: string;
+  preview: string;
+  footer: string;
+  footerLink?: FooterLink;
+}>;
 
 const FOOTER_LINK_CLASS_NAME = `${EmailClassName.Link} ${EmailClassName.StopLink}`;
 const FOOTER_LINK_SEPARATOR = ' ';
@@ -43,7 +50,7 @@ function footerLinkNodes(footerLink: FooterLink | undefined): ReactNode[] {
 export function EmailLayout(props: EmailLayoutProps): ReactElement {
   return createElement(
     Html,
-    { lang: 'en' },
+    { lang: LANGUAGE_PROFILES[props.language].htmlLang },
     createElement(
       Head,
       null,

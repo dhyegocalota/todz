@@ -28,7 +28,7 @@ Every checkbox states the input and the exact expected outcome. A ticked box car
 - [ ] Edge: `return` of `https://evil.example/`, `//evil.example`, `/\evil.example` or an unknown path — expected: 303 to the language home of the same host, never off the host.
 - [ ] Edge: `language=xx` — expected: 400, no cookie.
 - [ ] Every public page of every language carries `<html lang>` of the profile, a canonical of its own URL, eight `hreflang` links and an `x-default` to the English URL, `og:locale` and seven `og:locale:alternate`, and a JSON-LD `inLanguage` of the profile.
-- [ ] `sitemap.xml` lists the landing and the cloud queue page in the eight languages, each with eight `xhtml:link` alternates and an `x-default`.
+- [ ] `sitemap.xml` lists the landing in the eight languages (the token-gated cloud queue page is not listed), each with eight `xhtml:link` alternates and an `x-default`.
 - [ ] `POST /theme` with `theme=dark` same-origin — expected: 303 back to `return`, a `todz_theme=dark` cookie; `theme=system` clears the cookie; another origin — expected: 403.
 - [ ] A page with `todz_theme=dark` renders `<html data-theme="dark">` and `<meta name="color-scheme" content="dark">`; `light` — `light`; absent — no `data-theme` and `light dark`.
 - [ ] The CSP of every page has no `unsafe-inline` and no script or style source beyond hashes.

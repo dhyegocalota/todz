@@ -2,6 +2,7 @@ import type { WorkspaceListing } from '../directory-workspaces';
 import { escapedHtml } from '../escaped-html';
 import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
+import { type PagePreferences, privatePagePreferencesOf } from '../page-preferences';
 import { TurnstileAction } from '../turnstile';
 import { TURNSTILE_ORIGIN, TURNSTILE_SCRIPT_TAG } from '../turnstile-page';
 import {
@@ -21,7 +22,7 @@ import { adminPageResponse, siteContentSecurityPolicy, withFormOrigin } from '..
 import { SitePageKind, siteDocumentHtml } from '../site/site-shell';
 import { SITE_STYLE } from '../site/site-style';
 import type { AuthorizationRequest } from './oauth-authorization-request';
-import { OAUTH_COPY } from './oauth-copy';
+import { OAUTH_COPY_BY_LANGUAGE, type OAuthCopy } from './oauth-copy';
 import { OAuthDecision, OAuthField, OAuthPath } from './oauth-paths';
 import { isLoopbackRedirectUri, redirectHostOf, redirectOriginOf } from './oauth-redirect-uri';
 import { OAuthScope } from './oauth-scope';
@@ -35,11 +36,14 @@ export enum OAuthNotice {
   TryAgain = 'try-again',
 }
 
-const TEXT_OF_NOTICE: Record<OAuthNotice, string | null> = {
-  [OAuthNotice.None]: null,
-  [OAuthNotice.InvalidAddress]: OAUTH_COPY.signIn.invalidAddress,
-  [OAuthNotice.TryAgain]: OAUTH_COPY.signIn.tooMany,
-};
+function textOfNotice({ notice, copy }: { notice: OAuthNotice; copy: OAuthCopy }): string | null {
+  const texts: Record<OAuthNotice, string | null> = {
+    [OAuthNotice.None]: null,
+    [OAuthNotice.InvalidAddress]: copy.signIn.invalidAddress,
+    [OAuthNotice.TryAgain]: copy.signIn.tooMany,
+  };
+  return texts[notice];
+}
 
 const STATUS_OF_NOTICE: Record<OAuthNotice, HttpStatus> = {
   [OAuthNotice.None]: HttpStatus.Ok,
@@ -57,17 +61,16 @@ export enum OAuthRefusal {
 
 type RefusalCard = { title: string; body: string | null; status: HttpStatus };
 
-const CARD_OF_REFUSAL: Record<OAuthRefusal, RefusalCard> = {
-  [OAuthRefusal.Invalid]: { title: OAUTH_COPY.refusal.invalidTitle, body: OAUTH_COPY.refusal.invalidBody, status: HttpStatus.BadRequest },
-  [OAuthRefusal.Choice]: { title: OAUTH_COPY.refusal.choiceTitle, body: OAUTH_COPY.refusal.choiceBody, status: HttpStatus.BadRequest },
-  [OAuthRefusal.Forbidden]: {
-    title: OAUTH_COPY.refusal.forbiddenTitle,
-    body: OAUTH_COPY.refusal.forbiddenBody,
-    status: HttpStatus.Forbidden,
-  },
-  [OAuthRefusal.Unavailable]: { title: OAUTH_COPY.signIn.unavailable, body: null, status: HttpStatus.Unavailable },
-  [OAuthRefusal.TryAgain]: { title: OAUTH_COPY.signIn.tooMany, body: null, status: HttpStatus.TooManyRequests },
-};
+function cardOfRefusal({ refusal, copy }: { refusal: OAuthRefusal; copy: OAuthCopy }): RefusalCard {
+  const cards: Record<OAuthRefusal, RefusalCard> = {
+    [OAuthRefusal.Invalid]: { title: copy.refusal.invalidTitle, body: copy.refusal.invalidBody, status: HttpStatus.BadRequest },
+    [OAuthRefusal.Choice]: { title: copy.refusal.choiceTitle, body: copy.refusal.choiceBody, status: HttpStatus.BadRequest },
+    [OAuthRefusal.Forbidden]: { title: copy.refusal.forbiddenTitle, body: copy.refusal.forbiddenBody, status: HttpStatus.Forbidden },
+    [OAuthRefusal.Unavailable]: { title: copy.signIn.unavailable, body: null, status: HttpStatus.Unavailable },
+    [OAuthRefusal.TryAgain]: { title: copy.signIn.tooMany, body: null, status: HttpStatus.TooManyRequests },
+  };
+  return cards[refusal];
+}
 
 const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   style: SITE_STYLE,
@@ -84,13 +87,31 @@ const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   declaresManifest: false,
 });
 
-function documentOf({ title, content }: { title: string; content: string }): string {
+type OAuthPage = { copy: OAuthCopy; preferences: PagePreferences };
+
+export function oauthPreferencesOf({ request, returnPath }: { request: Request; returnPath?: string }): PagePreferences {
+  const preferences = privatePagePreferencesOf({ request });
+  if (returnPath === undefined) return preferences;
+  return { ...preferences, returnPath };
+}
+
+function oauthPageOf({ request, returnPath }: { request: Request; returnPath?: string }): OAuthPage {
+  const preferences = oauthPreferencesOf({ request, returnPath });
+  return { copy: OAUTH_COPY_BY_LANGUAGE[preferences.language], preferences };
+}
+
+function authorizePathOf(params: URLSearchParams): string {
+  return `${OAuthPath.Authorize}?${params.toString()}`;
+}
+
+function documentOf({ title, content, page }: { title: string; content: string; page: OAuthPage }): string {
   return siteDocumentHtml({
     kind: SitePageKind.Private,
     title,
-    description: OAUTH_COPY.meta.description,
+    description: page.copy.meta.description,
     main: adminCardMainHtml(content),
     scripts: [PAGE_SCRIPT],
+    preferences: page.preferences,
   });
 }
 
@@ -115,11 +136,12 @@ export function oauthPageAnswerOf({
   return answer;
 }
 
-export function refusalPageOf(refusal: OAuthRefusal): Response {
-  const { title, body, status } = CARD_OF_REFUSAL[refusal];
+export function refusalPageOf({ request, refusal }: { request: Request; refusal: OAuthRefusal }): Response {
+  const page = oauthPageOf({ request });
+  const { title, body, status } = cardOfRefusal({ refusal, copy: page.copy });
   const bodyHtml = body === null ? '' : `\n<p class="admin-body">${escapedHtml(body)}</p>`;
   return oauthPageAnswerOf({
-    html: documentOf({ title: OAUTH_COPY.meta.refusedTitle, content: `${answerTitleHtml(title)}${bodyHtml}` }),
+    html: documentOf({ title: page.copy.meta.refusedTitle, content: `${answerTitleHtml(title)}${bodyHtml}`, page }),
     status,
   });
 }
@@ -130,53 +152,63 @@ function widgetHtml(siteKey: string): string {
 
 // NB ADR 0046: the site key sits in a data attribute, so the page script stays one fixed source with one hash.
 export function signInPageOf({
+  request,
   clientName,
   params,
   notice,
   siteKey,
 }: {
+  request: Request;
   clientName: string;
   params: URLSearchParams;
   notice: OAuthNotice;
   siteKey: string;
 }): Response {
-  const content = `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(OAUTH_COPY.signIn.titleOf(clientName))}</h1>
-<p class="admin-body">${escapedHtml(OAUTH_COPY.signIn.lead)}</p>
+  const page = oauthPageOf({ request, returnPath: authorizePathOf(params) });
+  const { copy } = page;
+  const content = `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(copy.signIn.titleOf(clientName))}</h1>
+<p class="admin-body">${escapedHtml(copy.signIn.lead)}</p>
 <form class="${JOIN_FORM_CLASS} admin-form" method="post" action="${OAuthPath.SignInLinks}">
 ${hiddenInputHtml({ name: OAuthField.Request, value: params.toString() })}
 <div class="join-capsule">
-<label class="visually-hidden" for="${EMAIL_ID}">${escapedHtml(OAUTH_COPY.signIn.emailLabel)}</label>
-<input id="${EMAIL_ID}" class="join-input" name="${OAuthField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(OAUTH_COPY.signIn.emailPlaceholder)}" required>
-<button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(OAUTH_COPY.signIn.submitting)}">${escapedHtml(OAUTH_COPY.signIn.submit)}</button>
+<label class="visually-hidden" for="${EMAIL_ID}">${escapedHtml(copy.signIn.emailLabel)}</label>
+<input id="${EMAIL_ID}" class="join-input" name="${OAuthField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(copy.signIn.emailPlaceholder)}" required>
+<button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(copy.signIn.submitting)}">${escapedHtml(copy.signIn.submit)}</button>
 </div>
 ${widgetHtml(siteKey)}
-${noticeHtml(TEXT_OF_NOTICE[notice])}</form>
+${noticeHtml(textOfNotice({ notice, copy }))}</form>
 ${TURNSTILE_SCRIPT_TAG}`;
   return oauthPageAnswerOf({
-    html: documentOf({ title: OAUTH_COPY.meta.signInTitle, content }),
+    html: documentOf({ title: copy.meta.signInTitle, content, page }),
     status: STATUS_OF_NOTICE[notice],
     policy: CHALLENGE_CONTENT_SECURITY_POLICY,
   });
 }
 
 // NB ADR 0116: a decision answers a page that leaves for the client by a plain navigation, since form-action would block any later redirect of the client's own.
-export function returnPageOf({ clientName, location }: { clientName: string; location: string }): Response {
-  const content = `${answerTitleHtml(OAUTH_COPY.return.titleOf(clientName))}
-<p class="admin-body">${escapedHtml(OAUTH_COPY.return.body)}</p>
-<a class="admin-link" href="${escapedHtml(location)}" ${RETURN_ATTRIBUTE}>${escapedHtml(OAUTH_COPY.return.actionOf(clientName))}</a>`;
-  return oauthPageAnswerOf({ html: documentOf({ title: OAUTH_COPY.meta.returnTitle, content }), status: HttpStatus.Ok });
+export function returnPageOf({ request, clientName, location }: { request: Request; clientName: string; location: string }): Response {
+  const page = oauthPageOf({ request });
+  const { copy } = page;
+  const content = `${answerTitleHtml(copy.return.titleOf(clientName))}
+<p class="admin-body">${escapedHtml(copy.return.body)}</p>
+<a class="admin-link" href="${escapedHtml(location)}" ${RETURN_ATTRIBUTE}>${escapedHtml(copy.return.actionOf(clientName))}</a>`;
+  return oauthPageAnswerOf({ html: documentOf({ title: copy.meta.returnTitle, content, page }), status: HttpStatus.Ok });
 }
 
-export function approvedPageOf(clientName: string): Response {
-  const content = `${answerTitleHtml(OAUTH_COPY.approved.title)}
-<p class="admin-body">${escapedHtml(OAUTH_COPY.approved.bodyOf(clientName))}</p>`;
-  return oauthPageAnswerOf({ html: documentOf({ title: OAUTH_COPY.meta.approvedTitle, content }), status: HttpStatus.Ok });
+export function approvedPageOf({ request, clientName }: { request: Request; clientName: string }): Response {
+  const page = oauthPageOf({ request });
+  const { copy } = page;
+  const content = `${answerTitleHtml(copy.approved.title)}
+<p class="admin-body">${escapedHtml(copy.approved.bodyOf(clientName))}</p>`;
+  return oauthPageAnswerOf({ html: documentOf({ title: copy.meta.approvedTitle, content, page }), status: HttpStatus.Ok });
 }
 
-export function inboxPageOf(cookies: string[]): Response {
-  const content = `${answerTitleHtml(OAUTH_COPY.inbox.title)}
-<p class="admin-body">${escapedHtml(OAUTH_COPY.inbox.body)}</p>`;
-  return oauthPageAnswerOf({ html: documentOf({ title: OAUTH_COPY.meta.inboxTitle, content }), status: HttpStatus.Ok, cookies });
+export function inboxPageOf({ request, cookies }: { request: Request; cookies: string[] }): Response {
+  const page = oauthPageOf({ request });
+  const { copy } = page;
+  const content = `${answerTitleHtml(copy.inbox.title)}
+<p class="admin-body">${escapedHtml(copy.inbox.body)}</p>`;
+  return oauthPageAnswerOf({ html: documentOf({ title: copy.meta.inboxTitle, content, page }), status: HttpStatus.Ok, cookies });
 }
 
 function projectChoiceHtml({ id, name, isChecked }: { id: string; name: string; isChecked: boolean }): string {
@@ -196,14 +228,14 @@ function workspaceChoicesHtml({ listings, firstProjectId }: { listings: Workspac
     .join('\n');
 }
 
-function ownerChoiceHtml(): string {
-  return `<label class="consent-choice consent-owner"><input type="radio" name="${OAuthField.Choice}" value="${OAuthScope.Owner}" required><span>${escapedHtml(OAUTH_COPY.consent.ownerLabel)}<small class="consent-warning">${escapedHtml(OAUTH_COPY.consent.ownerWarning)}</small></span></label>`;
+function ownerChoiceHtml(copy: OAuthCopy): string {
+  return `<label class="consent-choice consent-owner"><input type="radio" name="${OAuthField.Choice}" value="${OAuthScope.Owner}" required><span>${escapedHtml(copy.consent.ownerLabel)}<small class="consent-warning">${escapedHtml(copy.consent.ownerWarning)}</small></span></label>`;
 }
 
-function redirectLineOf(redirectUri: string): string {
+function redirectLineOf({ redirectUri, copy }: { redirectUri: string; copy: OAuthCopy }): string {
   const host = redirectHostOf(redirectUri);
-  if (isLoopbackRedirectUri(redirectUri)) return OAUTH_COPY.consent.loopbackRedirectOf(host);
-  return OAUTH_COPY.consent.redirectOf(host);
+  if (isLoopbackRedirectUri(redirectUri)) return copy.consent.loopbackRedirectOf(host);
+  return copy.consent.redirectOf(host);
 }
 
 export function firstProjectIdOf(listings: WorkspaceListing[]): string | null {
@@ -215,41 +247,45 @@ export function firstProjectIdOf(listings: WorkspaceListing[]): string | null {
 // NB ADR 0109: one project is preselected and the owner scope never is; the form only reaches this server and the client's redirect origin.
 export function consentPageOf({
   request,
+  authorization,
   listings,
   formToken,
 }: {
-  request: AuthorizationRequest;
+  request: Request;
+  authorization: AuthorizationRequest;
   listings: WorkspaceListing[];
   formToken: string;
 }): Response {
-  const { client, redirectUri, offeredScopes, params } = request;
+  const { client, redirectUri, offeredScopes, params } = authorization;
+  const page = oauthPageOf({ request, returnPath: authorizePathOf(params) });
+  const { copy } = page;
   const firstProjectId = firstProjectIdOf(listings);
   const isProjectOffered = offeredScopes[OAuthScope.Project];
   const isProjectChoosable = isProjectOffered && firstProjectId !== null;
-  const projectHint = `<p class="consent-warning">${escapedHtml(OAUTH_COPY.consent.projectHint)}</p>\n`;
+  const projectHint = `<p class="consent-warning">${escapedHtml(copy.consent.projectHint)}</p>\n`;
   const projectChoices = isProjectChoosable ? `${projectHint}${workspaceChoicesHtml({ listings, firstProjectId })}` : '';
   const isWithoutProjects = isProjectOffered && firstProjectId === null;
-  const noProjectsLine = isWithoutProjects ? `<p class="admin-body">${escapedHtml(OAUTH_COPY.consent.noProjects)}</p>` : '';
-  const ownerChoice = offeredScopes[OAuthScope.Owner] ? ownerChoiceHtml() : '';
+  const noProjectsLine = isWithoutProjects ? `<p class="admin-body">${escapedHtml(copy.consent.noProjects)}</p>` : '';
+  const ownerChoice = offeredScopes[OAuthScope.Owner] ? ownerChoiceHtml(copy) : '';
   const hiddenInputs = [...params.entries(), [OAuthField.FormToken, formToken]]
     .map(([name, value]) => hiddenInputHtml({ name: String(name), value: String(value) }))
     .join('\n');
-  const content = `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(OAUTH_COPY.consent.titleOf(client.name))}</h1>
-<p class="admin-body">${escapedHtml(redirectLineOf(redirectUri))}</p>
+  const content = `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(copy.consent.titleOf(client.name))}</h1>
+<p class="admin-body">${escapedHtml(redirectLineOf({ redirectUri, copy }))}</p>
 <form class="${JOIN_FORM_CLASS} consent-form" method="post" action="${OAuthPath.Authorize}">
 ${hiddenInputs}
 <fieldset class="consent-choices">
-<legend class="consent-legend">${escapedHtml(OAUTH_COPY.consent.legend)}</legend>
+<legend class="consent-legend">${escapedHtml(copy.consent.legend)}</legend>
 ${noProjectsLine}${projectChoices}
 ${ownerChoice}
 </fieldset>
 <div class="consent-actions">
-<button class="admin-action" type="submit" name="${OAuthField.Decision}" value="${OAuthDecision.Deny}" formnovalidate>${escapedHtml(OAUTH_COPY.consent.deny)}</button>
-<button class="${JOIN_BUTTON_CLASS}" type="submit" name="${OAuthField.Decision}" value="${OAuthDecision.Approve}" data-submitting="${escapedHtml(OAUTH_COPY.consent.approving)}">${escapedHtml(OAUTH_COPY.consent.approve)}</button>
+<button class="admin-action" type="submit" name="${OAuthField.Decision}" value="${OAuthDecision.Deny}" formnovalidate>${escapedHtml(copy.consent.deny)}</button>
+<button class="${JOIN_BUTTON_CLASS}" type="submit" name="${OAuthField.Decision}" value="${OAuthDecision.Approve}" data-submitting="${escapedHtml(copy.consent.approving)}">${escapedHtml(copy.consent.approve)}</button>
 </div>
 </form>`;
   return oauthPageAnswerOf({
-    html: documentOf({ title: OAUTH_COPY.meta.consentTitle, content }),
+    html: documentOf({ title: copy.meta.consentTitle, content, page }),
     status: HttpStatus.Ok,
     policy: withFormOrigin({ policy: CONTENT_SECURITY_POLICY, origin: redirectOriginOf(redirectUri) }),
   });

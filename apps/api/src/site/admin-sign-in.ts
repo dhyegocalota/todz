@@ -1,3 +1,4 @@
+import type { Language } from '@todz/types';
 import { z } from 'zod';
 import { digestCredential } from '../credential-digest';
 import { generateCredentialSecret } from '../credential-secret';
@@ -9,6 +10,7 @@ import type { Env } from '../env';
 import { HttpStatus } from '../http-status';
 import { isLocalSiteHost } from '../local-origin';
 import { parsedJson } from '../parsed-json';
+import { languageOfRequest } from '../page-preferences';
 import { MediaType, hasMediaType, isBoundedRequest } from '../request-body';
 import { publicOriginOf } from '../sign-in-links';
 import { TURNSTILE_RESPONSE_FIELD, siteKeyOf } from '../turnstile-page';
@@ -116,10 +118,12 @@ async function issueAdminLink({
   database,
   guard,
   challenge,
+  language,
 }: {
   database: D1Database;
   guard: AdminLinkGuard;
   challenge: string;
+  language: Language;
 }): Promise<void> {
   const token = generateCredentialSecret();
   const digest = await digestCredential(token);
@@ -137,7 +141,7 @@ async function issueAdminLink({
   if (!isStored) return;
   const link = `${guard.siteOrigin}${AdminPath.LinkPage}#${AdminField.Token}=${token}`;
   try {
-    await guard.sender.send(adminSignInMail({ to: guard.adminEmail, link, origin: guard.siteOrigin }));
+    await guard.sender.send(adminSignInMail({ to: guard.adminEmail, link, origin: guard.siteOrigin, language }));
   } catch {
     await deleteAdminLink({ database, digest });
   }
@@ -148,16 +152,17 @@ export async function serveAdminSignInLink({ request, env, executionContext }: S
   const ask = await linkAskOf({ request, env });
   const siteKey = siteKeyOf(env);
   const isRefused = typeof ask === 'string';
-  if (isRefused) return adminCardAnswerOf({ notice: ask, siteKey });
+  if (isRefused) return adminCardAnswerOf({ request, notice: ask, siteKey });
   const challenge = generateCredentialSecret();
   const answer = await adminCardAnswerOf({
+    request,
     notice: AdminNotice.CheckInbox,
     siteKey,
     cookies: [adminCookieHeaderOf({ cookie: AdminCookie.Challenge, value: challenge })],
   });
   const isAdminAddress = ask.address === ask.guard.adminEmail;
   if (isAdminAddress) {
-    const issuance = issueAdminLink({ database: env.DIRECTORY, guard: ask.guard, challenge });
+    const issuance = issueAdminLink({ database: env.DIRECTORY, guard: ask.guard, challenge, language: languageOfRequest({ request }) });
     executionContext.waitUntil(issuance.catch(() => undefined));
   }
   return answer;

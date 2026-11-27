@@ -113,7 +113,7 @@ describe('GET /day-email/stop with a live token', () => {
     expect(html).toContain(STOP_PAGE_HEADING);
     expect(html).toContain(STOP_BUTTON);
     expect(html).toContain('method="post"');
-    expect(html).not.toContain(seeded.token);
+    expect(html.split(seeded.token)).toHaveLength(2);
     await expectUntouched(seeded);
   });
 

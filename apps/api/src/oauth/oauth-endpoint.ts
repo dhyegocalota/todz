@@ -28,15 +28,15 @@ const PAGE_REFUSAL_OF_LIMIT_REFUSAL: Record<LimitRefusal, OAuthRefusal> = {
   [LimitRefusal.Unavailable]: OAuthRefusal.Unavailable,
 };
 
-function pageLimitAnswerOf(refusal: LimitRefusal): Response {
-  const answer = refusalPageOf(PAGE_REFUSAL_OF_LIMIT_REFUSAL[refusal]);
+function pageLimitAnswerOf({ request, refusal }: { request: Request; refusal: LimitRefusal }): Response {
+  const answer = refusalPageOf({ request, refusal: PAGE_REFUSAL_OF_LIMIT_REFUSAL[refusal] });
   if (refusal === LimitRefusal.TryAgain) answer.headers.set(HttpHeader.RetryAfter, String(SIGN_IN_RATE_LIMIT_PERIOD_SECONDS));
   return answer;
 }
 
-const LIMIT_ANSWER_OF_KIND: Record<OAuthAnswer, (refusal: LimitRefusal) => Response> = {
+const LIMIT_ANSWER_OF_KIND: Record<OAuthAnswer, (parameters: { request: Request; refusal: LimitRefusal }) => Response> = {
   [OAuthAnswer.Page]: pageLimitAnswerOf,
-  [OAuthAnswer.Json]: oauthLimitResponse,
+  [OAuthAnswer.Json]: ({ refusal }) => oauthLimitResponse(refusal),
 };
 
 function routeKey({ method, pathname }: { method: string; pathname: string }): string {
@@ -88,6 +88,6 @@ export async function serveOAuth({
   const route = ROUTE_OF_REQUEST[routeKey({ method: request.method, pathname: new URL(request.url).pathname })];
   if (route === undefined) return noRouteResponse();
   const refusal = await oauthLimitRefusalOf({ request, env, limits: route.limits });
-  if (refusal !== null) return LIMIT_ANSWER_OF_KIND[route.answer](refusal);
+  if (refusal !== null) return LIMIT_ANSWER_OF_KIND[route.answer]({ request, refusal });
   return route.handler({ request, env, now, executionContext, issuer });
 }

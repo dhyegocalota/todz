@@ -8,8 +8,9 @@ import { EARLIEST_DAY, type MetricRow, metricRowsSince } from '../telemetry/metr
 import { ADMIN_METRICS_DAYS, SPARKLINE_HEIGHT, SPARKLINE_WIDTH } from '../telemetry/telemetry-constants';
 import { utcDayOf } from '../telemetry/telemetry-day';
 import { adminCardAnswerOf, adminClosedAnswerOf, adminPageAnswerOf, adminRedirectAnswerOf } from './admin-answer';
-import { ADMIN_COPY } from './admin-copy';
+import { ADMIN_COPY_BY_LANGUAGE, type AdminCopy } from './admin-copy';
 import { AdminNotice } from './admin-notice';
+import { adminPreferencesOf } from './admin-preferences';
 import { ADMIN_RESPONSE_HEADERS, AdminPath } from './admin-paths';
 import { adminEmailOf, hasAdminSession } from './admin-session';
 import { SiteGlyph, glyphHtml } from './site-glyphs';
@@ -89,34 +90,37 @@ function sparklinePointsOf(values: number[]): string {
     .join(' ');
 }
 
-function tileHtml(series: MetricSeries): string {
-  const label = ADMIN_COPY.metrics.labelOf[series.metric];
-  const chartLabel = ADMIN_COPY.metrics.chartLabel({ label, days: ADMIN_METRICS_DAYS });
+function tileHtml({ series, copy }: { series: MetricSeries; copy: AdminCopy }): string {
+  const label = copy.metrics.labelOf[series.metric];
+  const chartLabel = copy.metrics.chartLabel({ label, days: ADMIN_METRICS_DAYS });
   return `<div class="stat-tile glass"><dt>${escapedHtml(label)}</dt><dd>${COUNT_FORMAT.format(totalOf(series))}</dd><svg data-metric="${series.metric}" width="${SPARKLINE_WIDTH}" height="${SPARKLINE_HEIGHT}" viewBox="0 0 ${SPARKLINE_WIDTH} ${SPARKLINE_HEIGHT}" role="img" aria-label="${escapedHtml(chartLabel)}"><polyline points="${sparklinePointsOf(series.values)}" fill="none" stroke="currentColor" stroke-width="${SPARKLINE_STROKE_WIDTH}" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
 }
 
-function emptyHtml(): string {
-  const { metrics } = ADMIN_COPY;
+function emptyHtml(copy: AdminCopy): string {
+  const { metrics } = copy;
   return `<div class="empty-card glass">
 <h2 class="empty-title">${escapedHtml(metrics.emptyTitle)}</h2>
 <p class="empty-body">${escapedHtml(metrics.emptyBody)}</p>
 </div>`;
 }
 
-function metricsHtml(series: MetricSeries[]): string {
-  const { metrics, panel } = ADMIN_COPY;
-  const listing = series.length === 0 ? emptyHtml() : `<dl class="stat-list">\n${series.map(tileHtml).join('\n')}\n</dl>`;
+function metricsHtml({ series, request }: { series: MetricSeries[]; request: Request }): string {
+  const preferences = adminPreferencesOf({ request });
+  const copy = ADMIN_COPY_BY_LANGUAGE[preferences.language];
+  const { metrics, panel } = copy;
+  const tiles = series.map((tile) => tileHtml({ series: tile, copy })).join('\n');
+  const listing = series.length === 0 ? emptyHtml(copy) : `<dl class="stat-list">\n${tiles}\n</dl>`;
   return siteDocumentHtml({
     kind: SitePageKind.Private,
-    title: ADMIN_COPY.meta.metricsTitle,
-    description: ADMIN_COPY.meta.description,
+    title: copy.meta.metricsTitle,
+    description: copy.meta.description,
     main: `<main id="${CONTENT_ID}">
 <div class="admin-panel rise">
 <div class="panel-head">
 <h1 class="panel-title">${escapedHtml(metrics.title)}</h1>
-<nav class="panel-actions" aria-label="${escapedHtml(ADMIN_COPY.shell.navLabel)}">
-<a class="admin-action" href="${AdminPath.Usage}">${escapedHtml(ADMIN_COPY.usage.link)}</a>
-<a class="admin-action" href="${AdminPath.CloudQueue}">${escapedHtml(ADMIN_COPY.cloudQueue.link)}</a>
+<nav class="panel-actions" aria-label="${escapedHtml(copy.shell.navLabel)}">
+<a class="admin-action" href="${AdminPath.Usage}">${escapedHtml(copy.usage.link)}</a>
+<a class="admin-action" href="${AdminPath.CloudQueue}">${escapedHtml(copy.cloudQueue.link)}</a>
 <a class="admin-action" href="${AdminPath.MetricsExport}" download>${escapedHtml(metrics.download)}</a>
 <form method="post" action="${AdminPath.SignOut}"><button class="nav-link nav-button" type="submit">${escapedHtml(panel.signOut)}</button></form>
 </nav>
@@ -126,28 +130,32 @@ ${listing}
 </div>
 </main>`,
     scripts: [],
+    preferences,
   });
 }
 
 export async function serveAdminMetrics({ request, env }: SiteContext): Promise<Response> {
-  if (adminEmailOf(env) === null) return adminClosedAnswerOf({ env });
+  if (adminEmailOf(env) === null) return adminClosedAnswerOf({ request, env });
   const isSignedIn = await hasAdminSession({ request, env, now: Date.now() }).catch(() => null);
-  if (isSignedIn === null) return adminClosedAnswerOf({ env });
-  if (!isSignedIn) return adminCardAnswerOf({ notice: AdminNotice.None, siteKey: siteKeyOf(env) });
+  if (isSignedIn === null) return adminClosedAnswerOf({ request, env });
+  if (!isSignedIn) return adminCardAnswerOf({ request, notice: AdminNotice.None, siteKey: siteKeyOf(env) });
   const now = Date.now();
   const days = windowDaysOf(now);
   const rows = await metricRowsSince({ database: env.DIRECTORY, sinceDay: days[0]! }).catch(() => null);
-  if (rows === null) return adminClosedAnswerOf({ env });
-  const page = adminPageResponse({ html: metricsHtml(seriesOf({ rows, days })), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+  if (rows === null) return adminClosedAnswerOf({ request, env });
+  const page = adminPageResponse({
+    html: metricsHtml({ series: seriesOf({ rows, days }), request }),
+    contentSecurityPolicy: CONTENT_SECURITY_POLICY,
+  });
   return adminPageAnswerOf({ page, status: HttpStatus.Ok });
 }
 
 export async function serveAdminMetricsExport({ request, env }: SiteContext): Promise<Response> {
   const isSignedIn = await hasAdminSession({ request, env, now: Date.now() }).catch(() => null);
-  if (isSignedIn === null) return adminClosedAnswerOf({ env });
+  if (isSignedIn === null) return adminClosedAnswerOf({ request, env });
   if (!isSignedIn) return adminRedirectAnswerOf();
   const rows = await metricRowsSince({ database: env.DIRECTORY, sinceDay: EARLIEST_DAY }).catch(() => null);
-  if (rows === null) return adminClosedAnswerOf({ env });
+  if (rows === null) return adminClosedAnswerOf({ request, env });
   return new Response(metricsCsvOf(rows), {
     headers: { ...ADMIN_RESPONSE_HEADERS, [HttpHeader.ContentType]: CSV_CONTENT_TYPE, [HttpHeader.ContentDisposition]: CSV_DISPOSITION },
   });

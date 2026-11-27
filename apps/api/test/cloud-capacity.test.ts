@@ -1,9 +1,16 @@
-import { CLOUD_ADMISSION_LAPSE_DAYS, CLOUD_INACTIVE_DAYS, CLOUD_MAILS_PER_ADDRESS_DAY_MAX, MILLISECONDS_PER_DAY } from '@todz/types';
+import {
+  CLOUD_ADMISSION_LAPSE_DAYS,
+  CLOUD_INACTIVE_DAYS,
+  CLOUD_MAILS_PER_ADDRESS_DAY_MAX,
+  Language,
+  MILLISECONDS_PER_DAY,
+} from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test, vi } from 'vitest';
 import { cloudAccountsMaxOf } from '../src/cloud-accounts-max';
 import { cloudCapOf, cloudFullRefusalOf, isCloudFullFor } from '../src/cloud-admission';
 import { CLOUD_COPY } from '../src/cloud-copy';
+import { CLOUD_PAGE_COPY } from '../src/cloud-page-copy';
 import { countMailsSince } from '../src/cloud-mail-meter';
 import {
   admitAddress,
@@ -179,7 +186,7 @@ describe('a full cloud answers a link request like any other', () => {
     expect([refused.status, await refused.json()]).toEqual([admitted.status, await admitted.json()]);
     expect(refused.status).toBe(ACCEPTED_STATUS);
     const fullMail = sent.find((message) => message.to === refusedEmail);
-    expect(fullMail?.subject).toBe(CLOUD_COPY.fullMail.subject);
+    expect(fullMail?.subject).toBe(CLOUD_PAGE_COPY.fullMail.subject);
     expect(fullMail?.text).toMatch(new RegExp(`${SITE_ORIGIN}/cloud-queue\\?token=[0-9a-f]+\\.\\d+\\.[0-9a-f]{64}`));
     expect(fullMail?.text).not.toContain('sign-in#token');
     expect(fullMail?.text).toContain('https://docs.todz.app/self-host');
@@ -219,7 +226,7 @@ describe('a full cloud answers a link request like any other', () => {
     await seedEmailIdentity({ ownerId: await seedOwner(), email: admittedEmail });
     await requestLink({ email: admittedEmail, workerEnv });
     expect(sent.filter((message) => message.to === admittedEmail)).toHaveLength(1);
-    expect(sent.find((message) => message.to === admittedEmail)?.subject).not.toBe(CLOUD_COPY.fullMail.subject);
+    expect(sent.find((message) => message.to === admittedEmail)?.subject).not.toBe(CLOUD_PAGE_COPY.fullMail.subject);
   });
 
   test('a full mail that cannot be sent answers like a link that cannot be sent', async () => {
@@ -251,6 +258,7 @@ describe('admissions reserve their spots', () => {
         provider: SignInProviderKind.Email,
         subject: freshAddress(),
         timeZone: 'UTC',
+        language: Language.English,
         now: CLOCK_NOW,
         cap: strangerCap,
       }),
@@ -263,6 +271,7 @@ describe('admissions reserve their spots', () => {
         provider: SignInProviderKind.Email,
         subject: invitee,
         timeZone: 'UTC',
+        language: Language.English,
         now: CLOCK_NOW,
         cap: inviteeCap,
       }),
@@ -364,6 +373,7 @@ describe('admission is a count-guarded insert', () => {
       provider: SignInProviderKind.Email,
       subject: email,
       timeZone: 'UTC',
+      language: Language.English,
       now: CLOCK_NOW,
       cap,
     });

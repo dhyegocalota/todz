@@ -1,10 +1,12 @@
+import { Language } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
 import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
 import { MediaType } from '../request-body';
-import { ADMIN_COPY } from './admin-copy';
+import { ADMIN_COPY_BY_LANGUAGE, type AdminCopy } from './admin-copy';
 import { adminCardMainHtml } from './admin-page';
 import { AdminField, AdminPath } from './admin-paths';
+import { adminPreferencesOf } from './admin-preferences';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
 import { SitePageKind, siteDocumentHtml } from './site-shell';
 import { SITE_STYLE } from './site-style';
@@ -17,15 +19,16 @@ const WORKING_STATE = 'working';
 const FAILED_STATE = 'failed';
 const SAME_ORIGIN_CREDENTIALS = 'same-origin';
 
-const PAGE_SCRIPT = `{
+function pageScriptOf(copy: AdminCopy): string {
+  return `{
   const status = document.getElementById('${STATUS_ID}');
   const title = document.getElementById('${TITLE_ID}');
   const body = document.getElementById('${BODY_ID}');
   const retry = document.getElementById('${RETRY_ID}');
   const fail = () => {
     status.dataset.state = '${FAILED_STATE}';
-    title.textContent = ${JSON.stringify(ADMIN_COPY.link.failedTitle)};
-    body.textContent = ${JSON.stringify(ADMIN_COPY.link.failedBody)};
+    title.textContent = ${JSON.stringify(copy.link.failedTitle)};
+    body.textContent = ${JSON.stringify(copy.link.failedBody)};
     retry.hidden = false;
   };
   const spent = (response) => response.status === ${HttpStatus.Created} ? location.replace('${AdminPath.Panel}') : fail();
@@ -33,7 +36,7 @@ const PAGE_SCRIPT = `{
     const token = new URLSearchParams(location.hash.slice(1)).get('${AdminField.Token}');
     history.replaceState(null, '', location.pathname);
     status.dataset.state = '${WORKING_STATE}';
-    title.textContent = ${JSON.stringify(ADMIN_COPY.link.working)};
+    title.textContent = ${JSON.stringify(copy.link.working)};
     body.textContent = '';
     retry.hidden = true;
     const answer = token === null
@@ -49,31 +52,47 @@ const PAGE_SCRIPT = `{
   spend();
   addEventListener('hashchange', spend);
 }`;
+}
 
-const CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
-  style: SITE_STYLE,
-  scripts: [PAGE_SCRIPT],
-  widgetOrigin: null,
-  connectsToSelf: true,
-  declaresManifest: false,
-});
+type LinkPage = { script: string; contentSecurityPolicy: string };
 
-const LINK_PAGE_HTML = siteDocumentHtml({
-  kind: SitePageKind.Private,
-  title: ADMIN_COPY.meta.linkTitle,
-  description: ADMIN_COPY.meta.description,
-  main: adminCardMainHtml(`<div id="${STATUS_ID}" class="link-status" role="status" aria-live="polite" data-answer>
+async function linkPageOf(language: Language): Promise<[Language, LinkPage]> {
+  const script = pageScriptOf(ADMIN_COPY_BY_LANGUAGE[language]);
+  const contentSecurityPolicy = await siteContentSecurityPolicy({
+    style: SITE_STYLE,
+    scripts: [script],
+    widgetOrigin: null,
+    connectsToSelf: true,
+    declaresManifest: false,
+  });
+  return [language, { script, contentSecurityPolicy }];
+}
+
+const LINK_PAGES = new Map<Language, LinkPage>(await Promise.all(Object.values(Language).map(linkPageOf)));
+
+function linkPageHtml({ request, script, copy }: { request: Request; script: string; copy: AdminCopy }): string {
+  return siteDocumentHtml({
+    kind: SitePageKind.Private,
+    title: copy.meta.linkTitle,
+    description: copy.meta.description,
+    main: adminCardMainHtml(`<div id="${STATUS_ID}" class="link-status" role="status" aria-live="polite" data-answer>
 <h1 id="${TITLE_ID}" class="admin-title"></h1>
 <p id="${BODY_ID}" class="admin-body"></p>
-<a id="${RETRY_ID}" class="admin-link" href="${AdminPath.Panel}" hidden>${escapedHtml(ADMIN_COPY.link.failedAction)}</a>
+<a id="${RETRY_ID}" class="admin-link" href="${AdminPath.Panel}" hidden>${escapedHtml(copy.link.failedAction)}</a>
 </div>
 <noscript>
-<h1 class="admin-title">${escapedHtml(ADMIN_COPY.link.noScriptTitle)}</h1>
-<p class="admin-body">${escapedHtml(ADMIN_COPY.link.noScript)}</p>
+<h1 class="admin-title">${escapedHtml(copy.link.noScriptTitle)}</h1>
+<p class="admin-body">${escapedHtml(copy.link.noScript)}</p>
 </noscript>`),
-  scripts: [PAGE_SCRIPT],
-});
+    scripts: [script],
+    preferences: adminPreferencesOf({ request }),
+  });
+}
 
-export async function serveAdminLinkPage(): Promise<Response> {
-  return adminPageResponse({ html: LINK_PAGE_HTML, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+export async function serveAdminLinkPage({ request }: { request: Request }): Promise<Response> {
+  const { language } = adminPreferencesOf({ request });
+  const page = LINK_PAGES.get(language);
+  if (page === undefined) throw new Error(`no link page for ${language}`);
+  const html = linkPageHtml({ request, script: page.script, copy: ADMIN_COPY_BY_LANGUAGE[language] });
+  return adminPageResponse({ html, contentSecurityPolicy: page.contentSecurityPolicy });
 }

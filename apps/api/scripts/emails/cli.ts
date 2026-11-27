@@ -1,3 +1,4 @@
+import { Language } from '@todz/types';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { EmailSlot, filledHtmlOf } from '../../src/emails/email-slot';
@@ -46,11 +47,13 @@ async function check(): Promise<number> {
 async function preview(): Promise<number> {
   const emails = await generatedEmailsOf();
   mkdirSync(PREVIEW_DIRECTORY, { recursive: true });
-  Object.values(EmailTemplateName).forEach((name) => {
-    const path = `${PREVIEW_DIRECTORY}${name}.html`;
-    writeFileSync(path, filledHtmlOf({ html: emails[name].html, values: PREVIEW_VALUES }));
-    console.log(`wrote ${path}`);
-  });
+  Object.values(EmailTemplateName).forEach((name) =>
+    Object.values(Language).forEach((language) => {
+      const path = `${PREVIEW_DIRECTORY}${name}.${language}.html`;
+      writeFileSync(path, filledHtmlOf({ html: emails[name][language].html, values: PREVIEW_VALUES }));
+      console.log(`wrote ${path}`);
+    }),
+  );
   return SUCCESS_EXIT_CODE;
 }
 

@@ -34,7 +34,7 @@ async function admissionsOf({ env, form, now }: { env: Env; form: FormData; now:
 }
 
 export async function serveAdminCloudAdmissions({ request, env }: SiteContext): Promise<Response> {
-  if (!isSameOriginPost({ request, env })) return adminCardAnswerOf({ notice: AdminNotice.Forbidden, siteKey: siteKeyOf(env) });
+  if (!isSameOriginPost({ request, env })) return adminCardAnswerOf({ request, notice: AdminNotice.Forbidden, siteKey: siteKeyOf(env) });
   const isSignedIn = await hasAdminSession({ request, env, now: Date.now() }).catch(() => false);
   if (!isSignedIn) return adminRedirectAnswerOf();
   const { admitted, hasNoRoom } = await admissionsOf({ env, form: await request.formData(), now: Date.now() });

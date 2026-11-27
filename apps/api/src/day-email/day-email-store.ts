@@ -15,9 +15,9 @@ export enum DayEmailFailure {
 
 export type OwnerIdentityRow = { time_zone: string; subject: string };
 
-export type CandidateRow = { owner_id: string; time_zone: string; day_email_minutes: number; address: string };
+export type CandidateRow = { owner_id: string; time_zone: string; day_email_minutes: number; language: string; address: string };
 
-const CANDIDATES_STATEMENT = `SELECT owners.id AS owner_id, owners.time_zone, owners.day_email_minutes, owner_identities.subject AS address
+const CANDIDATES_STATEMENT = `SELECT owners.id AS owner_id, owners.time_zone, owners.day_email_minutes, owners.language, owner_identities.subject AS address
 FROM owners
 JOIN owner_identities ON owner_identities.owner_id = owners.id AND owner_identities.provider = ?
 WHERE owners.day_email = 1

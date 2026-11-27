@@ -1,3 +1,4 @@
+import { Language } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
@@ -22,6 +23,7 @@ describe('findSessionOwner', () => {
     expect(await findSessionOwner({ directory: env.DIRECTORY, digest: await digestCredential(secret), now: CLOCK_NOW })).toEqual({
       ownerId,
       isSuspended: false,
+      language: Language.English,
     });
   });
 

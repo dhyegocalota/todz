@@ -1,5 +1,8 @@
+import { Language } from '@todz/types';
 import { describe, expect, test } from 'vitest';
-import { SIGN_IN_EMAIL } from '../../src/emails/generated/email-templates';
+import { SIGN_IN_EMAIL as SIGN_IN_EMAILS } from '../../src/emails/generated/email-templates';
+
+const SIGN_IN_EMAIL = SIGN_IN_EMAILS[Language.English];
 
 const MINIMUM_CONTRAST = 4.5;
 const BRAND_COLOR = '#4764F5';

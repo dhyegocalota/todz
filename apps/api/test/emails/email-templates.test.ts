@@ -1,6 +1,10 @@
+import { Language } from '@todz/types';
 import { describe, expect, test } from 'vitest';
 import { EmailSlot } from '../../src/emails/email-slot';
-import { SIGN_IN_EMAIL, WELCOME_EMAIL } from '../../src/emails/generated/email-templates';
+import { SIGN_IN_EMAIL as SIGN_IN_EMAILS, WELCOME_EMAIL as WELCOME_EMAILS } from '../../src/emails/generated/email-templates';
+
+const SIGN_IN_EMAIL = SIGN_IN_EMAILS[Language.English];
+const WELCOME_EMAIL = WELCOME_EMAILS[Language.English];
 
 const COLOR_SCHEME_META = '<meta name="color-scheme" content="light dark"';
 const LOCKUP_URL = `${EmailSlot.Origin}/brand/todz-lockup.png`;

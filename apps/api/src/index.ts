@@ -5,6 +5,7 @@ import { DAY_EMAIL_STOP_PATH } from './day-email/day-email-stop-url';
 import type { Env } from './env';
 import { HEALTH_PATH, serveHealth } from './health';
 import { HostKind, WWW_PREFIX, hostKindOf } from './host-kind';
+import { HttpMethod } from './http-method';
 import { HttpStatus } from './http-status';
 import { serveMcp } from './mcp-endpoint';
 import { serveServerCard } from './mcp-server-card';
@@ -21,6 +22,8 @@ import { SIGN_IN_CHALLENGE_PAGE_PATH, serveSignInChallengePage } from './sign-in
 import { SIGN_IN_PAGE_PATH, serveSignInPage } from './sign-in-page';
 import { SELF_HOST_PATH, redirectToDocs } from './site/self-host-redirect';
 import { serveSite } from './site/site-endpoint';
+import { serveLanguage, serveTheme } from './site/language-routes';
+import { SitePath } from './site/site-paths';
 import { DiscoveryPath, SERVER_CARD_PATH } from './site/site-urls';
 import { USAGE_PATH, serveUsageRollup } from './telemetry/usage-rollup';
 
@@ -32,6 +35,13 @@ type Route = ({ request, env }: { request: Request; env: Env }) => Promise<Respo
 type HostContext = { request: Request; env: Env; executionContext: ExecutionContext };
 type HostHandler = (context: HostContext) => Promise<Response>;
 
+function postRoute(serve: ({ request }: { request: Request }) => Promise<Response>): Route {
+  return async ({ request }) => {
+    if (request.method !== HttpMethod.Post) return noRouteResponse();
+    return serve({ request });
+  };
+}
+
 const ROUTE_OF_PATH: Record<string, Route> = {
   [MCP_PATH]: ({ request, env }) => serveTimed({ env, serve: (observedEnv) => serveMcp({ request, env: observedEnv, now: Date.now() }) }),
   [SERVER_CARD_PATH]: async ({ request }) => serveServerCard({ request }),
@@ -39,6 +49,8 @@ const ROUTE_OF_PATH: Record<string, Route> = {
   [DAY_EMAIL_STOP_PATH]: ({ request, env }) => dayEmailStopResponse({ request, env }),
   [SIGN_IN_PAGE_PATH]: ({ request, env }) => serveSignInPage({ request, env }),
   [SIGN_IN_CHALLENGE_PAGE_PATH]: ({ request, env }) => serveSignInChallengePage({ request, env }),
+  [SitePath.Language]: postRoute(serveLanguage),
+  [SitePath.Theme]: postRoute(serveTheme),
   [USAGE_PATH]: ({ request, env }) => serveUsageRollup({ request, env }),
   ...Object.fromEntries(
     Object.values(OAuthMetadataPath).map((path): [string, Route] => [

@@ -1,4 +1,4 @@
-import { AGENT_NUDGE_BY_DEFAULT, DAY_EMAIL_BY_DEFAULT, DAY_EMAIL_MINUTES_DEFAULT } from '@todz/types';
+import { AGENT_NUDGE_BY_DEFAULT, DAY_EMAIL_BY_DEFAULT, DAY_EMAIL_MINUTES_DEFAULT, type Language } from '@todz/types';
 import { z } from 'zod';
 import { type CloudCap, cloudCapOf, cloudFullRefusalOf } from './cloud-admission';
 import { mailMeterOf } from './cloud-mail-meter';
@@ -6,7 +6,9 @@ import { findIdentityOwner, insertOwnerWithIdentity, storeOwnerChanges } from '.
 import { emailSenderOf } from './email-sender';
 import { welcomeMail } from './emails/welcome-mail';
 import type { Env } from './env';
+import { HttpHeader } from './http-header';
 import { HttpStatus } from './http-status';
+import { languageOfAcceptLanguage, supportedLanguageOfAcceptLanguage } from './language-negotiation';
 import { OwnerErrorCode, cloudFullResponse, errorResponse } from './owner-errors';
 import { ownerJson } from './owner-json';
 import type { OwnerRecord } from './owner-records';
@@ -49,14 +51,25 @@ async function retimedOwner({
   directory,
   ownerId,
   timeZone,
+  supportedLanguage,
   now,
 }: {
   directory: D1Database;
   ownerId: string;
   timeZone: string;
+  supportedLanguage: Language | null;
   now: number;
 }): Promise<IdentityOwner> {
-  const owner = await storeOwnerChanges({ directory, ownerId, timeZone, agentNudge: null, dayEmail: null, dayEmailMinutes: null, now });
+  const owner = await storeOwnerChanges({
+    directory,
+    ownerId,
+    timeZone,
+    agentNudge: null,
+    dayEmail: null,
+    dayEmailMinutes: null,
+    language: supportedLanguage,
+    now,
+  });
   if (owner === null) throw new Error('an identity names an owner with no row');
   return { owner, isNewOwner: false };
 }
@@ -66,14 +79,31 @@ async function identityOwner({
   kind,
   subject,
   timeZone,
+  supportedLanguage,
+  newOwnerLanguage,
   now,
   cap,
-}: OwnerIdentity & { timeZone: string; now: number; cap: CloudCap | null }): Promise<IdentityOwner | null> {
+}: OwnerIdentity & {
+  timeZone: string;
+  supportedLanguage: Language | null;
+  newOwnerLanguage: Language;
+  now: number;
+  cap: CloudCap | null;
+}): Promise<IdentityOwner | null> {
   const knownOwnerId = await findIdentityOwner({ directory, provider: kind, subject });
-  if (knownOwnerId !== null) return retimedOwner({ directory, ownerId: knownOwnerId, timeZone, now });
+  if (knownOwnerId !== null) return retimedOwner({ directory, ownerId: knownOwnerId, timeZone, supportedLanguage, now });
   const ownerId = crypto.randomUUID();
   try {
-    const isInserted = await insertOwnerWithIdentity({ directory, ownerId, provider: kind, subject, timeZone, now, cap });
+    const isInserted = await insertOwnerWithIdentity({
+      directory,
+      ownerId,
+      provider: kind,
+      subject,
+      timeZone,
+      language: newOwnerLanguage,
+      now,
+      cap,
+    });
     if (!isInserted) return null;
     return {
       owner: {
@@ -82,17 +112,28 @@ async function identityOwner({
         agentNudge: AGENT_NUDGE_BY_DEFAULT,
         dayEmail: DAY_EMAIL_BY_DEFAULT,
         dayEmailMinutes: DAY_EMAIL_MINUTES_DEFAULT,
+        language: newOwnerLanguage,
       },
       isNewOwner: true,
     };
   } catch (failure) {
     const rivalOwnerId = await findIdentityOwner({ directory, provider: kind, subject });
     if (rivalOwnerId === null) throw failure;
-    return retimedOwner({ directory, ownerId: rivalOwnerId, timeZone, now });
+    return retimedOwner({ directory, ownerId: rivalOwnerId, timeZone, supportedLanguage, now });
   }
 }
 
-async function sendWelcome({ request, env, address }: { request: Request; env: Env; address: string }): Promise<void> {
+async function sendWelcome({
+  request,
+  env,
+  address,
+  language,
+}: {
+  request: Request;
+  env: Env;
+  address: string;
+  language: Language;
+}): Promise<void> {
   const publicOrigin = publicOriginOf(env.PUBLIC_ORIGIN);
   if (publicOrigin === null) return;
   const sender = emailSenderOf({
@@ -103,7 +144,7 @@ async function sendWelcome({ request, env, address }: { request: Request; env: E
     meter: mailMeterOf(env),
   });
   if (sender === null) return;
-  await sender.send(welcomeMail({ to: address, origin: publicOrigin }));
+  await sender.send(welcomeMail({ to: address, origin: publicOrigin, language }));
 }
 
 export async function signIn({ request, env, now, executionContext }: OwnerContext): Promise<Response> {
@@ -157,10 +198,21 @@ export async function admittedOwner({
   const signUpRefusal = await signUpRefusalOf({ request, env, kind, subject, now });
   if (signUpRefusal !== null) return signUpRefusal;
   const cap = await cloudCapOf({ env, address: subject, now });
-  const identity = await identityOwner({ directory: env.DIRECTORY, kind, subject, timeZone, now, cap });
+  const acceptLanguage = request.headers.get(HttpHeader.AcceptLanguage);
+  const identity = await identityOwner({
+    directory: env.DIRECTORY,
+    kind,
+    subject,
+    timeZone,
+    supportedLanguage: supportedLanguageOfAcceptLanguage({ acceptLanguage }),
+    newOwnerLanguage: languageOfAcceptLanguage({ acceptLanguage }),
+    now,
+    cap,
+  });
   if (identity === null) return cloudFullResponse();
   const { owner, isNewOwner } = identity;
   const isWelcomedOwner = isNewOwner && kind === SignInProviderKind.Email;
-  if (isWelcomedOwner) executionContext.waitUntil(sendWelcome({ request, env, address: subject }).catch(() => undefined));
+  if (isWelcomedOwner)
+    executionContext.waitUntil(sendWelcome({ request, env, address: subject, language: owner.language }).catch(() => undefined));
   return owner;
 }

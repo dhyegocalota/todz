@@ -1,9 +1,11 @@
 import { escapedHtml } from '../escaped-html';
+import type { PagePreferences } from '../page-preferences';
 import { TurnstileAction } from '../turnstile';
 import { TURNSTILE_ORIGIN, TURNSTILE_RESPONSE_FIELD, TURNSTILE_SCRIPT_TAG, usableSiteKeyOf } from '../turnstile-page';
-import { ADMIN_COPY } from './admin-copy';
+import { ADMIN_COPY_BY_LANGUAGE, type AdminCopy } from './admin-copy';
 import { AdminNotice } from './admin-notice';
 import { AdminField, AdminPath } from './admin-paths';
+import { adminPreferencesOf } from './admin-preferences';
 import { SiteGlyph, glyphHtml } from './site-glyphs';
 import { adminPageResponse, siteContentSecurityPolicy } from './site-headers';
 import { CONTENT_ID, SitePageKind, siteDocumentHtml } from './site-shell';
@@ -25,7 +27,9 @@ type Challenge = { widget: string; scriptTag: string };
 
 type Card = { documentTitle: string; content: string };
 
-type SignInPage = { hasForm: boolean; available: (siteKey: string) => string; unavailable: string };
+type CardParameters = { copy: AdminCopy; challenge: Challenge };
+
+type SignInPage = { hasForm: boolean; cardOf: (parameters: CardParameters) => Card };
 
 const NO_CHALLENGE: Challenge = { widget: '', scriptTag: '' };
 
@@ -94,8 +98,8 @@ export function answerTitleHtml(title: string): string {
   return `<h1 id="${TITLE_ID}" class="admin-title" ${ANSWER_ATTRIBUTE} tabindex="-1">${escapedHtml(title)}</h1>`;
 }
 
-function backLinkHtml(): string {
-  return `<a class="admin-link" href="${AdminPath.Panel}">${escapedHtml(ADMIN_COPY.inbox.back)}</a>`;
+function backLinkHtml(copy: AdminCopy): string {
+  return `<a class="admin-link" href="${AdminPath.Panel}">${escapedHtml(copy.inbox.back)}</a>`;
 }
 
 // NB ADR 0046: the site key sits in a data attribute, so the page script stays one fixed source with one hash.
@@ -111,76 +115,86 @@ export function noticeHtml(text: string | null): string {
   return `<p class="join-notice" role="status" tabindex="-1" ${ANSWER_ATTRIBUTE}><span class="notice-dot" aria-hidden="true"></span>${escapedHtml(text)}</p>\n`;
 }
 
-function signInCardOf({ notice, challenge }: { notice: string | null; challenge: Challenge }): Card {
+function signInCardOf({ copy, notice, challenge }: CardParameters & { notice: string | null }): Card {
   return {
-    documentTitle: ADMIN_COPY.meta.signInTitle,
-    content: `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(ADMIN_COPY.signIn.title)}</h1>
-<p class="admin-body">${escapedHtml(ADMIN_COPY.signIn.lead)}</p>
+    documentTitle: copy.meta.signInTitle,
+    content: `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(copy.signIn.title)}</h1>
+<p class="admin-body">${escapedHtml(copy.signIn.lead)}</p>
 <form class="${JOIN_FORM_CLASS} admin-form" method="post" action="${AdminPath.SignInLinks}">
 <div class="join-capsule">
-<label class="visually-hidden" for="${EMAIL_ID}">${escapedHtml(ADMIN_COPY.signIn.emailLabel)}</label>
-<input id="${EMAIL_ID}" class="join-input" name="${AdminField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(ADMIN_COPY.signIn.emailPlaceholder)}" required>
-<button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(ADMIN_COPY.signIn.submitting)}">${escapedHtml(ADMIN_COPY.signIn.submit)}</button>
+<label class="visually-hidden" for="${EMAIL_ID}">${escapedHtml(copy.signIn.emailLabel)}</label>
+<input id="${EMAIL_ID}" class="join-input" name="${AdminField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(copy.signIn.emailPlaceholder)}" required>
+<button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(copy.signIn.submitting)}">${escapedHtml(copy.signIn.submit)}</button>
 </div>
 ${challenge.widget}${noticeHtml(notice)}</form>
 ${challenge.scriptTag}`,
   };
 }
 
-function inboxCard(): Card {
+function inboxCardOf({ copy }: CardParameters): Card {
   return {
-    documentTitle: ADMIN_COPY.meta.inboxTitle,
-    content: `${answerTitleHtml(ADMIN_COPY.inbox.title)}
-<p class="admin-body">${escapedHtml(ADMIN_COPY.inbox.body)}</p>
-${backLinkHtml()}`,
+    documentTitle: copy.meta.inboxTitle,
+    content: `${answerTitleHtml(copy.inbox.title)}
+<p class="admin-body">${escapedHtml(copy.inbox.body)}</p>
+${backLinkHtml(copy)}`,
   };
 }
 
-function closedCard(): Card {
-  return { documentTitle: ADMIN_COPY.meta.closedTitle, content: answerTitleHtml(ADMIN_COPY.refusal.closed) };
+function closedCardOf({ copy }: CardParameters): Card {
+  return { documentTitle: copy.meta.closedTitle, content: answerTitleHtml(copy.refusal.closed) };
 }
 
-function forbiddenCard(): Card {
+function forbiddenCardOf({ copy }: CardParameters): Card {
   return {
-    documentTitle: ADMIN_COPY.meta.refusedTitle,
-    content: `${answerTitleHtml(ADMIN_COPY.refusal.crossOriginTitle)}
-<p class="admin-body">${escapedHtml(ADMIN_COPY.refusal.crossOriginBody)}</p>
-${backLinkHtml()}`,
+    documentTitle: copy.meta.refusedTitle,
+    content: `${answerTitleHtml(copy.refusal.crossOriginTitle)}
+<p class="admin-body">${escapedHtml(copy.refusal.crossOriginBody)}</p>
+${backLinkHtml(copy)}`,
   };
 }
 
-function cardDocumentHtml({ documentTitle, content }: Card): string {
+function cardDocumentHtml({ card, copy, preferences }: { card: Card; copy: AdminCopy; preferences: PagePreferences }): string {
   return siteDocumentHtml({
     kind: SitePageKind.Private,
-    title: documentTitle,
-    description: ADMIN_COPY.meta.description,
-    main: adminCardMainHtml(content),
+    title: card.documentTitle,
+    description: copy.meta.description,
+    main: adminCardMainHtml(card.content),
     scripts: [PAGE_SCRIPT],
+    preferences,
   });
 }
 
-function signInPageOf({ hasForm, cardOf }: { hasForm: boolean; cardOf: (challenge: Challenge) => Card }): SignInPage {
-  return {
-    hasForm,
-    available: (siteKey) => cardDocumentHtml(cardOf(challengeOf(siteKey))),
-    unavailable: cardDocumentHtml(cardOf(NO_CHALLENGE)),
-  };
-}
-
 const SIGN_IN_PAGES: Record<AdminNotice, SignInPage> = {
-  [AdminNotice.None]: signInPageOf({ hasForm: true, cardOf: (challenge) => signInCardOf({ notice: null, challenge }) }),
-  [AdminNotice.TryAgain]: signInPageOf({
+  [AdminNotice.None]: { hasForm: true, cardOf: ({ copy, challenge }) => signInCardOf({ copy, notice: null, challenge }) },
+  [AdminNotice.TryAgain]: {
     hasForm: true,
-    cardOf: (challenge) => signInCardOf({ notice: ADMIN_COPY.refusal.tooMany, challenge }),
-  }),
-  [AdminNotice.CheckInbox]: signInPageOf({ hasForm: false, cardOf: inboxCard }),
-  [AdminNotice.Closed]: signInPageOf({ hasForm: false, cardOf: closedCard }),
-  [AdminNotice.Forbidden]: signInPageOf({ hasForm: false, cardOf: forbiddenCard }),
+    cardOf: ({ copy, challenge }) => signInCardOf({ copy, notice: copy.refusal.tooMany, challenge }),
+  },
+  [AdminNotice.CheckInbox]: { hasForm: false, cardOf: inboxCardOf },
+  [AdminNotice.Closed]: { hasForm: false, cardOf: closedCardOf },
+  [AdminNotice.Forbidden]: { hasForm: false, cardOf: forbiddenCardOf },
 };
 
-export async function serveAdminSignInPage({ notice, siteKey }: { notice: AdminNotice; siteKey: string | null }): Promise<Response> {
+export async function serveAdminSignInPage({
+  request,
+  notice,
+  siteKey,
+}: {
+  request: Request;
+  notice: AdminNotice;
+  siteKey: string | null;
+}): Promise<Response> {
   const page = SIGN_IN_PAGES[notice];
+  const preferences = adminPreferencesOf({ request });
+  const copy = ADMIN_COPY_BY_LANGUAGE[preferences.language];
   const usableSiteKey = page.hasForm ? usableSiteKeyOf(siteKey) : null;
-  if (usableSiteKey === null) return adminPageResponse({ html: page.unavailable, contentSecurityPolicy: CONTENT_SECURITY_POLICY });
-  return adminPageResponse({ html: page.available(usableSiteKey), contentSecurityPolicy: CHALLENGE_CONTENT_SECURITY_POLICY });
+  if (usableSiteKey === null) {
+    const card = page.cardOf({ copy, challenge: NO_CHALLENGE });
+    return adminPageResponse({ html: cardDocumentHtml({ card, copy, preferences }), contentSecurityPolicy: CONTENT_SECURITY_POLICY });
+  }
+  const card = page.cardOf({ copy, challenge: challengeOf(usableSiteKey) });
+  return adminPageResponse({
+    html: cardDocumentHtml({ card, copy, preferences }),
+    contentSecurityPolicy: CHALLENGE_CONTENT_SECURITY_POLICY,
+  });
 }

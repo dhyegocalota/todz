@@ -2,6 +2,8 @@ import type { Env } from './env';
 import { HttpHeader, NO_REFERRER, NO_SNIFF, NO_STORE } from './http-header';
 import { HttpStatus } from './http-status';
 import { noRouteResponse } from './owner-errors';
+import { languageOfRequest, themeOfRequest } from './page-preferences';
+import type { PageAppearance } from './standalone-page';
 
 const PAGE_METHOD = 'GET';
 const HASH_ALGORITHM = 'SHA-256';
@@ -12,7 +14,11 @@ const TURNSTILE_SCRIPT_URL = `${TURNSTILE_ORIGIN}/turnstile/v0/api.js`;
 export const TURNSTILE_SCRIPT_TAG = `<script src="${TURNSTILE_SCRIPT_URL}" async defer></script>`;
 export const TURNSTILE_EXPLICIT_SCRIPT_URL = `${TURNSTILE_SCRIPT_URL}?render=explicit`;
 
-export type TurnstilePage = { available: (siteKey: string) => string; unavailable: string; contentSecurityPolicy: string };
+export type TurnstilePage = {
+  available: (parameters: PageAppearance & { siteKey: string }) => string;
+  unavailable: (appearance: PageAppearance) => string;
+  contentSecurityPolicy: string;
+};
 
 export function usableSiteKeyOf(configured: string | null | undefined): string | null {
   if (configured === undefined || configured === null) return null;
@@ -69,6 +75,7 @@ export function serveTurnstilePage({ request, env, page }: { request: Request; e
   if (request.method !== PAGE_METHOD) return noRouteResponse();
   const siteKey = usableSiteKeyOf(env.TURNSTILE_SITE_KEY);
   const { contentSecurityPolicy } = page;
-  if (siteKey === null) return pageResponse({ html: page.unavailable, status: HttpStatus.Unavailable, contentSecurityPolicy });
-  return pageResponse({ html: page.available(siteKey), status: HttpStatus.Ok, contentSecurityPolicy });
+  const appearance = { language: languageOfRequest({ request }), theme: themeOfRequest({ request }) };
+  if (siteKey === null) return pageResponse({ html: page.unavailable(appearance), status: HttpStatus.Unavailable, contentSecurityPolicy });
+  return pageResponse({ html: page.available({ ...appearance, siteKey }), status: HttpStatus.Ok, contentSecurityPolicy });
 }

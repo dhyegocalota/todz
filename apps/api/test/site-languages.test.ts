@@ -24,6 +24,7 @@ const BAD_REQUEST_STATUS = 400;
 const FORBIDDEN_STATUS = 403;
 const NOT_FOUND_STATUS = 404;
 const SAME_ORIGIN_HEADERS = { Origin: SITE_ORIGIN };
+const REFUSED_HEADERS: Record<string, string>[] = [{ 'Sec-Fetch-Site': 'cross-site' }, { Origin: 'https://evil.example' }, {}];
 const OTHER_LANGUAGES = Object.values(Language).filter((language) => language !== Language.English);
 const SCRIPT_HASH_PATTERN = /^'sha256-[A-Za-z0-9+/=]+'$/;
 const SIGN_IN_PATH = '/sign-in';
@@ -70,11 +71,13 @@ function post({
   form,
   headers = SAME_ORIGIN_HEADERS,
   origin = SITE_ORIGIN,
+  settings = {},
 }: {
   path: string;
   form: Record<string, string>;
   headers?: Record<string, string>;
   origin?: string;
+  settings?: Partial<Env>;
 }) {
   const body = new URLSearchParams(form).toString();
   return serve({
@@ -82,7 +85,12 @@ function post({
     method: 'POST',
     headers: { 'Content-Type': FORM_CONTENT_TYPE, 'Content-Length': String(new TextEncoder().encode(body).length), ...headers },
     body,
+    settings,
   });
+}
+
+function escapedPattern(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function cookieOf({ response, name }: { response: Response; name: string }): string | null {
@@ -132,7 +140,7 @@ describe('the first visit to the landing', () => {
     const responses = await Promise.all([
       visit({ path: '/' }),
       visit({ path: '/', headers: { 'Accept-Language': 'it-IT,it;q=0.9' } }),
-      visit({ path: '/', headers: { 'Accept-Language': 'zh-TW,zh;q=0.9' } }),
+      visit({ path: '/', headers: { 'Accept-Language': 'zh-TW' } }),
       visit({ path: '/', headers: { 'Accept-Language': 'ja;q=0' } }),
     ]);
     responses.forEach((response) => {
@@ -287,7 +295,7 @@ describe('the selector', () => {
     expect(html).toContain('<form class="language-form" method="post" action="/language">');
     expect(html).toContain(`<input type="hidden" name="return" value="${pathPrefix}/">`);
     Object.entries(LANGUAGE_PROFILES).forEach(([candidate, profile]) => {
-      const button = new RegExp(`<button[^>]*name="language"[^>]*value="${candidate}"[^>]*>${profile.nativeName}</button>`);
+      const button = new RegExp(`<button[^>]*name="language"[^>]*value="${candidate}"[^>]*>${escapedPattern(profile.nativeName)}</button>`);
       expect(html).toMatch(button);
     });
     const current = elementsOf({ html, pattern: /<button[^>]*name="language"[^>]*aria-current="true"[^>]*>([^<]*)<\/button>/g });
@@ -327,14 +335,11 @@ describe('POST /language', () => {
     expect(response.status).toBe(SEE_OTHER_STATUS);
   });
 
-  test.each([{ 'Sec-Fetch-Site': 'cross-site' }, { Origin: 'https://evil.example' }, {}])(
-    'refuses %j and sets nothing',
-    async (headers) => {
-      const response = await post({ path: '/language', form: { language: 'ja', return: '/' }, headers });
-      expect(response.status).toBe(FORBIDDEN_STATUS);
-      expect(response.headers.getSetCookie()).toEqual([]);
-    },
-  );
+  test.each(REFUSED_HEADERS)('refuses %j and sets nothing', async (headers) => {
+    const response = await post({ path: '/language', form: { language: 'ja', return: '/' }, headers });
+    expect(response.status).toBe(FORBIDDEN_STATUS);
+    expect(response.headers.getSetCookie()).toEqual([]);
+  });
 
   test.each(HOSTILE_RETURNS)('sends %j to the language home and never off the host', async (returned) => {
     const response = await post({ path: '/language', form: { language: 'ja', return: returned } });
@@ -381,6 +386,7 @@ describe('POST /language', () => {
       form: { language: 'ja', return: '/' },
       origin: 'http://localhost:8788',
       headers: { Origin: 'http://localhost:8788' },
+      settings: { PUBLIC_ORIGIN: 'http://localhost:8787', SITE_ORIGIN: 'http://localhost:8788' },
     });
     expect(cookieOf({ response, name: LANGUAGE_COOKIE })).toBe(`${LANGUAGE_COOKIE}=ja; Path=/; SameSite=Lax; Max-Age=${ONE_YEAR_SECONDS}`);
   });
@@ -423,7 +429,7 @@ describe('the theme', () => {
 
   test('shows the three options and marks the current one', async () => {
     const html = await (await visit({ path: '/ja/', headers: { Cookie: `${THEME_COOKIE}=light` } })).text();
-    expect(html).toContain('<form class="theme-form" method="post" action="/theme">');
+    expect(html).toContain('<form class="theme-form" method="post" action="/theme"');
     expect(html).toContain('<input type="hidden" name="return" value="/ja/">');
     ['system', 'light', 'dark'].forEach((theme) => expect(html).toMatch(new RegExp(`<button[^>]*name="theme"[^>]*value="${theme}"`)));
     const pressed = elementsOf({ html, pattern: /<button[^>]*name="theme"[^>]*value="([a-z]+)"[^>]*aria-pressed="true"/g });
@@ -451,14 +457,11 @@ describe('the theme', () => {
     expect(response.headers.get('Location')).toBe('/');
   });
 
-  test.each([{ 'Sec-Fetch-Site': 'cross-site' }, { Origin: 'https://evil.example' }, {}])(
-    'refuses %j and sets nothing',
-    async (headers) => {
-      const response = await post({ path: '/theme', form: { theme: 'dark', return: '/' }, headers });
-      expect(response.status).toBe(FORBIDDEN_STATUS);
-      expect(response.headers.getSetCookie()).toEqual([]);
-    },
-  );
+  test.each(REFUSED_HEADERS)('refuses %j and sets nothing', async (headers) => {
+    const response = await post({ path: '/theme', form: { theme: 'dark', return: '/' }, headers });
+    expect(response.status).toBe(FORBIDDEN_STATUS);
+    expect(response.headers.getSetCookie()).toEqual([]);
+  });
 
   test.each(['sepia', 'Dark', ''])('refuses theme %j with 400', async (theme) => {
     const response = await post({ path: '/theme', form: { theme, return: '/' } });

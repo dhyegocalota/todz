@@ -8,7 +8,7 @@ import { HttpStatus } from '../http-status';
 import { LimitRefusal, limitRefusal } from '../limit-refusal';
 import { isLocalHost } from '../local-origin';
 import { isStopLinkLive, stopDayEmail } from './day-email-store';
-import { CONFIRM_PAGE, DONE_PAGE, GONE_PAGE, LIMITED_PAGE, stopPageResponse } from './day-email-stop-page';
+import { StopPageKind, stopPageResponse } from './day-email-stop-page';
 import { DAY_EMAIL_STOP_PATH, DAY_EMAIL_STOP_TOKEN_PARAMETER } from './day-email-stop-url';
 
 type StopContext = { request: Request; env: Env };
@@ -20,18 +20,19 @@ type TokenHandler = (context: TokenContext) => Promise<Response>;
 const TOKEN_PATTERN = new RegExp(`^[0-9a-f]{${DAY_EMAIL_STOP_TOKEN_LENGTH}}$`);
 const ALLOWED_METHODS = [HttpMethod.Get, HttpMethod.Post].join(', ');
 
-const ANSWER_OF_LIMIT_REFUSAL: Record<LimitRefusal, () => Response> = {
-  [LimitRefusal.TryAgain]: () =>
+const ANSWER_OF_LIMIT_REFUSAL: Record<LimitRefusal, (request: Request) => Response> = {
+  [LimitRefusal.TryAgain]: (request) =>
     stopPageResponse({
-      page: LIMITED_PAGE,
+      request,
+      kind: StopPageKind.Limited,
       status: HttpStatus.TooManyRequests,
       headers: { [HttpHeader.RetryAfter]: String(DAY_EMAIL_STOP_RATE_LIMIT_PERIOD_SECONDS) },
     }),
-  [LimitRefusal.Unavailable]: () => stopPageResponse({ page: LIMITED_PAGE, status: HttpStatus.Unavailable }),
+  [LimitRefusal.Unavailable]: (request) => stopPageResponse({ request, kind: StopPageKind.Limited, status: HttpStatus.Unavailable }),
 };
 
-function goneResponse(): Response {
-  return stopPageResponse({ page: GONE_PAGE, status: HttpStatus.NotFound });
+function goneResponse(request: Request): Response {
+  return stopPageResponse({ request, kind: StopPageKind.Gone, status: HttpStatus.NotFound });
 }
 
 function tokenOf(request: Request): string | null {
@@ -45,21 +46,21 @@ function tokenOf(request: Request): string | null {
 async function limitedResponse({ request, env }: StopContext): Promise<Response | null> {
   if (isLocalHost({ env, request })) return null;
   const clientAddress = request.headers.get(HttpHeader.ClientAddress);
-  if (clientAddress === null) return ANSWER_OF_LIMIT_REFUSAL[LimitRefusal.Unavailable]();
+  if (clientAddress === null) return ANSWER_OF_LIMIT_REFUSAL[LimitRefusal.Unavailable](request);
   const key = `${DAY_EMAIL_STOP_PATH}:${clientRateKey({ address: clientAddress })}`;
   const refusal = await limitRefusal({ limiter: env.DAY_EMAIL_STOP_LIMITER, key });
   if (refusal === null) return null;
-  return ANSWER_OF_LIMIT_REFUSAL[refusal]();
+  return ANSWER_OF_LIMIT_REFUSAL[refusal](request);
 }
 
-async function confirmPage({ env, digest, now }: TokenContext): Promise<Response> {
-  if (!(await isStopLinkLive({ directory: env.DIRECTORY, digest, now }))) return goneResponse();
-  return stopPageResponse({ page: CONFIRM_PAGE, status: HttpStatus.Ok });
+async function confirmPage({ request, env, digest, now }: TokenContext): Promise<Response> {
+  if (!(await isStopLinkLive({ directory: env.DIRECTORY, digest, now }))) return goneResponse(request);
+  return stopPageResponse({ request, kind: StopPageKind.Confirm, status: HttpStatus.Ok });
 }
 
-async function stopMail({ env, digest, now }: TokenContext): Promise<Response> {
-  if (!(await stopDayEmail({ directory: env.DIRECTORY, digest, now }))) return goneResponse();
-  return stopPageResponse({ page: DONE_PAGE, status: HttpStatus.Ok });
+async function stopMail({ request, env, digest, now }: TokenContext): Promise<Response> {
+  if (!(await stopDayEmail({ directory: env.DIRECTORY, digest, now }))) return goneResponse(request);
+  return stopPageResponse({ request, kind: StopPageKind.Done, status: HttpStatus.Ok });
 }
 
 const HANDLER_OF_METHOD: Record<string, TokenHandler> = {
@@ -74,6 +75,6 @@ export async function dayEmailStopResponse({ request, env }: StopContext): Promi
   const limited = await limitedResponse({ request, env });
   if (limited !== null) return limited;
   const token = tokenOf(request);
-  if (token === null) return goneResponse();
+  if (token === null) return goneResponse(request);
   return handler({ request, env, digest: await digestCredential(token), now: Date.now() });
 }

@@ -1,8 +1,10 @@
+import { LANGUAGE_PROFILES } from '@todz/types';
 import { exports } from 'cloudflare:workers';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { MCP_COPY } from '../src/mcp-copy';
 import { LANDING_COPY } from '../src/site/landing-copy';
 import { serveLandingPage } from '../src/site/landing-page';
+import { ENGLISH_PREFERENCES } from './english-preferences';
 import { LANDING_SHOTS, LandingShot } from '../src/site/landing-shots';
 import { SITE_STYLE } from '../src/site/site-style';
 import { inlineSources, onlyInlineSource, sourceHash } from './page-script';
@@ -10,6 +12,7 @@ import { inlineSources, onlyInlineSource, sourceHash } from './page-script';
 const OK_STATUS = 200;
 const STARS = 1234;
 const STARS_TEXT = '1.2k';
+const NATIVE_LANGUAGE_NAMES = Object.values(LANGUAGE_PROFILES).map(({ nativeName }) => nativeName);
 const STAR_GLYPH = '★';
 const LINK_ARROW = '→';
 const SIGNATURE_DASH = '—';
@@ -33,7 +36,11 @@ const EVENT_HANDLER_PATTERN = /<[^>]*\son[a-z]+=/;
 const READABLE_ATTRIBUTE_PATTERN = /\s(?:alt|aria-label)="([^"]*)"/g;
 const DESCRIPTION_PATTERN = /<meta name="description" content="([^"]*)">/g;
 const IMAGE_SOURCE_PATTERN = /\s(?:src|srcset)="([^"]*)"/g;
-const REMOTE_ASSET_PATTERNS = [/\s(?:src|srcset)="https?:/, /<link(?![^>]*rel="canonical")[^>]*\shref="https?:/, /url\(\s*['"]?https?:/];
+const REMOTE_ASSET_PATTERNS = [
+  /\s(?:src|srcset)="https?:/,
+  /<link(?![^>]*rel="(?:canonical|alternate)")[^>]*\shref="https?:/,
+  /url\(\s*['"]?https?:/,
+];
 const HREF_PATTERN = /\shref="([^"]*)"/g;
 const SITE_HREF_PATTERN = /^(?:\/|#|https:\/\/)/;
 const IMPORT_PATTERN = /from '([^']+)'/g;
@@ -74,7 +81,7 @@ async function pageOf(response: Response | Promise<Response>): Promise<SitePage>
 }
 
 function landingPage(): Promise<SitePage> {
-  return pageOf(serveLandingPage({ stars: STARS }));
+  return pageOf(serveLandingPage({ stars: STARS, preferences: ENGLISH_PREFERENCES }));
 }
 
 function decoded(text: string): string {
@@ -204,7 +211,15 @@ describe('the landing', () => {
 
   test('every word it shows or reads aloud comes from the copy module', async () => {
     const { html } = await landingPage();
-    const copy = [...copyStrings(LANDING_COPY), STARS_TEXT, STAR_GLYPH, LINK_ARROW, SIGNATURE_DASH, ...LINKED_LINE_PIECES];
+    const copy = [
+      ...copyStrings(LANDING_COPY),
+      ...NATIVE_LANGUAGE_NAMES,
+      STARS_TEXT,
+      STAR_GLYPH,
+      LINK_ARROW,
+      SIGNATURE_DASH,
+      ...LINKED_LINE_PIECES,
+    ];
     const readable = [
       ...textNodes(html),
       ...captures({ html, pattern: READABLE_ATTRIBUTE_PATTERN }).map(decoded),
