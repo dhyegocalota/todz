@@ -63,6 +63,20 @@ private func projectCache(taskCount: Int = 2) -> ProjectCache {
         #expect(try store.readOutbox() == nil)
     }
 
+    @Test func readsBackTheRememberedSelectionOfAnOwnerCache() throws {
+        let owner = try ownerCache()
+        let remembered = [WorkspaceSelection.all, .chosen([workspaceIdentifier, "other"])]
+        try remembered.forEach { selection in
+            try store.writeOwner(OwnerCache(ownerIdentifier: owner.ownerIdentifier, workspaces: owner.workspaces, activeWorkspaceIdentifier: workspaceIdentifier, selection: selection))
+            #expect(try store.readOwner()?.selection == selection)
+        }
+    }
+
+    @Test func readsBackTheActiveWorkspaceAsTheSelectionWhenNoneWasStored() throws {
+        try store.writeOwner(try ownerCache())
+        #expect(try store.readOwner()?.selection == .chosen([workspaceIdentifier]))
+    }
+
     @Test func readsBackWhatEachWriteSaved() throws {
         let owner = try ownerCache()
         let project = projectCache()
