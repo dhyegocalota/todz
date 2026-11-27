@@ -2,7 +2,7 @@ import SwiftUI
 import TodzKit
 
 private let expandedSymbol = "chevron.down"
-private let collapsedSymbol = "chevron.right"
+private let collapsedSymbol = "chevron.forward"
 
 struct ServerDisclosure: View {
     @Binding var isExpanded: Bool
