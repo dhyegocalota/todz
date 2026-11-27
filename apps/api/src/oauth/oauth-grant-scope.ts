@@ -81,18 +81,23 @@ export function scopesOfJson(text: string): GrantScope[] {
   return scopes.data;
 }
 
-export function grantAccessOf(scopes: GrantScope[]): GrantAccess {
-  const selection = scopes.filter(isSelectionScope);
-  const isAccount = selection.length < scopes.length;
-  if (isAccount) return { shape: GrantShape.Owner };
-  const [only] = selection;
-  const isSingleProject = selection.length === 1 && only?.kind === GrantScopeKind.Project;
-  if (isSingleProject) return { shape: GrantShape.Project, projectId: only.projectId };
-  return { shape: GrantShape.Selection, scopes: selection };
+export function isSingleProject(scopes: GrantScope[]): boolean {
+  const [only] = scopes;
+  return scopes.length === 1 && only?.kind === GrantScopeKind.Project;
 }
 
-export function grantShapeOf(scopes: GrantScope[]): GrantShape {
-  return grantAccessOf(scopes).shape;
+export function isAccountScopes(scopes: GrantScope[]): boolean {
+  return scopes.some((scope) => !isSelectionScope(scope));
+}
+
+// NB ADR 0126: only a grant chosen as one project reaches the other projects of its workspace; a selection narrowed or cut down to one project stays a selection.
+export function grantAccessOf({ scopes, reachesWorkspace }: { scopes: GrantScope[]; reachesWorkspace: boolean }): GrantAccess {
+  if (isAccountScopes(scopes)) return { shape: GrantShape.Owner };
+  const selection = scopes.filter(isSelectionScope);
+  const [only] = selection;
+  const isWorkspaceProject = reachesWorkspace && only?.kind === GrantScopeKind.Project && selection.length === 1;
+  if (isWorkspaceProject) return { shape: GrantShape.Project, projectId: only.projectId };
+  return { shape: GrantShape.Selection, scopes: selection };
 }
 
 export function isProjectCovered({

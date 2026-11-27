@@ -2,6 +2,7 @@ import { JSONRPC_VERSION } from '@modelcontextprotocol/server';
 import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_MINUTE } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
+import { CONNECTED_APPS_COPY } from '../../src/connected-apps-copy';
 import { generateCredentialSecret } from '../../src/credential-secret';
 import { serveMcp } from '../../src/mcp-endpoint';
 import { MCP_COPY } from '../../src/mcp-copy';
@@ -232,8 +233,8 @@ describe('Connected apps list the scopes of a grant', () => {
     const app = await onlyAppOf(session);
 
     expect(app.scope).toBe('project');
-    expect(app.project_id).toBe(otherProjectId);
-    expect(app.project_name).toBe('Alpha › Zebra; Beta › Project; Beta › Website');
+    expect(app.project_id).toBe(app.id);
+    expect(app.project_name).toBe(CONNECTED_APPS_COPY.legacySelectionName);
     expect(app.scopes).toEqual([
       { kind: 'project', project_id: otherProjectId, project_name: 'Zebra', workspace_id: otherWorkspaceId, workspace_name: 'Alpha' },
       { kind: 'project', project_id: owner.projectId, project_name: 'Project', workspace_id: workspaceId, workspace_name: 'Beta' },
@@ -249,7 +250,7 @@ describe('Connected apps list the scopes of a grant', () => {
     const app = await onlyAppOf(session);
 
     expect(app.scope).toBe('project');
-    expect(app.project_name).toBe('Gamma; Alpha › Project');
+    expect(app.project_name).toBe(CONNECTED_APPS_COPY.legacySelectionName);
     expect(app.scopes).toEqual([
       { kind: 'workspace', workspace_id: workspaceId, workspace_name: 'Gamma' },
       { kind: 'project', project_id: otherProjectId, project_name: 'Project', workspace_id: otherWorkspaceId, workspace_name: 'Alpha' },

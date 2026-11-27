@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { parsedJson } from '../parsed-json';
-import { type GrantScope, scopesJsonOf, scopesOfJson } from './oauth-grant-scope';
+import { type GrantScope, isSingleProject, scopesJsonOf, scopesOfJson } from './oauth-grant-scope';
 import { GRANT_SCOPES_JSON, PROJECT_WORKSPACE_ID, SCOPE_ROWS_OF_JSON } from './oauth-grant-scope-store';
 import {
   OAUTH_IDLE_CLIENT_LIFETIME_MS,
@@ -35,6 +35,7 @@ export type AccessGrantRecord = {
   timeZone: string;
   agentNudge: boolean;
   scopes: GrantScope[];
+  reachesWorkspace: boolean;
   projectWorkspaceId: string | null;
 };
 
@@ -55,20 +56,25 @@ type AccessGrantRow = {
   time_zone: string;
   agent_nudge: number;
   scopes: string;
+  reaches_workspace: number;
   project_workspace_id: string | null;
 };
 
 const RedirectUrisSchema = z.array(z.string());
 
+const GRANT_HAS_SCOPES = 'EXISTS (SELECT 1 FROM oauth_grant_scopes WHERE oauth_grant_scopes.grant_id = oauth_grants.id)';
+const LEGACY_REACH_BACKFILL = `UPDATE oauth_grants SET reaches_workspace = 1 WHERE project_id IS NOT NULL AND NOT ${GRANT_HAS_SCOPES}`;
+const LEGACY_SCOPES_BACKFILL = `INSERT INTO oauth_grant_scopes (grant_id, kind, workspace_id, project_id) SELECT id, CASE WHEN project_id IS NULL THEN 'account' ELSE 'project' END, NULL, project_id FROM oauth_grants WHERE NOT ${GRANT_HAS_SCOPES}`;
+
 const CLIENT_HAS_GRANT = 'EXISTS (SELECT 1 FROM oauth_grants WHERE oauth_grants.client_id = oauth_clients.id)';
 const CLIENT_IS_LIVE = `(${CLIENT_HAS_GRANT} OR (active_at > created_at AND active_at > ?) OR created_at > ?)`;
 const ACTIVE_CLIENT_QUERY = `SELECT id, name, redirect_uris FROM oauth_clients WHERE id = ? AND ${CLIENT_IS_LIVE}`;
-const ACCESS_GRANT_QUERY = `SELECT oauth_grants.id AS grant_id, oauth_clients.name AS client_name, owners.id AS owner_id, owners.suspended_at, owners.time_zone, owners.agent_nudge, ${GRANT_SCOPES_JSON} AS scopes, ${PROJECT_WORKSPACE_ID} AS project_workspace_id
+const ACCESS_GRANT_QUERY = `SELECT oauth_grants.id AS grant_id, oauth_clients.name AS client_name, owners.id AS owner_id, owners.suspended_at, owners.time_zone, owners.agent_nudge, ${GRANT_SCOPES_JSON} AS scopes, oauth_grants.reaches_workspace, ${PROJECT_WORKSPACE_ID} AS project_workspace_id
 FROM oauth_tokens
 JOIN oauth_grants ON oauth_grants.id = oauth_tokens.grant_id
 JOIN oauth_clients ON oauth_clients.id = oauth_grants.client_id
 JOIN owners ON owners.id = oauth_grants.owner_id
-WHERE oauth_tokens.digest = ? AND oauth_tokens.kind = ? AND oauth_tokens.expires_at > ?`;
+WHERE oauth_tokens.digest = ? AND oauth_tokens.kind = ? AND oauth_tokens.expires_at > ? AND ${GRANT_HAS_SCOPES}`;
 const CLIENT_GRANTS = 'SELECT id FROM oauth_grants WHERE client_id = ?';
 const GRANT_EXISTS = 'EXISTS (SELECT 1 FROM oauth_grants WHERE id = ?)';
 const IS_SUPERSEDED =
@@ -318,9 +324,9 @@ export async function insertGrant({
   const results = await directory.batch([
     directory
       .prepare(
-        'INSERT INTO oauth_grants (id, client_id, owner_id, redirect_uri, created_at, last_used_at) SELECT ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM oauth_codes WHERE digest = ? AND replayed_at IS NOT NULL)',
+        'INSERT INTO oauth_grants (id, client_id, owner_id, redirect_uri, created_at, last_used_at, reaches_workspace) SELECT ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM oauth_codes WHERE digest = ? AND replayed_at IS NOT NULL)',
       )
-      .bind(grantId, code.clientId, code.ownerId, code.redirectUri, now, now, codeDigest),
+      .bind(grantId, code.clientId, code.ownerId, code.redirectUri, now, now, Number(isSingleProject(code.scopes)), codeDigest),
     directory
       .prepare(`INSERT INTO oauth_grant_scopes (grant_id, kind, workspace_id, project_id) ${SCOPE_ROWS_OF_JSON} WHERE ${GRANT_EXISTS}`)
       .bind(grantId, scopesJsonOf(code.scopes), grantId),
@@ -412,7 +418,7 @@ export async function rotateTokens({
     ...tokens.map((token) => tokenInsertion({ directory, grantId, token, now, parentDigest })),
     directory.prepare('UPDATE oauth_grants SET last_used_at = ? WHERE id = ?').bind(now, grantId),
     clientActivity({ directory, grantId, now }),
-    directory.prepare(`SELECT ${GRANT_SCOPES_JSON} AS scopes FROM oauth_grants WHERE id = ?`).bind(grantId),
+    directory.prepare(`SELECT ${GRANT_SCOPES_JSON} AS scopes FROM oauth_grants WHERE id = ? AND ${GRANT_HAS_SCOPES}`).bind(grantId),
   ]);
   const cappedClientIds = deletedClientIdsOf(results[CAP_STATEMENT_INDEX]);
   const grant = onlyResultOf<{ scopes: string }>(results.at(-1));
@@ -439,6 +445,7 @@ export async function findAccessGrant({
     timeZone: row.time_zone,
     agentNudge: row.agent_nudge === 1,
     scopes: scopesOfJson(row.scopes),
+    reachesWorkspace: row.reaches_workspace === 1,
     projectWorkspaceId: row.project_workspace_id,
   };
 }
@@ -494,6 +501,11 @@ export async function deleteSpentOAuthRows({ directory, now }: { directory: D1Da
       .prepare(`DELETE FROM oauth_clients WHERE NOT ${CLIENT_IS_LIVE}`)
       .bind(now - OAUTH_IDLE_CLIENT_LIFETIME_MS, now - OAUTH_UNUSED_CLIENT_LIFETIME_MS),
   ]);
+}
+
+// NB ADR 0126: a grant the Worker before migration 0022 stored without scopes is refused until this idempotent run gives it the scope of its project or the account.
+export async function backfillLegacyGrantScopes(directory: D1Database): Promise<void> {
+  await directory.batch([directory.prepare(LEGACY_REACH_BACKFILL), directory.prepare(LEGACY_SCOPES_BACKFILL)]);
 }
 
 export async function deleteOAuthSession({ directory, digest }: { directory: D1Database; digest: string }): Promise<void> {

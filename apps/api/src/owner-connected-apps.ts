@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CONNECTED_APPS_COPY } from './connected-apps-copy';
 import { HttpStatus } from './http-status';
 import { recordGrantDeletions } from './oauth/oauth-grant-deletion';
 import { GrantDeletionReason } from './oauth/oauth-grant-deletion-reason';
@@ -41,10 +42,15 @@ function scopeJson(scope: NamedScope) {
 
 type LegacyScope = { scope: GrantShape.Owner | GrantShape.Project; projectId: string | null; projectName: string | null };
 
-function targetIdOf(scope: NamedScope): string {
-  if (scope.kind === GrantScopeKind.Workspace) return scope.workspaceId;
-  if (scope.kind === GrantScopeKind.Project) return scope.projectId;
-  throw new Error('the account names no target');
+type NamedProjectScope = Extract<NamedScope, { kind: GrantScopeKind.Project }>;
+
+function isNamedProject(scope: NamedScope): scope is NamedProjectScope {
+  return scope.kind === GrantScopeKind.Project;
+}
+
+function workspaceIdOfNamed(scope: NamedScope): string {
+  if (scope.kind === GrantScopeKind.Account) throw new Error('the account is never part of a selection');
+  return scope.workspaceId;
 }
 
 function selectionLabelOf(scope: NamedScope): string {
@@ -53,22 +59,25 @@ function selectionLabelOf(scope: NamedScope): string {
   throw new Error('the account is never part of a selection');
 }
 
-// NB ADR 0126: the app 0.2.8 knows only owner and project, so a selection lists as one project named after its scopes; newer apps read scopes.
-function legacyScopeOf(scopes: NamedScope[]): LegacyScope {
+// NB ADR 0126: the app 0.2.8 knows only owner and project and hides, while locked, a project it cannot see; a selection lists as one of its projects only when it stays in that project's workspace, and otherwise under the grant id and a name that names no workspace.
+function legacyScopeOf({ grantId, scopes }: { grantId: string; scopes: NamedScope[] }): LegacyScope {
   const [first] = scopes;
   if (first === undefined) throw new Error('a listed grant holds at least one scope');
   if (first.kind === GrantScopeKind.Account) return { scope: GrantShape.Owner, projectId: null, projectName: null };
-  const isSingleProject = scopes.length === 1 && first.kind === GrantScopeKind.Project;
-  if (isSingleProject) return { scope: GrantShape.Project, projectId: first.projectId, projectName: first.projectName };
+  const firstProject = scopes.find(isNamedProject);
+  const isInsideOneWorkspace =
+    firstProject !== undefined && scopes.every((scope) => workspaceIdOfNamed(scope) === firstProject.workspaceId);
+  if (!isInsideOneWorkspace) return { scope: GrantShape.Project, projectId: grantId, projectName: CONNECTED_APPS_COPY.legacySelectionName };
+  if (scopes.length === 1) return { scope: GrantShape.Project, projectId: firstProject.projectId, projectName: firstProject.projectName };
   return {
     scope: GrantShape.Project,
-    projectId: targetIdOf(first),
+    projectId: firstProject.projectId,
     projectName: scopes.map(selectionLabelOf).join(LEGACY_SELECTION_SEPARATOR),
   };
 }
 
 function connectedAppJson(app: ConnectedAppRecord) {
-  const legacy = legacyScopeOf(app.scopes);
+  const legacy = legacyScopeOf({ grantId: app.id, scopes: app.scopes });
   return {
     id: app.id,
     client_name: app.clientName,

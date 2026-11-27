@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { MCP_COPY, McpOwnerToolName, McpToolName } from '../src/mcp-copy';
 import { GrantScopeKind, type SelectionScope } from '../src/oauth/oauth-grant-scope';
 import { utcDayOf } from '../src/telemetry/telemetry-day';
-import { seedOwner, seedProject, seedSelectionToken, seedSiblingProject } from './directory-seed';
+import { seedOwner, seedProject, seedProjectToken, seedSelectionToken, seedSiblingProject } from './directory-seed';
 import { ClientEra, callTool, connectClient } from './mcp-client';
 
 const WORKER_ORIGIN = 'http://localhost:8787';
@@ -126,9 +126,9 @@ describe('the tool list of a selection', () => {
     });
   });
 
-  test('exactly one project scope is served as the project server, with no project argument and its siblings reachable by move', async () => {
-    const { ownerId, firstProjectId, secondProjectId } = await fixture();
-    const client = await connectedSelection({ ownerId, scopes: [projectScope(firstProjectId)] });
+  test('one project chosen as a project is served as the project server, with no project argument and its siblings reachable by move', async () => {
+    const { firstProjectId, secondProjectId } = await fixture();
+    const client = await connectClient({ era: ClientEra.Modern, token: await seedProjectToken({ projectId: firstProjectId }) });
 
     const tools = await toolsOf(client);
 

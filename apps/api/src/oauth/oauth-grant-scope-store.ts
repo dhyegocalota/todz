@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { type GrantScope, GrantScopeKind, type SelectionScope, scopesJsonOf } from './oauth-grant-scope';
+import { redirectHostOf } from './oauth-redirect-uri';
 
 export const GRANT_SCOPES_JSON =
   "(SELECT json_group_array(json_object('kind', kind, 'workspace_id', workspace_id, 'project_id', project_id)) FROM oauth_grant_scopes WHERE grant_id = oauth_grants.id)";
@@ -61,11 +62,10 @@ const GRANTS_QUERY =
 const NAMED_SCOPES_QUERY = `SELECT oauth_grant_scopes.grant_id, oauth_grant_scopes.kind, workspaces.id AS workspace_id, workspaces.name AS workspace_name, projects.id AS project_id, projects.name AS project_name, project_workspaces.id AS project_workspace_id, project_workspaces.name AS project_workspace_name
 FROM oauth_grant_scopes
 JOIN oauth_grants ON oauth_grants.id = oauth_grant_scopes.grant_id
-JOIN oauth_clients ON oauth_clients.id = oauth_grants.client_id
 LEFT JOIN workspaces ON workspaces.id = oauth_grant_scopes.workspace_id AND workspaces.owner_id = oauth_grants.owner_id
 LEFT JOIN projects ON projects.id = oauth_grant_scopes.project_id
 LEFT JOIN workspaces AS project_workspaces ON project_workspaces.id = projects.workspace_id AND project_workspaces.owner_id = oauth_grants.owner_id
-WHERE oauth_grants.owner_id = ? AND (? IS NULL OR oauth_grants.id = ?) AND (? IS NULL OR oauth_clients.name = ?)
+WHERE oauth_grants.owner_id = ? AND (? IS NULL OR oauth_grants.id = ?)
 AND (oauth_grant_scopes.kind = 'account' OR workspaces.id IS NOT NULL OR project_workspaces.id IS NOT NULL)
 ORDER BY CASE oauth_grant_scopes.kind WHEN 'account' THEN 0 WHEN 'workspace' THEN 1 ELSE 2 END, workspaces.name, project_workspaces.name, projects.name`;
 const OWNED_TARGETS_QUERY = `SELECT 'workspace' AS kind, id AS workspace_id, NULL AS project_id FROM workspaces WHERE owner_id = ? AND id IN (SELECT value FROM json_each(?))
@@ -97,20 +97,6 @@ export function grantScopeOfNamed(scope: NamedScope): GrantScope {
   return { kind: scope.kind };
 }
 
-function namedScopesStatement({
-  directory,
-  ownerId,
-  grantId,
-  clientName,
-}: {
-  directory: D1Database;
-  ownerId: string;
-  grantId: string | null;
-  clientName: string | null;
-}) {
-  return directory.prepare(NAMED_SCOPES_QUERY).bind(ownerId, grantId, grantId, clientName, clientName);
-}
-
 async function connectedApps({
   directory,
   ownerId,
@@ -122,7 +108,7 @@ async function connectedApps({
 }): Promise<ConnectedAppRecord[]> {
   const [grants, scopes] = await directory.batch([
     directory.prepare(GRANTS_QUERY).bind(ownerId, grantId, grantId),
-    namedScopesStatement({ directory, ownerId, grantId, clientName: null }),
+    directory.prepare(NAMED_SCOPES_QUERY).bind(ownerId, grantId, grantId),
   ]);
   if (grants === undefined || scopes === undefined) throw new Error('the batch answers one result per statement');
   const scopeRows = z.array(NamedScopeRowSchema).parse(scopes.results);
@@ -154,17 +140,22 @@ export async function findConnectedApp({
   return app;
 }
 
+// NB ADR 0126: what a client already holds is named only for the signed-in owner's grants of the same client name and redirect host.
 export async function heldScopesOf({
   directory,
   ownerId,
   clientName,
+  redirectHost,
 }: {
   directory: D1Database;
   ownerId: string;
   clientName: string;
+  redirectHost: string;
 }): Promise<NamedScope[]> {
-  const { results } = await namedScopesStatement({ directory, ownerId, grantId: null, clientName }).all();
-  return z.array(NamedScopeRowSchema).parse(results).map(namedScopeOf);
+  const apps = await connectedApps({ directory, ownerId, grantId: null });
+  return apps
+    .filter((app) => app.clientName === clientName && redirectHostOf(app.redirectUri) === redirectHost)
+    .flatMap((app) => app.scopes);
 }
 
 export async function findOwnedTargets({
@@ -193,7 +184,7 @@ export async function findOwnedTargets({
   };
 }
 
-// NB ADR 0126: new scopes are inserted before the rest are deleted, so the grant never holds none and the trigger never deletes it.
+// NB ADR 0126: new scopes are inserted before the rest are deleted, so the grant never holds none and the trigger never deletes it; a narrowed grant never reaches beyond its scopes.
 export async function replaceGrantScopes({
   directory,
   ownerId,
@@ -207,6 +198,7 @@ export async function replaceGrantScopes({
 }): Promise<void> {
   const scopesJson = scopesJsonOf(scopes);
   await directory.batch([
+    directory.prepare('UPDATE oauth_grants SET reaches_workspace = 0 WHERE id = ? AND owner_id = ?').bind(grantId, ownerId),
     directory
       .prepare(
         `INSERT OR IGNORE INTO oauth_grant_scopes (grant_id, kind, workspace_id, project_id) ${SCOPE_ROWS_OF_JSON} WHERE EXISTS (SELECT 1 FROM oauth_grants WHERE id = ? AND owner_id = ?)`,

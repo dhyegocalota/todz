@@ -89,7 +89,8 @@ async function seedGrant({
   secret = accessSecret(),
   clientName = SEEDED_CLIENT_NAME,
   expiresAt = Math.max(CLOCK_NOW, Date.now()) + MILLISECONDS_PER_DAY,
-}: SeededToken & { ownerId: string; scopes: GrantScope[] }): Promise<string> {
+  reachesWorkspace,
+}: SeededToken & { ownerId: string; scopes: GrantScope[]; reachesWorkspace: boolean }): Promise<string> {
   const clientId = base64UrlOf(crypto.getRandomValues(new Uint8Array(CLIENT_IDENTIFIER_BYTE_LENGTH)));
   const grantId = crypto.randomUUID();
   await env.DIRECTORY.batch([
@@ -101,8 +102,8 @@ async function seedGrant({
       CLOCK_NOW,
     ),
     env.DIRECTORY.prepare(
-      'INSERT INTO oauth_grants (id, client_id, owner_id, redirect_uri, created_at, last_used_at) VALUES (?, ?, ?, ?, ?, ?)',
-    ).bind(grantId, clientId, ownerId, SEEDED_REDIRECT_URI, CLOCK_NOW, CLOCK_NOW),
+      'INSERT INTO oauth_grants (id, client_id, owner_id, redirect_uri, created_at, last_used_at, reaches_workspace) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).bind(grantId, clientId, ownerId, SEEDED_REDIRECT_URI, CLOCK_NOW, CLOCK_NOW, Number(reachesWorkspace)),
     env.DIRECTORY.prepare('INSERT INTO oauth_tokens (digest, grant_id, kind, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').bind(
       await digestCredential(secret),
       grantId,
@@ -120,11 +121,11 @@ export async function seedSelectionToken({
   scopes,
   ...token
 }: SeededToken & { ownerId: string; scopes: SelectionScope[] }): Promise<string> {
-  return seedGrant({ ownerId, scopes, ...token });
+  return seedGrant({ ownerId, scopes, reachesWorkspace: false, ...token });
 }
 
 export async function seedOwnerToken({ ownerId, ...token }: SeededToken & { ownerId: string }): Promise<string> {
-  return seedGrant({ ownerId, scopes: [{ kind: GrantScopeKind.Account }], ...token });
+  return seedGrant({ ownerId, scopes: [{ kind: GrantScopeKind.Account }], reachesWorkspace: false, ...token });
 }
 
 export async function seedProjectToken({ projectId, ...token }: SeededToken & { projectId: string }): Promise<string> {
@@ -134,7 +135,7 @@ export async function seedProjectToken({ projectId, ...token }: SeededToken & { 
     .bind(projectId)
     .first<{ owner_id: string }>();
   if (owner === null) throw new Error('the seeded project should exist');
-  return seedGrant({ ownerId: owner.owner_id, scopes: [{ kind: GrantScopeKind.Project, projectId }], ...token });
+  return seedGrant({ ownerId: owner.owner_id, scopes: [{ kind: GrantScopeKind.Project, projectId }], reachesWorkspace: true, ...token });
 }
 
 export async function seedProjectWithToken({ timeZone = 'UTC', clientName }: { timeZone?: string; clientName?: string } = {}): Promise<{

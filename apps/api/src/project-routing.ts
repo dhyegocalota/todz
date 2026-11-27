@@ -128,8 +128,8 @@ export async function openOAuthAccess({ env, secret, now }: { env: Env; secret: 
   const tokenDigest = await digestCredential(secret);
   const grant = await findAccessGrant({ directory: env.DIRECTORY, digest: tokenDigest, now });
   if (grant === null) return null;
-  const { grantId, clientName, ownerId, isSuspended, timeZone, agentNudge, scopes, projectWorkspaceId } = grant;
-  const access = grantAccessOf(scopes);
+  const { grantId, clientName, ownerId, isSuspended, timeZone, agentNudge, scopes, reachesWorkspace, projectWorkspaceId } = grant;
+  const access = grantAccessOf({ scopes, reachesWorkspace });
   if (access.shape === GrantShape.Owner) {
     return { scope: GrantShape.Owner, grantId, clientName, owner: resolvedOwnerOf({ ownerId, isSuspended }) };
   }

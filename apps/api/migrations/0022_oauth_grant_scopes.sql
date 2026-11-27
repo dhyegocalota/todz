@@ -16,11 +16,14 @@ CREATE INDEX oauth_grant_scopes_workspace ON oauth_grant_scopes (workspace_id);
 
 CREATE INDEX oauth_grant_scopes_project ON oauth_grant_scopes (project_id);
 
-INSERT INTO oauth_grant_scopes (grant_id, kind, workspace_id, project_id)
-SELECT id, 'project', NULL, project_id FROM oauth_grants WHERE project_id IS NOT NULL;
+ALTER TABLE oauth_grants ADD COLUMN reaches_workspace INTEGER NOT NULL DEFAULT 0 CHECK (reaches_workspace IN (0, 1));
+
+UPDATE oauth_grants SET reaches_workspace = 1
+WHERE project_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM oauth_grant_scopes WHERE grant_id = oauth_grants.id);
 
 INSERT INTO oauth_grant_scopes (grant_id, kind, workspace_id, project_id)
-SELECT id, 'account', NULL, NULL FROM oauth_grants WHERE project_id IS NULL;
+SELECT id, CASE WHEN project_id IS NULL THEN 'account' ELSE 'project' END, NULL, project_id FROM oauth_grants
+WHERE NOT EXISTS (SELECT 1 FROM oauth_grant_scopes WHERE grant_id = oauth_grants.id);
 
 CREATE TRIGGER oauth_grant_scopes_last_deleted AFTER DELETE ON oauth_grant_scopes
 BEGIN

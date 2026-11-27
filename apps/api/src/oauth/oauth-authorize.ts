@@ -21,6 +21,7 @@ import { OAuthError } from './oauth-errors';
 import { OAuthNotice, OAuthRefusal, approvedPageOf, consentPageOf, refusalPageOf, returnPageOf, signInPageOf } from './oauth-pages';
 import { chosenScopesOf } from './oauth-grant-selection';
 import { heldScopesOf } from './oauth-grant-scope-store';
+import { redirectHostOf } from './oauth-redirect-uri';
 import {
   OAUTH_CODE_LIFETIME_MS,
   OAUTH_DECISION_FIELDS,
@@ -66,7 +67,12 @@ async function consentOrSignIn(context: OAuthContext, request: AuthorizationRequ
   if (session === null) return signInAgainOf({ httpRequest: context.request, request, siteKey: guard.siteKey });
   const [listings, held] = await Promise.all([
     listOwnerWorkspaces({ directory: context.env.DIRECTORY, ownerId: session.ownerId }),
-    heldScopesOf({ directory: context.env.DIRECTORY, ownerId: session.ownerId, clientName: request.client.name }),
+    heldScopesOf({
+      directory: context.env.DIRECTORY,
+      ownerId: session.ownerId,
+      clientName: request.client.name,
+      redirectHost: redirectHostOf(request.redirectUri),
+    }),
   ]);
   return consentPageOf({
     request: context.request,

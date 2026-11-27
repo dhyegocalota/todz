@@ -1,9 +1,8 @@
 import {
   type GrantScope,
   GrantScopeKind,
-  GrantShape,
   type SelectionScope,
-  grantShapeOf,
+  isAccountScopes,
   isProjectScope,
   isWorkspaceScope,
 } from './oauth-grant-scope';
@@ -58,7 +57,7 @@ export function scopeOfWord(word: string): GrantScope | null {
 
 // NB ADR 0126: the account answers owner, anything else answers its workspace and project words, so one project stays project:<id>.
 export function grantedScopeOf(scopes: GrantScope[]): string {
-  if (grantShapeOf(scopes) === GrantShape.Owner) return OAuthScope.Owner;
+  if (isAccountScopes(scopes)) return OAuthScope.Owner;
   const workspaceWords = scopes.filter(isWorkspaceScope).map(wordOfScope);
   const projectWords = scopes.filter(isProjectScope).map(wordOfScope);
   return [...workspaceWords.sort(), ...projectWords.sort()].join(SCOPE_SEPARATOR);
