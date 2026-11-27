@@ -28,7 +28,6 @@ struct SettingsView: View {
             privacySection
             SettingsWorkspaceRows()
             SettingsWorkspaceShortcuts()
-            SettingsOwnerKeys()
             SettingsConnectedApps()
             serverSection
             Section {

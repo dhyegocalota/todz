@@ -26,10 +26,7 @@ import Observation
     }
 
     public var selectedItem: SidebarItem = .inbox {
-        didSet {
-            waitingLink = nil
-            followKeyScreen(from: oldValue)
-        }
+        didSet { waitingLink = nil }
     }
 
     public var selectedTask: TaskKey? {
@@ -47,18 +44,6 @@ import Observation
     public internal(set) var banner: AppBanner?
     public internal(set) var histories: [TaskKey: HistoryLoad] = [:]
     public internal(set) var linkRevealCount = 0
-    public internal(set) var keyProjectIdentifier: String?
-    public internal(set) var keys: KeyList?
-    public internal(set) var issuedKey: IssuedKey?
-    public internal(set) var isIssuing = false
-    public internal(set) var issueFailure: KeyFailure?
-    public internal(set) var keyReloadFailure: KeyFailure?
-    public internal(set) var revokingKeyIdentifiers: Set<String> = []
-    public internal(set) var failedRevokeIdentifiers: Set<String> = []
-    public internal(set) var ownerKeys: KeyList?
-    public internal(set) var issuedOwnerKey: IssuedKey?
-    public internal(set) var isChangingOwnerKeys = false
-    public internal(set) var ownerKeyFailure: OwnerKeyFailure?
     public internal(set) var connectedApps: ConnectedAppList?
     public internal(set) var isChangingConnectedApps = false
     public internal(set) var connectedAppFailure: ConnectedAppFailure?
@@ -117,12 +102,7 @@ import Observation
     @ObservationIgnored var linkFollowing: Task<Void, Never>?
     @ObservationIgnored var waitingLink: WidgetLink?
     @ObservationIgnored var publishedWidgetSnapshot: WidgetSnapshotState?
-    @ObservationIgnored var keyScreenIdentifier: UUID?
-    @ObservationIgnored var keyIssueAnswerCount = 0
-    @ObservationIgnored var ownerKeyVisit = UUID()
     @ObservationIgnored var connectedAppVisit = UUID()
-    @ObservationIgnored var revokedKeyIdentifiers: Set<String> = []
-    @ObservationIgnored var keyLoading: Task<Void, Never>?
     @ObservationIgnored var serverSignOut: Task<Void, Never>?
     @ObservationIgnored var compatibilityRefresh: Task<Void, Never>?
     @ObservationIgnored var serverVersions: ServerVersions?
@@ -442,8 +422,6 @@ import Observation
         workspaces = []
         activeWorkspaceIdentifier = nil
         selection = nil
-        forgetKeys()
-        forgetOwnerKeys()
         forgetConnectedApps()
         selectedItem = .inbox
         selectedTask = nil

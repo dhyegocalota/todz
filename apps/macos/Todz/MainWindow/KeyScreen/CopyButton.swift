@@ -10,8 +10,6 @@ private let hiddenOpacity: Double = 0
 struct CopyButton: View {
     let text: String
     let item: String
-    let holdsSecret: Bool
-    let disabledReason: String?
     @State private var copyCount = 0
     @State private var isCopied = false
 
@@ -25,13 +23,12 @@ struct CopyButton: View {
             }
         }
         .todzMotion(.busySwap, value: isCopied)
-        .disabled(because: disabledReason)
         .accessibilityLabel(KeyScreenCopy.copyItem(item: item))
         .task(id: copyCount) { await endCopied() }
     }
 
     private func copy() {
-        Pasteboard.copy(text: text, holdsSecret: holdsSecret)
+        Pasteboard.copy(text: text)
         isCopied = true
         copyCount += 1
         AccessibilityNotification.Announcement(KeyScreenCopy.copied).post()

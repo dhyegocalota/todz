@@ -3,7 +3,6 @@ import TodzKit
 
 struct ClientCommands: View {
     let serverURL: URL
-    let secret: String?
     @Environment(MainWindowState.self) private var windowState
 
     var body: some View {
@@ -24,35 +23,15 @@ struct ClientCommands: View {
     }
 
     @ViewBuilder private var blocks: some View {
-        switch AgentCommand.of(client: windowState.agentClient, serverURL: serverURL, key: shownKey) {
+        switch AgentCommand.of(client: windowState.agentClient, serverURL: serverURL) {
         case let .claudeCode(line):
-            secretBlock(name: KeyScreenCopy.claudeCodeCommand, caption: KeyScreenCopy.claudeCodeCaption, text: line)
-        case let .codex(configuration, shellLine):
-            CommandBlock(
-                name: KeyScreenCopy.codexConfiguration,
-                caption: KeyScreenCopy.codexConfigCaption,
-                text: configuration,
-                holdsSecret: false,
-                disabledReason: disabledReason
-            )
-            secretBlock(name: KeyScreenCopy.codexShellLine, caption: KeyScreenCopy.codexShellCaption, text: shellLine)
+            CommandBlock(name: KeyScreenCopy.claudeCodeCommand, caption: KeyScreenCopy.claudeCodeCaption, text: line)
+        case let .codex(configuration, loginLine):
+            CommandBlock(name: KeyScreenCopy.codexConfiguration, caption: KeyScreenCopy.codexConfigCaption, text: configuration)
+            CommandBlock(name: KeyScreenCopy.codexLoginLine, caption: KeyScreenCopy.codexLoginCaption, text: loginLine)
         case let .cursor(json):
-            AddToCursorButton(serverURL: serverURL, secret: secret, disabledReason: disabledReason)
-            secretBlock(name: KeyScreenCopy.cursorJSON, caption: KeyScreenCopy.cursorCaption, text: json)
+            AddToCursorButton(serverURL: serverURL)
+            CommandBlock(name: KeyScreenCopy.cursorJSON, caption: KeyScreenCopy.cursorCaption, text: json)
         }
-    }
-
-    private var shownKey: String {
-        guard let secret else { return KeyScreenCopy.secretPlaceholder }
-        return secret
-    }
-
-    private var disabledReason: String? {
-        guard secret == nil else { return nil }
-        return KeyScreenCopy.createKeyFirst
-    }
-
-    private func secretBlock(name: String, caption: AttributedString, text: String) -> CommandBlock {
-        CommandBlock(name: name, caption: caption, text: text, holdsSecret: secret != nil, disabledReason: disabledReason)
     }
 }
