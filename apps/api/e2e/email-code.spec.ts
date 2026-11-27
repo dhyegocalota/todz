@@ -187,10 +187,16 @@ test.describe('the code page of the OAuth sign-in', () => {
     await context.close();
   });
 
-  test('works without JavaScript as a plain field with a submit button', async ({ browser }) => {
+  test('works without JavaScript as a plain field with a submit button, for an owner who already has an account', async ({ browser }) => {
+    const address = freshAddress();
+    const signUpContext = await browserContextOf(browser);
+    const signUpPage = await signUpContext.newPage();
+    await askedForCode({ page: signUpPage, address, authorize: await authorizeUrl(browser) });
+    await signUpPage.keyboard.type(await mailedCodeTo(address));
+    await expect(signUpPage.getByRole('heading', { level: 1, name: CONSENT_TITLE })).toBeVisible();
+    await signUpContext.close();
     const context = await browserContextOf(browser);
     const page = await context.newPage();
-    const address = freshAddress();
     const html = await askedForCode({ page, address, authorize: await authorizeUrl(browser) });
     const challengeCookies = (await context.cookies()).filter((cookie) => cookie.name.includes('challenge'));
     const plainContext = await browser.newContext({ javaScriptEnabled: false });
