@@ -1,5 +1,6 @@
+import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
-import { seedSiblingProject } from '../directory-seed';
+import { seedProject, seedSiblingProject } from '../directory-seed';
 import {
   CLIENT_STATE,
   HTTPS_REDIRECT_URI,
@@ -37,6 +38,28 @@ async function freshRequest(fields: Record<string, string> = {}): Promise<URLSea
 
 function authorize(params: URLSearchParams): Promise<Response> {
   return serveOAuthRequest({ request: authorizeRequest(params) });
+}
+
+async function nameProjectAndWorkspace({
+  projectId,
+  projectName,
+  workspaceName,
+}: {
+  projectId: string;
+  projectName: string;
+  workspaceName: string;
+}): Promise<void> {
+  await env.DIRECTORY.batch([
+    env.DIRECTORY.prepare('UPDATE projects SET name = ? WHERE id = ?').bind(projectName, projectId),
+    env.DIRECTORY.prepare('UPDATE workspaces SET name = ? WHERE id = (SELECT workspace_id FROM projects WHERE id = ?)').bind(
+      workspaceName,
+      projectId,
+    ),
+  ]);
+}
+
+function choiceLabelOf({ html, choice }: { html: string; choice: string }): string | undefined {
+  return new RegExp(`value="${choice}"[^>]*><span>([^<]*)</span>`).exec(html)?.[1];
 }
 
 function withParams({ params, changes }: { params: URLSearchParams; changes: Record<string, string | null> }): URLSearchParams {
@@ -169,6 +192,20 @@ describe('the consent screen', () => {
     expect(decodedHtml(html)).toContain(
       "A project lets it read and change that project's tasks, and move them to the other projects of its workspace.",
     );
+  });
+
+  test('each project choice names its workspace, so two inboxes never read alike', async () => {
+    const owner = await seededOwner();
+    const otherProjectId = await seedProject({ ownerId: owner.ownerId });
+    await nameProjectAndWorkspace({ projectId: owner.projectId, projectName: 'Inbox', workspaceName: 'Thrifty Traveler' });
+    await nameProjectAndWorkspace({ projectId: otherProjectId, projectName: 'Inbox', workspaceName: 'Personal' });
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+
+    const html = decodedHtml(await consentPage({ browser, params }));
+
+    expect(choiceLabelOf({ html, choice: owner.projectId })).toBe('Thrifty Traveler › Inbox');
+    expect(choiceLabelOf({ html, choice: otherProjectId })).toBe('Personal › Inbox');
   });
 
   test('an unknown decision is refused, never answered with an error', async () => {
