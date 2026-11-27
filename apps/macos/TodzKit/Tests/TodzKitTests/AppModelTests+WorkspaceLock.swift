@@ -42,13 +42,11 @@ extension AppModelTests {
         })
     }
 
-    @Test func aLaunchWithTheLockOnShowsOnlyTheCurrentWorkspaceAndPresentsTheRestLocked() async throws {
+    @Test func aLaunchWithTheLockOnShowsOnlyTheCurrentWorkspace() async throws {
         let harness = try await lockedHarness()
         let model = harness.model
         #expect(model.workspaceLock.isLocked)
         #expect(model.shownWorkspaces.map(\.identifier) == ["acme"])
-        #expect(model.presentedWorkspaces.map(\.identifier) == ["acme", "secret"])
-        #expect(model.presentedWorkspaces[1] == .locked(identifier: "secret"))
         #expect(model.taskViews?.today.open.map(\.task.title) == ["Acme 1", "Acme 2"])
     }
 
@@ -74,66 +72,36 @@ extension AppModelTests {
     @Test func withTheLockOffEverythingStaysAsBefore() async throws {
         let harness = try await lockedHarness(isLockOn: false, selection: .all)
         #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
-        #expect(harness.model.presentedWorkspaces.allSatisfy { if case .visible = $0 { true } else { false } })
+        #expect(harness.model.visibleWorkspaces.count == 2)
         await harness.model.switchWorkspace(identifier: "secret")
         #expect(harness.authenticator.asked.isEmpty)
         #expect(harness.model.activeWorkspace?.identifier == "secret")
     }
 
-    @Test func aRefusedAuthenticationKeepsTheSwitchFromHappeningAndPullsNothing() async throws {
+    @Test func afterTheSwitchPromptThePersonSwitchesAndSeesTheNames() async throws {
         let harness = try await lockedHarness()
-        harness.authenticator.isOwnerAuthenticated = false
-        harness.service.calls = []
-        await harness.model.switchWorkspace(identifier: "secret")
-        #expect(harness.authenticator.asked == [.showWorkspaces(identifiers: ["secret"])])
-        #expect(harness.model.activeWorkspace?.identifier == "acme")
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
-        #expect(pulledProjects(harness).isEmpty)
-        #expect(harness.model.presentedWorkspaces[1] == .locked(identifier: "secret"))
-    }
-
-    @Test func authenticatingLetsThePersonSwitchAndShowsTheNames() async throws {
-        let harness = try await lockedHarness()
+        #expect(await harness.model.beginWorkspaceSwitch())
         await harness.model.switchWorkspace(identifier: "secret")
         #expect(harness.model.activeWorkspace?.identifier == "secret")
         #expect(harness.model.taskViews?.today.open.map(\.task.title) == ["Secret 1"])
-        #expect(harness.model.presentedWorkspaces.map(\.identifier) == ["acme", "secret"])
-        #expect(harness.model.presentedWorkspaces.allSatisfy { if case .visible = $0 { true } else { false } })
+        #expect(harness.model.visibleWorkspaces.map(\.identifier) == ["acme", "secret"])
         await harness.model.switchWorkspace(identifier: "acme")
-        #expect(harness.authenticator.asked.count == 1)
+        #expect(harness.authenticator.asked == [.switchWorkspaces])
     }
 
-    @Test func theNumberAndStepShortcutsAskBeforeSwitching() async throws {
-        let harness = try await lockedHarness()
-        harness.authenticator.isOwnerAuthenticated = false
-        await harness.model.switchWorkspace(number: 2)
-        await harness.model.switchWorkspace(action: .next)
-        await harness.model.switchWorkspace(action: .previous)
-        #expect(harness.authenticator.asked.count == 3)
-        #expect(harness.model.activeWorkspace?.identifier == "acme")
-    }
-
-    @Test func selectingAllAndTogglingAnotherWorkspaceAsk() async throws {
-        let harness = try await lockedHarness()
-        harness.authenticator.isOwnerAuthenticated = false
-        await harness.model.selectWorkspaces(.all)
-        await harness.model.toggleWorkspace(identifier: "secret")
-        #expect(harness.authenticator.asked.count == 2)
-        #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme"])
-    }
-
-    @Test func choosingFromThePickerAsksAndShowsNoNames() async throws {
+    @Test func thePickerOfALockedLaunchStaysEmptyUntilThePromptIsConfirmed() async throws {
         let harness = try AppModelHarness(isWorkspaceLockOn: true)
         harness.seedWorkspace(name: "acme")
         harness.seedWorkspace(name: "secret")
         harness.vault.secret = harness.session
         await harness.model.launch()
         #expect(harness.model.phase == .choosing)
-        #expect(harness.model.presentedWorkspaces == [.locked(identifier: "acme"), .locked(identifier: "secret")])
-        harness.authenticator.isOwnerAuthenticated = false
+        #expect(harness.model.visibleWorkspaces.isEmpty)
         await harness.model.chooseWorkspace(identifier: "acme")
         #expect(harness.model.phase == .choosing)
-        harness.authenticator.isOwnerAuthenticated = true
+        #expect(harness.authenticator.asked.isEmpty)
+        #expect(await harness.model.beginWorkspaceSwitch())
+        #expect(harness.model.visibleWorkspaces.map(\.identifier) == ["acme", "secret"])
         await harness.model.chooseWorkspace(identifier: "acme")
         #expect(harness.model.phase == .ready)
         #expect(harness.model.activeWorkspace?.identifier == "acme")
@@ -141,6 +109,7 @@ extension AppModelTests {
 
     @Test func aRelockCollapsesToTheWorkspaceOnScreenAndReleasesTheOthers() async throws {
         let harness = try await lockedHarness()
+        _ = await harness.model.beginWorkspaceSwitch()
         await harness.model.selectWorkspaces(.all)
         #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
         await harness.model.relockWorkspaces(because: .screenLocked)
@@ -151,11 +120,12 @@ extension AppModelTests {
         #expect(harness.model.board.tasks(projectIdentifier: "secret-inbox").isEmpty)
         await harness.signals.cancelled(harness.watchKey("secret-inbox"))
         #expect(harness.signals.cancellationCount(of: harness.watchKey("secret-inbox")) == 1)
-        #expect(harness.model.presentedWorkspaces[1] == .locked(identifier: "secret"))
+        #expect(harness.model.visibleWorkspaces.map(\.identifier) == ["acme"])
     }
 
     @Test func aRelockErasesTheOtherWorkspacesCachedTasksAndKeepsTheCurrent() async throws {
         let harness = try await lockedHarness()
+        _ = await harness.model.beginWorkspaceSwitch()
         await harness.model.selectWorkspaces(.all)
         #expect(harness.store.projects["secret-inbox"] != nil)
         await harness.model.relockWorkspaces(because: .manual)
@@ -178,6 +148,7 @@ extension AppModelTests {
 
     @Test func anUnlockedSessionNeverWidensTheSharedSnapshot() async throws {
         let harness = try await lockedHarness()
+        _ = await harness.model.beginWorkspaceSwitch()
         await harness.model.selectWorkspaces(.all)
         await harness.published()
         #expect(harness.model.shownWorkspaces.map(\.identifier) == ["acme", "secret"])
@@ -189,6 +160,7 @@ extension AppModelTests {
 
     @Test func terminatingWritesTheCurrentWorkspaceAndReloadsTheTimelines() async throws {
         let harness = try await lockedHarness()
+        _ = await harness.model.beginWorkspaceSwitch()
         await harness.model.selectWorkspaces(.all)
         harness.widgets.snapshot = nil
         harness.widgets.calls = []
@@ -199,6 +171,7 @@ extension AppModelTests {
 
     @Test func inputAfterTheTimeoutRelocksAndCollapsesTheModel() async throws {
         let harness = try await lockedHarness()
+        _ = await harness.model.beginWorkspaceSwitch()
         await harness.model.selectWorkspaces(.all)
         harness.clock.now = harness.clock.now.addingTimeInterval(WorkspaceLockTimeout.standard.seconds)
         harness.model.noteWorkspaceLockInput()
@@ -219,16 +192,19 @@ extension AppModelTests {
         #expect(harness.model.phase == .choosing)
         #expect(harness.model.shownWorkspaces.isEmpty)
         #expect(harness.model.taskViews == nil)
-        #expect(harness.model.presentedWorkspaces == [.locked(identifier: "secret")])
+        #expect(harness.model.visibleWorkspaces.isEmpty)
         #expect(pulledProjects(harness).isEmpty)
-        harness.authenticator.isOwnerAuthenticated = false
         await harness.model.chooseWorkspace(identifier: "secret")
         #expect(harness.model.phase == .choosing)
-        #expect(harness.authenticator.asked == [.showWorkspaces(identifiers: ["secret"])])
+        harness.authenticator.isOwnerAuthenticated = false
+        #expect(!(await harness.model.beginWorkspaceSwitch()))
+        #expect(harness.model.visibleWorkspaces.isEmpty)
+        #expect(harness.authenticator.asked == [.switchWorkspaces])
     }
 
     @Test func aRelockRewritesTheSharedSnapshotFromTheCurrentWorkspaceAndReloadsTheWidgets() async throws {
         let harness = try await lockedHarness()
+        _ = await harness.model.beginWorkspaceSwitch()
         await harness.model.selectWorkspaces(.all)
         await harness.published()
         #expect(harness.widgets.snapshot?.open.map(\.title) == ["Acme 1", "Acme 2"])
@@ -243,15 +219,17 @@ extension AppModelTests {
 
     @Test func aRelockAfterSwitchingMakesTheWorkspaceOnScreenTheCurrentOne() async throws {
         let harness = try await lockedHarness()
+        _ = await harness.model.beginWorkspaceSwitch()
         await harness.model.switchWorkspace(identifier: "secret")
         await harness.model.relockWorkspaces(because: .screensaverStarted)
         #expect(harness.model.shownWorkspaces.map(\.identifier) == ["secret"])
-        #expect(harness.model.presentedWorkspaces == [.locked(identifier: "acme"), .visible(try #require(harness.model.activeWorkspace))])
+        #expect(harness.model.visibleWorkspaces.map(\.identifier) == ["secret"])
         #expect(harness.widgets.snapshot?.workspaceName == "secret")
     }
 
     @Test func idleBeyondTheTimeoutRelocksThroughTheModel() async throws {
         let harness = try await lockedHarness()
+        _ = await harness.model.beginWorkspaceSwitch()
         await harness.model.selectWorkspaces(.all)
         harness.clock.now = harness.clock.now.addingTimeInterval(WorkspaceLockTimeout.standard.seconds)
         await harness.model.relockWorkspacesIfIdle()
@@ -297,7 +275,7 @@ extension AppModelTests {
         let harness = try await lockedHarness()
         harness.service.calls = []
         let completion = await harness.model.completeFromShortcut(key: secretKey)
-        #expect(completion == .workspaceLocked)
+        #expect(completion == .notFound)
         #expect(harness.model.waitingChangeCount == 0)
         #expect(harness.service.calls.isEmpty)
     }
@@ -319,7 +297,7 @@ extension AppModelTests {
     @Test func aLinkToATaskOfALockedWorkspaceOpensTodayAndSaysToUnlock() async throws {
         let harness = try await lockedHarness()
         harness.model.follow(.task(secretKey))
-        #expect(harness.model.banner == .workspaceLocked)
+        #expect(harness.model.banner == .workspaceGone)
         #expect(harness.model.selectedItem == .today)
         #expect(harness.model.selectedTask == nil)
     }
@@ -345,13 +323,13 @@ extension AppModelTests {
         let harness = try await lockedHarness()
         harness.service.calls = []
         #expect(await harness.model.renameWorkspace(identifier: "secret", name: "Peek") == nil)
-        #expect(harness.model.banner == .workspaceLocked)
+        #expect(harness.model.banner == .workspaceGone)
         harness.model.dismissBanner()
         await harness.model.deleteProject(projectIdentifier: "secret-garden")
-        #expect(harness.model.banner == .workspaceLocked)
+        #expect(harness.model.banner == .workspaceGone)
         harness.model.dismissBanner()
         #expect(await harness.model.renameProject(projectIdentifier: "secret-garden", name: "Peek") == nil)
-        #expect(harness.model.banner == .workspaceLocked)
+        #expect(harness.model.banner == .workspaceGone)
         #expect(harness.service.calls.isEmpty)
         #expect(harness.authenticator.asked.isEmpty)
     }

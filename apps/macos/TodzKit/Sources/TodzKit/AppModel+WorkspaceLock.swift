@@ -1,14 +1,15 @@
 extension AppModel {
-    public var presentedWorkspaces: [PresentedWorkspace] {
-        workspaceLock.presented(workspaces, current: activeWorkspaceIdentifier)
-    }
-
     public var visibleWorkspaces: [Workspace] {
-        []
+        workspaceLock.visible(workspaces, current: activeWorkspaceIdentifier)
     }
 
     public func beginWorkspaceSwitch() async -> Bool {
-        false
+        await isAuthorized(.switchWorkspaces)
+    }
+
+    func isShowable(_ selection: WorkspaceSelection) -> Bool {
+        let selected = selection.workspaces(in: workspaces)
+        return !selected.isEmpty && selected.allSatisfy { visibleWorkspaces.contains($0) }
     }
 
     public func isLocked(workspaceIdentifier: String) -> Bool {
@@ -22,17 +23,11 @@ extension AppModel {
     }
 
     func refuseAsLocked() {
-        raise(.workspaceLocked)
+        raise(.workspaceGone)
     }
 
     func isAuthorized(_ action: WorkspaceLockAction) async -> Bool {
-        await workspaceLock.authorize(action, current: activeWorkspaceIdentifier)
-    }
-
-    func isAuthorized(toShow selection: WorkspaceSelection) async -> Bool {
-        let identifiers = Set(selection.workspaces(in: workspaces).map(\.identifier))
-        guard !identifiers.isEmpty else { return false }
-        return await isAuthorized(.showWorkspaces(identifiers: identifiers))
+        await workspaceLock.authorize(action)
     }
 
     func collapsedWhileLocked(_ selection: WorkspaceSelection) -> WorkspaceSelection? {
@@ -52,21 +47,17 @@ extension AppModel {
         reloadWidgets()
     }
 
-    public func unlockWorkspaces() async -> Bool {
-        await isAuthorized(toShow: .all)
-    }
-
     public func turnWorkspaceLockOn() async {
         workspaceLock.turnOn()
         await lockToCurrentWorkspace()
     }
 
     public func turnWorkspaceLockOff() async -> Bool {
-        await workspaceLock.turnOff(current: activeWorkspaceIdentifier)
+        await workspaceLock.turnOff()
     }
 
     public func setWorkspaceLockTimeout(_ timeout: WorkspaceLockTimeout) async -> Bool {
-        await workspaceLock.set(timeout: timeout, current: activeWorkspaceIdentifier)
+        await workspaceLock.set(timeout: timeout)
     }
 
     public func noteWorkspaceLockInput() {

@@ -7,7 +7,7 @@ struct SettingsWorkspaceLock: View {
 
     var body: some View {
         Group {
-            SettingsRow(title: SettingsCopy.lockWorkspaces, detail: switchDetail) {
+            SettingsRow(title: SettingsCopy.lockWorkspaces, detail: SettingsCopy.lockWorkspacesDetail) {
                 Toggle(SettingsCopy.lockWorkspaces, isOn: isOn)
                     .toggleStyle(.switch)
                     .labelsHidden()
@@ -31,10 +31,6 @@ struct SettingsWorkspaceLock: View {
             }
         }
         .todzAnimation(.snap, value: model.workspaceLock.isEnabled)
-    }
-
-    private var switchDetail: String {
-        model.workspaceLock.isEnabled ? SettingsCopy.lockWorkspacesDetailOn : SettingsCopy.lockWorkspacesDetailOff
     }
 
     private var unavailableReason: String? {

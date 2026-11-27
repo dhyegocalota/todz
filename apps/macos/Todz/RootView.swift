@@ -28,6 +28,19 @@ struct RootView: View {
             }
     }
 
+    @ViewBuilder private var choosing: some View {
+        if model.workspaceLock.isLocked {
+            LoadingScreen()
+                .task {
+                    _ = await model.beginWorkspaceSwitch()
+                    model.announceConfirmationFailure()
+                }
+        }
+        if !model.workspaceLock.isLocked {
+            WorkspacePickerScreen()
+        }
+    }
+
     @ViewBuilder private var screen: some View {
         switch model.phase {
         case .loading:
@@ -37,7 +50,7 @@ struct RootView: View {
         case .naming:
             FirstWorkspaceScreen()
         case .choosing:
-            WorkspacePickerScreen()
+            choosing
         case .ready:
             if let workspace = model.activeWorkspace {
                 MainWindow(workspace: workspace)

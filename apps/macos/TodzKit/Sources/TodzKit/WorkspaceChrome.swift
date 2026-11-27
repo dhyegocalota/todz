@@ -1,3 +1,4 @@
+// NB ADR 0113: every switching surface draws from the visible list alone, so a locked session draws what a one-workspace account draws.
 public enum WorkspaceSwitcherStyle: Equatable, Sendable {
     case plainName
     case menu
@@ -17,11 +18,13 @@ public struct WorkspaceChrome: Equatable, Sendable {
     public let canStep: Bool
 
     public init(visible: [Workspace], selection: WorkspaceSelection?, isMainWindow: Bool) {
-        switcher = .menu
-        showsAllWorkspaces = true
-        rows = []
-        showsSwitchHint = true
-        lastShortcutNumber = 0
-        canStep = true
+        let hasSeveral = visible.count > 1
+        let checked = selection?.workspaces(in: visible)
+        switcher = isMainWindow || hasSeveral ? .menu : .plainName
+        showsAllWorkspaces = hasSeveral
+        rows = visible.map { WorkspaceChromeRow(workspace: $0, isChecked: checked?.contains($0) == true) }
+        showsSwitchHint = hasSeveral
+        lastShortcutNumber = WorkspaceShortcuts.lastNumber(of: visible)
+        canStep = hasSeveral
     }
 }

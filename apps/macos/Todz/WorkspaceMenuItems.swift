@@ -1,20 +1,23 @@
 import SwiftUI
 import TodzKit
 
+private let switchWorkspaceKey: KeyEquivalent = "k"
+
 struct WorkspaceMenuItems: View {
     let model: AppModel
     let shortcuts: WorkspaceShortcutController
     let windowState: MainWindowState
 
     var body: some View {
-        ForEach(WorkspaceShortcuts.numbered(model.presentedWorkspaces), id: \.presented.identifier) { number, presented in
-            Button {
-                Task {
-                    await model.switchWorkspace(number: number)
-                    model.announceConfirmationFailure()
-                }
-            } label: {
-                PresentedWorkspaceLabel(presented: presented)
+        Button(WorkspaceLockCopy.switchWorkspace) {
+            windowState.requestWorkspaceChoice(model: model)
+        }
+        .keyboardShortcut(switchWorkspaceKey)
+        .disabled(!canSwitchWorkspace)
+        Divider()
+        ForEach(WorkspaceShortcuts.numbered(model.visibleWorkspaces), id: \.workspace.identifier) { number, workspace in
+            Button(workspace.name) {
+                Task { await model.switchWorkspace(number: number) }
             }
             .keyboardShortcut(WorkspaceShortcuts.keyboardShortcut(number: number))
             .disabled(!model.isReady)
@@ -26,11 +29,9 @@ struct WorkspaceMenuItems: View {
         }
         Divider()
         Menu(WorkspaceShortcutsCopy.chordsMenu) {
-            ForEach(WorkspaceShortcuts.numbered(model.presentedWorkspaces), id: \.presented.identifier) { number, presented in
-                Button {
+            ForEach(WorkspaceShortcuts.numbered(model.visibleWorkspaces), id: \.workspace.identifier) { number, workspace in
+                Button(workspace.name) {
                     Task { await model.switchWorkspace(action: .number(number)) }
-                } label: {
-                    PresentedWorkspaceLabel(presented: presented)
                 }
                 .keyboardShortcut(shortcuts.shortcut(for: .number(number)))
                 .disabled(!model.isReady)
@@ -57,7 +58,11 @@ struct WorkspaceMenuItems: View {
         .disabled(!model.isReady)
     }
 
+    private var canSwitchWorkspace: Bool {
+        model.isReady || model.phase == .choosing
+    }
+
     private var canStep: Bool {
-        model.isReady && model.workspaces.count > 1
+        model.isReady && model.visibleWorkspaces.count > 1
     }
 }

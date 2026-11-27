@@ -28,7 +28,7 @@ import TodzKit
     }
 
     func registerHotKeys() {
-        let isEligible = WorkspaceShortcuts.shouldRegister(phase: model.phase, workspaceCount: model.workspaces.count, isGlobalOn: preference.isGlobalOn)
+        let isEligible = WorkspaceShortcuts.shouldRegister(phase: model.phase, workspaceCount: model.visibleWorkspaces.count, isGlobalOn: preference.isGlobalOn)
         guard isEligible else {
             hotKeys.unregister()
             globalAvailability = [:]
@@ -62,7 +62,7 @@ import TodzKit
     private func observeEligibility() {
         withObservationTracking {
             _ = model.phase
-            _ = model.workspaces
+            _ = model.visibleWorkspaces
         } onChange: {
             Task { @MainActor in
                 self.registerHotKeys()

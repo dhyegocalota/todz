@@ -8,7 +8,7 @@ struct SettingsWorkspaceShortcuts: View {
     @State private var refusal: RebindRefusal?
 
     var body: some View {
-        if !model.workspaces.isEmpty {
+        if !model.visibleWorkspaces.isEmpty {
             Section {
                 SettingsRow(title: WorkspaceShortcutsCopy.fromAnyApp, detail: WorkspaceShortcutsCopy.fromAnyAppDetail(modifiers: WorkspaceShortcuts.globalModifiers.symbols, numbers: WorkspaceShortcuts.numbers)) {
                     Toggle(WorkspaceShortcutsCopy.fromAnyApp, isOn: $isGlobalOn)
@@ -17,21 +17,14 @@ struct SettingsWorkspaceShortcuts: View {
                 }
                 .onChange(of: isGlobalOn) { shortcuts.registerHotKeys() }
                 if isGlobalOn {
-                    ForEach(WorkspaceShortcuts.numbered(model.presentedWorkspaces), id: \.presented.identifier) { number, presented in
-                        WorkspaceChordRow(action: .number(number), title: title(of: presented), refusal: $refusal)
+                    ForEach(WorkspaceShortcuts.numbered(model.visibleWorkspaces), id: \.workspace.identifier) { number, workspace in
+                        WorkspaceChordRow(action: .number(number), title: workspace.name, refusal: $refusal)
                     }
                 }
                 ValidationLine(text: footnote, tone: refusal == nil ? .note : .issue)
             } header: {
                 Text(WorkspaceShortcutsCopy.header)
             }
-        }
-    }
-
-    private func title(of presented: PresentedWorkspace) -> String {
-        switch presented {
-        case let .visible(workspace): workspace.name
-        case .locked: WorkspaceLockCopy.lockedWorkspace
         }
     }
 
