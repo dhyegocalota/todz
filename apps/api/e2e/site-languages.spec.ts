@@ -262,3 +262,52 @@ test.describe('the first visit', () => {
     await context.close();
   });
 });
+
+test.describe('the controls live in the footer', () => {
+  test('are in the footer and absent from the header', async ({ page }) => {
+    await page.goto(LANDING_PATH);
+    await expect(page.locator('.site-footer .language-menu')).toHaveCount(1);
+    await expect(page.locator('.site-footer .theme-form')).toHaveCount(1);
+    await expect(page.locator('.site-header .language-menu')).toHaveCount(0);
+    await expect(page.locator('.site-header .theme-form')).toHaveCount(0);
+    await expect(page.locator('.language-summary')).toHaveAttribute('aria-label', 'Language: EN');
+    await expect(page.locator('.language-summary')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('an outside click closes the menu and keeps aria-expanded in sync', async ({ page }) => {
+    await page.goto(LANDING_PATH);
+    await page.locator('summary.language-summary').click();
+    await expect(page.locator('.language-summary')).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('.language-form')).toBeVisible();
+    await page.locator('.hero-title').click();
+    await expect(page.locator('.language-form')).toBeHidden();
+    await expect(page.locator('.language-summary')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('Escape closes the menu and returns focus to the trigger', async ({ page }) => {
+    await page.goto(LANDING_PATH);
+    await page.locator('summary.language-summary').click();
+    await page.locator('.language-option').nth(1).focus();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.language-form')).toBeHidden();
+    await expect(page.locator('.language-summary')).toBeFocused();
+    await expect(page.locator('.language-summary')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('choosing an option navigates', async ({ page }) => {
+    await page.goto(LANDING_PATH);
+    await page.locator('summary.language-summary').click();
+    await page.getByRole('button', { name: LANGUAGE_PROFILES[Language.Korean].nativeName }).click();
+    await expect(page).toHaveURL(urlPatternOf('/ko/'));
+    await expect(page.locator('.language-summary')).toHaveAttribute('aria-label', /: KO$/);
+  });
+
+  test('never scrolls sideways, closed or open', async ({ page }) => {
+    await page.goto(LANDING_PATH);
+    const overflows = () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(await overflows()).toBe(false);
+    await page.locator('summary.language-summary').click();
+    expect(await overflows()).toBe(false);
+    await expect(page.locator('.language-form')).toBeInViewport();
+  });
+});
