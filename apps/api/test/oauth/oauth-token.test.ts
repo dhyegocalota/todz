@@ -28,7 +28,6 @@ const ACCESS_TOKEN_PATTERN = /^todz-at_[A-Za-z0-9_-]{43}$/;
 const REFRESH_TOKEN_PATTERN = /^todz-rt_[A-Za-z0-9_-]{43}$/;
 const ACCESS_LIFETIME_SECONDS = 3_600;
 const CODE_LIFETIME_MS = 60 * MILLISECONDS_PER_SECOND;
-const REUSE_LEEWAY_MS = 5 * MILLISECONDS_PER_SECOND;
 const SPENT_REFRESH_TOKENS_MAX = 10_000;
 const HALF_HOURLY_REFRESHES_PER_LIFETIME = (30 * MILLISECONDS_PER_DAY) / (MILLISECONDS_PER_HOUR / 2);
 const DIGEST_LENGTH = 64;
@@ -206,18 +205,32 @@ describe('refreshing', () => {
     expect(await mcpStatus({ token: refreshed.access_token })).toBe(200);
   });
 
-  test('presenting a spent refresh token after the leeway revokes the whole family', async () => {
+  test('presenting a spent refresh token after its successor was used revokes the whole family', async () => {
     const owner = await seededOwner();
     const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
     const refreshed = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
+    const next = await tokensOf(await refreshAt({ clientId, refreshToken: refreshed.refresh_token, now: CLOCK_NOW + 1 }));
 
-    const reused = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS + 1 });
+    const reused = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + 2 });
 
     expect(reused.status).toBe(400);
     expect(await errorOf(reused)).toBe('invalid_grant');
-    expect(await mcpStatus({ token: refreshed.access_token })).toBe(401);
-    const afterReuse = await refreshAt({ clientId, refreshToken: refreshed.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS + 2 });
+    expect(await mcpStatus({ token: next.access_token })).toBe(401);
+    const afterReuse = await refreshAt({ clientId, refreshToken: next.refresh_token, now: CLOCK_NOW + 3 });
     expect(await errorOf(afterReuse)).toBe('invalid_grant');
+  });
+
+  test('a spent refresh token is honoured again however late, until a token issued from it is used', async () => {
+    const owner = await seededOwner();
+    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
+    const winner = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
+
+    const lateRetry = await tokensOf(
+      await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + MILLISECONDS_PER_HOUR / 2 }),
+    );
+
+    expect(await mcpStatus({ token: winner.access_token, now: CLOCK_NOW + MILLISECONDS_PER_HOUR / 2 })).toBe(200);
+    expect(await mcpStatus({ token: lateRetry.access_token, now: CLOCK_NOW + MILLISECONDS_PER_HOUR / 2 })).toBe(200);
   });
 
   test('a stolen token refreshed twice is still caught when the real client presents the first one', async () => {
@@ -226,11 +239,11 @@ describe('refreshing', () => {
     const second = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
     const third = await tokensOf(await refreshAt({ clientId, refreshToken: second.refresh_token, now: CLOCK_NOW + 1 }));
 
-    const realClient = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS + 1 });
+    const realClient = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + 2 });
 
     expect(await errorOf(realClient)).toBe('invalid_grant');
     expect(await mcpStatus({ token: third.access_token })).toBe(401);
-    const afterTheft = await refreshAt({ clientId, refreshToken: third.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS + 2 });
+    const afterTheft = await refreshAt({ clientId, refreshToken: third.refresh_token, now: CLOCK_NOW + 3 });
     expect(await errorOf(afterTheft)).toBe('invalid_grant');
   });
 
@@ -245,35 +258,58 @@ describe('refreshing', () => {
     expect(await errorOf(capped)).toBe('invalid_grant');
     expect(await mcpStatus({ token: second.access_token })).toBe(401);
     expect(await storedTokenCount(await digestCredential(tokens.refresh_token))).toBe(0);
-    const firstAgain = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS + 2 });
+    const firstAgain = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + 2 });
     expect(await errorOf(firstAgain)).toBe('invalid_grant');
   });
 
-  test('a retry within the leeway gets a working pair and keeps the app connected', async () => {
+  test('a retry before any successor is used gets a working pair and keeps the app connected', async () => {
     const owner = await seededOwner();
     const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
     const winner = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
 
-    const retry = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS }));
+    const retry = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + 1 }));
 
     expect(retry.refresh_token).not.toBe(winner.refresh_token);
     expect(await mcpStatus({ token: winner.access_token })).toBe(200);
     expect(await mcpStatus({ token: retry.access_token })).toBe(200);
-    expect((await refreshAt({ clientId, refreshToken: winner.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS })).status).toBe(200);
-    expect((await refreshAt({ clientId, refreshToken: retry.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS })).status).toBe(200);
+    expect((await refreshAt({ clientId, refreshToken: retry.refresh_token, now: CLOCK_NOW + 2 })).status).toBe(200);
   });
 
-  test('only the first retry within the leeway is honoured, and a second one is refused without disconnecting the app', async () => {
+  test('three refreshes of one token at once all get a working pair', async () => {
+    const owner = await seededOwner();
+    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
+
+    const racing = await Promise.all(
+      Array.from({ length: 3 }, () => refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW })),
+    );
+
+    const pairs = await Promise.all(racing.map(tokensOf));
+    expect(await Promise.all(pairs.map((pair) => mcpStatus({ token: pair.access_token })))).toEqual([200, 200, 200]);
+  });
+
+  test('once one sibling is used, presenting another revokes the whole family', async () => {
     const owner = await seededOwner();
     const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
     const winner = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
-    const retry = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + 1 }));
+    const sibling = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + 1 }));
+    const next = await tokensOf(await refreshAt({ clientId, refreshToken: winner.refresh_token, now: CLOCK_NOW + 2 }));
 
-    const secondRetry = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + 2 });
+    const stale = await refreshAt({ clientId, refreshToken: sibling.refresh_token, now: CLOCK_NOW + 3 });
 
-    expect(await errorOf(secondRetry)).toBe('invalid_grant');
-    expect(await mcpStatus({ token: winner.access_token })).toBe(200);
-    expect(await mcpStatus({ token: retry.access_token })).toBe(200);
+    expect(await errorOf(stale)).toBe('invalid_grant');
+    expect(await mcpStatus({ token: next.access_token })).toBe(401);
+  });
+
+  test('each refresh token records the refresh token it was issued from', async () => {
+    const owner = await seededOwner();
+    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
+    const refreshed = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
+
+    const lineage = await env.DIRECTORY.prepare('SELECT parent_digest FROM oauth_tokens WHERE digest = ?')
+      .bind(await digestCredential(refreshed.refresh_token))
+      .first<{ parent_digest: string | null }>();
+
+    expect(lineage?.parent_digest).toBe(await digestCredential(tokens.refresh_token));
   });
 
   test('the expiry sweep of a grant reads its tokens by an index on grant and expiry', async () => {
@@ -297,19 +333,7 @@ describe('refreshing', () => {
     expect(await Promise.all(pairs.map((pair) => mcpStatus({ token: pair.access_token })))).toEqual([200, 200]);
   });
 
-  test('the leeway counts from the first spend, so a retry never stretches it', async () => {
-    const owner = await seededOwner();
-    const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
-    await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
-    const retry = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS }));
-
-    const reused = await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW + REUSE_LEEWAY_MS + 1 });
-
-    expect(await errorOf(reused)).toBe('invalid_grant');
-    expect(await mcpStatus({ token: retry.access_token })).toBe(401);
-  });
-
-  test('a spent refresh token of another client is refused within the leeway too', async () => {
+  test('a spent refresh token of another client is refused', async () => {
     const owner = await seededOwner();
     const { clientId, tokens } = await connectedClient({ choiceOf: firstChoice, email: owner.email });
     const winner = await tokensOf(await refreshAt({ clientId, refreshToken: tokens.refresh_token, now: CLOCK_NOW }));
