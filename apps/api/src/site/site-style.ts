@@ -99,9 +99,9 @@ const ADMIN_STYLE = `.admin-card{display:flex;flex-direction:column;align-items:
 .consent-row{display:flex;align-items:stretch;gap:var(--space-2)}
 .consent-row .consent-choice{flex:1;min-width:0}
 .consent-toggle{flex:none;padding-inline:var(--space-4);cursor:pointer}
-.consent-projects{display:grid;gap:var(--space-2);padding-left:var(--space-5)}
+.consent-projects{display:grid;gap:var(--space-2);padding-inline-start:var(--space-5)}
 .consent-summary{font-size:var(--text-small);font-weight:600;color:var(--color-text-muted)}
-.consent-holds{margin-top:var(--space-3);font-size:var(--text-small);color:var(--color-text-muted)}
+.consent-holds{margin-block-start:var(--space-3);font-size:var(--text-small);color:var(--color-text-muted)}
 .consent-choice{display:flex;align-items:flex-start;gap:var(--space-3);min-height:var(--size-tap);padding:var(--space-3) var(--space-4);border-radius:var(--radius-control);background:var(--glass-sheen), var(--glass-fill);box-shadow:var(--glass-edge), var(--shadow-card);cursor:pointer;overflow-wrap:anywhere}
 .consent-choice:has(:checked){outline:2px solid var(--color-accent);outline-offset:-2px}
 .consent-choice input{flex:none;margin:0.3em 0 0;accent-color:var(--color-accent)}
