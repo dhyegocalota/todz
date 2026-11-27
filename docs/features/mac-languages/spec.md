@@ -1,6 +1,6 @@
 # Mac languages
 
-**Status:** Approved
+**Status:** Shipped 2026-11-27
 **Tier:** 🟡 (every user-facing string of the app and the widgets moves into a catalog, two new Settings rows, one new header; no server change, no schema)
 **Owner approval:** approved by [`docs/product/README.md`](../../product/README.md) (2026-11-23) and the owner's v1.2 order of 2026-11-27: the native macOS app and its widgets in eight languages, a Language override and an Appearance setting.
 **ADRs:** [0120](../../adr/0120-the-mac-app-localizes-through-one-string-catalog-and-a-language-choice-in-the-app-group-switches-it-at-once.md), [0121](../../adr/0121-every-erase-at-launch-writes-one-breadcrumb-line-that-names-the-path-and-never-task-data.md)
