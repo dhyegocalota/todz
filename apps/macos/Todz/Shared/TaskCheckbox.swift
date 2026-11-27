@@ -35,9 +35,9 @@ struct TaskCheckbox: View {
                         SparkleBurst(isBursting: task.isDone)
                     }
                 }
-                .todzAnimation(.draw, value: task.isDone)
+                .todzMotion(.complete, value: task.isDone)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.todzPress)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityAddTraits(.isToggle)
     }

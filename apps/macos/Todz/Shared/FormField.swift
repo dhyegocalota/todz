@@ -34,7 +34,7 @@ struct FormField: View {
                 ValidationLine(text: issue, tone: .issue)
             }
         }
-        .todzAnimation(.snap, value: issue)
+        .todzMotion(.sheetPresent, value: issue)
     }
 
     private var state: FieldState {

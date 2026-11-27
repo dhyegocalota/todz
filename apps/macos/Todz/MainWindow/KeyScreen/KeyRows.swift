@@ -4,7 +4,6 @@ import TodzKit
 struct KeyRows: View {
     let projectName: String
     @Environment(AppModel.self) private var model
-    @Environment(\.accessibilityReduceMotion) private var reducesMotion
 
     var body: some View {
         switch model.keys {
@@ -32,7 +31,7 @@ struct KeyRows: View {
                     KeyRow(key: key, projectName: projectName)
                 }
             }
-            .animation(reducesMotion ? nil : .default, value: keys)
+            .todzMotion(.reorder, value: keys)
         }
     }
 
