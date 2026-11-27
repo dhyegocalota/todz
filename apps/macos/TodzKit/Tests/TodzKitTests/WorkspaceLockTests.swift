@@ -146,7 +146,7 @@ private let garden = Workspace(identifier: "garden", name: "Garden", createdAt: 
         let harness = try LockHarness(isOn: true)
         harness.authenticator.isHolding = true
         let first = Task { await harness.lock.authorize(.showWorkspaces(identifiers: ["side"]), current: "acme") }
-        let second = Task { await harness.lock.authorize(.showWorkspaces(identifiers: ["garden"]), current: "acme") }
+        let second = Task { await harness.lock.authorize(.showWorkspaces(identifiers: ["side"]), current: "acme") }
         await Task.yield()
         await Task.yield()
         harness.authenticator.release()
@@ -265,9 +265,59 @@ private let garden = Workspace(identifier: "garden", name: "Garden", createdAt: 
         #expect(harness.lock.visible(WorkspaceSelection.chosen(["acme", "garden"]).workspaces(in: all), current: "garden") == [garden])
     }
 
-    @Test func collapsingKeepsTheFirstWorkspaceWhenTheCurrentIsNotSelected() throws {
+    @Test func collapsingShowsNothingWhenTheCurrentIsNotThere() throws {
         let harness = try LockHarness(isOn: true)
-        #expect(harness.lock.visible([side, garden], current: "acme") == [side])
+        #expect(harness.lock.visible([side, garden], current: "acme").isEmpty)
+        #expect(harness.lock.visible([side, garden], current: nil).isEmpty)
+    }
+
+    @Test func turningOffAndChangingTheTimeoutAskEvenInAnUnlockedSession() async throws {
+        let harness = try LockHarness(isOn: true)
+        _ = await harness.lock.authorize(.showWorkspaces(identifiers: ["side"]), current: "acme")
+        #expect(harness.lock.isUnlocked)
+        #expect(harness.lock.requiresAuthentication(for: .turnOff, current: "acme"))
+        #expect(harness.lock.requiresAuthentication(for: .changeTimeout, current: "acme"))
+        harness.authenticator.isOwnerAuthenticated = false
+        #expect(!(await harness.lock.turnOff(current: "acme")))
+        #expect(!(await harness.lock.set(timeout: .oneHour, current: "acme")))
+        #expect(harness.lock.isEnabled)
+        #expect(harness.lock.timeout == .fiveMinutes)
+    }
+
+    @Test func anotherActionWhileAPromptIsOpenIsRefusedNotSharedAndTheSameActionIsShared() async throws {
+        let harness = try LockHarness(isOn: true)
+        harness.authenticator.isHolding = true
+        let first = Task { await harness.lock.authorize(.turnOff, current: "acme") }
+        await Task.yield()
+        await Task.yield()
+        let other = await harness.lock.authorize(.changeTimeout, current: "acme")
+        let same = Task { await harness.lock.authorize(.turnOff, current: "acme") }
+        await Task.yield()
+        harness.authenticator.release()
+        #expect(!other)
+        #expect(await first.value)
+        #expect(await same.value)
+        #expect(harness.authenticator.asked == [.turnOff])
+    }
+
+    @Test func inputArrivingAfterTheTimeoutLeavesTheSessionLocked() async throws {
+        let harness = try LockHarness(isOn: true)
+        _ = await harness.lock.authorize(.showWorkspaces(identifiers: ["side"]), current: "acme")
+        harness.clock.now = harness.clock.now.addingTimeInterval(WorkspaceLockTimeout.fiveMinutes.seconds)
+        #expect(harness.lock.noteInput())
+        #expect(harness.lock.isLocked)
+        #expect(harness.lock.lastRelockTrigger == .idle)
+        #expect(!harness.lock.noteInput())
+        #expect(harness.lock.isLocked)
+    }
+
+    @Test func widgetsSeeOnlyTheCurrentWorkspaceWheneverTheSwitchIsOn() async throws {
+        let harness = try LockHarness(isOn: true)
+        _ = await harness.lock.authorize(.showWorkspaces(identifiers: ["side"]), current: "acme")
+        #expect(harness.lock.visibleToWidgets([acme, side], current: "acme") == [acme])
+        #expect(harness.lock.visibleToWidgets([side], current: "acme").isEmpty)
+        let off = try LockHarness()
+        #expect(off.lock.visibleToWidgets([acme, side], current: "acme") == [acme, side])
     }
 
     @Test func collapsingChangesNothingWhileUnlockedOrOff() async throws {

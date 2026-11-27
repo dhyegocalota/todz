@@ -2,6 +2,9 @@ import AppKit
 import TodzKit
 
 private let idleCheckInterval = Duration.seconds(10)
+private let inputEvents: NSEvent.EventTypeMask = [
+    .keyDown, .keyUp, .leftMouseDown, .rightMouseDown, .otherMouseDown, .leftMouseDragged, .rightMouseDragged, .mouseMoved, .scrollWheel,
+]
 private let screensaverStarted = Notification.Name("com.apple.screensaver.didstart")
 private let sleepNotifications: [Notification.Name] = [
     NSWorkspace.willSleepNotification,
@@ -28,7 +31,10 @@ private let sleepNotifications: [Notification.Name] = [
                 relock(on: .screenIsLocked, in: distributedCenter, because: .screenLocked),
                 relock(on: screensaverStarted, in: distributedCenter, because: .screensaverStarted),
             ]
-        inputMonitor = NSEvent.addLocalMonitorForEvents(matching: .any) { [model] event in
+        observations.append(NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [model] _ in
+            Task { @MainActor in await model.relockWorkspacesIfIdle() }
+        })
+        inputMonitor = NSEvent.addLocalMonitorForEvents(matching: inputEvents) { [model] event in
             MainActor.assumeIsolated { model.noteWorkspaceLockInput() }
             return event
         }

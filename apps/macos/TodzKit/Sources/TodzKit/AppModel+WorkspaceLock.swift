@@ -27,11 +27,21 @@ extension AppModel {
         return await isAuthorized(.showWorkspaces(identifiers: identifiers))
     }
 
-    func collapsedWhileLocked(_ selection: WorkspaceSelection) -> WorkspaceSelection {
+    func collapsedWhileLocked(_ selection: WorkspaceSelection) -> WorkspaceSelection? {
         guard workspaceLock.isLocked else { return selection }
         let selected = selection.workspaces(in: workspaces)
-        guard let shown = workspaceLock.visible(selected, current: activeWorkspaceIdentifier).first else { return selection }
+        guard let shown = workspaceLock.visible(selected, current: activeWorkspaceIdentifier).first else { return nil }
         return .chosen([shown.identifier])
+    }
+
+    var widgetWorkspaces: [Workspace] {
+        workspaceLock.visibleToWidgets(shownWorkspaces, current: activeWorkspaceIdentifier)
+    }
+
+    public func prepareWidgetsForTermination() {
+        publishedWidgetSnapshot = nil
+        publishWidgets()
+        reloadWidgets()
     }
 
     public func unlockWorkspaces() async -> Bool {
@@ -52,7 +62,8 @@ extension AppModel {
     }
 
     public func noteWorkspaceLockInput() {
-        workspaceLock.noteInput()
+        guard workspaceLock.noteInput() else { return }
+        workspaceRelock = Task { await lockToCurrentWorkspace() }
     }
 
     public func relockWorkspaces(because trigger: RelockTrigger) async {
@@ -66,7 +77,7 @@ extension AppModel {
     }
 
     // NB ADR 0110: a relock releases every other workspace from memory and the cache and rewrites the shared snapshot from the current one alone.
-    private func lockToCurrentWorkspace() async {
+    func lockToCurrentWorkspace() async {
         if phase == .ready, let current = activeWorkspaceIdentifier { await selectWorkspaces(.chosen([current])) }
         forgetLockedWorkspaces()
         publishedWidgetSnapshot = nil

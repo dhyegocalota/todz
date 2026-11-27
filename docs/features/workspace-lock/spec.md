@@ -42,7 +42,7 @@ Anyone at an unlocked Mac can open todz and switch to any workspace. The owner w
 | Question | Options | Owner's answer | Date |
 |----------|---------|----------------|------|
 | Which idle source | System idle time, input delivered to todz | The loop's call: input delivered to todz, the stricter and testable one | 2026-11-26 |
-| Does turning off need authentication while the session is unlocked | Always, only while locked | The loop's call: only while locked; an unlocked session was authenticated | 2026-11-26 |
+| Does turning off need authentication while the session is unlocked | Always, only while locked | The loop's call (revised after the security review): whenever the switch is on, locked or not, so an unlocked walk-away cannot weaken the lock | 2026-11-26 |
 
 ## Test strategy summary
 

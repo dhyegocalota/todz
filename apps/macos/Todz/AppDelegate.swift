@@ -151,6 +151,7 @@ private let cacheFolderName = "Cache"
 
     func applicationWillTerminate(_ notification: Notification) {
         workspaceShortcuts.stop()
+        model.prepareWidgetsForTermination()
         model.flushCache()
     }
 

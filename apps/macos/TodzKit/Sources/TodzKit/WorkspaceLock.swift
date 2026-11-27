@@ -9,7 +9,7 @@ import Observation
     public private(set) var isConfirmationFailed = false
     public private(set) var lastRelockTrigger: RelockTrigger?
     @ObservationIgnored private var lastInput: Date
-    @ObservationIgnored private var authentication: Task<DeviceOwnerAuthentication, Never>?
+    @ObservationIgnored private var authentication: (action: WorkspaceLockAction, task: Task<DeviceOwnerAuthentication, Never>)?
     @ObservationIgnored private let preference: WorkspaceLockPreference
     @ObservationIgnored private let authenticator: any DeviceOwnerAuthenticator
     @ObservationIgnored private let now: () -> Date
@@ -32,6 +32,9 @@ import Observation
     }
 
     public func requiresAuthentication(for action: WorkspaceLockAction, current: String?) -> Bool {
+        guard isEnabled else { return false }
+        let isWeakening = action == .turnOff || action == .changeTimeout
+        guard !isWeakening else { return true }
         guard isLocked else { return false }
         guard case let .showWorkspaces(identifiers) = action, let current else { return true }
         return !identifiers.subtracting([current]).isEmpty
@@ -43,7 +46,8 @@ import Observation
         guard !isTurningOffWithNoPassword else { return true }
         isConfirmationFailed = availability != .available
         guard availability == .available else { return false }
-        let result = await runningAuthentication(for: action).value
+        guard let running = runningAuthentication(for: action) else { return false }
+        let result = await running.value
         authentication = nil
         isConfirmationFailed = result == .failed
         guard result == .confirmed else { return false }
@@ -51,10 +55,10 @@ import Observation
         return true
     }
 
-    private func runningAuthentication(for action: WorkspaceLockAction) -> Task<DeviceOwnerAuthentication, Never> {
-        if let authentication { return authentication }
+    private func runningAuthentication(for action: WorkspaceLockAction) -> Task<DeviceOwnerAuthentication, Never>? {
+        if let authentication { return authentication.action == action ? authentication.task : nil }
         let started = Task { await authenticator.authenticate(for: action) }
-        authentication = started
+        authentication = (action: action, task: started)
         return started
     }
 
@@ -87,8 +91,11 @@ import Observation
         return true
     }
 
-    public func noteInput() {
+    @discardableResult
+    public func noteInput() -> Bool {
+        guard !relockIfIdle() else { return true }
         lastInput = now()
+        return false
     }
 
     @discardableResult
@@ -111,8 +118,16 @@ import Observation
 
     public func visible(_ workspaces: [Workspace], current: String?) -> [Workspace] {
         guard isLocked else { return workspaces }
-        let currentWorkspace = workspaces.first { $0.identifier == current }
-        guard let shown = currentWorkspace ?? workspaces.first else { return [] }
+        return only(current, in: workspaces)
+    }
+
+    public func visibleToWidgets(_ workspaces: [Workspace], current: String?) -> [Workspace] {
+        guard isEnabled else { return workspaces }
+        return only(current, in: workspaces)
+    }
+
+    private func only(_ current: String?, in workspaces: [Workspace]) -> [Workspace] {
+        guard let shown = workspaces.first(where: { $0.identifier == current }) else { return [] }
         return [shown]
     }
 

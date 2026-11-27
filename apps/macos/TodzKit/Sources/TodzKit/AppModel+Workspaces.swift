@@ -200,6 +200,8 @@ extension AppModel {
     }
 
     private var selectionToShow: WorkspaceSelection? {
+        let isCurrentGone = activeWorkspaceIdentifier.map { current in !workspaces.contains { $0.identifier == current } } == true
+        if workspaceLock.isLocked, isCurrentGone { return nil }
         if let selection, !selection.workspaces(in: workspaces).isEmpty { return collapsedWhileLocked(selection.limited(to: workspaces)) }
         guard workspaces.count == 1, let sole = workspaces.first else { return nil }
         return .chosen([sole.identifier])
@@ -212,7 +214,7 @@ extension AppModel {
 
     // NB ADR 0080: the primary workspace takes writes that name no project; every shown workspace is pulled and watched.
     private func show(_ newSelection: WorkspaceSelection) async {
-        let shown = workspaceLock.visible(newSelection.workspaces(in: workspaces), current: activeWorkspaceIdentifier)
+        let shown = newSelection.workspaces(in: workspaces)
         guard let primary = primary(of: shown) else { return }
         let previousIdentifiers = Set(selectedWorkspaces.flatMap(\.projects).map(\.identifier))
         let shownIdentifiers = shown.flatMap(\.projects).map(\.identifier)

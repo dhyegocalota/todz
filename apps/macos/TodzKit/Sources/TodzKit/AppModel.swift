@@ -140,6 +140,7 @@ import Observation
     @ObservationIgnored var taskViewsBuildCount = 0
     @ObservationIgnored private var storedTaskViews: (day: CalendarDate, isLocked: Bool, views: TaskViews)?
     @ObservationIgnored public let workspaceLock: WorkspaceLock
+    @ObservationIgnored var workspaceRelock: Task<Void, Never>?
     @ObservationIgnored let widgetStore: any WidgetStore
     @ObservationIgnored let reloadWidgets: @Sendable () -> Void
     @ObservationIgnored public let timeZone: TimeZone
