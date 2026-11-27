@@ -47,6 +47,14 @@ private func meta(of boardTask: BoardTask, shownWorkspaceCount: Int = 1) -> Menu
         #expect(meta(of: task(createdBy: .agent(clientName: "Claude Code"))).agentName == "Claude Code")
     }
 
+    @Test func theSecondLineSaysOverdueTheProjectAndTheWorkspaceButNeverTheAgent() {
+        #expect(meta(of: task(dueDate: yesterday)).hasSubline)
+        #expect(meta(of: task(project: website)).hasSubline)
+        #expect(meta(of: task(), shownWorkspaceCount: 2).hasSubline)
+        #expect(!meta(of: task(createdBy: .agent(clientName: "Codex"))).hasSubline)
+        #expect(!meta(of: task()).hasSubline)
+    }
+
     @Test func anySayingMakesTheMetaNotEmpty() {
         #expect(!meta(of: task(dueDate: yesterday)).isEmpty)
         #expect(!meta(of: task(project: website)).isEmpty)
