@@ -82,16 +82,11 @@ struct WorkspaceSwitcher: View {
         }
     }
 
-    private func choose(_ candidate: Workspace) async {
-        guard model.workspaceLock.isEnabled else { return await model.toggleWorkspace(identifier: candidate.identifier) }
-        await model.switchWorkspace(identifier: candidate.identifier)
-    }
-
     private func isShown(_ candidate: Workspace) -> Binding<Bool> {
         Binding {
             model.shownWorkspaces.contains { $0.identifier == candidate.identifier }
         } set: { _ in
-            Task { await choose(candidate) }
+            Task { await model.pickWorkspace(identifier: candidate.identifier) }
         }
     }
 }
