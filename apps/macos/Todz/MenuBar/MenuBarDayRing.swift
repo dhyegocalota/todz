@@ -31,7 +31,7 @@ struct MenuBarDayRing: View {
             }
         }
         .frame(width: MenuBarMetrics.dayRingDiameter, height: MenuBarMetrics.dayRingDiameter)
-        .todzAnimation(.settle, value: progress)
+        .todzMotion(.ringFill, value: progress)
         .onChange(of: isClosed) { _, isNowClosed in isBursting = isNowClosed }
         .accessibilityHidden(true)
     }

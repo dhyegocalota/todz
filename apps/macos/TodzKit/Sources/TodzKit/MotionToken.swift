@@ -17,6 +17,7 @@ public enum MotionToken: CaseIterable, Sendable, Equatable {
     case draw
     case sparkle
     case crossfade
+    case press
 
     public var durationMilliseconds: Int {
         switch self {
@@ -27,6 +28,7 @@ public enum MotionToken: CaseIterable, Sendable, Equatable {
         case .draw: 250
         case .sparkle: 300
         case .crossfade: 150
+        case .press: 150
         }
     }
 
@@ -39,6 +41,7 @@ public enum MotionToken: CaseIterable, Sendable, Equatable {
         case .draw: .easeOut
         case .sparkle: .easeOut
         case .crossfade: .ease
+        case .press: .spring(response: 0.075, dampingFraction: 0.9)
         }
     }
 }
