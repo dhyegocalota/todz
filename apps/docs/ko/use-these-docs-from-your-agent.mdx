@@ -1,0 +1,14 @@
+---
+title: 에이전트에서 이 문서 사용하기
+description: MCP나 일반 텍스트 파일로 에이전트에게 이 문서를 전달해요.
+---
+
+이 문서에는 전용 MCP 서버가 있어요. Claude Code에서는 이렇게 해요.
+
+```bash
+claude mcp add --transport http todz-docs https://docs.todz.app/mcp
+```
+
+일반 텍스트를 읽는 에이전트라면 [todz.app/llms.txt](https://todz.app/llms.txt)에 페이지 목록이 있고, [todz.app/llms-full.txt](https://todz.app/llms-full.txt)에 전체 내용이 들어 있어요.
+
+대신 에이전트가 작업을 처리하게 하려면 [에이전트 연결](/ko/connect-an-agent)을 참고하세요.

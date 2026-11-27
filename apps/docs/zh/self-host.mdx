@@ -1,0 +1,149 @@
+---
+title: 自行托管
+sidebarTitle: 服务器设置
+---
+
+在 Cloudflare 上运行你自己的 todz 服务器，并让 macOS App 和你的智能体指向它。服务器是一个 Worker，带一个 D1 数据库，每个项目一个 Durable Object。
+
+## 你需要什么
+
+- 一个开通了 **Workers Paid** 的 Cloudflare 账户（电子邮件绑定需要它），以及该账户中的一个域名。下文中，`example.com` 代表这个域名，`api.example.com` 代表服务器。
+- Node 和 pnpm，版本以 `.nvmrc` 和 `package.json` 为准；以及一台装有 Xcode 和 XcodeGen 的 Mac，用于构建 App。
+- 已登录你账户的 Wrangler：`pnpm --filter @todz/api exec wrangler login`。
+
+## 1. Fork、安装和检查
+
+Fork 这个仓库，然后在重命名任何东西之前：
+
+```bash
+pnpm install
+pnpm verify all
+```
+
+这道关卡还需要 gitleaks；它的 doctor 会指出缺少的东西。现在就运行它，因为有些测试固定了 todz 自己的生产环境名称，例如对 API 源码和邮件发送方的检查。完成第 2 步之后，这些固定项会失败，直到你把它们更新为你自己的名称。
+
+## 2. 重命名
+
+编辑 `apps/api/wrangler.jsonc`：
+
+- `account_id`：你账户的 id。
+- `routes`：把 `api.todz.app`、`todz.app` 和 `www.todz.app` 替换为 `api.example.com`、`example.com` 和 `www.example.com`，并保持 `custom_domain` 为 `true`。
+- `vars.PUBLIC_ORIGIN`：`https://api.example.com`。
+- `vars.SITE_ORIGIN`：`https://example.com`，落地页和本指南就在那里提供。
+- `send_email[0].allowed_sender_addresses`：你的发件人，例如 `noreply@example.com`。
+- `vars.TELEMETRY`：删除这一行。Fork 会从这个文件继承 `on`，所以删掉它才能关闭遥测；除非值恰好是 `on`，否则它就是关闭的（参见“隐私”页）。
+- `vars.CLOUD_ACCOUNTS_MAX`：删除这一行。Fork 会从这个文件继承 todz cloud 的账户上限；没有它，你的服务器会接纳每一个账户（参见“合理使用”页）。
+- `ratelimits`：保留这十九个绑定，其中登录和管理后台各三个，每日邮件的回复一个，它的停止链接一个，已登录的所有者一个，MCP 客户端一个，使用情况报告三个，更新检查两个，容量已满时的读取一个，OAuth 三个（它的路由，以及按每个客户端和总计的客户端注册）；如果你的账户已经使用了 `8601` 到 `8619`，请更改每个 `namespace_id`。
+
+其余保持原样。尤其是，`vars.SIGN_IN_PROVIDER` 保持为 `email`，`vars.EMAIL_SENDER` 保持为 `cloudflare`，`workers_dev` 和 `preview_urls` 保持为 `false`。永远不要给 `wrangler deploy` 传 `--var`，也永远不要在控制台里设置变量：伪造的提供方，或只记录链接的发送方，会让任何人都能登录。
+
+在 `apps/api/src/email-sender.ts` 中，把 `SENDER_ADDRESS` 和 `REPLY_TO_ADDRESS` 设为你自己的地址。
+
+## 3. 创建数据库并应用迁移
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 create todz-directory
+```
+
+把打印出的 id 填入 `d1_databases[0].database_id`，然后：
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+```
+
+## 4. 部署
+
+```bash
+pnpm --filter @todz/api server:deploy
+```
+
+请在 git 克隆中部署：脚本会用它通过 `git log` 读到的提交来命名这次构建。部署成功后，脚本会以 `todz server ready: https://api.example.com · server 2026.11.25+3f9c2ab · accepts app 0.2.4 or later  →  paste it in todz › Settings › Server` 结束：这就是第 7 步要用的 URL，附带服务器自己的版本号和它接受的最旧 App 版本。Cloudflare 会为 `api.example.com`、`example.com` 和 `www.example.com` 创建 DNS 记录和证书；这三个域名都不能已经有 A、AAAA 或 CNAME 记录。检查四件事：
+- `curl -sS -H "Todz-App-Version: 0.2.4" https://api.example.com/owner/sign-in-method` 返回 `{"method":"link"}`，而不带这个标头的同一个请求返回 `{"error":"app_too_old","minimum_app_version":"0.2.4"}`；
+- `curl -sS https://api.example.com/health` 返回 `{"service":"todz","origin":"https://api.example.com","version":"2026.11.25+3f9c2ab","minimum_app_version":"0.2.4"}`，并且它的 `version` 就是 ready 那一行打印出的版本；
+- 账户的 `todz-api.<subdomain>.workers.dev` 地址没有响应；
+- 在第 6 步完成之前，发送链接会返回 503 `sign_in_unavailable`，这是安全的状态。
+
+## 5. 邮件发送
+
+为你的域名启用发送功能，并添加 Cloudflare 列出的记录。区域 id 在控制台中该域名的“概览”页面上。
+
+```bash
+pnpm --filter @todz/api exec wrangler email sending enable example.com --zone-id <your zone id>
+pnpm --filter @todz/api exec wrangler email sending dns get example.com --zone-id <your zone id>
+```
+
+## 6. Turnstile
+
+在设置好 Turnstile 之前，登录和管理后台保持关闭（`sign_in_unavailable` 和“管理后台目前已关闭。”）。在 Cloudflare 控制台中，为 `example.com` 创建一个托管模式的 Turnstile 小组件。把它的站点密钥填入 `apps/api/wrangler.jsonc` 里的 `vars.TURNSTILE_SITE_KEY`，用 `pnpm --filter @todz/api server:deploy` 再部署一次，并存储它的密钥：
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put TURNSTILE_SECRET_KEY
+```
+
+Wrangler 会询问该值，这样它就不会进入你的 shell 历史。永远不要通过管道传入，永远不要 export，也永远不要把它写进 `wrangler.jsonc`。
+
+位于 `https://example.com/admin` 的管理后台用来读取你服务器的指标，它只允许以同样方式存储的那个地址登录；在你存储之前，它保持关闭：
+
+```bash
+pnpm --filter @todz/api exec wrangler secret put ADMIN_EMAIL
+```
+
+新账户按每个网络每天设有上限（参见[合理使用](https://docs.todz.app/zh/fair-use)），该上限用一个密钥为每个地址生成标识。请生成一次，并用同样的方式存储；在你这样做之前，新账户无法注册，现有账户仍然可以：
+
+```bash
+openssl rand -hex 32 | pnpm --filter @todz/api exec wrangler secret put SIGN_UP_KEY_SECRET
+```
+
+## 7. 构建 macOS 应用并指向你的服务器
+
+在 `apps/macos/project.yml` 中：
+- 在两个 target 里，把 `DEVELOPMENT_TEAM` 替换为你自己团队的 id（Xcode → 设置 → 账户；免费的个人团队也可以）；
+- 把 `bundleIdPrefix`、`TODZ_APP_BUNDLE_IDENTIFIER` 和 `TODZ_WIDGETS_BUNDLE_IDENTIFIER` 的值以及 `TODZ_APP_GROUP` 替换为你自己的标识符。
+
+然后构建：
+
+```bash
+xcodegen generate --spec apps/macos/project.yml
+xcodebuild build -project apps/macos/Todz.xcodeproj -scheme Todz -configuration Release -derivedDataPath apps/macos/build
+```
+
+你的 Release App 通过 `todz` 打开登录链接，服务器无需为此做任何设置，因为 App 在申请链接时会说明它的协议。
+
+然后打开 todz › 设置 › 服务器，粘贴部署时打印出的 URL。App 会检查它，退出它之前所用服务器的登录，并在你的服务器上重新开始。用你的邮箱登录。
+
+## 8. 让 MCP 客户端指向你的服务器
+
+支持 MCP OAuth 的客户端只需地址就能连接，你在浏览器中批准它们：
+
+```bash
+claude mcp add --transport http todz https://api.example.com/mcp
+```
+
+你的服务器就是它自己的 OAuth 授权服务器：签发者是 `PUBLIC_ORIGIN`，所以它的元数据位于 `https://api.example.com/.well-known/oauth-authorization-server`，登录邮件则来自你的发件人。其他任何东西都不需要配置，不过 OAuth 登录和 App 一样，也需要第 5 和第 6 步。
+
+OAuth 是客户端连接的唯一方式，在你的服务器上和在 todz cloud 上一样。发送任何其他凭据的客户端会收到 401，并指向文档的连接页面。
+
+## 更新
+
+从上游拉取。先更新服务器，再更新 App：比服务器更新的 App 无法检查服务器的地址。运行：
+
+```bash
+pnpm --filter @todz/api exec wrangler d1 migrations apply todz-directory --remote
+pnpm --filter @todz/api server:deploy
+```
+
+然后按第 7 步重新构建 App；它会保留你粘贴的服务器。
+
+在已经有所有者的服务器上，从未碰过“把我的一天发到邮箱”的所有者，要等你为他们手动开启这个默认值之后才会收到，这在没有这样的所有者会被发送邮件时是安全的；新所有者会立即收到。
+
+迁移只会向前推进。永远不要回滚到登录防护之前的版本，无论是用 `wrangler rollback` 还是控制台的“部署”页面。要关闭登录，请删除这个密钥：
+
+```bash
+pnpm --filter @todz/api exec wrangler secret delete TURNSTILE_SECRET_KEY
+```
+
+## App 更新
+
+- 来自 todz.app 的官方 App 会从 todz.app 经过签名的 appcast 自行更新，即使它指向你的服务器：你选择的服务器与 App 的更新互不相干。参见[在 Mac 上安装 › 更新](https://docs.todz.app/zh/install-on-mac#4-更新)。
+- 你按第 7 步自行构建的 App 永远不会自动安装更新；它可能会提供官方版本，而官方版本会替换你的构建。要保留你自己的构建，请按上文再构建一次，或者安装官方 App，并把你的服务器粘贴到**服务器**下。
+- 请让你的服务器保持最新。当新的 App 需要更新的服务器时，App 会提示服务器较旧；请先更新服务器。

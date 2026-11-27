@@ -1,0 +1,61 @@
+---
+title: Connecter un agent
+description: Connectez Claude Code, Claude.ai ou Codex à todz avec OAuth. Les clés d’API ont été supprimées.
+---
+
+Le serveur MCP de todz à l’adresse `https://api.todz.app/mcp` connecte les clients avec MCP OAuth. Ajoutez l’URL à votre client. Le premier appel ouvre votre navigateur, et vous y approuvez l’app. OAuth est la seule façon de se connecter.
+
+Si vous faites tourner votre propre serveur, utilisez son URL à la place de `https://api.todz.app/mcp`.
+
+## Changement majeur : les clés d’API ont été supprimées
+
+Le 2026-11-27, todz a supprimé les clés d’API. Les clés de projet et les clés de propriétaire ont cessé de fonctionner, et le serveur a supprimé toutes les clés stockées. Un client qui envoie encore une clé reçoit `401` avec un renvoi vers cette page.
+
+Pour reconnecter un agent qui utilisait une clé, lancez `claude mcp add --transport http todz https://api.todz.app/mcp` et connectez-vous, comme ci-dessous. Retirez l’ancien en-tête `Authorization`, ainsi que la variable `TODZ_API_KEY` si vous en aviez définie une. L’écran **Connecter un agent** de l’app Mac a disparu dans la même mise à jour.
+
+## Se connecter avec OAuth
+
+1. Saisissez votre e-mail todz et passez la vérification.
+2. Ouvrez le lien de connexion du message **dans le même navigateur**.
+3. Lisez l’écran de consentement : il nomme l’app et l’adresse où il vous renvoie.
+4. Choisissez un projet. Le premier est présélectionné. Ou choisissez **Tout votre compte (portée propriétaire)**, qui n’est jamais présélectionné et qui avertit « Il peut lire et modifier toutes les tâches, et créer, renommer et supprimer tous les espaces de travail et tous les projets. »
+5. Approuvez, ou refusez.
+
+Une portée projet donne les outils de tâches, ainsi que les autres projets de son espace de travail pour `move` et `projects`. Une portée propriétaire donne les outils du compte et les mêmes outils de tâches pour chaque projet du compte, chacun prenant l’identifiant `project` fourni par `workspaces`. L’historique d’une tâche nomme l’app par le nom sous lequel elle s’est enregistrée. Voir [Outils MCP](/fr/mcp-tools).
+
+Les jetons d’accès durent une heure et se renouvellent d’eux-mêmes. Les jetons d’actualisation durent 30 jours et sont renouvelés à chaque utilisation ; une nouvelle tentative dans les 30 secondes reçoit une nouvelle paire, et un jeton déjà utilisé qui revient plus tard déconnecte l’app. todz ne stocke les jetons que sous forme d’empreintes. L’utilisation raisonnable et le plafond du cloud s’appliquent à chaque app connectée.
+
+Pour déconnecter une app, ouvrez **Réglages** › **Apps connectées** dans l’app Mac. L’app s’arrête aussitôt.
+
+Les adresses de redirection doivent être en `https` ou être une adresse de boucle locale (`127.0.0.1`, `localhost`, `[::1]`). Les schémas personnalisés sont refusés, comme l’exige la spécification.
+
+### Claude Code
+
+```bash
+claude mcp add --transport http todz https://api.todz.app/mcp
+```
+
+Lancez ensuite `/mcp` dans Claude Code et choisissez todz pour vous connecter. Claude Code ouvre le navigateur.
+
+### Claude.ai et Claude Desktop
+
+Ouvrez **Paramètres** › **Connecteurs** › **Ajouter un connecteur personnalisé**, saisissez `https://api.todz.app/mcp` comme URL, puis appuyez sur **Connecter**.
+
+### Codex
+
+Ajoutez ceci à `~/.codex/config.toml` :
+
+```toml
+[mcp_servers.todz]
+url = "https://api.todz.app/mcp"
+```
+
+Puis connectez-vous :
+
+```bash
+codex mcp login todz
+```
+
+### Cursor
+
+Cursor se connecte aux serveurs MCP avec une adresse `cursor://`, ce que la spécification MCP n’autorise pas et que todz refuse. Cursor ne peut pas se connecter à todz tant qu’il ne se connecte pas avec une adresse `https` ou de boucle locale.

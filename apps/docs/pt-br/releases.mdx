@@ -1,0 +1,70 @@
+---
+title: Versões
+description: O que cada versão do app para Mac trouxe.
+---
+
+Cada versão é uma tag do GitHub chamada `mac-v<version>` em [github.com/dhyegocalota/todz/tags](https://github.com/dhyegocalota/todz/tags). O app lê [todz.app/download/appcast.xml](https://todz.app/download/appcast.xml) para se atualizar.
+
+## 0.2.8
+
+**Mudança incompatível: as chaves de API foram removidas.**
+
+- As chaves de projeto e as chaves de proprietário não funcionam mais, e o servidor apagou todas as chaves guardadas. Todo cliente MCP se conecta apenas com OAuth.
+- Um cliente que ainda envia uma chave recebe um 401 que aponta para [Conectar um agente](/pt-br/connect-an-agent). Para reconectar, rode `claude mcp add --transport http todz https://api.todz.app/mcp` e entre na conta.
+- A tela **Conectar um agente** do app para Mac agora mostra só os comandos de OAuth, sem chave, além de **Apps conectados**, onde você desconecta um app.
+
+O que mais há de novo:
+
+- O popover da barra de menus foi redesenhado: um anel do dia e uma contagem, um cartão **A seguir**, um campo de texto em vidro, uma fila discreta e **Concluídas hoje** recolhido. Um menu **Mais** reúne **Sair**, **Buscar atualizações…**, **Dar estrela no GitHub** e **Trocar de workspace…**. O ⌘O abre o todz, o Espaço conclui e o ⌘↩ conclui a tarefa de **A seguir**. Veja [Atalhos de teclado](/pt-br/keyboard-shortcuts).
+- Uma sessão de workspace bloqueada parece uma conta de um só workspace. **Trocar de workspace…** (⌘K) pede o Touch ID enquanto está bloqueada, e a opção nos Ajustes agora diz **Exigir Touch ID para trocar de workspace**. Veja [Workspaces](/pt-br/workspaces).
+- Um único sistema de movimento. Com **Reduzir movimento**, toda animação vira uma transição suave ou uma mudança instantânea.
+- Uma conexão OAuth com o escopo da conta expõe todas as ferramentas, inclusive as de tarefa, e cada ferramenta de tarefa recebe um projeto explícito. Veja [Ferramentas MCP](/pt-br/mcp-tools).
+
+## 0.2.7
+
+- Um bloqueio de workspace nos Ajustes, desativado por padrão: Touch ID ou a senha do Mac antes de trocar de workspace. Veja [Workspaces](/pt-br/workspaces).
+- A contagem da barra de menus rola, as linhas novas entram com um efeito de mola e o título da barra lateral voa até a barra de ferramentas.
+- Os Ajustes listam os apps conectados à sua conta e deixam você desconectar um.
+
+## 0.2.6
+
+- O todz se oferece para ir para **Aplicativos**, só quando você clica e só quando nenhum todz está aberto. Ele nunca substitui um todz já instalado.
+
+## 0.2.5
+
+- Os formulários passam a ter a mesma aparência: a folha de nome, o primeiro workspace, a confirmação digitando o nome, o campo do servidor e a entrada em um painel de vidro.
+- A linha de gravação de um atalho mostra que está ouvindo, e **Conectar um agente** ganhou blocos arredondados e um **Revogar** destrutivo.
+
+## 0.2.4
+
+- O app descarta as tarefas que um agente apagou ou moveu para outro lugar.
+- Os Ajustes mostram as mensagens de uso justo do servidor e gerenciam as chaves da sua conta. Veja [Uso justo](/pt-br/fair-use).
+- Quando o cloud está cheio ou um limite diário é atingido, o app mantém suas alterações na fila e pausa o envio até que possam sincronizar.
+
+## 0.2.3
+
+- Renomeie e exclua um workspace pelo menu **Workspace**, e exclua um projeto.
+- Um workspace mostra a última atividade dele.
+- Os atalhos globais de workspace ficam desativados até você ativá-los, e só se registram quando estão livres.
+- **Novo projeto** fica fixo embaixo da lista da barra lateral.
+
+## 0.2.2
+
+- Atalhos de workspace: ⌃1 … ⌃9, ⌃⌘[ e ⌃⌘], reatribuíveis, de qualquer app. Veja [Workspaces](/pt-br/workspaces).
+- Vários workspaces de uma vez, ou **Todos os workspaces**, marcados pelo workspace.
+- **Dar estrela ao todz no GitHub** no popover e no menu do todz, e **Código aberto no GitHub** nos Ajustes.
+- Um fundo para a imagem de disco.
+- **Compartilhar uso anônimo**, desativado até você dizer que sim. Veja [Privacidade](/pt-br/privacy).
+
+## 0.2.1
+
+Nenhuma mudança no app. É a primeira atualização entregue pelo Sparkle, para conferir que uma instalação da 0.2.0 se atualiza sozinha.
+
+## 0.2.0
+
+O primeiro download público.
+
+- O app se atualiza sozinho pelo Sparkle. Veja [Atualizações](/pt-br/updates).
+- Um seletor de workspace para contas com vários workspaces.
+- Movimento: o check é desenhado com uma explosão de menta, o popover se abre como uma flor, e o resumo da manhã e o fechamento do dia deslizam para dentro.
+- A faixa da barra de menus, o fechamento do dia, o resumo da manhã e o e-mail do dia.
