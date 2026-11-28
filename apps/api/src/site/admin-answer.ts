@@ -5,7 +5,7 @@ import { HttpStatus } from '../http-status';
 import { siteKeyOf } from '../turnstile-page';
 import { AdminNotice } from './admin-notice';
 import { serveAdminSignInPage } from './admin-page';
-import { ADMIN_RESPONSE_HEADERS, AdminPath } from './admin-paths';
+import { ADMIN_PAGE_RESPONSE_HEADERS, ADMIN_RESPONSE_HEADERS, AdminPath } from './admin-paths';
 
 type AdminAnswerParts = { status: HttpStatus; cookies?: string[] };
 
@@ -19,15 +19,27 @@ export const STATUS_OF_NOTICE: Record<AdminNotice, HttpStatus> = {
   [AdminNotice.CodeLocked]: HttpStatus.TooManyRequests,
 };
 
-function adminAnswerWith({ answer, cookies = [] }: { answer: Response; cookies?: string[] }): Response {
-  Object.entries(ADMIN_RESPONSE_HEADERS).forEach(([name, value]) => answer.headers.set(name, value));
+function adminAnswerWith({
+  answer,
+  cookies = [],
+  headers = ADMIN_RESPONSE_HEADERS,
+}: {
+  answer: Response;
+  cookies?: string[];
+  headers?: Record<string, string>;
+}): Response {
+  Object.entries(headers).forEach(([name, value]) => answer.headers.set(name, value));
   cookies.forEach((cookie) => answer.headers.append(HttpHeader.SetCookie, cookie));
   if (answer.status === HttpStatus.TooManyRequests) answer.headers.set(HttpHeader.RetryAfter, String(ADMIN_RATE_LIMIT_PERIOD_SECONDS));
   return answer;
 }
 
 export function adminPageAnswerOf({ page, status, cookies }: AdminAnswerParts & { page: Response }): Response {
-  return adminAnswerWith({ answer: new Response(page.body, { status, headers: page.headers }), cookies });
+  return adminAnswerWith({
+    answer: new Response(page.body, { status, headers: page.headers }),
+    cookies,
+    headers: ADMIN_PAGE_RESPONSE_HEADERS,
+  });
 }
 
 export async function adminCardAnswerOf({

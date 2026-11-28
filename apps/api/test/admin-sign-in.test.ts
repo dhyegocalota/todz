@@ -7,7 +7,7 @@ import { normalizedAddress } from '../src/email-address';
 import type { Env } from '../src/env';
 import { serveAdminSession, serveAdminSignInLink } from '../src/site/admin-sign-in';
 import { AdminNotice } from '../src/site/admin-notice';
-import { ADMIN_RESPONSE_HEADERS, AdminField, AdminPath } from '../src/site/admin-paths';
+import { ADMIN_PAGE_RESPONSE_HEADERS, ADMIN_RESPONSE_HEADERS, AdminField, AdminPath } from '../src/site/admin-paths';
 import { ADMIN_SESSION_LIFETIME_MS, ADMIN_SIGN_IN_LINK_LIFETIME_MS, AdminCookie, hasAdminSession } from '../src/site/admin-session';
 import { adminSignInMail } from '../src/emails/admin-sign-in-mail';
 import { serveAdminSignInPage } from '../src/site/admin-page';
@@ -319,7 +319,9 @@ function answerShapeOf(run: LinkRun): { status: number; headerNames: string[]; h
 }
 
 function expectAdminHeaders(response: Response): void {
-  Object.entries(ADMIN_RESPONSE_HEADERS).forEach(([name, value]) => expect(response.headers.get(name)).toBe(value));
+  const isPage = response.headers.get('Content-Type')?.includes('text/html') === true;
+  const expected = isPage ? ADMIN_PAGE_RESPONSE_HEADERS : ADMIN_RESPONSE_HEADERS;
+  Object.entries(expected).forEach(([name, value]) => expect(response.headers.get(name)).toBe(value));
 }
 
 async function expectCard({ run, notice, status }: { run: LinkRun; notice: AdminNotice; status: number }): Promise<void> {

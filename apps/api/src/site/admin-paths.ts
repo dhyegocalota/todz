@@ -1,4 +1,4 @@
-import { HttpHeader, NO_STORE } from '../http-header';
+import { HttpHeader, NO_STORE, NO_STORE_NO_TRANSFORM } from '../http-header';
 
 export enum AdminPath {
   Panel = '/admin',
@@ -38,4 +38,9 @@ export const ADMIN_SESSION_LIFETIME_HOURS = 12;
 export const ADMIN_RESPONSE_HEADERS: Record<string, string> = {
   [HttpHeader.CacheControl]: NO_STORE,
   [HttpHeader.XRobotsTag]: 'noindex',
+};
+
+export const ADMIN_PAGE_RESPONSE_HEADERS: Record<string, string> = {
+  ...ADMIN_RESPONSE_HEADERS,
+  [HttpHeader.CacheControl]: NO_STORE_NO_TRANSFORM,
 };

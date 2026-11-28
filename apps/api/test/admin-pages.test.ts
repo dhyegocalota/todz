@@ -9,7 +9,7 @@ import { TEST_SITE_KEY, inlineSources, onlyInlineSource, pageInlineSource, sourc
 const ADMIN_URL = 'https://todz.app/admin';
 const OK_STATUS = 200;
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
-const NO_STORE = 'no-store';
+const NO_STORE = 'no-store, no-transform';
 const NOINDEX = 'noindex';
 const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const TURNSTILE_SCRIPT_TAG = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';

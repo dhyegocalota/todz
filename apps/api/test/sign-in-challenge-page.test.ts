@@ -33,7 +33,7 @@ describe('GET /sign-in/challenge', () => {
     const { response } = await pageSource();
     expect(response.status).toBe(OK_STATUS);
     expect(response.headers.get('Content-Type')).toBe('text/html; charset=utf-8');
-    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(response.headers.get('Cache-Control')).toBe('no-store, no-transform');
     expect(response.headers.get('Referrer-Policy')).toBe('no-referrer');
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
   });

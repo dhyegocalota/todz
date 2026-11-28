@@ -267,7 +267,7 @@ describe('every answer', () => {
     responses.forEach((response, index) => {
       expect(response.headers.get('Content-Security-Policy')).toBe(policies[index]);
       expect(response.headers.get('X-Robots-Tag')).toBe('noindex');
-      expect(response.headers.get('Cache-Control')).toBe('no-store');
+      expect(response.headers.get('Cache-Control')).toBe('no-store, no-transform');
       expect(response.headers.get('Strict-Transport-Security')).toBe('max-age=31536000; includeSubDomains');
       expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
       expect(response.headers.get('Referrer-Policy')).toBe('no-referrer');

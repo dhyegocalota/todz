@@ -1,5 +1,5 @@
 import type { Env } from './env';
-import { HttpHeader, NO_REFERRER, NO_SNIFF, NO_STORE } from './http-header';
+import { HttpHeader, NO_REFERRER, NO_SNIFF, NO_STORE_NO_TRANSFORM } from './http-header';
 import { HttpStatus } from './http-status';
 import { noRouteResponse } from './owner-errors';
 import { languageOfRequest, themeOfRequest } from './page-preferences';
@@ -62,7 +62,7 @@ function pageResponse({
     status,
     headers: {
       [HttpHeader.ContentType]: 'text/html; charset=utf-8',
-      [HttpHeader.CacheControl]: NO_STORE,
+      [HttpHeader.CacheControl]: NO_STORE_NO_TRANSFORM,
       [HttpHeader.ReferrerPolicy]: NO_REFERRER,
       [HttpHeader.ContentTypeOptions]: NO_SNIFF,
       [HttpHeader.ContentSecurityPolicy]: contentSecurityPolicy,

@@ -98,7 +98,7 @@ describe('the metrics page', () => {
     expect(html.match(/<script/g)).toHaveLength(1);
     expect(response.headers.get('Content-Security-Policy')?.match(/'sha256-/g)).toHaveLength(2);
     expect(response.headers.get('Content-Security-Policy')).toContain("default-src 'none'");
-    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(response.headers.get('Cache-Control')).toBe('no-store, no-transform');
   });
 
   test('a visitor with no session sees the sign-in card and none of the numbers', async () => {
