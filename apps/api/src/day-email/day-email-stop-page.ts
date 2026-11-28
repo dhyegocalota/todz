@@ -1,6 +1,6 @@
 import { LANGUAGE_PROFILES, type Language } from '@todz/types';
 import { escapedHtml } from '../escaped-html';
-import { HttpHeader, NO_REFERRER, NO_SNIFF, NO_STORE } from '../http-header';
+import { HttpHeader, NO_REFERRER, NO_SNIFF, NO_STORE_NO_TRANSFORM } from '../http-header';
 import type { HttpStatus } from '../http-status';
 import { SIGN_IN_PAGE_ICON } from '../sign-in-page-icon';
 import { type PagePreferences, privatePagePreferencesOf } from '../page-preferences';
@@ -93,7 +93,7 @@ export function stopPageResponse({
     status,
     headers: {
       [HttpHeader.ContentType]: 'text/html; charset=utf-8',
-      [HttpHeader.CacheControl]: NO_STORE,
+      [HttpHeader.CacheControl]: NO_STORE_NO_TRANSFORM,
       [HttpHeader.ReferrerPolicy]: NO_REFERRER,
       [HttpHeader.ContentTypeOptions]: NO_SNIFF,
       [HttpHeader.ContentSecurityPolicy]: PAGE_POLICY,

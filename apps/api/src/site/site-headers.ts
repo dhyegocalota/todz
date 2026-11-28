@@ -1,7 +1,7 @@
 import { HttpHeader, NO_REFERRER, NO_SNIFF, STRICT_TRANSPORT_SECURITY } from '../http-header';
 import { HttpStatus } from '../http-status';
 import { sourceHash } from '../turnstile-page';
-import { ADMIN_RESPONSE_HEADERS } from './admin-paths';
+import { ADMIN_PAGE_RESPONSE_HEADERS } from './admin-paths';
 import { SWITCH_SCRIPT } from './site-switch-script';
 
 const HTML_CONTENT_TYPE = 'text/html; charset=utf-8';
@@ -64,6 +64,6 @@ export function sitePageResponse({ html, contentSecurityPolicy }: { html: string
 
 export function adminPageResponse({ html, contentSecurityPolicy }: { html: string; contentSecurityPolicy: string }): Response {
   const response = sitePageResponse({ html, contentSecurityPolicy });
-  Object.entries(ADMIN_RESPONSE_HEADERS).forEach(([name, value]) => response.headers.set(name, value));
+  Object.entries(ADMIN_PAGE_RESPONSE_HEADERS).forEach(([name, value]) => response.headers.set(name, value));
   return response;
 }

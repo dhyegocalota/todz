@@ -69,7 +69,7 @@ describe('GET /sign-in', () => {
     const { response } = await pageSource();
     expect(response.status).toBe(OK_STATUS);
     expect(response.headers.get('Content-Type')).toBe('text/html; charset=utf-8');
-    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(response.headers.get('Cache-Control')).toBe('no-store, no-transform');
     expect(response.headers.get('Referrer-Policy')).toBe('no-referrer');
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
   });
@@ -123,7 +123,7 @@ describe('GET /sign-in', () => {
     const response = await serveSignInPage({ request: new Request(PAGE_URL), env: workerEnvWith({}) });
     const html = await response.text();
     expect(response.status).toBe(UNAVAILABLE_STATUS);
-    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(response.headers.get('Cache-Control')).toBe('no-store, no-transform');
     expect(html).toContain(SIGN_IN_PAGE_COPY.unavailable);
     expect(html).not.toContain('cf-turnstile');
     expect(html).not.toContain('<script');

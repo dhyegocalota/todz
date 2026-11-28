@@ -27,6 +27,8 @@ export enum HttpHeader {
 }
 
 export const NO_STORE = 'no-store';
+// NB ADR 0060: no-transform stops Cloudflare injecting its analytics beacon, which an HTML page's policy would refuse.
+export const NO_STORE_NO_TRANSFORM = 'no-store, no-transform';
 export const NO_SNIFF = 'nosniff';
 export const NO_REFERRER = 'no-referrer';
 export const STRICT_TRANSPORT_SECURITY = 'max-age=31536000; includeSubDomains';

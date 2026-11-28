@@ -161,7 +161,7 @@ describe('authorize without a browser session asks for the email address', () =>
     const response = await authorize(params);
 
     expect(response.status).toBe(200);
-    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(response.headers.get('Cache-Control')).toBe('no-store, no-transform');
     const html = await response.text();
     expect(html).toContain('action="/oauth/sign-in-links"');
     expect(html).toContain('class="cf-turnstile"');
@@ -342,7 +342,7 @@ describe('the consent screen', () => {
 
       const response = await decide({ browser, params, fields: { decision: 'approve', choice: choiceOf(owner) } });
 
-      expect(response.headers.get('Cache-Control')).toBe('no-store');
+      expect(response.headers.get('Cache-Control')).toBe('no-store, no-transform');
       expect(response.headers.get('Referrer-Policy')).toBe('no-referrer');
       const returned = await returnedParams(response);
       expect(returned.get('code')).toMatch(/^[A-Za-z0-9_-]{43}$/);

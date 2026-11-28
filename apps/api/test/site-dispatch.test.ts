@@ -8,7 +8,7 @@ import worker from '../src/index';
 import { serveAdminLinkPage } from '../src/site/admin-link-page';
 import { AdminNotice } from '../src/site/admin-notice';
 import { serveAdminSignInPage } from '../src/site/admin-page';
-import { ADMIN_RESPONSE_HEADERS, AdminPath } from '../src/site/admin-paths';
+import { ADMIN_PAGE_RESPONSE_HEADERS, ADMIN_RESPONSE_HEADERS, AdminPath } from '../src/site/admin-paths';
 import { ADMIN_SESSION_LIFETIME_MS, AdminCookie } from '../src/site/admin-session';
 import { openAdminSession } from '../src/site/admin-store';
 import { TURNSTILE_DUMMY_TOKEN } from '../src/turnstile';
@@ -200,7 +200,9 @@ describe('the admin routes on the site host', () => {
   }
 
   function expectAdminHeaders(response: Response): void {
-    Object.entries(ADMIN_RESPONSE_HEADERS).forEach(([name, value]) => expect(response.headers.get(name)).toBe(value));
+    const isPage = response.headers.get('Content-Type')?.includes('text/html') === true;
+    const expected = isPage ? ADMIN_PAGE_RESPONSE_HEADERS : ADMIN_RESPONSE_HEADERS;
+    Object.entries(expected).forEach(([name, value]) => expect(response.headers.get(name)).toBe(value));
   }
 
   async function cardOf({ notice, siteKey = TURNSTILE_TEST_SITE_KEY }: { notice: AdminNotice; siteKey?: string | null }): Promise<string> {
