@@ -18,6 +18,7 @@ import {
   hiddenFieldsOf,
   newBrowser,
   pkcePair,
+  projectChoiceOf,
   redirectedParams,
   registerClient,
   returnedParams,
@@ -25,6 +26,7 @@ import {
   seededOwner,
   serveOAuthRequest,
   signedInBrowser,
+  workspaceChoiceOf,
 } from './oauth-client';
 
 const OTHER_PORT_LOOPBACK_URI = 'http://127.0.0.1:51000/callback';
@@ -56,6 +58,13 @@ async function nameProjectAndWorkspace({
       projectId,
     ),
   ]);
+}
+
+async function workspaceIdOf(projectId: string): Promise<string> {
+  const row = await env.DIRECTORY.prepare('SELECT workspace_id FROM projects WHERE id = ?')
+    .bind(projectId)
+    .first<{ workspace_id: string }>();
+  return row!.workspace_id;
 }
 
 function choiceLabelOf({ html, choice }: { html: string; choice: string }): string | undefined {
@@ -173,9 +182,10 @@ describe('authorize without a browser session asks for the email address', () =>
 });
 
 describe('the consent screen', () => {
-  test('names the app and the redirect host, preselects the first project and leaves the owner scope off', async () => {
+  test('names the app and the redirect host, offers a tree of workspaces and projects and checks nothing', async () => {
     const owner = await seededOwner();
     const siblingId = await seedSiblingProject({ projectId: owner.projectId, name: 'Website' });
+    const workspaceId = await workspaceIdOf(owner.projectId);
     const params = await freshRequest();
     const browser = await signedInBrowser({ params, email: owner.email });
 
@@ -184,14 +194,54 @@ describe('the consent screen', () => {
     expect(html).toContain('Claude Code');
     expect(html).toContain('127.0.0.1');
     expect(html).toContain('this computer');
-    expect(choicesOf(html)).toEqual([owner.projectId, siblingId, 'owner']);
-    expect(html).toMatch(new RegExp(`value="${owner.projectId}" checked`));
-    expect(html).not.toMatch(/value="owner" checked/);
+    expect(choicesOf(html)).toEqual([
+      workspaceChoiceOf(workspaceId),
+      projectChoiceOf(owner.projectId),
+      projectChoiceOf(siblingId),
+      'owner',
+    ]);
+    expect(html).not.toMatch(/name="choice" value="[^"]+" checked/);
     expect(html).toContain('Your whole account (owner scope)');
     expect(html).toContain('It can read and change every task, and create, rename and delete every workspace and project.');
-    expect(decodedHtml(html)).toContain(
-      "A project lets it read and change that project's tasks, and move them to the other projects of its workspace.",
-    );
+    expect(html).toContain('Includes all of its projects, now and later');
+    expect(html).toContain('data-consent-summary');
+  });
+
+  test('the tree script is hashed under the strict policy, with no inline handler and no unsafe-inline', async () => {
+    const owner = await seededOwner();
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+
+    const response = await browserVisit({ browser, request: authorizeRequest(params) });
+
+    const policy = response.headers.get('Content-Security-Policy')!;
+    const html = await response.text();
+    expect(policy).not.toContain('unsafe-inline');
+    expect(policy.match(/script-src[^;]*/)![0].match(/sha256-/g)!.length).toBeGreaterThanOrEqual(3);
+    expect(html).toContain('data-consent-tree');
+    expect(html).not.toMatch(/\son[a-z]+=/);
+    expect(html.match(/<script>/g)!.length).toBe(policy.match(/script-src[^;]*/)![0].match(/sha256-/g)!.length);
+  });
+
+  test('every project and workspace of the tree is a plain checkbox the form posts without the script', async () => {
+    const owner = await seededOwner();
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+
+    const html = await consentPage({ browser, params });
+
+    expect(html.match(/<input type="checkbox" name="choice"/g)).toHaveLength(3);
+    expect(html).not.toContain('type="radio"');
+  });
+
+  test('no count of tasks appears on the consent page', async () => {
+    const owner = await seededOwner();
+    const params = await freshRequest();
+    const browser = await signedInBrowser({ params, email: owner.email });
+
+    const html = decodedHtml(await consentPage({ browser, params }));
+
+    expect(html).not.toMatch(/\d+ tasks?/i);
   });
 
   test('each project choice names its workspace, so two inboxes never read alike', async () => {
@@ -204,8 +254,8 @@ describe('the consent screen', () => {
 
     const html = decodedHtml(await consentPage({ browser, params }));
 
-    expect(choiceLabelOf({ html, choice: owner.projectId })).toBe('Thrifty Traveler › Inbox');
-    expect(choiceLabelOf({ html, choice: otherProjectId })).toBe('Personal › Inbox');
+    expect(choiceLabelOf({ html, choice: projectChoiceOf(owner.projectId) })).toBe('Thrifty Traveler › Inbox');
+    expect(choiceLabelOf({ html, choice: projectChoiceOf(otherProjectId) })).toBe('Personal › Inbox');
   });
 
   test('a hostile workspace name is escaped inside its choice label', async () => {
@@ -216,7 +266,7 @@ describe('the consent screen', () => {
 
     const html = await consentPage({ browser, params });
 
-    expect(choiceLabelOf({ html, choice: owner.projectId })).toBe('&lt;img src=x onerror=alert(1)&gt; › Inbox');
+    expect(choiceLabelOf({ html, choice: projectChoiceOf(owner.projectId) })).toBe('&lt;img src=x onerror=alert(1)&gt; › Inbox');
     expect(html).not.toContain('<img src=x');
   });
 
@@ -225,7 +275,7 @@ describe('the consent screen', () => {
     const params = await freshRequest();
     const browser = await signedInBrowser({ params, email: owner.email });
 
-    const response = await decide({ browser, params, fields: { decision: 'toString', choice: owner.projectId } });
+    const response = await decide({ browser, params, fields: { decision: 'toString', choice: projectChoiceOf(owner.projectId) } });
 
     expect(response.status).toBe(400);
     expect(response.headers.get('Location')).toBeNull();
@@ -238,7 +288,7 @@ describe('the consent screen', () => {
     const replayed = newBrowser();
     replayed.cookies.set(SESSION_COOKIE, browser.cookies.get(SESSION_COOKIE)!);
 
-    const response = await decide({ browser, params, fields: { decision: 'deny', choice: owner.projectId } });
+    const response = await decide({ browser, params, fields: { decision: 'deny', choice: projectChoiceOf(owner.projectId) } });
 
     expect(response.headers.getSetCookie().some((cookie) => cookie.startsWith(`${SESSION_COOKIE}=;`) && cookie.includes('Max-Age=0'))).toBe(
       true,
@@ -254,7 +304,7 @@ describe('the consent screen', () => {
 
     const html = await consentPage({ browser, params });
 
-    expect(choicesOf(html)).toEqual([owner.projectId]);
+    expect(choicesOf(html)).toEqual([workspaceChoiceOf(await workspaceIdOf(owner.projectId)), projectChoiceOf(owner.projectId)]);
   });
 
   test('a client that asked for owner scope only is offered only the owner scope, still off', async () => {
@@ -281,7 +331,7 @@ describe('the consent screen', () => {
   });
 
   test.each([
-    ['a project', (owner: SeededOwner) => owner.projectId],
+    ['a project', (owner: SeededOwner) => projectChoiceOf(owner.projectId)],
     ['the whole account', () => 'owner'],
   ])(
     'approving %s answers a page that returns to the client with a code, the state and the issuer, never a redirect a form policy could block',
@@ -317,7 +367,9 @@ describe('the consent screen', () => {
     const params = await freshRequest();
     const browser = await signedInBrowser({ params, email: owner.email });
 
-    const redirected = await returnedParams(await decide({ browser, params, fields: { decision: 'deny', choice: owner.projectId } }));
+    const redirected = await returnedParams(
+      await decide({ browser, params, fields: { decision: 'deny', choice: projectChoiceOf(owner.projectId) } }),
+    );
 
     expect(redirected.get('error')).toBe('access_denied');
     expect(redirected.get('state')).toBe(CLIENT_STATE);
@@ -330,7 +382,7 @@ describe('the consent screen', () => {
     const params = await freshRequest();
     const browser = await signedInBrowser({ params, email: owner.email });
 
-    const response = await decide({ browser, params, fields: { decision: 'approve', choice: stranger.projectId } });
+    const response = await decide({ browser, params, fields: { decision: 'approve', choice: projectChoiceOf(stranger.projectId) } });
 
     expect(response.status).toBe(400);
     expect(response.headers.get('Location')).toBeNull();
@@ -396,14 +448,6 @@ describe('a decision comes only from the consent form the server rendered', () =
       ],
     ],
     [
-      'choice',
-      [
-        ['decision', 'approve'],
-        ['choice', 'owner'],
-        ['choice', 'owner'],
-      ],
-    ],
-    [
       'form token',
       [
         ['decision', 'approve'],
@@ -448,7 +492,7 @@ describe('the consent form is bound to its session, its request and its origin',
     const params = await freshRequest();
     const browser = await signedInBrowser({ params, email: owner.email });
     const html = await consentPage({ browser, params });
-    return { owner, params, fields: { ...hiddenFieldsOf(html), decision: 'approve', choice: owner.projectId } };
+    return { owner, params, fields: { ...hiddenFieldsOf(html), decision: 'approve', choice: projectChoiceOf(owner.projectId) } };
   }
 
   test('a post without the form token is refused', async () => {
@@ -460,7 +504,10 @@ describe('the consent form is bound to its session, its request and its origin',
 
     const response = await browserVisit({
       browser,
-      request: formRequest({ path: '/oauth/authorize', fields: { ...withoutToken, decision: 'approve', choice: owner.projectId } }),
+      request: formRequest({
+        path: '/oauth/authorize',
+        fields: { ...withoutToken, decision: 'approve', choice: projectChoiceOf(owner.projectId) },
+      }),
     });
 
     expect(response.status).toBe(403);
@@ -487,7 +534,7 @@ describe('the consent form is bound to its session, its request and its origin',
       browser,
       request: formRequest({
         path: '/oauth/authorize',
-        fields: { ...hiddenFieldsOf(html), state: 'another-state', decision: 'approve', choice: owner.projectId },
+        fields: { ...hiddenFieldsOf(html), state: 'another-state', decision: 'approve', choice: projectChoiceOf(owner.projectId) },
       }),
     });
 
@@ -502,7 +549,7 @@ describe('the consent form is bound to its session, its request and its origin',
     const response = await decide({
       browser,
       params,
-      fields: { decision: 'approve', choice: owner.projectId },
+      fields: { decision: 'approve', choice: projectChoiceOf(owner.projectId) },
       headers: { 'Sec-Fetch-Site': 'cross-site' },
     });
 
@@ -519,7 +566,7 @@ describe('the consent form is bound to its session, its request and its origin',
   });
 
   test.each([
-    ['a project', (owner: SeededOwner) => owner.projectId],
+    ['a project', (owner: SeededOwner) => projectChoiceOf(owner.projectId)],
     ['the whole account', () => 'owner'],
   ])('an approval of %s posted again says it was already approved, never the email form, and yields no code', async (_name, choiceOf) => {
     const owner = await seededOwner();
@@ -542,7 +589,11 @@ describe('the consent form is bound to its session, its request and its origin',
     const owner = await seededOwner();
     const params = await freshRequest();
     const browser = await signedInBrowser({ params, email: owner.email });
-    const fields = { ...hiddenFieldsOf(await consentPage({ browser, params })), decision: 'approve', choice: owner.projectId };
+    const fields = {
+      ...hiddenFieldsOf(await consentPage({ browser, params })),
+      decision: 'approve',
+      choice: projectChoiceOf(owner.projectId),
+    };
     await browserVisit({ browser, request: formRequest({ path: '/oauth/authorize', fields }) });
 
     const replayed = await browserVisit({

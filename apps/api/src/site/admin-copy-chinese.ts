@@ -67,6 +67,7 @@ export const ADMIN_COPY_CHINESE: AdminCopy = {
       [Metric.UsageRollups]: '共享的使用报告',
       [Metric.UsageVersions]: '按 App 版本统计的报告',
       [Metric.UsageEvents]: '共享的使用事件',
+      [Metric.OAuthGrantsDeleted]: '已移除的已连接应用',
     } satisfies Record<Metric, string>,
   },
   cloudQueue: {

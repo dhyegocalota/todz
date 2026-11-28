@@ -4,7 +4,7 @@ import { runInDurableObject } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
-import { OAuthScope } from '../src/oauth/oauth-scope';
+import { GrantShape } from '../src/oauth/oauth-grant-scope';
 import { ProjectFailureKind } from '../src/project-result';
 import { openOAuthAccess, openOwnedProject, resolveSessionOwner } from '../src/project-routing';
 import { countingEnv } from './counting-namespace';
@@ -103,7 +103,7 @@ describe('a token of one project reaches nothing of another', () => {
     await seedProjectToken({ projectId: await seedProject({ ownerId }), secret: secrets.b });
     const accessA = await openOAuthAccess({ env, secret: secrets.a, now: CLOCK_NOW });
     const accessB = await openOAuthAccess({ env, secret: secrets.b, now: CLOCK_NOW });
-    if (accessA?.scope !== OAuthScope.Project || accessB?.scope !== OAuthScope.Project) throw new Error('both tokens should open');
+    if (accessA?.scope !== GrantShape.Project || accessB?.scope !== GrantShape.Project) throw new Error('both tokens should open');
     const stubA = accessA.grantProject.project;
     const stubB = accessB.grantProject.project;
     unwrap(await stubA.addTasks({ openTasksMax: PROJECT_OPEN_TASKS_MAX, actor: AGENT_ACTOR, drafts: [draftOf('A one')] }));

@@ -9,4 +9,5 @@ export const ADMIN_SIGN_IN_EMAIL_COPY_ARABIC: AdminSignInEmailCopy = {
   action: 'تسجيل الدخول',
   fallback: 'يُفتح في المتصفح الخطأ؟ الصق هذا الرابط في المتصفح الذي طلبته منه:',
   footer: `يعمل هذا الرابط مرة واحدة، لمدة ${ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES} دقيقة، في المتصفح الذي طلبته منه.`,
+  codeLabel: 'أو أدخل هذا الرمز حيث طلبت الرابط. يعمل مرة واحدة وتنتهي صلاحيته مع الرابط.',
 };

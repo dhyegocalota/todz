@@ -7,8 +7,9 @@ Um cliente MCP se conecta ao servidor do todz apenas com OAuth: adicione a URL a
 
 - Um **escopo de projeto** guarda a lista de tarefas de um projeto: o projeto que você escolheu na tela de consentimento. Ele também pode listar e mover tarefas dentro do workspace desse projeto. Nunca cria, renomeia nem exclui um workspace ou um projeto. Os ids de tarefa são como `T-12`.
 - Um **escopo de proprietário** guarda a conta inteira: seus workspaces, seus projetos e todas as tarefas, então uma conexão expõe tudo o que o app pode fazer. Ele nunca vem selecionado na tela de consentimento, e você o desconecta em **Ajustes** › **Apps conectados**. Ele não alcança nenhuma outra conta.
+- Uma **seleção** guarda os workspaces e projetos que você marcou, e todo projeto de um workspace marcado, os novos também. Ela recebe as ferramentas de tarefa e a ferramenta de workspaces, que lista só o que ela cobre, e nenhuma das ferramentas que criam, renomeiam ou excluem um workspace ou um projeto, nem as que alteram ajustes. Você pode reduzir uma seleção em **Ajustes** › **Apps conectados**.
 
-Em um escopo de proprietário, toda ferramenta de tarefa recebe um argumento `project` obrigatório: o id do projeto em que ela trabalha, vindo de `workspaces`. Não existe projeto padrão. Um projeto de outra conta responde exatamente como um projeto que não existe. Um escopo de projeto não tem o argumento `project`, exceto que `move` recebe o destino ali.
+Em um escopo de proprietário e em uma seleção, toda ferramenta de tarefa recebe um argumento `project` obrigatório: o id do projeto em que ela trabalha, vindo de `workspaces`. Não existe projeto padrão. Um projeto de outra conta, ou fora de uma seleção, responde exatamente como um projeto que não existe, e uma movimentação precisa dos dois projetos dentro da seleção e em um mesmo workspace. Um escopo de projeto não tem o argumento `project`, exceto que `move` recebe o destino ali.
 
 Toda exclusão pede um argumento `confirm` com o nome atual (o título atual, no caso de uma tarefa); quando ele é diferente, nada é excluído.
 

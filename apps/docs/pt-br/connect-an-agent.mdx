@@ -18,12 +18,12 @@ Para reconectar um agente que usava uma chave, rode `claude mcp add --transport 
 1. Digite o e-mail do seu todz e passe pela verificação.
 2. Abra o link de acesso do e-mail **no mesmo navegador**.
 3. Leia a tela de consentimento: ela diz o nome do app e para onde ele te leva de volta.
-4. Escolha um projeto. O primeiro já vem selecionado. Ou escolha **Sua conta inteira (escopo de proprietário)**, que nunca vem selecionada e avisa: "Ele pode ler e alterar todas as tarefas, e criar, renomear e excluir todos os workspaces e projetos."
+4. Marque o que o app pode acessar: workspaces inteiros, ou só alguns dos projetos deles, de qualquer workspace. Nada vem selecionado, e uma linha mostra o que o mesmo app já tem. Ou marque **Sua conta inteira (escopo de proprietário)**, que avisa: "Ele pode ler e alterar todas as tarefas, e criar, renomear e excluir todos os workspaces e projetos."
 5. Aprove ou negue.
 
-Um escopo de projeto dá as ferramentas de tarefa, e os outros projetos do workspace dele para `move` e `projects`. Um escopo de proprietário dá as ferramentas da conta e as mesmas ferramentas de tarefa para todos os projetos da conta, cada uma recebendo o id `project` vindo de `workspaces`. O histórico de uma tarefa mostra o app pelo nome com que ele se registrou. Veja [Ferramentas MCP](/pt-br/mcp-tools).
+Um projeto dá as ferramentas de tarefa, e os outros projetos do workspace dele para `move` e `projects`. Vários projetos ou workspaces dão só as ferramentas de tarefa, cada uma recebendo o id `project` vindo de `workspaces`, que lista só o que você marcou: um workspace marcado cobre todos os projetos dele, os novos também, e um projeto fora da seleção responde como não encontrado. Um escopo de proprietário dá as ferramentas da conta e as mesmas ferramentas de tarefa para todos os projetos da conta. O histórico de uma tarefa mostra o app pelo nome com que ele se registrou. Em **Ajustes** › **Apps conectados** você pode reduzir o que um app acessa, ou revogá-lo. Veja [Ferramentas MCP](/pt-br/mcp-tools).
 
-Os tokens de acesso duram uma hora e se renovam sozinhos. Os tokens de atualização duram 30 dias e giram a cada uso; uma única nova tentativa em até 5 segundos recebe um par novo, e um token já usado que volte depois desconecta o app. O todz guarda os tokens apenas como hashes. O uso justo e o limite do cloud valem para todo app conectado.
+Os tokens de acesso duram uma hora e se renovam sozinhos. Os tokens de atualização duram 30 dias e giram a cada uso; uma nova tentativa recebe um par novo até o token novo ser usado, e um token já usado que volte depois disso desconecta o app. O todz guarda os tokens apenas como hashes. O uso justo e o limite do cloud valem para todo app conectado.
 
 Para desconectar um app, abra **Ajustes** › **Apps conectados** no app para Mac. O app para na hora.
 

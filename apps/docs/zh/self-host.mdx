@@ -41,7 +41,7 @@ pnpm verify all
 - `send_email[0].allowed_sender_addresses`：你的发件人，例如 `noreply@example.com`。
 - `vars.TELEMETRY`：删除这一行。Fork 会从这个文件继承 `on`，所以删掉它才能关闭遥测；除非值恰好是 `on`，否则它就是关闭的（参见“隐私”页）。
 - `vars.CLOUD_ACCOUNTS_MAX`：删除这一行。Fork 会从这个文件继承 todz cloud 的账户上限；没有它，你的服务器会接纳每一个账户（参见“合理使用”页）。
-- `ratelimits`：保留这十九个绑定，其中登录和管理后台各三个，每日邮件的回复一个，它的停止链接一个，已登录的所有者一个，MCP 客户端一个，使用情况报告三个，更新检查两个，容量已满时的读取一个，OAuth 三个（它的路由，以及按每个客户端和总计的客户端注册）；如果你的账户已经使用了 `8601` 到 `8619`，请更改每个 `namespace_id`。
+- `ratelimits`：保留这二十个绑定，其中登录四个（含一个用于邮件验证码尝试）、管理后台三个，每日邮件的回复一个，它的停止链接一个，已登录的所有者一个，MCP 客户端一个，使用情况报告三个，更新检查两个，容量已满时的读取一个，OAuth 三个（它的路由，以及按每个客户端和总计的客户端注册）；如果你的账户已经使用了 `8601` 到 `8620`，请更改每个 `namespace_id`。
 
 其余保持原样。尤其是，`vars.SIGN_IN_PROVIDER` 保持为 `email`，`vars.EMAIL_SENDER` 保持为 `cloudflare`，`workers_dev` 和 `preview_urls` 保持为 `false`。永远不要给 `wrangler deploy` 传 `--var`，也永远不要在控制台里设置变量：伪造的提供方，或只记录链接的发送方，会让任何人都能登录。
 

@@ -7,4 +7,5 @@ export const SIGN_IN_EMAIL_COPY_KOREAN: SignInEmailCopy = {
   action: 'todz에 로그인',
   fallback: '버튼이 동작하지 않나요? 이 링크를 브라우저에 붙여 넣으세요:',
   footer: '요청한 적이 없다면 이 메일을 무시하세요.',
+  codeLabel: '또는 링크를 요청한 화면에 이 코드를 입력하세요. 한 번만 쓸 수 있고 링크와 함께 만료돼요.',
 };

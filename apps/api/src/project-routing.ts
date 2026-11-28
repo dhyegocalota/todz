@@ -18,7 +18,7 @@ import {
   listWorkspaceProjects,
 } from './directory-workspaces';
 import type { Env } from './env';
-import { OAuthScope } from './oauth/oauth-scope';
+import { GrantShape, type SelectionScope, grantAccessOf, isProjectCovered } from './oauth/oauth-grant-scope';
 import { findAccessGrant } from './oauth/oauth-store';
 import type { ProjectRecord, WorkspaceRecord } from './owner-records';
 import type { ProjectStore } from './project-store';
@@ -84,14 +84,19 @@ export function withTimedProjects({ env, record }: { env: Env; record: RecordWai
   return { ...env, PROJECT_STORE: timedNamespace };
 }
 
-// NB ADR 0109: a project grant reaches only the projects of its own workspace, found by the workspace id its project joined to.
-function grantWorkspaceOf({ env, record }: { env: Env; record: GrantProjectRecord }): GrantWorkspace {
+type IsCovered = (projectId: string) => boolean;
+
+const EVERY_PROJECT: IsCovered = () => true;
+
+// NB ADR 0109: a project grant reaches only the projects of its own workspace, found by the workspace id its project joined to; ADR 0126 narrows that to the projects a selection covers.
+function grantWorkspaceOf({ env, record, isCovered }: { env: Env; record: GrantProjectRecord; isCovered: IsCovered }): GrantWorkspace {
   const { projectId, workspaceId } = record;
   return {
     projectId,
-    listProjects: () => listWorkspaceProjects({ directory: env.DIRECTORY, workspaceId }),
+    listProjects: async () => (await listWorkspaceProjects({ directory: env.DIRECTORY, workspaceId })).filter(({ id }) => isCovered(id)),
     openSibling: async (siblingId) => {
       if (siblingId === projectId) return null;
+      if (!isCovered(siblingId)) return null;
       const sibling = await findWorkspaceProject({ directory: env.DIRECTORY, workspaceId, projectId: siblingId });
       if (sibling === null) return null;
       return { record: sibling, project: openProject({ env, projectId: sibling.id }) };
@@ -99,10 +104,10 @@ function grantWorkspaceOf({ env, record }: { env: Env; record: GrantProjectRecor
   };
 }
 
-function grantProjectOf({ env, record }: { env: Env; record: GrantProjectRecord }): GrantProject {
+function grantProjectOf({ env, record, isCovered }: { env: Env; record: GrantProjectRecord; isCovered: IsCovered }): GrantProject {
   return {
     project: openProject({ env, projectId: record.projectId }),
-    workspace: grantWorkspaceOf({ env, record }),
+    workspace: grantWorkspaceOf({ env, record, isCovered }),
     timeZone: record.timeZone,
     agentNudge: record.agentNudge,
     ownerId: record.ownerId,
@@ -113,24 +118,31 @@ function grantProjectOf({ env, record }: { env: Env; record: GrantProjectRecord 
 type OAuthAccessBase = { grantId: string; clientName: string };
 
 export type OAuthAccess =
-  | (OAuthAccessBase & { scope: OAuthScope.Project; grantProject: GrantProject })
-  | (OAuthAccessBase & { scope: OAuthScope.Owner; owner: SessionOwner });
+  | (OAuthAccessBase & { scope: GrantShape.Project; grantProject: GrantProject })
+  | (OAuthAccessBase & { scope: GrantShape.Owner; owner: SessionOwner })
+  | (OAuthAccessBase & { scope: GrantShape.Selection; owner: SessionOwner; scopes: SelectionScope[] });
 
-// NB ADR 0109: an access token resolves to the one project it was granted or to the one owner of its grant, and to nothing else.
+// NB ADR 0109: an access token resolves to the one project it was granted or to the one owner of its grant, and to nothing else; ADR 0126 adds a selection of the owner's workspaces and projects.
 export async function openOAuthAccess({ env, secret, now }: { env: Env; secret: string; now: number }): Promise<OAuthAccess | null> {
   if (isBlankSecret(secret)) return null;
   const tokenDigest = await digestCredential(secret);
   const grant = await findAccessGrant({ directory: env.DIRECTORY, digest: tokenDigest, now });
   if (grant === null) return null;
-  const { grantId, clientName, ownerId, isSuspended, timeZone, agentNudge, projectId, workspaceId } = grant;
-  if (projectId === null) return { scope: OAuthScope.Owner, grantId, clientName, owner: resolvedOwnerOf({ ownerId, isSuspended }) };
-  if (workspaceId === null) throw new Error('a project grant reached no workspace');
-  const record = { projectId, workspaceId, timeZone, agentNudge, ownerId, isSuspended };
+  const { grantId, clientName, ownerId, isSuspended, timeZone, agentNudge, scopes, reachesWorkspace, projectWorkspaceId } = grant;
+  const access = grantAccessOf({ scopes, reachesWorkspace });
+  if (access.shape === GrantShape.Owner) {
+    return { scope: GrantShape.Owner, grantId, clientName, owner: resolvedOwnerOf({ ownerId, isSuspended }) };
+  }
+  if (access.shape === GrantShape.Selection) {
+    return { scope: GrantShape.Selection, grantId, clientName, owner: resolvedOwnerOf({ ownerId, isSuspended }), scopes: access.scopes };
+  }
+  if (projectWorkspaceId === null) return null;
+  const record = { projectId: access.projectId, workspaceId: projectWorkspaceId, timeZone, agentNudge, ownerId, isSuspended };
   return {
-    scope: OAuthScope.Project,
+    scope: GrantShape.Project,
     grantId,
     clientName,
-    grantProject: grantProjectOf({ env, record }),
+    grantProject: grantProjectOf({ env, record, isCovered: EVERY_PROJECT }),
   };
 }
 
@@ -200,7 +212,27 @@ export async function openOwnedGrantProject({
   if (!resolvedOwners.has(owner)) return null;
   const record = await findOwnedGrantProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId });
   if (record === null) return null;
-  return grantProjectOf({ env, record });
+  return grantProjectOf({ env, record, isCovered: EVERY_PROJECT });
+}
+
+// NB ADR 0126: a selection reaches a project only when the project is listed or its workspace is, and it belongs to the grant's owner; moves stay inside one workspace and inside the selection.
+export async function openCoveredGrantProject({
+  env,
+  owner,
+  projectId,
+  scopes,
+}: {
+  env: Env;
+  owner: SessionOwner;
+  projectId: string;
+  scopes: SelectionScope[];
+}): Promise<GrantProject | null> {
+  if (!resolvedOwners.has(owner)) return null;
+  const record = await findOwnedGrantProject({ directory: env.DIRECTORY, ownerId: owner.ownerId, projectId });
+  if (record === null) return null;
+  const isCovered: IsCovered = (candidateId) => isProjectCovered({ scopes, projectId: candidateId, workspaceId: record.workspaceId });
+  if (!isCovered(projectId)) return null;
+  return grantProjectOf({ env, record, isCovered });
 }
 
 export async function openOwnedProject({

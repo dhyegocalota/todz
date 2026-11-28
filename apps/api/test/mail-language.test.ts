@@ -11,6 +11,7 @@ type EmailMessage = ReturnType<typeof signInMail>;
 const ADDRESS = 'maria@example.com';
 const ORIGIN = 'https://todz.app';
 const LINK = `${ORIGIN}/sign-in#token=preview`;
+const CODE = '482913';
 const OPEN_SLOT = '{{';
 const STOP_TOKEN = 'ab'.repeat(32);
 const LANGUAGES = Object.values(Language);
@@ -21,9 +22,9 @@ function htmlTagOf(language: Language): string {
 }
 
 const LINK_MAILS: [string, (language: Language) => EmailMessage][] = [
-  ['sign-in', (language) => signInMail({ to: ADDRESS, link: LINK, origin: ORIGIN, language })],
-  ['admin sign-in', (language) => adminSignInMail({ to: ADDRESS, link: LINK, origin: ORIGIN, language })],
-  ['OAuth sign-in', (language) => oauthSignInMail({ to: ADDRESS, link: LINK, origin: ORIGIN, language })],
+  ['sign-in', (language) => signInMail({ to: ADDRESS, link: LINK, code: CODE, origin: ORIGIN, language })],
+  ['admin sign-in', (language) => adminSignInMail({ to: ADDRESS, link: LINK, code: CODE, origin: ORIGIN, language })],
+  ['OAuth sign-in', (language) => oauthSignInMail({ to: ADDRESS, link: LINK, code: CODE, origin: ORIGIN, language })],
 ];
 
 function dayMailOf({ language, count }: { language: Language; count: number }): EmailMessage {

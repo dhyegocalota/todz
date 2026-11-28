@@ -23,6 +23,8 @@ export const EMAIL_LOCKUP_WIDTH = 240;
 export const EMAIL_LOCKUP_HEIGHT = 80;
 export const EMAIL_FONT_STACK = "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
+export const EMAIL_MONOSPACE_STACK = "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace";
+
 export enum EmailClassName {
   Page = 'email-page',
   Card = 'email-card',
@@ -83,6 +85,16 @@ export const BUTTON_STYLE: CSSProperties = {
   fontWeight: 600,
   padding: '14px 32px',
   textDecoration: 'none',
+};
+export const CODE_STYLE: CSSProperties = {
+  color: TEXT_COLOR,
+  fontFamily: EMAIL_MONOSPACE_STACK,
+  fontSize: '34px',
+  fontWeight: 700,
+  letterSpacing: '10px',
+  lineHeight: '44px',
+  margin: '0 0 24px',
+  textAlign: 'center',
 };
 export const LINK_STYLE: CSSProperties = { color: BRAND_COLOR, fontSize: '14px', wordBreak: 'break-all' };
 export const RULE_STYLE: CSSProperties = { borderColor: RULE_COLOR, margin: '24px 0' };

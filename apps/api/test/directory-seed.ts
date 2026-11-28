@@ -2,6 +2,7 @@ import { MILLISECONDS_PER_DAY, MILLISECONDS_PER_HOUR, OAUTH_ACCESS_TOKEN_PREFIX 
 import { env } from 'cloudflare:workers';
 import { digestCredential } from '../src/credential-digest';
 import { base64UrlOf, generateCredentialSecret } from '../src/credential-secret';
+import { type GrantScope, GrantScopeKind, type SelectionScope } from '../src/oauth/oauth-grant-scope';
 import { OAuthTokenKind } from '../src/oauth/oauth-store';
 import { type SessionOwner, resolveSessionOwner } from '../src/project-routing';
 import { CLOCK_NOW } from './task-fixtures';
@@ -71,13 +72,25 @@ export function accessSecret(): string {
   return `${OAUTH_ACCESS_TOKEN_PREFIX}${generateCredentialSecret()}`;
 }
 
+function scopeInsertion({ grantId, scope }: { grantId: string; scope: GrantScope }) {
+  const workspaceId = scope.kind === GrantScopeKind.Workspace ? scope.workspaceId : null;
+  const projectId = scope.kind === GrantScopeKind.Project ? scope.projectId : null;
+  return env.DIRECTORY.prepare('INSERT INTO oauth_grant_scopes (grant_id, kind, workspace_id, project_id) VALUES (?, ?, ?, ?)').bind(
+    grantId,
+    scope.kind,
+    workspaceId,
+    projectId,
+  );
+}
+
 async function seedGrant({
   ownerId,
-  projectId,
+  scopes,
   secret = accessSecret(),
   clientName = SEEDED_CLIENT_NAME,
   expiresAt = Math.max(CLOCK_NOW, Date.now()) + MILLISECONDS_PER_DAY,
-}: SeededToken & { ownerId: string; projectId: string | null }): Promise<string> {
+  reachesWorkspace,
+}: SeededToken & { ownerId: string; scopes: GrantScope[]; reachesWorkspace: boolean }): Promise<string> {
   const clientId = base64UrlOf(crypto.getRandomValues(new Uint8Array(CLIENT_IDENTIFIER_BYTE_LENGTH)));
   const grantId = crypto.randomUUID();
   await env.DIRECTORY.batch([
@@ -89,8 +102,8 @@ async function seedGrant({
       CLOCK_NOW,
     ),
     env.DIRECTORY.prepare(
-      'INSERT INTO oauth_grants (id, client_id, owner_id, project_id, redirect_uri, created_at, last_used_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    ).bind(grantId, clientId, ownerId, projectId, SEEDED_REDIRECT_URI, CLOCK_NOW, CLOCK_NOW),
+      'INSERT INTO oauth_grants (id, client_id, owner_id, redirect_uri, created_at, last_used_at, reaches_workspace, is_scoped) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
+    ).bind(grantId, clientId, ownerId, SEEDED_REDIRECT_URI, CLOCK_NOW, CLOCK_NOW, Number(reachesWorkspace)),
     env.DIRECTORY.prepare('INSERT INTO oauth_tokens (digest, grant_id, kind, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').bind(
       await digestCredential(secret),
       grantId,
@@ -98,12 +111,21 @@ async function seedGrant({
       CLOCK_NOW,
       expiresAt,
     ),
+    ...scopes.map((scope) => scopeInsertion({ grantId, scope })),
   ]);
   return secret;
 }
 
+export async function seedSelectionToken({
+  ownerId,
+  scopes,
+  ...token
+}: SeededToken & { ownerId: string; scopes: SelectionScope[] }): Promise<string> {
+  return seedGrant({ ownerId, scopes, reachesWorkspace: false, ...token });
+}
+
 export async function seedOwnerToken({ ownerId, ...token }: SeededToken & { ownerId: string }): Promise<string> {
-  return seedGrant({ ownerId, projectId: null, ...token });
+  return seedGrant({ ownerId, scopes: [{ kind: GrantScopeKind.Account }], reachesWorkspace: false, ...token });
 }
 
 export async function seedProjectToken({ projectId, ...token }: SeededToken & { projectId: string }): Promise<string> {
@@ -113,7 +135,7 @@ export async function seedProjectToken({ projectId, ...token }: SeededToken & { 
     .bind(projectId)
     .first<{ owner_id: string }>();
   if (owner === null) throw new Error('the seeded project should exist');
-  return seedGrant({ ownerId: owner.owner_id, projectId, ...token });
+  return seedGrant({ ownerId: owner.owner_id, scopes: [{ kind: GrantScopeKind.Project, projectId }], reachesWorkspace: true, ...token });
 }
 
 export async function seedProjectWithToken({ timeZone = 'UTC', clientName }: { timeZone?: string; clientName?: string } = {}): Promise<{

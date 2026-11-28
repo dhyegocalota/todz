@@ -78,7 +78,13 @@ async function linkFormOf(request: Request): Promise<LinkForm | null> {
   return parsed.data;
 }
 
-async function validRequestOf({ context, form }: { context: OAuthContext; form: LinkForm }): Promise<AuthorizationRequest | null> {
+export async function validRequestOf({
+  context,
+  form,
+}: {
+  context: OAuthContext;
+  form: Pick<LinkForm, OAuthField.Request>;
+}): Promise<AuthorizationRequest | null> {
   const outcome = await authorizationOutcomeOf({
     params: new URLSearchParams(form[OAuthField.Request]),
     env: context.env,
@@ -137,12 +143,19 @@ export async function serveOAuthSignInLink(context: OAuthContext): Promise<Respo
     challenge: await digestCredential(challenge),
     now,
     language,
-    mailOf: (token) => oauthSignInMail({ to: address, link: linkOf(token), origin: issuer, language }),
+    mailOf: ({ token, code }) => oauthSignInMail({ to: address, link: linkOf(token), code, origin: issuer, language }),
   });
   if (mailing === LinkMailing.Unavailable) return refusalPageOf({ request, refusal: OAuthRefusal.Unavailable });
   if (mailing === LinkMailing.Refused)
     return signInPageOf({ request, clientName, params, notice: OAuthNotice.TryAgain, siteKey: guard.siteKey });
-  return inboxPageOf({ request, cookies: [oauthCookieHeaderOf({ cookie: OAuthCookie.Challenge, value: challenge })] });
+  return inboxPageOf({
+    request,
+    cookies: [oauthCookieHeaderOf({ cookie: OAuthCookie.Challenge, value: challenge })],
+    address,
+    params,
+    siteKey: guard.siteKey,
+    state: null,
+  });
 }
 
 function answerOfRefusal({

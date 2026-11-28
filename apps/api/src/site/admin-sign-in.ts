@@ -1,6 +1,7 @@
 import type { Language } from '@todz/types';
 import { z } from 'zod';
 import { digestCredential } from '../credential-digest';
+import { issuedEmailCode } from '../email-code';
 import { generateCredentialSecret } from '../credential-secret';
 import { mailMeterOf } from '../cloud-mail-meter';
 import { normalizedAddress } from '../email-address';
@@ -127,10 +128,13 @@ async function issueAdminLink({
 }): Promise<void> {
   const token = generateCredentialSecret();
   const digest = await digestCredential(token);
+  const issuedCode = await issuedEmailCode();
   const now = Date.now();
   const isStored = await insertAdminLinkWithinLimit({
     database,
     digest,
+    codeDigest: issuedCode.digest,
+    codeSalt: issuedCode.salt,
     email: guard.adminEmail,
     challenge: await digestCredential(challenge),
     now,
@@ -141,7 +145,7 @@ async function issueAdminLink({
   if (!isStored) return;
   const link = `${guard.siteOrigin}${AdminPath.LinkPage}#${AdminField.Token}=${token}`;
   try {
-    await guard.sender.send(adminSignInMail({ to: guard.adminEmail, link, origin: guard.siteOrigin, language }));
+    await guard.sender.send(adminSignInMail({ to: guard.adminEmail, link, code: issuedCode.code, origin: guard.siteOrigin, language }));
   } catch {
     await deleteAdminLink({ database, digest });
   }
@@ -159,6 +163,7 @@ export async function serveAdminSignInLink({ request, env, executionContext }: S
     notice: AdminNotice.CheckInbox,
     siteKey,
     cookies: [adminCookieHeaderOf({ cookie: AdminCookie.Challenge, value: challenge })],
+    address: ask.address,
   });
   const isAdminAddress = ask.address === ask.guard.adminEmail;
   if (isAdminAddress) {
@@ -166,6 +171,32 @@ export async function serveAdminSignInLink({ request, env, executionContext }: S
     executionContext.waitUntil(issuance.catch(() => undefined));
   }
   return answer;
+}
+
+export async function openedSessionCookies({
+  env,
+  adminEmail,
+  now,
+}: {
+  env: Env;
+  adminEmail: string;
+  now: number;
+}): Promise<string[] | null> {
+  const secret = generateCredentialSecret();
+  const isOpened = await openAdminSession({
+    database: env.DIRECTORY,
+    digest: await digestCredential(secret),
+    email: adminEmail,
+    now,
+    expiresAt: now + ADMIN_SESSION_LIFETIME_MS,
+  })
+    .then(() => true)
+    .catch(() => false);
+  if (!isOpened) return null;
+  return [
+    adminCookieHeaderOf({ cookie: AdminCookie.Session, value: secret }),
+    clearedAdminCookieHeaderOf({ cookie: AdminCookie.Challenge }),
+  ];
 }
 
 async function sessionTokenOf(request: Request): Promise<string | null> {
@@ -201,22 +232,7 @@ export async function serveAdminSession({ request, env }: SiteContext): Promise<
   }).catch(() => null);
   if (isSpent === null) return adminJsonAnswerOf({ status: HttpStatus.Unavailable });
   if (!isSpent) return adminJsonAnswerOf({ status: HttpStatus.Unauthorized });
-  const secret = generateCredentialSecret();
-  const isOpened = await openAdminSession({
-    database: env.DIRECTORY,
-    digest: await digestCredential(secret),
-    email: adminEmail,
-    now,
-    expiresAt: now + ADMIN_SESSION_LIFETIME_MS,
-  })
-    .then(() => true)
-    .catch(() => false);
-  if (!isOpened) return adminJsonAnswerOf({ status: HttpStatus.Unavailable });
-  return adminJsonAnswerOf({
-    status: HttpStatus.Created,
-    cookies: [
-      adminCookieHeaderOf({ cookie: AdminCookie.Session, value: secret }),
-      clearedAdminCookieHeaderOf({ cookie: AdminCookie.Challenge }),
-    ],
-  });
+  const cookies = await openedSessionCookies({ env, adminEmail, now });
+  if (cookies === null) return adminJsonAnswerOf({ status: HttpStatus.Unavailable });
+  return adminJsonAnswerOf({ status: HttpStatus.Created, cookies });
 }

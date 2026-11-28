@@ -12,7 +12,7 @@ import {
 } from '../src/project-routing';
 import { setOwnerSuspension } from '../src/owner-usage-store';
 import { countingEnv } from './counting-namespace';
-import { OAuthScope } from '../src/oauth/oauth-scope';
+import { GrantShape } from '../src/oauth/oauth-grant-scope';
 import {
   revokeToken,
   seedLiveOwner,
@@ -39,7 +39,7 @@ describe('openOAuthAccess', () => {
     const projectId = await seedProject({ ownerId });
     const secret = await seedProjectToken({ projectId });
     const access = await openOAuthAccess({ env, secret, now: CLOCK_NOW });
-    if (access === null || access.scope !== OAuthScope.Project) throw new Error('the token should open its project');
+    if (access === null || access.scope !== GrantShape.Project) throw new Error('the token should open its project');
     unwrap(
       await access.grantProject.project.addTasks({
         openTasksMax: PROJECT_OPEN_TASKS_MAX,
@@ -56,7 +56,7 @@ describe('openOAuthAccess', () => {
   test('an owner token opens the owner and no project', async () => {
     const ownerId = await seedOwner();
     const secret = await seedOwnerToken({ ownerId });
-    expect(await openOAuthAccess({ env, secret, now: CLOCK_NOW })).toMatchObject({ scope: OAuthScope.Owner, owner: { ownerId } });
+    expect(await openOAuthAccess({ env, secret, now: CLOCK_NOW })).toMatchObject({ scope: GrantShape.Owner, owner: { ownerId } });
   });
 
   test('a token names its owner time zone and agent nudge', async () => {

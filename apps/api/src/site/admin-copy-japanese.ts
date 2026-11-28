@@ -67,6 +67,7 @@ export const ADMIN_COPY_JAPANESE: AdminCopy = {
       [Metric.UsageRollups]: '共有された使用状況レポート',
       [Metric.UsageVersions]: 'アプリのバージョン別レポート',
       [Metric.UsageEvents]: '共有された使用状況イベント',
+      [Metric.OAuthGrantsDeleted]: '削除された接続済みアプリ',
     } satisfies Record<Metric, string>,
   },
   cloudQueue: {

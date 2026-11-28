@@ -92,7 +92,7 @@ describe('the official MCP SDK client connects with OAuth', () => {
     const now = Date.now();
     const browser = await signedInBrowser({ params, email: owner.email, now });
     const choice = firstChoice(await consentPage({ browser, params, now }));
-    expect(choice).toBe(owner.projectId);
+    expect(choice).toBe(`project:${owner.projectId}`);
     const code = await approvedCode({ browser, params, choice, now });
     const callback = new URLSearchParams({ code, iss: OAUTH_ORIGIN });
 

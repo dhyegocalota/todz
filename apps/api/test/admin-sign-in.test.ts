@@ -3,6 +3,7 @@ import { Language } from '@todz/types';
 import { env } from 'cloudflare:workers';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { digestCredential } from '../src/credential-digest';
+import { normalizedAddress } from '../src/email-address';
 import type { Env } from '../src/env';
 import { serveAdminSession, serveAdminSignInLink } from '../src/site/admin-sign-in';
 import { AdminNotice } from '../src/site/admin-notice';
@@ -54,6 +55,8 @@ const RETRY_AFTER_HEADER = 'Retry-After';
 const RETRY_AFTER_SECONDS = '60';
 const SET_COOKIE_HEADER = 'Set-Cookie';
 const LINK_PATTERN = /https:\/\/todz\.app\/admin\/sign-in#token=([A-Za-z0-9_-]{43})(?![A-Za-z0-9_-])/;
+const HIDDEN_ADDRESS_PATTERN = /(name="email" value=")[^"]*/g;
+const CODE_PATTERN = /(?:^|\s)([0-9]{6})(?:\s|$)/;
 const LOCAL_LINK_PATTERN = /http:\/\/localhost:8788\/admin\/sign-in#token=([A-Za-z0-9_-]{43})/;
 const COOKIE_VALUE_PATTERN = /^(__Host-[a-z_]+)=([A-Za-z0-9_-]*);/;
 const CHALLENGE_COOKIE_PATTERN = /^__Host-todz_admin_challenge=[A-Za-z0-9_-]{43}; Path=\/; Secure; HttpOnly; SameSite=Lax; Max-Age=900$/;
@@ -101,6 +104,7 @@ type LinkCall = {
 };
 
 type LinkRun = {
+  email: string;
   response: Response;
   html: string;
   request: Request;
@@ -191,6 +195,7 @@ async function askForLink({
   const html = await response.text();
   if (shouldWait) await waitOnExecutionContext(executionContext);
   return {
+    email,
     response,
     html,
     request,
@@ -255,13 +260,36 @@ function tokenOfSent(sent: RecordingBinding['sent']): string {
   return token;
 }
 
+function codeOfSent(sent: RecordingBinding['sent']): string {
+  const [message] = sent;
+  if (message === undefined) throw new Error('a mail should have been sent');
+  const code = CODE_PATTERN.exec(message.text)?.[1];
+  if (code === undefined) throw new Error('the mail should carry the sign-in code');
+  return code;
+}
+
 async function askedLink(): Promise<AskedLink> {
   const run = await askForLink();
   return { token: tokenOfSent(run.sent), challenge: cookieValueOf({ cookies: run.cookies, name: AdminCookie.Challenge }) };
 }
 
-function cardOf({ notice, siteKey = SITE_KEY }: { notice: AdminNotice; siteKey?: string | null }): Promise<string> {
-  return serveAdminSignInPage({ request: new Request(ADMIN_URL), notice, siteKey }).then((page) => page.text());
+function cardOf({
+  notice,
+  siteKey = SITE_KEY,
+  address,
+}: {
+  notice: AdminNotice;
+  siteKey?: string | null;
+  address?: string;
+}): Promise<string> {
+  return serveAdminSignInPage({ request: new Request(ADMIN_URL), notice, siteKey, address }).then((page) => page.text());
+}
+
+function addressOfCard({ run, notice }: { run: LinkRun; notice: AdminNotice }): string | undefined {
+  if (notice !== AdminNotice.CheckInbox) return undefined;
+  const address = normalizedAddress(run.email);
+  if (address === null) return undefined;
+  return address;
 }
 
 function failingDirectory(): D1Database {
@@ -285,7 +313,7 @@ function answerShapeOf(run: LinkRun): { status: number; headerNames: string[]; h
   return {
     status: run.response.status,
     headerNames: [...run.response.headers.keys()].sort(),
-    html: run.html,
+    html: run.html.replaceAll(HIDDEN_ADDRESS_PATTERN, '$1<address>'),
     cookieShapes: run.cookies.map((cookie) => cookie.replace(COOKIE_VALUE_PATTERN, '$1=<value>;')),
   };
 }
@@ -296,7 +324,7 @@ function expectAdminHeaders(response: Response): void {
 
 async function expectCard({ run, notice, status }: { run: LinkRun; notice: AdminNotice; status: number }): Promise<void> {
   expect(run.response.status).toBe(status);
-  expect(run.html).toBe(await cardOf({ notice }));
+  expect(run.html).toBe(await cardOf({ notice, address: addressOfCard({ run, notice }) }));
   expectAdminHeaders(run.response);
 }
 
@@ -361,7 +389,8 @@ describe('a link request as the admin on a public site host', () => {
     const run = await askForLink();
     const token = tokenOfSent(run.sent);
     const link = `${SITE_ORIGIN}${AdminPath.LinkPage}#token=${token}`;
-    expect(run.sent[0]).toMatchObject(adminSignInMail({ to: ADMIN_ADDRESS, link, origin: SITE_ORIGIN, language: Language.English }));
+    const code = codeOfSent(run.sent);
+    expect(run.sent[0]).toMatchObject(adminSignInMail({ to: ADMIN_ADDRESS, link, code, origin: SITE_ORIGIN, language: Language.English }));
     expect(run.html).not.toContain(token);
     expect(run.cookies.join()).not.toContain(token);
   });
@@ -425,7 +454,7 @@ describe('a link request as another address', () => {
     expect(other.cookies[0]).toMatch(CHALLENGE_COOKIE_PATTERN);
     expect(await adminLinkRows(OTHER_ADDRESS)).toEqual([]);
     expect(other.sent).toEqual([]);
-    expect(other.html).not.toContain(OTHER_ADDRESS);
+    expect(other.html.replaceAll(HIDDEN_ADDRESS_PATTERN, '$1')).not.toContain(OTHER_ADDRESS);
   });
 
   test('a directory that throws and a sender that never answers give the admin and another address the same answer, at once', async () => {

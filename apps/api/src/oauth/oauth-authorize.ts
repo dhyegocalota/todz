@@ -1,6 +1,5 @@
 import { digestCredential, isSameSignature, keyedDigest } from '../credential-digest';
 import { generateCredentialSecret } from '../credential-secret';
-import { findOwnedProject } from '../directory';
 import { listOwnerWorkspaces } from '../directory-workspaces';
 import { enumValueOf } from '../enum-value';
 import { HttpHeader } from '../http-header';
@@ -20,16 +19,23 @@ import { type OAuthBrowserSession, endedOAuthSessionCookie, oauthSessionOf } fro
 import type { OAuthContext } from './oauth-context';
 import { OAuthError } from './oauth-errors';
 import { OAuthNotice, OAuthRefusal, approvedPageOf, consentPageOf, refusalPageOf, returnPageOf, signInPageOf } from './oauth-pages';
-import { OAUTH_CODE_LIFETIME_MS, OAUTH_DECISION_FIELDS, OAuthDecision, OAuthField, OAuthParameter } from './oauth-paths';
-import { OAuthScope } from './oauth-scope';
+import { chosenScopesOf } from './oauth-grant-selection';
+import { heldScopesOf } from './oauth-grant-scope-store';
+import { redirectHostOf } from './oauth-redirect-uri';
+import {
+  OAUTH_CODE_LIFETIME_MS,
+  OAUTH_DECISION_FIELDS,
+  OAUTH_SINGLE_DECISION_FIELDS,
+  OAuthDecision,
+  OAuthField,
+  OAuthParameter,
+} from './oauth-paths';
 import { linkGuardOf } from './oauth-sign-in';
 import { hasIssuedCode, insertCode } from './oauth-store';
 
-type DecisionForm = { params: URLSearchParams; formToken: string | null; decision: string | null; choice: string | null };
+type DecisionForm = { params: URLSearchParams; formToken: string | null; decision: string | null; choices: string[] };
 
-type Decided = { context: OAuthContext; request: AuthorizationRequest; session: OAuthBrowserSession; choice: string | null };
-
-type ChosenScope = { projectId: string | null };
+type Decided = { context: OAuthContext; request: AuthorizationRequest; session: OAuthBrowserSession; choices: string[] };
 
 type ValidRequestAnswer = (context: OAuthContext, request: AuthorizationRequest) => Promise<Response>;
 
@@ -59,11 +65,20 @@ async function consentOrSignIn(context: OAuthContext, request: AuthorizationRequ
   if (guard === null) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Unavailable });
   const session = await oauthSessionOf(context);
   if (session === null) return signInAgainOf({ httpRequest: context.request, request, siteKey: guard.siteKey });
-  const listings = await listOwnerWorkspaces({ directory: context.env.DIRECTORY, ownerId: session.ownerId });
+  const [listings, held] = await Promise.all([
+    listOwnerWorkspaces({ directory: context.env.DIRECTORY, ownerId: session.ownerId }),
+    heldScopesOf({
+      directory: context.env.DIRECTORY,
+      ownerId: session.ownerId,
+      clientName: request.client.name,
+      redirectHost: redirectHostOf(request.redirectUri),
+    }),
+  ]);
   return consentPageOf({
     request: context.request,
     authorization: request,
     listings,
+    held,
     formToken: await formTokenOf({ session, request }),
   });
 }
@@ -79,32 +94,26 @@ async function decisionFormOf(request: Request): Promise<DecisionForm | null> {
   const isReadableForm = isBoundedRequest({ request }) && hasMediaType({ request, mediaType: MediaType.Form });
   if (!isReadableForm) return null;
   const form = new URLSearchParams(await request.text());
-  const hasRepeatedDecisionField = OAUTH_DECISION_FIELDS.some((name) => form.getAll(name).length > 1);
+  const hasRepeatedDecisionField = OAUTH_SINGLE_DECISION_FIELDS.some((name) => form.getAll(name).length > 1);
   if (hasRepeatedDecisionField) return null;
   const params = new URLSearchParams([...form.entries()].filter(([name]) => !OAUTH_DECISION_FIELDS.includes(name)));
   return {
     params,
     formToken: form.get(OAuthField.FormToken),
     decision: form.get(OAuthField.Decision),
-    choice: form.get(OAuthField.Choice),
+    choices: form.getAll(OAuthField.Choice),
   };
 }
 
-async function chosenScopeOf({ request, session, choice, context }: Decided): Promise<ChosenScope | null> {
-  const isOwnerChoice = choice === OAuthScope.Owner && request.offeredScopes[OAuthScope.Owner];
-  if (isOwnerChoice) return { projectId: null };
-  const isProjectChoice = choice !== null && choice !== OAuthScope.Owner && request.offeredScopes[OAuthScope.Project];
-  if (!isProjectChoice) return null;
-  const projectId = await findOwnedProject({ directory: context.env.DIRECTORY, ownerId: session.ownerId, projectId: choice });
-  if (projectId === null) return null;
-  return { projectId };
-}
-
 async function approve(decided: Decided): Promise<Response> {
-  const { context, request, session } = decided;
-  const chosenScope = await chosenScopeOf(decided);
-  if (chosenScope === null) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Choice });
-  const { projectId } = chosenScope;
+  const { context, request, session, choices } = decided;
+  const scopes = await chosenScopesOf({
+    directory: context.env.DIRECTORY,
+    ownerId: session.ownerId,
+    choices,
+    offeredScopes: request.offeredScopes,
+  });
+  if (scopes === null) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Choice });
   const code = generateCredentialSecret();
   await insertCode({
     directory: context.env.DIRECTORY,
@@ -112,7 +121,7 @@ async function approve(decided: Decided): Promise<Response> {
     code: {
       clientId: request.client.id,
       ownerId: session.ownerId,
-      projectId,
+      scopes,
       redirectUri: request.redirectUri,
       codeChallenge: request.codeChallenge,
       expiresAt: context.now + OAUTH_CODE_LIFETIME_MS,
@@ -218,7 +227,7 @@ function decide(form: DecisionForm): ValidRequestAnswer {
     if (form.decision === null) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Invalid });
     const decision = enumValueOf({ enumeration: OAuthDecision, candidate: form.decision });
     if (decision === null) return refusalPageOf({ request: context.request, refusal: OAuthRefusal.Invalid });
-    return ANSWER_OF_DECISION[decision]({ context, request, session, choice: form.choice });
+    return ANSWER_OF_DECISION[decision]({ context, request, session, choices: form.choices });
   };
 }
 

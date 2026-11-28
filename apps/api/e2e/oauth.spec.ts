@@ -24,8 +24,13 @@ const EVENT_DATA_PREFIX = 'data: ';
 const MAIL_POLL_TIMEOUT_MS = 15_000;
 const MEDIA_FOLDER = '.pr-media';
 const CALLBACK_PAGE = '<!doctype html><title>Back in the client</title><p>Back in the client</p>';
-const OWNER_CHOICE = 'owner';
 const WORKSPACE_NAME = 'Launch';
+const OTHER_WORKSPACE_NAME = 'Research';
+const THIRD_WORKSPACE_NAME = 'Archive';
+const OWNER_BOX = 'input[name="choice"][value="owner"]';
+const PROJECT_BOXES = 'input[name="choice"][value^="project:"]';
+const WORKSPACE_BOXES = 'input[name="choice"][value^="workspace:"]';
+const GROUP = '[data-consent-group]';
 
 type MailedMessage = { to: string; text: string };
 type Tokens = { access_token: string; refresh_token: string; scope: string };
@@ -36,6 +41,25 @@ type Connection = { page: Page; request: APIRequestContext; address: string; red
 type ConsentField = [string, string];
 type BouncingConnection = { connection: Connection; close: () => Promise<void> };
 type Approval = { code: string; consentFields: ConsentField[] };
+type Choose = { name: string; run: (page: Page) => Promise<void> };
+
+const chooseOwner: Choose = { name: 'consent-owner', run: (page) => page.locator(OWNER_BOX).check() };
+const chooseFirstProject: Choose = { name: 'consent-project', run: expandedFirstProject };
+const chooseTwoProjects: Choose = { name: 'consent-selection', run: expandedProjectOfEachWorkspace };
+
+async function expandedFirstProject(page: Page): Promise<void> {
+  await page.locator(GROUP).first().getByRole('button', { name: 'Show projects' }).click();
+  await page.locator(PROJECT_BOXES).first().check();
+}
+
+async function expandedProjectOfEachWorkspace(page: Page): Promise<void> {
+  const groups = page.locator(GROUP);
+  await expect(groups).toHaveCount(2);
+  await groups.nth(0).getByRole('button', { name: 'Show projects' }).click();
+  await groups.nth(1).getByRole('button', { name: 'Show projects' }).click();
+  await groups.nth(0).locator(PROJECT_BOXES).first().check();
+  await groups.nth(1).locator(PROJECT_BOXES).first().check();
+}
 
 enum Press {
   Once = 'once',
@@ -140,17 +164,17 @@ async function signIn({ page, address, authorizeUrl }: { page: Page; address: st
 
 async function approvedCode({
   page,
-  choice,
+  choose,
   landingUri,
   press,
 }: {
   page: Page;
-  choice: string | null;
+  choose: Choose;
   landingUri: string;
   press: Press;
 }): Promise<Approval> {
-  if (choice !== null) await page.locator(`input[name="choice"][value="${choice}"]`).check();
-  await snapshot({ page, name: choice === null ? 'consent-project' : 'consent-owner' });
+  await choose.run(page);
+  await snapshot({ page, name: choose.name });
   const consentFields = await consentFieldsOf(page);
   const heldDecisions: Route[] = [];
   await page.route(DECISION_URL, (route) => {
@@ -209,18 +233,18 @@ async function exchange({
 
 async function connect({
   connection,
-  choice,
+  choose,
   press = Press.Once,
 }: {
   connection: Connection;
-  choice: string | null;
+  choose: Choose;
   press?: Press;
 }): Promise<{ clientId: string; tokens: Tokens; consentFields: ConsentField[] }> {
   const { page, request, address, redirectUri, landingUri } = connection;
   const clientId = await registerClient({ request, redirectUri });
   const pkce = pkcePair();
   await signIn({ page, address, authorizeUrl: authorizeUrlOf({ clientId, challenge: pkce.challenge, redirectUri }) });
-  const { code, consentFields } = await approvedCode({ page, choice, landingUri, press });
+  const { code, consentFields } = await approvedCode({ page, choose, landingUri, press });
   return { clientId, tokens: await exchange({ request, clientId, code, pkce, redirectUri }), consentFields };
 }
 
@@ -271,12 +295,20 @@ async function toolNames({ request, token }: { request: APIRequestContext; token
   return (messageOf(await response.text()) as ToolsAnswer).result.tools.map((tool) => tool.name);
 }
 
-async function createWorkspace({ request, token }: { request: APIRequestContext; token: string }): Promise<void> {
+async function createWorkspace({
+  request,
+  token,
+  name = WORKSPACE_NAME,
+}: {
+  request: APIRequestContext;
+  token: string;
+  name?: string;
+}): Promise<void> {
   const created = await mcpCall({
     request,
     token,
     method: 'tools/call',
-    params: { name: 'create_workspace', arguments: { name: WORKSPACE_NAME } },
+    params: { name: 'create_workspace', arguments: { name } },
   });
   expect(created.status()).toBe(200);
 }
@@ -301,12 +333,12 @@ test('an MCP client connects with OAuth: register, sign in by link, consent, exc
     `Bearer resource_metadata="${OAUTH_ORIGIN}/.well-known/oauth-protected-resource/mcp"`,
   );
 
-  const owner = await connect({ connection, choice: OWNER_CHOICE });
+  const owner = await connect({ connection, choose: chooseOwner });
   expect(owner.tokens.scope).toBe('owner');
   expect(await toolNames({ request, token: owner.tokens.access_token })).toContain('create_workspace');
   await createWorkspace({ request, token: owner.tokens.access_token });
 
-  const project = await connect({ connection, choice: null });
+  const project = await connect({ connection, choose: chooseFirstProject });
   expect(project.tokens.scope).toMatch(/^project:/);
   const projectTools = await toolNames({ request, token: project.tokens.access_token });
   expect(projectTools).toContain('add');
@@ -324,6 +356,104 @@ test('an MCP client connects with OAuth: register, sign in by link, consent, exc
   });
   expect(revoked.status()).toBe(200);
   expect((await mcpCall({ request, token: renewed.access_token, method: 'tools/list', params: {} })).status()).toBe(401);
+  await context.close();
+  loopback.server.close();
+});
+
+type ToolCallAnswer = { result: { isError?: boolean; content: { text: string }[] } };
+
+async function addTaskTo({
+  request,
+  token,
+  project,
+}: {
+  request: APIRequestContext;
+  token: string;
+  project: string;
+}): Promise<ToolCallAnswer['result']> {
+  const response = await mcpCall({
+    request,
+    token,
+    method: 'tools/call',
+    params: { name: 'add', arguments: { project, tasks: [{ title: 'From the selection' }] } },
+  });
+  expect(response.status()).toBe(200);
+  return (messageOf(await response.text()) as ToolCallAnswer).result;
+}
+
+test('the consent tree expands, selects everything and keeps a live summary', async ({ browser, request }) => {
+  const context = await browserContextOf(browser);
+  const loopback = await loopbackListener();
+  const connection = {
+    page: await context.newPage(),
+    request,
+    address: `oauth-${crypto.randomUUID()}@example.com`,
+    redirectUri: loopback.redirectUri,
+    landingUri: loopback.redirectUri,
+  };
+  const owner = await connect({ connection, choose: chooseOwner });
+  await createWorkspace({ request, token: owner.tokens.access_token });
+  await createWorkspace({ request, token: owner.tokens.access_token, name: OTHER_WORKSPACE_NAME });
+  await createWorkspace({ request, token: owner.tokens.access_token, name: THIRD_WORKSPACE_NAME });
+  const clientId = await registerClient({ request, redirectUri: loopback.redirectUri });
+  const { page } = connection;
+  await signIn({
+    page,
+    address: connection.address,
+    authorizeUrl: authorizeUrlOf({ clientId, challenge: pkcePair().challenge, redirectUri: loopback.redirectUri }),
+  });
+
+  const summary = page.locator('[data-consent-summary]');
+  const groups = page.locator(GROUP);
+  await expect(groups).toHaveCount(3);
+  await expect(summary).toHaveText('Nothing selected yet');
+  await expect(groups.first().locator(PROJECT_BOXES).first()).toBeHidden();
+  await groups.first().getByRole('button', { name: 'Show projects' }).click();
+  await expect(groups.first().locator(PROJECT_BOXES).first()).toBeVisible();
+  await groups.first().locator(PROJECT_BOXES).first().check();
+  await expect(summary).toHaveText('1 project');
+  await groups.nth(1).locator(WORKSPACE_BOXES).check();
+  await expect(summary).toHaveText('1 workspace and 1 project');
+  await page.getByLabel('Select all workspaces').check();
+  await expect(summary).toHaveText('3 workspaces');
+  await expect(page.locator(WORKSPACE_BOXES)).toHaveCount(3);
+  await snapshot({ page, name: 'consent-tree' });
+  await groups.first().getByRole('button', { name: 'Hide projects' }).click();
+  await expect(groups.first().locator(PROJECT_BOXES).first()).toBeHidden();
+  await page.locator(OWNER_BOX).check();
+  await expect(summary).toHaveText('Your whole account');
+  await expect(page.locator(WORKSPACE_BOXES).first()).not.toBeChecked();
+  await context.close();
+  loopback.server.close();
+});
+
+test('a two-project selection is approved, granted and enforced end to end', async ({ browser, request }) => {
+  const context = await browserContextOf(browser);
+  const loopback = await loopbackListener();
+  const connection = {
+    page: await context.newPage(),
+    request,
+    address: `oauth-${crypto.randomUUID()}@example.com`,
+    redirectUri: loopback.redirectUri,
+    landingUri: loopback.redirectUri,
+  };
+  const owner = await connect({ connection, choose: chooseOwner });
+  await createWorkspace({ request, token: owner.tokens.access_token });
+  await createWorkspace({ request, token: owner.tokens.access_token, name: OTHER_WORKSPACE_NAME });
+
+  const selection = await connect({ connection, choose: chooseTwoProjects });
+
+  expect(selection.tokens.scope).toMatch(/^project:\S+ project:\S+$/);
+  const [firstProject, secondProject] = selection.tokens.scope.split(' ').map((word) => word.slice('project:'.length));
+  const tools = await toolNames({ request, token: selection.tokens.access_token });
+  expect(tools).toContain('workspaces');
+  expect(tools).toContain('add');
+  expect(tools).not.toContain('create_workspace');
+  expect((await addTaskTo({ request, token: selection.tokens.access_token, project: firstProject! })).isError).toBeUndefined();
+  expect((await addTaskTo({ request, token: selection.tokens.access_token, project: secondProject! })).isError).toBeUndefined();
+  const outside = await addTaskTo({ request, token: selection.tokens.access_token, project: crypto.randomUUID() });
+  expect(outside.isError).toBe(true);
+  expect(outside.content[0]?.text).toContain('Not found');
   await context.close();
   loopback.server.close();
 });
@@ -350,9 +480,9 @@ async function bouncingConnection({ browser, request }: { browser: Browser; requ
 test('approving lands on the client even when its redirect URI redirects again to another origin', async ({ browser, request }) => {
   const { connection, close } = await bouncingConnection({ browser, request });
 
-  const owner = await connect({ connection, choice: OWNER_CHOICE });
+  const owner = await connect({ connection, choose: chooseOwner });
   await createWorkspace({ request, token: owner.tokens.access_token });
-  const project = await connect({ connection, choice: null });
+  const project = await connect({ connection, choose: chooseFirstProject });
 
   expect(owner.tokens.scope).toBe('owner');
   expect(project.tokens.scope).toMatch(/^project:/);
@@ -365,9 +495,9 @@ test('Approve pressed again while the first approval is on its way posts once, a
 }) => {
   const { connection, close } = await bouncingConnection({ browser, request });
 
-  const owner = await connect({ connection, choice: OWNER_CHOICE, press: Press.Twice });
+  const owner = await connect({ connection, choose: chooseOwner, press: Press.Twice });
   await createWorkspace({ request, token: owner.tokens.access_token });
-  const project = await connect({ connection, choice: null, press: Press.Twice });
+  const project = await connect({ connection, choose: chooseFirstProject, press: Press.Twice });
   expect(project.tokens.scope).toMatch(/^project:/);
   await replayConsent({ page: connection.page, fields: project.consentFields });
 

@@ -7,4 +7,5 @@ export const SIGN_IN_EMAIL_COPY_GERMAN: SignInEmailCopy = {
   action: 'Bei todz anmelden',
   fallback: 'Der Button funktioniert nicht? Füge diesen Link in deinen Browser ein:',
   footer: 'Hast du das nicht angefordert, ignoriere diese E-Mail.',
+  codeLabel: 'Oder gib diesen Code dort ein, wo du den Link angefordert hast. Er funktioniert einmal und läuft mit dem Link ab.',
 };

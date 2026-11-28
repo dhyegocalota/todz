@@ -9,4 +9,5 @@ export const ADMIN_SIGN_IN_EMAIL_COPY_FRENCH: AdminSignInEmailCopy = {
   action: 'Se connecter',
   fallback: 'Il s’ouvre dans le mauvais navigateur ? Collez ce lien dans celui où vous l’avez demandé :',
   footer: `Ce lien fonctionne une seule fois, pendant ${ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES} minutes, dans le navigateur où vous l’avez demandé.`,
+  codeLabel: 'Ou saisissez ce code là où vous avez demandé le lien. Il fonctionne une seule fois et expire avec le lien.',
 };

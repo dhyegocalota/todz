@@ -1,4 +1,5 @@
 import type { WorkspaceListing } from '../directory-workspaces';
+import { EMAIL_CODE_COPY_BY_LANGUAGE } from '../email-code-copy';
 import { escapedHtml } from '../escaped-html';
 import { HttpHeader } from '../http-header';
 import { HttpStatus } from '../http-status';
@@ -19,17 +20,41 @@ import {
   noticeHtml,
 } from '../site/admin-page';
 import { adminPageResponse, siteContentSecurityPolicy, withFormOrigin } from '../site/site-headers';
+import { CodeState, EMAIL_CODE_SCRIPT, codeFormHtml, resendFormHtml } from '../site/email-code-input';
 import { SitePageKind, siteDocumentHtml } from '../site/site-shell';
 import { SITE_STYLE } from '../site/site-style';
+import type { ProjectRecord, WorkspaceRecord } from '../owner-records';
 import type { AuthorizationRequest } from './oauth-authorization-request';
+import {
+  CONSENT_GROUP_ATTRIBUTE,
+  CONSENT_HIDE_LABEL_ATTRIBUTE,
+  CONSENT_OWNER_ATTRIBUTE,
+  CONSENT_PROJECTS_ATTRIBUTE,
+  CONSENT_PROJECT_ATTRIBUTE,
+  CONSENT_SCRIPT,
+  CONSENT_SELECT_ALL_ATTRIBUTE,
+  CONSENT_SELECT_ALL_ROW_ATTRIBUTE,
+  CONSENT_SHOW_LABEL_ATTRIBUTE,
+  CONSENT_SUMMARY_ATTRIBUTE,
+  CONSENT_TOGGLE_ATTRIBUTE,
+  CONSENT_TREE_ATTRIBUTE,
+  CONSENT_WORDS_ATTRIBUTE,
+  CONSENT_WORKSPACE_ATTRIBUTE,
+  CONSENT_WORKSPACE_ID_ATTRIBUTE,
+} from './oauth-consent-script';
 import { OAUTH_COPY_BY_LANGUAGE, type OAuthCopy } from './oauth-copy';
+import { GrantScopeKind, WORKSPACE_PROJECT_SEPARATOR } from './oauth-grant-scope';
+import type { NamedScope } from './oauth-grant-scope-store';
 import { OAuthDecision, OAuthField, OAuthPath } from './oauth-paths';
 import { isLoopbackRedirectUri, redirectHostOf, redirectOriginOf } from './oauth-redirect-uri';
-import { OAuthScope } from './oauth-scope';
+import { OAuthScope, wordOfScope } from './oauth-scope';
 
 const TITLE_ID = 'oauth-title';
-const WORKSPACE_PROJECT_SEPARATOR = ' › ';
 const EMAIL_ID = 'oauth-email';
+const CODE_ID = 'oauth-code';
+const HOLDINGS_SEPARATOR = '; ';
+const CODE_SCRIPTS = [PAGE_SCRIPT, EMAIL_CODE_SCRIPT];
+const CONSENT_SCRIPTS = [PAGE_SCRIPT, CONSENT_SCRIPT];
 
 export enum OAuthNotice {
   None = 'none',
@@ -88,6 +113,27 @@ const CHALLENGE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
   declaresManifest: false,
 });
 
+const CONSENT_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
+  style: SITE_STYLE,
+  scripts: CONSENT_SCRIPTS,
+  widgetOrigin: null,
+  connectsToSelf: false,
+  declaresManifest: false,
+});
+
+const CODE_CONTENT_SECURITY_POLICY = await siteContentSecurityPolicy({
+  style: SITE_STYLE,
+  scripts: CODE_SCRIPTS,
+  widgetOrigin: TURNSTILE_ORIGIN,
+  connectsToSelf: false,
+  declaresManifest: false,
+});
+
+const STATUS_OF_CODE_STATE: Record<CodeState, HttpStatus> = {
+  [CodeState.Wrong]: HttpStatus.Unauthorized,
+  [CodeState.Locked]: HttpStatus.TooManyRequests,
+};
+
 type OAuthPage = { copy: OAuthCopy; preferences: PagePreferences };
 
 export function oauthPreferencesOf({ request, returnPath }: { request: Request; returnPath?: string }): PagePreferences {
@@ -110,18 +156,20 @@ function documentOf({
   content,
   page,
   hasControls,
+  scripts = [PAGE_SCRIPT],
 }: {
   title: string;
   content: string;
   page: OAuthPage;
   hasControls: boolean;
+  scripts?: string[];
 }): string {
   return siteDocumentHtml({
     kind: SitePageKind.Private,
     title,
     description: page.copy.meta.description,
     main: adminCardMainHtml(content),
-    scripts: [PAGE_SCRIPT],
+    scripts,
     preferences: page.preferences,
     hasControls,
   });
@@ -184,7 +232,7 @@ export function signInPageOf({
 ${hiddenInputHtml({ name: OAuthField.Request, value: params.toString() })}
 <div class="join-capsule">
 <label class="visually-hidden" for="${EMAIL_ID}">${escapedHtml(copy.signIn.emailLabel)}</label>
-<input id="${EMAIL_ID}" class="join-input" name="${OAuthField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(copy.signIn.emailPlaceholder)}" required>
+<input id="${EMAIL_ID}" class="join-input" name="${OAuthField.Email}" type="email" autocomplete="email" inputmode="email" placeholder="${escapedHtml(copy.signIn.emailPlaceholder)}" required autofocus>
 <button class="${JOIN_BUTTON_CLASS}" type="submit" data-submitting="${escapedHtml(copy.signIn.submitting)}">${escapedHtml(copy.signIn.submit)}</button>
 </div>
 ${widgetHtml(siteKey)}
@@ -221,43 +269,96 @@ export function approvedPageOf({ request, clientName }: { request: Request; clie
   });
 }
 
-export function inboxPageOf({ request, cookies }: { request: Request; cookies: string[] }): Response {
+export function inboxPageOf({
+  request,
+  cookies,
+  address,
+  params,
+  siteKey,
+  state,
+}: {
+  request: Request;
+  cookies: string[];
+  address: string;
+  params: URLSearchParams;
+  siteKey: string;
+  state: CodeState | null;
+}): Response {
   const page = oauthPageOf({ request });
   const { copy } = page;
-  const content = `${answerTitleHtml(copy.inbox.title)}
-<p class="admin-body">${escapedHtml(copy.inbox.body)}</p>`;
+  const codeCopy = EMAIL_CODE_COPY_BY_LANGUAGE[page.preferences.language];
+  const fields = [
+    { name: OAuthField.Email, value: address },
+    { name: OAuthField.Request, value: params.toString() },
+  ];
+  const content = `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(copy.inbox.title)}</h1>
+<p class="admin-body">${escapedHtml(copy.inbox.body)}</p>
+${codeFormHtml({ copy: codeCopy, action: OAuthPath.CodeSessions, fields, inputId: CODE_ID, state })}
+${resendFormHtml({ copy: codeCopy, action: OAuthPath.SignInLinks, fields, widget: `${widgetHtml(siteKey)}\n` })}
+${TURNSTILE_SCRIPT_TAG}`;
   return oauthPageAnswerOf({
-    html: documentOf({ title: copy.meta.inboxTitle, content, page, hasControls: false }),
-    status: HttpStatus.Ok,
+    html: documentOf({ title: copy.meta.inboxTitle, content, page, hasControls: false, scripts: CODE_SCRIPTS }),
+    status: state === null ? HttpStatus.Ok : STATUS_OF_CODE_STATE[state],
+    policy: CODE_CONTENT_SECURITY_POLICY,
     cookies,
   });
 }
 
-function projectChoiceHtml({ id, name, isChecked }: { id: string; name: string; isChecked: boolean }): string {
-  const checked = isChecked ? ' checked' : '';
-  return `<label class="consent-choice"><input type="radio" name="${OAuthField.Choice}" value="${escapedHtml(id)}"${checked} required><span>${escapedHtml(name)}</span></label>`;
+function choiceBoxHtml({ value, attributes, labelHtml }: { value: string; attributes: string; labelHtml: string }): string {
+  return `<label class="consent-choice"><input type="checkbox" name="${OAuthField.Choice}" value="${escapedHtml(value)}" ${attributes}>${labelHtml}</label>`;
 }
 
-function workspaceChoicesHtml({ listings, firstProjectId }: { listings: WorkspaceListing[]; firstProjectId: string | null }): string {
-  return listings
-    .filter(({ projects }) => projects.length > 0)
-    .map(({ workspace, projects }) =>
-      [
-        `<p class="consent-workspace">${escapedHtml(workspace.name)}</p>`,
-        ...projects.map((project) =>
-          projectChoiceHtml({
-            id: project.id,
-            name: `${workspace.name}${WORKSPACE_PROJECT_SEPARATOR}${project.name}`,
-            isChecked: project.id === firstProjectId,
-          }),
-        ),
-      ].join('\n'),
-    )
-    .join('\n');
+function projectChoiceHtml({ project, workspace }: { project: ProjectRecord; workspace: WorkspaceRecord }): string {
+  const label = `${workspace.name}${WORKSPACE_PROJECT_SEPARATOR}${project.name}`;
+  return choiceBoxHtml({
+    value: wordOfScope({ kind: GrantScopeKind.Project, projectId: project.id }),
+    attributes: `${CONSENT_PROJECT_ATTRIBUTE} ${CONSENT_WORKSPACE_ID_ATTRIBUTE}="${escapedHtml(workspace.id)}"`,
+    labelHtml: `<span>${escapedHtml(label)}</span>`,
+  });
+}
+
+function workspaceGroupHtml({ listing, copy }: { listing: WorkspaceListing; copy: OAuthCopy }): string {
+  const { workspace, projects } = listing;
+  const workspaceBox = choiceBoxHtml({
+    value: wordOfScope({ kind: GrantScopeKind.Workspace, workspaceId: workspace.id }),
+    attributes: `${CONSENT_WORKSPACE_ATTRIBUTE} ${CONSENT_WORKSPACE_ID_ATTRIBUTE}="${escapedHtml(workspace.id)}"`,
+    labelHtml: `<span>${escapedHtml(workspace.name)}<small class="consent-warning">${escapedHtml(copy.consent.workspaceIncludes)}</small></span>`,
+  });
+  const toggle = `<button class="admin-action consent-toggle" type="button" ${CONSENT_TOGGLE_ATTRIBUTE} ${CONSENT_SHOW_LABEL_ATTRIBUTE}="${escapedHtml(copy.consent.showProjects)}" ${CONSENT_HIDE_LABEL_ATTRIBUTE}="${escapedHtml(copy.consent.hideProjects)}" aria-expanded="true" hidden>${escapedHtml(copy.consent.hideProjects)}</button>`;
+  return `<div class="consent-group" ${CONSENT_GROUP_ATTRIBUTE}>
+<div class="consent-row">${workspaceBox}${toggle}</div>
+<div class="consent-projects" ${CONSENT_PROJECTS_ATTRIBUTE}>
+${projects.map((project) => projectChoiceHtml({ project, workspace })).join('\n')}
+</div>
+</div>`;
+}
+
+function summaryWordsOf(copy: OAuthCopy): Record<string, string> {
+  return {
+    none: copy.consent.summaryNone,
+    account: copy.consent.accountName,
+    workspaceOne: copy.consent.summaryWorkspaceOne,
+    workspaceMany: copy.consent.summaryWorkspaceMany,
+    projectOne: copy.consent.summaryProjectOne,
+    projectMany: copy.consent.summaryProjectMany,
+    both: copy.consent.summaryBoth,
+  };
+}
+
+function selectionTreeHtml({ listings, copy }: { listings: WorkspaceListing[]; copy: OAuthCopy }): string {
+  const selectAll = `<div ${CONSENT_SELECT_ALL_ROW_ATTRIBUTE} hidden><label class="consent-choice"><input type="checkbox" ${CONSENT_SELECT_ALL_ATTRIBUTE}><span>${escapedHtml(copy.consent.selectAll)}</span></label></div>`;
+  const groups = listings.map((listing) => workspaceGroupHtml({ listing, copy })).join('\n');
+  const summary = `<p class="consent-summary" aria-live="polite" ${CONSENT_SUMMARY_ATTRIBUTE} ${CONSENT_WORDS_ATTRIBUTE}="${escapedHtml(JSON.stringify(summaryWordsOf(copy)))}" hidden></p>`;
+  return `<p class="consent-warning">${escapedHtml(copy.consent.selectionHint)}</p>
+<div class="consent-tree" ${CONSENT_TREE_ATTRIBUTE}>
+${selectAll}
+${groups}
+</div>
+${summary}`;
 }
 
 function ownerChoiceHtml(copy: OAuthCopy): string {
-  return `<label class="consent-choice consent-owner"><input type="radio" name="${OAuthField.Choice}" value="${OAuthScope.Owner}" required><span>${escapedHtml(copy.consent.ownerLabel)}<small class="consent-warning">${escapedHtml(copy.consent.ownerWarning)}</small></span></label>`;
+  return `<label class="consent-choice consent-owner"><input type="checkbox" name="${OAuthField.Choice}" value="${OAuthScope.Owner}" ${CONSENT_OWNER_ATTRIBUTE}><span>${escapedHtml(copy.consent.ownerLabel)}<small class="consent-warning">${escapedHtml(copy.consent.ownerWarning)}</small></span></label>`;
 }
 
 function redirectLineOf({ redirectUri, copy }: { redirectUri: string; copy: OAuthCopy }): string {
@@ -266,33 +367,42 @@ function redirectLineOf({ redirectUri, copy }: { redirectUri: string; copy: OAut
   return copy.consent.redirectOf(host);
 }
 
-export function firstProjectIdOf(listings: WorkspaceListing[]): string | null {
-  const [firstProject] = listings.flatMap(({ projects }) => projects);
-  if (firstProject === undefined) return null;
-  return firstProject.id;
+function heldLabelOf({ scope, copy }: { scope: NamedScope; copy: OAuthCopy }): string {
+  if (scope.kind === GrantScopeKind.Workspace) return scope.workspaceName;
+  if (scope.kind === GrantScopeKind.Project) return `${scope.workspaceName}${WORKSPACE_PROJECT_SEPARATOR}${scope.projectName}`;
+  return copy.consent.accountName;
 }
 
-// NB ADR 0109: one project is preselected and the owner scope never is; the form only reaches this server and the client's redirect origin.
+function heldLineHtml({ clientName, held, copy }: { clientName: string; held: NamedScope[]; copy: OAuthCopy }): string {
+  if (held.length === 0) return '';
+  const isAccount = (scope: NamedScope) => scope.kind === GrantScopeKind.Account;
+  const ordered = [...held.filter((scope) => !isAccount(scope)), ...held.filter(isAccount)];
+  const labels = [...new Set(ordered.map((scope) => heldLabelOf({ scope, copy })))];
+  return `<p class="consent-holds">${escapedHtml(copy.consent.holdsOf({ clientName, held: labels.join(HOLDINGS_SEPARATOR) }))}</p>\n`;
+}
+
+// NB ADR 0126: the page is a tree of plain checkboxes the form posts without script; the owner scope is never preselected and no task count is shown.
 export function consentPageOf({
   request,
   authorization,
   listings,
+  held,
   formToken,
 }: {
   request: Request;
   authorization: AuthorizationRequest;
   listings: WorkspaceListing[];
+  held: NamedScope[];
   formToken: string;
 }): Response {
   const { client, redirectUri, offeredScopes, params } = authorization;
   const page = oauthPageOf({ request, returnPath: authorizePathOf(params) });
   const { copy } = page;
-  const firstProjectId = firstProjectIdOf(listings);
+  const selectable = listings.filter(({ projects }) => projects.length > 0);
   const isProjectOffered = offeredScopes[OAuthScope.Project];
-  const isProjectChoosable = isProjectOffered && firstProjectId !== null;
-  const projectHint = `<p class="consent-warning">${escapedHtml(copy.consent.projectHint)}</p>\n`;
-  const projectChoices = isProjectChoosable ? `${projectHint}${workspaceChoicesHtml({ listings, firstProjectId })}` : '';
-  const isWithoutProjects = isProjectOffered && firstProjectId === null;
+  const isSelectable = isProjectOffered && selectable.length > 0;
+  const selectionTree = isSelectable ? selectionTreeHtml({ listings: selectable, copy }) : '';
+  const isWithoutProjects = isProjectOffered && selectable.length === 0;
   const noProjectsLine = isWithoutProjects ? `<p class="admin-body">${escapedHtml(copy.consent.noProjects)}</p>` : '';
   const ownerChoice = offeredScopes[OAuthScope.Owner] ? ownerChoiceHtml(copy) : '';
   const hiddenInputs = [...params.entries(), [OAuthField.FormToken, formToken]]
@@ -300,11 +410,11 @@ export function consentPageOf({
     .join('\n');
   const content = `<h1 id="${TITLE_ID}" class="admin-title">${escapedHtml(copy.consent.titleOf(client.name))}</h1>
 <p class="admin-body">${escapedHtml(redirectLineOf({ redirectUri, copy }))}</p>
-<form class="${JOIN_FORM_CLASS} consent-form" method="post" action="${OAuthPath.Authorize}">
+${heldLineHtml({ clientName: client.name, held, copy })}<form class="${JOIN_FORM_CLASS} consent-form" method="post" action="${OAuthPath.Authorize}">
 ${hiddenInputs}
 <fieldset class="consent-choices">
 <legend class="consent-legend">${escapedHtml(copy.consent.legend)}</legend>
-${noProjectsLine}${projectChoices}
+${noProjectsLine}${selectionTree}
 ${ownerChoice}
 </fieldset>
 <div class="consent-actions">
@@ -313,8 +423,8 @@ ${ownerChoice}
 </div>
 </form>`;
   return oauthPageAnswerOf({
-    html: documentOf({ title: copy.meta.consentTitle, content, page, hasControls: true }),
+    html: documentOf({ title: copy.meta.consentTitle, content, page, hasControls: true, scripts: CONSENT_SCRIPTS }),
     status: HttpStatus.Ok,
-    policy: withFormOrigin({ policy: CONTENT_SECURITY_POLICY, origin: redirectOriginOf(redirectUri) }),
+    policy: withFormOrigin({ policy: CONSENT_CONTENT_SECURITY_POLICY, origin: redirectOriginOf(redirectUri) }),
   });
 }

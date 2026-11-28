@@ -27,6 +27,8 @@ export const EMAIL_SETTINGS: Partial<Env> = {
 };
 const TOKEN_IN_MAIL_PATTERN = /sign-in#token=([A-Za-z0-9_-]{43})/;
 const TOKEN_GROUP = 1;
+const CODE_IN_MAIL_PATTERN = /(?:^|\s)([0-9]{6})(?:\s|$)/;
+const CODE_GROUP = 1;
 
 export const PUBLIC_HTTPS_ORIGIN = 'https://todz.app';
 const PUBLIC_HTTPS_HOSTNAME = 'todz.app';
@@ -68,6 +70,7 @@ export function guardedSettings(): Partial<Env> {
     SIGN_IN_LIMITER: recordingLimiter({ isAllowed: true }).limiter,
     SIGN_IN_ADDRESS_LIMITER: recordingLimiter({ isAllowed: true }).limiter,
     SIGN_IN_GLOBAL_LIMITER: recordingLimiter({ isAllowed: true }).limiter,
+    SIGN_IN_CODE_LIMITER: recordingLimiter({ isAllowed: true }).limiter,
   };
 }
 
@@ -161,6 +164,12 @@ export function tokenOfMail(mail: SentMail): string {
   return token;
 }
 
+export function codeOfMail(mail: SentMail): string {
+  const code = CODE_IN_MAIL_PATTERN.exec(mail.text)?.[CODE_GROUP];
+  if (code === undefined) throw new Error('the mail should carry a sign-in code');
+  return code;
+}
+
 export function requestLink({
   email = freshAddress(),
   challenge = LINK_CHALLENGE,
@@ -192,13 +201,50 @@ export async function askedLink({
   email = freshAddress(),
   verifier = generateCredentialSecret(),
   now = CLOCK_NOW,
-}: { email?: string; verifier?: string; now?: number } = {}): Promise<{ email: string; verifier: string; token: string }> {
+}: { email?: string; verifier?: string; now?: number } = {}): Promise<{ email: string; verifier: string; token: string; code: string }> {
   const output = consoleOutput();
   const response = await requestLink({ email, challenge: await digestCredential(verifier), now });
   if (response.status !== ACCEPTED_STATUS) throw new Error(`asking for a link answered ${response.status}`);
-  const token = tokenOfMail(mailSent(output));
+  const mail = mailSent(output);
   output.mockRestore();
-  return { email, verifier, token };
+  return { email, verifier, token: tokenOfMail(mail), code: codeOfMail(mail) };
+}
+
+export function redeemCode({
+  email,
+  code,
+  verifier,
+  now = CLOCK_NOW,
+  timeZone = 'UTC',
+  workerEnv = emailEnv(),
+  executionContext,
+  turnstileToken = TURNSTILE_DUMMY_TOKEN,
+  origin,
+  headers = {},
+}: {
+  email: unknown;
+  code: unknown;
+  verifier: unknown;
+  now?: number;
+  timeZone?: string;
+  workerEnv?: Env;
+  executionContext?: ExecutionContext;
+  turnstileToken?: unknown;
+  origin?: string;
+  headers?: Record<string, string>;
+}): Promise<Response> {
+  return serveOwnerCall({
+    call: {
+      method: 'POST',
+      path: SESSIONS_PATH,
+      body: { email, email_code: code, link_verifier: verifier, time_zone: timeZone, turnstile_token: turnstileToken },
+      headers: { ...CLIENT_HEADERS, ...headers },
+      origin,
+    },
+    now,
+    workerEnv,
+    executionContext,
+  });
 }
 
 export function redeemLink({
@@ -209,6 +255,7 @@ export function redeemLink({
   workerEnv = emailEnv(),
   executionContext,
   turnstileToken = TURNSTILE_DUMMY_TOKEN,
+  origin,
   headers = {},
 }: {
   token: string;
@@ -218,6 +265,7 @@ export function redeemLink({
   workerEnv?: Env;
   executionContext?: ExecutionContext;
   turnstileToken?: unknown;
+  origin?: string;
   headers?: Record<string, string>;
 }): Promise<Response> {
   return serveOwnerCall({
@@ -226,6 +274,7 @@ export function redeemLink({
       path: SESSIONS_PATH,
       body: { identity_token: token, link_verifier: verifier, time_zone: timeZone, turnstile_token: turnstileToken },
       headers: { ...CLIENT_HEADERS, ...headers },
+      origin,
     },
     now,
     workerEnv,

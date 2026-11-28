@@ -67,6 +67,7 @@ export const ADMIN_COPY_SPANISH: AdminCopy = {
       [Metric.UsageRollups]: 'Informes de uso compartidos',
       [Metric.UsageVersions]: 'Informes por versión de la app',
       [Metric.UsageEvents]: 'Eventos de uso compartidos',
+      [Metric.OAuthGrantsDeleted]: 'Apps conectadas eliminadas',
     } satisfies Record<Metric, string>,
   },
   cloudQueue: {

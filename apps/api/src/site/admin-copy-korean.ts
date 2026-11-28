@@ -67,6 +67,7 @@ export const ADMIN_COPY_KOREAN: AdminCopy = {
       [Metric.UsageRollups]: '공유된 사용 보고서',
       [Metric.UsageVersions]: '앱 버전별 보고서',
       [Metric.UsageEvents]: '공유된 사용 이벤트',
+      [Metric.OAuthGrantsDeleted]: '제거된 연결된 앱',
     } satisfies Record<Metric, string>,
   },
   cloudQueue: {

@@ -39,7 +39,15 @@ import {
   renameProject,
   renameWorkspace,
 } from './owner-workspace-actions';
-import { type SessionOwner, findOwnedProjectId, findOwnedWorkspaceId, openOwnedGrantProject } from './project-routing';
+import { GrantShape, type SelectionScope, isProjectCovered } from './oauth/oauth-grant-scope';
+import {
+  type GrantProject,
+  type SessionOwner,
+  findOwnedProjectId,
+  findOwnedWorkspaceId,
+  openCoveredGrantProject,
+  openOwnedGrantProject,
+} from './project-routing';
 
 const MCP_SERVER_NAME = 'todz';
 const MCP_SERVER_VERSION = '0.1.0';
@@ -48,18 +56,27 @@ const LINE_BREAK = '\n';
 const PROJECT_INDENT = '  ';
 const TIME_PART_WIDTH = 2;
 
+export type OwnerReach = { shape: GrantShape.Owner } | { shape: GrantShape.Selection; scopes: SelectionScope[] };
+
 export type OwnerMcpScope = {
   env: Env;
   owner: SessionOwner;
+  reach: OwnerReach;
   now: number;
   limits: FairUseLimits;
   refusalTextOf: WriteRefusalTextOf;
   clientNameOf: ClientNameOf;
 };
 
+function grantProjectOf({ scope, projectId }: { scope: OwnerMcpScope; projectId: string }): Promise<GrantProject | null> {
+  const { env, owner, reach } = scope;
+  if (reach.shape === GrantShape.Owner) return openOwnedGrantProject({ env, owner, projectId });
+  return openCoveredGrantProject({ env, owner, projectId, scopes: reach.scopes });
+}
+
 async function taskScopeOf({ scope, projectId }: { scope: OwnerMcpScope; projectId: string }): Promise<McpServerScope | null> {
-  const { env, owner, now, clientNameOf, limits, refusalTextOf } = scope;
-  const grantProject = await openOwnedGrantProject({ env, owner, projectId });
+  const { now, clientNameOf, limits, refusalTextOf } = scope;
+  const grantProject = await grantProjectOf({ scope, projectId });
   if (grantProject === null) return null;
   return mcpScopeOf({ grantProject, now, clientNameOf, limits, refusalTextOf });
 }
@@ -161,13 +178,31 @@ function settingsLines(settings: OwnerRecord): string[] {
   return [MCP_COPY.timeZoneLine(settings.timeZone), MCP_COPY.agentNudgeLine(nudgeState), dayEmailLine];
 }
 
-function registerReadTools({ server, scope }: { server: McpServer; scope: OwnerMcpScope }): void {
-  const { env, owner } = scope;
+function coveredListings({ listings, scopes }: { listings: WorkspaceListing[]; scopes: SelectionScope[] }): WorkspaceListing[] {
+  return listings.flatMap(({ workspace, projects }) => {
+    const covered = projects.filter(({ id }) => isProjectCovered({ scopes, projectId: id, workspaceId: workspace.id }));
+    if (covered.length === 0) return [];
+    return [{ workspace, projects: covered }];
+  });
+}
+
+async function reachedListingsOf(scope: OwnerMcpScope): Promise<WorkspaceListing[]> {
+  const { env, owner, reach } = scope;
+  const listings = await listOwnerWorkspaces({ directory: env.DIRECTORY, ownerId: owner.ownerId });
+  if (reach.shape === GrantShape.Owner) return listings;
+  return coveredListings({ listings, scopes: reach.scopes });
+}
+
+function registerWorkspacesTool({ server, scope }: { server: McpServer; scope: OwnerMcpScope }): void {
   server.registerTool(
     McpOwnerToolName.Workspaces,
     { description: MCP_COPY.ownerTools[McpOwnerToolName.Workspaces], annotations: annotationsOf(McpOwnerToolName.Workspaces) },
-    async () => textAnswer(workspacesAnswer(await listOwnerWorkspaces({ directory: env.DIRECTORY, ownerId: owner.ownerId }))),
+    async () => textAnswer(workspacesAnswer(await reachedListingsOf(scope))),
   );
+}
+
+function registerSettingsReadTool({ server, scope }: { server: McpServer; scope: OwnerMcpScope }): void {
+  const { env, owner } = scope;
   server.registerTool(
     McpOwnerToolName.Settings,
     { description: MCP_COPY.ownerTools[McpOwnerToolName.Settings], annotations: annotationsOf(McpOwnerToolName.Settings) },
@@ -332,12 +367,26 @@ function registerProjectTools({ server, scope }: { server: McpServer; scope: Own
   );
 }
 
-export function buildOwnerMcpServer(scope: OwnerMcpScope): McpServer {
-  const server = new McpServer({ name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION }, { instructions: MCP_COPY.ownerInstructions });
-  registerReadTools({ server, scope });
+function registerAccountTools({ server, scope }: { server: McpServer; scope: OwnerMcpScope }): void {
+  registerSettingsReadTool({ server, scope });
   registerWorkspaceTools({ server, scope });
   registerProjectTools({ server, scope });
   registerSettingsTool({ server, scope });
+}
+
+const INSTRUCTIONS_OF_SHAPE: Record<OwnerReach['shape'], string> = {
+  [GrantShape.Owner]: MCP_COPY.ownerInstructions,
+  [GrantShape.Selection]: MCP_COPY.selectionInstructions,
+};
+
+// NB ADR 0126: only the whole account is offered the owner tools; a selection gets the workspaces it covers and the task tools.
+export function buildOwnerMcpServer(scope: OwnerMcpScope): McpServer {
+  const server = new McpServer(
+    { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION },
+    { instructions: INSTRUCTIONS_OF_SHAPE[scope.reach.shape] },
+  );
+  registerWorkspacesTool({ server, scope });
+  if (scope.reach.shape === GrantShape.Owner) registerAccountTools({ server, scope });
   registerTaskTools({
     server,
     access: { kind: TaskAccessKind.Owner, scopeOf: (projectId) => taskScopeOf({ scope, projectId }) },

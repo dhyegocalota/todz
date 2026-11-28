@@ -67,6 +67,7 @@ export const ADMIN_COPY_HINDI: AdminCopy = {
       [Metric.UsageRollups]: 'साझा किए गए उपयोग रिपोर्ट',
       [Metric.UsageVersions]: 'ऐप संस्करण के अनुसार रिपोर्ट',
       [Metric.UsageEvents]: 'साझा किए गए उपयोग इवेंट',
+      [Metric.OAuthGrantsDeleted]: 'हटाए गए कनेक्टेड ऐप',
     } satisfies Record<Metric, string>,
   },
   cloudQueue: {

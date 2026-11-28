@@ -18,12 +18,13 @@ Jede Zahl ist ein Wert für einen Tag, mit höchstens einem kurzen Label.
 | Update-Prüfungen | Die Mac-App, die nach Updates fragt | die App-Version und die macOS-Hauptversion, etwa `0.2.1\|15` |
 | Geteilte Nutzungsberichte | Die Mac-App, nur wenn du **Anonyme Nutzungsdaten teilen** einschaltest | die App-Version und die macOS-Hauptversion |
 | Geteilte Nutzungsereignisse | Derselbe Bericht | eines von `popover_opened`, `day_closed`, `morning_glance`, `shortcut_used`, `multi_workspace` |
+| Entfernte verbundene Apps | Der Server, wenn die Verbindung einer App endet | eines von `replayed_code`, `eviction`, `reuse_after_rotation`, `cap`, `client_revoke`, `settings_disconnect`, `cascade` |
 
 ## Was nie gespeichert wird
 
 - Kein Aufgabentitel, keine Notiz, kein Projektname, kein Workspace-Name und keine E-Mail-Adresse.
 - Keine IP-Adresse und kein User-Agent. Der User-Agent einer Update-Prüfung wird auf die zwei Versionsnummern gelesen und verworfen.
-- Kein Ereignisprotokoll und kein Zeitstempel eines einzelnen Ereignisses. Nur ein Tag und eine Summe.
+- Kein Ereignisprotokoll und kein Zeitstempel eines einzelnen Ereignisses. Nur ein Tag und eine Summe. Die einzige Ausnahme: Endet die Verbindung einer App, schreibt der Server eine Zeile in seine eigenen Logs, mit dem Grund und dem Namen der App, ohne Konto, Adresse oder Token.
 - Der Zufallscode, den die Mac-App mit einem Bericht sendet, wechselt alle 30 Tage, dient nur dazu, Missbrauch zu bremsen, und wird nie gespeichert.
 
 Die Summen werden 13 Monate aufbewahrt und dann vom Server gelöscht.

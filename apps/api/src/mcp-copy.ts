@@ -64,6 +64,7 @@ export const MCP_COPY = {
     [McpToolName.Projects]: 'List the projects of the workspace this connection belongs to, with their ids.',
   } satisfies Record<McpToolName, string>,
   ownerInstructions: `This todz connection has owner scope and holds the whole account: its workspaces, its projects and every task. Call workspaces to list them with their ids, create_workspace and create_project to add, rename_workspace and rename_project to rename, and delete_workspace and delete_project to remove one for good with its current name as confirm. Every task tool (next, add, list, show, history, update, done, reopen, delete, move) takes the project id it works on, from workspaces; delete needs the task title as confirm, and move takes the destination project in destination. Ids look like ${EXAMPLE_TASK_ID}.`,
+  selectionInstructions: `This todz connection reaches a selection of the account: the workspaces and projects its owner chose, and every project of a chosen workspace. Call workspaces to list them with their ids. Every task tool (next, add, list, show, history, update, done, reopen, delete, move) takes the project id it works on, from workspaces; delete needs the task title as confirm, and move takes the destination project in destination, within the same workspace and the selection. A project outside the selection answers as not found. Ids look like ${EXAMPLE_TASK_ID}.`,
   titles: {
     [McpToolName.Next]: 'Next task',
     [McpToolName.Add]: 'Add tasks',

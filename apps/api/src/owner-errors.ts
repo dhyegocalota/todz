@@ -25,6 +25,8 @@ export enum OwnerErrorCode {
   AccountSuspended = 'account_suspended',
   SignUpRefused = 'sign_up_refused',
   CloudFull = 'cloud_full',
+  CodeLocked = 'code_locked',
+  ScopeNotNarrower = 'scope_not_narrower',
 }
 
 const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
@@ -44,6 +46,8 @@ const STATUS_OF_CODE: Record<OwnerErrorCode, HttpStatus> = {
   [OwnerErrorCode.AccountSuspended]: HttpStatus.Forbidden,
   [OwnerErrorCode.SignUpRefused]: HttpStatus.Forbidden,
   [OwnerErrorCode.CloudFull]: HttpStatus.Forbidden,
+  [OwnerErrorCode.CodeLocked]: HttpStatus.TooManyRequests,
+  [OwnerErrorCode.ScopeNotNarrower]: HttpStatus.Unprocessable,
 };
 
 const STATUS_OF_LIMIT: Record<FairUseLimit, HttpStatus> = {

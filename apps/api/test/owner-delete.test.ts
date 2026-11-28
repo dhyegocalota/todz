@@ -80,7 +80,10 @@ async function storedWorkspaceRows(workspaceId: string): Promise<number> {
 }
 
 async function storedGrantRows(projectId: string): Promise<number> {
-  return countRows({ sql: 'SELECT count(*) AS total FROM oauth_grants WHERE project_id = ?', bindings: [projectId] });
+  return countRows({
+    sql: 'SELECT count(*) AS total FROM oauth_grants WHERE id IN (SELECT grant_id FROM oauth_grant_scopes WHERE project_id = ?)',
+    bindings: [projectId],
+  });
 }
 
 async function projectStoreTableCount(projectId: string): Promise<number> {

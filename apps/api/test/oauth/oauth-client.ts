@@ -27,8 +27,10 @@ const FETCH_SITE_HEADER = 'Sec-Fetch-Site';
 const COOKIE_PAIR_SEPARATOR = '; ';
 const MAIL_LINK_PATTERN = /\/oauth\/sign-in#token=([A-Za-z0-9_-]{43})&request=([A-Za-z0-9%._~*'()!-]+)/;
 const HIDDEN_INPUT_PATTERN = /<input type="hidden" name="([a-z_]+)" value="([^"]*)">/g;
-const RADIO_PATTERN = /<input type="radio" name="choice" value="([^"]+)"/g;
+const CHOICE_PATTERN = /<input type="checkbox" name="choice" value="([^"]+)"/g;
 const RETURN_LINK_PATTERN = /<a class="admin-link" href="([^"]+)" data-return>/;
+const MAIL_CODE_PATTERN = /(?:^|\s)([0-9]{6})(?:\s|$)/;
+const CODE_GROUP = 1;
 const LINK_GROUP = 1;
 const TOKEN_GROUP = 1;
 const REQUEST_GROUP = 2;
@@ -222,7 +224,15 @@ export function hiddenFieldsOf(html: string): Record<string, string> {
 }
 
 export function choicesOf(html: string): string[] {
-  return [...html.matchAll(RADIO_PATTERN)].map((match) => decodedHtml(match[NAME_GROUP]!));
+  return [...html.matchAll(CHOICE_PATTERN)].map((match) => decodedHtml(match[NAME_GROUP]!));
+}
+
+export function projectChoiceOf(projectId: string): string {
+  return `project:${projectId}`;
+}
+
+export function workspaceChoiceOf(workspaceId: string): string {
+  return `workspace:${workspaceId}`;
 }
 
 export type MailedLink = { token: string; request: string };
@@ -231,6 +241,13 @@ export function mailedLinkOf(text: string): MailedLink {
   const match = MAIL_LINK_PATTERN.exec(text);
   if (match === null) throw new Error('the mail should carry an OAuth sign-in link');
   return { token: match[TOKEN_GROUP]!, request: decodeURIComponent(match[REQUEST_GROUP]!) };
+}
+
+export function mailedCodeOf(line: string): string {
+  const { text } = z.object({ text: z.string() }).parse(JSON.parse(line));
+  const code = MAIL_CODE_PATTERN.exec(text)?.[CODE_GROUP];
+  if (code === undefined) throw new Error('the mail should carry a sign-in code');
+  return code;
 }
 
 export async function askForLink({
@@ -321,6 +338,7 @@ export async function decide({
   browser,
   params,
   fields,
+  choices = [],
   workerEnv,
   now,
   headers,
@@ -328,14 +346,19 @@ export async function decide({
   browser: Browser;
   params: URLSearchParams;
   fields: Record<string, string>;
+  choices?: string[];
   workerEnv?: Env;
   now?: number;
   headers?: Record<string, string>;
 }): Promise<Response> {
   const html = await consentPage({ browser, params, workerEnv, now });
+  const entries: [string, string][] = [
+    ...Object.entries({ ...hiddenFieldsOf(html), ...fields }),
+    ...choices.map((choice): [string, string] => ['choice', choice]),
+  ];
   return browserVisit({
     browser,
-    request: formRequest({ path: '/oauth/authorize', fields: { ...hiddenFieldsOf(html), ...fields }, headers }),
+    request: formRequest({ path: '/oauth/authorize', fields: entries, headers }),
     workerEnv,
     now,
   });
@@ -365,11 +388,11 @@ export async function approvedCode({
 }: {
   browser: Browser;
   params: URLSearchParams;
-  choice: string;
+  choice: string | string[];
   workerEnv?: Env;
   now?: number;
 }): Promise<string> {
-  const response = await decide({ browser, params, fields: { decision: 'approve', choice }, workerEnv, now });
+  const response = await decide({ browser, params, fields: { decision: 'approve' }, choices: [choice].flat(), workerEnv, now });
   const code = (await returnedParams(response)).get('code');
   if (code === null) throw new Error('approving should redirect with a code');
   return code;
@@ -384,12 +407,14 @@ export async function exchangeCode({
   code,
   verifier,
   redirectUri = LOOPBACK_REDIRECT_URI,
+  workerEnv,
   now,
 }: {
   clientId: string;
   code: string;
   verifier: string;
   redirectUri?: string;
+  workerEnv?: Env;
   now?: number;
 }): Promise<Response> {
   return serveOAuthRequest({
@@ -401,6 +426,7 @@ export async function exchangeCode({
       client_id: clientId,
       resource: MCP_RESOURCE,
     }),
+    workerEnv,
     now,
   });
 }
@@ -421,7 +447,7 @@ export async function connectedClient({
   email = freshAddress(),
   now = CLOCK_NOW,
 }: {
-  choiceOf: (html: string) => string;
+  choiceOf: (html: string) => string | string[];
   email?: string;
   now?: number;
 }): Promise<ConnectedClient> {
@@ -436,8 +462,8 @@ export async function connectedClient({
 }
 
 export function firstChoice(html: string): string {
-  const [choice] = choicesOf(html);
-  if (choice === undefined) throw new Error('the consent page should offer a choice');
+  const choice = choicesOf(html).find((candidate) => candidate.startsWith('project:'));
+  if (choice === undefined) throw new Error('the consent page should offer a project');
   return choice;
 }
 

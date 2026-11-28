@@ -18,12 +18,13 @@ Cada recuento es un número para un día, con como máximo una etiqueta corta.
 | Comprobaciones de actualización | La app para Mac pidiendo actualizaciones | la versión de la app y la versión principal de macOS, como `0.2.1\|15` |
 | Informes de uso compartidos | La app para Mac, solo si activas **Compartir uso anónimo** | la versión de la app y la versión principal de macOS |
 | Eventos de uso compartidos | El mismo informe | uno de `popover_opened`, `day_closed`, `morning_glance`, `shortcut_used`, `multi_workspace` |
+| Apps conectadas eliminadas | El servidor, cuando termina la conexión de una app | uno de `replayed_code`, `eviction`, `reuse_after_rotation`, `cap`, `client_revoke`, `settings_disconnect`, `cascade` |
 
 ## Qué nunca se almacena
 
 - Ningún título de tarea, nota, nombre de proyecto, nombre de espacio de trabajo ni dirección de correo.
 - Ninguna dirección IP ni agente de usuario. El agente de usuario de una comprobación de actualización se lee para obtener los dos números de versión y se descarta.
-- Ningún registro de eventos ni marca de tiempo de un evento individual. Solo un día y un total.
+- Ningún registro de eventos ni marca de tiempo de un evento individual. Solo un día y un total. La única excepción: cuando termina la conexión de una app, el servidor escribe una línea en sus propios registros con el motivo y el nombre de la app, sin cuenta, dirección ni token.
 - El código aleatorio que la app para Mac envía con un informe cambia cada 30 días, se usa solo para frenar abusos y nunca se almacena.
 
 Los totales se conservan 13 meses y luego el servidor los elimina.

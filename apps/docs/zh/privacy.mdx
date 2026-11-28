@@ -18,12 +18,13 @@ todz 以每日总数的形式统计使用情况。它从不存储任何人的操
 | 更新检查 | Mac App 请求更新 | App 版本和 macOS 主版本，例如 `0.2.1\|15` |
 | 共享的使用报告 | Mac App，仅当你开启**共享匿名使用数据**时 | App 版本和 macOS 主版本 |
 | 共享的使用事件 | 同一份报告 | `popover_opened`、`day_closed`、`morning_glance`、`shortcut_used`、`multi_workspace` 之一 |
+| 已移除的已连接应用 | 服务器，在某个应用的连接结束时 | `replayed_code`、`eviction`、`reuse_after_rotation`、`cap`、`client_revoke`、`settings_disconnect`、`cascade` 之一 |
 
 ## 绝不存储什么
 
 - 不存任何任务标题、备注、项目名称、工作区名称或邮箱地址。
 - 不存 IP 地址，也不存 user agent。更新检查的 user agent 只用来读取两个版本号，随后即丢弃。
-- 不存事件日志，也不存任何单个事件的时间戳。只有日期和总数。
+- 不存事件日志，也不存任何单个事件的时间戳。只有日期和总数。唯一的例外：某个应用的连接结束时，服务器会在自己的日志中写入一行，包含原因和应用名称，不含账户、地址或令牌。
 - Mac App 随报告发送的随机代码每 30 天更换一次，只用来减缓滥用，而且从不存储。
 
 总数保存 13 个月，之后由服务器删除。

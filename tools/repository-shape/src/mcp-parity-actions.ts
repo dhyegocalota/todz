@@ -8,7 +8,7 @@ export enum ParityScope {
 
 export type AppAction = { action: string; ownerRoute: string | null; tool: string | null; scope: ParityScope; reason: string | null };
 
-const CREDENTIAL_REASON = 'a credential: an agent able to list or disconnect apps could widen its own access';
+const CREDENTIAL_REASON = 'a credential: an agent able to list, narrow or disconnect apps could widen its own access';
 const IDENTITY_REASON = 'a person proves who they are: an agent never signs in for them';
 const SYNC_REASON = 'sync transport between a Mac and the server; an agent reads tasks with list and show';
 
@@ -58,6 +58,12 @@ export const APP_ACTIONS: AppAction[] = [
   withoutTool({
     action: 'List the connected apps',
     ownerRoute: 'list_connected_apps',
+    scope: ParityScope.NotOverMcp,
+    reason: CREDENTIAL_REASON,
+  }),
+  withoutTool({
+    action: 'Narrow the scopes of an app',
+    ownerRoute: 'narrow_app',
     scope: ParityScope.NotOverMcp,
     reason: CREDENTIAL_REASON,
   }),

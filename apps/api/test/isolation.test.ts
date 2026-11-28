@@ -2,7 +2,7 @@ import { MILLISECONDS_PER_HOUR, PROJECT_OPEN_TASKS_MAX, TaskPlacement, TaskState
 import { runInDurableObject } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { describe, expect, test } from 'vitest';
-import { OAuthScope } from '../src/oauth/oauth-scope';
+import { GrantShape } from '../src/oauth/oauth-grant-scope';
 import { ProjectFailureKind } from '../src/project-result';
 import { openOAuthAccess, openOwnedProject, resolveSessionOwner } from '../src/project-routing';
 import type { ProjectStore } from '../src/project-store';
@@ -29,7 +29,7 @@ function newSecret(): string {
 
 async function openToken(secret: string): Promise<Stub> {
   const access = await openOAuthAccess({ env, secret, now: CLOCK_NOW });
-  if (access === null || access.scope !== OAuthScope.Project) throw new Error('the token should open a project');
+  if (access === null || access.scope !== GrantShape.Project) throw new Error('the token should open a project');
   return access.grantProject.project;
 }
 

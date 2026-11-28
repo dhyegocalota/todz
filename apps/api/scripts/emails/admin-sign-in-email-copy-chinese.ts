@@ -9,4 +9,5 @@ export const ADMIN_SIGN_IN_EMAIL_COPY_CHINESE: AdminSignInEmailCopy = {
   action: '登录',
   fallback: '在错误的浏览器中打开了？请把这个链接粘贴到你申请时所用的那个浏览器：',
   footer: `此链接只能使用一次，有效期 ${ADMIN_SIGN_IN_LINK_LIFETIME_MINUTES} 分钟，且只能在你申请它的浏览器中打开。`,
+  codeLabel: '或者在你申请链接的页面输入此验证码。验证码只能使用一次，并与链接同时过期。',
 };

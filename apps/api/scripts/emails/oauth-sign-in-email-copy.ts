@@ -17,6 +17,7 @@ export const OAUTH_SIGN_IN_EMAIL_COPY = {
   fallback: 'Opens in the wrong browser? Paste this link into the one where you asked:',
   footer:
     "This link works once, expires soon and opens only in the browser where you asked for it. If you didn't ask, ignore this email: nothing is connected.",
+  codeLabel: 'Or enter this code where you asked for the link. It works once and expires with the link.',
 };
 
 export type OAuthSignInEmailCopy = typeof OAUTH_SIGN_IN_EMAIL_COPY;

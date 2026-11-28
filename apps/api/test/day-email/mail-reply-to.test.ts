@@ -8,11 +8,12 @@ const ADDRESS = 'maria@example.com';
 const ORIGIN = 'https://todz.app';
 const LINK = `${ORIGIN}/sign-in#token=preview`;
 const HELLO_ADDRESS = 'hello@todz.app';
+const CODE = '482913';
 
 describe.each([
-  ['sign-in', () => signInMail({ to: ADDRESS, link: LINK, origin: ORIGIN, language: Language.English })],
+  ['sign-in', () => signInMail({ to: ADDRESS, link: LINK, code: CODE, origin: ORIGIN, language: Language.English })],
   ['welcome', () => welcomeMail({ to: ADDRESS, origin: ORIGIN, language: Language.English })],
-  ['admin sign-in', () => adminSignInMail({ to: ADDRESS, link: LINK, origin: ORIGIN, language: Language.English })],
+  ['admin sign-in', () => adminSignInMail({ to: ADDRESS, link: LINK, code: CODE, origin: ORIGIN, language: Language.English })],
 ])('the %s mail', (_name, build) => {
   test('replies to hello@todz.app and carries no headers', () => {
     const message = build();

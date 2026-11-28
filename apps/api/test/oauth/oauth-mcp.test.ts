@@ -27,7 +27,7 @@ const REGISTERED_NAME = 'Cursor';
 const ENVELOPE_NAME = 'Claude Code';
 const TOOLS_LIST_BODY = { jsonrpc: JSONRPC_VERSION, id: 1, method: 'tools/list', params: {} };
 
-async function grantedTokens({ owner, choiceOf }: { owner: SeededOwner; choiceOf: (html: string) => string }): Promise<Tokens> {
+async function grantedTokens({ owner, choiceOf }: { owner: SeededOwner; choiceOf: (html: string) => string | string[] }): Promise<Tokens> {
   const now = Date.now();
   const clientId = await registerClient({ metadata: clientMetadata({ client_name: REGISTERED_NAME }), now });
   const { verifier, challenge } = await pkcePair();

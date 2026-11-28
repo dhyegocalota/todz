@@ -18,12 +18,12 @@ To reconnect an agent that used a key, run `claude mcp add --transport http todz
 1. Enter your todz email and pass the check.
 2. Open the sign-in link from the mail **in the same browser**.
 3. Read the consent screen: it names the app and where it sends you back.
-4. Pick one project. The first one is preselected. Or pick **Your whole account (owner scope)**, which is never preselected and warns "It can read and change every task, and create, rename and delete every workspace and project."
+4. Tick what the app may reach: whole workspaces, or only some of their projects, from any workspace. Nothing is preselected, and a line names what the same app already holds. Or tick **Your whole account (owner scope)**, which warns "It can read and change every task, and create, rename and delete every workspace and project."
 5. Approve, or Deny.
 
-A project scope gives the task tools, and the other projects of its workspace for `move` and `projects`. An owner scope gives the account tools and the same task tools for every project of the account, each taking the `project` id from `workspaces`. The history of a task names the app by the name it registered. See [MCP tools](/mcp-tools).
+One project gives the task tools, and the other projects of its workspace for `move` and `projects`. Several projects or workspaces give the task tools only, each taking the `project` id from `workspaces`, which lists only what you ticked: a ticked workspace covers all of its projects, new ones included, and a project outside the selection answers as not found. An owner scope gives the account tools and the same task tools for every project of the account. The history of a task names the app by the name it registered. In **Settings** › **Connected apps** you can narrow what an app reaches, or revoke it. See [MCP tools](/mcp-tools).
 
-Access tokens last one hour and renew themselves. Refresh tokens last 30 days and rotate on every use; one retry within 5 seconds gets a fresh pair, and a spent one used again later disconnects the app. todz stores tokens only as digests. Fair use and the cloud cap apply to every connected app.
+Access tokens last one hour and renew themselves. Refresh tokens last 30 days and rotate on every use; a retry gets a fresh pair until the new token is used, and a spent one used after that disconnects the app. todz stores tokens only as digests. Fair use and the cloud cap apply to every connected app.
 
 To disconnect an app, open **Settings** › **Connected apps** in the Mac app. The app stops at once.
 

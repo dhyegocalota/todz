@@ -5,6 +5,7 @@ describe('the email slots', () => {
   test('are written between double braces', () => {
     expect(Object.values(EmailSlot)).toEqual([
       '{{link}}',
+      '{{code}}',
       '{{email}}',
       '{{origin}}',
       '{{more}}',

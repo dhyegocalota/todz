@@ -16,6 +16,7 @@ export const SIGN_IN_EMAIL_COPY = {
   action: 'Sign in to todz',
   fallback: 'Button not working? Paste this link into your browser:',
   footer: "If you didn't ask for this, ignore this email.",
+  codeLabel: 'Or enter this code where you asked for the link. It works once and expires with the link.',
 };
 
 export type SignInEmailCopy = typeof SIGN_IN_EMAIL_COPY;

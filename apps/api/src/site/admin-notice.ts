@@ -4,4 +4,6 @@ export enum AdminNotice {
   TryAgain = 'try-again',
   Closed = 'closed',
   Forbidden = 'forbidden',
+  WrongCode = 'wrong-code',
+  CodeLocked = 'code-locked',
 }

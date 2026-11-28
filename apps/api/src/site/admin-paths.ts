@@ -5,6 +5,7 @@ export enum AdminPath {
   SignInLinks = '/admin/sign-in-links',
   LinkPage = '/admin/sign-in',
   Sessions = '/admin/sessions',
+  CodeSessions = '/admin/code-sessions',
   SignOut = '/admin/sign-out',
   Metrics = '/admin/metrics',
   MetricsExport = '/admin/metrics.csv',
@@ -18,6 +19,7 @@ export enum AdminPath {
 export enum AdminField {
   Email = 'email',
   Token = 'token',
+  EmailCode = 'email_code',
   Owner = 'owner',
   Choice = 'choice',
   Count = 'count',

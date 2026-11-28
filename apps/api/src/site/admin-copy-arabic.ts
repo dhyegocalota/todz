@@ -67,6 +67,7 @@ export const ADMIN_COPY_ARABIC: AdminCopy = {
       [Metric.UsageRollups]: 'تقارير الاستخدام المشتركة',
       [Metric.UsageVersions]: 'التقارير حسب إصدار التطبيق',
       [Metric.UsageEvents]: 'أحداث الاستخدام المشتركة',
+      [Metric.OAuthGrantsDeleted]: 'التطبيقات المتصلة المُزالة',
     } satisfies Record<Metric, string>,
   },
   cloudQueue: {

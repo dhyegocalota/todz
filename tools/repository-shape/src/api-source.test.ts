@@ -53,6 +53,7 @@ const CLOUD_READ_RATE_LIMIT_NAMESPACE_ID = '8616';
 const OAUTH_RATE_LIMIT_NAMESPACE_ID = '8617';
 const OAUTH_REGISTER_RATE_LIMIT_NAMESPACE_ID = '8618';
 const OAUTH_REGISTER_GLOBAL_RATE_LIMIT_NAMESPACE_ID = '8619';
+const SIGN_IN_CODE_RATE_LIMIT_NAMESPACE_ID = '8620';
 const LOCAL_ADMIN_EMAIL_VARIABLE = '--var ADMIN_EMAIL:admin@todz.test';
 const ACCOUNT_ID = 'e2035d8e0b7173d520ccf643f6f4661c';
 const PREVIEW_DATABASE_ID = '00000000-0000-0000-0000-000000000000';
@@ -78,6 +79,8 @@ const CONSOLE_IDENTIFIER = /\bconsole\b/;
 const CONSOLE_CRASH_LOG = 'apps/api/src/crash-log.ts';
 const CONSOLE_DAY_EMAIL_LOG = 'apps/api/src/day-email/day-email-log.ts';
 const CONSOLE_EMAIL_SENDER = 'apps/api/src/email-sender.ts';
+const CONSOLE_GRANT_DELETION_LOG = 'apps/api/src/oauth/oauth-grant-deletion.ts';
+const CONSOLE_FILES_COUNT = 4;
 const SCHEDULED_MODULE = 'apps/api/src/scheduled.ts';
 const DAY_EMAIL_CRON = '*/15 * * * *';
 const METRICS_CRON = '0 3 * * *';
@@ -147,8 +150,11 @@ describe('the api source', () => {
     expect(sourceFiles.length).toBeGreaterThan(0);
   });
 
-  test('only the development email sender, the day email log and the crash log name console, so no other log carries a task, a secret or a digest', () => {
-    expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual([CONSOLE_CRASH_LOG, CONSOLE_DAY_EMAIL_LOG, CONSOLE_EMAIL_SENDER]);
+  test('only the development email sender, the day email log, the crash log and the grant deletion log name console, so no other log carries a task, a secret or a digest', () => {
+    expect(filesMatching(CONSOLE_IDENTIFIER)).toEqual(
+      expect.arrayContaining([CONSOLE_CRASH_LOG, CONSOLE_DAY_EMAIL_LOG, CONSOLE_EMAIL_SENDER, CONSOLE_GRANT_DELETION_LOG]),
+    );
+    expect(filesMatching(CONSOLE_IDENTIFIER)).toHaveLength(CONSOLE_FILES_COUNT);
   });
 
   test('only the reply module names the producer of a reply owner, so the brand of the routing module opens nothing else (pin)', () => {
@@ -310,6 +316,11 @@ describe('the api source', () => {
         name: 'OAUTH_REGISTER_GLOBAL_LIMITER',
         namespace_id: OAUTH_REGISTER_GLOBAL_RATE_LIMIT_NAMESPACE_ID,
         simple: { limit: sharedLimit('OAUTH_REGISTER_GLOBAL_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
+      },
+      {
+        name: 'SIGN_IN_CODE_LIMITER',
+        namespace_id: SIGN_IN_CODE_RATE_LIMIT_NAMESPACE_ID,
+        simple: { limit: sharedLimit('SIGN_IN_CODE_RATE_LIMIT_MAX'), period: RATE_LIMIT_PERIOD_SECONDS },
       },
     ]);
   });

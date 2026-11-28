@@ -1,4 +1,5 @@
 import { enumValueOf } from '../enum-value';
+import { GrantDeletionReason } from '../oauth/oauth-grant-deletion-reason';
 
 export enum Metric {
   OwnersTotal = 'owners_total',
@@ -15,6 +16,7 @@ export enum Metric {
   UsageRollups = 'usage_rollups',
   UsageVersions = 'usage_versions',
   UsageEvents = 'usage_events',
+  OAuthGrantsDeleted = 'oauth_grants_deleted',
 }
 
 export enum UsageEvent {
@@ -95,6 +97,7 @@ const DIMENSION_OF_METRIC: Record<Metric, (candidate: string) => string> = {
   [Metric.UsageRollups]: () => NO_DIMENSION,
   [Metric.UsageVersions]: versionDimensionOf,
   [Metric.UsageEvents]: (candidate) => enumDimensionOf({ enumeration: UsageEvent, candidate }),
+  [Metric.OAuthGrantsDeleted]: (candidate) => enumDimensionOf({ enumeration: GrantDeletionReason, candidate }),
 };
 
 export function dimensionOf({ metric, candidate }: { metric: Metric; candidate: string }): string {

@@ -6,14 +6,14 @@ import { HttpStatus } from './http-status';
 import { MCP_COPY } from './mcp-copy';
 import { FAIR_USE_COPY } from './fair-use-copy';
 import { fairUseLimitsOf } from './fair-use-limits';
-import { buildOwnerMcpServer } from './mcp-owner-server';
+import { type OwnerReach, buildOwnerMcpServer } from './mcp-owner-server';
 import { type McpServerScope, buildMcpServer, mcpScopeOf } from './mcp-server';
 import { isReadThrottled } from './cloud-read-throttle';
 import { logCrash } from './crash-log';
 import { stampOwnerSeen } from './owner-last-seen';
 import { writeRefusalTextOf } from './owner-write-quota';
 import { mcpChallengeOf, mcpResourceOf, oauthIssuerOf } from './oauth/oauth-metadata';
-import { OAuthScope } from './oauth/oauth-scope';
+import { GrantShape } from './oauth/oauth-grant-scope';
 import { type GrantProject, type OAuthAccess, type SessionOwner, openOAuthAccess } from './project-routing';
 import { isSignedInRateLimited, withRetryAfter } from './signed-in-limiter';
 
@@ -105,16 +105,18 @@ async function serveOwnerScope({
   request,
   env,
   owner,
+  reach,
   clientName,
   now,
 }: {
   request: Request;
   env: Env;
   owner: SessionOwner;
+  reach: OwnerReach;
   clientName: string;
   now: number;
 }): Promise<Response> {
-  const scope = { env, owner, now, clientNameOf: () => clientName, ...quotaFieldsOf({ env, ownerId: owner.ownerId, now }) };
+  const scope = { env, owner, reach, now, clientNameOf: () => clientName, ...quotaFieldsOf({ env, ownerId: owner.ownerId, now }) };
   return createMcpHandler(() => buildOwnerMcpServer(scope), HANDLER_OPTIONS_OF_ERA[await eraOf(request)]).fetch(request);
 }
 
@@ -142,19 +144,28 @@ async function serveGrantProject({
 }
 
 function grantGateOf(access: OAuthAccess): { limiterKey: string; ownerId: string; isSuspended: boolean } {
-  if (access.scope === OAuthScope.Owner) {
+  if (access.scope === GrantShape.Owner) {
     return { limiterKey: access.owner.ownerId, ownerId: access.owner.ownerId, isSuspended: access.owner.isSuspended };
+  }
+  if (access.scope === GrantShape.Selection) {
+    return { limiterKey: access.grantId, ownerId: access.owner.ownerId, isSuspended: access.owner.isSuspended };
   }
   return { limiterKey: access.grantId, ownerId: access.grantProject.ownerId, isSuspended: access.grantProject.isSuspended };
 }
 
-// NB ADR 0109: an OAuth access token is served as the project or the account its grant names, never more.
+// NB ADR 0109: an OAuth access token is served as the project or the account its grant names, never more; ADR 0126 serves a selection by the owner server with the account tools left out.
 async function serveAccessToken({ request, env, secret, now }: CredentialRequest): Promise<Response> {
   const access = await openOAuthAccess({ env, secret, now });
   if (access === null) return rejectedCredential(env);
   const refusal = await gateRefusalOf({ request, env, now, ...grantGateOf(access) });
   if (refusal !== null) return refusal;
-  if (access.scope === OAuthScope.Owner) return serveOwnerScope({ request, env, owner: access.owner, clientName: access.clientName, now });
+  if (access.scope === GrantShape.Owner) {
+    return serveOwnerScope({ request, env, owner: access.owner, reach: { shape: access.scope }, clientName: access.clientName, now });
+  }
+  if (access.scope === GrantShape.Selection) {
+    const reach = { shape: access.scope, scopes: access.scopes };
+    return serveOwnerScope({ request, env, owner: access.owner, reach, clientName: access.clientName, now });
+  }
   return serveGrantProject({ request, env, grantProject: access.grantProject, clientName: access.clientName, now });
 }
 

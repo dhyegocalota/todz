@@ -7,4 +7,5 @@ export const SIGN_IN_EMAIL_COPY_ARABIC: SignInEmailCopy = {
   action: 'تسجيل الدخول إلى todz',
   fallback: 'الزر لا يعمل؟ الصق هذا الرابط في متصفحك:',
   footer: 'إذا لم تطلب هذا، فتجاهل هذه الرسالة.',
+  codeLabel: 'أو أدخل هذا الرمز حيث طلبت الرابط. يعمل مرة واحدة وتنتهي صلاحيته مع الرابط.',
 };
